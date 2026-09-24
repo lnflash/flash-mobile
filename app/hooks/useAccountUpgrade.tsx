@@ -4,6 +4,13 @@ import { parsePhoneNumber } from "libphonenumber-js"
 // hooks
 import { useActivityIndicator } from "./useActivityIndicator"
 import { normalizeContentType } from "@app/utils/image-content-type"
+import { fileSha256Hex } from "@app/utils/file-sha256"
+import {
+  buildEvidence,
+  isVerificationStatus,
+  planUploads,
+  validateUpgradeAddress,
+} from "@app/utils/identity-verification"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
   useBusinessAccountUpgradeRequestMutation,
@@ -17,10 +24,13 @@ import {
 
 // store
 import {
+  IdentitySide,
   setAccountUpgrade,
   setBankInfo,
   setBusinessInfo,
+  setIdentityUploaded,
   setPersonalInfo,
+  UploadedEvidence,
 } from "@app/store/redux/slices/accountUpgradeSlice"
 
 const sanitizeMessage = (msg: string): string => {
@@ -41,15 +51,27 @@ type UpgradeResult = {
   errors?: string[]
 }
 
+export type UploadEvidenceResult =
+  | { success: true; uploaded: Record<IdentitySide, UploadedEvidence | undefined> }
+  | { success: false; failedSide?: IdentitySide; error: string }
+
+export class EvidenceUploadError extends Error {
+  side: IdentitySide
+  constructor(side: IdentitySide, message: string) {
+    super(message)
+    this.name = "EvidenceUploadError"
+    this.side = side
+  }
+}
+
 export const useAccountUpgrade = () => {
   const dispatch = useAppDispatch()
   const { toggleActivityIndicator } = useActivityIndicator()
-  const { accountType, status, personalInfo, businessInfo, bankInfo } = useAppSelector(
-    (state) => state.accountUpgrade,
-  )
+  const { accountType, status, personalInfo, businessInfo, bankInfo, identity } =
+    useAppSelector((state) => state.accountUpgrade)
 
   const { data: dataAuthed } = useAuthQuery()
-  const { data } = useLatestAccountUpgradeRequestQuery({
+  const { data, refetch: refetchUpgradeRequest } = useLatestAccountUpgradeRequestQuery({
     fetchPolicy: "cache-and-network",
   })
   const upgradeData = data?.latestAccountUpgradeRequest.upgradeRequest
@@ -61,7 +83,7 @@ export const useAccountUpgrade = () => {
   })
 
   useEffect(() => {
-    if (upgradeData && upgradeData.status !== status) {
+    if (upgradeData && upgradeData.verification.status !== status) {
       setAccountUpgradeData()
     } else if (dataAuthed?.me?.phone) {
       const parsed = parsePhoneNumber(dataAuthed.me.phone)
@@ -81,9 +103,14 @@ export const useAccountUpgrade = () => {
       const parsedPhone = upgradeData.phoneNumber
         ? parsePhoneNumber(upgradeData.phoneNumber)
         : undefined
+      const verification = upgradeData.verification
       dispatch(
         setAccountUpgrade({
-          status: upgradeData.status,
+          status: isVerificationStatus(verification.status)
+            ? verification.status
+            : undefined,
+          reasonCode: verification.reasonCode ?? undefined,
+          reasonMessage: verification.reasonMessage ?? undefined,
           accountType: upgradeData.requestedLevel,
         }),
       )
@@ -120,46 +147,94 @@ export const useAccountUpgrade = () => {
     }
   }
 
-  const uploadIdDocument = async (): Promise<string | null> => {
-    const { idDocument } = bankInfo
-    if (!idDocument?.fileName || !idDocument.type || !idDocument.uri) {
-      return null
+  /** Presigned PUT of one capture; returns its storage key and hash. */
+  const uploadOne = async (side: IdentitySide): Promise<UploadedEvidence> => {
+    const image = identity[side]
+    if (!image?.uri || !image.fileName || !image.type) {
+      throw new EvidenceUploadError(side, "Photo is missing. Please take it again.")
     }
 
     // Normalize content type: Android returns "image/jpg" for some JPEGs,
     // but the backend only accepts "image/jpeg" (ENG-291)
-    const normalizedContentType = normalizeContentType(idDocument.type)
+    const contentType = normalizeContentType(image.type)
 
-    let data
+    let uploadUrl: string | null | undefined
+    let fileKey: string | null | undefined
     try {
       const result = await generateIdDocumentUploadUrl({
-        variables: {
-          input: {
-            filename: idDocument.fileName,
-            contentType: normalizedContentType,
-          },
-        },
+        variables: { input: { filename: image.fileName, contentType } },
       })
-      data = result.data
+      uploadUrl = result.data?.idDocumentUploadUrlGenerate.uploadUrl
+      fileKey = result.data?.idDocumentUploadUrlGenerate.fileKey
     } catch (err) {
       const message = err instanceof Error ? err.message : ""
       if (message.includes("InvalidFileType")) {
-        throw new Error("Unsupported file type. Please upload a JPG or PNG image.")
+        throw new EvidenceUploadError(
+          side,
+          "Unsupported file type. Please take the photo again.",
+        )
       }
-      throw new Error("Failed to upload ID document. Please try again.")
+      throw new EvidenceUploadError(side, "Failed to upload photo. Please try again.")
     }
 
-    if (!data?.idDocumentUploadUrlGenerate.uploadUrl) {
-      throw new Error("Failed to generate upload URL to upload ID Document")
+    if (!uploadUrl || !fileKey) {
+      throw new EvidenceUploadError(side, "Failed to upload photo. Please try again.")
     }
 
-    await uploadFileToS3(
-      data.idDocumentUploadUrlGenerate.uploadUrl,
-      idDocument.uri,
-      normalizedContentType,
-    )
+    let sha256: string
+    try {
+      sha256 = await fileSha256Hex(image.uri)
+    } catch {
+      throw new EvidenceUploadError(
+        side,
+        "Could not read the photo. Please take it again.",
+      )
+    }
 
-    return data.idDocumentUploadUrlGenerate.fileKey ?? null
+    try {
+      await uploadFileToS3(uploadUrl, image.uri, contentType)
+    } catch {
+      throw new EvidenceUploadError(side, "Failed to upload photo. Please try again.")
+    }
+
+    return { uri: image.uri, fileKey, sha256 }
+  }
+
+  /**
+   * Upload every required capture that is not already in storage. Keys are
+   * recorded in the slice per side as each PUT completes, so a failure on the
+   * second file leaves the first reusable and a retry only sends what is left.
+   */
+  const uploadEvidence = async (): Promise<UploadEvidenceResult> => {
+    const plan = planUploads(identity)
+    if (plan.missing.length) {
+      return {
+        success: false,
+        failedSide: plan.missing[0],
+        error: "Please take all the required photos before continuing.",
+      }
+    }
+
+    const uploaded: Record<IdentitySide, UploadedEvidence | undefined> = {
+      front: identity.uploaded.front,
+      back: identity.uploaded.back,
+      selfie: identity.uploaded.selfie,
+    }
+
+    for (const side of plan.toUpload) {
+      try {
+        const evidence = await uploadOne(side)
+        uploaded[side] = evidence
+        dispatch(setIdentityUploaded({ side, evidence }))
+      } catch (err) {
+        const side_ = err instanceof EvidenceUploadError ? err.side : side
+        const message =
+          err instanceof Error ? err.message : "Failed to upload photo. Please try again."
+        return { success: false, failedSide: side_, error: sanitizeMessage(message) }
+      }
+    }
+
+    return { success: true, uploaded }
   }
 
   const submitAccountUpgrade = async (): Promise<UpgradeResult> => {
@@ -170,23 +245,28 @@ export const useAccountUpgrade = () => {
     const businessName =
       businessInfo.businessName ||
       (isProUpgrade ? `${username || "Flash"} - Pro Account` : undefined)
-    const line1 = businessInfo.line1 || (isProUpgrade ? "1 Grenada Way" : undefined)
-    const city = businessInfo.city || (isProUpgrade ? "Kingston 5" : undefined)
-    const state = businessInfo.state || (isProUpgrade ? "Kingston" : undefined)
-    const postalCode = businessInfo.postalCode || (isProUpgrade ? "000000" : undefined)
-    const country = businessInfo.country || (isProUpgrade ? "Jamaica" : undefined)
-    const line2 = businessInfo.line2
+    const { line1, line2, city, state, postalCode, country } = businessInfo
 
     if (!fullName) return { success: false, errors: ["Full name is required"] }
     if (!businessName) return { success: false, errors: ["Business name is required"] }
-    if (!city || !country || !line1 || !postalCode || !state) {
+    if (
+      validateUpgradeAddress(businessInfo).length ||
+      !line1 ||
+      !city ||
+      !state ||
+      !country
+    ) {
       return { success: false, errors: ["Please complete all address fields"] }
     }
 
     toggleActivityIndicator(true)
 
     try {
-      const idDocument = await uploadIdDocument()
+      const upload = await uploadEvidence()
+      if (!upload.success) {
+        return { success: false, errors: [upload.error] }
+      }
+      const { evidence, legacyIdDocument } = buildEvidence(identity, upload.uploaded)
 
       let bankAccount = undefined
       if (
@@ -210,19 +290,20 @@ export const useAccountUpgrade = () => {
           city,
           country,
           line1,
-          line2: line2,
-          postalCode,
+          line2: line2 || undefined,
+          postalCode: postalCode || undefined,
           state,
           title: businessName,
         },
-        bankAccount: bankAccount,
+        bankAccount,
         level: accountType,
-        idDocument: idDocument,
+        // Legacy field kept for backends that predate `evidence`; the server
+        // folds it into the ID_FRONT row when both are present.
+        idDocument: legacyIdDocument,
+        evidence,
         fullName,
         terminalsRequested: businessInfo.terminalRequested ? 1 : 0,
       }
-
-      console.log("Account Upgrade Request Input: ", input)
 
       if (!dataAuthed?.me?.email?.address && personalInfo.email) {
         await registerUserEmail({
@@ -244,13 +325,20 @@ export const useAccountUpgrade = () => {
         }
       }
 
-      dispatch(setAccountUpgrade({ status: "Pending" }))
+      dispatch(
+        setAccountUpgrade({
+          status: "SUBMITTED",
+          reasonCode: undefined,
+          reasonMessage: undefined,
+        }),
+      )
+      refetchUpgradeRequest().catch(() => undefined)
 
       return {
         success: !!upgradeResponse?.id,
       }
     } catch (err) {
-      console.error("Account upgrade failed:", err)
+      console.error("Account upgrade failed:", err instanceof Error ? err.message : err)
       return {
         success: false,
         errors: [
@@ -262,7 +350,7 @@ export const useAccountUpgrade = () => {
     }
   }
 
-  return { submitAccountUpgrade }
+  return { submitAccountUpgrade, uploadEvidence }
 }
 
 const uploadFileToS3 = async (
