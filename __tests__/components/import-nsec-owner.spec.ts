@@ -62,17 +62,48 @@ describe("importNsec owner record", () => {
     expect(await getNostrKeyOwner(npub)).toBeNull()
   })
 
-  it("treats a void backend result as registered", async () => {
-    // Callers that do not report refusals resolve undefined; only an explicit
-    // `false` is a refusal.
+  it("leaves the previous key and its owner record untouched when refused", async () => {
+    // Shared phone: B imports A's nsec, A holds it on the backend. The
+    // refusal must be a no-op — B's own key stays in the keychain (it is the
+    // only copy that decrypts DMs to B's registered npub) and stays B's.
+    const previous = newKey()
+    await Keychain.setInternetCredentials(
+      KEYCHAIN_NOSTRCREDS_KEY,
+      KEYCHAIN_NOSTRCREDS_KEY,
+      previous.nsec,
+    )
+    await setNostrKeyOwner(previous.npub, ACCOUNT_B)
     const { nsec, npub } = newKey()
     const ok = await importNsec(nsec, {
       onError: jest.fn(),
-      updateFlashBackend: async () => undefined,
+      updateFlashBackend: refused,
       accountId: ACCOUNT_B,
     })
-    expect(ok).toBe(true)
-    expect(await getNostrKeyOwner(npub)).toBe(ACCOUNT_B)
+    expect(ok).toBe(false)
+    const stored = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
+    expect(stored && stored.password).toBe(previous.nsec)
+    expect(await getNostrKeyOwner(previous.npub)).toBe(ACCOUNT_B)
+    expect(await getNostrKeyOwner(npub)).toBeNull()
+  })
+
+  it("does not write the keychain until the backend has accepted", async () => {
+    const { nsec } = newKey()
+    const order: string[] = []
+    // The keychain module is a jest.fn mock; a one-shot implementation leaves
+    // its default in-memory store behaviour intact for later tests.
+    ;(Keychain.setInternetCredentials as jest.Mock).mockImplementationOnce(async () => {
+      order.push("keychain")
+      return false
+    })
+    await importNsec(nsec, {
+      onError: jest.fn(),
+      updateFlashBackend: async () => {
+        order.push("backend")
+        return true
+      },
+      accountId: ACCOUNT_B,
+    })
+    expect(order).toEqual(["backend", "keychain"])
   })
 
   it("drops the owner record of the key it replaced", async () => {

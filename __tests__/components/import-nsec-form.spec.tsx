@@ -13,7 +13,7 @@ import { Alert } from "react-native"
 import * as Keychain from "react-native-keychain"
 import { fireEvent, render, waitFor } from "@testing-library/react-native"
 import { generateSecretKey, getPublicKey, nip19 } from "nostr-tools"
-import { getNostrKeyOwner } from "@app/nostr/key-owner"
+import { getNostrKeyOwner, setNostrKeyOwner } from "@app/nostr/key-owner"
 import {
   KEYCHAIN_NOSTRCREDS_KEY,
   NSEC_REGISTERED_ELSEWHERE_ERROR,
@@ -108,6 +108,15 @@ describe("NsecInputForm", () => {
   })
 
   it("never shows success when the backend refuses the key", async () => {
+    // Shared phone: B (signed in) imports A's nsec. B's own key must survive
+    // the refusal — it is the only copy that decrypts DMs to B's npub.
+    const previous = newKey()
+    await Keychain.setInternetCredentials(
+      KEYCHAIN_NOSTRCREDS_KEY,
+      KEYCHAIN_NOSTRCREDS_KEY,
+      previous.nsec,
+    )
+    await setNostrKeyOwner(previous.npub, "account-b")
     const { nsec, npub } = newKey()
     mockUserUpdateNpub.mockResolvedValue({
       data: { userUpdateNpub: { errors: [{ code: "NPUB_NOT_AVAILABLE" }] } },
@@ -117,5 +126,8 @@ describe("NsecInputForm", () => {
     expect(alertSpy).not.toHaveBeenCalled()
     expect(screen.getByText(NSEC_REGISTERED_ELSEWHERE_ERROR)).toBeTruthy()
     expect(await getNostrKeyOwner(npub)).toBeNull()
+    const stored = await Keychain.getInternetCredentials(KEYCHAIN_NOSTRCREDS_KEY)
+    expect(stored && stored.password).toBe(previous.nsec)
+    expect(await getNostrKeyOwner(previous.npub)).toBe("account-b")
   })
 })

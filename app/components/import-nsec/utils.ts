@@ -17,20 +17,22 @@ export const NSEC_REGISTERED_ELSEWHERE_ERROR = "This key is registered to anothe
 export type ImportNsecOptions = {
   onError: (msg: string) => void
   /**
-   * Registers the key on the account. Resolves `false` when the backend
-   * refused it (another account holds it); anything else counts as registered.
+   * Registers the key on the account. Resolves `true` when the backend
+   * accepted it, `false` when it refused (another account holds it).
    */
-  updateFlashBackend: () => Promise<unknown>
+  updateFlashBackend: () => Promise<boolean>
   accountId?: string | null
 }
 
 /**
- * Stores an imported nsec as this device's key and registers it on the
- * account. A key the backend refuses is reported as an error, not a success:
- * the keychain would otherwise hold a key the account cannot advertise, and
- * the next launch would surface an unexplained refusal. With `accountId`, a
- * registered key is recorded as that account's (see `key-owner.ts`), and the
- * owner record of the key it replaced is dropped.
+ * Registers an imported nsec on the account and, only once the backend has
+ * accepted it, stores it as this device's key. The backend runs first because
+ * the write is destructive: it overwrites the account's own key, which is the
+ * only copy that can decrypt DMs sent to the npub the account advertises. A
+ * refused key (another account holds it) is reported as an error, not a
+ * success, and leaves the keychain and the previous key's owner record
+ * untouched. With `accountId`, a registered key is recorded as that account's
+ * (see `key-owner.ts`), and the owner record of the key it replaced is dropped.
  */
 export const importNsec = async (
   nsec: string,
@@ -55,7 +57,12 @@ export const importNsec = async (
       previousNpub = null
     }
     const npub = npubOfNsec(nsec)
-    // Save the nsec key to the keychain
+    const registered = await updateFlashBackend()
+    if (!registered) {
+      onError(NSEC_REGISTERED_ELSEWHERE_ERROR)
+      return false
+    }
+    // Only a key the account can advertise replaces the one in the keychain.
     await Keychain.setInternetCredentials(
       KEYCHAIN_NOSTRCREDS_KEY,
       KEYCHAIN_NOSTRCREDS_KEY,
@@ -65,11 +72,6 @@ export const importNsec = async (
       await clearNostrKeyOwner(previousNpub).catch((e) =>
         console.warn("[importNsec] could not clear replaced key owner:", e),
       )
-    }
-    const registered = await updateFlashBackend()
-    if (registered === false) {
-      onError(NSEC_REGISTERED_ELSEWHERE_ERROR)
-      return false
     }
     if (accountId) {
       await setNostrKeyOwner(npub, accountId).catch((e) =>
