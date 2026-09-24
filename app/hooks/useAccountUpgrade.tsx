@@ -52,9 +52,16 @@ const sanitizeMessage = (msg: string): string => {
   return msg
 }
 
-type UpgradeResult = {
+/**
+ * Outcome of a full submit. When the evidence upload is what failed the
+ * upload's `failedSide`/`reason` ride along so the review screen can treat a
+ * dead capture the same way on a resubmit as it does on first submission.
+ */
+export type UpgradeResult = {
   success: boolean
   errors?: string[]
+  failedSide?: IdentitySide
+  reason?: UploadFailureReason
 }
 
 /**
@@ -309,7 +316,12 @@ export const useAccountUpgrade = () => {
     try {
       const upload = await uploadEvidence()
       if (!upload.success) {
-        return { success: false, errors: [upload.error] }
+        return {
+          success: false,
+          errors: [upload.error],
+          failedSide: upload.failedSide,
+          reason: upload.reason,
+        }
       }
       const { evidence, legacyIdDocument } = buildEvidence(identity, upload.uploaded)
 

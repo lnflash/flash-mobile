@@ -92,7 +92,15 @@ const IdentityReview: React.FC<Props> = ({ navigation, route }) => {
         const res = await submitAccountUpgrade()
         if (res.success) {
           navigation.replace("AccountUpgradeSuccess", { resubmitted: true })
+        } else if (res.reason === "file") {
+          // Same as the first-submission path below: a dead capture must be
+          // retaken, not retried, so forget the side rather than leave Try
+          // again enabled against a file that will fail identically.
+          setFailedSide(res.failedSide)
+          setErrorMsg(res.errors?.join(", ") || LL.AccountUpgrade.uploadFailed())
+          if (res.failedSide) dispatch(clearIdentityCapture({ side: res.failedSide }))
         } else {
+          setFailedSide(res.failedSide)
           setErrorMsg(res.errors?.join(", ") || LL.AccountUpgrade.uploadFailed())
         }
         return

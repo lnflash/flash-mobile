@@ -396,9 +396,13 @@ describe("useAccountUpgrade — submitAccountUpgrade", () => {
       res = await result.current.submitAccountUpgrade()
     })
 
+    // The upload's side/reason ride along so the review screen can tell a
+    // dead capture (retake) from a blip (retry) on the resubmit path too.
     expect(res).toEqual({
       success: false,
       errors: ["Failed to upload photo. Please try again."],
+      failedSide: "back",
+      reason: "network",
     })
     expect(mockRequestUpgrade).not.toHaveBeenCalled()
     expect(mockDispatch).not.toHaveBeenCalledWith(

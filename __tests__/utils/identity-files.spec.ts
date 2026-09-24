@@ -9,6 +9,7 @@ import {
   identityFilePath,
   identityFileUri,
   persistCapture,
+  removeIdentityDir,
   removeIdentityFiles,
   stripFileScheme,
 } from "@app/utils/identity-files"
@@ -130,5 +131,20 @@ describe("removeIdentityFiles", () => {
         },
       }),
     ).resolves.toBeUndefined()
+  })
+})
+
+describe("removeIdentityDir", () => {
+  it("unlinks the whole idv directory under the current document directory", async () => {
+    // Logout resets the slice, so nothing would reference files left behind;
+    // the directory itself has to go, not just the sides the state knows of.
+    await removeIdentityDir()
+    expect(rnfs.unlink).toHaveBeenCalledTimes(1)
+    expect(rnfs.unlink).toHaveBeenCalledWith("/tmp/idv")
+  })
+
+  it("is a no-op when the directory was never created", async () => {
+    rnfs.unlink.mockRejectedValueOnce(new Error("ENOENT"))
+    await expect(removeIdentityDir()).resolves.toBeUndefined()
   })
 })

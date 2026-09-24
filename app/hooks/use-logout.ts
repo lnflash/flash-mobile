@@ -16,6 +16,7 @@ import { useFlashcard } from "./useFlashcard"
 import KeyStoreWrapper from "../utils/storage/secureStorage"
 import { SCHEMA_VERSION_KEY } from "@app/config"
 import { disconnectToSDK } from "@app/utils/breez-sdk"
+import { removeIdentityDir } from "@app/utils/identity-files"
 
 // store
 import { resetAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
@@ -58,6 +59,10 @@ const useLogout = () => {
     await KeyStoreWrapper.removePin()
     await KeyStoreWrapper.removePinAttempts()
     dispatch(resetUserSlice())
+    // ENG-608: ID captures live under <documents>/idv/. Resetting the slice
+    // below drops every reference to them, so wipe the directory first or the
+    // photos of a government ID outlive the account that took them.
+    await removeIdentityDir()
     dispatch(resetAccountUpgrade())
     resetState()
     resetFlashcard()

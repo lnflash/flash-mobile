@@ -73,6 +73,20 @@ export const removeIdentityFile = async (relativePath: string): Promise<void> =>
   }
 }
 
+/**
+ * Delete the whole `<documents>/idv/` directory, captures and all. For logout:
+ * the slice is reset there, so anything left on disk would have nothing
+ * referencing it and would otherwise sit in the (iOS-backed-up) document
+ * directory for the next account on the phone. Best-effort like the rest.
+ */
+export const removeIdentityDir = async (): Promise<void> => {
+  try {
+    await RNFS.unlink(identityFilePath(IDENTITY_DIR))
+  } catch {
+    // Never created, or already gone — nothing to do.
+  }
+}
+
 /** Delete every capture file the identity state points at. */
 export const removeIdentityFiles = async (
   identity: Pick<IdentityState, "front" | "back" | "selfie">,

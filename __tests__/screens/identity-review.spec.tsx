@@ -233,4 +233,56 @@ describe("IdentityReview", () => {
       resubmitted: true,
     })
   })
+
+  it("on a resubmit, a dead file forgets that side instead of leaving Try again armed", async () => {
+    // submitAccountUpgrade used to flatten the upload failure to `errors`
+    // only, so a file-reason failure (unreadable still, rejected type) between
+    // mount and confirm showed the message but kept the side in the slice and
+    // confirm enabled; Try again then failed identically.
+    mockSubmitAccountUpgrade.mockResolvedValue({
+      success: false,
+      errors: ["Could not read the photo. Please take it again."],
+      failedSide: "front",
+      reason: "file",
+    })
+    const { getAllByText, getByTestId, queryAllByText } = renderReview({
+      resubmit: true,
+    })
+
+    await act(async () => {
+      fireEvent.press(getAllByText(en.AccountUpgrade.confirmSubmit())[0])
+    })
+
+    await waitFor(() => expect(getByTestId("identity-review-error")).toBeTruthy())
+    expect(getAllByText("Could not read the photo. Please take it again.")).toHaveLength(
+      1,
+    )
+    expect(queryAllByText(en.AccountUpgrade.uploadFailed())).toHaveLength(0)
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: "accountUpgrade/clearIdentityCapture",
+      payload: { side: "front" },
+    })
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockUploadEvidence).not.toHaveBeenCalled()
+  })
+
+  it("on a resubmit, a network failure keeps the capture and marks the side for retry", async () => {
+    mockSubmitAccountUpgrade.mockResolvedValue({
+      success: false,
+      errors: ["Network error during upload"],
+      failedSide: "selfie",
+      reason: "network",
+    })
+    const { getAllByText, getByTestId } = renderReview({ resubmit: true })
+
+    await act(async () => {
+      fireEvent.press(getAllByText(en.AccountUpgrade.confirmSubmit())[0])
+    })
+
+    await waitFor(() => expect(getByTestId("identity-review-error")).toBeTruthy())
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "accountUpgrade/clearIdentityCapture" }),
+    )
+  })
 })
