@@ -3,6 +3,7 @@ import { Pressable, ScrollView, useWindowDimensions, View } from "react-native"
 import Modal from "react-native-modal"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
+import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { testProps } from "@app/utils/testProps"
 
@@ -41,6 +42,7 @@ const CashoutAccountPicker: React.FC<Props> = ({
   onClose,
 }) => {
   const styles = useStyles()
+  const sheetInsetStyle = useModalInsetStyle(styles.sheet)
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { height } = useWindowDimensions()
@@ -88,7 +90,10 @@ const CashoutAccountPicker: React.FC<Props> = ({
        */
       coverScreen={false}
     >
-      <View style={styles.sheet}>
+      {/* Plain testID: `testProps` sets `accessible`, which on iOS collapses
+          the whole sheet (title, options, manage link) into one VoiceOver
+          stop labelled with the id. */}
+      <View style={[styles.sheet, sheetInsetStyle]} testID="cashout-account-sheet">
         <Text type="h2" bold style={styles.sheetTitle}>
           {LL.Cashout.chooseAccount()}
         </Text>

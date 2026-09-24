@@ -48,6 +48,10 @@ const AccountCreateModal: React.FC<Props> = ({ modalVisible, setModalVisible }) 
             <View style={styles.cover} />
           </TouchableWithoutFeedback>
         </View>
+        {/* No safe-area inset here (ENG-605): this sheet lives on the Home
+            bottom-tab screen, so its inline absoluteFill ends at the tab bar,
+            and BottomTabView already pads `insets.bottom` under the tab bar.
+            Adding `useModalInsetStyle` would stack a second inset band. */}
         <View style={styles.viewModal}>
           <Icon name="remove" size={64} color={colors.grey3} style={styles.icon} />
           <Text type="h1">{LL.common.needWallet()}</Text>

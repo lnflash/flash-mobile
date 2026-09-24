@@ -18,10 +18,25 @@ import * as React from "react"
 import { MockedProvider } from "@apollo/client/testing"
 import { createTheme, ThemeProvider } from "@rneui/themed"
 import { act, fireEvent, render } from "@testing-library/react-native"
+import { StyleSheet } from "react-native"
+import { SafeAreaProvider } from "react-native-safe-area-context"
 import { ReactTestInstance } from "react-test-renderer"
 
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
+
+// The sheet pads by the safe-area inset (ENG-605). The provider mock feeds
+// `useSafeAreaInsets` from context so a test can render under a 3-button-nav
+// inset and pin that the sheet actually applies it on top of its own padding.
+jest.mock("react-native-safe-area-context", () =>
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require("../helpers/safe-area-context-mock").build(),
+)
+
+// Android 15 3-button nav under edge-to-edge.
+const THREE_BUTTON_NAV = { top: 24, bottom: 48, left: 0, right: 0 }
+// The sheet's designed bottom padding (styles.sheet in the component).
+const SHEET_DESIGN_PADDING_BOTTOM = 32
 
 jest.mock("@app/i18n/i18n-react", () => {
   const { i18nObject: i18n } = jest.requireActual("@app/i18n/i18n-util")
@@ -73,18 +88,34 @@ const Host = (
   )
 }
 
-const renderPicker = (props: Partial<PickerProps> = {}) => {
+const renderPicker = (
+  props: Partial<PickerProps> = {},
+  insets: { top: number; bottom: number; left: number; right: number } = {
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+) => {
   const onClose = jest.fn()
   const onSelectAccount = jest.fn()
   const screen = render(
-    <ThemeProvider theme={createTheme({})}>
-      <MockedProvider mocks={[bankAccountsMock, externalAccountsMock]}>
-        <Host onSelectAccount={onSelectAccount} {...props} onClose={onClose} />
-      </MockedProvider>
-    </ThemeProvider>,
+    <SafeAreaProvider
+      initialMetrics={{ insets, frame: { x: 0, y: 0, width: 0, height: 0 } }}
+    >
+      <ThemeProvider theme={createTheme({})}>
+        <MockedProvider mocks={[bankAccountsMock, externalAccountsMock]}>
+          <Host onSelectAccount={onSelectAccount} {...props} onClose={onClose} />
+        </MockedProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>,
   )
   return { screen, onClose, onSelectAccount }
 }
+
+const sheetPaddingBottom = (screen: ReturnType<typeof render>) =>
+  StyleSheet.flatten(screen.getByTestId("cashout-account-sheet").props.style)
+    .paddingBottom
 
 const finishHideAnimation = () =>
   act(() => {
@@ -109,6 +140,26 @@ describe("CashoutAccountPicker", () => {
     await screen.findByTestId("cashout-account-jm-1")
 
     expect(mockLastModalProps?.coverScreen).toBe(false)
+  })
+
+  it("pads the sheet by its own bottom padding plus the safe-area inset (ENG-605)", async () => {
+    // Inline (coverScreen={false}) means the sheet reaches the physical window
+    // edge, so it must clear the nav bar itself -- on top of, not instead of,
+    // the padding it was designed with.
+    const { screen } = renderPicker({}, THREE_BUTTON_NAV)
+    await screen.findByTestId("cashout-account-jm-1")
+
+    expect(sheetPaddingBottom(screen)).toBe(
+      SHEET_DESIGN_PADDING_BOTTOM + THREE_BUTTON_NAV.bottom,
+    )
+  })
+
+  it("keeps its designed bottom padding when the window is not edge-to-edge", async () => {
+    // Android 14 and older at target 35: inset 0, layout unchanged.
+    const { screen } = renderPicker()
+    await screen.findByTestId("cashout-account-jm-1")
+
+    expect(sheetPaddingBottom(screen)).toBe(SHEET_DESIGN_PADDING_BOTTOM)
   })
 
   it("lists every account with the default badge and marks the current pick", async () => {

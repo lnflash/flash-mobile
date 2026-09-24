@@ -65,6 +65,10 @@ const CashWalletCutoverModal = () => {
        */
       coverScreen={false}
     >
+      {/* No safe-area inset here (ENG-605): this sheet lives on the Home
+          bottom-tab screen, so its inline absoluteFill ends at the tab bar,
+          and BottomTabView already pads `insets.bottom` under the tab bar.
+          Adding `useModalInsetStyle` would stack a second inset band. */}
       <View style={styles.sheet}>
         <View style={styles.handle} />
 

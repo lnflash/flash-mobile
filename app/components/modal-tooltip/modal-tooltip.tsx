@@ -4,6 +4,7 @@ import { View, TouchableOpacity, ScrollView } from "react-native"
 import Icon from "react-native-vector-icons/Ionicons"
 
 import Modal from "react-native-modal"
+import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 import { useAppConfig } from "@app/hooks"
 import { LocalizedString } from "typesafe-i18n"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
@@ -34,6 +35,7 @@ export const ModalTooltip: React.FC<ModalTooltipProps> = ({
   const [isVisible, setIsVisible] = React.useState(false)
   const toggleModal = () => setIsVisible(!isVisible)
   const styles = useStyles()
+  const sheetInsetStyle = useModalInsetStyle(styles.modalCard)
 
   let iconParams: { name: string; type: string }
   let defaultTitle: LocalizedString
@@ -75,7 +77,7 @@ export const ModalTooltip: React.FC<ModalTooltipProps> = ({
         backdropColor={colors.grey3}
       >
         <TouchableOpacity style={styles.fillerOpacity} onPress={toggleModal} />
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, sheetInsetStyle]} testID="modal-tooltip-sheet">
           <View style={styles.modalTitleContainer}>
             <Icon size={24} {...iconParams} style={styles.iconContainer} />
             <Text type={"h1"}>{modalTitle}</Text>

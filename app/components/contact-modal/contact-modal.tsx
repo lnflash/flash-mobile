@@ -1,6 +1,7 @@
 import React from "react"
-import { Linking } from "react-native"
+import { Linking, View } from "react-native"
 import ReactNativeModal from "react-native-modal"
+import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 
 import { CONTACT_EMAIL_ADDRESS } from "@app/config"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -40,6 +41,7 @@ const ContactModal: React.FC<Props> = ({
 }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
+  const sheetInsetStyle = useModalInsetStyle()
   const {
     theme: { colors },
   } = useTheme()
@@ -119,23 +121,27 @@ const ContactModal: React.FC<Props> = ({
       // host on Android (see #545), which would push it off-screen.
       coverScreen={false}
     >
-      {contactOptionList.map((item) => {
-        if (item.hidden) return null
-        return (
-          <ListItem
-            key={item.name}
-            bottomDivider
-            onPress={item.action}
-            containerStyle={styles.listItemContainer}
-          >
-            {item.icon}
-            <ListItem.Content>
-              <ListItem.Title style={styles.listItemTitle}>{item.name}</ListItem.Title>
-            </ListItem.Content>
-            <ListItem.Chevron name={"chevron-forward"} type="ionicon" />
-          </ListItem>
-        )
-      })}
+      {/* Wrapper carries the bottom safe-area inset; the sheet has no
+          content container of its own. */}
+      <View style={sheetInsetStyle} testID="contact-modal-sheet">
+        {contactOptionList.map((item) => {
+          if (item.hidden) return null
+          return (
+            <ListItem
+              key={item.name}
+              bottomDivider
+              onPress={item.action}
+              containerStyle={styles.listItemContainer}
+            >
+              {item.icon}
+              <ListItem.Content>
+                <ListItem.Title style={styles.listItemTitle}>{item.name}</ListItem.Title>
+              </ListItem.Content>
+              <ListItem.Chevron name={"chevron-forward"} type="ionicon" />
+            </ListItem>
+          )
+        })}
+      </View>
     </ReactNativeModal>
   )
 }

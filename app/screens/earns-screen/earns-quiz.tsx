@@ -11,6 +11,7 @@ import Icon from "react-native-vector-icons/Ionicons"
 import { gql } from "@apollo/client"
 import { useQuizCompletedMutation } from "@app/graphql/generated"
 import { getErrorMessages } from "@app/graphql/utils"
+import { useModalInsetStyle } from "@app/hooks/use-modal-insets"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { toastShow } from "@app/utils/toast"
 import { RouteProp, useNavigation } from "@react-navigation/native"
@@ -180,6 +181,7 @@ export const EarnQuiz = ({ route }: Props) => {
     theme: { colors },
   } = useTheme()
   const styles = useStyles()
+  const sheetInsetStyle = useModalInsetStyle(styles.modalBackground)
 
   const { LL } = useI18nContext()
   const quizQuestionsContent = getQuizQuestionsContent({ LL })
@@ -309,7 +311,7 @@ export const EarnQuiz = ({ route }: Props) => {
             <View style={{ height: "100%", width: "100%" }} />
           </TouchableWithoutFeedback>
         </View>
-        <View style={styles.modalBackground}>
+        <View style={[styles.modalBackground, sheetInsetStyle]}>
           <View style={{ height: 14 }}>
             <Icon
               name="remove"

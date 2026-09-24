@@ -7,44 +7,44 @@
  * intro, offline/error handling, and persisted view tracking.
  */
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from "react"
 import {
   View,
   Text,
   StyleSheet,
   Animated,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
   StatusBar,
   ActivityIndicator,
-} from 'react-native'
-import { WebView } from 'react-native-webview'
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
-import { StackNavigationProp } from '@react-navigation/stack'
-import NetInfo from '@react-native-community/netinfo'
-import ReactNativeHapticFeedback from 'react-native-haptic-feedback'
-import Icon from 'react-native-vector-icons/Ionicons'
+} from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { WebView } from "react-native-webview"
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native"
+import { StackNavigationProp } from "@react-navigation/stack"
+import NetInfo from "@react-native-community/netinfo"
+import ReactNativeHapticFeedback from "react-native-haptic-feedback"
+import Icon from "react-native-vector-icons/Ionicons"
 
-import { RootStackParamList } from '@app/navigation/stack-param-lists'
-import { FEATURED_PROFILE } from '@app/constants/featured-profile'
-import { logFeaturedViewOpened } from '@app/utils/analytics'
-import { usePersistentStateContext } from '@app/store/persistent-state'
+import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { FEATURED_PROFILE } from "@app/constants/featured-profile"
+import { logFeaturedViewOpened } from "@app/utils/analytics"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
-type FeaturedProfileViewRouteProp = RouteProp<RootStackParamList, 'FeaturedProfileView'>
+type FeaturedProfileViewRouteProp = RouteProp<RootStackParamList, "FeaturedProfileView">
 type FeaturedProfileViewNavigationProp = StackNavigationProp<
   RootStackParamList,
-  'FeaturedProfileView'
+  "FeaturedProfileView"
 >
 
 // View theme colors
 const VIEW_COLORS = {
-  background: '#0a0a0a',
-  text: '#00ff00',
-  textSecondary: '#33ff33',
-  textDim: '#006600',
-  headerBackground: 'rgba(10, 10, 10, 0.95)',
-  overlayBackground: '#000000',
+  background: "#0a0a0a",
+  text: "#00ff00",
+  textSecondary: "#33ff33",
+  textDim: "#006600",
+  headerBackground: "rgba(10, 10, 10, 0.95)",
+  overlayBackground: "#000000",
 }
 
 const FeaturedProfileView: React.FC = () => {
@@ -56,9 +56,7 @@ const FeaturedProfileView: React.FC = () => {
 
   // Capture first-access detection at mount time so the log effect doesn't
   // depend on persistentState (which would re-fire on every state update).
-  const isFirstAccessRef = useRef(
-    !persistentState?.featuredProfile?.hasViewedProfile,
-  )
+  const isFirstAccessRef = useRef(!persistentState?.featuredProfile?.hasViewedProfile)
   const hasLoggedRef = useRef(false)
 
   // Animation states
@@ -107,7 +105,7 @@ const FeaturedProfileView: React.FC = () => {
 
   // Run entry animation (mount-only; refs hold the Animated.Values).
   useEffect(() => {
-    ReactNativeHapticFeedback.trigger('notificationSuccess', {
+    ReactNativeHapticFeedback.trigger("notificationSuccess", {
       enableVibrateFallback: true,
       ignoreAndroidSystemSettings: false,
     })
@@ -206,7 +204,9 @@ const FeaturedProfileView: React.FC = () => {
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
             <Icon name="key" size={18} color={VIEW_COLORS.text} style={styles.keyIcon} />
-            <Text style={styles.headerTitle}>{FEATURED_PROFILE.UI_TEXT.HEADER_TITLE}</Text>
+            <Text style={styles.headerTitle}>
+              {FEATURED_PROFILE.UI_TEXT.HEADER_TITLE}
+            </Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
@@ -217,7 +217,9 @@ const FeaturedProfileView: React.FC = () => {
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
           <Animated.View style={[styles.overlayContent, { opacity: textOpacity }]}>
             <Icon name="key" size={48} color={VIEW_COLORS.text} />
-            <Text style={styles.overlayText}>{FEATURED_PROFILE.UI_TEXT.OVERLAY_TEXT}</Text>
+            <Text style={styles.overlayText}>
+              {FEATURED_PROFILE.UI_TEXT.OVERLAY_TEXT}
+            </Text>
             <View style={styles.cursorContainer}>
               <Text style={styles.cursor}>_</Text>
             </View>
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: VIEW_COLORS.background,
   },
   headerContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -246,29 +248,32 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 12,
+    // The status-bar offset comes from the SafeAreaView above (context
+    // SafeAreaView pads on Android too); adding StatusBar.currentHeight here
+    // as well double-padded under edge-to-edge.
+    paddingTop: 12,
   },
   backButton: {
     padding: 8,
     marginLeft: -8,
   },
   headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   keyIcon: {
     marginRight: 8,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: VIEW_COLORS.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   headerSpacer: {
     width: 40,
@@ -276,17 +281,17 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: VIEW_COLORS.overlayBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 100,
   },
   overlayContent: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   overlayText: {
     fontSize: 18,
     color: VIEW_COLORS.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     marginTop: 24,
     letterSpacing: 2,
   },
@@ -296,12 +301,12 @@ const styles = StyleSheet.create({
   cursor: {
     fontSize: 18,
     color: VIEW_COLORS.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: VIEW_COLORS.background,
     paddingTop: 100,
   },
@@ -309,32 +314,32 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     color: VIEW_COLORS.textDim,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   offlineContainer: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: VIEW_COLORS.background,
     paddingHorizontal: 40,
   },
   offlineTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: VIEW_COLORS.text,
     marginTop: 24,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   offlineText: {
     fontSize: 14,
     color: VIEW_COLORS.textDim,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 12,
     lineHeight: 20,
   },
   retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: VIEW_COLORS.text,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -343,7 +348,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: VIEW_COLORS.background,
     marginLeft: 8,
   },

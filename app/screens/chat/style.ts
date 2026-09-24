@@ -2,6 +2,10 @@ import { color } from "@rneui/base"
 import { makeStyles } from "@rneui/themed"
 
 export const useStyles = makeStyles(({ colors }) => ({
+  flex: {
+    flex: 1,
+  },
+
   activityIndicatorContainer: {
     alignItems: "center",
     flex: 1,
