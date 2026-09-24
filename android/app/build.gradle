@@ -208,3 +208,22 @@ project.ext.vectoricons = [
 ]
 
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+
+// AGP 8.8+ no longer routes the app's configureCMake* tasks through every library's
+// preBuild. Autolinked libraries that ship codegen specs but no native code of their
+// own (react-native-config, async-storage, clipboard, netinfo, ...) therefore have no
+// build/generated/source/codegen/jni/ yet when the app's CMake configure runs, and RN
+// 0.77's generated Android-autolinking.cmake add_subdirectory()s those dirs
+// unconditionally -> "add_subdirectory given source ... which is not an existing
+// directory". Order the app's CMake configure after every library's codegen instead.
+// (Upstream RN only guards the missing dirs, facebook/react-native#56886, which would
+// silently drop those TurboModules from the app; the ordering edge is the real fix.)
+gradle.projectsEvaluated {
+    def libraryCodegenTasks = rootProject.subprojects
+        .findAll { it != project }
+        .collect { it.tasks.findByName("generateCodegenArtifactsFromSchema") }
+        .findAll { it != null }
+    tasks.matching { it.name.startsWith("configureCMake") }.configureEach { task ->
+        task.dependsOn(libraryCodegenTasks)
+    }
+}

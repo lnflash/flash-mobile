@@ -15,8 +15,6 @@ newArchEnabled=true
 # Enable Hermes JS engine
 hermesEnabled=true
 
-android.aapt2Version=8.6.1-11315950
-
 # Override galoymoney react-native-geetest-module SDK versions
 GeetestModule_compileSdkVersion=android-31
 GeetestModule_targetSdkVersion=31

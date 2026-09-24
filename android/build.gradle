@@ -18,17 +18,13 @@ buildscript {
         maven {
             url('https://www.jitpack.io')
         }
-        maven {
-            url = uri("https://storage.googleapis.com/r8-releases/raw")
-        }
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.7.2")
+        classpath("com.android.tools.build:gradle:8.9.3")
         classpath 'com.google.firebase:perf-plugin:1.4.2'
         classpath 'com.google.gms:google-services:4.4.0'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("com.android.tools:r8:8.7.18")
     }
 }
 
