@@ -1,0 +1,18 @@
+diff --git a/node_modules/@breeztech/react-native-breez-sdk-liquid/android/build.gradle b/node_modules/@breeztech/react-native-breez-sdk-liquid/android/build.gradle
+index 20efc72..8809f58 100644
+--- a/node_modules/@breeztech/react-native-breez-sdk-liquid/android/build.gradle
++++ b/node_modules/@breeztech/react-native-breez-sdk-liquid/android/build.gradle
+@@ -25,11 +25,11 @@ apply plugin: 'kotlin-android'
+ 
+ android {
+     namespace "com.breezsdkliquid"
+-    compileSdkVersion 34
++    compileSdkVersion rootProject.ext.has('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34
+     
+     defaultConfig {
+         minSdkVersion 24
+-        targetSdkVersion 34
++        targetSdkVersion rootProject.ext.has('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 34
+         versionCode 1
+         versionName "1.0"
+     }
