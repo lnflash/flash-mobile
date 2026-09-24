@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import { Screen } from "@app/components/screen"
 import { useBridgeCreateExternalAccountMutation } from "@app/graphql/generated"
 import { useActivityIndicator } from "@app/hooks"
+import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
 type Props = StackScreenProps<RootStackParamList, "BridgeAddExternalAccount">
@@ -23,6 +25,9 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
   const { theme } = useTheme()
   const { LL } = useI18nContext()
   const { toggleActivityIndicator } = useActivityIndicator()
+  const insets = useSafeAreaInsets()
+  // Android keyboard avoidance; Screen already pads insets.bottom. See below.
+  const keyboardPaddingStyle = useKeyboardPaddingStyle(insets.bottom)
 
   const [createExternalAccount] = useBridgeCreateExternalAccountMutation()
 
@@ -131,198 +136,207 @@ const BridgeAddExternalAccount: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <Screen>
+      {/* iOS: KeyboardAvoidingView "padding", as everywhere else. Android: the
+          manifest's adjustResize is ignored under edge-to-edge and the old
+          "height" behavior double-shrank on Android 14 and older (window
+          resize + KAV), so the reanimated IME hook pads the bottom instead and
+          the KAV is deliberately a no-op there. ENG-605. */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.container}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.headerRow}>
-            <Text type="h1" style={styles.title}>
-              {LL.BridgeAddExternalAccount.title()}
-            </Text>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Text style={styles.cancelText}>{LL.common.cancel()}</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.subtitle}>{LL.BridgeAddExternalAccount.subtitle()}</Text>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{LL.BridgeAddExternalAccount.bankName()}</Text>
-            <TextInput
-              style={styles.input}
-              value={bankName}
-              onChangeText={setBankName}
-              autoCapitalize="words"
-              placeholder={LL.BridgeAddExternalAccount.bankNamePlaceholder()}
-              placeholderTextColor={theme.colors.grey3}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>
-              {LL.BridgeAddExternalAccount.accountOwnerName()}
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={accountOwnerName}
-              onChangeText={setAccountOwnerName}
-              autoCapitalize="words"
-              placeholder={LL.BridgeAddExternalAccount.accountOwnerNamePlaceholder()}
-              placeholderTextColor={theme.colors.grey3}
-            />
-          </View>
-
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldRowLeft}>
-              <Text style={styles.label}>
-                {LL.BridgeAddExternalAccount.routingNumber()}
+        <Animated.View style={[styles.container, keyboardPaddingStyle]}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.headerRow}>
+              <Text type="h1" style={styles.title}>
+                {LL.BridgeAddExternalAccount.title()}
               </Text>
-              <TextInput
-                style={styles.input}
-                value={routingNumber}
-                onChangeText={setRoutingNumber}
-                placeholder={LL.BridgeAddExternalAccount.routingNumberPlaceholder()}
-                placeholderTextColor={theme.colors.grey3}
-                keyboardType="number-pad"
-                maxLength={9}
-              />
-            </View>
-            <View style={styles.fieldRowRight}>
-              <Text style={styles.label}>
-                {LL.BridgeAddExternalAccount.accountNumber()}
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={accountNumber}
-                onChangeText={setAccountNumber}
-                placeholder={LL.BridgeAddExternalAccount.accountNumberPlaceholder()}
-                placeholderTextColor={theme.colors.grey3}
-                keyboardType="number-pad"
-              />
-            </View>
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{LL.BridgeAddExternalAccount.accountType()}</Text>
-            <View style={styles.segmentRow}>
               <TouchableOpacity
-                style={[
-                  styles.segmentButton,
-                  checkingOrSavings === "checking" && styles.segmentButtonActive,
-                ]}
-                onPress={() => setCheckingOrSavings("checking")}
+                onPress={() => navigation.goBack()}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    checkingOrSavings === "checking" && styles.segmentTextActive,
-                  ]}
-                >
-                  {LL.BridgeAddExternalAccount.checking()}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.segmentButton,
-                  checkingOrSavings === "savings" && styles.segmentButtonActive,
-                ]}
-                onPress={() => setCheckingOrSavings("savings")}
-              >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    checkingOrSavings === "savings" && styles.segmentTextActive,
-                  ]}
-                >
-                  {LL.BridgeAddExternalAccount.savings()}
-                </Text>
+                <Text style={styles.cancelText}>{LL.common.cancel()}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+            <Text style={styles.subtitle}>{LL.BridgeAddExternalAccount.subtitle()}</Text>
 
-          <Text type="h2" style={styles.sectionTitle}>
-            {LL.BridgeAddExternalAccount.yourAddress()}
-          </Text>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>
-              {LL.BridgeAddExternalAccount.streetAddress()}
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={streetLine1}
-              onChangeText={setStreetLine1}
-              autoCapitalize="words"
-              placeholder={LL.BridgeAddExternalAccount.streetAddressPlaceholder()}
-              placeholderTextColor={theme.colors.grey3}
-            />
-          </View>
-
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldRowCity}>
-              <Text style={styles.label}>{LL.BridgeAddExternalAccount.city()}</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{LL.BridgeAddExternalAccount.bankName()}</Text>
               <TextInput
                 style={styles.input}
-                value={city}
-                onChangeText={setCity}
+                value={bankName}
+                onChangeText={setBankName}
                 autoCapitalize="words"
-                placeholder={LL.BridgeAddExternalAccount.cityPlaceholder()}
+                placeholder={LL.BridgeAddExternalAccount.bankNamePlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
               />
             </View>
-            <View style={styles.fieldRowState}>
-              <Text style={styles.label}>{LL.BridgeAddExternalAccount.state()}</Text>
-              <TextInput
-                style={styles.input}
-                value={state}
-                onChangeText={setState}
-                autoCapitalize="characters"
-                placeholder={LL.BridgeAddExternalAccount.statePlaceholder()}
-                placeholderTextColor={theme.colors.grey3}
-                maxLength={2}
-              />
-            </View>
-          </View>
 
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldRowLeft}>
-              <Text style={styles.label}>{LL.BridgeAddExternalAccount.zipCode()}</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>
+                {LL.BridgeAddExternalAccount.accountOwnerName()}
+              </Text>
               <TextInput
                 style={styles.input}
-                value={postalCode}
-                onChangeText={setPostalCode}
-                placeholder={LL.BridgeAddExternalAccount.zipCodePlaceholder()}
+                value={accountOwnerName}
+                onChangeText={setAccountOwnerName}
+                autoCapitalize="words"
+                placeholder={LL.BridgeAddExternalAccount.accountOwnerNamePlaceholder()}
                 placeholderTextColor={theme.colors.grey3}
-                keyboardType="number-pad"
-                maxLength={5}
               />
             </View>
-            <View style={styles.fieldRowRight}>
-              <Text style={styles.label}>{LL.BridgeAddExternalAccount.country()}</Text>
-              <TextInput
-                style={styles.input}
-                value={country}
-                onChangeText={setCountry}
-                autoCapitalize="characters"
-                placeholder={LL.BridgeAddExternalAccount.countryPlaceholder()}
-                placeholderTextColor={theme.colors.grey3}
-                maxLength={3}
-              />
-            </View>
-          </View>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitText}>
-              {LL.BridgeAddExternalAccount.linkBankAccount()}
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldRowLeft}>
+                <Text style={styles.label}>
+                  {LL.BridgeAddExternalAccount.routingNumber()}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={routingNumber}
+                  onChangeText={setRoutingNumber}
+                  placeholder={LL.BridgeAddExternalAccount.routingNumberPlaceholder()}
+                  placeholderTextColor={theme.colors.grey3}
+                  keyboardType="number-pad"
+                  maxLength={9}
+                />
+              </View>
+              <View style={styles.fieldRowRight}>
+                <Text style={styles.label}>
+                  {LL.BridgeAddExternalAccount.accountNumber()}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={accountNumber}
+                  onChangeText={setAccountNumber}
+                  placeholder={LL.BridgeAddExternalAccount.accountNumberPlaceholder()}
+                  placeholderTextColor={theme.colors.grey3}
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>
+                {LL.BridgeAddExternalAccount.accountType()}
+              </Text>
+              <View style={styles.segmentRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.segmentButton,
+                    checkingOrSavings === "checking" && styles.segmentButtonActive,
+                  ]}
+                  onPress={() => setCheckingOrSavings("checking")}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      checkingOrSavings === "checking" && styles.segmentTextActive,
+                    ]}
+                  >
+                    {LL.BridgeAddExternalAccount.checking()}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.segmentButton,
+                    checkingOrSavings === "savings" && styles.segmentButtonActive,
+                  ]}
+                  onPress={() => setCheckingOrSavings("savings")}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      checkingOrSavings === "savings" && styles.segmentTextActive,
+                    ]}
+                  >
+                    {LL.BridgeAddExternalAccount.savings()}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text type="h2" style={styles.sectionTitle}>
+              {LL.BridgeAddExternalAccount.yourAddress()}
             </Text>
-          </TouchableOpacity>
-        </ScrollView>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>
+                {LL.BridgeAddExternalAccount.streetAddress()}
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={streetLine1}
+                onChangeText={setStreetLine1}
+                autoCapitalize="words"
+                placeholder={LL.BridgeAddExternalAccount.streetAddressPlaceholder()}
+                placeholderTextColor={theme.colors.grey3}
+              />
+            </View>
+
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldRowCity}>
+                <Text style={styles.label}>{LL.BridgeAddExternalAccount.city()}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={city}
+                  onChangeText={setCity}
+                  autoCapitalize="words"
+                  placeholder={LL.BridgeAddExternalAccount.cityPlaceholder()}
+                  placeholderTextColor={theme.colors.grey3}
+                />
+              </View>
+              <View style={styles.fieldRowState}>
+                <Text style={styles.label}>{LL.BridgeAddExternalAccount.state()}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={state}
+                  onChangeText={setState}
+                  autoCapitalize="characters"
+                  placeholder={LL.BridgeAddExternalAccount.statePlaceholder()}
+                  placeholderTextColor={theme.colors.grey3}
+                  maxLength={2}
+                />
+              </View>
+            </View>
+
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldRowLeft}>
+                <Text style={styles.label}>{LL.BridgeAddExternalAccount.zipCode()}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={postalCode}
+                  onChangeText={setPostalCode}
+                  placeholder={LL.BridgeAddExternalAccount.zipCodePlaceholder()}
+                  placeholderTextColor={theme.colors.grey3}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                />
+              </View>
+              <View style={styles.fieldRowRight}>
+                <Text style={styles.label}>{LL.BridgeAddExternalAccount.country()}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={country}
+                  onChangeText={setCountry}
+                  autoCapitalize="characters"
+                  placeholder={LL.BridgeAddExternalAccount.countryPlaceholder()}
+                  placeholderTextColor={theme.colors.grey3}
+                  maxLength={3}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+              <Text style={styles.submitText}>
+                {LL.BridgeAddExternalAccount.linkBankAccount()}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Screen>
   )

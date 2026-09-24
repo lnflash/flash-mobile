@@ -1,6 +1,6 @@
 import "react-native-get-random-values"
 import * as React from "react"
-import { ActivityIndicator, Image, View, TouchableOpacity, Platform } from "react-native"
+import { ActivityIndicator, Image, View, TouchableOpacity } from "react-native"
 import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "../../components/screen"
@@ -27,7 +27,7 @@ import { getSigner } from "@app/nostr/signer"
 import { FlatList } from "react-native-gesture-handler"
 import { MessageBubble } from "./components/MessageBubble"
 import { MessageInput } from "./components/MessageInput"
-import { Animated, useKeyboardPaddingStyle } from "./components/use-keyboard-padding"
+import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { QuickZapModal } from "@app/components/zaps/quick-zap-modal"
 import { sendZap } from "@app/utils/nostr/zap"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -85,7 +85,8 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   const { rumors, setRumors, reactions, addOptimisticReaction } = useChatContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "Primary">>()
   const insets = useSafeAreaInsets()
-  // Android 15+ edge-to-edge ignores adjustResize; see use-keyboard-padding.ts.
+  // Android edge-to-edge ignores adjustResize; see app/hooks/use-keyboard-padding.ts.
+  // Screen already pads insets.bottom, so the hook subtracts it from the IME height.
   const composerPaddingStyle = useKeyboardPaddingStyle(insets.bottom)
   const { appConfig } = useAppConfig()
   const lnAddressHostname = appConfig.galoyInstance.lnAddressHostname
@@ -294,12 +295,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   return (
     <Screen>
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { paddingTop: Platform.OS === "android" ? insets.top : 0 },
-        ]}
-      >
+      {/* Status-bar offset comes from Screen's SafeAreaView on both platforms
+          now (ENG-605); padding insets.top here as well would double it. */}
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>

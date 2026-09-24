@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { Alert, View, Image, TouchableOpacity, Platform } from "react-native"
+import { Alert, View, Image, TouchableOpacity } from "react-native"
 import { makeStyles, useTheme, Text, Button } from "@rneui/themed"
 import { Screen } from "../../../components/screen"
 import { FlatList } from "react-native-gesture-handler"
@@ -14,7 +14,7 @@ import { NIP29_DEFAULT_GROUP_ID, NIP29_DEFAULT_RELAY_URL } from "./constants"
 import { useChatContext } from "../chatContext"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { MessageInput } from "../components/MessageInput"
-import { Animated, useKeyboardPaddingStyle } from "../components/use-keyboard-padding"
+import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { MessageBubble } from "../components/MessageBubble"
 import { GroupInfoModal } from "./GroupInfoModal"
 import { Rumor } from "@app/utils/nostr"
@@ -55,7 +55,8 @@ const InnerGroupChat: React.FC = () => {
   const styles = useStyles()
   const { theme: { colors, mode } } = useTheme()
   const insets = useSafeAreaInsets()
-  // Android 15+ edge-to-edge ignores adjustResize; see use-keyboard-padding.ts.
+  // Android edge-to-edge ignores adjustResize; see app/hooks/use-keyboard-padding.ts.
+  // Screen already pads insets.bottom, so the hook subtracts it from the IME height.
   const composerPaddingStyle = useKeyboardPaddingStyle(insets.bottom)
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { messages, isMember, isAdmin, canModerate, isKing, adminList, roleMap, knownMembers, sendMessage, requestJoin, removeMessage, removeMember, setRole, groupMetadata } = useNostrGroupChat()
@@ -170,7 +171,9 @@ const InnerGroupChat: React.FC = () => {
   return (
     <Screen>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: Platform.OS === "android" ? insets.top : 0 }]}>
+      {/* Status-bar offset comes from Screen's SafeAreaView on both platforms
+          now (ENG-605); padding insets.top here as well would double it. */}
+      <View style={styles.header}>
         <TouchableOpacity onPress={navigation.goBack} style={styles.backBtn} hitSlop={8}>
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>

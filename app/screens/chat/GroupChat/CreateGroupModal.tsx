@@ -74,6 +74,11 @@ export const CreateGroupModal: React.FC<Props> = ({
       </TouchableWithoutFeedback>
 
       <KeyboardAvoidingView
+        // Android: `undefined` on purpose. This sheet lives in a core Modal;
+        // RN's dialog window uses SOFT_INPUT_ADJUST_RESIZE with a
+        // fitsSystemWindows root, so the framework pads for the IME (and the
+        // system bars) even under edge-to-edge. A JS behavior here would
+        // stack on top of that. ENG-605.
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.sheet}
       >
