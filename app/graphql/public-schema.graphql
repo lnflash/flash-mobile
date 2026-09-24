@@ -333,7 +333,9 @@ A wallet belonging to an account which contains a BTC balance and a list of tran
 type BTCWallet implements Wallet {
   accountId: ID!
 
-  """A balance stored in BTC."""
+  """
+  Not denominated in sats. Null for external BTC wallets; no value shape is guaranteed for other BTC wallets.
+  """
   balance: FractionalCentAmount
   id: ID!
   isExternal: Boolean!
@@ -2471,6 +2473,10 @@ A wallet belonging to an account which contains a USD balance and a list of tran
 """
 type UsdWallet implements Wallet {
   accountId: ID!
+
+  """
+  Balance in US cents as a float (up to 8 decimal places). Null for external wallets.
+  """
   balance: FractionalCentAmount
   id: ID!
   isExternal: Boolean!
@@ -2515,6 +2521,10 @@ A wallet belonging to an account which contains a USDT balance and a list of tra
 """
 type UsdtWallet implements Wallet {
   accountId: ID!
+
+  """
+  USDT balance in US cents as a float (1 USDT = 100 cents). Up to 4 decimal places when backed by USDT; up to 8 if the balance is reported in USD.
+  """
   balance: FractionalCentAmount
   id: ID!
   isExternal: Boolean!
@@ -2776,6 +2786,10 @@ A generic wallet which stores value in one of our supported currencies.
 """
 interface Wallet {
   accountId: ID!
+
+  """
+  For USD and USDT wallets, the balance in US cents as a float. See the concrete wallet type for units, nullability and exceptions.
+  """
   balance: FractionalCentAmount
   id: ID!
   isExternal: Boolean!
