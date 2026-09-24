@@ -17,6 +17,7 @@ import { WalletDescriptor } from "@app/types/wallets"
 import _Map from "@app/assets/icons-redesign/map.svg"
 import { Event } from "nostr-tools"
 import { NavigatorScreenParams } from "@react-navigation/native"
+import type { IdentitySide } from "@app/store/redux/slices/accountUpgradeSlice"
 
 export type RootStackParamList = {
   Reconciliation: { from: string; to: string }
@@ -184,7 +185,17 @@ export type RootStackParamList = {
     phone: string
     channel: PhoneCodeChannelType
   }
-  AccountUpgradeSuccess: undefined
+  // ENG-608 identity capture. `resubmit` is set when a reviewer sent the
+  // request back: progress steps are hidden and IdentityReview submits directly.
+  IdentityDocumentType: { resubmit?: boolean } | undefined
+  IdentityCapture: {
+    side: IdentitySide
+    resubmit?: boolean
+    /** Set when retaking one side from IdentityReview. */
+    returnToReview?: boolean
+  }
+  IdentityReview: { resubmit?: boolean } | undefined
+  AccountUpgradeSuccess: { resubmitted?: boolean } | undefined
   // Featured profile WebView entry
   FeaturedProfileView: { entryPoint: "search" | "long_press" | "profile" }
   BridgeKycWebView: {

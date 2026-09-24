@@ -18,7 +18,7 @@ import { AccountLevel } from "@app/graphql/generated"
 
 type Props = StackScreenProps<RootStackParamList, "AccountUpgradeSuccess">
 
-const Success: React.FC<Props> = ({ navigation }) => {
+const Success: React.FC<Props> = ({ navigation, route }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
@@ -34,12 +34,13 @@ const Success: React.FC<Props> = ({ navigation }) => {
 
   // ENG-516: capability language, not tier language. Verify applies
   // immediately; bank-payout / business upgrades are requests pending review.
-  const successText =
-    accountType === AccountLevel.Two
-      ? LL.AccountUpgrade.successBankPayoutRequest()
-      : accountType === AccountLevel.Three
-      ? LL.AccountUpgrade.successBusinessRequest()
-      : LL.AccountUpgrade.successVerified()
+  const successText = route.params?.resubmitted
+    ? LL.AccountUpgrade.successResubmitted()
+    : accountType === AccountLevel.Two
+    ? LL.AccountUpgrade.successBankPayoutRequest()
+    : accountType === AccountLevel.Three
+    ? LL.AccountUpgrade.successBusinessRequest()
+    : LL.AccountUpgrade.successVerified()
 
   return (
     <Screen backgroundColor={colors.primary}>

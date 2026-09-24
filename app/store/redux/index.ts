@@ -13,11 +13,14 @@ import {
   REGISTER,
 } from "redux-persist"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { migrate, PERSIST_VERSION } from "./migrations"
 
 const persistConfig = {
   key: "root",
+  version: PERSIST_VERSION,
   storage: AsyncStorage,
   whitelist: ["accountUpgrade"],
+  migrate,
 }
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
