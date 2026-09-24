@@ -349,6 +349,12 @@ gql`
         phoneNumber
         email
         idDocument
+        verification {
+          status
+          reasonCode
+          reasonMessage
+          reviewedAt
+        }
       }
     }
   }

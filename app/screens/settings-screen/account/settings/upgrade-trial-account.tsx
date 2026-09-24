@@ -15,6 +15,7 @@ import { AccountLevel, useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { useAppSelector } from "@app/store/redux"
+import { isUpgradePending, needsResubmit } from "@app/utils/identity-verification"
 
 export const UpgradeTrialAccount: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -23,7 +24,8 @@ export const UpgradeTrialAccount: React.FC = () => {
   const { currentLevel } = useLevel()
   const { status } = useAppSelector((state) => state.accountUpgrade)
 
-  const upgradePending = status === "Pending"
+  const upgradePending = isUpgradePending(status)
+  const upgradeNeedsResubmit = needsResubmit(status)
 
   const hasBalance = useShowWarningSecureAccount()
 
@@ -53,11 +55,15 @@ export const UpgradeTrialAccount: React.FC = () => {
     return (
       <PrimaryBtn
         label={
-          !upgradePending
-            ? LL.TransactionLimitsScreen.requestUpgrade()
-            : LL.TransactionLimitsScreen.editRequest()
+          upgradeNeedsResubmit
+            ? LL.AccountUpgrade.resubmit()
+            : upgradePending
+            ? LL.TransactionLimitsScreen.editRequest()
+            : LL.TransactionLimitsScreen.requestUpgrade()
         }
-        btnStyle={upgradePending ? { backgroundColor: "#FF7e1c" } : {}}
+        btnStyle={
+          upgradePending || upgradeNeedsResubmit ? { backgroundColor: "#FF7e1c" } : {}
+        }
         onPress={() => navigation.navigate("AccountType")}
       />
     )

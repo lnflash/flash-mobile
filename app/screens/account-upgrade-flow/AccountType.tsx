@@ -15,10 +15,15 @@ import { useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useBridgeKyc } from "@app/hooks/use-bridge-kyc"
 import { useAccountStatus } from "@app/hooks/use-account-status"
+import { useAccountUpgrade } from "@app/hooks/useAccountUpgrade"
 
 // store
-import { useAppDispatch } from "@app/store/redux"
+import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+
+// utils
+import { verificationPresentation } from "@app/utils/identity-verification"
+import { testProps } from "@app/utils/testProps"
 
 type Props = StackScreenProps<RootStackParamList, "AccountType">
 
@@ -51,6 +56,13 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { currentLevel } = useLevel()
   const { statusHeadline, capabilities, refetch: refetchStatus } = useAccountStatus()
+  // Keeps the slice in sync with latestAccountUpgradeRequest (ENG-608 status card).
+  useAccountUpgrade()
+  const {
+    status: upgradeStatus,
+    reasonMessage,
+    accountType: requestedLevel,
+  } = useAppSelector((state) => state.accountUpgrade)
   const {
     bridgeTopupEnabled,
     bridgeKycStatus,
@@ -88,11 +100,18 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
   const usdNeedsVerify = usdStatus === "locked" && bridgeTopupEnabled && !verifiedOn
 
   const onPress = (accountType: string) => {
+    // Verify: type, personal, code. L2/L3 add identity, business and bank
+    // (plus the code step when coming from trial).
     const numOfSteps =
-      accountType === AccountLevel.One ? 3 : currentLevel === AccountLevel.Zero ? 5 : 4
+      accountType === AccountLevel.One ? 3 : currentLevel === AccountLevel.Zero ? 6 : 5
 
     dispatch(setAccountUpgrade({ accountType, numOfSteps }))
     navigation.navigate("PersonalInformation")
+  }
+
+  const onResubmit = () => {
+    dispatch(setAccountUpgrade({ accountType: requestedLevel }))
+    navigation.navigate("IdentityDocumentType", { resubmit: true })
   }
 
   const isTrial = statusHeadline === "TRIAL" || !verifiedOn
@@ -101,6 +120,64 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
     : statusHeadline === "BUSINESS"
     ? LL.AccountUpgrade.statusBusiness()
     : LL.AccountUpgrade.statusVerified()
+
+  const renderStatusCard = () => {
+    if (!upgradeStatus) return null
+    const p = verificationPresentation(upgradeStatus)
+    const title = LL.AccountUpgrade[p.labelKey]()
+    const defaultDesc = LL.AccountUpgrade[`${p.labelKey}Desc`]()
+    const desc = p.showReason && reasonMessage ? reasonMessage : defaultDesc
+    const iconName =
+      p.tone === "success"
+        ? "checkmark-circle"
+        : p.tone === "error"
+        ? "close-circle"
+        : p.tone === "action"
+        ? "alert-circle"
+        : "time"
+    const iconColor =
+      p.tone === "success"
+        ? colors.green
+        : p.tone === "error"
+        ? colors.red
+        : p.tone === "action"
+        ? colors._orange
+        : colors.grey2
+    return (
+      <View
+        style={[styles.statusCard, p.tone === "action" && styles.statusCardAction]}
+        {...testProps(`upgrade-status-${upgradeStatus}`)}
+      >
+        <View style={styles.statusHeader}>
+          <Icon name={iconName} size={20} color={iconColor} type="ionicon" />
+          <Text type="bm" style={styles.statusEyebrow}>
+            {LL.AccountUpgrade.statusCardTitle()}
+          </Text>
+        </View>
+        <Text type="bl" bold style={styles.statusTitle}>
+          {title}
+        </Text>
+        <Text type="bm" style={styles.desc}>
+          {desc}
+        </Text>
+        {p.ctaKey === "resubmit" && (
+          <TouchableOpacity
+            style={styles.statusCta}
+            onPress={onResubmit}
+            {...testProps("upgrade-status-resubmit")}
+          >
+            <Text style={styles.setupText}>{LL.AccountUpgrade.resubmit()}</Text>
+            <Icon
+              name="chevron-forward"
+              size={16}
+              color={colors.primary}
+              type="ionicon"
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+    )
+  }
 
   const renderCapRow = ({ icon, title, desc, status, onPress: onRowPress }: CapRow) => {
     const on = status === "on"
@@ -186,6 +263,8 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         </View>
+
+        {renderStatusCard()}
 
         {!verifiedOn && (
           <TouchableOpacity
@@ -316,6 +395,35 @@ const useStyles = makeStyles(({ colors }) => ({
     padding: 14,
     marginVertical: 6,
     borderRadius: 16,
+  },
+  statusCard: {
+    backgroundColor: colors.grey5,
+    padding: 15,
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.grey5,
+  },
+  statusCardAction: {
+    borderColor: colors._orange,
+  },
+  statusHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  statusEyebrow: {
+    color: colors.grey2,
+    marginLeft: 6,
+  },
+  statusTitle: {
+    marginBottom: 2,
+  },
+  statusCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginTop: 10,
   },
   verifyCard: {
     flexDirection: "row",
