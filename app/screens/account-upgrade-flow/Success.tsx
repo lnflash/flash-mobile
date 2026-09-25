@@ -6,6 +6,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
 import { Screen } from "@app/components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import { PrimaryBtn } from "@app/components/buttons"
 
 // assets
@@ -43,7 +44,7 @@ const Success: React.FC<Props> = ({ navigation, route }) => {
     : LL.AccountUpgrade.successVerified()
 
   return (
-    <Screen backgroundColor={colors.primary} statusBar="light-content">
+    <Screen backgroundColor={colors.primary} statusBar={statusBarTintFor(colors.primary)}>
       <View style={styles.wrapper}>
         <Text type="h02" bold style={styles.header}>
           {successText}

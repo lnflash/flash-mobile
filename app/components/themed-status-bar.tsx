@@ -1,6 +1,43 @@
+import { NavigationContext, useIsFocused } from "@react-navigation/native"
 import { useTheme, useThemeMode } from "@rneui/themed"
 import * as React from "react"
-import { StatusBar } from "react-native"
+import { StatusBar, StatusBarProps } from "react-native"
+
+/**
+ * A StatusBar entry scoped to the route that owns it (ENG-609).
+ *
+ * React Native's StatusBar stack is mount-ordered and last-mounted-wins: an
+ * entry is pushed on mount and popped only on unmount. The stack navigator keeps
+ * routes below the top mounted, so an entry that lives as long as its component
+ * leaks onto every screen pushed afterwards — the scanner's `light-content`
+ * following you into a white send-details screen, which is the ENG-609 symptom
+ * all over again. Rendering only while the route is focused keeps the override
+ * scoped to the screen that asked for it.
+ *
+ * Every per-screen override goes through this, not through a bare `StatusBar`:
+ * `Screen`'s `statusBar` prop, and the two screens that push their own entry
+ * directly because they don't route through `Screen`'s props (FeaturedProfileView
+ * has no `Screen` at all, NIP17Chat needs `translucent`/`transparent`, which the
+ * prop can't express).
+ *
+ * `useIsFocused` throws outside a navigator, and ErrorScreen renders `Screen`
+ * above NavigationContainerWrapper, so fall back to an unscoped entry when there
+ * is no navigation context — there is nothing to leak onto there. Reading the
+ * context is also what decides it: `useContext` is unconditional, the hook that
+ * throws is behind the branch.
+ */
+const FocusScopedStatusBar: React.FC<StatusBarProps> = (props) =>
+  useIsFocused() ? <StatusBar {...props} /> : null
+
+export const FocusedStatusBar: React.FC<StatusBarProps> = (props) => {
+  const isInsideNavigator = React.useContext(NavigationContext) !== undefined
+
+  return isInsideNavigator ? (
+    <FocusScopedStatusBar {...props} />
+  ) : (
+    <StatusBar {...props} />
+  )
+}
 
 /**
  * Status-bar icon tint and background, taken from the active theme.
@@ -24,10 +61,10 @@ import { StatusBar } from "react-native"
  * undefined gave dark icons on a dark background.
  *
  * FeaturedProfileView owns a dark header (#0a0a0a) and pushes its own
- * "light-content" entry, so it is unaffected. NIP17Chat is a light-in-light-theme
- * screen that sets only `translucent`/`transparent` and no barStyle; React Native
- * merges the mounted StatusBar stack per prop, so it inherits this barStyle and
- * is fixed by this change rather than exempted from it.
+ * light-content entry via FocusedStatusBar, so it is unaffected. NIP17Chat is a
+ * light-in-light-theme screen that sets only `translucent`/`transparent` and no
+ * barStyle; React Native merges the mounted StatusBar stack per prop, so it
+ * inherits this barStyle and is fixed by this change rather than exempted from it.
  *
  * Must be rendered inside ThemeProvider — it reads the theme.
  */

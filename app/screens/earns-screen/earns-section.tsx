@@ -13,6 +13,7 @@ import { useLevel } from "@app/graphql/level-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useSharedValue } from "react-native-reanimated"
 import { Screen } from "../../components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import type { RootStackParamList } from "../../navigation/stack-param-lists"
 import { useQuizServer } from "../earns-map-screen/use-quiz-server"
 import { SVGs } from "./earn-svg-factory"
@@ -278,8 +279,8 @@ export const EarnSection = ({ route }: Props) => {
   return (
     // Same as earns-map-screen: the declaration predates ENG-609 wiring the
     // prop. _gold is #fff200 in both themes, where white icons are 1.1:1 and
-    // invisible, so state the dark tint rather than inherit the theme's.
-    <Screen backgroundColor={colors._gold} statusBar="dark-content">
+    // invisible, so the tint comes from the field rather than from the theme.
+    <Screen backgroundColor={colors._gold} statusBar={statusBarTintFor(colors._gold)}>
       <View style={styles.container}>
         <Carousel
           data={cards}

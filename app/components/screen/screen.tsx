@@ -53,14 +53,14 @@
  * applies.
  */
 import { HeaderShownContext } from "@react-navigation/elements"
-import { NavigationContext, useIsFocused } from "@react-navigation/native"
 import * as React from "react"
-import { KeyboardAvoidingView, ScrollView, StatusBar, View } from "react-native"
+import { KeyboardAvoidingView, ScrollView, View } from "react-native"
 import { Edge, SafeAreaView } from "react-native-safe-area-context"
 
 import { ScreenProps } from "./screen.props"
 import { isNonScrolling, offsets, presets } from "./screen.presets"
 import { isIos } from "../../utils/helper"
+import { FocusedStatusBar } from "../themed-status-bar"
 import { useTheme } from "@rneui/themed"
 
 /**
@@ -79,59 +79,23 @@ import { useTheme } from "@rneui/themed"
  * We pass the screen's own background because that is what the band should be
  * on Android <= 14, where the window still draws a real, opaque one.
  *
- * Why focus matters: that stack is mount-ordered and last-mounted-wins
- * (RN's StatusBar pushes on mount and pops only on unmount), and the stack
- * navigator keeps routes below the top mounted. An entry that lives as long
- * as the component would therefore leak onto every screen pushed afterwards —
- * the scanner's `light-content` following you into a white send-details
- * screen, which is the ENG-609 symptom all over again. Rendering it only
- * while the route is focused keeps the override scoped to the screen that
- * asked for it.
- *
- * `useIsFocused` throws outside a navigator, and ErrorScreen renders `Screen`
- * above NavigationContainerWrapper, so fall back to an unscoped entry when
- * there is no navigation context — there is nothing to leak onto there.
+ * The entry is scoped to focus by `FocusedStatusBar` (see its comment in
+ * app/components/themed-status-bar.tsx) so it cannot leak onto screens pushed
+ * on top of this one.
  *
  * The prop was declared and documented since the original Ignite template but
  * never read, so `earns-map-screen` and `earns-section` asked for
- * "light-content" and silently got whatever the global was.
+ * "light-content" and silently got whatever the global was. Callers should
+ * derive the value with `statusBarTintFor` (app/utils/status-bar-tint.ts)
+ * rather than hand-picking it per theme mode.
  */
-const FocusedStatusBar: React.FC<{
-  barStyle: NonNullable<ScreenProps["statusBar"]>
-  backgroundColor?: string
-}> = ({ barStyle, backgroundColor }) =>
-  useIsFocused() ? (
-    <StatusBar barStyle={barStyle} backgroundColor={backgroundColor} />
-  ) : null
-
-/**
- * Stand-in for NavigationContext when there isn't one to read.
- *
- * Fourteen specs mock `@react-navigation/native` with a partial object that
- * omits NavigationContext, so the import is `undefined` there and
- * `useContext(undefined)` throws. Reading this empty context instead yields
- * `undefined` — the same answer as "not inside a navigator", which is the
- * behaviour those specs want anyway.
- */
-const NoNavigationContext = React.createContext<unknown>(undefined)
-
 const ScreenStatusBar: React.FC<Pick<ScreenProps, "statusBar" | "backgroundColor">> = ({
   statusBar,
   backgroundColor,
-}) => {
-  const isInsideNavigator =
-    React.useContext(
-      (NavigationContext ?? NoNavigationContext) as React.Context<unknown>,
-    ) !== undefined
-
-  if (!statusBar) return null
-
-  return isInsideNavigator ? (
+}) =>
+  statusBar ? (
     <FocusedStatusBar barStyle={statusBar} backgroundColor={backgroundColor} />
-  ) : (
-    <StatusBar barStyle={statusBar} backgroundColor={backgroundColor} />
-  )
-}
+  ) : null
 
 /** The edges to pad under a navigation header: everything but `top`. */
 const EDGES_BELOW_HEADER: Edge[] = ["left", "right", "bottom"]

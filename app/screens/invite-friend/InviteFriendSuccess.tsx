@@ -1,6 +1,6 @@
 import React from "react"
 import { Dimensions, View } from "react-native"
-import { makeStyles, Text, useTheme, useThemeMode } from "@rneui/themed"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -9,6 +9,9 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 // components
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
+
+// utils
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 
 // assets
 import SendSuccess from "@app/assets/illustrations/send-success.svg"
@@ -21,8 +24,6 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
   const { LL } = useI18nContext()
   const { bottom } = useSafeAreaInsets()
   const { colors } = useTheme().theme
-  // accent02 is a light green in the dark theme, where white icons wash out.
-  const { mode } = useThemeMode()
   const styles = useStyles()
 
   // Get the contact from route params, or use default
@@ -36,7 +37,9 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
     <Screen
       unsafe
       backgroundColor={colors.accent02}
-      statusBar={mode === "dark" ? "dark-content" : "light-content"}
+      // accent02 is a dark green in the light theme and a light one in the dark
+      // theme, so the tint is derived from the colour rather than the mode.
+      statusBar={statusBarTintFor(colors.accent02)}
     >
       <View style={styles.container}>
         <SendSuccess width={width / 1.2} height={width / 1.2} />

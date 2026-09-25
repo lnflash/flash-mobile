@@ -20,7 +20,11 @@ jest.mock("@app/graphql/generated", () => ({
 }))
 
 const mockNavigate = jest.fn()
+// Spread the real module so `Screen` reads the real NavigationContext and
+// therefore takes the same focus-scoped status-bar path it takes in the app
+// (ENG-609). A partial mock made these specs exercise the unscoped fallback.
 jest.mock("@react-navigation/native", () => ({
+  ...jest.requireActual("@react-navigation/native"),
   useNavigation: () => ({ navigate: mockNavigate }),
 }))
 

@@ -19,7 +19,11 @@ jest.mock("@app/i18n/i18n-react", () => ({
 const mockPopToTop = jest.fn()
 let mockRouteParams: { pending?: boolean } | undefined
 
+// Spread the real module so `Screen` reads the real NavigationContext and
+// therefore takes the same focus-scoped status-bar path it takes in the app
+// (ENG-609). A partial mock made these specs exercise the unscoped fallback.
 jest.mock("@react-navigation/native", () => ({
+  ...jest.requireActual("@react-navigation/native"),
   useNavigation: () => ({ popToTop: mockPopToTop }),
   useRoute: () => ({ key: "s", name: "conversionSuccess", params: mockRouteParams }),
 }))

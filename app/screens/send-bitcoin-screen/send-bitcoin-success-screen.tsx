@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react"
 import Rate from "react-native-rate"
 import { View, Alert, InteractionManager } from "react-native"
-import { makeStyles, Text, useTheme, useThemeMode } from "@rneui/themed"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -25,6 +25,7 @@ import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 
 // utils
 import { testProps } from "../../utils/testProps"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import { DisplayCurrency, isNonZeroMoneyAmount } from "@app/types/amounts"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinSuccess">
@@ -33,8 +34,6 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const client = useApolloClient()
   const styles = useStyles()
   const { colors } = useTheme().theme
-  // accent02 is a light green in the dark theme, where white icons wash out.
-  const { mode } = useThemeMode()
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
@@ -157,7 +156,9 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
     <Screen
       unsafe
       backgroundColor={colors.accent02}
-      statusBar={mode === "dark" ? "dark-content" : "light-content"}
+      // accent02 is a dark green in the light theme and a light one in the dark
+      // theme, so the tint is derived from the colour rather than the mode.
+      statusBar={statusBarTintFor(colors.accent02)}
     >
       <View style={styles.container}>
         <SuccessIconAnimation>

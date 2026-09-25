@@ -5,6 +5,7 @@ import { ScrollView, TouchableOpacity } from "react-native-gesture-handler"
 import { SvgProps } from "react-native-svg"
 import { MountainHeader } from "../../components/mountain-header"
 import { Screen } from "../../components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import { RootStackParamList } from "../../navigation/stack-param-lists"
 import { getQuizQuestionsContent, sectionCompletedPct } from "../earns-screen"
 
@@ -268,12 +269,16 @@ export const EarnMapScreen: React.FC = () => {
   return (
     // `statusBar` was declared here but never read until ENG-609 wired it, so
     // this asked for light icons and got whatever the global was. The field
-    // under the bar is _sky (#C3CCFF) or _orange (#FF7e1c) in BOTH themes, so
-    // light icons would be the wrong half of the contrast — hence dark, stated
-    // explicitly rather than left to the theme default, which flips to light in
-    // dark mode over the same light field. `backgroundColor` paints the band to
-    // match on Android <= 14, where the window still draws a real one.
-    <Screen unsafe statusBar="dark-content" backgroundColor={backgroundColor}>
+    // under the bar is _sky (#C3CCFF) or _orange (#FF7e1c) in BOTH themes, and
+    // the tint is derived from whichever one is showing rather than left to the
+    // theme default, which flips to light in dark mode over the same light
+    // field. `backgroundColor` paints the band to match on Android <= 14, where
+    // the window still draws a real one.
+    <Screen
+      unsafe
+      statusBar={statusBarTintFor(backgroundColor)}
+      backgroundColor={backgroundColor}
+    >
       <ScrollView
         // removeClippedSubviews={true}
         style={{ backgroundColor }}

@@ -28,8 +28,15 @@ import { useAppConfig } from "@app/hooks"
 
 // components
 import { Screen } from "../../components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import { PrimaryBtn } from "@app/components/buttons"
 import { ActionBtns, QRCamera } from "@app/components/scan"
+
+/**
+ * The full-bleed camera field. `statusBarTintFor` derives the icon tint from it
+ * (ENG-609) so the two can never drift apart.
+ */
+const CAMERA_FIELD = "#000"
 
 export const ScanningQRCodeScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -196,9 +203,13 @@ export const ScanningQRCodeScreen = () => {
   }
 
   return (
-    // The camera fills the window, status-bar strip included, so the icons need
-    // the light tint whatever the theme says (ENG-609).
-    <Screen unsafe backgroundColor="#000" statusBar="light-content">
+    // The camera fills the window, status-bar strip included, so the icons are
+    // tinted for that field rather than for the theme (ENG-609).
+    <Screen
+      unsafe
+      backgroundColor={CAMERA_FIELD}
+      statusBar={statusBarTintFor(CAMERA_FIELD)}
+    >
       <QRCamera device={device} processInvoice={processInvoice} />
       <ActionBtns processInvoice={processInvoice} />
     </Screen>

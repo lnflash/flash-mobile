@@ -18,6 +18,7 @@ import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { CloseCross } from "../../components/close-cross"
 import { Screen } from "../../components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import type { RootStackParamList } from "../../navigation/stack-param-lists"
 import { shuffle } from "../../utils/helper"
 import { sleep } from "../../utils/sleep"
@@ -293,7 +294,13 @@ export const EarnQuiz = ({ route }: Props) => {
   })
 
   return (
-    <Screen backgroundColor={colors._lighterGrey} unsafe>
+    // _lighterGrey (#E6EBEf) is a full-bleed field in both themes, so the tint
+    // comes from the field, not from the theme mode (ENG-609).
+    <Screen
+      backgroundColor={colors._lighterGrey}
+      unsafe
+      statusBar={statusBarTintFor(colors._lighterGrey)}
+    >
       <Modal
         style={{ marginHorizontal: 0, marginBottom: 0, flexGrow: 1 }}
         // Quiz card is bottom-pinned via a flex spacer; the broken Fabric modal

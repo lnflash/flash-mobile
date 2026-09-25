@@ -4,7 +4,7 @@ import { createTheme, ThemeProvider, ThemeMode, useThemeMode } from "@rneui/them
 import { act, render } from "@testing-library/react-native"
 
 import appTheme from "../../app/rne-theme/theme"
-import { ThemedStatusBar } from "../../app/components/themed-status-bar"
+import { FocusedStatusBar, ThemedStatusBar } from "../../app/components/themed-status-bar"
 
 const renderInMode = (mode: ThemeMode) =>
   render(
@@ -87,5 +87,34 @@ describe("ThemedStatusBar", () => {
     } finally {
       consoleError.mockRestore()
     }
+  })
+})
+
+describe("FocusedStatusBar", () => {
+  // The in-navigator behaviour is driven against a real stack navigator in
+  // __tests__/components/screen-status-bar-focus.spec.tsx. This is the other
+  // branch: ErrorScreen renders `Screen` above NavigationContainerWrapper, where
+  // `useIsFocused` would throw and there is nothing to leak onto anyway.
+  it("falls back to an unscoped entry outside a navigator", () => {
+    const tree = render(
+      <FocusedStatusBar barStyle="light-content" backgroundColor="#0a0a0a" />,
+    )
+
+    const entry = tree.UNSAFE_getByType(StatusBar)
+
+    expect(entry.props.barStyle).toBe("light-content")
+    expect(entry.props.backgroundColor).toBe("#0a0a0a")
+  })
+
+  it("passes every StatusBar prop through, not just barStyle", () => {
+    // NIP17Chat pushes `translucent`/`transparent` and deliberately no barStyle,
+    // so that the themed default still applies to the icons.
+    const entry = render(
+      <FocusedStatusBar translucent backgroundColor="transparent" />,
+    ).UNSAFE_getByType(StatusBar)
+
+    expect(entry.props.translucent).toBe(true)
+    expect(entry.props.backgroundColor).toBe("transparent")
+    expect(entry.props.barStyle).toBeUndefined()
   })
 })

@@ -3,6 +3,7 @@ import { Text, View } from "react-native"
 import { Button } from "@rneui/base"
 import { CloseCross } from "../../components/close-cross"
 import { Screen } from "../../components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import BadgerShovelBitcoin from "./badger-shovel-01.svg"
 import { MountainHeader } from "../../components/mountain-header"
 import type { RootStackParamList } from "../../navigation/stack-param-lists"
@@ -70,7 +71,13 @@ export const SectionCompleted: React.FC<Props> = ({ route }) => {
   const { amount, sectionTitle } = route.params
   const { LL } = useI18nContext()
   return (
-    <Screen backgroundColor={colors._orange} unsafe>
+    // _orange (#FF7e1c) is a full-bleed field in both themes, so the tint comes
+    // from the field, not from the theme mode (ENG-609).
+    <Screen
+      backgroundColor={colors._orange}
+      unsafe
+      statusBar={statusBarTintFor(colors._orange)}
+    >
       <MountainHeader amount={amount.toString()} color={colors._orange} />
       <View style={styles.container}>
         <View style={styles.divider} />

@@ -2,7 +2,7 @@ import React from "react"
 import { View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { StackScreenProps } from "@react-navigation/stack"
-import { makeStyles, Text, useTheme, useThemeMode } from "@rneui/themed"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -10,13 +10,14 @@ import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { PrimaryBtn } from "@app/components/buttons"
 import { Screen } from "@app/components/screen"
 
+// utils
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
+
 type Props = StackScreenProps<RootStackParamList, "CashoutSuccess">
 
 const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
-  // accent02 is a light green in the dark theme, where white icons wash out.
-  const { mode } = useThemeMode()
   const styles = useStyles()
 
   const onPressDone = () => {
@@ -29,7 +30,9 @@ const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
   return (
     <Screen
       backgroundColor={colors.accent02}
-      statusBar={mode === "dark" ? "dark-content" : "light-content"}
+      // accent02 is a dark green in the light theme and a light one in the dark
+      // theme, so the tint is derived from the colour rather than the mode.
+      statusBar={statusBarTintFor(colors.accent02)}
     >
       <View style={styles.container}>
         <GaloyIcon name={"send-success"} size={128} />

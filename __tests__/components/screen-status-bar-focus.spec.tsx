@@ -12,15 +12,21 @@
  * `statusBar="light-content"`, route B declares nothing. After navigating
  * A -> B, the merged props must be back to whatever the global themed entry
  * says, not A's override.
+ *
+ * The same guard also covers the two screens that push their own entry instead
+ * of going through `Screen`'s prop — FeaturedProfileView (no `Screen` at all)
+ * and NIP17Chat (`translucent`/`transparent`, which the prop cannot express) —
+ * so the bare-`View` shape is driven here too.
  */
 import { NavigationContainer } from "@react-navigation/native"
 import { createStackNavigator } from "@react-navigation/stack"
 import { createTheme, ThemeProvider } from "@rneui/themed"
 import { act, render, screen } from "@testing-library/react-native"
 import * as React from "react"
-import { StatusBar, Text } from "react-native"
+import { StatusBar, Text, View } from "react-native"
 
 import { Screen } from "@app/components/screen"
+import { FocusedStatusBar } from "@app/components/themed-status-bar"
 
 const Stack = createStackNavigator()
 
@@ -35,19 +41,39 @@ const DarkRoute = ({ navigation }: { navigation: { navigate: (r: string) => void
   </Screen>
 )
 
+/**
+ * The FeaturedProfileView shape: a plain View with its own entry, no `Screen`.
+ */
+const BareViewRoute = ({
+  navigation,
+}: {
+  navigation: { navigate: (r: string) => void }
+}) => (
+  <View>
+    <FocusedStatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
+    <Text testID="go" onPress={() => navigation.navigate("Plain")}>
+      go
+    </Text>
+  </View>
+)
+
 const PlainRoute = () => (
   <Screen preset="scroll">
     <Text>plain</Text>
   </Screen>
 )
 
-const renderStack = () =>
+type RouteComponent = React.ComponentType<{
+  navigation: { navigate: (r: string) => void }
+}>
+
+const renderStack = (First: RouteComponent = DarkRoute) =>
   render(
     <ThemeProvider theme={createTheme({})}>
       <GlobalEntry />
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Dark" component={DarkRoute} />
+          <Stack.Screen name="Dark" component={First as React.ComponentType} />
           <Stack.Screen name="Plain" component={PlainRoute} />
         </Stack.Navigator>
       </NavigationContainer>
@@ -79,6 +105,21 @@ describe("Screen statusBar override and focus", () => {
     })
 
     // The dark route is still mounted underneath; its entry must no longer win.
+    expect(mergedBarStyle()).toBe("dark-content")
+  })
+
+  // FeaturedProfileView and NIP17Chat push their own entries rather than going
+  // through `Screen`'s prop. Before they were wrapped in FocusedStatusBar they
+  // were plain `StatusBar` elements and leaked exactly like this.
+  it("scopes an entry pushed outside Screen to focus as well", async () => {
+    renderStack(BareViewRoute)
+
+    expect(mergedBarStyle()).toBe("light-content")
+
+    await act(async () => {
+      screen.getByTestId("go").props.onPress()
+    })
+
     expect(mergedBarStyle()).toBe("dark-content")
   })
 })
