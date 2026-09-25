@@ -7,12 +7,12 @@ import {
   View,
   TouchableOpacity,
   Image,
-  StatusBar,
 } from "react-native"
 import { FlatList } from "react-native-gesture-handler"
 import Icon from "react-native-vector-icons/Ionicons"
 
 import { Screen } from "../../components/screen"
+import { FocusedStatusBar } from "../../components/themed-status-bar"
 import { testProps } from "../../utils/testProps"
 
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -173,8 +173,13 @@ export const NIP17Chat: React.FC = () => {
     <Screen style={styles.flex}>
       {/* `translucent` makes the window edge-to-edge at the top on Android 14
           and older; Screen's SafeAreaView then pads by the status-bar inset on
-          every Android version, so no manual StatusBar.currentHeight here. */}
-      <StatusBar translucent backgroundColor="transparent" />
+          every Android version, so no manual StatusBar.currentHeight here.
+          Focus-scoped, not a bare StatusBar: the entry would otherwise outlive
+          this route and leave the status bar translucent over screens pushed on
+          top of it (ENG-609). It sets no barStyle on purpose — the themed
+          default still applies. `Screen`'s `statusBar` prop can only express a
+          barStyle, which is why this pushes its own entry. */}
+      <FocusedStatusBar translucent backgroundColor="transparent" />
       {userPublicKey && !showImportModal ? (
         <View style={styles.flex}>
           <Tab.Navigator

@@ -15,7 +15,6 @@ import {
   Animated,
   TouchableOpacity,
   Platform,
-  StatusBar,
   ActivityIndicator,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -30,6 +29,8 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { FEATURED_PROFILE } from "@app/constants/featured-profile"
 import { logFeaturedViewOpened } from "@app/utils/analytics"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { FocusedStatusBar } from "@app/components/themed-status-bar"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 
 type FeaturedProfileViewRouteProp = RouteProp<RootStackParamList, "FeaturedProfileView">
 type FeaturedProfileViewNavigationProp = StackNavigationProp<
@@ -149,7 +150,17 @@ const FeaturedProfileView: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={VIEW_COLORS.background} />
+      {/* Focus-scoped, not a bare StatusBar: the entry would otherwise outlive
+          this route and tint the status bar of anything pushed over it — e.g. a
+          push-notification deep link — leaving light icons on a white screen
+          (ENG-609). This screen paints its own near-black field, so the tint
+          comes from that rather than from the theme mode. There is no `Screen`
+          here to hang the `statusBar` prop on: the WebView is full-bleed and the
+          header is an absolutely positioned SafeAreaView over it. */}
+      <FocusedStatusBar
+        barStyle={statusBarTintFor(VIEW_COLORS.background)}
+        backgroundColor={VIEW_COLORS.background}
+      />
 
       {/* WebView - rendered behind overlay */}
       {showWebView && !isOffline && !hasError && (

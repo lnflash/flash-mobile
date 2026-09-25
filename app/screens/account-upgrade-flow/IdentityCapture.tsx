@@ -13,6 +13,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
 import { Screen } from "@app/components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import { PrimaryBtn } from "@app/components/buttons"
 import { CaptureOverlay, CapturePreview } from "@app/components/account-upgrade-flow"
 
@@ -30,6 +31,12 @@ import {
 import { persistCapture } from "@app/utils/identity-files"
 import { captureGate, nextSide } from "@app/utils/identity-verification"
 import { testProps } from "@app/utils/testProps"
+
+/**
+ * The full-bleed camera field. `statusBarTintFor` derives the icon tint from it
+ * (ENG-609) so the two can never drift apart.
+ */
+const CAMERA_FIELD = "#000"
 
 type Props = StackScreenProps<RootStackParamList, "IdentityCapture">
 
@@ -162,7 +169,11 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
 
   if (pending) {
     return (
-      <Screen unsafe backgroundColor="#000">
+      <Screen
+        unsafe
+        backgroundColor={CAMERA_FIELD}
+        statusBar={statusBarTintFor(CAMERA_FIELD)}
+      >
         <CapturePreview
           uri={`file://${pending.tempPath}`}
           title={copy[side].title}
@@ -175,7 +186,11 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen unsafe backgroundColor="#000">
+    <Screen
+      unsafe
+      backgroundColor={CAMERA_FIELD}
+      statusBar={statusBarTintFor(CAMERA_FIELD)}
+    >
       <View style={[styles.header, { paddingTop: top + 8 }]}>
         <View style={styles.headerRow}>
           <Text type="h1" bold style={styles.headerText}>
@@ -257,7 +272,7 @@ const useStyles = makeStyles(({ colors }) => ({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 12,
-    backgroundColor: "#000",
+    backgroundColor: CAMERA_FIELD,
   },
   headerRow: {
     flexDirection: "row",
@@ -306,7 +321,7 @@ const useStyles = makeStyles(({ colors }) => ({
   footer: {
     alignItems: "center",
     paddingTop: 12,
-    backgroundColor: "#000",
+    backgroundColor: CAMERA_FIELD,
   },
   error: {
     color: colors._orange,

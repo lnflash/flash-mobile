@@ -17,12 +17,19 @@ import { useCameraDevice, useCameraPermission } from "react-native-vision-camera
 
 // components
 import { Screen } from "../../components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import { PrimaryBtn } from "@app/components/buttons"
 import { ActionBtns, QRCamera } from "@app/components/scan"
 
 // type
 import { PhoneCodeChannelType } from "@app/graphql/generated"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+
+/**
+ * The full-bleed camera field. `statusBarTintFor` derives the icon tint from it
+ * (ENG-609) so the two can never drift apart.
+ */
+const CAMERA_FIELD = "#000"
 
 type Props = StackScreenProps<RootStackParamList, "SignInViaQRCode">
 
@@ -210,9 +217,15 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen unsafe>
+    // The camera fills the window, status-bar strip included, so the icons are
+    // tinted for that field rather than for the theme (ENG-609).
+    <Screen
+      unsafe
+      backgroundColor={CAMERA_FIELD}
+      statusBar={statusBarTintFor(CAMERA_FIELD)}
+    >
       {pending ? (
-        <View style={{ flex: 1, backgroundColor: "#000" }} />
+        <View style={styles.cameraPlaceholder} />
       ) : (
         <QRCamera device={device} processInvoice={processQRCode} />
       )}
@@ -224,6 +237,10 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
 export default SignInViaQRCode
 
 const useStyles = makeStyles(() => ({
+  cameraPlaceholder: {
+    flex: 1,
+    backgroundColor: CAMERA_FIELD,
+  },
   close: {
     height: "100%",
     justifyContent: "center",

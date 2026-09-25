@@ -23,7 +23,15 @@ export interface ScreenProps {
   backgroundColor?: string
 
   /**
-   * An optional status bar setting. Defaults to light-content.
+   * An optional status-bar icon tint for this screen.
+   *
+   * Defaults to the theme tint (dark icons on light, light icons on dark) set
+   * app-wide by ThemedStatusBar — see app/components/themed-status-bar.tsx.
+   * Set it only when the screen paints its own full-bleed field under the
+   * status bar (a camera view, a coloured success screen), where the theme
+   * tint would be the wrong one. The band itself is painted with
+   * `backgroundColor`, which matters on Android <= 14 where the window still
+   * draws a real, opaque band.
    */
   statusBar?: "light-content" | "dark-content"
 

@@ -13,8 +13,27 @@ import { WebView, WebViewNavigation } from "react-native-webview"
 import Icon from "react-native-vector-icons/Ionicons"
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 
 type Props = StackScreenProps<RootStackParamList, "BridgeExternalAccountWebView">
+
+/**
+ * The full-bleed field under the status bar on the WebView branch (ENG-609).
+ *
+ * The route is `headerShown: false` (root-navigator.tsx) and the `Screen` is
+ * `unsafe`, so there is nothing holding content out of the status bar: on
+ * Android 15+ forced edge-to-edge the clock and signal icons land straight on
+ * this field. It is white in both palettes — Bridge's own hosted page is, and
+ * the `loadingContainer` scrim that covers the whole screen while the page
+ * loads is `rgba(255, 255, 255, 0.9)`, which is what the user actually sees
+ * first. With no `statusBar` the themed default applies, which hands a
+ * dark-mode user `light-content`: white icons on white.
+ *
+ * `statusBarTintFor` derives the tint from the field so the two cannot drift.
+ * Keep this in step with `loadingContainer.backgroundColor` below, and with
+ * BridgeKycWebView, which is the same screen shape.
+ */
+const WEBVIEW_FIELD = "#FFFFFF"
 
 // Viewport meta injection before content loads to prevent initial zoom.
 const VIEWPORT_INJECTION_JS = `(function(){const forceViewport=()=>{const content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';document.querySelectorAll('meta[name="viewport"]').forEach(m=>m.remove());const meta=document.createElement('meta');meta.name='viewport';meta.content=content;if(document.head){document.head.insertBefore(meta,document.head.firstChild)}else{document.documentElement.appendChild(meta)}};forceViewport();document.addEventListener('DOMContentLoaded',forceViewport);window.addEventListener('load',forceViewport);if(document.documentElement){document.documentElement.style.touchAction='pan-x pan-y'}true})();`
@@ -115,7 +134,15 @@ const BridgeExternalAccountWebView: React.FC<Props> = ({ navigation, route }) =>
   }
 
   return (
-    <Screen unsafe preset="fixed">
+    // The hosted page and its loading scrim are white whatever the theme, so the
+    // icons are tinted for that field rather than for the theme (ENG-609). The
+    // error branch above keeps the themed default so `colors.error` still reads.
+    <Screen
+      unsafe
+      preset="fixed"
+      backgroundColor={WEBVIEW_FIELD}
+      statusBar={statusBarTintFor(WEBVIEW_FIELD)}
+    >
       {closeButton}
       <View style={styles.container}>
         {isLoading && (

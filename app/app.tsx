@@ -15,11 +15,11 @@ import "@react-native-firebase/crashlytics"
 import { ThemeProvider } from "@rneui/themed"
 import "node-libs-react-native/globals" // needed for Buffer?
 import * as React from "react"
-import { Platform, StatusBar } from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import { RootSiblingParent } from "react-native-root-siblings"
 import { GaloyToast } from "./components/galoy-toast"
 import { PushNotificationComponent } from "./components/push-notification"
+import { ThemedStatusBar } from "./components/themed-status-bar"
 import { GaloyClient } from "./graphql/client"
 import TypesafeI18n from "./i18n/i18n-react"
 import { loadAllLocales } from "./i18n/i18n-util.sync"
@@ -82,10 +82,6 @@ export const App = () => {
 
   return (
     <SafeAreaProvider>
-      <StatusBar
-        backgroundColor={"#000"}
-        barStyle={Platform.OS === "android" ? "light-content" : undefined}
-      />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <PolyfillCrypto />
         <Provider store={store}>
@@ -96,6 +92,9 @@ export const App = () => {
                 <ActivityIndicatorProvider>
                   <TypesafeI18n locale={detectDefaultLocale()}>
                     <ThemeProvider theme={theme}>
+                      {/* Inside ThemeProvider: the icon tint follows the
+                          theme. See ENG-609. */}
+                      <ThemedStatusBar />
                       <GaloyClient>
                         <FeatureFlagContextProvider>
                           <ErrorBoundary FallbackComponent={ErrorScreen}>

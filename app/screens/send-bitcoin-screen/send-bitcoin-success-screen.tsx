@@ -25,6 +25,7 @@ import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 
 // utils
 import { testProps } from "../../utils/testProps"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
 import { DisplayCurrency, isNonZeroMoneyAmount } from "@app/types/amounts"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinSuccess">
@@ -113,8 +114,7 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
   if (isNonZeroMoneyAmount(unitOfAccountAmount)) {
     const isBtcDenominatedCashWalletAmount =
-      (walletCurrency === WalletCurrency.Usd ||
-        walletCurrency === WalletCurrency.Usdt) &&
+      (walletCurrency === WalletCurrency.Usd || walletCurrency === WalletCurrency.Usdt) &&
       unitOfAccountAmount.currency === WalletCurrency.Btc
 
     const primaryAmount = convertMoneyAmount(unitOfAccountAmount, DisplayCurrency)
@@ -153,7 +153,13 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen unsafe backgroundColor={colors.accent02}>
+    <Screen
+      unsafe
+      backgroundColor={colors.accent02}
+      // accent02 is a dark green in the light theme and a light one in the dark
+      // theme, so the tint is derived from the colour rather than the mode.
+      statusBar={statusBarTintFor(colors.accent02)}
+    >
       <View style={styles.container}>
         <SuccessIconAnimation>
           <GaloyIcon name={"send-success"} size={128} />

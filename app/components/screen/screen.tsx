@@ -60,7 +60,42 @@ import { Edge, SafeAreaView } from "react-native-safe-area-context"
 import { ScreenProps } from "./screen.props"
 import { isNonScrolling, offsets, presets } from "./screen.presets"
 import { isIos } from "../../utils/helper"
+import { FocusedStatusBar } from "../themed-status-bar"
 import { useTheme } from "@rneui/themed"
+
+/**
+ * The per-screen half of the status-bar story (ENG-609).
+ *
+ * ThemedStatusBar sets the app-wide tint from the theme mode, which is right
+ * for screens that use the theme background. It is wrong for a screen that
+ * paints its own full-bleed field under the status bar — a black camera view,
+ * a green success screen — and under Android 15+ forced edge-to-edge there is
+ * no opaque band left to hide the mismatch, so the clock and signal icons land
+ * straight on that field. Those screens declare `statusBar` and get it here.
+ *
+ * React Native merges the mounted StatusBar stack per prop, so this entry
+ * overrides only what it sets: an undefined `backgroundColor` still falls
+ * through to the themed entry rather than resetting to the platform default.
+ * We pass the screen's own background because that is what the band should be
+ * on Android <= 14, where the window still draws a real, opaque one.
+ *
+ * The entry is scoped to focus by `FocusedStatusBar` (see its comment in
+ * app/components/themed-status-bar.tsx) so it cannot leak onto screens pushed
+ * on top of this one.
+ *
+ * The prop was declared and documented since the original Ignite template but
+ * never read, so `earns-map-screen` and `earns-section` asked for
+ * "light-content" and silently got whatever the global was. Callers should
+ * derive the value with `statusBarTintFor` (app/utils/status-bar-tint.ts)
+ * rather than hand-picking it per theme mode.
+ */
+const ScreenStatusBar: React.FC<Pick<ScreenProps, "statusBar" | "backgroundColor">> = ({
+  statusBar,
+  backgroundColor,
+}) =>
+  statusBar ? (
+    <FocusedStatusBar barStyle={statusBar} backgroundColor={backgroundColor} />
+  ) : null
 
 /** The edges to pad under a navigation header: everything but `top`. */
 const EDGES_BELOW_HEADER: Edge[] = ["left", "right", "bottom"]
@@ -97,6 +132,10 @@ function ScreenWithoutScrolling(props: ScreenProps) {
       behavior={isIos ? "padding" : undefined}
       keyboardVerticalOffset={offsets[props.keyboardOffset || "none"]}
     >
+      <ScreenStatusBar
+        statusBar={props.statusBar}
+        backgroundColor={props.backgroundColor}
+      />
       {props.unsafe ? (
         <View style={[preset.inner, style]}>{props.children}</View>
       ) : (
@@ -136,6 +175,10 @@ function ScreenWithScrolling(props: ScreenProps) {
       behavior={isIos ? "padding" : undefined}
       keyboardVerticalOffset={offsets[props.keyboardOffset || "none"]}
     >
+      <ScreenStatusBar
+        statusBar={props.statusBar}
+        backgroundColor={props.backgroundColor}
+      />
       {props.unsafe ? (
         <View style={[preset.outer, backgroundStyle]}>{scroller}</View>
       ) : (

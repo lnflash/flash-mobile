@@ -19,7 +19,12 @@ jest.mock("@app/i18n/i18n-react", () => ({
 const mockPopToTop = jest.fn()
 let mockRouteParams: { pending?: boolean } | undefined
 
+// Spread the real module so `NavigationContext` is the real context object rather
+// than `undefined`. These specs mount no navigator, so `Screen` still takes the
+// unscoped branch; the focus-scoped branch is driven against a real stack
+// navigator in __tests__/components/screen-status-bar-focus.spec.tsx (ENG-609).
 jest.mock("@react-navigation/native", () => ({
+  ...jest.requireActual("@react-navigation/native"),
   useNavigation: () => ({ popToTop: mockPopToTop }),
   useRoute: () => ({ key: "s", name: "conversionSuccess", params: mockRouteParams }),
 }))

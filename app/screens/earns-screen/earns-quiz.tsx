@@ -18,6 +18,15 @@ import { RouteProp, useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { CloseCross } from "../../components/close-cross"
 import { Screen } from "../../components/screen"
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
+
+/**
+ * What sits under the status bar while the answer sheet is open: the sheet's
+ * backdrop, `black` at `backdropOpacity` 0.7, over `_lighterGrey` #E6EBEf.
+ * 0.3 × #E6EBEf ≈ #454647. Named so the tint keeps going through
+ * `statusBarTintFor` rather than being hand-picked for this one state.
+ */
+const QUIZ_SCRIM_FIELD = "#454647"
 import type { RootStackParamList } from "../../navigation/stack-param-lists"
 import { shuffle } from "../../utils/helper"
 import { sleep } from "../../utils/sleep"
@@ -293,7 +302,16 @@ export const EarnQuiz = ({ route }: Props) => {
   })
 
   return (
-    <Screen backgroundColor={colors._lighterGrey} unsafe>
+    // _lighterGrey (#E6EBEf) is a full-bleed field in both themes, so the tint
+    // comes from the field, not from the theme mode (ENG-609). With the answer
+    // sheet open the field is the sheet's backdrop instead: coverScreen={false}
+    // renders it inside this Screen, so on an edge-to-edge window it covers the
+    // status-bar strip too, and the tint has to flip with it.
+    <Screen
+      backgroundColor={colors._lighterGrey}
+      unsafe
+      statusBar={statusBarTintFor(quizVisible ? QUIZ_SCRIM_FIELD : colors._lighterGrey)}
+    >
       <Modal
         style={{ marginHorizontal: 0, marginBottom: 0, flexGrow: 1 }}
         // Quiz card is bottom-pinned via a flex spacer; the broken Fabric modal

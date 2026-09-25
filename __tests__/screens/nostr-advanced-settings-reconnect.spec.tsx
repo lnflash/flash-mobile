@@ -62,7 +62,12 @@ jest.mock("@app/screens/chat/chatContext", () => ({
   }),
 }))
 
+// Spread the real module so `NavigationContext` is the real context object rather
+// than `undefined`. These specs mount no navigator, so `Screen` still takes the
+// unscoped branch; the focus-scoped branch is driven against a real stack
+// navigator in __tests__/components/screen-status-bar-focus.spec.tsx (ENG-609).
 jest.mock("@react-navigation/native", () => ({
+  ...jest.requireActual("@react-navigation/native"),
   useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),
 }))
 

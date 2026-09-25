@@ -10,6 +10,9 @@ import { GaloyIcon } from "@app/components/atomic/galoy-icon"
 import { PrimaryBtn } from "@app/components/buttons"
 import { Screen } from "@app/components/screen"
 
+// utils
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
+
 type Props = StackScreenProps<RootStackParamList, "CashoutSuccess">
 
 const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
@@ -25,7 +28,12 @@ const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen backgroundColor={colors.accent02}>
+    <Screen
+      backgroundColor={colors.accent02}
+      // accent02 is a dark green in the light theme and a light one in the dark
+      // theme, so the tint is derived from the colour rather than the mode.
+      statusBar={statusBarTintFor(colors.accent02)}
+    >
       <View style={styles.container}>
         <GaloyIcon name={"send-success"} size={128} />
         <Text type="h01" style={styles.successText}>

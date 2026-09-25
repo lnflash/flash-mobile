@@ -10,6 +10,9 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { Screen } from "@app/components/screen"
 import { PrimaryBtn } from "@app/components/buttons"
 
+// utils
+import { statusBarTintFor } from "@app/utils/status-bar-tint"
+
 // assets
 import SendSuccess from "@app/assets/illustrations/send-success.svg"
 
@@ -31,7 +34,13 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen unsafe backgroundColor={colors.accent02}>
+    <Screen
+      unsafe
+      backgroundColor={colors.accent02}
+      // accent02 is a dark green in the light theme and a light one in the dark
+      // theme, so the tint is derived from the colour rather than the mode.
+      statusBar={statusBarTintFor(colors.accent02)}
+    >
       <View style={styles.container}>
         <SendSuccess width={width / 1.2} height={width / 1.2} />
         <Text type="h02" color={colors.white} style={styles.title}>
