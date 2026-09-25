@@ -179,11 +179,52 @@ type AccountUpgradeRequest {
   status: String!
   terminalsRequested: Int!
   username: String!
+
+  """
+  Identity verification state of this request. `status` above is the raw ERPNext value; prefer this for anything shown to the customer.
+  """
+  verification: AccountUpgradeVerification!
 }
 
 type AccountUpgradeRequestPayload {
   errors: [Error]
   upgradeRequest: AccountUpgradeRequest
+}
+
+"""
+Where an upgrade request is in identity verification, derived from the request's decision and its ID Verification review state.
+"""
+type AccountUpgradeVerification {
+  """Decision Reason code recorded by the reviewer, e.g. RESUBMIT_BLURRY."""
+  reasonCode: String
+
+  """
+  Plain-language message for the customer matching reasonCode. Null when no reason was recorded or its text could not be fetched; never an internal reviewer note.
+  """
+  reasonMessage: String
+
+  """When the reviewer last decided, if they have."""
+  reviewedAt: Timestamp
+  status: AccountUpgradeVerificationStatus!
+}
+
+enum AccountUpgradeVerificationStatus {
+  """Upgrade granted."""
+  APPROVED
+
+  """
+  A reviewer asked for something to be resubmitted. reasonMessage says what.
+  """
+  MORE_INFO_NEEDED
+
+  """Upgrade declined. reasonMessage says why, when a reason was recorded."""
+  REJECTED
+
+  """Received; automated checks have not finished yet."""
+  SUBMITTED
+
+  """Checks are done (or could not run) and a reviewer has it."""
+  UNDER_REVIEW
 }
 
 type Address {

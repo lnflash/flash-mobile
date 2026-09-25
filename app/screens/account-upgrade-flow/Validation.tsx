@@ -72,7 +72,7 @@ const Validation: React.FC<Props> = ({ navigation, route }) => {
               [
                 {
                   text: "Continue",
-                  onPress: () => navigation.replace("BusinessInformation"),
+                  onPress: () => navigation.replace("IdentityDocumentType"),
                 },
               ],
             )

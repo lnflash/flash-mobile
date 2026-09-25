@@ -106,11 +106,10 @@ const PersonalInformation: React.FC<Props> = ({ navigation }) => {
         if (currentLevel === AccountLevel.Zero && channel) {
           submitPhoneNumber(channel)
         } else {
-          navigation.navigate("BusinessInformation")
+          navigation.navigate("IdentityDocumentType")
         }
       }
     } catch (err) {
-      console.log("Personal information error: ", err)
       setFullNameErr("Name must be at least 2 characters")
       setPhoneNumberErr("Please enter a valid phone number")
     }

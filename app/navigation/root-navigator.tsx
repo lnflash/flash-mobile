@@ -124,6 +124,9 @@ import {
   BankInformation,
   AccountType,
   Validation,
+  IdentityDocumentType,
+  IdentityCapture,
+  IdentityReview,
   Success,
 } from "@app/screens/account-upgrade-flow"
 import { FeaturedProfileView } from "@app/screens/featured-profile-view"
@@ -667,6 +670,21 @@ export const RootStack = () => {
         name="Validation"
         component={Validation}
         options={{ title: LL.AccountUpgrade.validation() }}
+      />
+      <RootNavigator.Screen
+        name="IdentityDocumentType"
+        component={IdentityDocumentType}
+        options={{ title: LL.AccountUpgrade.identityInfo() }}
+      />
+      <RootNavigator.Screen
+        name="IdentityCapture"
+        component={IdentityCapture}
+        options={{ headerShown: false }}
+      />
+      <RootNavigator.Screen
+        name="IdentityReview"
+        component={IdentityReview}
+        options={{ title: LL.AccountUpgrade.identityInfo() }}
       />
       <RootNavigator.Screen
         name="AccountUpgradeSuccess"

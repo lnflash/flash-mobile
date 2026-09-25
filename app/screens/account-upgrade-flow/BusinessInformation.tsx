@@ -27,6 +27,12 @@ import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { setBusinessInfo } from "@app/store/redux/slices/accountUpgradeSlice"
 import { AccountLevel } from "@app/graphql/generated"
 
+// utils
+import {
+  AddressField as AddressFieldName,
+  validateUpgradeAddress,
+} from "@app/utils/identity-verification"
+
 const getAddressComponent = (
   details: GooglePlaceDetail | null,
   ...types: string[]
@@ -42,13 +48,20 @@ const getAddressComponent = (
 
 type Props = StackScreenProps<RootStackParamList, "BusinessInformation">
 
+type AddressErrors = Partial<Record<AddressFieldName, string>>
+
+/**
+ * Business name plus a real address. Since ENG-608 the address is required for
+ * every level (a bank cash-out request needs it for the reviewer); the Google
+ * Places search prefills the fields, all of which stay editable.
+ */
 const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch()
   const styles = useStyles()
   const { LL } = useI18nContext()
 
   const [businessNameErr, setBusinessNameErr] = useState<string>()
-  const [businessAddressErr, setBusinessAddressErr] = useState<string>()
+  const [addressErrs, setAddressErrs] = useState<AddressErrors>({})
   const { numOfSteps, accountType, businessInfo } = useAppSelector(
     (state) => state.accountUpgrade,
   )
@@ -60,10 +73,14 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
     city,
     country,
     line1,
+    line2,
     postalCode,
     state,
     terminalRequested,
   } = businessInfo
+
+  const clearAddressErr = (field: AddressFieldName) =>
+    setAddressErrs((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev))
 
   const onPressNext = async () => {
     let hasError = false
@@ -71,8 +88,15 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       setBusinessNameErr("Business name must be at least 2 characters")
       hasError = true
     }
-    if (!isProUpgrade && !(city && country && line1 && state)) {
-      setBusinessAddressErr("Please enter a valid address")
+    if (!isProUpgrade && !businessName) {
+      setBusinessNameErr("Business name is required")
+      hasError = true
+    }
+    const missing = validateUpgradeAddress(businessInfo)
+    if (missing.length) {
+      const errs: AddressErrors = {}
+      for (const field of missing) errs[field] = LL.AccountUpgrade.addressFieldRequired()
+      setAddressErrs(errs)
       hasError = true
     }
     if (!hasError) {
@@ -81,7 +105,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
   }
 
   const onAddressSelect = (data: GooglePlaceData, details: GooglePlaceDetail | null) => {
-    setBusinessAddressErr(undefined)
+    setAddressErrs({})
     const streetNumber = getAddressComponent(details, "street_number", "premise")
     const route = getAddressComponent(details, "route", "street_address", "neighborhood")
     const line1 = [streetNumber, route].filter(Boolean).join(" ") || undefined
@@ -95,8 +119,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       "administrative_area_level_2",
     )
     const state = getAddressComponent(details, "administrative_area_level_1")
-    const postalCode =
-      getAddressComponent(details, "postal_code", "postal_code_prefix") || "000000"
+    const postalCode = getAddressComponent(details, "postal_code", "postal_code_prefix")
     const country = getAddressComponent(details, "country")
 
     dispatch(
@@ -111,6 +134,8 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       }),
     )
   }
+
+  const addressComplete = validateUpgradeAddress(businessInfo).length === 0
 
   return (
     <Screen
@@ -134,12 +159,74 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
           autoCapitalize="words"
         />
         <AddressField
-          label={LL.AccountUpgrade.businessAddress()}
-          placeholder={LL.AccountUpgrade.businessAddressPlaceholder()}
+          label={
+            isProUpgrade
+              ? LL.AccountUpgrade.address()
+              : LL.AccountUpgrade.businessAddress()
+          }
+          placeholder={LL.AccountUpgrade.addressSearch()}
           value={businessAddress}
-          errorMsg={businessAddressErr}
-          isOptional={isProUpgrade}
           onAddressSelect={onAddressSelect}
+        />
+        <InputField
+          label={LL.AccountUpgrade.addressLine1()}
+          placeholder={LL.AccountUpgrade.addressLine1Placeholder()}
+          value={line1}
+          errorMsg={addressErrs.line1}
+          onChangeText={(val) => {
+            clearAddressErr("line1")
+            dispatch(setBusinessInfo({ line1: val }))
+          }}
+          autoCapitalize="words"
+        />
+        <InputField
+          label={LL.AccountUpgrade.addressLine2()}
+          placeholder={LL.AccountUpgrade.addressLine2Placeholder()}
+          value={line2}
+          isOptional
+          onChangeText={(val) => dispatch(setBusinessInfo({ line2: val }))}
+          autoCapitalize="words"
+        />
+        <InputField
+          label={LL.AccountUpgrade.city()}
+          placeholder={LL.AccountUpgrade.cityPlaceholder()}
+          value={city}
+          errorMsg={addressErrs.city}
+          onChangeText={(val) => {
+            clearAddressErr("city")
+            dispatch(setBusinessInfo({ city: val }))
+          }}
+          autoCapitalize="words"
+        />
+        <InputField
+          label={LL.AccountUpgrade.state()}
+          placeholder={LL.AccountUpgrade.statePlaceholder()}
+          value={state}
+          errorMsg={addressErrs.state}
+          onChangeText={(val) => {
+            clearAddressErr("state")
+            dispatch(setBusinessInfo({ state: val }))
+          }}
+          autoCapitalize="words"
+        />
+        <InputField
+          label={LL.AccountUpgrade.postalCode()}
+          placeholder={LL.AccountUpgrade.postalCodePlaceholder()}
+          value={postalCode}
+          isOptional
+          onChangeText={(val) => dispatch(setBusinessInfo({ postalCode: val }))}
+          autoCapitalize="characters"
+        />
+        <InputField
+          label={LL.AccountUpgrade.country()}
+          placeholder={LL.AccountUpgrade.countryPlaceholder()}
+          value={country}
+          errorMsg={addressErrs.country}
+          onChangeText={(val) => {
+            clearAddressErr("country")
+            dispatch(setBusinessInfo({ country: val }))
+          }}
+          autoCapitalize="words"
         />
         <CheckBoxField
           isChecked={terminalRequested}
@@ -150,7 +237,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
       </View>
       <PrimaryBtn
         label={LL.common.next()}
-        disabled={isProUpgrade ? false : !businessName || !line1}
+        disabled={(!isProUpgrade && !businessName) || !addressComplete}
         btnStyle={styles.btn}
         onPress={onPressNext}
       />
@@ -160,7 +247,7 @@ const BusinessInformation: React.FC<Props> = ({ navigation }) => {
 
 export default BusinessInformation
 
-const useStyles = makeStyles(({ colors }) => ({
+const useStyles = makeStyles(() => ({
   container: {
     flex: 1,
     paddingVertical: 10,
@@ -169,10 +256,5 @@ const useStyles = makeStyles(({ colors }) => ({
   btn: {
     marginBottom: 10,
     marginHorizontal: 20,
-  },
-  terminalRequest: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 15,
   },
 }))

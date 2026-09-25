@@ -1296,6 +1296,13 @@ query LatestAccountUpgradeRequest {
       phoneNumber
       email
       idDocument
+      verification {
+        status
+        reasonCode
+        reasonMessage
+        reviewedAt
+        __typename
+      }
       __typename
     }
     __typename

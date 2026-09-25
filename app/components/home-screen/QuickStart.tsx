@@ -24,6 +24,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { AccountLevel, useHomeAuthedQuery } from "@app/graphql/generated"
+import { isUpgradePending, needsResubmit } from "@app/utils/identity-verification"
 
 // utils
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk"
@@ -49,7 +50,7 @@ const QuickStart = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { persistentState, updateState } = usePersistentStateContext()
-  const { status } = useAppSelector((state) => state.accountUpgrade)
+  const { status, reasonMessage } = useAppSelector((state) => state.accountUpgrade)
 
   const ref = useRef(null)
   const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
@@ -69,7 +70,10 @@ const QuickStart = () => {
     if (credentials) setHasRecoveryPhrase(true)
   }
 
-  const upgradePending = status === "Pending"
+  // SUBMITTED and UNDER_REVIEW both read as "pending"; MORE_INFO_NEEDED is a
+  // prompt to resubmit and carries the reviewer's message.
+  const upgradePending = isUpgradePending(status)
+  const upgradeNeedsResubmit = needsResubmit(status)
 
   let carouselData = [
     {
@@ -81,14 +85,18 @@ const QuickStart = () => {
     },
     {
       type: "upgrade",
-      title: !upgradePending
-        ? LL.HomeScreen.upgradeTitle()
-        : LL.HomeScreen.upgradeTitlePending(),
-      description: !upgradePending
-        ? LL.HomeScreen.upgradeDesc()
-        : LL.HomeScreen.upgradePendingDesc(),
+      title: upgradeNeedsResubmit
+        ? LL.AccountUpgrade.statusMoreInfoNeeded()
+        : upgradePending
+        ? LL.HomeScreen.upgradeTitlePending()
+        : LL.HomeScreen.upgradeTitle(),
+      description: upgradeNeedsResubmit
+        ? reasonMessage || LL.AccountUpgrade.statusMoreInfoNeededDesc()
+        : upgradePending
+        ? LL.HomeScreen.upgradePendingDesc()
+        : LL.HomeScreen.upgradeDesc(),
       image: Account,
-      pending: upgradePending,
+      pending: upgradePending || upgradeNeedsResubmit,
       onPress: () => navigation.navigate("AccountType"),
     },
     {

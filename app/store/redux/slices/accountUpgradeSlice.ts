@@ -1,11 +1,64 @@
 import { AccountLevel } from "@app/graphql/generated"
-import { createSlice } from "@reduxjs/toolkit"
+import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import { CountryCode } from "libphonenumber-js"
-import { Asset } from "react-native-image-picker"
 
-interface AccountUpgradeSlice {
+/** Free-form document kind sent as `UpgradeEvidenceInput.documentType`. */
+export type IdentityDocumentType = "passport" | "national_id" | "drivers_licence"
+
+/** Which capture the user is on. Passports have no back side. */
+export type IdentitySide = "front" | "back" | "selfie"
+
+/**
+ * A still taken in IdentityCapture, kept on disk until it is uploaded.
+ *
+ * `path` is relative to the app document directory (e.g. `idv/front-123.jpg`),
+ * never an absolute URI: the OS temp directory is purged and the iOS
+ * container path changes on every update. Resolve it with
+ * `identityFileUri` / `identityFilePath` from `@app/utils/identity-files`.
+ */
+export type CapturedImage = {
+  path: string
+  width: number
+  height: number
+  fileName: string
+  type: string
+}
+
+/**
+ * A capture that already made it to storage. Keyed by the local `path` so a
+ * retake invalidates the key and a retry after a partial failure reuses it.
+ */
+export type UploadedEvidence = {
+  path: string
+  fileKey: string
+  sha256: string
+}
+
+/** Mirrors `AccountUpgradeVerificationStatus` in the public schema. */
+export type UpgradeVerificationStatus =
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "MORE_INFO_NEEDED"
+  | "APPROVED"
+  | "REJECTED"
+
+/**
+ * No `issuingCountry`: the schema field is optional and there is no picker
+ * yet, so nothing is sent rather than a guessed country on every document.
+ */
+export type IdentityState = {
+  documentType?: IdentityDocumentType
+  front?: CapturedImage
+  back?: CapturedImage
+  selfie?: CapturedImage
+  uploaded: Partial<Record<IdentitySide, UploadedEvidence>>
+}
+
+export interface AccountUpgradeSlice {
   accountType: AccountLevel
-  status?: "Approved" | "Pending" | "Rejected"
+  status?: UpgradeVerificationStatus
+  reasonCode?: string
+  reasonMessage?: string
   personalInfo: {
     fullName?: string
     countryCode?: CountryCode
@@ -29,16 +82,26 @@ interface AccountUpgradeSlice {
     bankAccountType?: string
     currency?: string
     accountNumber?: string
-    idDocument?: Asset
   }
+  identity: IdentityState
   numOfSteps: number
   loading: boolean
   error?: string
 }
 
+export const initialIdentityState: IdentityState = {
+  documentType: undefined,
+  front: undefined,
+  back: undefined,
+  selfie: undefined,
+  uploaded: {},
+}
+
 const initialState: AccountUpgradeSlice = {
   accountType: "ONE",
   status: undefined,
+  reasonCode: undefined,
+  reasonMessage: undefined,
   personalInfo: {
     fullName: undefined,
     countryCode: "JM",
@@ -49,7 +112,7 @@ const initialState: AccountUpgradeSlice = {
     businessName: undefined,
     businessAddress: undefined,
     city: undefined,
-    country: undefined,
+    country: "Jamaica",
     line1: undefined,
     line2: undefined,
     postalCode: undefined,
@@ -62,8 +125,8 @@ const initialState: AccountUpgradeSlice = {
     bankAccountType: undefined,
     currency: undefined,
     accountNumber: undefined,
-    idDocument: undefined,
   },
+  identity: initialIdentityState,
   numOfSteps: 3,
   loading: false,
   error: undefined,
@@ -89,6 +152,56 @@ export const accountUpgradeSlice = createSlice({
       ...state,
       bankInfo: { ...state.bankInfo, ...action.payload },
     }),
+    setIdentity: (state, action: PayloadAction<Partial<IdentityState>>) => ({
+      ...state,
+      identity: { ...state.identity, ...action.payload },
+    }),
+    /**
+     * Replace one side's capture. Any storage key recorded for that side is
+     * dropped so the next upload sends the new file.
+     */
+    setIdentityCapture: (
+      state,
+      action: PayloadAction<{ side: IdentitySide; image: CapturedImage }>,
+    ) => {
+      const { side, image } = action.payload
+      const uploaded = { ...state.identity.uploaded }
+      delete uploaded[side]
+      return {
+        ...state,
+        identity: { ...state.identity, [side]: image, uploaded },
+      }
+    },
+    /**
+     * Forget one side's capture (its file is gone or unreadable) so the review
+     * card reads "Not taken yet" and confirm disables until it is retaken.
+     */
+    clearIdentityCapture: (state, action: PayloadAction<{ side: IdentitySide }>) => {
+      const { side } = action.payload
+      const uploaded = { ...state.identity.uploaded }
+      delete uploaded[side]
+      return {
+        ...state,
+        identity: { ...state.identity, [side]: undefined, uploaded },
+      }
+    },
+    setIdentityUploaded: (
+      state,
+      action: PayloadAction<{ side: IdentitySide; evidence: UploadedEvidence }>,
+    ) => ({
+      ...state,
+      identity: {
+        ...state.identity,
+        uploaded: {
+          ...state.identity.uploaded,
+          [action.payload.side]: action.payload.evidence,
+        },
+      },
+    }),
+    resetIdentity: (state) => ({
+      ...state,
+      identity: { ...initialIdentityState },
+    }),
     setLoading: (state, action) => ({
       ...state,
       loading: action.payload,
@@ -108,6 +221,11 @@ export const {
   setPersonalInfo,
   setBusinessInfo,
   setBankInfo,
+  setIdentity,
+  setIdentityCapture,
+  clearIdentityCapture,
+  setIdentityUploaded,
+  resetIdentity,
   setLoading,
   setError,
   resetAccountUpgrade,

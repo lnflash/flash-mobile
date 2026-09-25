@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react"
-import { ScrollView } from "react-native"
+import { Alert, ScrollView } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -8,7 +8,6 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import {
   DropDownField,
   InputField,
-  PhotoUploadField,
   ProgressSteps,
 } from "@app/components/account-upgrade-flow"
 import { Screen } from "@app/components/screen"
@@ -54,18 +53,10 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
   const [accountTypeErr, setAccountTypeErr] = useState<string>()
   const [currencyErr, setCurrencyErr] = useState<string>()
   const [accountNumErr, setAccountNumErr] = useState<string>()
-  const [idDocumentErr, setIdDocumentErr] = useState<string>()
   const {
     accountType,
     numOfSteps,
-    bankInfo: {
-      bankName,
-      bankBranch,
-      bankAccountType,
-      currency,
-      accountNumber,
-      idDocument,
-    },
+    bankInfo: { bankName, bankBranch, bankAccountType, currency, accountNumber },
   } = useAppSelector((state) => state.accountUpgrade)
 
   const { data } = useSupportedBanksQuery()
@@ -99,25 +90,12 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       }
     }
 
-    if (!idDocument) {
-      setIdDocumentErr("You must upload an ID document before proceeding")
-      hasError = true
-    }
-
     if (!hasError) {
       const res = await submitAccountUpgrade()
       if (res.success) {
         navigation.navigate("AccountUpgradeSuccess")
       } else if (res.errors?.length) {
-        const errorMsg = res.errors.join(", ")
-        if (
-          errorMsg.toLowerCase().includes("file") ||
-          errorMsg.toLowerCase().includes("upload")
-        ) {
-          setIdDocumentErr(errorMsg)
-        } else {
-          alert(errorMsg)
-        }
+        Alert.alert("", res.errors.join(", "))
       }
     }
   }
@@ -126,13 +104,6 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
     <Screen>
       <ProgressSteps numOfSteps={numOfSteps} currentStep={numOfSteps} />
       <ScrollView style={styles.container}>
-        <PhotoUploadField
-          label={LL.AccountUpgrade.uploadId()}
-          photo={idDocument}
-          errorMsg={idDocumentErr}
-          onPhotoUpload={(val) => dispatch(setBankInfo({ idDocument: val }))}
-          setErrorMsg={setIdDocumentErr}
-        />
         <DropDownField
           label={LL.AccountUpgrade.bankName()}
           placeholder={LL.AccountUpgrade.bankNamePlaceholder()}

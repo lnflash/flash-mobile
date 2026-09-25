@@ -267,6 +267,8 @@ export type AccountUpgradeRequest = {
   readonly status: Scalars['String']['output'];
   readonly terminalsRequested: Scalars['Int']['output'];
   readonly username: Scalars['String']['output'];
+  /** Identity verification state of this request. `status` above is the raw ERPNext value; prefer this for anything shown to the customer. */
+  readonly verification: AccountUpgradeVerification;
 };
 
 export type AccountUpgradeRequestPayload = {
@@ -275,6 +277,32 @@ export type AccountUpgradeRequestPayload = {
   readonly upgradeRequest?: Maybe<AccountUpgradeRequest>;
 };
 
+/** Where an upgrade request is in identity verification, derived from the request's decision and its ID Verification review state. */
+export type AccountUpgradeVerification = {
+  readonly __typename: 'AccountUpgradeVerification';
+  /** Decision Reason code recorded by the reviewer, e.g. RESUBMIT_BLURRY. */
+  readonly reasonCode?: Maybe<Scalars['String']['output']>;
+  /** Plain-language message for the customer matching reasonCode. Null when no reason was recorded or its text could not be fetched; never an internal reviewer note. */
+  readonly reasonMessage?: Maybe<Scalars['String']['output']>;
+  /** When the reviewer last decided, if they have. */
+  readonly reviewedAt?: Maybe<Scalars['Timestamp']['output']>;
+  readonly status: AccountUpgradeVerificationStatus;
+};
+
+export const AccountUpgradeVerificationStatus = {
+  /** Upgrade granted. */
+  Approved: 'APPROVED',
+  /** A reviewer asked for something to be resubmitted. reasonMessage says what. */
+  MoreInfoNeeded: 'MORE_INFO_NEEDED',
+  /** Upgrade declined. reasonMessage says why, when a reason was recorded. */
+  Rejected: 'REJECTED',
+  /** Received; automated checks have not finished yet. */
+  Submitted: 'SUBMITTED',
+  /** Checks are done (or could not run) and a reviewer has it. */
+  UnderReview: 'UNDER_REVIEW'
+} as const;
+
+export type AccountUpgradeVerificationStatus = typeof AccountUpgradeVerificationStatus[keyof typeof AccountUpgradeVerificationStatus];
 export type Address = {
   readonly __typename: 'Address';
   readonly city: Scalars['String']['output'];
@@ -3504,7 +3532,7 @@ export type InvitePreviewQuery = { readonly __typename: 'Query', readonly invite
 export type LatestAccountUpgradeRequestQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type LatestAccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly latestAccountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly fullName: string, readonly terminalsRequested: number, readonly status: string, readonly requestedLevel: AccountLevel, readonly phoneNumber: string, readonly email?: string | null, readonly idDocument: boolean, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountName?: string | null, readonly accountNumber: string, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string, readonly id?: string | null, readonly isDefault: boolean } | null } | null } };
+export type LatestAccountUpgradeRequestQuery = { readonly __typename: 'Query', readonly latestAccountUpgradeRequest: { readonly __typename: 'AccountUpgradeRequestPayload', readonly errors?: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string } | null> | null, readonly upgradeRequest?: { readonly __typename: 'AccountUpgradeRequest', readonly currentLevel: AccountLevel, readonly fullName: string, readonly terminalsRequested: number, readonly status: string, readonly requestedLevel: AccountLevel, readonly phoneNumber: string, readonly email?: string | null, readonly idDocument: boolean, readonly address: { readonly __typename: 'Address', readonly city: string, readonly country: string, readonly line1: string, readonly line2?: string | null, readonly postalCode?: string | null, readonly state: string, readonly title: string }, readonly bankAccount?: { readonly __typename: 'BankAccount', readonly accountName?: string | null, readonly accountNumber: string, readonly accountType: string, readonly bankBranch: string, readonly bankName: string, readonly currency: string, readonly id?: string | null, readonly isDefault: boolean } | null, readonly verification: { readonly __typename: 'AccountUpgradeVerification', readonly status: AccountUpgradeVerificationStatus, readonly reasonCode?: string | null, readonly reasonMessage?: string | null, readonly reviewedAt?: number | null } } | null } };
 
 export type SupportedBanksQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6728,6 +6756,12 @@ export const LatestAccountUpgradeRequestDocument = gql`
       phoneNumber
       email
       idDocument
+      verification {
+        status
+        reasonCode
+        reasonMessage
+        reviewedAt
+      }
     }
   }
 }
