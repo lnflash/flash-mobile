@@ -1,16 +1,13 @@
-import React from "react"
-import { act, render, waitFor } from "@testing-library/react-native"
-import { Text } from "react-native"
+import { act, waitFor } from "@testing-library/react-native"
 import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager"
 import axios from "axios"
 
-import { FlashcardProvider } from "@app/contexts/Flashcard"
-import { useFlashcard } from "@app/hooks/useFlashcard"
-import { IsAuthedContextProvider } from "@app/graphql/is-authed-context"
-import { PersistentStateContext } from "@app/store/persistent-state"
-import { ThemeProvider } from "@rneui/themed"
-import theme from "@app/rne-theme/theme"
 import { buildSelectApdu } from "@app/utils/cashu-card"
+import {
+  FlashcardSnapshot,
+  PROVIDER_RENDER_TIMEOUT_MS,
+  renderProvider,
+} from "./flashcard-harness"
 
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
@@ -55,33 +52,7 @@ const transceive = NfcManager.isoDepHandler.transceive as jest.Mock
 const getTag = NfcManager.getTag as jest.Mock
 const cancelTechnologyRequest = NfcManager.cancelTechnologyRequest as jest.Mock
 
-type Snapshot = ReturnType<typeof useFlashcard>
-let latest: Snapshot | undefined
-
-const Probe = () => {
-  latest = useFlashcard()
-  return <Text>{latest.balanceInSats ?? "no-balance"}</Text>
-}
-
-const renderProvider = () =>
-  render(
-    <ThemeProvider theme={theme}>
-      <IsAuthedContextProvider value={true}>
-        <PersistentStateContext.Provider
-          value={{
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            persistentState: {} as any,
-            updateState: jest.fn(),
-            resetState: jest.fn(),
-          }}
-        >
-          <FlashcardProvider>
-            <Probe />
-          </FlashcardProvider>
-        </PersistentStateContext.Provider>
-      </IsAuthedContextProvider>
-    </ThemeProvider>,
-  )
+let latest: FlashcardSnapshot | undefined
 
 /**
  * Renders the provider and taps once. readFlashcard does not await handleTag,
@@ -90,7 +61,9 @@ const renderProvider = () =>
  * one release per tap.
  */
 const tapOnce = async () => {
-  renderProvider()
+  renderProvider((snapshot) => {
+    latest = snapshot
+  })
   await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
   await act(async () => {
     await latest?.readFlashcard(false)
@@ -99,8 +72,7 @@ const tapOnce = async () => {
 }
 
 describe("FlashcardProvider Cashu card orchestration", () => {
-  // First render pays the provider's module-load cost (rneui, nfc, animatable).
-  jest.setTimeout(30000)
+  jest.setTimeout(PROVIDER_RENDER_TIMEOUT_MS)
 
   let warn: jest.SpyInstance
 
@@ -203,7 +175,40 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     await tapOnce()
 
     expect(axios.get).not.toHaveBeenCalled()
-    expect(toastShow).not.toHaveBeenCalled()
+    expect(toastShow).toHaveBeenCalledWith(expect.objectContaining({ type: "error" }))
+    expect(toastShow).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "success" }),
+    )
     expect(latest?.balanceInSats).toBeUndefined()
+  })
+
+  it("tells the user when the card is lost mid-read and still ends the tap", async () => {
+    // SELECT succeeded, then the tag left the field: the native side rejects
+    // transceive (iOS readerTransceiveErrorTagConnectionLost, Android
+    // IOException). The user gets a toast, the session is released once,
+    // and the tap is not retried as a BoltCard.
+    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+    getTag.mockResolvedValue(NDEF_TAG)
+    transceive.mockImplementation(async (bytes: number[]) => {
+      if (bytes[1] === INS_SELECT) return ok([0, 2])
+      throw new Error("readerTransceiveErrorTagConnectionLost")
+    })
+
+    await tapOnce()
+
+    expect(toastShow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "error",
+        message:
+          "Couldn't read the card. Hold your phone steady against it and try again.",
+      }),
+    )
+    expect(toastShow).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "success" }),
+    )
+    expect(axios.get).not.toHaveBeenCalled()
+    expect(latest?.balanceInSats).toBeUndefined()
+    // The rethrow lands in handleTag's outer catch: still the one logging site.
+    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error))
   })
 })

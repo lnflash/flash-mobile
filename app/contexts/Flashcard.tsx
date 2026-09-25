@@ -16,7 +16,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
 import { toastShow } from "../utils/toast"
-import { readCashuCardBalance } from "../utils/cashu-card"
+import { CashuCardInfo, readCashuCardBalance } from "../utils/cashu-card"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -133,11 +133,25 @@ export const FlashcardProvider = ({ children }: Props) => {
       const tech = await NfcManager.requestTechnology([NfcTech.IsoDep, NfcTech.Ndef])
       const tag = await NfcManager.getTag()
       if (tech === NfcTech.IsoDep) {
-        const info = await readCashuCardBalance((bytes) =>
-          NfcManager.isoDepHandler.transceive(bytes),
-        )
+        let info: CashuCardInfo | null
+        try {
+          info = await readCashuCardBalance((bytes) =>
+            NfcManager.isoDepHandler.transceive(bytes),
+          )
+        } catch (err) {
+          // The card answered SELECT (or the channel itself dropped), so this
+          // tap is over: it must not be re-read as a BoltCard. Every NDEF-side
+          // failure toasts, so this one does too. Rethrowing keeps the outer
+          // catch as the only logging site and the finally as the only release.
+          toastShow({
+            position: "top",
+            message:
+              "Couldn't read the card. Hold your phone steady against it and try again.",
+            type: "error",
+          })
+          throw err
+        }
         if (info) {
-          setLoading(false)
           toastShow({
             position: "top",
             message: `Cashu card: ${info.balanceSat} sats (v${info.version})`,
