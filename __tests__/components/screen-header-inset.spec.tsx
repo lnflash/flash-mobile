@@ -50,7 +50,11 @@ variants.forEach(({ name, preset }) => {
       expect(edges).not.toContain("top")
     })
 
-    it("keeps the side and bottom edges, which no header reserves", () => {
+    // Says nothing about whether `bottom` is the *right* edge to keep on a tab
+    // screen — a bottom tab bar reserves it the same way a header reserves the
+    // top, which is ENG-612, still open. This only pins that the header does
+    // not reserve it.
+    it("keeps the side and bottom edges, which the header does not reserve", () => {
       const edges = edgesOf(renderScreen({ headerShown: true, preset }))
 
       expect(edges).toEqual(expect.arrayContaining(["left", "right", "bottom"]))
@@ -59,6 +63,14 @@ variants.forEach(({ name, preset }) => {
     it("pads all four edges with no header, where nothing else holds content clear", () => {
       // undefined `edges` is safe-area-context's own "all four, additive".
       expect(edgesOf(renderScreen({ headerShown: false, preset }))).toBeUndefined()
+    })
+
+    // Both `unsafe` branches render a bare View — `edges` is not a valid View
+    // prop. Pins that neither preset grew a safe-area wrapper back.
+    it("renders no safe-area wrapper when unsafe", () => {
+      const tree = renderScreen({ headerShown: true, preset, unsafe: true })
+
+      expect(tree.UNSAFE_queryAllByType(SafeAreaView)).toHaveLength(0)
     })
   })
 })

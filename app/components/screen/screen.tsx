@@ -1,14 +1,4 @@
-import { HeaderShownContext } from "@react-navigation/elements"
-import * as React from "react"
-import { KeyboardAvoidingView, ScrollView, View } from "react-native"
-import { Edge, SafeAreaView } from "react-native-safe-area-context"
-
-import { ScreenProps } from "./screen.props"
-import { isNonScrolling, offsets, presets } from "./screen.presets"
-import { isIos } from "../../utils/helper"
-import { useTheme } from "@rneui/themed"
-
-/**
+/*
  * Safe-area handling (ENG-605, Android 16 forced edge-to-edge).
  *
  * The wrapper is react-native-safe-area-context's SafeAreaView, not the core
@@ -20,7 +10,7 @@ import { useTheme } from "@rneui/themed"
  * (Android 15+ today, every Android 16 device at targetSdk 36) content is
  * pushed out from under the status and navigation bars.
  *
- * It is NOT position-aware, which is what `edges` below is for (ENG-611).
+ * It is NOT position-aware, which is what `edges` is for (ENG-611).
  * safe-area-context 5.x reads the nearest *provider's* insets verbatim and
  * does no frame math against the view's own position — Android resolves
  * `findProvider()` then `getSafeAreaInsets(providerView)`, iOS reads
@@ -36,6 +26,14 @@ import { useTheme } from "@rneui/themed"
  * when a header is shown above us; keep it when there is none, where this
  * wrapper is the only thing holding content out of the status bar.
  *
+ * The bottom edge has the same defect and is NOT fixed here — see ENG-612.
+ * A bottom tab bar also pads itself by `insets.bottom` and is laid out below
+ * the scene in normal flow, so on a tab screen this wrapper adds that inset a
+ * second time. It is not a one-line change: the routes that hide the tab bar
+ * with `tabBarStyle: { display: "none" }` (Chat → `messages`, Scan) still need
+ * the bottom inset, and `BottomTabBarHeightContext` cannot be trusted to read
+ * 0 for them without a device check. ENG-612 carries the detail.
+ *
  * Keyboard: KeyboardAvoidingView is `behavior="padding"` on iOS and
  * `undefined` on Android. With no behavior it renders a plain View, so it
  * contributes nothing on Android and cannot double up with the bottom inset
@@ -45,6 +43,17 @@ import { useTheme } from "@rneui/themed"
  * tracks the IME inset directly and subtracts the inset this wrapper already
  * applies.
  */
+import { HeaderShownContext } from "@react-navigation/elements"
+import * as React from "react"
+import { KeyboardAvoidingView, ScrollView, View } from "react-native"
+import { Edge, SafeAreaView } from "react-native-safe-area-context"
+
+import { ScreenProps } from "./screen.props"
+import { isNonScrolling, offsets, presets } from "./screen.presets"
+import { isIos } from "../../utils/helper"
+import { useTheme } from "@rneui/themed"
+
+/** The edges to pad under a navigation header: everything but `top`. */
 const EDGES_BELOW_HEADER: Edge[] = ["left", "right", "bottom"]
 
 /**
@@ -59,6 +68,7 @@ const useSafeAreaEdges = (): Edge[] | undefined => {
 
   return isHeaderShown ? EDGES_BELOW_HEADER : undefined
 }
+
 function ScreenWithoutScrolling(props: ScreenProps) {
   const {
     theme: { colors },
