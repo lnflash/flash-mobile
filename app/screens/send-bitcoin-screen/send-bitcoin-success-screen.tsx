@@ -153,7 +153,7 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen unsafe backgroundColor={colors.accent02}>
+    <Screen unsafe backgroundColor={colors.accent02} statusBar="light-content">
       <View style={styles.container}>
         <SuccessIconAnimation>
           <GaloyIcon name={"send-success"} size={128} />

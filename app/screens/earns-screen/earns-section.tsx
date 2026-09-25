@@ -276,7 +276,10 @@ export const EarnSection = ({ route }: Props) => {
   }
 
   return (
-    <Screen backgroundColor={colors._gold} statusBar="light-content">
+    // Same as earns-map-screen: the declaration predates ENG-609 wiring the
+    // prop. _gold is #fff200 in both themes, where white icons are 1.1:1 and
+    // invisible, so state the dark tint rather than inherit the theme's.
+    <Screen backgroundColor={colors._gold} statusBar="dark-content">
       <View style={styles.container}>
         <Carousel
           data={cards}

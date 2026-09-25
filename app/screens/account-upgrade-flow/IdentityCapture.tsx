@@ -162,7 +162,7 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
 
   if (pending) {
     return (
-      <Screen unsafe backgroundColor="#000">
+      <Screen unsafe backgroundColor="#000" statusBar="light-content">
         <CapturePreview
           uri={`file://${pending.tempPath}`}
           title={copy[side].title}
@@ -175,7 +175,7 @@ const IdentityCapture: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen unsafe backgroundColor="#000">
+    <Screen unsafe backgroundColor="#000" statusBar="light-content">
       <View style={[styles.header, { paddingTop: top + 8 }]}>
         <View style={styles.headerRow}>
           <Text type="h1" bold style={styles.headerText}>

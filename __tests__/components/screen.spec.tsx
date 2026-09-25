@@ -11,6 +11,7 @@ import * as React from "react"
 import {
   KeyboardAvoidingView,
   ScrollView,
+  StatusBar,
   StyleProp,
   StyleSheet,
   Text,
@@ -162,5 +163,60 @@ describe("Screen safe-area wrapper (ENG-605)", () => {
     const screen = renderScreen(EDGE_TO_EDGE)
 
     expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBe("padding")
+  })
+})
+
+// ENG-609. `statusBar` was declared and documented on ScreenProps since the
+// Ignite template and read by nothing, which was harmless only while the global
+// tint happened to be "light-content" — the two screens that passed it got what
+// they asked for by accident. ThemedStatusBar removed that accident, so the
+// prop had to become real: a screen painting its own full-bleed field under the
+// status bar (a camera view, a coloured success screen) needs to state its tint
+// and get it.
+describe("Screen status-bar override (ENG-609)", () => {
+  const statusBarsIn = (screen: ReturnType<typeof renderScreen>) =>
+    screen.UNSAFE_queryAllByType(StatusBar)
+
+  it("renders no entry of its own when the screen states no tint", () => {
+    // Silence here is the feature: with nothing in the stack from Screen, the
+    // themed entry at the app root decides, which is what every ordinary screen
+    // wants.
+    expect(statusBarsIn(renderScreen(EDGE_TO_EDGE))).toHaveLength(0)
+    expect(statusBarsIn(renderScreen(EDGE_TO_EDGE, { preset: "scroll" }))).toHaveLength(0)
+  })
+
+  const tints = ["light-content", "dark-content"] as const
+
+  tints.forEach((statusBar) => {
+    it(`renders the declared ${statusBar} tint on the fixed preset`, () => {
+      const screen = renderScreen(EDGE_TO_EDGE, { statusBar, backgroundColor: "#000" })
+
+      const bar = screen.UNSAFE_getByType(StatusBar)
+      expect(bar.props.barStyle).toBe(statusBar)
+      // Android <= 14 still paints a real band; it should be the screen's own
+      // field, not the themed white one inherited from the app root.
+      expect(bar.props.backgroundColor).toBe("#000")
+    })
+  })
+
+  it("renders the declared tint on the scroll preset too", () => {
+    const screen = renderScreen(EDGE_TO_EDGE, {
+      preset: "scroll",
+      statusBar: "light-content",
+      backgroundColor: "#007856",
+    })
+
+    const bar = screen.UNSAFE_getByType(StatusBar)
+    expect(bar.props.barStyle).toBe("light-content")
+    expect(bar.props.backgroundColor).toBe("#007856")
+  })
+
+  it("leaves the band colour undefined when the screen names no background", () => {
+    // React Native merges the StatusBar stack per prop and skips undefined, so
+    // an override that only names a tint still inherits the themed band rather
+    // than resetting it to the platform default grey.
+    const screen = renderScreen(EDGE_TO_EDGE, { statusBar: "light-content" })
+
+    expect(screen.UNSAFE_getByType(StatusBar).props.backgroundColor).toBeUndefined()
   })
 })

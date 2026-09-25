@@ -43,7 +43,7 @@ const Success: React.FC<Props> = ({ navigation, route }) => {
     : LL.AccountUpgrade.successVerified()
 
   return (
-    <Screen backgroundColor={colors.primary}>
+    <Screen backgroundColor={colors.primary} statusBar="light-content">
       <View style={styles.wrapper}>
         <Text type="h02" bold style={styles.header}>
           {successText}

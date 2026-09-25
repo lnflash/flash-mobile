@@ -53,14 +53,71 @@
  * applies.
  */
 import { HeaderShownContext } from "@react-navigation/elements"
+import { NavigationContext, useIsFocused } from "@react-navigation/native"
 import * as React from "react"
-import { KeyboardAvoidingView, ScrollView, View } from "react-native"
+import { KeyboardAvoidingView, ScrollView, StatusBar, View } from "react-native"
 import { Edge, SafeAreaView } from "react-native-safe-area-context"
 
 import { ScreenProps } from "./screen.props"
 import { isNonScrolling, offsets, presets } from "./screen.presets"
 import { isIos } from "../../utils/helper"
 import { useTheme } from "@rneui/themed"
+
+/**
+ * The per-screen half of the status-bar story (ENG-609).
+ *
+ * ThemedStatusBar sets the app-wide tint from the theme mode, which is right
+ * for screens that use the theme background. It is wrong for a screen that
+ * paints its own full-bleed field under the status bar — a black camera view,
+ * a green success screen — and under Android 15+ forced edge-to-edge there is
+ * no opaque band left to hide the mismatch, so the clock and signal icons land
+ * straight on that field. Those screens declare `statusBar` and get it here.
+ *
+ * React Native merges the mounted StatusBar stack per prop, so this entry
+ * overrides only what it sets: an undefined `backgroundColor` still falls
+ * through to the themed entry rather than resetting to the platform default.
+ * We pass the screen's own background because that is what the band should be
+ * on Android <= 14, where the window still draws a real, opaque one.
+ *
+ * Why focus matters: that stack is mount-ordered and last-mounted-wins
+ * (RN's StatusBar pushes on mount and pops only on unmount), and the stack
+ * navigator keeps routes below the top mounted. An entry that lives as long
+ * as the component would therefore leak onto every screen pushed afterwards —
+ * the scanner's `light-content` following you into a white send-details
+ * screen, which is the ENG-609 symptom all over again. Rendering it only
+ * while the route is focused keeps the override scoped to the screen that
+ * asked for it.
+ *
+ * `useIsFocused` throws outside a navigator, and ErrorScreen renders `Screen`
+ * above NavigationContainerWrapper, so fall back to an unscoped entry when
+ * there is no navigation context — there is nothing to leak onto there.
+ *
+ * The prop was declared and documented since the original Ignite template but
+ * never read, so `earns-map-screen` and `earns-section` asked for
+ * "light-content" and silently got whatever the global was.
+ */
+const FocusedStatusBar: React.FC<{
+  barStyle: NonNullable<ScreenProps["statusBar"]>
+  backgroundColor?: string
+}> = ({ barStyle, backgroundColor }) =>
+  useIsFocused() ? (
+    <StatusBar barStyle={barStyle} backgroundColor={backgroundColor} />
+  ) : null
+
+const ScreenStatusBar: React.FC<Pick<ScreenProps, "statusBar" | "backgroundColor">> = ({
+  statusBar,
+  backgroundColor,
+}) => {
+  const isInsideNavigator = React.useContext(NavigationContext) !== undefined
+
+  if (!statusBar) return null
+
+  return isInsideNavigator ? (
+    <FocusedStatusBar barStyle={statusBar} backgroundColor={backgroundColor} />
+  ) : (
+    <StatusBar barStyle={statusBar} backgroundColor={backgroundColor} />
+  )
+}
 
 /** The edges to pad under a navigation header: everything but `top`. */
 const EDGES_BELOW_HEADER: Edge[] = ["left", "right", "bottom"]
@@ -97,6 +154,10 @@ function ScreenWithoutScrolling(props: ScreenProps) {
       behavior={isIos ? "padding" : undefined}
       keyboardVerticalOffset={offsets[props.keyboardOffset || "none"]}
     >
+      <ScreenStatusBar
+        statusBar={props.statusBar}
+        backgroundColor={props.backgroundColor}
+      />
       {props.unsafe ? (
         <View style={[preset.inner, style]}>{props.children}</View>
       ) : (
@@ -136,6 +197,10 @@ function ScreenWithScrolling(props: ScreenProps) {
       behavior={isIos ? "padding" : undefined}
       keyboardVerticalOffset={offsets[props.keyboardOffset || "none"]}
     >
+      <ScreenStatusBar
+        statusBar={props.statusBar}
+        backgroundColor={props.backgroundColor}
+      />
       {props.unsafe ? (
         <View style={[preset.outer, backgroundStyle]}>{scroller}</View>
       ) : (

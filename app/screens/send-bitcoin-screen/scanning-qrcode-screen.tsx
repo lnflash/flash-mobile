@@ -196,7 +196,9 @@ export const ScanningQRCodeScreen = () => {
   }
 
   return (
-    <Screen unsafe>
+    // The camera fills the window, status-bar strip included, so the icons need
+    // the light tint whatever the theme says (ENG-609).
+    <Screen unsafe backgroundColor="#000" statusBar="light-content">
       <QRCamera device={device} processInvoice={processInvoice} />
       <ActionBtns processInvoice={processInvoice} />
     </Screen>

@@ -31,7 +31,7 @@ const InviteFriendSuccess: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen unsafe backgroundColor={colors.accent02}>
+    <Screen unsafe backgroundColor={colors.accent02} statusBar="light-content">
       <View style={styles.container}>
         <SendSuccess width={width / 1.2} height={width / 1.2} />
         <Text type="h02" color={colors.white} style={styles.title}>

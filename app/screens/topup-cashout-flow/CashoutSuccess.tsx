@@ -25,7 +25,7 @@ const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen backgroundColor={colors.accent02}>
+    <Screen backgroundColor={colors.accent02} statusBar="light-content">
       <View style={styles.container}>
         <GaloyIcon name={"send-success"} size={128} />
         <Text type="h01" style={styles.successText}>
