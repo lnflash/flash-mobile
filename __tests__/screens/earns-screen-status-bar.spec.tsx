@@ -16,7 +16,7 @@ import * as React from "react"
 import { StatusBar } from "react-native"
 import { createTheme, ThemeMode, ThemeProvider } from "@rneui/themed"
 import { MockedProvider } from "@apollo/client/testing"
-import { render, RenderAPI } from "@testing-library/react-native"
+import { fireEvent, render, RenderAPI } from "@testing-library/react-native"
 
 import appTheme from "../../app/rne-theme/theme"
 import { dark, light } from "../../app/rne-theme/colors"
@@ -157,6 +157,24 @@ describe("the earns flow tints the status bar for its field, in both themes", ()
         expect(tints).toContain("dark-content")
         expect(tints).not.toContain("light-content")
       })
+    })
+  })
+
+  // The quiz's answer sheet renders its backdrop inside the Screen
+  // (coverScreen={false}), so with the sheet open the field under the status
+  // bar is 0.7 black over #E6EBEf, not #E6EBEf — and the tint has to follow it.
+  ;(["light", "dark"] as ThemeMode[]).forEach((mode) => {
+    it(`EarnQuiz: light icons once the answer sheet is open, in ${mode} mode`, () => {
+      const [, element] = screens[1]
+      const tree = inMode(mode, element())
+
+      expect(tintsDeclaredBy(tree)).not.toContain("light-content")
+
+      fireEvent.press(tree.getByText(/^Earn /))
+
+      const tints = tintsDeclaredBy(tree)
+      expect(tints).toContain("light-content")
+      expect(tints).not.toContain("dark-content")
     })
   })
 })
