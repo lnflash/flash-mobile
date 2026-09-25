@@ -61,9 +61,7 @@ export const UpgradeTrialAccount: React.FC = () => {
             ? LL.TransactionLimitsScreen.editRequest()
             : LL.TransactionLimitsScreen.requestUpgrade()
         }
-        btnStyle={
-          upgradePending || upgradeNeedsResubmit ? { backgroundColor: "#FF7e1c" } : {}
-        }
+        btnStyle={upgradePending || upgradeNeedsResubmit ? styles.awaitingReview : {}}
         onPress={() => navigation.navigate("AccountType")}
       />
     )
@@ -84,6 +82,8 @@ const useStyles = makeStyles(({ colors }) => ({
     rowGap: 10,
   },
   selfCenter: { alignSelf: "center" },
+  // Orange while the request is with a reviewer, or needs the customer to resubmit.
+  awaitingReview: { backgroundColor: colors._orange },
   sideBySide: {
     display: "flex",
     flexDirection: "row",

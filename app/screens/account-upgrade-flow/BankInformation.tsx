@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react"
-import { ScrollView } from "react-native"
+import { Alert, ScrollView } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -95,7 +95,7 @@ const BankInformation: React.FC<Props> = ({ navigation }) => {
       if (res.success) {
         navigation.navigate("AccountUpgradeSuccess")
       } else if (res.errors?.length) {
-        alert(res.errors.join(", "))
+        Alert.alert("", res.errors.join(", "))
       }
     }
   }
