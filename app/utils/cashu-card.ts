@@ -7,17 +7,24 @@
  * spec/APDU.md Profile B). Read-only: select the applet, GET_INFO,
  * GET_BALANCE — enough to show a card's balance from the consumer app.
  *
- * Wire notes (verified against cardctl, the reference driver):
- *   SELECT  : 00 A4 04 00 07 + applet AID  → 9000 + 2-byte version
- *   GET_INFO: B0 01 00 00 (Le 256)         → 8-byte body
- *   GET_BAL : B0 11 00 00 (Le 4)           → 4-byte big-endian sat
+ * Wire notes (mirrors cardctl, the reference driver):
+ *   SELECT  : 00 A4 04 00 07 + package AID   → 9000 + 2-byte version
+ *             retried as 00 A4 04 00 08 + applet AID when the card declines
+ *             the 7-byte prefix match (spec/APDU.md "SELECT")
+ *   GET_INFO: B0 01 00 00 00 (Le 00 = 256)   → 8-byte body
+ *   GET_BAL : B0 11 00 00 04 (Le 4)          → 4-byte big-endian uint32
  *
  * The applet must be selected before any command: IsoDep channels address the
  * card's currently-active application, and the Cashu applet is not the
  * default one.
  */
 export const CASHU_AID = [0xd2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x02]
+/** Full applet-instance AID: the package AID plus the 0x01 instance suffix. */
+export const CASHU_APPLET_AID = [...CASHU_AID, 0x01]
 const SW_OK = 0x9000
+
+const GET_INFO_APDU = [0xb0, 0x01, 0x00, 0x00, 0x00]
+const GET_BALANCE_APDU = [0xb0, 0x11, 0x00, 0x00, 0x04]
 
 export interface CashuCardInfo {
   version: string
@@ -31,13 +38,13 @@ export interface CashuCardInfo {
 const sw = (response: number[]): number =>
   (response[response.length - 2] << 8) | response[response.length - 1]
 
-export const buildSelectApdu = (): number[] => [
+export const buildSelectApdu = (aid: number[] = CASHU_AID): number[] => [
   0x00,
   0xa4,
   0x04,
   0x00,
-  CASHU_AID.length,
-  ...CASHU_AID,
+  aid.length,
+  ...aid,
 ]
 
 export const parseInfo = (body: number[]): Omit<CashuCardInfo, "balanceSat"> => {
@@ -56,7 +63,9 @@ export const parseBalance = (body: number[]): number => {
   if (body.length !== 4) {
     throw new Error(`GET_BALANCE: expected 4 bytes, got ${body.length}`)
   }
-  return (body[0] << 24) | (body[1] << 16) | (body[2] << 8) | body[3]
+  // `|` yields a signed 32-bit int; `>>> 0` reinterprets it as the uint32 the
+  // card sends, so balances >= 0x80000000 don't come back negative.
+  return ((body[0] << 24) | (body[1] << 16) | (body[2] << 8) | body[3]) >>> 0
 }
 
 export type IsoDepTransceive = (bytes: number[]) => Promise<number[]>
@@ -69,15 +78,21 @@ export type IsoDepTransceive = (bytes: number[]) => Promise<number[]>
 export const readCashuCardBalance = async (
   transceive: IsoDepTransceive,
 ): Promise<CashuCardInfo | null> => {
-  const select = await transceive(buildSelectApdu())
+  // ISO 7816-4 SELECT does prefix matching, so the 7-byte package AID normally
+  // selects the applet instance. Runtimes that decline partial matches need the
+  // full 8-byte applet AID; cardctl retries the same way.
+  let select = await transceive(buildSelectApdu(CASHU_AID))
+  if (sw(select) !== SW_OK) {
+    select = await transceive(buildSelectApdu(CASHU_APPLET_AID))
+  }
   if (sw(select) !== SW_OK) {
     return null
   }
-  const info = await transceive([0xb0, 0x01, 0x00, 0x00])
+  const info = await transceive(GET_INFO_APDU)
   if (sw(info) !== SW_OK) {
     throw new Error(`GET_INFO failed: ${sw(info).toString(16)}`)
   }
-  const balance = await transceive([0xb0, 0x11, 0x00, 0x00, 0x04])
+  const balance = await transceive(GET_BALANCE_APDU)
   if (sw(balance) !== SW_OK) {
     throw new Error(`GET_BALANCE failed: ${sw(balance).toString(16)}`)
   }
