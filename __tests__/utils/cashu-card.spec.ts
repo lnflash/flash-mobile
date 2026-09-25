@@ -22,6 +22,10 @@ const INFO_BODY = [0, 2, 32, 1, 7, 0x07, 1, 0]
 const BALANCE_BODY = [0, 0, 0x01, 0xf4]
 const SW_FILE_NOT_FOUND = [0x6a, 0x82]
 const SW_UNKNOWN = [0x6f, 0x00]
+/** JavaCard runtime: the applet exists but its select() failed. */
+const SW_APPLET_SELECT_FAILED = [0x69, 0x99]
+/** GlobalPlatform: the instance is present but locked. */
+const SW_LOCKED = [0x62, 0x83]
 
 const ok = (data: number[]) => [...data, 0x90, 0x00]
 const hex = (bytes: number[]) =>
@@ -77,6 +81,16 @@ describe("cashu-card parser", () => {
 })
 
 describe("readCashuCardBalance", () => {
+  let warn: jest.SpyInstance
+
+  beforeEach(() => {
+    warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    warn.mockRestore()
+  })
+
   it("selects, reads info and balance over the IsoDep channel", async () => {
     const card = scriptedCard([
       [SELECT_PACKAGE, ok([0, 2])],
@@ -120,6 +134,41 @@ describe("readCashuCardBalance", () => {
     await expect(readCashuCardBalance(card.transceive)).resolves.toBeNull()
     // Nothing is sent to a card that isn't ours.
     expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+    // 6A82 to both forms is the BoltCard/NTAG 424 answer the NDEF fall-through
+    // relies on: an expected outcome, not one worth a log line.
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it("a card that refuses the package AID with anything but 6A82 resolves null and says so", async () => {
+    // spec/APDU.md "SELECT": a double refusal "looks like an uninstalled
+    // applet" — but 6999 is an installed applet whose select() failed, which
+    // the caller would otherwise misreport as "not a Cashu card". Both status
+    // words are logged (a status word carries no secret), then null so the
+    // tap still falls through instead of aborting.
+    const card = scriptedCard([
+      [SELECT_PACKAGE, SW_APPLET_SELECT_FAILED],
+      [SELECT_APPLET, SW_FILE_NOT_FOUND],
+    ])
+
+    await expect(readCashuCardBalance(card.transceive)).resolves.toBeNull()
+    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(
+      "Cashu applet SELECT refused: package AID 6999, applet AID 6a82",
+    )
+  })
+
+  it("a locked applet instance resolves null and logs both status words", async () => {
+    const card = scriptedCard([
+      [SELECT_PACKAGE, SW_LOCKED],
+      [SELECT_APPLET, SW_LOCKED],
+    ])
+
+    await expect(readCashuCardBalance(card.transceive)).resolves.toBeNull()
+    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+    expect(warn).toHaveBeenCalledWith(
+      "Cashu applet SELECT refused: package AID 6283, applet AID 6283",
+    )
   })
 
   it("genuine status failures throw", async () => {

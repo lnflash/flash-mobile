@@ -21,6 +21,8 @@ import { toastShow } from "@app/utils/toast"
 //     on the tag), reached only when the request resolved with IsoDep
 //   - one requestTechnology per tap, whatever the card turns out to be
 //   - a cancelled request ends the tap; it never opens a second session
+//   - getTag() runs only on the NDEF path, after the applet SELECT: on iOS
+//     it is a live NDEF read, so it must never precede or follow a Cashu read
 
 const ok = (data: number[]) => [...data, 0x90, 0x00]
 const SW_FILE_NOT_FOUND = [0x6a, 0x82]
@@ -105,6 +107,9 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     // The applet SELECT goes out first, verbatim, over the manager's handler.
     expect(transceive.mock.calls[0][0]).toEqual(buildSelectApdu())
     expect(transceive).toHaveBeenCalledTimes(3)
+    // The applet is the only thing this tap talks to: no NDEF read before the
+    // SELECT (neither cardctl nor flash-pos sends one) and none after it.
+    expect(getTag).not.toHaveBeenCalled()
     expect(toastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "success",
@@ -125,6 +130,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(transceive).not.toHaveBeenCalled()
     await waitFor(() => expect(latest?.balanceInSats).toBe(1234))
     expect(requestTechnology).toHaveBeenCalledTimes(1)
+    expect(getTag).toHaveBeenCalledTimes(1)
   })
 
   it("falls through to the NDEF flow on the same tap when the applet SELECT is refused", async () => {
@@ -144,6 +150,12 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     // Both SELECT forms were tried, nothing more.
     expect(transceive).toHaveBeenCalledTimes(2)
     expect(transceive.mock.calls.every((call) => call[0][1] === INS_SELECT)).toBe(true)
+    // ...and the NDEF read came after them, not before.
+    expect(getTag.mock.invocationCallOrder[0]).toBeGreaterThan(
+      transceive.mock.invocationCallOrder[1],
+    )
+    // A plain 6A82/6A82 refusal is the expected BoltCard answer: nothing to log.
+    expect(warn).not.toHaveBeenCalled()
     expect(toastShow).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: "success" }),
     )
@@ -175,6 +187,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     await tapOnce()
 
     expect(axios.get).not.toHaveBeenCalled()
+    expect(getTag).not.toHaveBeenCalled()
     expect(toastShow).toHaveBeenCalledWith(expect.objectContaining({ type: "error" }))
     expect(toastShow).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: "success" }),
@@ -207,6 +220,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
       expect.objectContaining({ type: "success" }),
     )
     expect(axios.get).not.toHaveBeenCalled()
+    expect(getTag).not.toHaveBeenCalled()
     expect(latest?.balanceInSats).toBeUndefined()
     // The rethrow lands in handleTag's outer catch: still the one logging site.
     expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error))

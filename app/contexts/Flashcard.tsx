@@ -130,8 +130,14 @@ export const FlashcardProvider = ({ children }: Props) => {
       // IsoDep tag (e.g. an NTAG 424 BoltCard) continues into the NDEF flow on
       // the same tap. A rejected request (user cancel, timeout) propagates to
       // the outer catch; it must never open a second session.
+      //
+      // The applet SELECT is the first APDU on the wire, as in cardctl and
+      // flash-pos. getTag() waits for the NDEF path: on Android it returns
+      // the message cached at discovery, but on iOS it is a live Type-4 NDEF
+      // read (NfcManager.m readNDEFWithCompletionHandler) that would SELECT
+      // the NDEF application on a Cashu card, which has none, before we had
+      // spoken to the applet at all.
       const tech = await NfcManager.requestTechnology([NfcTech.IsoDep, NfcTech.Ndef])
-      const tag = await NfcManager.getTag()
       if (tech === NfcTech.IsoDep) {
         let info: CashuCardInfo | null
         try {
@@ -162,6 +168,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         // The applet SELECT was refused: not a Cashu card. Parse the same
         // tag's NDEF message below.
       }
+      const tag = await NfcManager.getTag()
       if (tag && tag.id) {
         const ndefRecord = tag?.ndefMessage?.[0]
         // eslint-disable-next-line no-negated-condition
