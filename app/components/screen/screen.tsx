@@ -28,8 +28,12 @@
  * `headerTransparent` breaks this equivalence — the header floats absolutely
  * and reserves nothing (stack: `isFloatHeaderAbsolute` in CardStack; bottom
  * tabs: the header's `styles.absolute`), but HeaderShownContext is still
- * true, so a transparent-header route must pass `unsafe` or reinstate the top
- * inset itself. No route uses it today.
+ * true, so such a route would sit under the status bar. No route uses it
+ * today. If one is added, it must reinstate the top inset on its own content
+ * (`useSafeAreaInsets().top`). Do NOT reach for `unsafe`: that swaps the
+ * whole SafeAreaView for a bare View, dropping left, right and bottom too,
+ * which on an edge-to-edge window runs the content under the navigation bar
+ * — the very defect this wrapper exists to prevent.
  *
  * The bottom edge has the same defect and is NOT fixed here — see ENG-612.
  * A bottom tab bar also pads itself by `insets.bottom` and is laid out below
