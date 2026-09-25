@@ -225,7 +225,7 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
       statusBar={statusBarTintFor(CAMERA_FIELD)}
     >
       {pending ? (
-        <View style={{ flex: 1, backgroundColor: CAMERA_FIELD }} />
+        <View style={styles.cameraPlaceholder} />
       ) : (
         <QRCamera device={device} processInvoice={processQRCode} />
       )}
@@ -237,6 +237,10 @@ const SignInViaQRCode: React.FC<Props> = ({ navigation }) => {
 export default SignInViaQRCode
 
 const useStyles = makeStyles(() => ({
+  cameraPlaceholder: {
+    flex: 1,
+    backgroundColor: CAMERA_FIELD,
+  },
   close: {
     height: "100%",
     justifyContent: "center",
