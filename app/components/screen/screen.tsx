@@ -25,6 +25,11 @@
  * status-bar-high band of dead space under the header. Drop the top edge
  * when a header is shown above us; keep it when there is none, where this
  * wrapper is the only thing holding content out of the status bar.
+ * `headerTransparent` breaks this equivalence — the header floats absolutely
+ * and reserves nothing (stack: `isFloatHeaderAbsolute` in CardStack; bottom
+ * tabs: the header's `styles.absolute`), but HeaderShownContext is still
+ * true, so a transparent-header route must pass `unsafe` or reinstate the top
+ * inset itself. No route uses it today.
  *
  * The bottom edge has the same defect and is NOT fixed here — see ENG-612.
  * A bottom tab bar also pads itself by `insets.bottom` and is laid out below
@@ -60,8 +65,9 @@ const EDGES_BELOW_HEADER: Edge[] = ["left", "right", "bottom"]
  * The edges the safe-area wrapper should pad. `undefined` means all four.
  *
  * HeaderShownContext is true when this screen, or any parent screen, shows a
- * navigation header — the same signal the header itself uses to decide
- * whether to reserve the status bar.
+ * navigation header. A header reserves the status bar unless it is
+ * `headerTransparent`, which this context cannot distinguish — see the banner
+ * at the top of the file.
  */
 const useSafeAreaEdges = (): Edge[] | undefined => {
   const isHeaderShown = React.useContext(HeaderShownContext)

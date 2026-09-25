@@ -20,6 +20,7 @@ import {
 import { render } from "@testing-library/react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { createTheme, ThemeProvider } from "@rneui/themed"
+import { HeaderShownContext } from "@react-navigation/elements"
 
 import { Screen } from "@app/components/screen"
 
@@ -33,15 +34,22 @@ jest.mock("react-native-safe-area-context", () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const shared = require("../helpers/safe-area-context-mock").build()
 
-  // Stand-in for the native view: pads by the provider insets on all edges.
+  // Stand-in for the native view: pads by the provider insets, on the edges
+  // named by `edges` (the library's own default, `undefined`, means all four).
+  // Honouring the prop matters since ENG-611 — Screen drops `top` under a
+  // navigation header, and a mock that always padded top would keep asserting
+  // a status-bar pad the component no longer applies.
   const SafeAreaViewMock = ({
     children,
+    edges,
     style,
   }: {
     children: React.ReactNode
+    edges?: string[]
     style?: unknown
   }) => {
     const insets = shared.useSafeAreaInsets()
+    const on = (edge: string) => !edges || edges.includes(edge)
     return ReactActual.createElement(
       RNView,
       {
@@ -49,10 +57,10 @@ jest.mock("react-native-safe-area-context", () => {
         style: [
           style,
           {
-            paddingTop: insets.top,
-            paddingBottom: insets.bottom,
-            paddingLeft: insets.left,
-            paddingRight: insets.right,
+            paddingTop: on("top") ? insets.top : 0,
+            paddingBottom: on("bottom") ? insets.bottom : 0,
+            paddingLeft: on("left") ? insets.left : 0,
+            paddingRight: on("right") ? insets.right : 0,
           },
         ],
       },
@@ -72,15 +80,18 @@ const NOT_EDGE_TO_EDGE = { top: 0, bottom: 0, left: 0, right: 0 }
 const renderScreen = (
   insets: typeof EDGE_TO_EDGE,
   props: React.ComponentProps<typeof Screen> = {},
+  headerShown = false,
 ) =>
   render(
     <ThemeProvider theme={createTheme({})}>
       <SafeAreaProvider
         initialMetrics={{ insets, frame: { x: 0, y: 0, width: 0, height: 0 } }}
       >
-        <Screen {...props}>
-          <Text>child</Text>
-        </Screen>
+        <HeaderShownContext.Provider value={headerShown}>
+          <Screen {...props}>
+            <Text>child</Text>
+          </Screen>
+        </HeaderShownContext.Provider>
       </SafeAreaProvider>
     </ThemeProvider>,
   )
@@ -133,6 +144,18 @@ describe("Screen safe-area wrapper (ENG-605)", () => {
     const wrapper = getByText("child").parent?.parent
     expect(wrapper?.type).toBe(View)
     expect(flat(wrapper as { props: { style?: unknown } }).paddingTop).toBeUndefined()
+  })
+
+  // The companion spec (screen-header-inset.spec.tsx) pins the `edges` prop
+  // Screen passes. This one pins what that prop costs in real padding, so the
+  // mock above cannot drift back into padding top unconditionally.
+  it("drops the top pad under a navigation header, keeping the bottom one", () => {
+    const { getByTestId } = renderScreen(EDGE_TO_EDGE, {}, true)
+
+    expect(flat(getByTestId(SAFE_AREA_VIEW_TEST_ID))).toMatchObject({
+      paddingTop: 0,
+      paddingBottom: 34,
+    })
   })
 
   it("uses the iOS keyboard behavior on iOS (jest default platform)", () => {
