@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react"
 import Rate from "react-native-rate"
 import { View, Alert, InteractionManager } from "react-native"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { makeStyles, Text, useTheme, useThemeMode } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -33,6 +33,8 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const client = useApolloClient()
   const styles = useStyles()
   const { colors } = useTheme().theme
+  // accent02 is a light green in the dark theme, where white icons wash out.
+  const { mode } = useThemeMode()
   const { bottom } = useSafeAreaInsets()
   const { LL } = useI18nContext()
   const { convertMoneyAmount } = usePriceConversion()
@@ -113,8 +115,7 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
   if (isNonZeroMoneyAmount(unitOfAccountAmount)) {
     const isBtcDenominatedCashWalletAmount =
-      (walletCurrency === WalletCurrency.Usd ||
-        walletCurrency === WalletCurrency.Usdt) &&
+      (walletCurrency === WalletCurrency.Usd || walletCurrency === WalletCurrency.Usdt) &&
       unitOfAccountAmount.currency === WalletCurrency.Btc
 
     const primaryAmount = convertMoneyAmount(unitOfAccountAmount, DisplayCurrency)
@@ -153,7 +154,11 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <Screen unsafe backgroundColor={colors.accent02} statusBar="light-content">
+    <Screen
+      unsafe
+      backgroundColor={colors.accent02}
+      statusBar={mode === "dark" ? "dark-content" : "light-content"}
+    >
       <View style={styles.container}>
         <SuccessIconAnimation>
           <GaloyIcon name={"send-success"} size={128} />

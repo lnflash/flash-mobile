@@ -104,11 +104,25 @@ const FocusedStatusBar: React.FC<{
     <StatusBar barStyle={barStyle} backgroundColor={backgroundColor} />
   ) : null
 
+/**
+ * Stand-in for NavigationContext when there isn't one to read.
+ *
+ * Fourteen specs mock `@react-navigation/native` with a partial object that
+ * omits NavigationContext, so the import is `undefined` there and
+ * `useContext(undefined)` throws. Reading this empty context instead yields
+ * `undefined` — the same answer as "not inside a navigator", which is the
+ * behaviour those specs want anyway.
+ */
+const NoNavigationContext = React.createContext<unknown>(undefined)
+
 const ScreenStatusBar: React.FC<Pick<ScreenProps, "statusBar" | "backgroundColor">> = ({
   statusBar,
   backgroundColor,
 }) => {
-  const isInsideNavigator = React.useContext(NavigationContext) !== undefined
+  const isInsideNavigator =
+    React.useContext(
+      (NavigationContext ?? NoNavigationContext) as React.Context<unknown>,
+    ) !== undefined
 
   if (!statusBar) return null
 

@@ -2,7 +2,7 @@ import React from "react"
 import { View } from "react-native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { StackScreenProps } from "@react-navigation/stack"
-import { makeStyles, Text, useTheme } from "@rneui/themed"
+import { makeStyles, Text, useTheme, useThemeMode } from "@rneui/themed"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
 // components
@@ -15,6 +15,8 @@ type Props = StackScreenProps<RootStackParamList, "CashoutSuccess">
 const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
+  // accent02 is a light green in the dark theme, where white icons wash out.
+  const { mode } = useThemeMode()
   const styles = useStyles()
 
   const onPressDone = () => {
@@ -25,7 +27,10 @@ const CashoutSuccess: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <Screen backgroundColor={colors.accent02} statusBar="light-content">
+    <Screen
+      backgroundColor={colors.accent02}
+      statusBar={mode === "dark" ? "dark-content" : "light-content"}
+    >
       <View style={styles.container}>
         <GaloyIcon name={"send-success"} size={128} />
         <Text type="h01" style={styles.successText}>
