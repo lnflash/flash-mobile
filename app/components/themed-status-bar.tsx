@@ -1,27 +1,54 @@
-import { useThemeMode } from "@rneui/themed"
+import { useTheme, useThemeMode } from "@rneui/themed"
 import * as React from "react"
 import { StatusBar } from "react-native"
 
 /**
- * Status-bar icon tint, taken from the active theme.
+ * Status-bar icon tint and background, taken from the active theme.
  *
- * Android 15+ enforces edge-to-edge and ignores StatusBar.setBackgroundColor,
- * so the black band this used to paint never rendered and the app's own
- * content sat behind the bar instead. The tint stayed hard-coded to
- * "light-content", which put white icons on white screens (ENG-609). The tint
- * is a separate API and still works, so drive it from the theme: dark icons on
- * the light theme, light icons on the dark theme. The same reasoning applies on
- * iOS, where leaving barStyle undefined gave dark icons in dark mode.
+ * The tint used to be hard-coded to "light-content" while the background was
+ * hard-coded to black. On Android 15+ edge-to-edge is enforced and
+ * StatusBar.setBackgroundColor is a no-op for apps targeting SDK 35+, so the
+ * black band stopped rendering, the app's own white content showed through, and
+ * the white icons went invisible (ENG-609).
  *
- * Screens that own a dark header (FeaturedProfileView, NIP17Chat) push their
- * own StatusBar entry. React Native merges the mounted stack and the last
- * defined value wins per prop, so those overrides keep working and NIP17Chat,
- * which sets no barStyle, still inherits this one.
+ * Both props are therefore driven from the theme rather than dropped: the tint
+ * flips with the mode, and the background is painted with the same `colors.white`
+ * token `Screen` uses for its own background. That matters because minSdkVersion
+ * is 26 (android/build.gradle) and the app theme sets no android:statusBarColor
+ * (android/app/src/main/res/values/styles.xml), so on Android 8-14 the window
+ * still paints a real, opaque band. With no entry in the StatusBar stack setting
+ * a background, RN would fall back to the platform default (#757575 grey) there.
+ * Painting `colors.white` keeps the band matching the content underneath on
+ * Android <= 14 and reproduces the Android 15+ look. On iOS the prop is ignored,
+ * and the barStyle fix also covers iOS dark mode, where leaving barStyle
+ * undefined gave dark icons on a dark background.
  *
- * Must be rendered inside ThemeProvider — it reads the theme mode.
+ * FeaturedProfileView owns a dark header (#0a0a0a) and pushes its own
+ * "light-content" entry, so it is unaffected. NIP17Chat is a light-in-light-theme
+ * screen that sets only `translucent`/`transparent` and no barStyle; React Native
+ * merges the mounted StatusBar stack per prop, so it inherits this barStyle and
+ * is fixed by this change rather than exempted from it.
+ *
+ * Must be rendered inside ThemeProvider — it reads the theme.
  */
 export const ThemedStatusBar: React.FC = () => {
+  const { theme } = useTheme()
   const { mode } = useThemeMode()
 
-  return <StatusBar barStyle={mode === "dark" ? "light-content" : "dark-content"} />
+  if (__DEV__ && !theme) {
+    // Not a style nit: outside ThemeProvider the rneui context falls back to its
+    // default, mode is undefined, and dark-theme users silently get dark icons on
+    // a black screen again — exactly the ENG-609 bug, with the unit tests green.
+    // eslint-disable-next-line no-console
+    console.error(
+      "ThemedStatusBar must be rendered inside ThemeProvider — it reads the theme mode (ENG-609).",
+    )
+  }
+
+  return (
+    <StatusBar
+      barStyle={mode === "dark" ? "light-content" : "dark-content"}
+      backgroundColor={theme?.colors.white}
+    />
+  )
 }
