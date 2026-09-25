@@ -35,12 +35,13 @@ jest.mock("@app/i18n/i18n-react", () => ({
   useI18nContext: () => ({ LL: require("../../app/i18n/i18n-util").i18nObject("en") }),
 }))
 
-// Spread the real module so `Screen` reads the real NavigationContext and takes
-// the same focus-scoped status-bar path it takes in the app.
+// Spread the real module so `NavigationContext` is the real context object rather
+// than `undefined`. These specs mount no navigator, so `Screen` still takes the
+// unscoped branch; the focus-scoped branch is driven against a real stack
+// navigator in __tests__/components/screen-status-bar-focus.spec.tsx (ENG-609).
 jest.mock("@react-navigation/native", () => ({
   ...jest.requireActual("@react-navigation/native"),
   useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn(), popToTop: jest.fn() }),
-  useIsFocused: () => true,
 }))
 jest.mock("react-native-safe-area-context", () => {
   const actual = jest.requireActual("react-native-safe-area-context")

@@ -63,6 +63,12 @@ jest.mock("@app/components/account-upgrade-flow", () => {
 })
 
 // --- the two QR scanners -----------------------------------------------------
+// Spread the real module so `NavigationContext` is the real context object rather
+// than `undefined`. This spec mounts no navigator, so `Screen` still takes the
+// unscoped branch; the focus-scoped branch is driven against a real stack
+// navigator in __tests__/components/screen-status-bar-focus.spec.tsx (ENG-609).
+// `useIsFocused` is stubbed for `QRCamera`, which calls it directly to pause the
+// camera off-screen and would throw outside a navigator — not for `Screen`.
 jest.mock("@react-navigation/native", () => ({
   ...jest.requireActual("@react-navigation/native"),
   useNavigation: () => ({
