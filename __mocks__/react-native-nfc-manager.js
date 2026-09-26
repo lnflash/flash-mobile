@@ -1,8 +1,10 @@
 const NfcManager = {
   cancelTechnologyRequest: jest.fn(),
   getTag: jest.fn(),
-  isEnabled: jest.fn(async () => false),
-  isSupported: jest.fn(async () => false),
+  isEnabled: jest.fn(async () => true),
+  isSupported: jest.fn(async () => true),
+  // Tech handlers live on the manager, not on the tag returned by getTag().
+  isoDepHandler: { transceive: jest.fn() },
   requestTechnology: jest.fn(),
   start: jest.fn(),
 }
@@ -16,6 +18,7 @@ module.exports = {
     },
   },
   NfcTech: {
+    IsoDep: "IsoDep",
     Ndef: "Ndef",
   },
 }

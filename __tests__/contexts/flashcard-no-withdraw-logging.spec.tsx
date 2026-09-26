@@ -1,16 +1,13 @@
-import React from "react"
-import { act, render, waitFor } from "@testing-library/react-native"
-import { Text } from "react-native"
+import { act, waitFor } from "@testing-library/react-native"
 import NfcManager, { Ndef } from "react-native-nfc-manager"
 import { getParams } from "js-lnurl"
 import axios from "axios"
 
-import { FlashcardProvider } from "@app/contexts/Flashcard"
-import { useFlashcard } from "@app/hooks/useFlashcard"
-import { IsAuthedContextProvider } from "@app/graphql/is-authed-context"
-import { PersistentStateContext } from "@app/store/persistent-state"
-import { ThemeProvider } from "@rneui/themed"
-import theme from "@app/rne-theme/theme"
+import {
+  FlashcardSnapshot,
+  PROVIDER_RENDER_TIMEOUT_MS,
+  renderProvider,
+} from "./flashcard-harness"
 
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
@@ -29,49 +26,21 @@ const BALANCE_HTML = `<a href="lightning:${CARD_LNURL}">pay</a><dt>1,234 SATS</d
 const SECRETS = [K1, CALLBACK, CARD_LNURL, "PARAM_P", "PARAM_C"]
 const CONSOLE_METHODS = ["log", "warn", "error", "info", "debug"] as const
 
-type Snapshot = ReturnType<typeof useFlashcard>
-let latest: Snapshot | undefined
-let readFlashcard: Snapshot["readFlashcard"] | undefined
-
-const Probe = () => {
-  const ctx = useFlashcard()
-  latest = ctx
-  readFlashcard = ctx.readFlashcard
-  return <Text>{ctx.k1 ?? "no-k1"}</Text>
+let latest: FlashcardSnapshot | undefined
+const capture = (snapshot: FlashcardSnapshot) => {
+  latest = snapshot
 }
-
-const renderProvider = () =>
-  render(
-    <ThemeProvider theme={theme}>
-      <IsAuthedContextProvider value={true}>
-        <PersistentStateContext.Provider
-          value={{
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            persistentState: {} as any,
-            updateState: jest.fn(),
-            resetState: jest.fn(),
-          }}
-        >
-          <FlashcardProvider>
-            <Probe />
-          </FlashcardProvider>
-        </PersistentStateContext.Provider>
-      </IsAuthedContextProvider>
-    </ThemeProvider>,
-  )
 
 const consoleOutput = (spies: jest.SpyInstance[]) =>
   spies.flatMap((spy) => spy.mock.calls.map((call) => call.map(String).join(" ")))
 
 describe("FlashcardProvider withdraw parameters", () => {
-  // First render pays the provider's module-load cost (rneui, nfc, animatable).
-  jest.setTimeout(30000)
+  jest.setTimeout(PROVIDER_RENDER_TIMEOUT_MS)
 
   let spies: jest.SpyInstance[]
 
   beforeEach(() => {
     latest = undefined
-    readFlashcard = undefined
     spies = CONSOLE_METHODS.map((m) =>
       jest.spyOn(console, m).mockImplementation(() => {}),
     )
@@ -96,10 +65,10 @@ describe("FlashcardProvider withdraw parameters", () => {
       callback: CALLBACK,
     })
 
-    renderProvider()
-    await waitFor(() => expect(readFlashcard).toBeDefined())
+    renderProvider(capture)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await act(async () => {
-      await readFlashcard?.(true)
+      await latest?.readFlashcard(true)
     })
 
     await waitFor(() => expect(latest?.k1).toBe(K1))
@@ -115,10 +84,10 @@ describe("FlashcardProvider withdraw parameters", () => {
   it("parses the balance page for a balance tap without logging the card link", async () => {
     ;(axios.get as jest.Mock).mockResolvedValue({ data: BALANCE_HTML })
 
-    renderProvider()
-    await waitFor(() => expect(readFlashcard).toBeDefined())
+    renderProvider(capture)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await act(async () => {
-      await readFlashcard?.(false)
+      await latest?.readFlashcard(false)
     })
 
     await waitFor(() => expect(latest?.balanceInSats).toBe(1234))
@@ -147,10 +116,10 @@ describe("FlashcardProvider withdraw parameters", () => {
     )
     ;(axios.get as jest.Mock).mockRejectedValue(failure)
 
-    renderProvider()
-    await waitFor(() => expect(readFlashcard).toBeDefined())
+    renderProvider(capture)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await act(async () => {
-      await readFlashcard?.(false)
+      await latest?.readFlashcard(false)
     })
 
     expect(console.warn).toHaveBeenCalledWith(
@@ -167,10 +136,10 @@ describe("FlashcardProvider withdraw parameters", () => {
       new Error(`Failed to fetch ${CARD_PAYLOAD} (k1=${K1}, callback=${CALLBACK})`),
     )
 
-    renderProvider()
-    await waitFor(() => expect(readFlashcard).toBeDefined())
+    renderProvider(capture)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await act(async () => {
-      await readFlashcard?.(true)
+      await latest?.readFlashcard(true)
     })
 
     expect(console.warn).toHaveBeenCalledWith(
@@ -185,10 +154,10 @@ describe("FlashcardProvider withdraw parameters", () => {
   it("logs only a type name when the withdraw params lookup throws a string", async () => {
     ;(getParams as jest.Mock).mockRejectedValue(`${CARD_PAYLOAD} ${K1} ${CALLBACK}`)
 
-    renderProvider()
-    await waitFor(() => expect(readFlashcard).toBeDefined())
+    renderProvider(capture)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await act(async () => {
-      await readFlashcard?.(true)
+      await latest?.readFlashcard(true)
     })
 
     expect(console.warn).toHaveBeenCalledWith(
@@ -207,10 +176,10 @@ describe("FlashcardProvider withdraw parameters", () => {
       reason: `not a withdraw tag: ${CARD_PAYLOAD}`,
     })
 
-    renderProvider()
-    await waitFor(() => expect(readFlashcard).toBeDefined())
+    renderProvider(capture)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await act(async () => {
-      await readFlashcard?.(true)
+      await latest?.readFlashcard(true)
     })
 
     expect(toastShow).toHaveBeenCalledWith(
@@ -233,10 +202,10 @@ describe("FlashcardProvider withdraw parameters", () => {
       reason: `Failed to fetch ${CARD_PAYLOAD} ${CALLBACK}`,
     })
 
-    renderProvider()
-    await waitFor(() => expect(readFlashcard).toBeDefined())
+    renderProvider(capture)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await act(async () => {
-      await readFlashcard?.(true)
+      await latest?.readFlashcard(true)
     })
 
     expect(toastShow).toHaveBeenCalledWith(

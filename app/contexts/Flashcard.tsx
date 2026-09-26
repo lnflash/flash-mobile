@@ -16,6 +16,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 
 // utils
 import { toastShow } from "../utils/toast"
+import { CashuCardInfo, readCashuCardBalance } from "../utils/cashu-card"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -106,14 +107,14 @@ export const FlashcardProvider = ({ children }: Props) => {
         message: "NFC is not supported on this device",
         type: "error",
       })
-    } else if (!isEnabled) {
+    } else if (isEnabled) {
+      handleTag(isPayment)
+    } else {
       toastShow({
         position: "top",
         message: "NFC is not enabled on this device.",
         type: "error",
       })
-    } else {
-      handleTag(isPayment)
     }
   }
 
@@ -121,7 +122,52 @@ export const FlashcardProvider = ({ children }: Props) => {
     try {
       setVisible(true)
       NfcManager.start()
-      await NfcManager.requestTechnology(NfcTech.Ndef)
+      // One NFC session covers both card types. A Cashu card is an IsoDep
+      // JavaCard applet (lnflash/cashu-javacard); a BoltCard is an NDEF tag.
+      // The request resolves with the tech the tapped card connected as, so
+      // the Cashu read only runs on an IsoDep tag. A Type-4 tag that connected
+      // as IsoDep still reports its NDEF message from getTag(), so a non-Cashu
+      // IsoDep tag (e.g. an NTAG 424 BoltCard) continues into the NDEF flow on
+      // the same tap. A rejected request (user cancel, timeout) propagates to
+      // the outer catch; it must never open a second session.
+      //
+      // The applet SELECT is the first APDU on the wire, as in cardctl and
+      // flash-pos. getTag() waits for the NDEF path: on Android it returns
+      // the message cached at discovery, but on iOS it is a live Type-4 NDEF
+      // read (NfcManager.m readNDEFWithCompletionHandler) that would SELECT
+      // the NDEF application on a Cashu card, which has none, before we had
+      // spoken to the applet at all.
+      const tech = await NfcManager.requestTechnology([NfcTech.IsoDep, NfcTech.Ndef])
+      if (tech === NfcTech.IsoDep) {
+        let info: CashuCardInfo | null
+        try {
+          info = await readCashuCardBalance((bytes) =>
+            NfcManager.isoDepHandler.transceive(bytes),
+          )
+        } catch (err) {
+          // The card answered SELECT (or the channel itself dropped), so this
+          // tap is over: it must not be re-read as a BoltCard. Every NDEF-side
+          // failure toasts, so this one does too. Rethrowing keeps the outer
+          // catch as the only logging site and the finally as the only release.
+          toastShow({
+            position: "top",
+            message:
+              "Couldn't read the card. Hold your phone steady against it and try again.",
+            type: "error",
+          })
+          throw err
+        }
+        if (info) {
+          toastShow({
+            position: "top",
+            message: `Cashu card: ${info.balanceSat} sats (v${info.version})`,
+            type: "success",
+          })
+          return
+        }
+        // The applet SELECT was refused: not a Cashu card. Parse the same
+        // tag's NDEF message below.
+      }
       const tag = await NfcManager.getTag()
       if (tag && tag.id) {
         const ndefRecord = tag?.ndefMessage?.[0]
@@ -204,6 +250,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       const response = await axios.get(url)
       const html = response.data
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updateState((state: any) => {
         if (state)
           return {
@@ -274,6 +321,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     setTransactions(undefined)
     setLoading(undefined)
     setError(undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateState((state: any) => {
       if (state)
         return {
@@ -320,11 +368,7 @@ export const FlashcardProvider = ({ children }: Props) => {
                 easing="ease-out"
                 iterationCount="infinite"
               >
-                <NfcScan
-                  width={width / 2}
-                  height={width / 2}
-                  style={{ marginVertical: 40 }}
-                />
+                <NfcScan width={width / 2} height={width / 2} style={styles.nfcScan} />
               </Animatable.View>
             </View>
             <PrimaryBtn type="clear" label="Cancel" onPress={cancelTechnologyRequest} />
@@ -336,6 +380,9 @@ export const FlashcardProvider = ({ children }: Props) => {
 }
 
 const useStyles = makeStyles(({ colors, mode }) => ({
+  nfcScan: {
+    marginVertical: 40,
+  },
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
