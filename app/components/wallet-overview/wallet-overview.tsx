@@ -147,9 +147,10 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
 
   const onPressBitcoin = () => navigateHandler("BTCTransactionHistory")
 
-  const onPressFlashcard = () => {
-    if (lnurl) navigation.navigate("Card")
-    else readFlashcard()
+  const onPressFlashcard = async () => {
+    if (lnurl) return navigation.navigate("Card")
+    const { cashuCard } = await readFlashcard()
+    if (cashuCard) navigation.navigate("FlashcardV2")
   }
 
   return (

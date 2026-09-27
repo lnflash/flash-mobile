@@ -1,18 +1,21 @@
 import React from "react"
 import { render } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
+import { Provider } from "react-redux"
 
 import { FlashcardProvider } from "@app/contexts/Flashcard"
 import { useFlashcard } from "@app/hooks/useFlashcard"
 import { IsAuthedContextProvider } from "@app/graphql/is-authed-context"
 import { PersistentStateContext } from "@app/store/persistent-state"
+import { store } from "@app/store/redux"
 import theme from "@app/rne-theme/theme"
 
 /**
  * Shared harness for the FlashcardProvider specs. Mounts the provider under
- * the contexts it reads (theme, auth, persistent state) and hands every
- * render's context value to `onSnapshot`, so a spec can drive `readFlashcard`
- * and read the resulting state back without rendering any UI of its own.
+ * the contexts it reads (theme, auth, persistent state, the redux store it
+ * records tapped cards into) and hands every render's context value to
+ * `onSnapshot`, so a spec can drive `readFlashcard` and read the resulting
+ * state back without rendering any UI of its own.
  *
  * Module mocks (js-lnurl, axios, the toast) stay in each spec: `jest.mock`
  * is hoisted per test file, and the spec is what holds the mock references.
@@ -34,20 +37,22 @@ const Probe = ({ onSnapshot }: ProbeProps) => {
 
 export const renderProvider = (onSnapshot: (snapshot: FlashcardSnapshot) => void) =>
   render(
-    <ThemeProvider theme={theme}>
-      <IsAuthedContextProvider value={true}>
-        <PersistentStateContext.Provider
-          value={{
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            persistentState: {} as any,
-            updateState: jest.fn(),
-            resetState: jest.fn(),
-          }}
-        >
-          <FlashcardProvider>
-            <Probe onSnapshot={onSnapshot} />
-          </FlashcardProvider>
-        </PersistentStateContext.Provider>
-      </IsAuthedContextProvider>
-    </ThemeProvider>,
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <IsAuthedContextProvider value={true}>
+          <PersistentStateContext.Provider
+            value={{
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              persistentState: {} as any,
+              updateState: jest.fn(),
+              resetState: jest.fn(),
+            }}
+          >
+            <FlashcardProvider>
+              <Probe onSnapshot={onSnapshot} />
+            </FlashcardProvider>
+          </PersistentStateContext.Provider>
+        </IsAuthedContextProvider>
+      </ThemeProvider>
+    </Provider>,
   )

@@ -135,6 +135,8 @@ export type RootStackParamList = {
   transactionHistory?: undefined
   Earn: undefined
   Card: undefined
+  /** The Cashu card screen (ENG-616). Reads the card from FlashcardContext. */
+  FlashcardV2: undefined
   Map: undefined
   accountScreen: undefined
   notificationSettingsScreen: undefined

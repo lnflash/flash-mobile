@@ -13,10 +13,12 @@ import { Loading } from "./ActivityIndicatorContext"
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useAppDispatch } from "@app/store/redux"
+import { cardSeen } from "@app/store/redux/slices/flashcardV2Slice"
 
 // utils
 import { toastShow } from "../utils/toast"
-import { CashuCardInfo, readCashuCardBalance } from "../utils/cashu-card"
+import { CashuCardInfo, readCashuCard } from "../utils/cashu-card"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -37,17 +39,28 @@ type TransactionItem = {
   sats: string
 }
 
-interface FlashcardInterface {
+/**
+ * What one tap produced. A Cashu card (ENG-616) is returned here so the caller
+ * can navigate on it; a BoltCard still lands in `lnurl` and the callers keep
+ * watching that. Nothing in either field is secret.
+ */
+export type FlashcardReadResult = {
+  cashuCard?: CashuCardInfo
+}
+
+export interface FlashcardInterface {
   tag?: TagEvent
   k1?: string
   callback?: string
   lnurl?: string
   balanceInSats?: number
   transactions?: TransactionItem[]
+  /** The last Cashu card this tap-session read: balance, PIN state, pubkey. */
+  cashuCard?: CashuCardInfo
   loading?: boolean
   error?: string
   resetFlashcard: () => void
-  readFlashcard: (isPayment?: boolean) => void
+  readFlashcard: (isPayment?: boolean) => Promise<FlashcardReadResult>
 }
 
 export const FlashcardContext = createContext<FlashcardInterface>({
@@ -57,10 +70,11 @@ export const FlashcardContext = createContext<FlashcardInterface>({
   lnurl: undefined,
   balanceInSats: undefined,
   transactions: undefined,
+  cashuCard: undefined,
   loading: undefined,
   error: undefined,
   resetFlashcard: () => {},
-  readFlashcard: () => {},
+  readFlashcard: async () => ({}),
 })
 
 type Props = {
@@ -82,6 +96,8 @@ export const FlashcardProvider = ({ children }: Props) => {
   const [transactions, setTransactions] = useState<TransactionItem[]>()
   const [loading, setLoading] = useState<boolean>()
   const [error, setError] = useState<string>()
+  const [cashuCard, setCashuCard] = useState<CashuCardInfo>()
+  const dispatch = useAppDispatch()
 
   useEffect(() => {
     loadFlashcard()
@@ -97,7 +113,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     }
   }
 
-  const readFlashcard = async (isPayment?: boolean) => {
+  const readFlashcard = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
     const isSupported = await NfcManager.isSupported()
     const isEnabled = await NfcManager.isEnabled()
 
@@ -107,18 +123,20 @@ export const FlashcardProvider = ({ children }: Props) => {
         message: "NFC is not supported on this device",
         type: "error",
       })
-    } else if (isEnabled) {
-      handleTag(isPayment)
-    } else {
+      return {}
+    }
+    if (!isEnabled) {
       toastShow({
         position: "top",
         message: "NFC is not enabled on this device.",
         type: "error",
       })
+      return {}
     }
+    return handleTag(isPayment)
   }
 
-  const handleTag = async (isPayment?: boolean) => {
+  const handleTag = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
     try {
       setVisible(true)
       NfcManager.start()
@@ -141,7 +159,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       if (tech === NfcTech.IsoDep) {
         let info: CashuCardInfo | null
         try {
-          info = await readCashuCardBalance((bytes) =>
+          info = await readCashuCard((bytes) =>
             NfcManager.isoDepHandler.transceive(bytes),
           )
         } catch (err) {
@@ -158,12 +176,20 @@ export const FlashcardProvider = ({ children }: Props) => {
           throw err
         }
         if (info) {
-          toastShow({
-            position: "top",
-            message: `Cashu card: ${info.balanceSat} sats (v${info.version})`,
-            type: "success",
-          })
-          return
+          // The card screen renders this; the caller navigates on the result.
+          setCashuCard(info)
+          // And the phone remembers the card: the applet keeps no history of
+          // its own, so this device-local record is the only one (ENG-616).
+          dispatch(
+            cardSeen({
+              pubkey: info.pubkey,
+              version: info.version,
+              pinState: info.pinState,
+              lastBalance: info.balance,
+              at: Date.now(),
+            }),
+          )
+          return { cashuCard: info }
         }
         // The applet SELECT was refused: not a Cashu card. Parse the same
         // tag's NDEF message below.
@@ -204,6 +230,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     } finally {
       cancelTechnologyRequest()
     }
+    return {}
   }
 
   const getPayDetails = async (payload: string) => {
@@ -321,6 +348,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     setTransactions(undefined)
     setLoading(undefined)
     setError(undefined)
+    setCashuCard(undefined)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateState((state: any) => {
       if (state)
@@ -342,6 +370,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         lnurl,
         balanceInSats,
         transactions,
+        cashuCard,
         loading,
         error,
         resetFlashcard,

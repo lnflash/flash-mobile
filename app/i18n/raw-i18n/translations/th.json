@@ -76,6 +76,19 @@
     "readNfcCard": "Read NFC card",
     "findFlashpoint": "Find a Flashpoint"
   },
+  "FlashcardV2": {
+    "title": "Flashcard",
+    "onCardBalance": "Stored on the card",
+    "slots": "Proof slots",
+    "slotSummary": "{unspent:number} loaded · {free:number} free of {max:number}",
+    "appletVersion": "Card software",
+    "cardId": "Card ID",
+    "bearerWarning": "The value lives on the card itself. If the card is lost, the funds are not recoverable.",
+    "noPinTitle": "No PIN on this card",
+    "noPinBody": "Anyone holding this card can spend from it or load it. Set a PIN before carrying a balance.",
+    "blockedTitle": "This card is blocked",
+    "blockedBody": "The PIN was entered wrong too many times and the card cannot be unblocked. Move any remaining value off it and replace the card."
+  },
   "Cashout": {
     "title": "Settle ครับ",
     "percentageToCashout": "ลงทุนเพื่อการปรับเงินบาท  %",

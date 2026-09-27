@@ -302,6 +302,55 @@ type RootTranslation = {
 		 */
 		findFlashpoint: string
 	}
+	FlashcardV2: {
+		/**
+		 * F​l​a​s​h​c​a​r​d
+		 */
+		title: string
+		/**
+		 * S​t​o​r​e​d​ ​o​n​ ​t​h​e​ ​c​a​r​d
+		 */
+		onCardBalance: string
+		/**
+		 * P​r​o​o​f​ ​s​l​o​t​s
+		 */
+		slots: string
+		/**
+		 * {​u​n​s​p​e​n​t​}​ ​l​o​a​d​e​d​ ​·​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​o​f​ ​{​m​a​x​}
+		 * @param {number} free
+		 * @param {number} max
+		 * @param {number} unspent
+		 */
+		slotSummary: RequiredParams<'free' | 'max' | 'unspent'>
+		/**
+		 * C​a​r​d​ ​s​o​f​t​w​a​r​e
+		 */
+		appletVersion: string
+		/**
+		 * C​a​r​d​ ​I​D
+		 */
+		cardId: string
+		/**
+		 * T​h​e​ ​v​a​l​u​e​ ​l​i​v​e​s​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​i​t​s​e​l​f​.​ ​I​f​ ​t​h​e​ ​c​a​r​d​ ​i​s​ ​l​o​s​t​,​ ​t​h​e​ ​f​u​n​d​s​ ​a​r​e​ ​n​o​t​ ​r​e​c​o​v​e​r​a​b​l​e​.
+		 */
+		bearerWarning: string
+		/**
+		 * N​o​ ​P​I​N​ ​o​n​ ​t​h​i​s​ ​c​a​r​d
+		 */
+		noPinTitle: string
+		/**
+		 * A​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​ ​o​r​ ​l​o​a​d​ ​i​t​.​ ​S​e​t​ ​a​ ​P​I​N​ ​b​e​f​o​r​e​ ​c​a​r​r​y​i​n​g​ ​a​ ​b​a​l​a​n​c​e​.
+		 */
+		noPinBody: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​b​l​o​c​k​e​d
+		 */
+		blockedTitle: string
+		/**
+		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​ ​a​n​d​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​n​o​t​ ​b​e​ ​u​n​b​l​o​c​k​e​d​.​ ​M​o​v​e​ ​a​n​y​ ​r​e​m​a​i​n​i​n​g​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​ ​a​n​d​ ​r​e​p​l​a​c​e​ ​t​h​e​ ​c​a​r​d​.
+		 */
+		blockedBody: string
+	}
 	Cashout: {
 		/**
 		 * S​e​t​t​l​e
@@ -7129,6 +7178,52 @@ export type TranslationFunctions = {
 		 * Find a Flashpoint
 		 */
 		findFlashpoint: () => LocalizedString
+	}
+	FlashcardV2: {
+		/**
+		 * Flashcard
+		 */
+		title: () => LocalizedString
+		/**
+		 * Stored on the card
+		 */
+		onCardBalance: () => LocalizedString
+		/**
+		 * Proof slots
+		 */
+		slots: () => LocalizedString
+		/**
+		 * {unspent} loaded · {free} free of {max}
+		 */
+		slotSummary: (arg: { free: number, max: number, unspent: number }) => LocalizedString
+		/**
+		 * Card software
+		 */
+		appletVersion: () => LocalizedString
+		/**
+		 * Card ID
+		 */
+		cardId: () => LocalizedString
+		/**
+		 * The value lives on the card itself. If the card is lost, the funds are not recoverable.
+		 */
+		bearerWarning: () => LocalizedString
+		/**
+		 * No PIN on this card
+		 */
+		noPinTitle: () => LocalizedString
+		/**
+		 * Anyone holding this card can spend from it or load it. Set a PIN before carrying a balance.
+		 */
+		noPinBody: () => LocalizedString
+		/**
+		 * This card is blocked
+		 */
+		blockedTitle: () => LocalizedString
+		/**
+		 * The PIN was entered wrong too many times and the card cannot be unblocked. Move any remaining value off it and replace the card.
+		 */
+		blockedBody: () => LocalizedString
 	}
 	Cashout: {
 		/**

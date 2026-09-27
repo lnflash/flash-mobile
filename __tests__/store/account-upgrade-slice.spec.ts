@@ -10,7 +10,7 @@ import reducer, {
   setIdentityCapture,
   setIdentityUploaded,
 } from "@app/store/redux/slices/accountUpgradeSlice"
-import { migrateAccountUpgradeV1, PERSIST_VERSION } from "@app/store/redux/migrations"
+import { migrateAccountUpgradeV1, migrations } from "@app/store/redux/migrations"
 
 const image = {
   path: "idv/front-1.jpg",
@@ -105,8 +105,10 @@ describe("accountUpgrade slice — identity", () => {
 })
 
 describe("persist migration v1", () => {
-  it("is the current persist version", () => {
-    expect(PERSIST_VERSION).toBe(1)
+  // Version 2 (ENG-616) added the flashcardV2 slice on top; v1 must stay
+  // registered at 1 so a phone still on the pre-identity shape runs both.
+  it("stays registered at version 1", () => {
+    expect(migrations[1]).toBe(migrateAccountUpgradeV1)
   })
 
   it("drops bankInfo.idDocument, maps legacy status strings and adds identity", () => {
