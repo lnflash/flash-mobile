@@ -44,16 +44,19 @@ const describeError = (err: unknown): string => {
 
 /**
  * A card's unspent value per unit, as the mint names the unit of each keyset
- * on it. An empty card needs no lookup. Undefined when the mint could not be
- * asked or did not answer with a keyset list.
+ * on it. An empty card needs no lookup. Undefined when the tap could not read
+ * the keyset split (there is nothing to ask the mint about), or when the mint
+ * could not be asked or did not answer with a keyset list.
  */
 const cardUnitTotals = async (
   card: CashuCardInfo,
 ): Promise<CardUnitTotals | undefined> => {
-  if (card.keysets.length === 0) return { byUnit: [], unknown: 0 }
+  const { keysets } = card
+  if (!keysets) return undefined
+  if (keysets.length === 0) return { byUnit: [], unknown: 0 }
   try {
-    const units = await unitsForKeysets(card.keysets.map((k) => k.keysetId))
-    return totalsByUnit(card.keysets, units)
+    const units = await unitsForKeysets(keysets.map((k) => k.keysetId))
+    return totalsByUnit(keysets, units)
   } catch (err) {
     console.warn("Cashu mint keyset lookup failed:", describeError(err))
     return undefined
@@ -82,8 +85,9 @@ export type FlashcardReadResult = {
 export type CashuCardState = CashuCardInfo & {
   /**
    * The card's unspent value per unit, once the mint has named the unit of
-   * each keyset on it. Undefined while that lookup is outstanding or after it
-   * failed: the screen then labels the card's figure "unit unknown".
+   * each keyset on it. Undefined while that lookup is outstanding, after it
+   * failed, or when the tap could not read the keyset split at all: the
+   * screen then labels the card's figure "unit unknown".
    */
   unitTotals?: CardUnitTotals
 }
@@ -295,9 +299,10 @@ export const FlashcardProvider = ({ children }: Props) => {
   /**
    * Puts the mint's units on a Cashu card that was just read: per-unit totals
    * on the card in context and, signed in, the card's single unit (if it has
-   * exactly one) on its record. A mint that cannot be reached leaves the
-   * screen's figure labelled "unit unknown" and the record's unit as it was;
-   * the next read asks again. A newer read, or a forget, in the meantime wins.
+   * exactly one) on its record. A mint that cannot be reached, or a tap that
+   * lost the keyset split, leaves the screen's figure labelled "unit unknown"
+   * and the record's unit as it was; the next read asks again. A newer read,
+   * or a forget, in the meantime wins.
    */
   const resolveCashuUnits = async (card: CashuCardInfo, generation: number) => {
     const unitTotals = await cardUnitTotals(card)

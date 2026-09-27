@@ -246,6 +246,52 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(knownCards()[PUBKEY_HEX].unit).toBeUndefined()
   })
 
+  it("still opens a card that leaves the field during the keyset split: balance kept, unit unknown, mint not asked", async () => {
+    // Two unspent proofs; the tag is lost at the second GET_PROOF, after
+    // GET_BALANCE answered. The split only names units, so the read stands
+    // and the screen labels the figure "unit unknown".
+    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+    getTag.mockResolvedValue(ISO_DEP_ONLY_TAG)
+    transceive.mockImplementation(async (bytes: number[]) => {
+      switch (bytes[1]) {
+        case 0x01:
+          // v0.2, 32 slots, 2 unspent, 0 spent, 30 empty, caps 0x07, PIN set.
+          return ok([0, 2, 32, 2, 0, 30, 0x07, 1])
+        case 0x11:
+          return ok([0, 0, 0x03, 0xe8])
+        case 0x14:
+          return ok([1, 1, ...new Array(30).fill(0)])
+        case 0x13:
+          if (bytes[2] === 1) throw new Error("readerTransceiveErrorTagConnectionLost")
+          return ok(PROOF_SLOT)
+        default:
+          return cashuCard(bytes)
+      }
+    })
+
+    const result = await tapOnce()
+
+    expect(result.cashuCard).toMatchObject({
+      balance: 1000,
+      pubkey: PUBKEY_HEX,
+      unspent: 2,
+      pinState: "set",
+    })
+    expect(result.cashuCard?.keysets).toBeUndefined()
+    await waitFor(() => expect(latest?.cashuCard?.balance).toBe(1000))
+    // Nothing to ask the mint about, so nothing is asked.
+    expect(lookupUnits).not.toHaveBeenCalled()
+    expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+    // The read counts: no "couldn't read" toast, and the phone remembers it.
+    expect(toastShow).not.toHaveBeenCalled()
+    expect(knownCards()[PUBKEY_HEX]).toMatchObject({ lastBalance: 1000 })
+    expect(knownCards()[PUBKEY_HEX].unit).toBeUndefined()
+    // One session, released once (tapOnce waits for exactly one release).
+    expect(requestTechnology).toHaveBeenCalledTimes(1)
+    expect(getTag).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: Error")
+  })
+
   it("keeps a read made while signed out in memory only, off this phone's record", async () => {
     tapCashuCard()
 

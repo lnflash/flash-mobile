@@ -14,7 +14,6 @@ import { useFlashcard, useTapFlashcard } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { blockedPinGatesSpend, CashuCardInfo } from "@app/utils/cashu-card"
-import { testProps } from "@app/utils/testProps"
 
 import FlashcardImage from "@app/assets/images/flashcard.png"
 import Sync from "@app/assets/icons/sync.svg"
@@ -70,8 +69,10 @@ export const FlashcardV2Screen = () => {
       <View style={styles.balanceWrapper}>
         <HideableArea isContentVisible={hideBalance}>
           <View>
+            {/* A plain testID: `testProps` would make a screen reader read
+                the id instead of the amount. */}
             {balanceLines(cashuCard, LL).map(({ testID, text }) => (
-              <Text key={testID} type="h03" {...testProps(testID)}>
+              <Text key={testID} type="h03" testID={testID}>
                 {text}
               </Text>
             ))}
@@ -79,7 +80,9 @@ export const FlashcardV2Screen = () => {
           <TouchableOpacity
             style={styles.sync}
             onPress={tapFlashcard}
-            {...testProps("flashcard-v2-refresh")}
+            testID="flashcard-v2-refresh"
+            accessibilityRole="button"
+            accessibilityLabel={LL.CardScreen.readNfcCard()}
           >
             <Sync color={colors.icon02} width={32} height={32} />
           </TouchableOpacity>
@@ -129,11 +132,14 @@ type Notice = { testID: string; title: string; body: string; severe: boolean }
 
 /**
  * What the card's PIN state means for whoever holds it, by applet version.
- * Nothing when a PIN is set. A blocked card is not shown as frozen unless its
- * version is confirmed to keep refusing spends (`blockedPinGatesSpend`): on
- * v0.2.0 a blocked PIN stops gating SPEND_PROOF (ENG-615), so the truth is
- * that anyone holding it can spend it, and nothing unblocks it (ENG-617). A
- * state byte this app cannot decode is said to be unknown, not guessed at.
+ * Both PIN states that look protective are keyed on whether the version is
+ * confirmed to keep refusing spends once the PIN is blocked
+ * (`blockedPinGatesSpend`). On v0.2.0 it is not (ENG-615): the third wrong
+ * VERIFY_PIN blocks the PIN and a blocked PIN stops gating SPEND_PROOF, so a
+ * set PIN won't stop whoever holds the card, and a blocked card spends for
+ * anyone and cannot be unblocked (ENG-617). Nothing is said about a set PIN
+ * only on a confirmed version. A state byte this app cannot decode is said to
+ * be unknown, not guessed at.
  */
 const PinStateNotice: React.FC<Pick<CashuCardInfo, "pinState" | "version">> = ({
   pinState,
@@ -145,10 +151,14 @@ const PinStateNotice: React.FC<Pick<CashuCardInfo, "pinState" | "version">> = ({
   const notice = pinNotice(pinState, version, LL)
   if (!notice) return null
 
+  // One element for a screen reader, labelled with the words on screen. A
+  // plain testID, not `testProps`, which would label it with the id instead.
   return (
     <View
       style={[styles.notice, notice.severe ? styles.noticeSevere : styles.noticeWarning]}
-      {...testProps(notice.testID)}
+      testID={notice.testID}
+      accessible
+      accessibilityLabel={`${notice.title}. ${notice.body}`}
     >
       <Text type="bl" bold>
         {notice.title}
@@ -165,7 +175,16 @@ const pinNotice = (
 ): Notice | undefined => {
   switch (pinState) {
     case "set":
-      return undefined
+      // CashuApplet.java@v0.2.0:517-521 blocks the PIN on the third wrong
+      // VERIFY_PIN, after which requirePinIfSet (:587-591) gates nothing.
+      return blockedPinGatesSpend(version)
+        ? undefined
+        : {
+            testID: "flashcard-v2-pin-bypassable",
+            title: LL.FlashcardV2.pinSetBypassableTitle(),
+            body: LL.FlashcardV2.pinSetBypassableBody(),
+            severe: false,
+          }
     case "unset":
       return {
         testID: "flashcard-v2-no-pin",
@@ -206,7 +225,7 @@ const DetailRow: React.FC<{ label: string; value: string; testID?: string }> = (
   return (
     <View style={styles.row}>
       <Text type="p2">{label}</Text>
-      <Text type="p2" bold {...(testID ? testProps(testID) : {})}>
+      <Text type="p2" bold testID={testID}>
         {value}
       </Text>
     </View>
@@ -252,10 +271,11 @@ export const formatUnitAmount = (amount: number, unit: string, LL: LLType): stri
 
 /**
  * The card's figures, one per unit the mint named. Until the mint has answered
- * (or when it could not be asked) the card's own total is shown labelled
- * "unit unknown", never bare: GET_BALANCE adds every keyset together and the
- * card stores no unit. Value in a keyset the mint does not list is shown the
- * same way.
+ * (or when it could not be asked, or the tap lost the keyset split so there
+ * was nothing to ask it) the card's own total is shown labelled "unit
+ * unknown", never bare: GET_BALANCE adds every keyset together and the card
+ * stores no unit. Value in a keyset the mint does not list is shown the same
+ * way.
  */
 export const balanceLines = (
   card: CashuCardState,
@@ -266,9 +286,10 @@ export const balanceLines = (
     text: LL.FlashcardV2.unitUnknown({ amount: grouped.format(amount) }),
   })
   // An empty card has nothing to name a unit for; no need to wait on the mint.
+  // A split that was not read (`keysets` undefined) is not an empty one.
   const totals =
     card.unitTotals ??
-    (card.balance === 0 && card.keysets.length === 0
+    (card.balance === 0 && card.keysets?.length === 0
       ? { byUnit: [], unknown: 0 }
       : undefined)
   if (!totals) return [unknown(card.balance)]

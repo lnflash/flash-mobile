@@ -843,13 +843,24 @@ describe("readCashuCard", () => {
     await expect(readCashuCard(transceive)).rejects.toThrow("Tag was lost")
   })
 
-  it("genuine status failures after SELECT throw a CardError naming the command", async () => {
+  it("genuine status failures up to GET_BALANCE throw a CardError naming the command", async () => {
+    // The four reads flash-pos readCard makes: without any of them there is
+    // no balance to show, so the read fails as a whole.
     const infoFails = scriptedCard([
       [SELECT_PACKAGE, ok([0, 2])],
       [GET_INFO, SW_UNKNOWN],
     ])
     await expect(readCashuCard(infoFails.transceive)).rejects.toThrow(
       "GET_INFO failed: the card failed to sign (0x6F00)",
+    )
+
+    const pubkeyFails = scriptedCard([
+      [SELECT_PACKAGE, ok([0, 2])],
+      [GET_INFO, ok(INFO_BODY)],
+      [GET_PUBKEY, SW_UNKNOWN],
+    ])
+    await expect(readCashuCard(pubkeyFails.transceive)).rejects.toThrow(
+      "GET_PUBKEY failed: the card failed to sign (0x6F00)",
     )
 
     const balanceFails = scriptedCard([
@@ -861,14 +872,98 @@ describe("readCashuCard", () => {
     await expect(readCashuCard(balanceFails.transceive)).rejects.toMatchObject({
       sw: 0x6f00,
     })
+  })
 
-    const slotFails = scriptedCard([
-      ...READ_SCRIPT.slice(0, 5),
-      [getProofApdu(0), SW_UNKNOWN],
-    ])
-    await expect(readCashuCard(slotFails.transceive)).rejects.toThrow(
-      "GET_PROOF slot 0 failed: the card failed to sign (0x6F00)",
-    )
+  describe("the keyset split is best effort once GET_BALANCE has answered", () => {
+    // Two unspent proofs, 500 + 1000, in slots 0 and 1; the rest empty.
+    const TWO_PROOF_INFO = [0, 2, 32, 2, 0, 30, 0x07, 1]
+    const TWO_PROOF_BALANCE = uint32(1500)
+    const TWO_PROOF_STATUSES = [1, 1, ...new Array(30).fill(0)]
+    const upToBalance: Array<[number[], number[]]> = [
+      [SELECT_PACKAGE, ok([0, 2])],
+      [GET_INFO, ok(TWO_PROOF_INFO)],
+      [GET_PUBKEY, ok(PUBKEY)],
+      [GET_BALANCE, ok(TWO_PROOF_BALANCE)],
+    ]
+
+    it("a card pulled away at the second GET_PROOF still reads: balance and pubkey, no split", async () => {
+      // The Android case the split must survive: the user lifts the phone at
+      // the discovery beep, midway through the per-slot reads.
+      const card = scriptedCard([
+        ...upToBalance,
+        [GET_SLOT_STATUS_32, ok(TWO_PROOF_STATUSES)],
+        [getProofApdu(0), ok(proofSlot(1, 500))],
+      ])
+      const lost = new Error("readerTransceiveErrorTagConnectionLost")
+      const transceive = async (bytes: number[]) => {
+        if (hex(bytes) === hex(getProofApdu(1))) {
+          card.sent.push(bytes)
+          throw lost
+        }
+        return card.transceive(bytes)
+      }
+
+      const info = await readCashuCard(transceive)
+
+      expect(info).toMatchObject({
+        version: "0.2",
+        unspent: 2,
+        pinState: "set",
+        pubkey: hex(PUBKEY),
+        balance: 1500,
+      })
+      // Not a partial split that would under-report the card: none at all.
+      expect(info?.keysets).toBeUndefined()
+      // The second GET_PROOF was attempted; nothing after it.
+      expect(card.sent).toEqual([
+        SELECT_PACKAGE,
+        GET_INFO,
+        GET_PUBKEY,
+        GET_BALANCE,
+        GET_SLOT_STATUS_32,
+        getProofApdu(0),
+        getProofApdu(1),
+      ])
+      // Only the error's class name reaches the console, never its message.
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: Error")
+    })
+
+    it("a slot the card refuses to read leaves the split out and logs the status word", async () => {
+      const card = scriptedCard([
+        ...READ_SCRIPT.slice(0, 5),
+        [getProofApdu(0), SW_UNKNOWN],
+      ])
+
+      const info = await readCashuCard(card.transceive)
+
+      expect(info).toMatchObject({ balance: 500, pubkey: hex(PUBKEY) })
+      expect(info?.keysets).toBeUndefined()
+      expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: CardError 6F00")
+    })
+
+    it("a card that refuses GET_SLOT_STATUS reads without the split and sends no GET_PROOF", async () => {
+      const card = scriptedCard([...upToBalance, [GET_SLOT_STATUS_32, [0x6d, 0x00]]])
+
+      const info = await readCashuCard(card.transceive)
+
+      expect(info).toMatchObject({ balance: 1500 })
+      expect(info?.keysets).toBeUndefined()
+      expect(card.sent.map((apdu) => apdu[1])).not.toContain(INS.GET_PROOF)
+      expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: CardError 6D00")
+    })
+
+    it("a malformed slot map is a framing failure, and also costs only the split", async () => {
+      const card = scriptedCard([...upToBalance, [GET_SLOT_STATUS_32, ok([1, 1, 0])]])
+
+      const info = await readCashuCard(card.transceive)
+
+      expect(info).toMatchObject({ balance: 1500 })
+      expect(info?.keysets).toBeUndefined()
+      expect(warn).toHaveBeenCalledWith(
+        "Cashu card keyset split skipped: CardProtocolError",
+      )
+    })
   })
 
   it("spends and loads nothing — a read must never send SPEND_PROOF or LOAD_PROOF", async () => {

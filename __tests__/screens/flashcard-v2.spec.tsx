@@ -176,6 +176,20 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByTestId("flashcard-v2-balance-unknown")).toBeNull()
   })
 
+  it("shows the card's total as unit unknown when the tap lost the keyset split", () => {
+    // readCashuCard keeps GET_BALANCE when the per-slot reads fail and leaves
+    // `keysets` undefined; the provider then has nothing to ask the mint.
+    mockCashuCard = card({ keysets: undefined, unitTotals: undefined })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-balance-unknown").props.children).toBe(
+      "1,500 · unit unknown",
+    )
+    expect(screen.queryByTestId("flashcard-v2-balance-empty")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-balance-sat")).toBeNull()
+  })
+
   it("re-reads through the routing tap, so a different card opens its own screen", () => {
     renderScreen()
 
@@ -184,9 +198,34 @@ describe("FlashcardV2Screen", () => {
     expect(mockTapFlashcard).toHaveBeenCalledTimes(1)
   })
 
-  it("says nothing about the PIN when one is set", () => {
+  it("warns that a set PIN on a v0.2 card won't stop someone holding it", () => {
+    // CashuApplet.java@v0.2.0:517-521: the third wrong VERIFY_PIN blocks the
+    // PIN, and a blocked PIN gates nothing (:587-591, ENG-615). Next to the
+    // no-PIN notice ("anyone holding this card can spend"), silence here would
+    // tell the owner a set PIN protects the balance.
+    mockCashuCard = card({ version: "0.2", pinState: "set" })
+
     renderScreen()
 
+    expect(screen.getByTestId("flashcard-v2-pin-bypassable")).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.pinSetBypassableTitle())).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.pinSetBypassableBody())).toBeTruthy()
+    expect(
+      screen.getByText(/three wrong PIN entries in a row switch the PIN check off/),
+    ).toBeTruthy()
+    expect(screen.getByText(/won't stop someone who has the card/)).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-no-pin")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-blocked")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-pin-unknown")).toBeNull()
+  })
+
+  it("says nothing about a set PIN only on a version confirmed to keep refusing once blocked", () => {
+    mockBlockedPinGatesSpend = true
+    mockCashuCard = card({ version: "9.9", pinState: "set" })
+
+    renderScreen()
+
+    expect(screen.queryByTestId("flashcard-v2-pin-bypassable")).toBeNull()
     expect(screen.queryByTestId("flashcard-v2-no-pin")).toBeNull()
     expect(screen.queryByTestId("flashcard-v2-blocked")).toBeNull()
     expect(screen.queryByTestId("flashcard-v2-pin-unknown")).toBeNull()
@@ -291,6 +330,86 @@ describe("FlashcardV2Screen", () => {
     renderScreen()
 
     expect(mockGoBack).not.toHaveBeenCalled()
+  })
+
+  describe("a screen reader hears the words on screen, never a test id", () => {
+    type NoticeCase = {
+      name: string
+      state: Partial<CashuCardState>
+      /** Stands in for `blockedPinGatesSpend`; undefined keeps the real answer. */
+      gates?: boolean
+      testID: string
+      title: string
+      body: string
+    }
+    const notices: NoticeCase[] = [
+      {
+        name: "no-PIN",
+        state: { pinState: "unset" },
+        testID: "flashcard-v2-no-pin",
+        title: LL.FlashcardV2.noPinTitle(),
+        body: LL.FlashcardV2.noPinBody(),
+      },
+      {
+        name: "set-PIN on v0.2",
+        state: { pinState: "set" },
+        testID: "flashcard-v2-pin-bypassable",
+        title: LL.FlashcardV2.pinSetBypassableTitle(),
+        body: LL.FlashcardV2.pinSetBypassableBody(),
+      },
+      {
+        name: "blocked v0.2",
+        state: { pinState: "blocked" },
+        testID: "flashcard-v2-blocked",
+        title: LL.FlashcardV2.blockedOpenTitle(),
+        body: LL.FlashcardV2.blockedOpenBody(),
+      },
+      {
+        name: "blocked on a confirmed version",
+        state: { version: "9.9", pinState: "blocked" },
+        gates: true,
+        testID: "flashcard-v2-blocked",
+        title: LL.FlashcardV2.blockedLockedTitle(),
+        body: LL.FlashcardV2.blockedLockedBody(),
+      },
+      {
+        name: "unknown PIN state",
+        state: { pinState: "unknown" },
+        testID: "flashcard-v2-pin-unknown",
+        title: LL.FlashcardV2.pinUnknownTitle(),
+        body: LL.FlashcardV2.pinUnknownBody(),
+      },
+    ]
+
+    notices.forEach(({ name, state, gates, testID, title, body }) => {
+      it(`reads the ${name} notice as one element, labelled with its title and body`, () => {
+        mockBlockedPinGatesSpend = gates
+        mockCashuCard = card(state)
+
+        renderScreen()
+
+        const notice = screen.getByTestId(testID)
+        expect(notice.props.accessible).toBe(true)
+        expect(notice.props.accessibilityLabel).toContain(body)
+        expect(notice.props.accessibilityLabel).toBe(`${title}. ${body}`)
+        expect(notice.props.accessibilityLabel).not.toContain("flashcard-v2")
+      })
+    })
+
+    it("reads the balance and card id as their text, and names the refresh button", () => {
+      renderScreen()
+
+      // No label on a Text means it is read as its text ("1,500 sats").
+      expect(
+        screen.getByTestId("flashcard-v2-balance-sat").props.accessibilityLabel,
+      ).toBeUndefined()
+      expect(
+        screen.getByTestId("flashcard-v2-card-id").props.accessibilityLabel,
+      ).toBeUndefined()
+      const refresh = screen.getByTestId("flashcard-v2-refresh")
+      expect(refresh.props.accessibilityRole).toBe("button")
+      expect(refresh.props.accessibilityLabel).toBe(LL.CardScreen.readNfcCard())
+    })
   })
 })
 

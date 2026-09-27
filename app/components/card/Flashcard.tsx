@@ -26,7 +26,6 @@ import Sync from "@app/assets/icons/sync.svg"
 
 // utils
 import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
-import { testProps } from "@app/utils/testProps"
 
 type Props = {
   onReload: () => void
@@ -72,7 +71,9 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
           <TouchableOpacity
             style={styles.sync}
             onPress={tapFlashcard}
-            {...testProps("flashcard-refresh")}
+            testID="flashcard-refresh"
+            accessibilityRole="button"
+            accessibilityLabel={LL.CardScreen.readNfcCard()}
           >
             <Sync color={colors.icon02} width={32} height={32} />
           </TouchableOpacity>

@@ -34,9 +34,11 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const { btcWallet } = useBreez()
   const { lnurl, balanceInSats } = useFlashcard()
   // One rule for the tile and the Settings row, and every tap routed by what
-  // was tapped (ENG-616): see app/hooks/use-tap-flashcard.ts.
+  // was tapped (ENG-616): see app/hooks/use-tap-flashcard.ts. The tile's sync
+  // refreshes the BoltCard in place, as it always has (the tile body is what
+  // opens Card); only a Cashu card tapped on it opens a screen, its own.
   const openFlashcard = useOpenFlashcard()
-  const tapFlashcard = useTapFlashcard()
+  const refreshFlashcard = useTapFlashcard({ openBoltCard: false })
 
   const { persistentState, updateState } = usePersistentStateContext()
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
@@ -181,7 +183,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           currency={displayCurrency}
           emptyText={LL.HomeScreen.addFlashcard()}
           onPress={openFlashcard}
-          onPressRightBtn={tapFlashcard}
+          onPressRightBtn={refreshFlashcard}
           rightIcon={"sync"}
         />
       )}

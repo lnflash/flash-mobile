@@ -247,6 +247,7 @@ export interface CardInfo {
    * run with no PIN: a `blocked` card spends for whoever holds it, and a `set`
    * PIN is three wrong guesses away from off. `blockedPinGatesSpend` says which
    * versions are known to behave; none yet. Nothing unblocks a PIN (ENG-617).
+   * A screen must not present either state as protection on any other version.
    */
   pinState: CardPinState
 }
@@ -263,8 +264,10 @@ const VERSIONS_WHERE_BLOCKED_PIN_GATES_SPEND: readonly string[] = []
 
 /**
  * True only when `version` (GET_INFO's "major.minor") is confirmed to keep a
- * blocked card from spending. False means: treat a blocked card as spendable
- * by anyone holding it.
+ * blocked card from spending. That is also the only case in which a set PIN
+ * protects the balance: three wrong guesses then freeze the card instead of
+ * switching the PIN check off. False means: treat a blocked card as spendable
+ * by anyone holding it, and a set PIN as no obstacle to whoever holds the card.
  */
 export const blockedPinGatesSpend = (version: string): boolean =>
   VERSIONS_WHERE_BLOCKED_PIN_GATES_SPEND.includes(version)
@@ -648,8 +651,40 @@ export interface CashuCardInfo extends CardInfo {
   pubkey: string
   /** GET_BALANCE: every unspent proof, whatever its keyset. See `getBalance`. */
   balance: number
-  /** The same unspent value split by keyset; empty for an empty card. */
-  keysets: CardKeysetTotal[]
+  /**
+   * The same unspent value split by keyset; empty for an empty card.
+   * Undefined when the split could not be read this tap (the card left the
+   * field partway through, or refused a slot read): `balance` still stands,
+   * it just cannot be put in a unit, so a screen shows it as "unit unknown".
+   */
+  keysets?: CardKeysetTotal[]
+}
+
+/** An error's class name, plus the status word when the card refused. */
+const failureLabel = (error: unknown): string => {
+  if (error instanceof CardError) return `${error.name} ${swLabel(error.sw)}`
+  return error instanceof Error ? error.name : typeof error
+}
+
+/**
+ * The balance split by keyset, best effort. It exists only to name units, and
+ * it costs GET_SLOT_STATUS plus a GET_PROOF per unspent slot: up to 33 more
+ * APDUs, each a chance for the card to leave the field. Once GET_BALANCE has
+ * answered, losing the split must not lose the read, so any failure here
+ * resolves undefined and the caller shows the total as "unit unknown". Only an
+ * error name and a status word are logged.
+ */
+const readKeysetSplit = async (
+  transceive: Transceiver,
+  info: CardInfo,
+): Promise<CardKeysetTotal[] | undefined> => {
+  if (info.unspent === 0) return []
+  try {
+    return await getUnspentByKeyset(transceive, info.maxSlots)
+  } catch (error) {
+    console.warn(`Cashu card keyset split skipped: ${failureLabel(error)}`)
+    return undefined
+  }
 }
 
 /**
@@ -662,8 +697,11 @@ export interface CashuCardInfo extends CardInfo {
  * NTAG 424 BoltCard says this), with a warning for any other status word
  * (6999: the applet's select() failed; 6283/6A81: a locked instance), which a
  * silent null would misreport as "not a Cashu card". A status word carries no
- * secret, so it can be logged. Throws on genuine failures once the applet is
- * selected, and on a transport failure at any point.
+ * secret, so it can be logged. Throws on a transport failure during SELECT,
+ * and when GET_INFO, GET_PUBKEY or GET_BALANCE fails, refused or dropped: the
+ * same four reads, and the same failure surface, as flash-pos `readCard`
+ * (src/services/cashuCard.ts:393-405). The keyset split after them is best
+ * effort (`readKeysetSplit`): its failure leaves `keysets` undefined.
  */
 export const readCashuCard = async (
   transceive: Transceiver,
@@ -685,7 +723,6 @@ export const readCashuCard = async (
   const info = await getInfo(transceive)
   const pubkey = toHex(await getPubkey(transceive))
   const balance = await getBalance(transceive)
-  const keysets =
-    info.unspent > 0 ? await getUnspentByKeyset(transceive, info.maxSlots) : []
+  const keysets = await readKeysetSplit(transceive, info)
   return { ...info, pubkey, balance, keysets }
 }

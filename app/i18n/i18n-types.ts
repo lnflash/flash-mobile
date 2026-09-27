@@ -358,6 +358,14 @@ type RootTranslation = {
 		 */
 		noPinBody: string
 		/**
+		 * T​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​t​u​r​n​ ​t​h​i​s​ ​P​I​N​ ​o​f​f
+		 */
+		pinSetBypassableTitle: string
+		/**
+		 * O​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​,​ ​t​h​r​e​e​ ​w​r​o​n​g​ ​P​I​N​ ​e​n​t​r​i​e​s​ ​i​n​ ​a​ ​r​o​w​ ​s​w​i​t​c​h​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​,​ ​a​n​d​ ​t​h​e​n​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​.​ ​T​h​e​ ​P​I​N​ ​w​o​n​'​t​ ​s​t​o​p​ ​s​o​m​e​o​n​e​ ​w​h​o​ ​h​a​s​ ​t​h​e​ ​c​a​r​d​.
+		 */
+		pinSetBypassableBody: string
+		/**
 		 * T​h​i​s​ ​c​a​r​d​ ​n​o​ ​l​o​n​g​e​r​ ​a​s​k​s​ ​f​o​r​ ​a​ ​P​I​N
 		 */
 		blockedOpenTitle: string
@@ -7259,6 +7267,14 @@ export type TranslationFunctions = {
 		 * Anyone holding this card can spend from it or load it.
 		 */
 		noPinBody: () => LocalizedString
+		/**
+		 * Three wrong entries turn this PIN off
+		 */
+		pinSetBypassableTitle: () => LocalizedString
+		/**
+		 * On this card's software, three wrong PIN entries in a row switch the PIN check off, and then anyone holding the card can spend from it. The PIN won't stop someone who has the card.
+		 */
+		pinSetBypassableBody: () => LocalizedString
 		/**
 		 * This card no longer asks for a PIN
 		 */

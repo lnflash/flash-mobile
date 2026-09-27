@@ -18,7 +18,6 @@ import { useCreateAccount } from "@app/hooks/useCreateAccount"
 
 // utils
 import { logGetStartedAction } from "@app/utils/analytics"
-import { testProps } from "@app/utils/testProps"
 
 // assets
 import AppLogoLightMode from "../../assets/logo/app-logo-light.png"
@@ -103,7 +102,9 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
           onPress={onPressCard}
           style={{ padding: 20 }}
           activeOpacity={0.5}
-          {...testProps("get-started-read-card")}
+          testID="get-started-read-card"
+          accessibilityRole="button"
+          accessibilityLabel={LL.CardScreen.readNfcCard()}
         >
           <Icon
             source={Nfc}

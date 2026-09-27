@@ -5,7 +5,11 @@
 import { act, renderHook } from "@testing-library/react-native"
 
 import type { FlashcardReadResult } from "@app/contexts/Flashcard"
-import { useOpenFlashcard, useTapFlashcard } from "@app/hooks/use-tap-flashcard"
+import {
+  type TapFlashcardOptions,
+  useOpenFlashcard,
+  useTapFlashcard,
+} from "@app/hooks/use-tap-flashcard"
 
 const mockNavigate = jest.fn()
 const mockReadFlashcard = jest.fn<Promise<FlashcardReadResult>, []>()
@@ -25,16 +29,16 @@ beforeEach(() => {
   mockFlashcard = {}
 })
 
-describe("useTapFlashcard", () => {
-  const tap = async () => {
-    const { result } = renderHook(() => useTapFlashcard())
-    let read: FlashcardReadResult = {}
-    await act(async () => {
-      read = await result.current()
-    })
-    return read
-  }
+const tap = async (options?: TapFlashcardOptions) => {
+  const { result } = renderHook(() => useTapFlashcard(options))
+  let read: FlashcardReadResult = {}
+  await act(async () => {
+    read = await result.current()
+  })
+  return read
+}
 
+describe("useTapFlashcard", () => {
   it("opens the Cashu screen when the tap read a Cashu card", async () => {
     mockReadFlashcard.mockResolvedValue({ cashuCard: CASHU_CARD })
 
@@ -59,6 +63,37 @@ describe("useTapFlashcard", () => {
     mockReadFlashcard.mockResolvedValue({})
 
     await tap()
+
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+})
+
+describe("useTapFlashcard({ openBoltCard: false }): the Home tile's sync", () => {
+  // On main that control re-read the card and refreshed the tile in place;
+  // the tile body is what opens Card.
+  it("refreshes a BoltCard in place: the tap reads it and opens nothing", async () => {
+    mockReadFlashcard.mockResolvedValue({ boltCard: true })
+
+    const read = await tap({ openBoltCard: false })
+
+    expect(mockReadFlashcard).toHaveBeenCalledTimes(1)
+    expect(mockNavigate).not.toHaveBeenCalled()
+    expect(read).toEqual({ boltCard: true })
+  })
+
+  it("still opens the Cashu screen for a Cashu card, which nothing else shows", async () => {
+    mockReadFlashcard.mockResolvedValue({ cashuCard: CASHU_CARD })
+
+    await tap({ openBoltCard: false })
+
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2")
+    expect(mockNavigate).toHaveBeenCalledTimes(1)
+  })
+
+  it("goes nowhere when the tap read nothing", async () => {
+    mockReadFlashcard.mockResolvedValue({})
+
+    await tap({ openBoltCard: false })
 
     expect(mockNavigate).not.toHaveBeenCalled()
   })

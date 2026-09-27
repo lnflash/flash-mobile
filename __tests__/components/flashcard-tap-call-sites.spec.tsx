@@ -4,7 +4,8 @@
  * two "open my card" entry points go through `useOpenFlashcard`. One spec per
  * call site: a control wired back to a raw `readFlashcard` (the bug this
  * replaces: a Cashu card tapped anywhere but Settings opened nothing) fails
- * here. The FlashcardV2 refresh is pinned in flashcard-v2.spec.tsx, the
+ * here, and so does the Home tile's sync if it stops refreshing a BoltCard in
+ * place. The FlashcardV2 refresh is pinned in flashcard-v2.spec.tsx, the
  * routing itself in use-tap-flashcard.spec.tsx.
  */
 import * as React from "react"
@@ -14,6 +15,7 @@ import { createTheme, ThemeProvider } from "@rneui/themed"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import appTheme from "../../app/rne-theme/theme"
+import type { TapFlashcardOptions } from "../../app/hooks/use-tap-flashcard"
 import { EmptyCard, Flashcard } from "../../app/components/card"
 import WalletOverview from "../../app/components/wallet-overview/wallet-overview"
 import { GetStartedScreen } from "../../app/screens/get-started-screen/get-started-screen"
@@ -22,12 +24,13 @@ import { AccountFlashcard } from "../../app/screens/settings-screen/settings/acc
 loadLocale("en")
 const LL = i18nObject("en")
 
-const mockTapFlashcard = jest.fn(async () => ({}))
+/** Called with the options the call site passed to `useTapFlashcard`. */
+const mockTapFlashcard = jest.fn(async (_options?: TapFlashcardOptions) => ({}))
 const mockOpenFlashcard = jest.fn(async () => {})
 const mockReadFlashcard = jest.fn(async () => ({}))
 
 jest.mock("@app/hooks", () => ({
-  useTapFlashcard: () => mockTapFlashcard,
+  useTapFlashcard: (options?: TapFlashcardOptions) => () => mockTapFlashcard(options),
   useOpenFlashcard: () => mockOpenFlashcard,
   // A linked BoltCard, so the Home tile renders. `readFlashcard` is here only
   // so a call site that still used it would be caught calling it.
@@ -124,8 +127,13 @@ const renderInTheme = (element: React.ReactElement) =>
     </ThemeProvider>,
   )
 
-const expectTapped = () => {
+/**
+ * One routed tap. `options` is what the call site must pass: none means a
+ * BoltCard opens Card, `{ openBoltCard: false }` means it refreshes in place.
+ */
+const expectTapped = (options?: TapFlashcardOptions) => {
   expect(mockTapFlashcard).toHaveBeenCalledTimes(1)
+  expect(mockTapFlashcard).toHaveBeenCalledWith(options)
   expect(mockOpenFlashcard).not.toHaveBeenCalled()
   expect(mockReadFlashcard).not.toHaveBeenCalled()
 }
@@ -169,12 +177,14 @@ describe("card tap call sites", () => {
     expectTapped()
   })
 
-  it("Home: the Flashcard tile's sync routes the tap", () => {
+  it("Home: the Flashcard tile's sync refreshes a BoltCard in place, and routes a Cashu card", () => {
+    // On main this re-read the card and updated the tile without leaving
+    // Home; the tile body is what opens Card.
     renderInTheme(<WalletOverview setIsUnverifiedSeedModalVisible={jest.fn()} />)
 
     fireEvent.press(screen.getByTestId(`${LL.HomeScreen.flashcard()}-right`))
 
-    expectTapped()
+    expectTapped({ openBoltCard: false })
   })
 
   it("Home: the Flashcard tile opens by the shared entry-point rule", () => {
@@ -191,5 +201,34 @@ describe("card tap call sites", () => {
     fireEvent.press(screen.getByTestId(LL.SettingsScreen.flashcard()))
 
     expectOpened()
+  })
+})
+
+describe("icon-only read controls a screen reader can name", () => {
+  // A test id must not double as the accessibility label: the control would
+  // be announced as "flashcard-refresh".
+  it("Card: the BoltCard refresh is a button labelled as a card read", () => {
+    renderInTheme(<Flashcard onReload={jest.fn()} onTopup={jest.fn()} />)
+
+    const refresh = screen.getByTestId("flashcard-refresh")
+
+    expect(refresh.props.accessibilityRole).toBe("button")
+    expect(refresh.props.accessibilityLabel).toBe(LL.CardScreen.readNfcCard())
+  })
+
+  it("Get Started: the NFC icon is a button labelled as a card read", () => {
+    const props = {
+      navigation: { navigate: jest.fn(), replace: jest.fn(), reset: jest.fn() },
+      route: { key: "getStarted", name: "getStarted" },
+    } as unknown as React.ComponentProps<typeof GetStartedScreen>
+    const { unmount } = renderInTheme(<GetStartedScreen {...props} />)
+
+    const readCard = screen.getByTestId("get-started-read-card")
+
+    expect(readCard.props.accessibilityRole).toBe("button")
+    expect(readCard.props.accessibilityLabel).toBe(LL.CardScreen.readNfcCard())
+    // The icon pulses on a timer; stop it before the test ends so no frame
+    // lands outside act().
+    unmount()
   })
 })
