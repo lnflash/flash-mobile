@@ -389,6 +389,102 @@ type RootTranslation = {
 		 * T​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​r​e​a​d​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​s​t​a​t​e​.​ ​U​p​d​a​t​e​ ​t​h​e​ ​a​p​p​ ​b​e​f​o​r​e​ ​r​e​l​y​i​n​g​ ​o​n​ ​t​h​e​ ​c​a​r​d​'​s​ ​P​I​N​.
 		 */
 		pinUnknownBody: string
+		/**
+		 * S​e​t​
+	​P​I​N
+		 */
+		setPin: string
+		/**
+		 * C​h​a​n​g​e​
+	​P​I​N
+		 */
+		changePin: string
+		/**
+		 * S​e​t​ ​c​a​r​d​ ​P​I​N
+		 */
+		setPinTitle: string
+		/**
+		 * C​h​a​n​g​e​ ​c​a​r​d​ ​P​I​N
+		 */
+		changePinTitle: string
+		/**
+		 * C​u​r​r​e​n​t​ ​P​I​N
+		 */
+		currentPin: string
+		/**
+		 * N​e​w​ ​P​I​N
+		 */
+		newPin: string
+		/**
+		 * C​o​n​f​i​r​m​ ​n​e​w​ ​P​I​N
+		 */
+		confirmPin: string
+		/**
+		 * 4​ ​t​o​ ​8​ ​d​i​g​i​t​s
+		 */
+		pinLength: string
+		/**
+		 * T​h​e​ ​P​I​N​s​ ​d​o​n​'​t​ ​m​a​t​c​h
+		 */
+		pinMismatch: string
+		/**
+		 * C​h​o​o​s​e​ ​a​ ​P​I​N​ ​d​i​f​f​e​r​e​n​t​ ​f​r​o​m​ ​t​h​e​ ​c​u​r​r​e​n​t​ ​o​n​e
+		 */
+		pinSameAsCurrent: string
+		/**
+		 * O​n​c​e​ ​s​e​t​,​ ​a​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​b​u​t​ ​n​e​v​e​r​ ​r​e​m​o​v​e​d​.​ ​T​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​b​l​o​c​k​ ​t​h​e​ ​c​a​r​d​ ​f​o​r​ ​g​o​o​d​,​ ​s​o​ ​p​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​.
+		 */
+		setPinWarning: string
+		/**
+		 * O​n​c​e​ ​s​e​t​,​ ​a​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​b​u​t​ ​n​e​v​e​r​ ​r​e​m​o​v​e​d​.​ ​P​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​:​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​,​ ​t​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​i​n​ ​a​ ​r​o​w​ ​s​w​i​t​c​h​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​.
+		 */
+		setPinWarningOpen: string
+		/**
+		 * H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​t​h​e​ ​b​a​c​k​ ​o​f​ ​y​o​u​r​ ​p​h​o​n​e​ ​t​o​ ​a​p​p​l​y
+		 */
+		tapToApply: string
+		/**
+		 * P​I​N​ ​s​e​t​.​ ​T​h​e​ ​c​a​r​d​ ​n​o​w​ ​a​s​k​s​ ​f​o​r​ ​i​t​ ​b​e​f​o​r​e​ ​i​t​ ​s​p​e​n​d​s​ ​o​r​ ​l​o​a​d​s​.
+		 */
+		pinSet: string
+		/**
+		 * P​I​N​ ​c​h​a​n​g​e​d​.
+		 */
+		pinChanged: string
+		/**
+		 * W​r​o​n​g​ ​P​I​N​.​ ​{​t​r​i​e​s​}​ ​t​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​c​a​r​d​ ​b​l​o​c​k​s​.
+		 * @param {number} tries
+		 */
+		wrongPin: RequiredParams<'tries'>
+		/**
+		 * W​r​o​n​g​ ​P​I​N​.​ ​{​t​r​i​e​s​}​ ​t​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​s​w​i​t​c​h​e​s​ ​o​f​f​.
+		 * @param {number} tries
+		 */
+		wrongPinOpen: RequiredParams<'tries'>
+		/**
+		 * T​h​a​t​ ​w​a​s​ ​t​h​e​ ​l​a​s​t​ ​t​r​y​.​ ​T​h​e​ ​c​a​r​d​ ​i​s​ ​n​o​w​ ​b​l​o​c​k​e​d​ ​a​n​d​ ​m​u​s​t​ ​b​e​ ​r​e​p​l​a​c​e​d​.
+		 */
+		cardNowBlocked: string
+		/**
+		 * T​h​a​t​ ​w​a​s​ ​t​h​e​ ​l​a​s​t​ ​t​r​y​.​ ​O​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​i​s​ ​n​o​w​ ​o​f​f​:​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​i​t​s​ ​b​a​l​a​n​c​e​.​ ​M​o​v​e​ ​t​h​e​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​.
+		 */
+		cardNowOpen: string
+		/**
+		 * T​h​a​t​ ​i​s​ ​a​ ​d​i​f​f​e​r​e​n​t​ ​c​a​r​d​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​t​h​i​s​ ​s​c​r​e​e​n​ ​i​s​ ​s​h​o​w​i​n​g​.
+		 */
+		wrongCard: string
+		/**
+		 * N​o​ ​C​a​s​h​u​ ​c​a​r​d​ ​f​o​u​n​d​.​ ​H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​s​t​e​a​d​y​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		cardNotFound: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​a​ ​P​I​N​.​ ​C​h​a​n​g​e​ ​i​t​ ​i​n​s​t​e​a​d​.
+		 */
+		pinAlreadySet: string
+		/**
+		 * C​o​n​t​i​n​u​e
+		 */
+		next: string
 	}
 	Cashout: {
 		/**
@@ -7299,6 +7395,100 @@ export type TranslationFunctions = {
 		 * This app can't read this card's PIN state. Update the app before relying on the card's PIN.
 		 */
 		pinUnknownBody: () => LocalizedString
+		/**
+		 * Set
+	PIN
+		 */
+		setPin: () => LocalizedString
+		/**
+		 * Change
+	PIN
+		 */
+		changePin: () => LocalizedString
+		/**
+		 * Set card PIN
+		 */
+		setPinTitle: () => LocalizedString
+		/**
+		 * Change card PIN
+		 */
+		changePinTitle: () => LocalizedString
+		/**
+		 * Current PIN
+		 */
+		currentPin: () => LocalizedString
+		/**
+		 * New PIN
+		 */
+		newPin: () => LocalizedString
+		/**
+		 * Confirm new PIN
+		 */
+		confirmPin: () => LocalizedString
+		/**
+		 * 4 to 8 digits
+		 */
+		pinLength: () => LocalizedString
+		/**
+		 * The PINs don't match
+		 */
+		pinMismatch: () => LocalizedString
+		/**
+		 * Choose a PIN different from the current one
+		 */
+		pinSameAsCurrent: () => LocalizedString
+		/**
+		 * Once set, a PIN can be changed but never removed. Three wrong entries block the card for good, so pick one you will remember.
+		 */
+		setPinWarning: () => LocalizedString
+		/**
+		 * Once set, a PIN can be changed but never removed. Pick one you will remember: on this card's software, three wrong entries in a row switch the PIN check off.
+		 */
+		setPinWarningOpen: () => LocalizedString
+		/**
+		 * Hold the card to the back of your phone to apply
+		 */
+		tapToApply: () => LocalizedString
+		/**
+		 * PIN set. The card now asks for it before it spends or loads.
+		 */
+		pinSet: () => LocalizedString
+		/**
+		 * PIN changed.
+		 */
+		pinChanged: () => LocalizedString
+		/**
+		 * Wrong PIN. {tries} tries left before the card blocks.
+		 */
+		wrongPin: (arg: { tries: number }) => LocalizedString
+		/**
+		 * Wrong PIN. {tries} tries left before the PIN check switches off.
+		 */
+		wrongPinOpen: (arg: { tries: number }) => LocalizedString
+		/**
+		 * That was the last try. The card is now blocked and must be replaced.
+		 */
+		cardNowBlocked: () => LocalizedString
+		/**
+		 * That was the last try. On this card's software the PIN check is now off: anyone holding the card can spend its balance. Move the value off it.
+		 */
+		cardNowOpen: () => LocalizedString
+		/**
+		 * That is a different card. Tap the card this screen is showing.
+		 */
+		wrongCard: () => LocalizedString
+		/**
+		 * No Cashu card found. Hold the card steady and try again.
+		 */
+		cardNotFound: () => LocalizedString
+		/**
+		 * This card already has a PIN. Change it instead.
+		 */
+		pinAlreadySet: () => LocalizedString
+		/**
+		 * Continue
+		 */
+		next: () => LocalizedString
 	}
 	Cashout: {
 		/**

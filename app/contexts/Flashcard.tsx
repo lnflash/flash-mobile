@@ -22,7 +22,18 @@ import {
 
 // utils
 import { toastShow } from "../utils/toast"
-import { CashuCardInfo, readCashuCard } from "../utils/cashu-card"
+import {
+  CashuCardInfo,
+  Transceiver,
+  WrongCardError,
+  getBalance as getCardBalance,
+  getInfo,
+  getPubkey,
+  readCashuCard,
+  selectApplet,
+  toHex,
+} from "../utils/cashu-card"
+import { extendCardTimeout } from "../utils/cashu-card-nfc"
 import {
   CardUnitTotals,
   soleUnit,
@@ -112,6 +123,17 @@ export interface FlashcardInterface {
    */
   forgetCashuCard: () => void
   readFlashcard: (isPayment?: boolean) => Promise<FlashcardReadResult>
+  /**
+   * One more tap, for something that changes the card: PIN, load, spend.
+   * Opens a session, SELECTs the applet, checks it is `expectedPubkey`'s card
+   * when given, runs `op`, re-reads the card so `cashuCard` shows the result,
+   * releases. Failures are rethrown after the release; the caller owns the
+   * message.
+   */
+  runCardOperation: <T>(
+    op: (transceive: Transceiver) => Promise<T>,
+    expectedPubkey?: string,
+  ) => Promise<T>
 }
 
 export const FlashcardContext = createContext<FlashcardInterface>({
@@ -127,6 +149,9 @@ export const FlashcardContext = createContext<FlashcardInterface>({
   resetFlashcard: () => {},
   forgetCashuCard: () => {},
   readFlashcard: async () => ({}),
+  runCardOperation: async () => {
+    throw new Error("FlashcardProvider is not mounted")
+  },
 })
 
 type Props = {
@@ -307,9 +332,71 @@ export const FlashcardProvider = ({ children }: Props) => {
   const resolveCashuUnits = async (card: CashuCardInfo, generation: number) => {
     const unitTotals = await cardUnitTotals(card)
     if (!unitTotals || generation !== cashuGeneration.current) return
-    setCashuCard((current) => (current ? { ...current, unitTotals } : current))
+    // Totals belong to the split they were computed from. A card operation
+    // that moved value since then dropped that split (runCardOperation).
+    setCashuCard((current) =>
+      current && current.keysets === card.keysets ? { ...current, unitTotals } : current,
+    )
     if (isAuthed) {
       dispatch(cardUnitResolved({ pubkey: card.pubkey, unit: soleUnit(unitTotals) }))
+    }
+  }
+
+  const runCardOperation = async <T,>(
+    op: (transceive: Transceiver) => Promise<T>,
+    expectedPubkey?: string,
+  ): Promise<T> => {
+    setVisible(true)
+    NfcManager.start()
+    try {
+      // IsoDep only: this tap is for the applet, never for an NDEF tag.
+      await NfcManager.requestTechnology(NfcTech.IsoDep)
+      // On-card work can outlive Android's 618 ms default (see the helper).
+      await extendCardTimeout()
+      const transceive: Transceiver = (bytes) =>
+        NfcManager.isoDepHandler.transceive(bytes)
+      // A fresh IsoDep channel resets the active applet; without a SELECT
+      // Android answers every command with 6E00 (flash-pos found this).
+      await selectApplet(transceive)
+      if (expectedPubkey) {
+        const pubkey = toHex(await getPubkey(transceive))
+        if (pubkey !== expectedPubkey) throw new WrongCardError(pubkey)
+      }
+      const result = await op(transceive)
+      // Re-read so the screen shows the card as it now is: a new PIN state,
+      // a different balance. The pubkey cannot change.
+      const info = await getInfo(transceive)
+      const balance = await getCardBalance(transceive)
+      setCashuCard((previous) => {
+        if (!previous) return previous
+        // The keyset split, and the units the mint named for it, describe the
+        // balance the tap read. An operation that moved value leaves neither
+        // true, so drop both and let the screen say "unit unknown" until the
+        // next read, rather than show old per-unit figures beside a new total.
+        const moved = balance !== previous.balance
+        return {
+          ...previous,
+          ...info,
+          balance,
+          keysets: moved ? undefined : previous.keysets,
+          unitTotals: moved ? undefined : previous.unitTotals,
+        }
+      })
+      // Signed out, a card stays in memory only, as on a tap.
+      if (expectedPubkey && isAuthed) {
+        dispatch(
+          cardSeen({
+            pubkey: expectedPubkey,
+            version: info.version,
+            pinState: info.pinState,
+            lastBalance: balance,
+            at: Date.now(),
+          }),
+        )
+      }
+      return result
+    } finally {
+      cancelTechnologyRequest()
     }
   }
 
@@ -467,6 +554,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         resetFlashcard,
         forgetCashuCard,
         readFlashcard,
+        runCardOperation,
       }}
     >
       {children}

@@ -290,6 +290,32 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByText(/Anyone holding this card can spend/)).toBeNull()
   })
 
+  it("offers Set PIN on a card with none and Change PIN on a card with one, opening the PIN screen in that mode", () => {
+    mockCashuCard = card({ pinState: "unset" })
+    const { unmount } = renderScreen()
+    fireEvent.press(screen.getByText(LL.FlashcardV2.setPin()))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "set" })
+    expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
+    unmount()
+
+    mockNavigate.mockClear()
+    mockCashuCard = card({ pinState: "set" })
+    renderScreen()
+    fireEvent.press(screen.getByText(LL.FlashcardV2.changePin()))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "change" })
+    expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+  })
+
+  it("offers no PIN action on a blocked card or one whose PIN state it cannot read", () => {
+    ;(["blocked", "unknown"] as const).forEach((pinState) => {
+      mockCashuCard = card({ pinState })
+      const { unmount } = renderScreen()
+      expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
+      unmount()
+    })
+  })
+
   it("Remove card forgets the Cashu card, not the BoltCard", () => {
     renderScreen()
 

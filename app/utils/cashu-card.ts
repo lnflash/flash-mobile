@@ -44,6 +44,8 @@ export const INS = {
   SPEND_PROOF: 0x20,
   LOAD_PROOF: 0x30,
   VERIFY_PIN: 0x40,
+  SET_PIN: 0x41,
+  CHANGE_PIN: 0x42,
 } as const
 
 /** Sends a raw APDU and resolves to the full response: data bytes + SW1 + SW2. */
@@ -418,6 +420,48 @@ const pinBytes = (pin: string, command: string): number[] => {
     )
   }
   return Array.from(pin).map((c) => c.charCodeAt(0))
+}
+
+/** The tries left encoded in a 63CX status word, or undefined for any other. */
+export const triesLeft = (sw: number): number | undefined =>
+  (sw & 0xfff0) === 0x63c0 ? sw & 0x0f : undefined
+
+/** A tap reached a card that is not the one the screen is showing. */
+export class WrongCardError extends Error {
+  constructor(readonly pubkey: string) {
+    super("a different card was tapped")
+    this.name = "WrongCardError"
+  }
+}
+
+/**
+ * SET_PIN: once per card lifetime. Needs no authentication — the card ships
+ * with no PIN, which is why setting one is the holder's first job — and
+ * answers 6985 if one is already set. There is no way back to "no PIN".
+ */
+export async function setCardPin(transceive: Transceiver, pin: string): Promise<void> {
+  await send(transceive, INS.SET_PIN, {
+    data: pinBytes(pin, "SET_PIN"),
+    context: "SET_PIN",
+  })
+}
+
+/**
+ * CHANGE_PIN: `oldLen ‖ old ‖ new`. The applet requires VERIFY_PIN in the same
+ * session (6982 otherwise) and checks the old PIN again itself (63CX), so the
+ * caller verifies first and both PINs travel in one tap.
+ */
+export async function changeCardPin(
+  transceive: Transceiver,
+  oldPin: string,
+  newPin: string,
+): Promise<void> {
+  const oldBytes = pinBytes(oldPin, "CHANGE_PIN")
+  const newBytes = pinBytes(newPin, "CHANGE_PIN")
+  await send(transceive, INS.CHANGE_PIN, {
+    data: [oldBytes.length, ...oldBytes, ...newBytes],
+    context: "CHANGE_PIN",
+  })
 }
 
 /**

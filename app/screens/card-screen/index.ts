@@ -1,3 +1,4 @@
 export * from "./card"
 export * from "./flashcard-topup"
 export * from "./flashcard-v2"
+export * from "./flashcard-v2-pin"
