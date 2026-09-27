@@ -1,28 +1,36 @@
 /**
  * ENG-616: the Flashcard v2 (Cashu card) screen renders what the last tap read
- * and tells the truth about the card's PIN state.
+ * and tells the truth about the card's balance and PIN state.
  */
 import * as React from "react"
 import { fireEvent, render, screen } from "@testing-library/react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
 
+import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import appTheme from "../../app/rne-theme/theme"
+import type { CashuCardState } from "../../app/contexts/Flashcard"
 import {
   FlashcardV2Screen,
+  formatUnitAmount,
   shortPubkey,
 } from "../../app/screens/card-screen/flashcard-v2"
-import { CashuCardInfo } from "../../app/utils/cashu-card"
 
 loadLocale("en")
+const LL = i18nObject("en")
 
 const mockNavigate = jest.fn()
 const mockGoBack = jest.fn()
-const mockAddListener = jest.fn(() => jest.fn())
-const mockReadFlashcard = jest.fn(async () => ({}))
+const mockAddListener = jest.fn((_event: string, _listener: () => void) => jest.fn())
+let mockIsFocused = true
+const mockTapFlashcard = jest.fn(async () => ({}))
+const mockForgetCashuCard = jest.fn()
 const mockResetFlashcard = jest.fn()
-let mockCashuCard: CashuCardInfo | undefined
+let mockCashuCard: CashuCardState | undefined
 let mockIsAuthed = true
+// Undefined: the real per-version answer (no released applet keeps a blocked
+// card from spending, ENG-615). A spec sets it to render a version that does.
+let mockBlockedPinGatesSpend: boolean | undefined
 
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -34,6 +42,7 @@ jest.mock("@react-navigation/native", () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
     addListener: mockAddListener,
+    isFocused: () => mockIsFocused,
   }),
 }))
 jest.mock("react-native-safe-area-context", () =>
@@ -49,14 +58,24 @@ jest.mock("@app/graphql/is-authed-context", () => ({
 jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
     cashuCard: mockCashuCard,
-    readFlashcard: mockReadFlashcard,
+    forgetCashuCard: mockForgetCashuCard,
     resetFlashcard: mockResetFlashcard,
   }),
+  useTapFlashcard: () => mockTapFlashcard,
 }))
+jest.mock("@app/utils/cashu-card", () => {
+  const actual = jest.requireActual("@app/utils/cashu-card")
+  return {
+    ...actual,
+    blockedPinGatesSpend: (version: string) =>
+      mockBlockedPinGatesSpend ?? actual.blockedPinGatesSpend(version),
+  }
+})
 
 const PUBKEY = "02" + "ab".repeat(32)
+const SAT_KEYSET = "0059534ce0bfa19a"
 
-const card = (overrides: Partial<CashuCardInfo> = {}): CashuCardInfo => ({
+const card = (overrides: Partial<CashuCardState> = {}): CashuCardState => ({
   version: "0.2",
   maxSlots: 32,
   unspent: 3,
@@ -67,6 +86,8 @@ const card = (overrides: Partial<CashuCardInfo> = {}): CashuCardInfo => ({
   pinState: "set",
   pubkey: PUBKEY,
   balance: 1500,
+  keysets: [{ keysetId: SAT_KEYSET, amount: 1500 }],
+  unitTotals: { byUnit: [{ unit: "sat", amount: 1500 }], unknown: 0 },
   ...overrides,
 })
 
@@ -87,13 +108,17 @@ describe("FlashcardV2Screen", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockIsAuthed = true
+    mockIsFocused = true
+    mockBlockedPinGatesSpend = undefined
     mockCashuCard = card()
   })
 
-  it("shows the on-card balance, slot summary, applet version and a short card id", () => {
+  it("shows the balance in the unit the mint named, slot summary, applet version and a short card id", () => {
     renderScreen()
 
-    expect(screen.getByTestId("flashcard-v2-balance").props.children).toBe("1,500")
+    expect(screen.getByTestId("flashcard-v2-balance-sat").props.children).toBe(
+      "1,500 sats",
+    )
     expect(screen.getByText("3 loaded · 24 free of 32")).toBeTruthy()
     expect(screen.getByText("v0.2")).toBeTruthy()
     expect(screen.getByTestId("flashcard-v2-card-id").props.children).toBe(
@@ -104,12 +129,59 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByText(PUBKEY)).toBeNull()
   })
 
-  it("re-reads the card from the refresh control", () => {
+  it("never shows the card's figure bare: until the mint names the unit, it says the unit is unknown", () => {
+    // GET_BALANCE adds every keyset together and the card stores no unit.
+    mockCashuCard = card({ unitTotals: undefined })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-balance-unknown").props.children).toBe(
+      "1,500 · unit unknown",
+    )
+    expect(screen.queryByText("1,500")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-balance-sat")).toBeNull()
+  })
+
+  it("shows a total per unit on a card holding more than one, and labels what no keyset accounts for", () => {
+    mockCashuCard = card({
+      balance: 1255,
+      unitTotals: {
+        byUnit: [
+          { unit: "sat", amount: 1000 },
+          { unit: "usd", amount: 250 },
+        ],
+        unknown: 5,
+      },
+    })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-balance-sat").props.children).toBe(
+      "1,000 sats",
+    )
+    expect(screen.getByTestId("flashcard-v2-balance-usd").props.children).toBe("2.50 USD")
+    expect(screen.getByTestId("flashcard-v2-balance-unknown").props.children).toBe(
+      "5 · unit unknown",
+    )
+    // Never summed across units.
+    expect(screen.queryByText(/1,255/)).toBeNull()
+  })
+
+  it("says an empty card is empty without waiting on the mint", () => {
+    mockCashuCard = card({ balance: 0, unspent: 0, keysets: [], unitTotals: undefined })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-balance-empty").props.children).toBe("Empty")
+    expect(screen.queryByTestId("flashcard-v2-balance-unknown")).toBeNull()
+  })
+
+  it("re-reads through the routing tap, so a different card opens its own screen", () => {
     renderScreen()
 
     fireEvent.press(screen.getByTestId("flashcard-v2-refresh"))
 
-    expect(mockReadFlashcard).toHaveBeenCalledWith(false)
+    expect(mockTapFlashcard).toHaveBeenCalledTimes(1)
   })
 
   it("says nothing about the PIN when one is set", () => {
@@ -117,44 +189,88 @@ describe("FlashcardV2Screen", () => {
 
     expect(screen.queryByTestId("flashcard-v2-no-pin")).toBeNull()
     expect(screen.queryByTestId("flashcard-v2-blocked")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-pin-unknown")).toBeNull()
   })
 
-  it("warns that a card with no PIN spends for whoever holds it", () => {
-    mockCashuCard = card({ pinState: "unset" })
+  it("warns that a v0.2 card with no PIN spends for whoever holds it, and promises nothing a PIN cannot deliver", () => {
+    // On v0.2.0 three wrong guesses turn a set PIN off (ENG-615), so the
+    // notice must not sell setting one as protection for a balance.
+    mockCashuCard = card({ version: "0.2", pinState: "unset" })
 
     renderScreen()
 
     expect(screen.getByTestId("flashcard-v2-no-pin")).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.noPinBody())).toBeTruthy()
     expect(screen.getByText(/Anyone holding this card can spend/)).toBeTruthy()
+    expect(screen.queryByText(/Set a PIN/i)).toBeNull()
+    expect(screen.queryByText(/before carrying a balance/i)).toBeNull()
   })
 
-  it("tells a blocked card the truth: it cannot be unblocked and must be replaced", () => {
-    // No unblock path exists on this applet (ENG-617); the screen must not
-    // offer one or imply one is coming.
-    mockCashuCard = card({ pinState: "blocked" })
+  it("tells the truth about a blocked v0.2 card: it no longer asks for a PIN and anyone holding it can spend it", () => {
+    // CashuApplet.java@v0.2.0:587-591 gates only pinState 1: once blocked,
+    // SPEND_PROOF runs with no PIN. The card is open, not frozen, and nothing
+    // unblocks it (ENG-617).
+    mockCashuCard = card({ version: "0.2", pinState: "blocked" })
 
     renderScreen()
 
     expect(screen.getByTestId("flashcard-v2-blocked")).toBeTruthy()
-    expect(screen.getByText(/cannot be unblocked/)).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.blockedOpenTitle())).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.blockedOpenBody())).toBeTruthy()
+    expect(screen.getByText(/anyone holding the card can spend its balance/)).toBeTruthy()
+    expect(screen.getByText(/can't be unblocked/)).toBeTruthy()
+    expect(screen.getByText(/Move the value off it/)).toBeTruthy()
+    // Not the frozen-and-safe reading the firmware does not back.
+    expect(screen.queryByText(LL.FlashcardV2.blockedLockedTitle())).toBeNull()
+    expect(screen.queryByText(/refuses to spend/)).toBeNull()
     expect(screen.queryByText(/unblock now/i)).toBeNull()
   })
 
-  it("offers Remove card only when signed in, and it forgets the card", () => {
+  it("keys the blocked copy on the applet version: only a version confirmed to keep refusing reads as frozen", () => {
+    mockBlockedPinGatesSpend = true
+    mockCashuCard = card({ version: "9.9", pinState: "blocked" })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-blocked")).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.blockedLockedTitle())).toBeTruthy()
+    expect(screen.getByText(/refuses to spend and can't be unblocked/)).toBeTruthy()
+    expect(screen.queryByText(LL.FlashcardV2.blockedOpenTitle())).toBeNull()
+  })
+
+  it("says it cannot read a PIN state byte it does not know, instead of calling the card PIN-less", () => {
+    mockCashuCard = card({ pinState: "unknown" })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-pin-unknown")).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.pinUnknownTitle())).toBeTruthy()
+    expect(screen.getByText(/can't read this card's PIN state/)).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-no-pin")).toBeNull()
+    expect(screen.queryByText(/No PIN on this card/)).toBeNull()
+    expect(screen.queryByText(/Anyone holding this card can spend/)).toBeNull()
+  })
+
+  it("Remove card forgets the Cashu card, not the BoltCard", () => {
     renderScreen()
 
     fireEvent.press(screen.getByText(/Remove/))
 
-    expect(mockResetFlashcard).toHaveBeenCalledTimes(1)
+    expect(mockForgetCashuCard).toHaveBeenCalledTimes(1)
+    expect(mockResetFlashcard).not.toHaveBeenCalled()
   })
 
-  it("hides Remove card when signed out and forgets the card on leaving instead", () => {
+  it("hides Remove card when signed out and forgets the Cashu card on leaving instead", () => {
     mockIsAuthed = false
 
     renderScreen()
 
     expect(screen.queryByText(/Remove/)).toBeNull()
     expect(mockAddListener).toHaveBeenCalledWith("beforeRemove", expect.any(Function))
+    const [, onLeave] = mockAddListener.mock.calls[0]
+    onLeave()
+    expect(mockForgetCashuCard).toHaveBeenCalledTimes(1)
+    expect(mockResetFlashcard).not.toHaveBeenCalled()
   })
 
   it("leaves the screen when there is no card to show", () => {
@@ -163,7 +279,33 @@ describe("FlashcardV2Screen", () => {
     renderScreen()
 
     expect(mockGoBack).toHaveBeenCalledTimes(1)
-    expect(screen.queryByTestId("flashcard-v2-balance")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-balance-sat")).toBeNull()
+  })
+
+  it("does not pop a second screen when the card is forgotten on the way out", () => {
+    // Leaving signed out forgets the card during the screen's own removal;
+    // by then it is no longer focused, and a goBack would pop the screen below.
+    mockCashuCard = undefined
+    mockIsFocused = false
+
+    renderScreen()
+
+    expect(mockGoBack).not.toHaveBeenCalled()
+  })
+})
+
+describe("formatUnitAmount", () => {
+  it("reads sat amounts as sats", () => {
+    expect(formatUnitAmount(1234567, "sat", LL)).toBe("1,234,567 sats")
+  })
+
+  it("reads usd amounts as the cents they are (spec/NUT-XX.md: sats or cents)", () => {
+    expect(formatUnitAmount(123456, "usd", LL)).toBe("1,234.56 USD")
+    expect(formatUnitAmount(5, "usd", LL)).toBe("0.05 USD")
+  })
+
+  it("shows any other unit as the mint's number and the mint's code", () => {
+    expect(formatUnitAmount(1500, "msat", LL)).toBe("1,500 msat")
   })
 })
 

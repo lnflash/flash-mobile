@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from "react"
+import React, { createContext, useEffect, useRef, useState } from "react"
 import { Dimensions, Modal, Platform, TouchableOpacity, View } from "react-native"
 import NfcManager, { Ndef, TagEvent, NfcTech } from "react-native-nfc-manager"
 import * as Animatable from "react-native-animatable"
@@ -14,11 +14,21 @@ import { Loading } from "./ActivityIndicatorContext"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppDispatch } from "@app/store/redux"
-import { cardSeen } from "@app/store/redux/slices/flashcardV2Slice"
+import {
+  cardForgotten,
+  cardSeen,
+  cardUnitResolved,
+} from "@app/store/redux/slices/flashcardV2Slice"
 
 // utils
 import { toastShow } from "../utils/toast"
 import { CashuCardInfo, readCashuCard } from "../utils/cashu-card"
+import {
+  CardUnitTotals,
+  soleUnit,
+  totalsByUnit,
+  unitsForKeysets,
+} from "../utils/cashu-mint"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -32,6 +42,24 @@ const describeError = (err: unknown): string => {
   return typeof status === "number" ? `${name} status=${status}` : name
 }
 
+/**
+ * A card's unspent value per unit, as the mint names the unit of each keyset
+ * on it. An empty card needs no lookup. Undefined when the mint could not be
+ * asked or did not answer with a keyset list.
+ */
+const cardUnitTotals = async (
+  card: CashuCardInfo,
+): Promise<CardUnitTotals | undefined> => {
+  if (card.keysets.length === 0) return { byUnit: [], unknown: 0 }
+  try {
+    const units = await unitsForKeysets(card.keysets.map((k) => k.keysetId))
+    return totalsByUnit(card.keysets, units)
+  } catch (err) {
+    console.warn("Cashu mint keyset lookup failed:", describeError(err))
+    return undefined
+  }
+}
+
 const width = Dimensions.get("screen").width
 
 type TransactionItem = {
@@ -40,12 +68,24 @@ type TransactionItem = {
 }
 
 /**
- * What one tap produced. A Cashu card (ENG-616) is returned here so the caller
- * can navigate on it; a BoltCard still lands in `lnurl` and the callers keep
- * watching that. Nothing in either field is secret.
+ * What one tap produced, so the caller can open the screen for it
+ * (`useTapFlashcard`). Nothing in either field is secret.
  */
 export type FlashcardReadResult = {
+  /** A Cashu card (ENG-616): what the card screen will show. */
   cashuCard?: CashuCardInfo
+  /** A BoltCard whose balance page loaded: the BoltCard screen has a card to show. */
+  boltCard?: boolean
+}
+
+/** A Cashu card as the app holds it: what the card said, plus what the mint said. */
+export type CashuCardState = CashuCardInfo & {
+  /**
+   * The card's unspent value per unit, once the mint has named the unit of
+   * each keyset on it. Undefined while that lookup is outstanding or after it
+   * failed: the screen then labels the card's figure "unit unknown".
+   */
+  unitTotals?: CardUnitTotals
 }
 
 export interface FlashcardInterface {
@@ -55,11 +95,18 @@ export interface FlashcardInterface {
   lnurl?: string
   balanceInSats?: number
   transactions?: TransactionItem[]
-  /** The last Cashu card this tap-session read: balance, PIN state, pubkey. */
-  cashuCard?: CashuCardInfo
+  /** The last Cashu card this app session read: balance, PIN state, pubkey. */
+  cashuCard?: CashuCardState
   loading?: boolean
   error?: string
+  /** Forgets the BoltCard: context and its persisted link. The Cashu card stays. */
   resetFlashcard: () => void
+  /**
+   * Forgets the Cashu card: context and this phone's record of it. The
+   * BoltCard link stays. "Remove card" on the Cashu screen, and leaving that
+   * screen signed out.
+   */
+  forgetCashuCard: () => void
   readFlashcard: (isPayment?: boolean) => Promise<FlashcardReadResult>
 }
 
@@ -74,6 +121,7 @@ export const FlashcardContext = createContext<FlashcardInterface>({
   loading: undefined,
   error: undefined,
   resetFlashcard: () => {},
+  forgetCashuCard: () => {},
   readFlashcard: async () => ({}),
 })
 
@@ -96,7 +144,10 @@ export const FlashcardProvider = ({ children }: Props) => {
   const [transactions, setTransactions] = useState<TransactionItem[]>()
   const [loading, setLoading] = useState<boolean>()
   const [error, setError] = useState<string>()
-  const [cashuCard, setCashuCard] = useState<CashuCardInfo>()
+  const [cashuCard, setCashuCard] = useState<CashuCardState>()
+  // Bumped by every Cashu read and every forget, so a mint lookup that
+  // finishes late can tell it no longer describes the card on screen.
+  const cashuGeneration = useRef(0)
   const dispatch = useAppDispatch()
 
   useEffect(() => {
@@ -137,6 +188,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   const handleTag = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
+    let boltCard = false
     try {
       setVisible(true)
       NfcManager.start()
@@ -177,18 +229,25 @@ export const FlashcardProvider = ({ children }: Props) => {
         }
         if (info) {
           // The card screen renders this; the caller navigates on the result.
+          cashuGeneration.current += 1
           setCashuCard(info)
-          // And the phone remembers the card: the applet keeps no history of
-          // its own, so this device-local record is the only one (ENG-616).
-          dispatch(
-            cardSeen({
-              pubkey: info.pubkey,
-              version: info.version,
-              pinState: info.pinState,
-              lastBalance: info.balance,
-              at: Date.now(),
-            }),
-          )
+          // A signed-in phone remembers the card: the applet keeps no history
+          // of its own, so this device-local record is the only one (ENG-616).
+          // A read while signed out stays in memory, as a BoltCard's does.
+          if (isAuthed) {
+            dispatch(
+              cardSeen({
+                pubkey: info.pubkey,
+                version: info.version,
+                pinState: info.pinState,
+                lastBalance: info.balance,
+                at: Date.now(),
+              }),
+            )
+          }
+          // The mint names the units; ask it off the NFC session, which the
+          // finally below releases without waiting.
+          resolveCashuUnits(info, cashuGeneration.current)
           return { cashuCard: info }
         }
         // The applet SELECT was refused: not a Cashu card. Parse the same
@@ -212,7 +271,7 @@ export const FlashcardProvider = ({ children }: Props) => {
             if (isPayment) {
               await getPayDetails(payload)
             } else {
-              await getHtml(tag, payload)
+              boltCard = await getHtml(tag, payload)
             }
           }
           setLoading(false)
@@ -230,7 +289,23 @@ export const FlashcardProvider = ({ children }: Props) => {
     } finally {
       cancelTechnologyRequest()
     }
-    return {}
+    return boltCard ? { boltCard } : {}
+  }
+
+  /**
+   * Puts the mint's units on a Cashu card that was just read: per-unit totals
+   * on the card in context and, signed in, the card's single unit (if it has
+   * exactly one) on its record. A mint that cannot be reached leaves the
+   * screen's figure labelled "unit unknown" and the record's unit as it was;
+   * the next read asks again. A newer read, or a forget, in the meantime wins.
+   */
+  const resolveCashuUnits = async (card: CashuCardInfo, generation: number) => {
+    const unitTotals = await cardUnitTotals(card)
+    if (!unitTotals || generation !== cashuGeneration.current) return
+    setCashuCard((current) => (current ? { ...current, unitTotals } : current))
+    if (isAuthed) {
+      dispatch(cardUnitResolved({ pubkey: card.pubkey, unit: soleUnit(unitTotals) }))
+    }
   }
 
   const getPayDetails = async (payload: string) => {
@@ -260,7 +335,8 @@ export const FlashcardProvider = ({ children }: Props) => {
     }
   }
 
-  const getHtml = async (tag: TagEvent, payload: string) => {
+  /** Loads a BoltCard's balance page; true when it named the card's lnurl. */
+  const getHtml = async (tag: TagEvent, payload: string): Promise<boolean> => {
     try {
       // Extract the full URL from the payload instead of just the query parameters
       const urlMatch = payload.match(/lnurlw?:\/\/[^?]+/)
@@ -290,9 +366,10 @@ export const FlashcardProvider = ({ children }: Props) => {
       })
       setTag(tag)
 
-      getLnurl(html)
+      const found = getLnurl(html)
       getBalance(html)
       getTransactions(html)
+      return found
     } catch (err) {
       console.warn("NFC balance page fetch failed:", describeError(err))
       toastShow({
@@ -301,14 +378,17 @@ export const FlashcardProvider = ({ children }: Props) => {
           "Unsupported NFC card. Please ensure you are using a flashcard or other boltcard compatible NFC",
         type: "error",
       })
+      return false
     }
   }
 
-  const getLnurl = (html: string) => {
+  const getLnurl = (html: string): boolean => {
     const lnurlMatch = html.match(/href="lightning:(lnurl\w+)"/)
     if (lnurlMatch) {
       setLnurl(lnurlMatch[1])
+      return true
     }
+    return false
   }
 
   const getBalance = (html: string) => {
@@ -348,7 +428,6 @@ export const FlashcardProvider = ({ children }: Props) => {
     setTransactions(undefined)
     setLoading(undefined)
     setError(undefined)
-    setCashuCard(undefined)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateState((state: any) => {
       if (state)
@@ -359,6 +438,13 @@ export const FlashcardProvider = ({ children }: Props) => {
         }
       return undefined
     })
+  }
+
+  const forgetCashuCard = () => {
+    // A unit lookup still in flight must not write to a card that is gone.
+    cashuGeneration.current += 1
+    if (cashuCard) dispatch(cardForgotten({ pubkey: cashuCard.pubkey }))
+    setCashuCard(undefined)
   }
 
   return (
@@ -374,6 +460,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         loading,
         error,
         resetFlashcard,
+        forgetCashuCard,
         readFlashcard,
       }}
     >

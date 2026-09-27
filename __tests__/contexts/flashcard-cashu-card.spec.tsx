@@ -3,16 +3,25 @@ import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager"
 import axios from "axios"
 
 import { buildSelectApdu } from "@app/utils/cashu-card"
+import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { store } from "@app/store/redux"
+import { resetFlashcardV2 } from "@app/store/redux/slices/flashcardV2Slice"
 import {
   FlashcardSnapshot,
   PROVIDER_RENDER_TIMEOUT_MS,
+  ProviderOptions,
   renderProvider,
 } from "./flashcard-harness"
 
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
 jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
+// The mint is asked for keyset units after a Cashu read; no spec reaches the
+// network. The grouping itself stays real.
+jest.mock("@app/utils/cashu-mint", () => ({
+  ...jest.requireActual("@app/utils/cashu-mint"),
+  unitsForKeysets: jest.fn(),
+}))
 import { toastShow } from "@app/utils/toast"
 
 // Exercises handleTag's orchestration — the only code that decides whether a
@@ -25,13 +34,17 @@ import { toastShow } from "@app/utils/toast"
 //   - getTag() runs only on the NDEF path, after the applet SELECT: on iOS
 //     it is a live NDEF read, so it must never precede or follow a Cashu read
 //   - a Cashu read lands in context state AND in the tap's result, so a
-//     screen can render it and the caller can navigate on it (ENG-616)
+//     screen can render it and the caller can navigate on it (ENG-616); only
+//     a signed-in read is written to the phone's record of cards
+//   - the Cashu card and the BoltCard are forgotten separately
 
 const ok = (data: number[]) => [...data, 0x90, 0x00]
 const SW_FILE_NOT_FOUND = [0x6a, 0x82]
 const INS_SELECT = 0xa4
 const PUBKEY = [0x02, ...Array.from({ length: 32 }, (_, i) => i + 1)]
 const PUBKEY_HEX = PUBKEY.map((b) => b.toString(16).padStart(2, "0")).join("")
+const KEYSET = [0x00, 0x59, 0x53, 0x4c, 0xe0, 0xbf, 0xa1, 0x9a]
+const KEYSET_HEX = "0059534ce0bfa19a"
 
 // A BoltCard payload; values are placeholders.
 const CARD_PAYLOAD = "lnurlw://card.test.flashapp.me/boltcard?p=PARAM_P&c=PARAM_C"
@@ -40,7 +53,24 @@ const NDEF_TAG = { id: "04AABBCC", ndefMessage: [{ payload: [1, 2, 3] }] }
 // A JavaCard with no NDEF application on it.
 const ISO_DEP_ONLY_TAG = { id: "08AABBCC" }
 
-/** Answers like a real Cashu card: SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE. */
+/** One unspent 500 proof in slot 0, the rest spent or empty. */
+const SLOT_STATUSES = [1, ...new Array(7).fill(2), ...new Array(24).fill(0)]
+const PROOF_SLOT = [
+  0x01,
+  ...KEYSET,
+  0,
+  0,
+  0x01,
+  0xf4,
+  ...new Array(32).fill(0xab),
+  0x02,
+  ...new Array(32).fill(0xcd),
+]
+
+/**
+ * Answers like a real Cashu card: SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE,
+ * GET_SLOT_STATUS, GET_PROOF.
+ */
 const cashuCard = async (bytes: number[]) => {
   switch (bytes[1]) {
     case INS_SELECT:
@@ -52,6 +82,10 @@ const cashuCard = async (bytes: number[]) => {
       return ok(PUBKEY)
     case 0x11:
       return ok([0, 0, 0x01, 0xf4])
+    case 0x14:
+      return ok(SLOT_STATUSES)
+    case 0x13:
+      return ok(PROOF_SLOT)
     default:
       throw new Error("unsupported")
   }
@@ -61,25 +95,46 @@ const requestTechnology = NfcManager.requestTechnology as jest.Mock
 const transceive = NfcManager.isoDepHandler.transceive as jest.Mock
 const getTag = NfcManager.getTag as jest.Mock
 const cancelTechnologyRequest = NfcManager.cancelTechnologyRequest as jest.Mock
+const lookupUnits = unitsForKeysets as jest.Mock
 
 let latest: FlashcardSnapshot | undefined
 
-/**
- * Renders the provider and taps once, resolving to what the tap returned. The
- * tap is "done" once the session has been released (the finally block), which
- * is also the invariant every test here cares about: exactly one release.
- */
-const tapOnce = async () => {
+const knownCards = () => store.getState().flashcardV2.cards
+
+/** Mounts the provider; `tap` then reads one card and resolves to the result. */
+const mount = async (options: ProviderOptions = {}) => {
   renderProvider((snapshot) => {
     latest = snapshot
-  })
+  }, options)
   await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
-  let result: Awaited<ReturnType<NonNullable<typeof latest>["readFlashcard"]>> = {}
-  await act(async () => {
-    result = (await latest?.readFlashcard(false)) ?? {}
-  })
-  await waitFor(() => expect(cancelTechnologyRequest).toHaveBeenCalledTimes(1))
-  return result
+  let taps = 0
+  const tap = async () => {
+    let result: Awaited<ReturnType<FlashcardSnapshot["readFlashcard"]>> = {}
+    await act(async () => {
+      result = (await latest?.readFlashcard(false)) ?? {}
+    })
+    // The tap is "done" once the session has been released (the finally
+    // block), which is also the invariant every test here cares about:
+    // exactly one release per tap.
+    taps += 1
+    await waitFor(() => expect(cancelTechnologyRequest).toHaveBeenCalledTimes(taps))
+    return result
+  }
+  return { tap }
+}
+
+/** Renders the provider and taps once, resolving to what the tap returned. */
+const tapOnce = async (options: ProviderOptions = {}) => (await mount(options)).tap()
+
+const tapCashuCard = () => {
+  requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+  getTag.mockResolvedValue(ISO_DEP_ONLY_TAG)
+  transceive.mockImplementation(cashuCard)
+}
+
+const tapBoltCard = () => {
+  requestTechnology.mockResolvedValue(NfcTech.Ndef)
+  getTag.mockResolvedValue(NDEF_TAG)
 }
 
 describe("FlashcardProvider Cashu card orchestration", () => {
@@ -89,10 +144,13 @@ describe("FlashcardProvider Cashu card orchestration", () => {
 
   beforeEach(() => {
     latest = undefined
+    store.dispatch(resetFlashcardV2())
     warn = jest.spyOn(console, "warn").mockImplementation(() => {})
     requestTechnology.mockReset()
     transceive.mockReset()
     getTag.mockReset()
+    lookupUnits.mockReset()
+    lookupUnits.mockResolvedValue({ [KEYSET_HEX]: "sat" })
     ;(NfcManager.isSupported as jest.Mock).mockResolvedValue(true)
     ;(NfcManager.isEnabled as jest.Mock).mockResolvedValue(true)
     ;(Ndef.text.decodePayload as jest.Mock).mockReturnValue(CARD_PAYLOAD)
@@ -105,9 +163,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
   })
 
   it("reads a Cashu card through the manager's IsoDep handler when the request resolves IsoDep", async () => {
-    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
-    getTag.mockResolvedValue(ISO_DEP_ONLY_TAG)
-    transceive.mockImplementation(cashuCard)
+    tapCashuCard()
 
     const result = await tapOnce()
 
@@ -115,8 +171,16 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(requestTechnology).toHaveBeenCalledWith([NfcTech.IsoDep, NfcTech.Ndef])
     // The applet SELECT goes out first, verbatim, over the manager's handler.
     expect(transceive.mock.calls[0][0]).toEqual(buildSelectApdu())
-    // SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE — a read touches nothing else.
-    expect(transceive).toHaveBeenCalledTimes(4)
+    // SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE, then GET_SLOT_STATUS and the
+    // one unspent slot's GET_PROOF — a read touches nothing else.
+    expect(transceive.mock.calls.map((call) => call[0][1])).toEqual([
+      INS_SELECT,
+      0x01,
+      0x10,
+      0x11,
+      0x14,
+      0x13,
+    ])
     // The applet is the only thing this tap talks to: no NDEF read before the
     // SELECT (neither cardctl nor flash-pos sends one) and none after it.
     expect(getTag).not.toHaveBeenCalled()
@@ -131,18 +195,20 @@ describe("FlashcardProvider Cashu card orchestration", () => {
       unspent: 1,
       spent: 7,
       empty: 24,
+      keysets: [{ keysetId: KEYSET_HEX, amount: 500 }],
     }
     expect(result.cashuCard).toMatchObject(expected)
+    expect(result.boltCard).toBeUndefined()
     await waitFor(() => expect(latest?.cashuCard).toMatchObject(expected))
     // ...and the phone remembers the card: the applet keeps no history, so
     // this device-local record is the only one.
-    expect(store.getState().flashcardV2.cards[PUBKEY_HEX]).toMatchObject({
+    expect(knownCards()[PUBKEY_HEX]).toMatchObject({
       pubkey: PUBKEY_HEX,
       version: "0.2",
       pinState: "set",
       lastBalance: 500,
     })
-    expect(store.getState().flashcardV2.cards[PUBKEY_HEX].lastSeenAt).toBeGreaterThan(0)
+    expect(knownCards()[PUBKEY_HEX].lastSeenAt).toBeGreaterThan(0)
     // No toast: the card screen is the feedback now.
     expect(toastShow).not.toHaveBeenCalled()
     // The BoltCard flow does not run for a Cashu card.
@@ -150,9 +216,50 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(latest?.balanceInSats).toBeUndefined()
   })
 
+  it("names the balance's unit from the mint's keysets, in context and on the card's record", async () => {
+    tapCashuCard()
+
+    await tapOnce()
+
+    // Asked about exactly the keysets the card holds, after the tap.
+    expect(lookupUnits).toHaveBeenCalledWith([KEYSET_HEX])
+    await waitFor(() =>
+      expect(latest?.cashuCard?.unitTotals).toEqual({
+        byUnit: [{ unit: "sat", amount: 500 }],
+        unknown: 0,
+      }),
+    )
+    expect(knownCards()[PUBKEY_HEX].unit).toBe("sat")
+  })
+
+  it("leaves the unit unknown, and the record's unit alone, when the mint cannot be asked", async () => {
+    tapCashuCard()
+    lookupUnits.mockRejectedValue(new Error("Network Error"))
+
+    await tapOnce()
+
+    await waitFor(() =>
+      expect(warn).toHaveBeenCalledWith("Cashu mint keyset lookup failed:", "Error"),
+    )
+    expect(latest?.cashuCard?.balance).toBe(500)
+    expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+    expect(knownCards()[PUBKEY_HEX].unit).toBeUndefined()
+  })
+
+  it("keeps a read made while signed out in memory only, off this phone's record", async () => {
+    tapCashuCard()
+
+    const result = await tapOnce({ isAuthed: false })
+
+    // The screen still gets the card and the caller still navigates on it...
+    expect(result.cashuCard?.pubkey).toBe(PUBKEY_HEX)
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    // ...but nothing is written for the next account on the phone to find.
+    expect(knownCards()).toEqual({})
+  })
+
   it("does not touch the IsoDep channel when the tag connected as Ndef", async () => {
-    requestTechnology.mockResolvedValue(NfcTech.Ndef)
-    getTag.mockResolvedValue(NDEF_TAG)
+    tapBoltCard()
 
     const result = await tapOnce()
 
@@ -162,6 +269,25 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(getTag).toHaveBeenCalledTimes(1)
     expect(result.cashuCard).toBeUndefined()
     expect(latest?.cashuCard).toBeUndefined()
+  })
+
+  it("reports a BoltCard read in the tap's result, so the caller can open its screen", async () => {
+    tapBoltCard()
+
+    const result = await tapOnce()
+
+    expect(result).toEqual({ boltCard: true })
+    await waitFor(() => expect(latest?.lnurl).toBe("lnurl1CARD"))
+  })
+
+  it("reports nothing when a BoltCard's balance page does not load", async () => {
+    tapBoltCard()
+    ;(axios.get as jest.Mock).mockRejectedValue(new Error("Network Error"))
+
+    const result = await tapOnce()
+
+    expect(result).toEqual({})
+    expect(latest?.lnurl).toBeUndefined()
   })
 
   it("falls through to the NDEF flow on the same tap when the applet SELECT is refused", async () => {
@@ -188,6 +314,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     // A plain 6A82/6A82 refusal is the expected BoltCard answer: nothing to log.
     expect(warn).not.toHaveBeenCalled()
     expect(result.cashuCard).toBeUndefined()
+    expect(result.boltCard).toBe(true)
   })
 
   it("a cancelled request ends the tap without opening a second session", async () => {
@@ -222,6 +349,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(result.cashuCard).toBeUndefined()
     expect(latest?.cashuCard).toBeUndefined()
     expect(latest?.balanceInSats).toBeUndefined()
+    expect(knownCards()).toEqual({})
   })
 
   it("tells the user when the card is lost mid-read and still ends the tap", async () => {
@@ -251,19 +379,96 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     // The rethrow lands in handleTag's outer catch: still the one logging site.
     expect(warn).toHaveBeenCalledWith(expect.any(String), expect.any(Error))
   })
+})
 
-  it("resetFlashcard forgets the card, so a logout does not carry it to the next user", async () => {
-    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
-    getTag.mockResolvedValue(ISO_DEP_ONLY_TAG)
-    transceive.mockImplementation(cashuCard)
+describe("FlashcardProvider forgets each card on its own", () => {
+  jest.setTimeout(PROVIDER_RENDER_TIMEOUT_MS)
 
-    await tapOnce()
-    await waitFor(() => expect(latest?.cashuCard).toBeDefined())
+  let warn: jest.SpyInstance
+
+  beforeEach(() => {
+    latest = undefined
+    store.dispatch(resetFlashcardV2())
+    warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    requestTechnology.mockReset()
+    transceive.mockReset()
+    getTag.mockReset()
+    lookupUnits.mockReset()
+    lookupUnits.mockResolvedValue({ [KEYSET_HEX]: "sat" })
+    ;(Ndef.text.decodePayload as jest.Mock).mockReturnValue(CARD_PAYLOAD)
+    ;(axios.get as jest.Mock).mockResolvedValue({ data: BALANCE_HTML })
+  })
+
+  afterEach(() => {
+    warn.mockRestore()
+    jest.clearAllMocks()
+  })
+
+  /** A phone holding both: a linked BoltCard, then a Cashu card read. */
+  const holdBothCards = async (updateState = jest.fn()) => {
+    const { tap } = await mount({ updateState })
+    tapBoltCard()
+    await tap()
+    tapCashuCard()
+    await tap()
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    expect(latest?.lnurl).toBe("lnurl1CARD")
+    expect(knownCards()[PUBKEY_HEX]).toBeDefined()
+    return { tap }
+  }
+
+  it("forgetCashuCard drops the Cashu card from context and from this phone, and leaves the BoltCard linked", async () => {
+    const updateState = jest.fn()
+    await holdBothCards(updateState)
+    const persistentWrites = updateState.mock.calls.length
+
+    await act(async () => {
+      latest?.forgetCashuCard()
+    })
+
+    await waitFor(() => expect(latest?.cashuCard).toBeUndefined())
+    // Gone from the store, not just the context: the next account on this
+    // phone finds nothing.
+    expect(knownCards()).toEqual({})
+    // The BoltCard is untouched, in context and in persistent state.
+    expect(latest?.lnurl).toBe("lnurl1CARD")
+    expect(latest?.balanceInSats).toBe(1234)
+    expect(updateState).toHaveBeenCalledTimes(persistentWrites)
+  })
+
+  it("resetFlashcard forgets the BoltCard and leaves the Cashu card alone", async () => {
+    await holdBothCards()
 
     await act(async () => {
       await latest?.resetFlashcard()
     })
 
-    await waitFor(() => expect(latest?.cashuCard).toBeUndefined())
+    await waitFor(() => expect(latest?.lnurl).toBeUndefined())
+    expect(latest?.balanceInSats).toBeUndefined()
+    expect(latest?.cashuCard?.pubkey).toBe(PUBKEY_HEX)
+    expect(knownCards()[PUBKEY_HEX]).toBeDefined()
+  })
+
+  it("a unit lookup that lands after the card was forgotten does not bring it back", async () => {
+    let answer: (units: Record<string, string>) => void = () => {}
+    lookupUnits.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve
+      }),
+    )
+    const { tap } = await mount()
+    tapCashuCard()
+    await tap()
+    expect(knownCards()[PUBKEY_HEX]).toBeDefined()
+
+    await act(async () => {
+      latest?.forgetCashuCard()
+    })
+    await act(async () => {
+      answer({ [KEYSET_HEX]: "sat" })
+    })
+
+    expect(latest?.cashuCard).toBeUndefined()
+    expect(knownCards()).toEqual({})
   })
 })

@@ -27,8 +27,9 @@ jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
     lnurl: undefined,
     balanceInSats: undefined,
-    readFlashcard: jest.fn(),
   }),
+  useOpenFlashcard: () => jest.fn(),
+  useTapFlashcard: () => jest.fn(),
 }))
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({

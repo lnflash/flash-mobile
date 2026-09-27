@@ -11,9 +11,11 @@
  * about NFC, so the whole protocol is unit-testable without a card. The
  * IsoDep transport is the one shared session in `app/contexts/Flashcard.tsx`.
  *
- * Ported from flash-pos `src/services/cashuCard.ts` so both apps speak
- * byte-identical APDUs to the same card. Command reference: cashu-javacard
- * `spec/APDU.md`; reference host driver `tools/cardctl/cardctl.py`.
+ * Ported from flash-pos `src/services/cashuCard.ts`. Every command the two
+ * share is built byte for byte the same (GET_PROOF_COUNT, which flash-pos never
+ * sends, follows spec/APDU.md). The one deliberate divergence is when the
+ * fallback SELECT goes out: see `selectApplet`. Command reference:
+ * cashu-javacard `spec/APDU.md`; reference host driver `tools/cardctl/cardctl.py`.
  */
 
 /** 7-byte package AID. SELECT does prefix matching, so this also finds the applet. */
@@ -57,7 +59,8 @@ export class CardError extends Error {
 
 /**
  * The card accepted the command (0x9000) but the framing was wrong — a short
- * response, a wrong-length body.
+ * response, a wrong-length body — or the caller asked for bytes that cannot go
+ * on the wire.
  *
  * Deliberately *not* a `CardError`: there is no status word to report, and
  * pretending `sw === 0` would let retry logic misread a framing bug as a card
@@ -71,6 +74,9 @@ export class CardProtocolError extends Error {
 }
 
 const hex16 = (n: number) => n.toString(16).toUpperCase().padStart(4, "0")
+
+/** A status word for a log line; -1 (see `statusWordOf`) has none to show. */
+const swLabel = (sw: number) => (sw < 0 ? "none" : hex16(sw))
 
 /**
  * Known status words. The applet reuses the ISO 7816 space, so a bare hex code
@@ -119,6 +125,21 @@ export function describeStatusWord(sw: number): string {
   }
 }
 
+/**
+ * Every value handed to the native bridge must already be a byte. Both bridges
+ * keep only the low 8 bits of what they get (react-native-nfc-manager 3.17.2:
+ * Android `NfcManager.java:1501`, iOS `Util.m:36`) and read NaN as 0, so a
+ * slot index of 256 or a NaN from a bad hex digit would otherwise reach the
+ * card as a different, valid-looking byte.
+ */
+const assertBytes = (values: number[], what: string) => {
+  values.forEach((value) => {
+    if (!Number.isInteger(value) || value < 0 || value > 0xff) {
+      throw new CardProtocolError(`${what}: ${value} is not a byte`)
+    }
+  })
+}
+
 export function buildApdu(
   ins: number,
   {
@@ -136,6 +157,7 @@ export function buildApdu(
   } = {},
 ): number[] {
   const apdu = [cla, ins, p1, p2]
+  assertBytes(apdu, "APDU header")
   if (data && data.length > 0) {
     // Short-form Lc is a single byte. Without this guard a 300-byte payload
     // pushes `300`, which the native bridge truncates to 0x2c — a silently
@@ -145,9 +167,11 @@ export function buildApdu(
         `APDU data too long for short Lc: ${data.length} bytes (max 255)`,
       )
     }
+    assertBytes(data, "APDU data")
     apdu.push(data.length, ...data)
   }
   if (le !== undefined) {
+    assertBytes([le], "APDU Le")
     apdu.push(le)
   }
   return apdu
@@ -212,37 +236,90 @@ export interface CardInfo {
   secp256k1Native: boolean
   schnorr: boolean
   /**
-   * GET_INFO byte 7. There is no capability bit for "PIN-gated spend"; this is
-   * how a reader learns whether SPEND/LOAD will demand VERIFY_PIN (D13).
-   * `blocked` is terminal today — no unblock path exists (ENG-617).
+   * GET_INFO byte 7: 0 unset, 1 set, 2 blocked (spec/APDU.md:58); `unknown`
+   * for any other value.
+   *
+   * It names the PIN's state; it does NOT tell a reader whether SPEND will
+   * demand VERIFY_PIN (ENG-615). On applet v0.2.0 the gate fires only for
+   * state 1 (`requirePinIfSet`, CashuApplet.java@v0.2.0:587-591), and the
+   * third wrong VERIFY_PIN moves the card to state 2 (:517-521). From then on
+   * SPEND_PROOF and SIGN_ARBITRARY (:419, :446), LOAD_PROOF and CLEAR_SPENT all
+   * run with no PIN: a `blocked` card spends for whoever holds it, and a `set`
+   * PIN is three wrong guesses away from off. `blockedPinGatesSpend` says which
+   * versions are known to behave; none yet. Nothing unblocks a PIN (ENG-617).
    */
   pinState: CardPinState
 }
 
 /**
- * SELECT the applet: 7-byte package AID first (prefix match, what cardctl
- * does), then the full applet AID for runtimes that decline partial matches.
- * Resolves to the body SELECT returns (the 2-byte applet version).
+ * Applet versions confirmed to keep refusing SPEND_PROOF and SIGN_ARBITRARY
+ * once the PIN is blocked, i.e. versions carrying cashu-javacard#25 (ENG-615).
+ * Empty on purpose: v0.2.0 does not, and the fix is not in a released,
+ * silicon-verified applet yet. It is a list of confirmed versions rather than
+ * a "newer than 0.2" comparison because a version this app has never seen is
+ * exactly the case it cannot vouch for.
+ */
+const VERSIONS_WHERE_BLOCKED_PIN_GATES_SPEND: readonly string[] = []
+
+/**
+ * True only when `version` (GET_INFO's "major.minor") is confirmed to keep a
+ * blocked card from spending. False means: treat a blocked card as spendable
+ * by anyone holding it.
+ */
+export const blockedPinGatesSpend = (version: string): boolean =>
+  VERSIONS_WHERE_BLOCKED_PIN_GATES_SPEND.includes(version)
+
+/**
+ * Neither SELECT form selected the applet. Carries both status words (-1: the
+ * response was too short to hold one): 6A82 to both is what a tag without the
+ * applet says, an NTAG 424 BoltCard among them; anything else is a card that
+ * knows the AID and still refused (6999: the applet's select() failed;
+ * 6283/6A81: a locked instance). `sw` is the applet-AID answer, the last word
+ * the card said.
+ */
+export class AppletNotSelectedError extends CardError {
+  constructor(readonly packageSw: number, readonly appletSw: number) {
+    super(appletSw, "SELECT")
+    this.name = "AppletNotSelectedError"
+    this.message = `SELECT failed: package AID ${swLabel(
+      packageSw,
+    )}, applet AID ${swLabel(appletSw)}`
+  }
+
+  /** Both forms answered 6A82: no Cashu applet on this tag at all. */
+  get noSuchApplet(): boolean {
+    return this.packageSw === SW_FILE_NOT_FOUND && this.appletSw === SW_FILE_NOT_FOUND
+  }
+}
+
+/**
+ * SELECT the applet: the 7-byte package AID first (prefix match), then the full
+ * 8-byte applet AID after ANY refusal of the first. That is the spec's policy,
+ * spec/APDU.md:26-27 ("the 7-byte form first, the 8-byte form as a fallback on
+ * any error"), and what cardctl's `select()` does. flash-pos falls back only on
+ * 6A82 (`src/services/cashuCard.ts:196-216`), so on a card that refuses the
+ * package AID with any other status word this app sends one APDU more than the
+ * terminal does: the applet-AID SELECT that flash-pos never tries.
+ *
+ * A transport failure (the card left the field) is not a refusal: it
+ * propagates at once, with no second SELECT on a dead handle. A response too
+ * short to carry a status word is treated like any other non-9000 answer.
+ *
+ * Resolves to the body SELECT returns (the 2-byte applet version); rejects
+ * with `AppletNotSelectedError` when both forms are refused.
  */
 export async function selectApplet(transceive: Transceiver): Promise<number[]> {
-  let lastError: unknown
-  for (const aid of [CASHU_AID, CASHU_APPLET_AID]) {
-    try {
-      return parseResponse(await transceive(buildSelectApdu(aid)), "SELECT")
-    } catch (error) {
-      // Only "applet not found" earns a second attempt. A transport failure —
-      // the card left the field mid-SELECT — must surface as itself; retrying
-      // on a dead handle would report a card that moved as a card running the
-      // wrong software.
-      if (!(error instanceof CardError) || error.sw !== SW_FILE_NOT_FOUND) {
-        throw error
-      }
-      lastError = error
-    }
+  const packageResponse = await transceive(buildSelectApdu(CASHU_AID))
+  const packageSw = statusWordOf(packageResponse)
+  if (packageSw === SW_OK) {
+    return packageResponse.slice(0, -2)
   }
-  throw lastError instanceof Error
-    ? lastError
-    : new CardError(SW_FILE_NOT_FOUND, "SELECT")
+  const appletResponse = await transceive(buildSelectApdu(CASHU_APPLET_AID))
+  const appletSw = statusWordOf(appletResponse)
+  if (appletSw === SW_OK) {
+    return appletResponse.slice(0, -2)
+  }
+  throw new AppletNotSelectedError(packageSw, appletSw)
 }
 
 export function parseInfo(body: number[]): CardInfo {
@@ -288,10 +365,13 @@ export function parseBalance(body: number[]): number {
 }
 
 /**
- * Sum of unspent proof amounts on the card, in the unit of the keyset the
- * proofs were minted under — the card does not know the unit. Advisory only:
- * SIGN_ARBITRARY can witness a proof without burning its slot, so reconcile
- * against the mint (NUT-07) before trusting it for money decisions.
+ * Sum of unspent proof amounts on the card, whatever keyset each proof was
+ * minted under: the applet adds every unspent slot (CashuApplet.java@v0.2.0:
+ * 364-377) and knows no units, so on its own this number has none. Pair it
+ * with `getUnspentByKeyset` and the mint's keyset units before showing it.
+ * Advisory only: SIGN_ARBITRARY can witness a proof without burning its slot,
+ * so reconcile against the mint (NUT-07) before trusting it for money
+ * decisions.
  */
 export async function getBalance(transceive: Transceiver): Promise<number> {
   return parseBalance(
@@ -311,45 +391,84 @@ export async function getProofCount(transceive: Transceiver): Promise<number> {
   return body[0]
 }
 
+/** The applet's bounds on a PIN: VERIFY_PIN takes Lc 04–08 (spec/APDU.md). */
+export const PIN_MIN_LENGTH = 4
+export const PIN_MAX_LENGTH = 8
+
+/**
+ * 4–8 ASCII digits. The applet accepts any 4–8 bytes, but a PIN is typed, and
+ * a keypad can emit digits outside ASCII (an Arabic-Indic "٣" is U+0663; the
+ * app ships `ar`). The bridge keeps only the low byte of each char code
+ * (see `assertBytes`), so such a PIN would go out as unrelated bytes, fail, and
+ * spend one of the card's three tries — the third blocks it, and on v0.2.0 a
+ * blocked card spends for anyone (`CardInfo.pinState`). Refusing locally costs
+ * nothing.
+ */
+export const isValidCardPin = (pin: string): boolean =>
+  new RegExp(`^[0-9]{${PIN_MIN_LENGTH},${PIN_MAX_LENGTH}}$`).test(pin)
+
+const pinBytes = (pin: string, command: string): number[] => {
+  if (!isValidCardPin(pin)) {
+    // Never put the PIN itself in the message: errors reach the console.
+    throw new CardProtocolError(
+      `${command}: a PIN is ${PIN_MIN_LENGTH}-${PIN_MAX_LENGTH} ASCII digits`,
+    )
+  }
+  return Array.from(pin).map((c) => c.charCodeAt(0))
+}
+
 /**
  * VERIFY_PIN within the current session. Resolves on success; a wrong PIN
  * rejects with the card's `63CX` (tries remaining), a blocked PIN with `6983`,
- * an unset PIN with `6984`. The session flag clears on deselect — every tap
- * that spends or loads re-verifies.
+ * an unset PIN with `6984`. A PIN that is not 4–8 ASCII digits is refused with
+ * a `CardProtocolError` before any APDU is built, so it costs no try. The
+ * session flag clears on deselect — every tap that spends or loads re-verifies.
  */
 export async function verifyCardPin(transceive: Transceiver, pin: string): Promise<void> {
-  const data = Array.from(pin).map((c) => c.charCodeAt(0))
-  await send(transceive, INS.VERIFY_PIN, { data, context: "VERIFY_PIN" })
+  await send(transceive, INS.VERIFY_PIN, {
+    data: pinBytes(pin, "VERIFY_PIN"),
+    context: "VERIFY_PIN",
+  })
 }
 
-const hexToBytes = (hex: string): number[] =>
-  (hex.match(/../g) ?? []).map((h) => parseInt(h, 16))
+/** Exactly `length` bytes of hex, or a `CardProtocolError` naming the field. */
+const hexField = (hex: string, length: number, field: string): number[] => {
+  if (!new RegExp(`^[0-9a-fA-F]{${length * 2}}$`).test(hex)) {
+    throw new CardProtocolError(
+      `LOAD_PROOF: ${field} must be ${length * 2} hex chars (${length} bytes)`,
+    )
+  }
+  return (hex.match(/../g) ?? []).map((h) => parseInt(h, 16))
+}
+
+/** A proof amount the 4-byte slot field can hold: a whole number, 1..2^32-1. */
+const MAX_PROOF_AMOUNT = 0xffffffff
 
 /**
  * LOAD_PROOF: store a proof (keyset + amount + nonce + C) into the next free
  * slot; resolves to that slot's index. Wire format mirrors cardctl: 8-byte
  * keyset id (raw, never ASCII — ASCII stores half an id and strands the funds),
  * 4-byte big-endian amount, 32-byte nonce, 33-byte C. PIN-gated when set.
+ *
+ * Every field is checked before an APDU is built: `>>>` would wrap an amount
+ * past 2^32 without a word, and a non-hex digit parses as NaN, which reaches
+ * the card as 0x00. Either way the slot would hold a proof the mint rejects.
  */
 export async function loadProof(
   transceive: Transceiver,
   proof: { keysetId: string; amount: number; nonce: string; C: string },
 ): Promise<number> {
-  if (proof.keysetId.length !== 16) {
-    throw new CardProtocolError(
-      `LOAD_PROOF: keyset id must be 16 hex chars, got ${proof.keysetId.length}`,
-    )
-  }
-  const nonceBytes = hexToBytes(proof.nonce)
-  const cBytes = hexToBytes(proof.C)
-  if (nonceBytes.length !== 32 || cBytes.length !== 33) {
-    throw new CardProtocolError(
-      `LOAD_PROOF: expected 32-byte nonce and 33-byte C, got ${nonceBytes.length}/${cBytes.length}`,
-    )
-  }
   const { amount } = proof
+  if (!Number.isInteger(amount) || amount < 1 || amount > MAX_PROOF_AMOUNT) {
+    throw new CardProtocolError(
+      `LOAD_PROOF: amount must be a whole number from 1 to ${MAX_PROOF_AMOUNT}, got ${amount}`,
+    )
+  }
+  const keysetBytes = hexField(proof.keysetId, 8, "keyset id")
+  const nonceBytes = hexField(proof.nonce, 32, "nonce")
+  const cBytes = hexField(proof.C, 33, "C")
   const data = [
-    ...hexToBytes(proof.keysetId),
+    ...keysetBytes,
     (amount >>> 24) & 0xff,
     (amount >>> 16) & 0xff,
     (amount >>> 8) & 0xff,
@@ -455,6 +574,40 @@ export async function getProof(
   }
 }
 
+/** The unspent value on a card under one mint keyset. */
+export type CardKeysetTotal = {
+  /** NUT-02 keyset id, 16 hex chars, as the slot stores it. */
+  keysetId: string
+  /** Sum of the unspent proofs minted under it, in that keyset's unit. */
+  amount: number
+}
+
+/**
+ * What the card holds, keyset by keyset: GET_SLOT_STATUS, then GET_PROOF for
+ * each unspent slot — the same reads flash-pos plans a charge from. The card
+ * stores a keyset id per proof and no unit at all, and its GET_BALANCE adds
+ * every keyset together; the mint's keyset list is what turns these into
+ * amounts in a unit (`app/utils/cashu-mint.ts`). Reads only; nothing is spent.
+ * Keysets come back in the order their first proof sits on the card.
+ */
+export async function getUnspentByKeyset(
+  transceive: Transceiver,
+  slotCount: number,
+): Promise<CardKeysetTotal[]> {
+  const statuses = await getSlotStatuses(transceive, slotCount)
+  const totals = new Map<string, number>()
+  // One APDU at a time: an IsoDep channel carries a single exchange.
+  for (const [slot, status] of statuses.entries()) {
+    if (status === "unspent") {
+      const proof = await getProof(transceive, slot)
+      if (proof.status === "unspent") {
+        totals.set(proof.keysetId, (totals.get(proof.keysetId) ?? 0) + proof.amount)
+      }
+    }
+  }
+  return [...totals].map(([keysetId, amount]) => ({ keysetId, amount }))
+}
+
 /**
  * Mark a slot spent and return the BIP-340 witness over `message`
  * (sha256 of the UTF-8 P2PK secret).
@@ -493,32 +646,38 @@ export async function spendProof(
 export interface CashuCardInfo extends CardInfo {
   /** Hex, 33-byte compressed — the card's P2PK identity and its stable id. */
   pubkey: string
-  /** Sum of unspent proofs, in the proofs' keyset unit. See `getBalance`. */
+  /** GET_BALANCE: every unspent proof, whatever its keyset. See `getBalance`. */
   balance: number
+  /** The same unspent value split by keyset; empty for an empty card. */
+  keysets: CardKeysetTotal[]
 }
 
 /**
  * The read-only round-trip over an open IsoDep channel:
- * SELECT → GET_INFO → GET_PUBKEY → GET_BALANCE.
+ * SELECT → GET_INFO → GET_PUBKEY → GET_BALANCE, then GET_SLOT_STATUS and a
+ * GET_PROOF per unspent slot when the card holds anything.
  *
  * Resolves null when the tag refuses both SELECT forms so the caller can fall
- * back to other card types: quietly for 6A82 (no such applet — an NTAG 424
- * BoltCard says this), with a warning for any other status word (6999: the
- * applet's select() failed; 6283/6A81: a locked instance), which a silent null
- * would misreport as "not a Cashu card". A status word carries no secret, so
- * it can be logged. Throws on genuine failures once the applet is selected.
+ * back to other card types: quietly when both say 6A82 (no such applet — an
+ * NTAG 424 BoltCard says this), with a warning for any other status word
+ * (6999: the applet's select() failed; 6283/6A81: a locked instance), which a
+ * silent null would misreport as "not a Cashu card". A status word carries no
+ * secret, so it can be logged. Throws on genuine failures once the applet is
+ * selected, and on a transport failure at any point.
  */
 export const readCashuCard = async (
   transceive: Transceiver,
 ): Promise<CashuCardInfo | null> => {
-  const packageSw = statusWordOf(await transceive(buildSelectApdu(CASHU_AID)))
-  const appletSw =
-    packageSw === SW_OK
-      ? SW_OK
-      : statusWordOf(await transceive(buildSelectApdu(CASHU_APPLET_AID)))
-  if (appletSw !== SW_OK) {
-    if (packageSw !== SW_FILE_NOT_FOUND || appletSw !== SW_FILE_NOT_FOUND) {
-      const refused = `package AID ${hex16(packageSw)}, applet AID ${hex16(appletSw)}`
+  try {
+    await selectApplet(transceive)
+  } catch (error) {
+    if (!(error instanceof AppletNotSelectedError)) {
+      throw error
+    }
+    if (!error.noSuchApplet) {
+      const refused = `package AID ${swLabel(error.packageSw)}, applet AID ${swLabel(
+        error.appletSw,
+      )}`
       console.warn(`Cashu applet SELECT refused: ${refused}`)
     }
     return null
@@ -526,5 +685,7 @@ export const readCashuCard = async (
   const info = await getInfo(transceive)
   const pubkey = toHex(await getPubkey(transceive))
   const balance = await getBalance(transceive)
-  return { ...info, pubkey, balance }
+  const keysets =
+    info.unspent > 0 ? await getUnspentByKeyset(transceive, info.maxSlots) : []
+  return { ...info, pubkey, balance, keysets }
 }

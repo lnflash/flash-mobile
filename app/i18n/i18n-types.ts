@@ -312,6 +312,21 @@ type RootTranslation = {
 		 */
 		onCardBalance: string
 		/**
+		 * {​a​m​o​u​n​t​}​ ​{​u​n​i​t​}
+		 * @param {string} amount
+		 * @param {string} unit
+		 */
+		amountInUnit: RequiredParams<'amount' | 'unit'>
+		/**
+		 * {​a​m​o​u​n​t​}​ ​·​ ​u​n​i​t​ ​u​n​k​n​o​w​n
+		 * @param {string} amount
+		 */
+		unitUnknown: RequiredParams<'amount'>
+		/**
+		 * E​m​p​t​y
+		 */
+		empty: string
+		/**
 		 * P​r​o​o​f​ ​s​l​o​t​s
 		 */
 		slots: string
@@ -339,17 +354,33 @@ type RootTranslation = {
 		 */
 		noPinTitle: string
 		/**
-		 * A​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​ ​o​r​ ​l​o​a​d​ ​i​t​.​ ​S​e​t​ ​a​ ​P​I​N​ ​b​e​f​o​r​e​ ​c​a​r​r​y​i​n​g​ ​a​ ​b​a​l​a​n​c​e​.
+		 * A​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​ ​o​r​ ​l​o​a​d​ ​i​t​.
 		 */
 		noPinBody: string
 		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​n​o​ ​l​o​n​g​e​r​ ​a​s​k​s​ ​f​o​r​ ​a​ ​P​I​N
+		 */
+		blockedOpenTitle: string
+		/**
+		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​,​ ​a​n​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​t​h​a​t​ ​s​w​i​t​c​h​e​s​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​:​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​i​t​s​ ​b​a​l​a​n​c​e​.​ ​I​t​ ​c​a​n​'​t​ ​b​e​ ​u​n​b​l​o​c​k​e​d​.​ ​M​o​v​e​ ​t​h​e​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​.
+		 */
+		blockedOpenBody: string
+		/**
 		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​b​l​o​c​k​e​d
 		 */
-		blockedTitle: string
+		blockedLockedTitle: string
 		/**
-		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​ ​a​n​d​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​n​o​t​ ​b​e​ ​u​n​b​l​o​c​k​e​d​.​ ​M​o​v​e​ ​a​n​y​ ​r​e​m​a​i​n​i​n​g​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​ ​a​n​d​ ​r​e​p​l​a​c​e​ ​t​h​e​ ​c​a​r​d​.
+		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​.​ ​T​h​e​ ​c​a​r​d​ ​r​e​f​u​s​e​s​ ​t​o​ ​s​p​e​n​d​ ​a​n​d​ ​c​a​n​'​t​ ​b​e​ ​u​n​b​l​o​c​k​e​d​.
 		 */
-		blockedBody: string
+		blockedLockedBody: string
+		/**
+		 * P​I​N​ ​s​t​a​t​e​ ​u​n​k​n​o​w​n
+		 */
+		pinUnknownTitle: string
+		/**
+		 * T​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​r​e​a​d​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​s​t​a​t​e​.​ ​U​p​d​a​t​e​ ​t​h​e​ ​a​p​p​ ​b​e​f​o​r​e​ ​r​e​l​y​i​n​g​ ​o​n​ ​t​h​e​ ​c​a​r​d​'​s​ ​P​I​N​.
+		 */
+		pinUnknownBody: string
 	}
 	Cashout: {
 		/**
@@ -7189,6 +7220,18 @@ export type TranslationFunctions = {
 		 */
 		onCardBalance: () => LocalizedString
 		/**
+		 * {amount} {unit}
+		 */
+		amountInUnit: (arg: { amount: string, unit: string }) => LocalizedString
+		/**
+		 * {amount} · unit unknown
+		 */
+		unitUnknown: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Empty
+		 */
+		empty: () => LocalizedString
+		/**
 		 * Proof slots
 		 */
 		slots: () => LocalizedString
@@ -7213,17 +7256,33 @@ export type TranslationFunctions = {
 		 */
 		noPinTitle: () => LocalizedString
 		/**
-		 * Anyone holding this card can spend from it or load it. Set a PIN before carrying a balance.
+		 * Anyone holding this card can spend from it or load it.
 		 */
 		noPinBody: () => LocalizedString
 		/**
+		 * This card no longer asks for a PIN
+		 */
+		blockedOpenTitle: () => LocalizedString
+		/**
+		 * The PIN was entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. It can't be unblocked. Move the value off it.
+		 */
+		blockedOpenBody: () => LocalizedString
+		/**
 		 * This card is blocked
 		 */
-		blockedTitle: () => LocalizedString
+		blockedLockedTitle: () => LocalizedString
 		/**
-		 * The PIN was entered wrong too many times and the card cannot be unblocked. Move any remaining value off it and replace the card.
+		 * The PIN was entered wrong too many times. The card refuses to spend and can't be unblocked.
 		 */
-		blockedBody: () => LocalizedString
+		blockedLockedBody: () => LocalizedString
+		/**
+		 * PIN state unknown
+		 */
+		pinUnknownTitle: () => LocalizedString
+		/**
+		 * This app can't read this card's PIN state. Update the app before relying on the card's PIN.
+		 */
+		pinUnknownBody: () => LocalizedString
 	}
 	Cashout: {
 		/**

@@ -47,7 +47,6 @@ module.exports = {
       "|@react-navigation" +
       "|@noble" +
       "|@scure" +
-      "|@cashu" +
       "|react-native-animatable" +
       "|react-native-camera" +
       "|react-native-country-picker-modal" +

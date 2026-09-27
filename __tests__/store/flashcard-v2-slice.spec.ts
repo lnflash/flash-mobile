@@ -1,12 +1,11 @@
 /**
- * ENG-616 — flashcardV2 slice: the device-local record of tapped Cashu cards
- * and the ledger the money flows write into.
+ * ENG-616 — flashcardV2 slice: the device-local record of the Cashu cards this
+ * phone has read.
  */
 import reducer, {
   cardForgotten,
-  cardLabelled,
   cardSeen,
-  eventRecorded,
+  cardUnitResolved,
   initialFlashcardV2State,
   resetFlashcardV2,
 } from "@app/store/redux/slices/flashcardV2Slice"
@@ -33,6 +32,10 @@ describe("flashcardV2 slice — known cards", () => {
     expect(reducer(undefined, { type: "@@init" })).toEqual(initialFlashcardV2State)
   })
 
+  it("holds cards and nothing else: no ledger ships before a flow writes one", () => {
+    expect(Object.keys(initialFlashcardV2State)).toEqual(["cards"])
+  })
+
   it("remembers a card by pubkey with what the read said and when", () => {
     const state = reducer(undefined, seen())
 
@@ -46,10 +49,9 @@ describe("flashcardV2 slice — known cards", () => {
     })
   })
 
-  it("a later read updates balance and PIN state but keeps the unit and label a read cannot learn", () => {
+  it("a later read updates balance and PIN state but keeps the unit a read cannot learn", () => {
     let state = reducer(undefined, seen())
-    state = reducer(state, cardLabelled({ pubkey: PUBKEY, label: "Wallet card" }))
-    state = reducer(state, seen({ unit: "usd" }))
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "usd" }))
     state = reducer(state, seen({ lastBalance: 900, pinState: "blocked", at: 2_000 }))
 
     expect(state.cards[PUBKEY]).toMatchObject({
@@ -57,75 +59,17 @@ describe("flashcardV2 slice — known cards", () => {
       pinState: "blocked",
       lastSeenAt: 2_000,
       unit: "usd",
-      label: "Wallet card",
     })
   })
 
-  it("labelling an unknown card is a no-op rather than inventing one", () => {
-    const state = reducer(undefined, cardLabelled({ pubkey: "02ff", label: "x" }))
-    expect(state.cards).toEqual({})
-  })
-
-  it("forgetting a card keeps its ledger entries", () => {
+  it("forgetting a card drops it and only it", () => {
+    const other = "03" + "cd".repeat(32)
     let state = reducer(undefined, seen())
-    state = reducer(
-      state,
-      eventRecorded({
-        kind: "topup",
-        id: "t1",
-        pubkey: PUBKEY,
-        at: 1_500,
-        amount: 500,
-        unit: "usd",
-        quoteId: "q1",
-        status: "loaded",
-      }),
-    )
+    state = reducer(state, seen({ pubkey: other }))
     state = reducer(state, cardForgotten({ pubkey: PUBKEY }))
 
     expect(state.cards[PUBKEY]).toBeUndefined()
-    expect(state.events).toHaveLength(1)
-  })
-})
-
-describe("flashcardV2 slice — ledger", () => {
-  it("records intent first and lets the outcome replace it by id", () => {
-    const pending = {
-      kind: "sweep" as const,
-      id: "s1",
-      pubkey: PUBKEY,
-      at: 3_000,
-      amount: 1500,
-      unit: "usd",
-      status: "pending" as const,
-    }
-    let state = reducer(undefined, eventRecorded(pending))
-    state = reducer(
-      state,
-      eventRecorded({ ...pending, meltQuoteId: "m1", status: "settled" }),
-    )
-
-    expect(state.events).toEqual([{ ...pending, meltQuoteId: "m1", status: "settled" }])
-  })
-
-  it("appends in order, newest last", () => {
-    let state = reducer(
-      undefined,
-      eventRecorded({ kind: "pinChanged", id: "p1", pubkey: PUBKEY, at: 1 }),
-    )
-    state = reducer(
-      state,
-      eventRecorded({ kind: "pinChanged", id: "p2", pubkey: PUBKEY, at: 2 }),
-    )
-    expect(state.events.map((e) => e.id)).toEqual(["p1", "p2"])
-  })
-
-  it("never stores PIN material — a PIN change is only the fact of it", () => {
-    const state = reducer(
-      undefined,
-      eventRecorded({ kind: "pinChanged", id: "p1", pubkey: PUBKEY, at: 1 }),
-    )
-    expect(JSON.stringify(state)).not.toMatch(/pin["']?\s*:/i)
+    expect(state.cards[other]).toBeDefined()
   })
 
   it("reset drops everything", () => {
@@ -135,20 +79,42 @@ describe("flashcardV2 slice — ledger", () => {
   })
 })
 
+describe("flashcardV2 slice — unit from the mint", () => {
+  it("records the unit the mint named for every proof on the card", () => {
+    let state = reducer(undefined, seen())
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "sat" }))
+    expect(state.cards[PUBKEY].unit).toBe("sat")
+  })
+
+  it("clears it when the card no longer holds a single unit", () => {
+    let state = reducer(undefined, seen())
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "sat" }))
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: undefined }))
+    expect(state.cards[PUBKEY].unit).toBeUndefined()
+  })
+
+  it("never invents a card: a unit for a card not on record is dropped", () => {
+    // A lookup that lands after the card was forgotten, or after a signed-out
+    // read that was never recorded.
+    const state = reducer(undefined, cardUnitResolved({ pubkey: PUBKEY, unit: "sat" }))
+    expect(state.cards).toEqual({})
+  })
+})
+
 describe("redux-persist migration to version 2", () => {
   it("is registered at the current persist version", () => {
     expect(PERSIST_VERSION).toBe(2)
     expect(migrations[2]).toBe(migrateFlashcardV2)
   })
 
-  it("gives a phone persisted before the slice existed an empty ledger", () => {
+  it("gives a phone persisted before the slice existed an empty card list", () => {
     const migrated = migrateFlashcardV2({ accountUpgrade: { accountType: "ONE" } })
     expect(migrated.flashcardV2).toEqual(initialFlashcardV2State)
     expect(migrated.accountUpgrade).toEqual({ accountType: "ONE" })
   })
 
   it("keeps a slice that is already there", () => {
-    const existing = { cards: { [PUBKEY]: { pubkey: PUBKEY } }, events: [] }
+    const existing = { cards: { [PUBKEY]: { pubkey: PUBKEY } } }
     expect(migrateFlashcardV2({ flashcardV2: existing }).flashcardV2).toBe(existing)
   })
 })

@@ -23,8 +23,11 @@ jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
     lnurl: "lnurl1abc",
     balanceInSats: 12345,
-    readFlashcard: jest.fn(),
   }),
+  // The tile's taps are routed by these (ENG-616); pinned in
+  // flashcard-tap-call-sites.spec.tsx.
+  useOpenFlashcard: () => jest.fn(),
+  useTapFlashcard: () => jest.fn(),
 }))
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({

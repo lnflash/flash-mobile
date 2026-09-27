@@ -14,10 +14,15 @@ import { initialFlashcardV2State } from "./slices/flashcardV2Slice"
  * that killed the app mid-flow before the update rehydrates the old shape.
  *
  * Version 2 (ENG-616) adds the persisted `flashcardV2` slice: the cards this
- * phone has tapped and the ledger of what it did to them. No existing data is
- * transformed; the bump records that a new key is now part of the persisted
- * tree, and the migration gives an older store the empty shape explicitly
- * rather than relying on the merge to fill it in.
+ * phone has read. No existing data is transformed; the bump records that a new
+ * key is now part of the persisted tree, and the migration gives an older store
+ * the empty shape explicitly.
+ *
+ * A later field on `flashcardV2` itself (a top-up ledger, say) needs its own
+ * version and migration. The default reconciler, autoMergeLevel1, fills in a
+ * missing *top-level* key but hard-sets each persisted one wholesale, so a
+ * phone that saved `{ cards }` rehydrates without the new field no matter what
+ * the reducer's initial state says.
  */
 export const PERSIST_VERSION = 2
 

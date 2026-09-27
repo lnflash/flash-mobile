@@ -7,12 +7,13 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { Screen } from "@app/components/screen"
 import { IconBtn } from "@app/components/buttons"
 import HideableArea from "@app/components/hideable-area/hideable-area"
+import type { CashuCardState } from "@app/contexts/Flashcard"
 import { useHideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useFlashcard } from "@app/hooks"
+import { useFlashcard, useTapFlashcard } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { CashuCardInfo } from "@app/utils/cashu-card"
+import { blockedPinGatesSpend, CashuCardInfo } from "@app/utils/cashu-card"
 import { testProps } from "@app/utils/testProps"
 
 import FlashcardImage from "@app/assets/images/flashcard.png"
@@ -25,10 +26,11 @@ import Sync from "@app/assets/icons/sync.svg"
  * on it: balance, slot counts, PIN state, the card's public key. Top-up,
  * change-PIN and sweep arrive in their own PRs and hang off this screen.
  *
- * The balance is the card's own count of its unspent proofs. It is advisory —
- * the card cannot tell a proof the mint has already seen from one it hasn't —
- * so it is shown as a plain number in the unit the proofs were minted in, not
- * converted through the price feed like the BoltCard balance is.
+ * The balance is the card's own count of its unspent proofs, per unit. The
+ * card stores no unit, so each figure carries the unit the mint names for its
+ * keysets, or says the unit is unknown; it is never converted through the
+ * price feed like the BoltCard balance is. It is also advisory: the card
+ * cannot tell a proof the mint has already seen from one it hasn't.
  */
 export const FlashcardV2Screen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -36,7 +38,8 @@ export const FlashcardV2Screen = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const { cashuCard, readFlashcard, resetFlashcard } = useFlashcard()
+  const { cashuCard, forgetCashuCard } = useFlashcard()
+  const tapFlashcard = useTapFlashcard()
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
   // Same courtesy the BoltCard screen extends: a card read while signed out
@@ -44,15 +47,17 @@ export const FlashcardV2Screen = () => {
   useEffect(() => {
     if (!isAuthed) {
       return navigation.addListener("beforeRemove", () => {
-        resetFlashcard()
+        forgetCashuCard()
       })
     }
-  }, [isAuthed, navigation, resetFlashcard])
+  }, [isAuthed, navigation, forgetCashuCard])
 
   // Nothing to show without a card; the caller navigates here only after a
-  // read, but "Remove card" from this very screen lands us here too.
+  // read, but "Remove card" from this very screen lands us here too. Only
+  // while focused: forgetting the card on the way out must not pop a second
+  // screen.
   useEffect(() => {
-    if (!cashuCard) navigation.goBack()
+    if (!cashuCard && navigation.isFocused()) navigation.goBack()
   }, [cashuCard, navigation])
 
   if (!cashuCard) return null
@@ -64,12 +69,16 @@ export const FlashcardV2Screen = () => {
 
       <View style={styles.balanceWrapper}>
         <HideableArea isContentVisible={hideBalance}>
-          <Text type="h03" {...testProps("flashcard-v2-balance")}>
-            {cashuCard.balance.toLocaleString()}
-          </Text>
+          <View>
+            {balanceLines(cashuCard, LL).map(({ testID, text }) => (
+              <Text key={testID} type="h03" {...testProps(testID)}>
+                {text}
+              </Text>
+            ))}
+          </View>
           <TouchableOpacity
             style={styles.sync}
-            onPress={() => readFlashcard(false)}
+            onPress={tapFlashcard}
             {...testProps("flashcard-v2-refresh")}
           >
             <Sync color={colors.icon02} width={32} height={32} />
@@ -80,7 +89,7 @@ export const FlashcardV2Screen = () => {
         {LL.FlashcardV2.onCardBalance()}
       </Text>
 
-      <PinStateNotice pinState={cashuCard.pinState} />
+      <PinStateNotice pinState={cashuCard.pinState} version={cashuCard.version} />
 
       <View style={styles.details}>
         <DetailRow label={LL.FlashcardV2.slots()} value={slotSummary(cashuCard, LL)} />
@@ -101,7 +110,7 @@ export const FlashcardV2Screen = () => {
             type="clear"
             icon="cardRemove"
             label={LL.CardScreen.removeCard()}
-            onPress={resetFlashcard}
+            onPress={forgetCashuCard}
           />
         </View>
       )}
@@ -116,34 +125,76 @@ export const FlashcardV2Screen = () => {
   )
 }
 
+type Notice = { testID: string; title: string; body: string; severe: boolean }
+
 /**
- * The PIN row doubles as the blocked-card dead end. There is no unblock path
- * on this applet (ENG-617), so a blocked card is told the truth: it has to be
- * replaced. Until ENG-615 ships, a card reporting "blocked" should also not be
- * trusted to keep refusing — the notice says to move the funds off it.
+ * What the card's PIN state means for whoever holds it, by applet version.
+ * Nothing when a PIN is set. A blocked card is not shown as frozen unless its
+ * version is confirmed to keep refusing spends (`blockedPinGatesSpend`): on
+ * v0.2.0 a blocked PIN stops gating SPEND_PROOF (ENG-615), so the truth is
+ * that anyone holding it can spend it, and nothing unblocks it (ENG-617). A
+ * state byte this app cannot decode is said to be unknown, not guessed at.
  */
-const PinStateNotice: React.FC<{ pinState: CashuCardInfo["pinState"] }> = ({
+const PinStateNotice: React.FC<Pick<CashuCardInfo, "pinState" | "version">> = ({
   pinState,
+  version,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
 
-  if (pinState === "set") return null
+  const notice = pinNotice(pinState, version, LL)
+  if (!notice) return null
 
-  const blocked = pinState === "blocked"
   return (
     <View
-      style={[styles.notice, blocked ? styles.noticeBlocked : styles.noticeNoPin]}
-      {...testProps(blocked ? "flashcard-v2-blocked" : "flashcard-v2-no-pin")}
+      style={[styles.notice, notice.severe ? styles.noticeSevere : styles.noticeWarning]}
+      {...testProps(notice.testID)}
     >
       <Text type="bl" bold>
-        {blocked ? LL.FlashcardV2.blockedTitle() : LL.FlashcardV2.noPinTitle()}
+        {notice.title}
       </Text>
-      <Text type="caption">
-        {blocked ? LL.FlashcardV2.blockedBody() : LL.FlashcardV2.noPinBody()}
-      </Text>
+      <Text type="caption">{notice.body}</Text>
     </View>
   )
+}
+
+const pinNotice = (
+  pinState: CashuCardInfo["pinState"],
+  version: string,
+  LL: LLType,
+): Notice | undefined => {
+  switch (pinState) {
+    case "set":
+      return undefined
+    case "unset":
+      return {
+        testID: "flashcard-v2-no-pin",
+        title: LL.FlashcardV2.noPinTitle(),
+        body: LL.FlashcardV2.noPinBody(),
+        severe: false,
+      }
+    case "blocked":
+      return blockedPinGatesSpend(version)
+        ? {
+            testID: "flashcard-v2-blocked",
+            title: LL.FlashcardV2.blockedLockedTitle(),
+            body: LL.FlashcardV2.blockedLockedBody(),
+            severe: true,
+          }
+        : {
+            testID: "flashcard-v2-blocked",
+            title: LL.FlashcardV2.blockedOpenTitle(),
+            body: LL.FlashcardV2.blockedOpenBody(),
+            severe: true,
+          }
+    case "unknown":
+      return {
+        testID: "flashcard-v2-pin-unknown",
+        title: LL.FlashcardV2.pinUnknownTitle(),
+        body: LL.FlashcardV2.pinUnknownBody(),
+        severe: false,
+      }
+  }
 }
 
 const DetailRow: React.FC<{ label: string; value: string; testID?: string }> = ({
@@ -171,7 +222,68 @@ const slotSummary = (card: CashuCardInfo, LL: LLType) =>
     max: card.maxSlots,
   })
 
-/** First and last six hex chars of the 33-byte pubkey: enough to tell cards apart. */
+// en-US grouping, as the app's own money formatting uses (use-display-currency).
+const grouped = new Intl.NumberFormat("en-US")
+const cents = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+/**
+ * An amount in its keyset unit's own terms, never converted through a price.
+ * Slot amounts are in the keyset's base unit, "sats or cents"
+ * (cashu-javacard spec/NUT-XX.md:86), so `sat` reads as sats and `usd` as
+ * dollars and cents. The spec is silent on any other unit, so those show the
+ * mint's number with the mint's unit code.
+ */
+export const formatUnitAmount = (amount: number, unit: string, LL: LLType): string => {
+  switch (unit) {
+    case "sat":
+      return LL.FlashcardV2.amountInUnit({ amount: grouped.format(amount), unit: "sats" })
+    case "usd":
+      return LL.FlashcardV2.amountInUnit({
+        amount: cents.format(amount / 100),
+        unit: "USD",
+      })
+    default:
+      return LL.FlashcardV2.amountInUnit({ amount: grouped.format(amount), unit })
+  }
+}
+
+/**
+ * The card's figures, one per unit the mint named. Until the mint has answered
+ * (or when it could not be asked) the card's own total is shown labelled
+ * "unit unknown", never bare: GET_BALANCE adds every keyset together and the
+ * card stores no unit. Value in a keyset the mint does not list is shown the
+ * same way.
+ */
+export const balanceLines = (
+  card: CashuCardState,
+  LL: LLType,
+): { testID: string; text: string }[] => {
+  const unknown = (amount: number) => ({
+    testID: "flashcard-v2-balance-unknown",
+    text: LL.FlashcardV2.unitUnknown({ amount: grouped.format(amount) }),
+  })
+  // An empty card has nothing to name a unit for; no need to wait on the mint.
+  const totals =
+    card.unitTotals ??
+    (card.balance === 0 && card.keysets.length === 0
+      ? { byUnit: [], unknown: 0 }
+      : undefined)
+  if (!totals) return [unknown(card.balance)]
+  const lines = totals.byUnit.map(({ unit, amount }) => ({
+    testID: `flashcard-v2-balance-${unit}`,
+    text: formatUnitAmount(amount, unit, LL),
+  }))
+  if (totals.unknown > 0) lines.push(unknown(totals.unknown))
+  if (lines.length === 0) {
+    lines.push({ testID: "flashcard-v2-balance-empty", text: LL.FlashcardV2.empty() })
+  }
+  return lines
+}
+
+/** First eight and last six hex chars of the 33-byte pubkey: enough to tell cards apart. */
 export const shortPubkey = (pubkey: string) =>
   pubkey.length > 16 ? `${pubkey.slice(0, 8)}…${pubkey.slice(-6)}` : pubkey
 
@@ -206,11 +318,11 @@ const useStyles = makeStyles(({ colors }) => ({
     marginHorizontal: 20,
     marginTop: 20,
   },
-  noticeNoPin: {
+  noticeWarning: {
     borderColor: colors.warning,
     backgroundColor: colors.layer,
   },
-  noticeBlocked: {
+  noticeSevere: {
     borderColor: colors.error,
     backgroundColor: colors.layer,
   },

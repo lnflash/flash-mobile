@@ -41,19 +41,6 @@ module.exports = mergeConfig(defaultConfig, {
   },
   resolver: {
     ...defaultConfig.resolver,
-    // @cashu/cashu-ts v4 is ESM-only and declares no `main` — only package
-    // `exports`. Without this Metro cannot resolve it at all (ENG-616).
-    // (Metro's own option names, hence the camelcase exemptions.)
-    // eslint-disable-next-line camelcase
-    unstable_enablePackageExports: true,
-    // With exports resolution on, packages that import `tslib` (Apollo and
-    // friends) would pick tslib's ESM build, whose namespace comes up undefined
-    // under Metro's interop ("Cannot read property '__extends' of undefined").
-    // Preferring the require/react-native conditions keeps those on CJS.
-    // cashu-ts is unaffected: its exports carry no `require` key, so it still
-    // falls through to `default`, its ESM bundle. Same shape as flash-pos.
-    // eslint-disable-next-line camelcase
-    unstable_conditionNames: ["require", "react-native"],
     assetExts: defaultConfig.resolver.assetExts.filter((ext) => ext !== "svg"),
     sourceExts: [...defaultConfig.resolver.sourceExts, "svg", "cjs", "json"],
     extraNodeModules: {
