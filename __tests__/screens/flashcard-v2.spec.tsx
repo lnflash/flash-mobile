@@ -331,11 +331,24 @@ describe("FlashcardV2Screen", () => {
     renderScreen()
 
     expect(screen.queryByText(/Remove/)).toBeNull()
+    // The PIN action sits behind sign-in with Remove card.
+    expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
     expect(mockAddListener).toHaveBeenCalledWith("beforeRemove", expect.any(Function))
     const [, onLeave] = mockAddListener.mock.calls[0]
     onLeave()
     expect(mockForgetCashuCard).toHaveBeenCalledTimes(1)
     expect(mockResetFlashcard).not.toHaveBeenCalled()
+  })
+
+  it("offers no PIN action when signed out, on a card with a PIN or without one", () => {
+    mockIsAuthed = false
+    ;(["set", "unset"] as const).forEach((pinState) => {
+      mockCashuCard = card({ pinState })
+      const { unmount } = renderScreen()
+      expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
+      unmount()
+    })
   })
 
   it("leaves the screen when there is no card to show", () => {

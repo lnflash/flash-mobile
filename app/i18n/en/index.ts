@@ -144,6 +144,9 @@ const en: BaseTranslation = {
     cardRefused: "The card refused the change. Try again.",
     pinChangeUncertain:
       "The tap was cut short while the card was saving the new PIN. It may already use the new PIN: try the new one first.",
+    pinSetUncertain:
+      "The tap was cut short while the card was saving the PIN. It may already use this PIN: confirm it and tap the card again to finish.",
+    pinSetEarlier: "PIN set. The card saved it during the tap that was cut short.",
     cardNotFound: "No Cashu card found. Hold the card steady and try again.",
     pinAlreadySet: "This card already has a PIN. Change it instead.",
     pinEntered: "Digits entered: {count:number}",

@@ -28,15 +28,33 @@ import { toastShow } from "@app/utils/toast"
 
 type Step = "current" | "new" | "confirm"
 
+type PinMode = RootStackParamList["FlashcardV2Pin"]["mode"]
+
 type LLType = ReturnType<typeof useI18nContext>["LL"]
 
 /** A status word as the log shows it, e.g. "6F00". */
 const swHex = (sw: number) => sw.toString(16).toUpperCase().padStart(4, "0")
 
+/** SET_PIN's answer on a card that already has a PIN (spec/APDU.md, SET_PIN). */
+const SW_PIN_ALREADY_SET = 0x6985
+
 /** What one tap told the screen besides what it threw. Filled in while the tap runs. */
 type TapReport = {
-  /** CHANGE_PIN reached the wire: a tap lost after this may have left either PIN. */
-  changeSent: boolean
+  /**
+   * VERIFY_PIN or SET_PIN reached the wire. Until then no PIN from this tap
+   * has reached the card, so a failure leaves every PIN typed standing.
+   */
+  pinSent: boolean
+  /**
+   * SET_PIN or CHANGE_PIN reached the wire: a tap lost after this may or may
+   * not have left the new PIN on the card.
+   */
+  pinWriteSent: boolean
+  /**
+   * SET_PIN answered 6985 to the PIN an earlier, cut-short SET_PIN carried:
+   * the card saved that one before the earlier tap lost its answer.
+   */
+  earlierSetLanded: boolean
   /** What GET_INFO said when the card was re-read after the operation. */
   after?: CardInfo
 }
@@ -48,6 +66,13 @@ type Failure = {
    * re-read after the refusal, shows what that means for this card.
    */
   final?: boolean
+  /**
+   * The PINs typed so far still stand, so only the confirmation is retyped.
+   * Otherwise the flow starts again from its first step.
+   */
+  keepPins?: boolean
+  /** SET_PIN went out and its answer was lost: the card may already hold the new PIN. */
+  setInDoubt?: boolean
 }
 
 /**
@@ -65,6 +90,14 @@ type Failure = {
  * switches the PIN check off (ENG-615), and the copy says which. A blocked PIN
  * ends the flow: the screen goes back to the card, which the refusal's re-read
  * has already updated.
+ *
+ * A tap that fails before any PIN reaches the card (a different card, a tag
+ * without the applet, a tap lost before VERIFY_PIN or SET_PIN) keeps the PINs:
+ * only the confirmation is retyped. SET_PIN saves the PIN before it answers
+ * (CashuApplet.java@v0.2.0:538-539; 0.3: 574-575), so a tap lost after it went
+ * out keeps the new PIN too, and says the card may already use it. Tapping
+ * again with that PIN finishes the job either way: a card that already has it
+ * answers 6985, which here means the earlier write landed.
  */
 export const FlashcardV2PinScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -84,6 +117,9 @@ export const FlashcardV2PinScreen = () => {
   const [next, setNext] = useState("")
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
+  // Each PIN a cut-short tap sent with SET_PIN: the card may hold any one of
+  // them. Kept only while this screen is open, like the PINs themselves.
+  const [unansweredSetPins, setUnansweredSetPins] = useState<string[]>([])
 
   // iOS has no live regions (the status area below is one on Android), so an
   // error is read out as it appears.
@@ -128,22 +164,51 @@ export const FlashcardV2PinScreen = () => {
     if (!cashuCard) return
     setBusy(true)
     setError(undefined)
-    const tap: TapReport = { changeSent: false }
+    const tap: TapReport = {
+      pinSent: false,
+      pinWriteSent: false,
+      earlierSetLanded: false,
+    }
+    // When `next` is the only PIN a cut-short SET_PIN carried, a 6985 to it
+    // means the card holds it: the card was read with no PIN, and nothing
+    // else on this screen writes one.
+    const onlyUnansweredSet =
+      unansweredSetPins.length === 1 && unansweredSetPins[0] === next
     try {
       await runCardOperation(
         async (transceive) => {
           if (params.mode === "set") {
-            await setCardPin(transceive, next)
+            tap.pinSent = true
+            tap.pinWriteSent = true
+            try {
+              await setCardPin(transceive, next)
+            } catch (err) {
+              // A 6985 here means the earlier write landed. Returning makes
+              // this tap a success, so the provider re-reads the card, or
+              // applies `assume` when the card leaves first, and the card
+              // screen offers Change PIN.
+              if (
+                err instanceof CardError &&
+                err.sw === SW_PIN_ALREADY_SET &&
+                onlyUnansweredSet
+              ) {
+                tap.earlierSetLanded = true
+                return
+              }
+              throw err
+            }
           } else {
+            tap.pinSent = true
             await verifyCardPin(transceive, current)
-            tap.changeSent = true
+            tap.pinWriteSent = true
             await changeCardPin(transceive, current, next)
           }
         },
         cashuCard.pubkey,
         {
-          // A 9000 to either command leaves the card with a PIN set, whether
-          // or not it stays in the field for the re-read.
+          // A 9000 to either command, or the 6985 above, leaves the card
+          // with a PIN set, whether or not it stays in the field for the
+          // re-read.
           assume: { pinState: "set" },
           onReread: (info) => {
             tap.after = info
@@ -153,20 +218,25 @@ export const FlashcardV2PinScreen = () => {
       toastShow({
         position: "top",
         type: "success",
-        message:
-          params.mode === "set" ? LL.FlashcardV2.pinSet() : LL.FlashcardV2.pinChanged(),
+        message: successMessage(params.mode, tap, LL),
       })
       navigation.goBack()
     } catch (err) {
-      // Cancelling the sheet is the holder's choice, not a failure: no error,
-      // and only the confirmation to retype (flash-pos treats a cancel the
-      // same way: isUserCancel, docs/13-cashu-card.md).
-      if (err instanceof NfcError.UserCancel) {
+      // Cancelling the sheet before any PIN reached the card is the holder's
+      // choice, not a failure: no error, and only the confirmation to retype
+      // (flash-pos treats a cancel the same way: isUserCancel,
+      // docs/13-cashu-card.md). A cancel that cuts off a PIN command is a
+      // lost answer like any other, below.
+      if (err instanceof NfcError.UserCancel && !tap.pinSent) {
         setError(undefined)
         setStepIndex(steps.indexOf("confirm"))
         return
       }
-      const failure = describeFailure(err, { ...tap, cardVersion: cashuCard.version }, LL)
+      const failure = describeFailure(
+        err,
+        { ...tap, mode: params.mode, cardVersion: cashuCard.version },
+        LL,
+      )
       if (failure.final) {
         toastShow({ position: "top", type: "error", message: failure.message })
         // The toast is not announced, and this screen is about to go.
@@ -174,9 +244,14 @@ export const FlashcardV2PinScreen = () => {
         navigation.goBack()
         return
       }
+      if (failure.setInDoubt) {
+        setUnansweredSetPins((pins) => (pins.includes(next) ? pins : [...pins, next]))
+      }
       setError(failure.message)
-      // Whatever else went wrong, the current PIN is what to re-enter.
-      setStepIndex(0)
+      // The confirmation alone while the PINs typed still stand. Otherwise
+      // the first step: the current PIN was wrong, the card refused the PIN,
+      // or a lost answer leaves which PIN is current in doubt.
+      setStepIndex(failure.keepPins ? steps.indexOf("confirm") : 0)
     } finally {
       setBusy(false)
     }
@@ -244,23 +319,39 @@ export const FlashcardV2PinScreen = () => {
   )
 }
 
+/** What to tell the holder about a tap that worked. */
+const successMessage = (mode: PinMode, tap: TapReport, LL: LLType): string => {
+  if (mode === "change") return LL.FlashcardV2.pinChanged()
+  return tap.earlierSetLanded ? LL.FlashcardV2.pinSetEarlier() : LL.FlashcardV2.pinSet()
+}
+
 /**
- * What to tell the holder about a tap that failed. Nothing here carries a
- * status word or a PIN: the words are for the holder, the status word for
- * the log. `cardVersion` is the version of the card on screen, for when the
- * tap produced no re-read.
+ * What to tell the holder about a tap that failed, and whether the PINs typed
+ * still stand. Nothing here carries a status word or a PIN: the words are for
+ * the holder, the status word for the log. `cardVersion` is the version of
+ * the card on screen, for when the tap produced no re-read.
  */
 const describeFailure = (
   err: unknown,
-  { changeSent, after, cardVersion }: TapReport & { cardVersion: string },
+  {
+    pinSent,
+    pinWriteSent,
+    after,
+    mode,
+    cardVersion,
+  }: TapReport & { mode: PinMode; cardVersion: string },
   LL: LLType,
 ): Failure => {
   const version = after?.version ?? cardVersion
-  if (err instanceof WrongCardError) return { message: LL.FlashcardV2.wrongCard() }
+  // Both are thrown before the operation runs (runCardOperation checks the
+  // card first), so no PIN reached any card.
+  if (err instanceof WrongCardError) {
+    return { message: LL.FlashcardV2.wrongCard(), keepPins: true }
+  }
   // Before CardError, which it extends: a tag without the applet (a BoltCard,
   // a bank card) lands here, and its message is developer text.
   if (err instanceof AppletNotSelectedError) {
-    return { message: LL.FlashcardV2.notCashuCard() }
+    return { message: LL.FlashcardV2.notCashuCard(), keepPins: true }
   }
   if (err instanceof CardError) {
     const tries = triesLeft(err.sw)
@@ -280,7 +371,7 @@ const describeFailure = (
     switch (err.sw) {
       case 0x6983:
         return { message: blockedPinMessage(after, version, LL), final: true }
-      case 0x6985:
+      case SW_PIN_ALREADY_SET:
         return { message: LL.FlashcardV2.pinAlreadySet() }
       case 0x6986:
         // LOCK_CARD was run on this card: SET_PIN and CHANGE_PIN both refuse
@@ -292,9 +383,26 @@ const describeFailure = (
     }
   }
   // The card gave no answer: the tap was lost, timed out, or never reached
-  // the applet. Once CHANGE_PIN was sent the card may have saved the new PIN
-  // before the answer was lost, and retyping the old one would spend a try.
-  if (changeSent) return { message: LL.FlashcardV2.pinChangeUncertain() }
+  // the applet. Before any PIN command went out, nothing on the card changed.
+  if (!pinSent) return { message: LL.FlashcardV2.cardNotFound(), keepPins: true }
+  if (pinWriteSent) {
+    // SET_PIN saves the PIN before it answers (CashuApplet.java@v0.2.0:
+    // 538-539; 0.3: 574-575), so the card may already hold it. Sending the
+    // same PIN again settles it: 9000 sets it, and 6985 says the earlier
+    // write landed.
+    if (mode === "set") {
+      return {
+        message: LL.FlashcardV2.pinSetUncertain(),
+        keepPins: true,
+        setInDoubt: true,
+      }
+    }
+    // Once CHANGE_PIN was sent the card may have saved the new PIN before
+    // the answer was lost, and retyping the old one would spend a try.
+    return { message: LL.FlashcardV2.pinChangeUncertain() }
+  }
+  // Lost during VERIFY_PIN: a wrong current PIN may have cost a try the
+  // holder never heard about, so it is entered again.
   return { message: LL.FlashcardV2.cardNotFound() }
 }
 

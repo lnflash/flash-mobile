@@ -490,6 +490,14 @@ type RootTranslation = {
 		 */
 		pinChangeUncertain: string
 		/**
+		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​s​a​v​i​n​g​ ​t​h​e​ ​P​I​N​.​ ​I​t​ ​m​a​y​ ​a​l​r​e​a​d​y​ ​u​s​e​ ​t​h​i​s​ ​P​I​N​:​ ​c​o​n​f​i​r​m​ ​i​t​ ​a​n​d​ ​t​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​.
+		 */
+		pinSetUncertain: string
+		/**
+		 * P​I​N​ ​s​e​t​.​ ​T​h​e​ ​c​a​r​d​ ​s​a​v​e​d​ ​i​t​ ​d​u​r​i​n​g​ ​t​h​e​ ​t​a​p​ ​t​h​a​t​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​.
+		 */
+		pinSetEarlier: string
+		/**
 		 * N​o​ ​C​a​s​h​u​ ​c​a​r​d​ ​f​o​u​n​d​.​ ​H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​s​t​e​a​d​y​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		cardNotFound: string
@@ -7522,6 +7530,14 @@ export type TranslationFunctions = {
 		 * The tap was cut short while the card was saving the new PIN. It may already use the new PIN: try the new one first.
 		 */
 		pinChangeUncertain: () => LocalizedString
+		/**
+		 * The tap was cut short while the card was saving the PIN. It may already use this PIN: confirm it and tap the card again to finish.
+		 */
+		pinSetUncertain: () => LocalizedString
+		/**
+		 * PIN set. The card saved it during the tap that was cut short.
+		 */
+		pinSetEarlier: () => LocalizedString
 		/**
 		 * No Cashu card found. Hold the card steady and try again.
 		 */
