@@ -6,7 +6,7 @@ import {
   extendCardTimeout,
 } from "../../app/utils/cashu-card-nfc"
 
-// The mock manager has no setTimeout; give it one per test.
+// Swap the shared mock's setTimeout for one this spec resets per test.
 const setTimeoutMock = jest.fn()
 ;(NfcManager as unknown as { setTimeout: jest.Mock }).setTimeout = setTimeoutMock
 

@@ -452,27 +452,43 @@ type RootTranslation = {
 		 */
 		pinChanged: string
 		/**
-		 * W​r​o​n​g​ ​P​I​N​.​ ​{​t​r​i​e​s​}​ ​t​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​c​a​r​d​ ​b​l​o​c​k​s​.
+		 * W​r​o​n​g​ ​P​I​N​.​ ​T​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​c​a​r​d​ ​b​l​o​c​k​s​:​ ​{​t​r​i​e​s​}​.
 		 * @param {number} tries
 		 */
 		wrongPin: RequiredParams<'tries'>
 		/**
-		 * W​r​o​n​g​ ​P​I​N​.​ ​{​t​r​i​e​s​}​ ​t​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​s​w​i​t​c​h​e​s​ ​o​f​f​.
+		 * W​r​o​n​g​ ​P​I​N​.​ ​T​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​s​w​i​t​c​h​e​s​ ​o​f​f​:​ ​{​t​r​i​e​s​}​.
 		 * @param {number} tries
 		 */
 		wrongPinOpen: RequiredParams<'tries'>
 		/**
-		 * T​h​a​t​ ​w​a​s​ ​t​h​e​ ​l​a​s​t​ ​t​r​y​.​ ​T​h​e​ ​c​a​r​d​ ​i​s​ ​n​o​w​ ​b​l​o​c​k​e​d​ ​a​n​d​ ​m​u​s​t​ ​b​e​ ​r​e​p​l​a​c​e​d​.
+		 * T​h​e​ ​P​I​N​ ​h​a​s​ ​b​e​e​n​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​.​ ​T​h​e​ ​c​a​r​d​ ​i​s​ ​b​l​o​c​k​e​d​ ​a​n​d​ ​m​u​s​t​ ​b​e​ ​r​e​p​l​a​c​e​d​.
 		 */
 		cardNowBlocked: string
 		/**
-		 * T​h​a​t​ ​w​a​s​ ​t​h​e​ ​l​a​s​t​ ​t​r​y​.​ ​O​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​i​s​ ​n​o​w​ ​o​f​f​:​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​i​t​s​ ​b​a​l​a​n​c​e​.​ ​M​o​v​e​ ​t​h​e​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​.
+		 * T​h​e​ ​P​I​N​ ​h​a​s​ ​b​e​e​n​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​,​ ​a​n​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​t​h​a​t​ ​s​w​i​t​c​h​e​s​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​:​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​i​t​s​ ​b​a​l​a​n​c​e​.​ ​M​o​v​e​ ​t​h​e​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​.
 		 */
 		cardNowOpen: string
 		/**
 		 * T​h​a​t​ ​i​s​ ​a​ ​d​i​f​f​e​r​e​n​t​ ​c​a​r​d​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​t​h​i​s​ ​s​c​r​e​e​n​ ​i​s​ ​s​h​o​w​i​n​g​.
 		 */
 		wrongCard: string
+		/**
+		 * T​h​a​t​ ​i​s​n​'​t​ ​a​ ​C​a​s​h​u​ ​c​a​r​d​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​t​h​i​s​ ​s​c​r​e​e​n​ ​i​s​ ​s​h​o​w​i​n​g​.
+		 */
+		notCashuCard: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​ ​a​g​a​i​n​s​t​ ​c​h​a​n​g​e​s​,​ ​s​o​ ​i​t​s​ ​P​I​N​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​ ​o​r​ ​c​h​a​n​g​e​d​.
+		 */
+		cardLocked: string
+		/**
+		 * T​h​e​ ​c​a​r​d​ ​r​e​f​u​s​e​d​ ​t​h​e​ ​c​h​a​n​g​e​.​ ​T​r​y​ ​a​g​a​i​n​.
+		 */
+		cardRefused: string
+		/**
+		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​s​a​v​i​n​g​ ​t​h​e​ ​n​e​w​ ​P​I​N​.​ ​I​t​ ​m​a​y​ ​a​l​r​e​a​d​y​ ​u​s​e​ ​t​h​e​ ​n​e​w​ ​P​I​N​:​ ​t​r​y​ ​t​h​e​ ​n​e​w​ ​o​n​e​ ​f​i​r​s​t​.
+		 */
+		pinChangeUncertain: string
 		/**
 		 * N​o​ ​C​a​s​h​u​ ​c​a​r​d​ ​f​o​u​n​d​.​ ​H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​s​t​e​a​d​y​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
@@ -481,6 +497,19 @@ type RootTranslation = {
 		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​a​ ​P​I​N​.​ ​C​h​a​n​g​e​ ​i​t​ ​i​n​s​t​e​a​d​.
 		 */
 		pinAlreadySet: string
+		/**
+		 * D​i​g​i​t​s​ ​e​n​t​e​r​e​d​:​ ​{​c​o​u​n​t​}
+		 * @param {number} count
+		 */
+		pinEntered: RequiredParams<'count'>
+		/**
+		 * C​l​e​a​r
+		 */
+		pinPadClear: string
+		/**
+		 * D​e​l​e​t​e
+		 */
+		pinPadDelete: string
 		/**
 		 * C​o​n​t​i​n​u​e
 		 */
@@ -7458,25 +7487,41 @@ export type TranslationFunctions = {
 		 */
 		pinChanged: () => LocalizedString
 		/**
-		 * Wrong PIN. {tries} tries left before the card blocks.
+		 * Wrong PIN. Tries left before the card blocks: {tries}.
 		 */
 		wrongPin: (arg: { tries: number }) => LocalizedString
 		/**
-		 * Wrong PIN. {tries} tries left before the PIN check switches off.
+		 * Wrong PIN. Tries left before the PIN check switches off: {tries}.
 		 */
 		wrongPinOpen: (arg: { tries: number }) => LocalizedString
 		/**
-		 * That was the last try. The card is now blocked and must be replaced.
+		 * The PIN has been entered wrong too many times. The card is blocked and must be replaced.
 		 */
 		cardNowBlocked: () => LocalizedString
 		/**
-		 * That was the last try. On this card's software the PIN check is now off: anyone holding the card can spend its balance. Move the value off it.
+		 * The PIN has been entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. Move the value off it.
 		 */
 		cardNowOpen: () => LocalizedString
 		/**
 		 * That is a different card. Tap the card this screen is showing.
 		 */
 		wrongCard: () => LocalizedString
+		/**
+		 * That isn't a Cashu card. Tap the card this screen is showing.
+		 */
+		notCashuCard: () => LocalizedString
+		/**
+		 * This card is locked against changes, so its PIN can't be set or changed.
+		 */
+		cardLocked: () => LocalizedString
+		/**
+		 * The card refused the change. Try again.
+		 */
+		cardRefused: () => LocalizedString
+		/**
+		 * The tap was cut short while the card was saving the new PIN. It may already use the new PIN: try the new one first.
+		 */
+		pinChangeUncertain: () => LocalizedString
 		/**
 		 * No Cashu card found. Hold the card steady and try again.
 		 */
@@ -7485,6 +7530,18 @@ export type TranslationFunctions = {
 		 * This card already has a PIN. Change it instead.
 		 */
 		pinAlreadySet: () => LocalizedString
+		/**
+		 * Digits entered: {count}
+		 */
+		pinEntered: (arg: { count: number }) => LocalizedString
+		/**
+		 * Clear
+		 */
+		pinPadClear: () => LocalizedString
+		/**
+		 * Delete
+		 */
+		pinPadDelete: () => LocalizedString
 		/**
 		 * Continue
 		 */
