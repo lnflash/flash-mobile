@@ -206,6 +206,8 @@ describe("FlashcardV2PinScreen", () => {
     expect(sent).toEqual([VERIFY_1234, CHANGE_1234_5678])
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
     expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ type: "success" }))
+    // A toast is not announced, so a screen reader hears the outcome directly.
+    expect(announce).toHaveBeenCalledWith("PIN changed.")
     // The confirmation says what happened, and nothing about the PIN.
     const toasted = JSON.stringify(mockToast.mock.calls)
     expect(toasted).not.toContain("1234")
@@ -235,6 +237,9 @@ describe("FlashcardV2PinScreen", () => {
     const sent = await runCapturedOp()
     expect(sent).toEqual([[0xb0, 0x41, 0x00, 0x00, 0x04, 0x32, 0x34, 0x36, 0x38]])
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(announce).toHaveBeenCalledWith(
+      "PIN set. The card now asks for it before it spends or loads.",
+    )
   })
 
   it("set: on firmware that freezes a blocked card, the warning says so", () => {
@@ -290,18 +295,25 @@ describe("FlashcardV2PinScreen", () => {
     })
   }
 
-  /** The last-try outcome: the flow ends on a toast and the card screen, never a retry. */
-  const expectFlowEnded = async (message: RegExp) => {
-    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
-    expect(mockToast).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "error", message: expect.stringMatching(message) }),
-    )
-    expect(announce).toHaveBeenCalledWith(expect.stringMatching(message))
-    expect(screen.queryByTestId("pin-error")).toBeNull()
+  /**
+   * The last-try outcome ends the flow on this screen: the whole message in
+   * the status area (a toast would cut it at two lines), no pad to type on, and
+   * the card screen only once the holder presses Close.
+   */
+  const expectFlowEnded = async (message: string) => {
+    await waitFor(() => expect(pinError()).toBe(message))
+    expect(mockToast).not.toHaveBeenCalled()
+    expect(screen.queryByTestId("pin-1")).toBeNull()
+    expect(screen.queryByText("Continue")).toBeNull()
+    expect(mockGoBack).not.toHaveBeenCalled()
+    fireEvent.press(screen.getByText("Close"))
+    expect(mockGoBack).toHaveBeenCalledTimes(1)
   }
 
-  const FROZEN = /blocked and must be replaced/
-  const OPEN = /switches the PIN check off: anyone holding the card can spend/
+  const FROZEN =
+    "The PIN has been entered wrong too many times. The card is blocked and must be replaced."
+  const OPEN =
+    "The PIN has been entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. Move the value off it."
 
   const firmwares = [
     {
@@ -398,8 +410,8 @@ describe("FlashcardV2PinScreen", () => {
     }
     await enterAndApply("1111")
 
-    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
-    expect(JSON.stringify(mockToast.mock.calls)).not.toMatch(/last try/)
+    await waitFor(() => expect(screen.getByText("Close")).toBeTruthy())
+    expect(pinError()).not.toMatch(/last try/)
   })
 
   // Each failure the card or the tap can produce, and the words it gets. None
@@ -652,6 +664,10 @@ describe("FlashcardV2PinScreen", () => {
           type: "success",
           message: "PIN set. The card saved it during the tap that was cut short.",
         }),
+      )
+      // The retry is the one outcome a screen-reader user has no other way to hear.
+      expect(announce).toHaveBeenCalledWith(
+        "PIN set. The card saved it during the tap that was cut short.",
       )
       // A success, so the card screen stops offering Set PIN even when the
       // card leaves before the re-read.

@@ -117,6 +117,9 @@ export const FlashcardV2PinScreen = () => {
   const [next, setNext] = useState("")
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
+  // Set once the card has settled the flow with no retry left (the last try):
+  // the message stays on this screen and Close returns to the card screen.
+  const [finished, setFinished] = useState(false)
   // Each PIN a cut-short tap sent with SET_PIN: the card may hold any one of
   // them. Kept only while this screen is open, like the PINs themselves.
   const [unansweredSetPins, setUnansweredSetPins] = useState<string[]>([])
@@ -215,11 +218,10 @@ export const FlashcardV2PinScreen = () => {
           },
         },
       )
-      toastShow({
-        position: "top",
-        type: "success",
-        message: successMessage(params.mode, tap, LL),
-      })
+      const message = successMessage(params.mode, tap, LL)
+      toastShow({ position: "top", type: "success", message })
+      // A toast is not announced, and this screen is about to go.
+      AccessibilityInfo.announceForAccessibility(message)
       navigation.goBack()
     } catch (err) {
       // Cancelling the sheet before any PIN reached the card is the holder's
@@ -238,10 +240,12 @@ export const FlashcardV2PinScreen = () => {
         LL,
       )
       if (failure.final) {
-        toastShow({ position: "top", type: "error", message: failure.message })
-        // The toast is not announced, and this screen is about to go.
-        AccessibilityInfo.announceForAccessibility(failure.message)
-        navigation.goBack()
+        // End the flow here, not in a toast: a toast shows two ellipsized
+        // lines, and this message's last sentence (what the card now does,
+        // and what to do about it) is the one that matters. The status area
+        // announces it (a live region on Android, the effect above on iOS).
+        setError(failure.message)
+        setFinished(true)
         return
       }
       if (failure.setInDoubt) {
@@ -271,18 +275,22 @@ export const FlashcardV2PinScreen = () => {
         <Text type="h02" testID="pin-step-title" accessibilityRole="header">
           {title}
         </Text>
-        <Text type="caption">{LL.FlashcardV2.pinLength()}</Text>
-        <Text
-          type="h01"
-          style={styles.dots}
-          testID="pin-entry"
-          accessibilityLabel={LL.FlashcardV2.pinEntered({ count: entry.length })}
-        >
-          {"●".repeat(entry.length)}
-          <Text type="h01" style={styles.empty}>
-            {"○".repeat(Math.max(0, 4 - entry.length))}
-          </Text>
-        </Text>
+        {!finished && (
+          <>
+            <Text type="caption">{LL.FlashcardV2.pinLength()}</Text>
+            <Text
+              type="h01"
+              style={styles.dots}
+              testID="pin-entry"
+              accessibilityLabel={LL.FlashcardV2.pinEntered({ count: entry.length })}
+            >
+              {"●".repeat(entry.length)}
+              <Text type="h01" style={styles.empty}>
+                {"○".repeat(Math.max(0, 4 - entry.length))}
+              </Text>
+            </Text>
+          </>
+        )}
         {/* Always mounted, so TalkBack reads a message as it appears in it. */}
         <View style={styles.status} testID="pin-status" accessibilityLiveRegion="polite">
           {error && (
@@ -302,18 +310,24 @@ export const FlashcardV2PinScreen = () => {
           )}
         </View>
       </View>
-      <PinPad
-        onDigit={onDigit}
-        onBackspace={() => setEntry((e) => e.slice(0, -1))}
-        onClear={() => setEntry("")}
-      />
-      <View style={styles.footer}>
-        <PrimaryBtn
-          label={LL.FlashcardV2.next()}
-          disabled={!canContinue}
-          loading={busy}
-          onPress={advance}
+      {!finished && (
+        <PinPad
+          onDigit={onDigit}
+          onBackspace={() => setEntry((e) => e.slice(0, -1))}
+          onClear={() => setEntry("")}
         />
+      )}
+      <View style={styles.footer}>
+        {finished ? (
+          <PrimaryBtn label={LL.common.close()} onPress={() => navigation.goBack()} />
+        ) : (
+          <PrimaryBtn
+            label={LL.FlashcardV2.next()}
+            disabled={!canContinue}
+            loading={busy}
+            onPress={advance}
+          />
+        )}
       </View>
     </Screen>
   )
