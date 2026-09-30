@@ -73,11 +73,11 @@ const cardFreeDeps = (): CardFreeDeps => ({ mint: mint(), store, now: Date.now }
  * and IBEX refusing for balance (INSUFFICIENT_BALANCE).
  *
  * Nothing else may read as "failed", which tells the user nothing left the
- * wallet and lets the record go: the busy-lock answer to a same-key request
- * still executing (ResourceAttemptsLockServiceError, sent as
- * ROUTE_FINDING_ERROR with an empty message) must be retried under the same
- * key (src/app/payments/idempotency.ts), and IBEX's generic error (no code)
- * can come back after IBEX debited.
+ * wallet and takes a fresh key for the next attempt: the busy-lock answer to
+ * a same-key request still executing (ResourceAttemptsLockServiceError, sent
+ * as ROUTE_FINDING_ERROR with an empty message) must be retried under the
+ * same key (src/app/payments/idempotency.ts), and IBEX's generic error (no
+ * code) can come back after IBEX debited.
  */
 const REFUSED_BEFORE_EXECUTION: readonly string[] = [
   "INSUFFICIENT_BALANCE",

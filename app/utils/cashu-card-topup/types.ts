@@ -58,8 +58,8 @@ export type TopUpRecord = {
     /**
      * The retry flag. Set before a dispatch: while it is set a payment under
      * `idempotencyKey` may be out, so the next dispatch is a retry of that
-     * key. Cleared, with a fresh key, only when a FIRST dispatch was refused
-     * provably before it executed.
+     * key. Cleared, with a fresh key, only when a FIRST dispatch provably
+     * moved nothing: refused before it executed, or reported failed by IBEX.
      */
     dispatched: boolean
     /**
