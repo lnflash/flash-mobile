@@ -1,5 +1,6 @@
 import {
   Amount,
+  MintOperationError,
   OutputData,
   Proof,
   SerializedBlindedMessage,
@@ -7,6 +8,7 @@ import {
   getPubKeyFromPrivKey,
   hasValidDleq,
   hashToCurve,
+  isMintOperationError,
   signMintQuote,
 } from "@cashu/cashu-ts"
 import { Network as NetworkLibGaloy, decodeInvoiceString } from "@galoymoney/client"
@@ -61,15 +63,28 @@ import type { CardUnit, TopUpFailure, TopUpOutput, TopUpRecord } from "./types"
 export const MAX_TOPUP_AMOUNT = 1_000_000
 
 /**
- * A payment is sent only while this much of its quote's life is left. The
- * mint issues a paid quote only until the quote's `expiry` (Nutshell 0.20.3
- * mint(): "quote expired"), and with MINT_QUOTE_TTL unset that is the
- * invoice's own expiry: phoenixd's for sat, five minutes for a Flash USD
- * invoice. A payment sent later could land with no time left to mint it. A
- * quote never sent for payment is quoted again instead. Measured by the
- * quote's age (`pastPayWindow`).
+ * A payment is sent only while enough of its quote's life is left for it to
+ * settle and be minted (`payWindowMs`). The mint issues a paid quote only
+ * until the quote's `expiry` (Nutshell mint(): "quote expired"), and with
+ * MINT_QUOTE_TTL unset that is the invoice's own expiry: phoenixd's for a sat
+ * quote, and 60 s for a usd one. Forge's usd invoice is a Flash invoice, and
+ * IBEX caps every non-sat receive invoice at 60 s (flash
+ * src/domain/bitcoin/lightning/invoice-expiration.ts and
+ * src/services/ibex/client.ts; the ENG-555 invoice in the send flow's
+ * invoice-expiry.ts is one). So the window is a quarter of the quote's life,
+ * at most this and at least MIN_PAY_WINDOW_MS: two minutes for a sat quote,
+ * 15 s for a usd one, whose payment settles inside Flash. A payment sent later
+ * could land with no time left to mint it. A quote never sent for payment is
+ * quoted again instead. Measured by the quote's age (`pastPayWindow`).
  */
 export const PAY_WINDOW_MS = 2 * 60_000
+
+/** The least time a quote must have left to be paid: see PAY_WINDOW_MS. */
+export const MIN_PAY_WINDOW_MS = 10_000
+
+/** How much of a quote's life must be left to pay it, for a quote living `lifeMs`. */
+export const payWindowMs = (lifeMs: number): number =>
+  Math.max(MIN_PAY_WINDOW_MS, Math.min(PAY_WINDOW_MS, lifeMs / 4))
 
 /**
  * How long past the end of its life a quote the mint still holds unpaid is
@@ -202,18 +217,34 @@ const pastPayWindow = (record: TopUpRecord, now: number): boolean => {
   const { lifeMs } = record.quote
   if (lifeMs === null) return false
   const age = quoteAge(record, now)
-  return !(age >= 0 && age <= lifeMs - PAY_WINDOW_MS)
+  return !(age >= 0 && age <= lifeMs - payWindowMs(lifeMs))
 }
 
 /**
  * The quote's expiry has passed, so the mint refuses to issue it now, paid or
- * not. The harmful verdict is yes (the top-up stops being minted), so both
- * readings must agree, as in `quoteIsDead`.
+ * not: read from the clocks, for a mint call that got no answer. A refusal
+ * the mint gave decides alone (`refusedAsExpired`). The harmful verdict is
+ * yes (the top-up stops being minted), so both readings must agree, as in
+ * `quoteIsDead`.
  */
 const quoteExpired = (record: TopUpRecord, now: number): boolean =>
   record.quote.lifeMs !== null &&
   quoteAge(record, now) > record.quote.lifeMs &&
   pastMintExpiry(record, now, 0)
+
+/** NUT error code 20007: "Quote is expired". */
+const QUOTE_EXPIRED_CODE = 20007
+
+/**
+ * The mint's own refusal to issue a paid quote past its expiry, which it will
+ * repeat, whatever either clock reads. Nutshell main raises it as
+ * QuoteExpiredError, code 20007; 0.20.3 raised a TransactionError with the
+ * same "quote expired" detail and code 11000 (cashu/mint/ledger.py mint() at
+ * either). Both are read as this, whichever one forge's private 0.20.3.1
+ * build carries.
+ */
+const refusedAsExpired = (err: MintOperationError): boolean =>
+  err.code === QUOTE_EXPIRED_CODE || /quote (is )?expired/i.test(err.message)
 
 /**
  * Nothing can pay the quote's invoice any more, not even a payment sent just
@@ -466,8 +497,8 @@ export async function payTopUp(
   if (pastPayWindow(record, deps.now())) {
     if (everSent(record)) return { record, result: { status: "expired" } }
     record = await requote(deps, record)
-    // A quote whose whole life is shorter than the window, or a clock that
-    // moved while it was quoted, is not paid either.
+    // A quote whose whole life is shorter than MIN_PAY_WINDOW_MS, or a clock
+    // that moved while it was quoted, is not paid either.
     if (pastPayWindow(record, deps.now())) {
       return { record, result: { status: "expired" } }
     }
@@ -586,7 +617,11 @@ const mintAttempt = async (deps: CardFreeDeps, id: string): Promise<MintResult> 
       if (after !== "ISSUED") {
         // Nutshell refuses to mint a paid quote once its expiry has passed,
         // and will keep refusing: the value is at the mint, out of reach.
-        if (after === "PAID" && quoteExpired(record, deps.now())) {
+        // Only a call that got no answer from the mint is judged by the clocks.
+        const expired = isMintOperationError(err)
+          ? refusedAsExpired(err)
+          : quoteExpired(record, deps.now())
+        if (after === "PAID" && expired) {
           throw new TopUpError(
             "expired",
             "the mint no longer issues this paid quote: its expiry has passed",

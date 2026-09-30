@@ -6,6 +6,7 @@ export type { ProofState, QuoteState, TopUpMint, TopUpQuote } from "./mint"
 export {
   EXPIRY_GRACE_MS,
   MAX_TOPUP_AMOUNT,
+  MIN_PAY_WINDOW_MS,
   PAY_WINDOW_MS,
   TopUpError,
   advanceTopUps,
@@ -14,6 +15,7 @@ export {
   loadTopUp,
   mintTopUp,
   payTopUp,
+  payWindowMs,
   prepareTopUp,
   proofStatesForLoad,
   quoteIsDead,

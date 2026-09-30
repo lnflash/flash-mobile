@@ -78,18 +78,32 @@ const sleep = (ms: number) =>
  * A blocked PIN is refused outright: on v0.2.0 it spends for anyone
  * (ENG-615), and on 0.3 it can never load again, so paid funds would be
  * stranded. A PIN state or a unit this app cannot read is refused too.
+ * While `usdEnabled` (the cashuCardUsdEnabled flag) is off, a card whose
+ * unit is USD takes no new top-up: flash-pos charges every card proof as
+ * sats until ENG-619. An unfinished USD top-up is still finished: a resume
+ * never asks this.
  */
 export type TopUpEligibility =
   /** `committed`: the unit is fixed by an unfinished top-up, not by the card's value. */
   | { ok: true; unit: CardUnit | "choose"; committed?: boolean }
   | {
       ok: false
-      reason: "blocked" | "pin-unknown" | "mixed" | "unit-unknown" | "unfinished-unit"
+      reason:
+        | "blocked"
+        | "pin-unknown"
+        | "mixed"
+        | "unit-unknown"
+        | "unfinished-unit"
+        | "usd-off"
+        | "usd-off-unfinished"
     }
 
 export const topUpEligibility = (
   card: CashuCardState,
-  unfinishedUnits: readonly CardUnit[] = [],
+  {
+    unfinishedUnits = [],
+    usdEnabled,
+  }: { unfinishedUnits?: readonly CardUnit[]; usdEnabled: boolean },
 ): TopUpEligibility => {
   if (card.pinState === "blocked") return { ok: false, reason: "blocked" }
   if (card.pinState === "unknown") return { ok: false, reason: "pin-unknown" }
@@ -108,6 +122,9 @@ export const topUpEligibility = (
   if (units.size > 1) return { ok: false, reason: "unfinished-unit" }
   const [only] = [...units]
   if (!only) return { ok: true, unit: "choose" }
+  if (only === "usd" && !usdEnabled) {
+    return { ok: false, reason: cardUnit ? "usd-off" : "usd-off-unfinished" }
+  }
   return cardUnit ? { ok: true, unit: only } : { ok: true, unit: only, committed: true }
 }
 
@@ -118,6 +135,8 @@ const refusal = (reason: Exclude<TopUpEligibility, { ok: true }>["reason"], LL: 
     "mixed": LL.FlashcardV2.topUpCantMixed(),
     "unit-unknown": LL.FlashcardV2.topUpCantUnknownUnit(),
     "unfinished-unit": LL.FlashcardV2.topUpCantUnfinishedUnit(),
+    "usd-off": LL.FlashcardV2.topUpCantUsd(),
+    "usd-off-unfinished": LL.FlashcardV2.topUpCantUsdUnfinished(),
   }[reason])
 
 const NO_COMMITMENTS: { slots: number; units: CardUnit[] } = { slots: 0, units: [] }
@@ -166,7 +185,10 @@ export const FlashcardV2TopUpScreen = () => {
   // store, before anything is quoted.
   const [commitments, setCommitments] = useState(NO_COMMITMENTS)
   const eligibility = cashuCard
-    ? topUpEligibility(cashuCard, commitments.units)
+    ? topUpEligibility(cashuCard, {
+        unfinishedUnits: commitments.units,
+        usdEnabled: cashuCardUsdEnabled,
+      })
     : undefined
   const resumeId = params?.topUpId
   const [step, setStep] = useState<Step>(() => {
@@ -218,7 +240,10 @@ export const FlashcardV2TopUpScreen = () => {
         // Nothing held: nothing to change.
         if (!live || (committed.slots === 0 && committed.units.length === 0)) return
         setCommitments(committed)
-        const after = topUpEligibility(cashuCard, committed.units)
+        const after = topUpEligibility(cashuCard, {
+          unfinishedUnits: committed.units,
+          usdEnabled: cashuCardUsdEnabled,
+        })
         if (!after.ok) {
           setStep((current) =>
             current.name === "amount"

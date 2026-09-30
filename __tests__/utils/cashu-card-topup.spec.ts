@@ -17,12 +17,13 @@
  */
 import * as Keychain from "react-native-keychain"
 
-import { Amount, hashToCurve, signMintQuote } from "@cashu/cashu-ts"
+import { Amount, MintOperationError, hashToCurve, signMintQuote } from "@cashu/cashu-ts"
 
 import { toHex } from "../../app/utils/cashu-card"
 import { buildCardP2PKSecret } from "../../app/utils/cashu-card-outputs"
 import {
   EXPIRY_GRACE_MS,
+  MIN_PAY_WINDOW_MS,
   PAY_WINDOW_MS,
   PayArgs,
   PayOutcome,
@@ -36,6 +37,7 @@ import {
   loadTopUp,
   mintTopUp,
   payTopUp,
+  payWindowMs,
   prepareTopUp,
   proofStatesForLoad,
   unfinishedTopUps,
@@ -159,7 +161,7 @@ describe("prepareTopUp", () => {
     // When the quote arrived, on the phone's clock, and its life, off the invoice.
     expect(record.quote).toMatchObject({
       quotedAt: clock,
-      lifeMs: mint.ttlSeconds * 1000,
+      lifeMs: mint.ttlSeconds.sat * 1000,
     })
     // 1000 = 512+256+128+64+32+8: one output per power of two, each a card secret.
     expect(record.outputs.map((o) => o.amount)).toEqual([512, 256, 128, 64, 32, 8])
@@ -384,8 +386,8 @@ describe("payTopUp", () => {
     )
   })
 
-  it("never pays a fresh quote whose whole life is shorter than the pay window, even quoted again", async () => {
-    mint.ttlSeconds = 60
+  it("never pays a fresh quote whose whole life is shorter than the least pay window, even quoted again", async () => {
+    mint.ttlSeconds.sat = MIN_PAY_WINDOW_MS / 2_000
     const record = await prepare()
 
     const { result } = await payTopUp(deps, record.id)
@@ -441,6 +443,88 @@ describe("payTopUp", () => {
       result: { status: "expired" },
     })
     expect(pay).toHaveBeenCalledTimes(1)
+  })
+
+  it("sizes the pay window to the quote: a quarter of its life, between the least window and two minutes", () => {
+    // A sat quote on phoenixd's hour-long invoice.
+    expect(payWindowMs(3_600_000)).toBe(PAY_WINDOW_MS)
+    // A usd quote on a 60 s Flash invoice.
+    expect(payWindowMs(60_000)).toBe(15_000)
+    expect(payWindowMs(20_000)).toBe(MIN_PAY_WINDOW_MS)
+  })
+})
+
+describe("a usd top-up, whose quote lives 60 s (IBEX's cap on the Flash invoice behind it)", () => {
+  const USD_CARD = { empty: 32, unit: "usd" as const }
+  const prepareUsd = (amount = 500) => prepare(amount, { unit: "usd", card: USD_CARD })
+
+  it("pays a fresh quote and mints it inside its life, under the usd keyset", async () => {
+    settlesOnPay()
+    const record = await prepareUsd()
+    expect(record.quote.lifeMs).toBe(60_000)
+
+    await expect(payTopUp(deps, record.id)).resolves.toMatchObject({
+      result: { status: "paid" },
+    })
+    expect(mint.createQuote).toHaveBeenCalledTimes(1)
+    clock += 5_000
+    const { record: after } = await mintTopUp(deps, record.id)
+
+    expect(after.state).toBe("minted")
+    expect(after.proofs?.every((proof) => proof.keysetId === mint.usdKeysetId)).toBe(true)
+    expect(after.proofs?.reduce((sum, proof) => sum + proof.amount, 0)).toBe(500)
+  })
+
+  it("retries under the same key after an unknown answer while the window is open, and mints", async () => {
+    const record = await prepareUsd()
+    pay.mockResolvedValueOnce({ kind: "unknown" })
+    await payTopUp(deps, record.id)
+    // 30 s in, 30 s left: more than the 15 s window.
+    clock += 30_000
+    settlesOnPay()
+
+    await expect(payTopUp(deps, record.id)).resolves.toMatchObject({
+      result: { status: "paid" },
+    })
+    expect(pay).toHaveBeenCalledTimes(2)
+    expect(pay).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        paymentRequest: record.quote.request,
+        idempotencyKey: record.payment.idempotencyKey,
+        isRetry: true,
+      }),
+    )
+    expect(mint.createQuote).toHaveBeenCalledTimes(1)
+    await expect(mintTopUp(deps, record.id)).resolves.toMatchObject({ status: "minted" })
+  })
+
+  it("quotes again once a quote never sent is inside its last 15 s, and pays the new one", async () => {
+    settlesOnPay()
+    const record = await prepareUsd()
+    clock += 46_000
+
+    const { result, record: after } = await payTopUp(deps, record.id)
+
+    expect(result).toEqual({ status: "paid" })
+    expect(mint.createQuote).toHaveBeenCalledTimes(2)
+    expect(pay).toHaveBeenCalledTimes(1)
+    expect(pay).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentRequest: after.quote.request }),
+    )
+    await expect(mintTopUp(deps, record.id)).resolves.toMatchObject({ status: "minted" })
+  })
+
+  it("never retries a sent quote inside its last 15 s", async () => {
+    const record = await prepareUsd()
+    pay.mockResolvedValueOnce({ kind: "unknown" })
+    await payTopUp(deps, record.id)
+    clock += 46_000
+
+    await expect(payTopUp(deps, record.id)).resolves.toMatchObject({
+      result: { status: "expired" },
+    })
+    expect(pay).toHaveBeenCalledTimes(1)
+    expect(mint.createQuote).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -533,6 +617,41 @@ describe("mintTopUp", () => {
     const after = await deps.store.get(record.id)
     expect(after?.state).toBe("paid")
     expect(after?.lockKey).toBe(record.lockKey)
+  })
+
+  it("reads Nutshell 0.20.3's form of the refusal (code 11000, same detail) the same way", async () => {
+    settlesOnPay()
+    const record = await prepare()
+    await payTopUp(deps, record.id)
+    ;(mint.mint as jest.Mock).mockRejectedValueOnce(
+      new MintOperationError(11000, "quote expired"),
+    )
+
+    await expect(mintTopUp(deps, record.id)).rejects.toMatchObject({ reason: "expired" })
+  })
+
+  it("any other refusal from the mint is its own answer, never read as the quote's expiry", async () => {
+    settlesOnPay()
+    const record = await prepare()
+    await payTopUp(deps, record.id)
+    clock = pastExpiry(record, 1_000)
+    ;(mint.mint as jest.Mock).mockRejectedValueOnce(
+      new MintOperationError(11000, "transaction error"),
+    )
+
+    const err = await mintTopUp(deps, record.id).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(MintOperationError)
+    expect((await deps.store.get(record.id))?.mintRefused).toBeUndefined()
+  })
+
+  it("a call that got no answer is read as the quote's expiry only when its age and the phone's clock both say so", async () => {
+    settlesOnPay()
+    const record = await prepare()
+    await payTopUp(deps, record.id)
+    clock = pastExpiry(record, 1_000)
+    ;(mint.mint as jest.Mock).mockRejectedValueOnce(new Error("Network request failed"))
+
+    await expect(mintTopUp(deps, record.id)).rejects.toMatchObject({ reason: "expired" })
   })
 
   it("resumes an ISSUED quote by restore alone (the app died after the mint signed)", async () => {
@@ -805,6 +924,44 @@ describe("a phone clock that is not the mint's: a quote is judged by its age on 
     clock = pastExpiry(record, EXPIRY_GRACE_MS + 30 * 60_000 + 1)
     await expect(advanceTopUps(deps)).resolves.toEqual({ waiting: 0 })
     expect(await deps.store.list()).toEqual([])
+  })
+
+  it("30 min slow: a paid quote the mint refuses as expired is asked about once, and Finish says why", async () => {
+    phoneAt(-30 * 60_000)
+    const record = await prepare()
+    pay.mockResolvedValueOnce({ kind: "pending" })
+    await payTopUp(deps, record.id)
+    // The payment settles while the app is away, and the app comes back a
+    // second after the quote's expiry, which the phone's clock reads as half
+    // an hour off.
+    mint.settle(record.quote.id)
+    clock = pastExpiry(record, 1_000)
+
+    await expect(advanceTopUps(deps)).resolves.toEqual({ waiting: 0 })
+    expect(await deps.store.get(record.id)).toMatchObject({
+      state: "paid",
+      mintRefused: "expired",
+    })
+    await expect(advanceTopUps(deps)).resolves.toEqual({ waiting: 0 })
+    expect(mint.mint).toHaveBeenCalledTimes(1)
+    await expect(mintTopUp(deps, record.id)).rejects.toMatchObject({ reason: "expired" })
+    expect(mint.mint).toHaveBeenCalledTimes(2)
+  })
+
+  it("slow when the quote arrived and set right since: a call that got no answer is not read as the quote's expiry", async () => {
+    phoneAt(-30 * 60_000)
+    settlesOnPay()
+    const record = await prepare()
+    await payTopUp(deps, record.id)
+    // Set right a minute before the expiry. The quote's age reads 29 min past
+    // its life; the phone's clock, now the mint's, does not.
+    phoneAt(0)
+    clock = pastExpiry(record, -60_000)
+    ;(mint.mint as jest.Mock).mockRejectedValueOnce(new Error("Network request failed"))
+
+    await expect(mintTopUp(deps, record.id)).rejects.toThrow("Network request failed")
+    expect((await deps.store.get(record.id))?.mintRefused).toBeUndefined()
+    await expect(mintTopUp(deps, record.id)).resolves.toMatchObject({ status: "minted" })
   })
 
   it("a clock set back since the quote arrived hides the quote's age: a sent quote is not retried on it", async () => {

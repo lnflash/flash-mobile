@@ -727,6 +727,14 @@ type RootTranslation = {
 		 */
 		topUpCantUnfinishedUnit: string
 		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​U​S​D​,​ ​a​n​d​ ​t​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​t​o​p​ ​u​p​ ​U​S​D​ ​y​e​t​.
+		 */
+		topUpCantUsd: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​a​ ​U​S​D​ ​t​o​p​-​u​p​ ​s​t​i​l​l​ ​t​o​ ​f​i​n​i​s​h​,​ ​a​n​d​ ​t​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​s​t​a​r​t​ ​a​ ​n​e​w​ ​U​S​D​ ​t​o​p​-​u​p​ ​y​e​t​.​ ​F​i​n​i​s​h​ ​t​h​a​t​ ​o​n​e​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
+		 */
+		topUpCantUsdUnfinished: string
+		/**
 		 * {​a​m​o​u​n​t​}​ ​i​s​ ​p​a​i​d​ ​f​o​r​ ​a​n​d​ ​n​o​t​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​y​e​t​.
 		 * @param {unknown} amount
 		 */
@@ -7994,6 +8002,14 @@ export type TranslationFunctions = {
 		 * This card has a top-up in another unit still to finish. Finish it from the card's screen first.
 		 */
 		topUpCantUnfinishedUnit: () => LocalizedString
+		/**
+		 * This card holds USD, and this app can't top up USD yet.
+		 */
+		topUpCantUsd: () => LocalizedString
+		/**
+		 * This card has a USD top-up still to finish, and this app can't start a new USD top-up yet. Finish that one from the card's screen.
+		 */
+		topUpCantUsdUnfinished: () => LocalizedString
 		/**
 		 * {amount} is paid for and not on the card yet.
 		 */

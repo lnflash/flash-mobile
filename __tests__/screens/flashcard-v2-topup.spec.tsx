@@ -203,23 +203,40 @@ beforeEach(() => {
 })
 
 describe("topUpEligibility", () => {
+  const holding = (unit: "sat" | "usd") =>
+    card({ balance: 500, unitTotals: { byUnit: [{ unit, amount: 500 }], unknown: 0 } })
+  const usdOn = { usdEnabled: true }
+  const usdOff = { usdEnabled: false }
+
   it("lets an empty card choose its unit and a one-unit card top up in that unit", () => {
-    expect(topUpEligibility(card())).toEqual({ ok: true, unit: "choose" })
-    expect(
-      topUpEligibility(
-        card({
-          balance: 500,
-          unitTotals: { byUnit: [{ unit: "usd", amount: 500 }], unknown: 0 },
-        }),
-      ),
-    ).toEqual({ ok: true, unit: "usd" })
+    expect(topUpEligibility(card(), usdOn)).toEqual({ ok: true, unit: "choose" })
+    expect(topUpEligibility(holding("usd"), usdOn)).toEqual({ ok: true, unit: "usd" })
+    expect(topUpEligibility(card(), { ...usdOn, unfinishedUnits: ["usd"] })).toEqual({
+      ok: true,
+      unit: "usd",
+      committed: true,
+    })
+  })
+
+  it("with the USD flag off, a card set to USD takes no new top-up, by its value or by an unfinished top-up", () => {
+    expect(topUpEligibility(holding("usd"), usdOff)).toEqual({
+      ok: false,
+      reason: "usd-off",
+    })
+    expect(topUpEligibility(card(), { ...usdOff, unfinishedUnits: ["usd"] })).toEqual({
+      ok: false,
+      reason: "usd-off-unfinished",
+    })
+    // Sats are untouched, and an empty card still chooses (the screen offers sats only).
+    expect(topUpEligibility(holding("sat"), usdOff)).toEqual({ ok: true, unit: "sat" })
+    expect(topUpEligibility(card(), usdOff)).toEqual({ ok: true, unit: "choose" })
   })
 
   it("refuses a blocked PIN, an unreadable PIN state, a mixed card and a card whose unit is not known yet", () => {
-    expect(topUpEligibility(card({ pinState: "blocked" }))).toMatchObject({
+    expect(topUpEligibility(card({ pinState: "blocked" }), usdOn)).toMatchObject({
       reason: "blocked",
     })
-    expect(topUpEligibility(card({ pinState: "unknown" }))).toMatchObject({
+    expect(topUpEligibility(card({ pinState: "unknown" }), usdOn)).toMatchObject({
       reason: "pin-unknown",
     })
     expect(
@@ -234,6 +251,7 @@ describe("topUpEligibility", () => {
             unknown: 0,
           },
         }),
+        usdOn,
       ),
     ).toMatchObject({ reason: "mixed" })
     expect(
@@ -242,13 +260,14 @@ describe("topUpEligibility", () => {
           balance: 900,
           unitTotals: { byUnit: [{ unit: "sat", amount: 500 }], unknown: 400 },
         }),
+        usdOn,
       ),
     ).toMatchObject({ reason: "mixed" })
-    expect(topUpEligibility(card({ balance: 900, unitTotals: undefined }))).toMatchObject(
-      {
-        reason: "unit-unknown",
-      },
-    )
+    expect(
+      topUpEligibility(card({ balance: 900, unitTotals: undefined }), usdOn),
+    ).toMatchObject({
+      reason: "unit-unknown",
+    })
   })
 })
 
@@ -265,6 +284,56 @@ describe("FlashcardV2TopUpScreen", () => {
   it("hides USD while the flag is off", () => {
     renderScreen()
     expect(screen.queryByTestId("topup-unit-usd")).toBeNull()
+  })
+
+  it("with the flag off, a card holding USD takes no new top-up, and says why", () => {
+    mockCard = card({
+      balance: 500,
+      unspent: 1,
+      empty: 31,
+      unitTotals: { byUnit: [{ unit: "usd", amount: 500 }], unknown: 0 },
+    })
+    renderScreen()
+    expect(screen.getByTestId("topup-refused").props.children).toBe(
+      LL.FlashcardV2.topUpCantUsd(),
+    )
+    expect(screen.queryByTestId("amount-input")).toBeNull()
+  })
+
+  it("with the flag off, an empty card with an unfinished USD top-up takes no new one, and says to finish that one", async () => {
+    mockStoreList.mockResolvedValue([
+      record({ unit: "usd", payment: { ...record().payment, dispatched: true } }),
+    ])
+    renderScreen()
+
+    await waitFor(() =>
+      expect(screen.getByTestId("topup-refused").props.children).toBe(
+        LL.FlashcardV2.topUpCantUsdUnfinished(),
+      ),
+    )
+    expect(screen.queryByTestId("amount-input")).toBeNull()
+    expect(mockPrepare).not.toHaveBeenCalled()
+  })
+
+  it("with the flag off, an unfinished USD top-up is still finished", async () => {
+    mockParams = { topUpId: "topup-1" }
+    mockCard = card({
+      balance: 500,
+      unspent: 1,
+      empty: 31,
+      unitTotals: { byUnit: [{ unit: "usd", amount: 500 }], unknown: 0 },
+    })
+    mockStoreGet.mockResolvedValue(record({ unit: "usd", state: "minted" }))
+    renderScreen()
+
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    expect(mockLoad).toHaveBeenCalledWith(
+      expect.objectContaining({ unit: "usd", state: "minted" }),
+      mockCard,
+      undefined,
+    )
+    expect(screen.getByTestId("topup-done")).toBeTruthy()
   })
 
   it("with the flag on, an empty card can take USD", () => {

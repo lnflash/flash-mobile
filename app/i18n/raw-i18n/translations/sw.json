@@ -1467,6 +1467,8 @@
     "topUpCantBlocked": "This card's PIN is blocked, so it can't take new funds.",
     "topUpCantPinUnknown": "This app can't read this card's PIN state, so it won't load funds onto it.",
     "topUpCantUnfinishedUnit": "This card has a top-up in another unit still to finish. Finish it from the card's screen first.",
+    "topUpCantUsd": "This card holds USD, and this app can't top up USD yet.",
+    "topUpCantUsdUnfinished": "This card has a USD top-up still to finish, and this app can't start a new USD top-up yet. Finish that one from the card's screen.",
     "topUpUnfinishedPaid": "{amount} is paid for and not on the card yet.",
     "topUpUnfinishedUnpaid": "A top-up of {amount} is waiting for its payment to reach the mint.",
     "topUpUnfinishedExpired": "A top-up of {amount} expired before its payment reached the mint.",

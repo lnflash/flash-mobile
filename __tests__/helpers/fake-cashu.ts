@@ -3,13 +3,14 @@
  * DLEQ, NUT-20 quote locks, NUT-09 restore, NUT-07 proof states), quotes real
  * signed bolt11 invoices, and refuses a paid quote past its expiry as Nutshell
  * does, and a card that stores proofs the way the applet does, duplicates
- * included.
+ * included. The mint has a sat and a usd keyset, as forge does.
  */
 import { createHash } from "crypto"
 import { encode, sign } from "bolt11"
 import {
   Amount,
   MintKeys,
+  MintOperationError,
   SerializedBlindedMessage,
   SerializedBlindedSignature,
   createBlindSignature,
@@ -20,7 +21,12 @@ import {
 } from "@cashu/cashu-ts"
 
 import { PROOF_SIZE, Transceiver, toHex } from "../../app/utils/cashu-card"
-import type { ProofState, QuoteState, TopUpMint } from "../../app/utils/cashu-card-topup"
+import type {
+  CardUnit,
+  ProofState,
+  QuoteState,
+  TopUpMint,
+} from "../../app/utils/cashu-card-topup"
 
 type FakeQuote = {
   amount: number
@@ -32,7 +38,9 @@ type FakeQuote = {
 }
 
 export type FakeMint = TopUpMint & {
+  /** The sat keyset's id. */
   keysetId: string
+  usdKeysetId: string
   quotes: Map<string, FakeQuote>
   /** Settle a quote's invoice, as a payment reaching the mint would. */
   settle: (quote: string) => void
@@ -40,8 +48,12 @@ export type FakeMint = TopUpMint & {
   signed: Map<string, SerializedBlindedSignature>
   /** NUT-07: proofs the mint has seen spent (or pending), by Y. Others are UNSPENT. */
   proofStatesByY: Map<string, ProofState>
-  /** How long a new quote lives, in seconds: phoenixd's createinvoice default. */
-  ttlSeconds: number
+  /**
+   * How long a new quote lives, in seconds, by unit: for sat phoenixd's
+   * createinvoice default, and for usd 60 s, IBEX's cap on the Flash invoice
+   * forge's usd backend creates.
+   */
+  ttlSeconds: Record<CardUnit, number>
 }
 
 /** The mint's Lightning node key: it signs every quote's invoice, as phoenixd does. */
@@ -79,20 +91,25 @@ const bolt11 = ({
 export const createFakeMint = ({
   now = Date.now,
 }: { now?: () => number } = {}): FakeMint => {
-  const pair = createNewMintKeys(21, undefined, { unit: "sat", versionByte: 0 })
-  const keys: Record<string, string> = {}
-  Object.entries(pair.pubKeys).forEach(([amount, key]) => {
-    keys[amount] = toHex(key)
-  })
-  const keyset = {
-    id: pair.keysetId,
-    unit: "sat",
-    active: true,
-    // The mint API's own field name.
-    // eslint-disable-next-line camelcase
-    input_fee_ppk: 0,
-    keys,
-  } as MintKeys
+  const keysetFor = (unit: CardUnit) => {
+    const pair = createNewMintKeys(21, undefined, { unit, versionByte: 0 })
+    const keys: Record<string, string> = {}
+    Object.entries(pair.pubKeys).forEach(([amount, key]) => {
+      keys[amount] = toHex(key)
+    })
+    const keyset = {
+      id: pair.keysetId,
+      unit,
+      active: true,
+      // The mint API's own field name.
+      // eslint-disable-next-line camelcase
+      input_fee_ppk: 0,
+      keys,
+    } as MintKeys
+    return { pair, keyset }
+  }
+  const keysets = [keysetFor("sat"), keysetFor("usd")]
+  const byId = (id: string) => keysets.find(({ keyset }) => keyset.id === id)
   const quotes = new Map<string, FakeQuote>()
   const signed = new Map<string, SerializedBlindedSignature>()
   const proofStatesByY = new Map<string, ProofState>()
@@ -100,6 +117,9 @@ export const createFakeMint = ({
   let count = 0
 
   const sign = (message: SerializedBlindedMessage): SerializedBlindedSignature => {
+    const found = byId(message.id)
+    if (!found) throw new Error(`unknown keyset ${message.id}`)
+    const { pair } = found
     const privateKey = pair.privKeys[Amount.from(message.amount).toString()]
     const B_ = pointFromHex(message.B_)
     const { C_ } = createBlindSignature(B_, privateKey, pair.keysetId)
@@ -120,33 +140,37 @@ export const createFakeMint = ({
 
   const fake: FakeMint = {
     url: "https://mint.test",
-    keysetId: pair.keysetId,
+    keysetId: keysets[0].keyset.id,
+    usdKeysetId: keysets[1].keyset.id,
     quotes,
     signed,
     proofStatesByY,
-    ttlSeconds: 3600,
+    ttlSeconds: { sat: 3600, usd: 60 },
     settle: (id) => {
       quoteOf(id).state = "PAID"
     },
-    activeKeyset: jest.fn(async (unit: string) => {
-      if (unit !== "sat") throw new Error(`no active ${unit} keyset`)
-      return keyset
+    activeKeyset: jest.fn(async (unit: CardUnit) => {
+      const found = keysets.find(({ keyset }) => keyset.unit === unit)
+      if (!found) throw new Error(`no active ${unit} keyset`)
+      return found.keyset
     }),
     keyset: jest.fn(async (id: string) => {
-      if (id !== keyset.id) throw new Error(`unknown keyset ${id}`)
-      return keyset
+      const found = byId(id)
+      if (!found) throw new Error(`unknown keyset ${id}`)
+      return found.keyset
     }),
     createQuote: jest.fn(async ({ unit, amount, pubkey }) => {
       count += 1
       const id = `quote-${count}`
       const issuedAt = nowSeconds()
+      const ttlSeconds = fake.ttlSeconds[unit]
       const quote: FakeQuote = {
         amount,
         unit,
         pubkey,
         state: "UNPAID",
-        request: bolt11({ id, amount, timestamp: issuedAt, ttlSeconds: fake.ttlSeconds }),
-        expiry: issuedAt + fake.ttlSeconds,
+        request: bolt11({ id, amount, timestamp: issuedAt, ttlSeconds }),
+        expiry: issuedAt + ttlSeconds,
       }
       quotes.set(id, quote)
       return { quote: id, ...quote }
@@ -160,10 +184,14 @@ export const createFakeMint = ({
       }
       const total = outputs.reduce((sum, o) => sum + Amount.from(o.amount).toNumber(), 0)
       if (total !== quote.amount) throw new Error("outputs do not add up to the quote")
-      // Nutshell 0.20.3 cashu/mint/ledger.py mint(): a PAID quote is refused
-      // once its expiry has passed, and stays PAID.
+      if (outputs.some((o) => byId(o.id)?.keyset.unit !== quote.unit)) {
+        throw new Error("quote unit does not match output unit")
+      }
+      // Nutshell cashu/mint/ledger.py mint(): a PAID quote is refused once
+      // its expiry has passed, and stays PAID. Main raises QuoteExpiredError
+      // (code 20007); cashu-ts throws it as a MintOperationError.
       if (quote.expiry !== null && quote.expiry < nowSeconds()) {
-        throw new Error("quote expired")
+        throw new MintOperationError(20007, "quote expired")
       }
       const signatures = outputs.map(sign)
       outputs.forEach((output, i) => signed.set(output.B_, signatures[i]))
