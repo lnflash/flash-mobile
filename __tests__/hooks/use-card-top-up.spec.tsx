@@ -18,7 +18,12 @@ import {
   useTopUpMinter,
   useUnfinishedTopUps,
 } from "../../app/hooks/use-card-top-up"
-import type { PayArgs, TopUpRecord } from "../../app/utils/cashu-card-topup"
+import {
+  PayArgs,
+  TopUpError,
+  TopUpMintError,
+  TopUpRecord,
+} from "../../app/utils/cashu-card-topup"
 
 loadLocale("en")
 
@@ -145,17 +150,28 @@ describe("useCardTopUp pay", () => {
       },
     ],
     [
-      "IBEX's own corroborated verdict, with no error attached, is a failure",
+      "IBEX's own corroborated verdict, with no error attached, is a failure, and definitive: the server caches it under the key",
       PaymentSendResult.Failure,
       [],
-      { kind: "failed" },
+      { kind: "failed", definitive: true },
     ],
     [
       "the busy lock on a same-key request still running is unknown, never a failure",
       PaymentSendResult.Failure,
-      // ResourceAttemptsLockServiceError → RouteFindingError with an empty message.
-      [{ code: "ROUTE_FINDING_ERROR", message: "" }],
-      { kind: "unknown" },
+      // flash maps ResourceAttemptsLockServiceError to UnexpectedClientError
+      // (src/graphql/error-map.ts, error.ts): this, word for word.
+      [
+        {
+          code: "UNEXPECTED_CLIENT_ERROR",
+          message:
+            "Unexpected error occurred, please try again or contact support if it persists (code: ResourceAttemptsLockServiceError: Unknown error)",
+        },
+      ],
+      {
+        kind: "unknown",
+        message:
+          "Unexpected error occurred, please try again or contact support if it persists (code: ResourceAttemptsLockServiceError: Unknown error)",
+      },
     ],
     [
       "IBEX's generic error is unknown: IBEX may have debited",
@@ -307,12 +323,28 @@ describe("useCardTopUp load", () => {
     expect(mockVerifyCardPin).not.toHaveBeenCalled()
   })
 
-  it("no tap when the mint cannot be asked about a resumed load's proofs", async () => {
-    mockProofStates.mockRejectedValueOnce(new Error("Network request failed"))
+  it("no tap when the mint cannot be asked about a resumed load's proofs, and the failure says the mint, not the card", async () => {
+    const failures = [
+      new Error("Network request failed"),
+      new TopUpMintError("the mint gave no known state for proof 02ab"),
+    ]
+    for (const failure of failures) {
+      mockProofStates.mockRejectedValueOnce(failure)
+      await expect(
+        hook().load({ id: "t1", cardPubkey: "02ab" } as TopUpRecord, { maxSlots: 32 }),
+      ).rejects.toMatchObject({ reason: "mint-unreachable" })
+    }
+    expect(mockRunCardOperation).not.toHaveBeenCalled()
+  })
+
+  it("keeps the engine's own refusal before the tap as it is", async () => {
+    mockProofStates.mockRejectedValueOnce(
+      new TopUpError("not-found", "top-up t1 is not saved"),
+    )
 
     await expect(
       hook().load({ id: "t1", cardPubkey: "02ab" } as TopUpRecord, { maxSlots: 32 }),
-    ).rejects.toThrow("Network request failed")
+    ).rejects.toMatchObject({ reason: "not-found" })
     expect(mockRunCardOperation).not.toHaveBeenCalled()
   })
 })
@@ -344,16 +376,23 @@ describe("useUnfinishedTopUps", () => {
     expect(result.current.records).toEqual([])
   })
 
-  it("a dismiss the engine refuses keeps the top-up listed", async () => {
+  it("a dismiss the engine refuses keeps the top-up, and reads the top-ups again the same way", async () => {
     mockUnfinished.mockResolvedValue([saved])
-    mockCancel.mockRejectedValueOnce(new Error("this payment may still land"))
     const { result } = renderHook(() => useUnfinishedTopUps("02ab"))
+    await waitFor(() => expect(mockUnfinished).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(result.current.records).toEqual([saved]))
+    // The mint holds its payment: the engine saved it as paid on the way.
+    const paid = { ...saved, state: "paid" } as TopUpRecord
+    mockUnfinished.mockResolvedValue([paid])
+    mockCancel.mockRejectedValueOnce(new Error("the mint holds this top-up's payment"))
 
     await act(async () => {
-      await expect(result.current.dismiss("t1")).rejects.toThrow("may still land")
+      await expect(result.current.dismiss("t1")).rejects.toThrow("the mint holds")
     })
-    expect(result.current.records).toEqual([saved])
+
+    await waitFor(() => expect(result.current.records).toEqual([paid]))
+    expect(mockUnfinished).toHaveBeenCalledTimes(4)
+    expect(mockAdvance).toHaveBeenCalledTimes(2)
   })
 })
 

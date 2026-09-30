@@ -28,6 +28,21 @@ export type TopUpOutput = {
  */
 export type TopUpState = "quoted" | "paid" | "minted" | "loaded"
 
+/** Why a top-up step stopped: see `TopUpError`. */
+export type TopUpFailure =
+  | "amount"
+  | "slots"
+  | "unit"
+  | "quote"
+  | "state"
+  | "not-found"
+  | "restore"
+  | "dleq"
+  | "mint-mismatch"
+  | "expired"
+  /** The mint could not be asked (NUT-07, before a load's tap): the card was not touched. */
+  | "mint-unreachable"
+
 export type TopUpRecord = {
   version: 1
   id: string
@@ -41,8 +56,19 @@ export type TopUpRecord = {
     id: string
     /** The bolt11 invoice the wallet pays. */
     request: string
-    /** Unix seconds, or null when the mint sets none. */
+    /** Unix seconds on the mint's clock, or null when the mint sets none. */
     expiry: number | null
+    /**
+     * The phone's clock, in ms, when this quote arrived. Against the phone's
+     * clock now, it says how old the quote is without comparing the phone's
+     * clock with the mint's (`quoteAge` in the engine).
+     */
+    quotedAt: number
+    /**
+     * How long the quote lives, in ms: its `expiry` less its invoice's bolt11
+     * timestamp, both on the mint's side. Null when there is no expiry.
+     */
+    lifeMs: number | null
   }
   /**
    * NUT-20: the private key the quote is locked to, hex. Without it nobody,
@@ -70,6 +96,13 @@ export type TopUpRecord = {
      */
     everDispatched: boolean
   }
+  /**
+   * Set when the mint refused this paid top-up in a way it will repeat: a
+   * quote past its expiry, a signature that fails its DLEQ check, and the
+   * like. The card-free pass stops asking the mint about it; the user can
+   * still ask again (Finish), which asks the mint once more.
+   */
+  mintRefused?: TopUpFailure
   /** Set once minted: what each LOAD_PROOF writes. */
   proofs?: CardSlotProof[]
   /**

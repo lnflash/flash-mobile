@@ -28,7 +28,6 @@ export type {
   PayResult,
   PrepareArgs,
   TopUpDeps,
-  TopUpFailure,
 } from "./engine"
 export { createMinterLoop } from "./minter"
 export type { MinterLoop, MinterLoopOptions } from "./minter"

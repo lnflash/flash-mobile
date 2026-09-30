@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AppState } from "react-native"
 import { gql } from "@apollo/client"
 import { useFocusEffect } from "@react-navigation/native"
@@ -22,6 +22,7 @@ import {
   CardFreeDeps,
   PayOutcome,
   TopUpDeps,
+  TopUpError,
   TopUpMint,
   TopUpRecord,
   advanceTopUps,
@@ -74,10 +75,13 @@ const cardFreeDeps = (): CardFreeDeps => ({ mint: mint(), store, now: Date.now }
  *
  * Nothing else may read as "failed", which tells the user nothing left the
  * wallet and takes a fresh key for the next attempt: the busy-lock answer to
- * a same-key request still executing (ResourceAttemptsLockServiceError, sent
- * as ROUTE_FINDING_ERROR with an empty message) must be retried under the
- * same key (src/app/payments/idempotency.ts), and IBEX's generic error (no
- * code) can come back after IBEX debited.
+ * a same-key request still executing must be retried under the same key
+ * (src/app/payments/idempotency.ts), and IBEX's generic error (no code) can
+ * come back after IBEX debited. The busy lock is ResourceAttemptsLockServiceError,
+ * which flash sends as UNEXPECTED_CLIENT_ERROR, "Unexpected error occurred,
+ * please try again or contact support if it persists (code:
+ * ResourceAttemptsLockServiceError: Unknown error)" (src/graphql/error-map.ts,
+ * the catch-all that returns UnexpectedClientError).
  */
 const REFUSED_BEFORE_EXECUTION: readonly string[] = [
   "INSUFFICIENT_BALANCE",
@@ -111,8 +115,9 @@ const readPaymentAnswer = (answer: PaymentAnswer | null | undefined): PayOutcome
       // No error attached: IBEX's own verdict that the payment ran and
       // failed (a route failure, say), which the server reports only when
       // IBEX corroborates it (src/services/ibex/payment-status.ts) and
-      // caches under the key. Nothing left the wallet.
-      if (errors.length === 0) return { kind: "failed" }
+      // caches under the key, replaying it to every retry. Nothing left the
+      // wallet, and this key can never pay: definitive, even on a retry.
+      if (errors.length === 0) return { kind: "failed", definitive: true }
       if (errors.every((error) => REFUSED_BEFORE_EXECUTION.includes(error.code ?? ""))) {
         return { kind: "failed", message }
       }
@@ -202,14 +207,28 @@ export const useCardTopUp = () => {
   /**
    * One tap: VERIFY_PIN when the card has a PIN, then the load, in the same
    * session. A resumed load asks the mint about each proof first, before the
-   * tap, so the card session never waits on the network.
+   * tap, so the card session never waits on the network. When the mint
+   * cannot be asked, nothing touches the card, and the failure says so
+   * (`mint-unreachable`), not that no card was found.
    */
   const load = async (
     record: TopUpRecord,
     card: Pick<CardInfo, "maxSlots">,
     pin?: string,
   ): Promise<TopUpRecord> => {
-    const mintStates = await proofStatesForLoad(deps, record.id)
+    let mintStates: Awaited<ReturnType<typeof proofStatesForLoad>>
+    try {
+      mintStates = await proofStatesForLoad(deps, record.id)
+    } catch (err) {
+      // The engine's own refusals (a top-up no longer saved) keep their reason.
+      if (err instanceof TopUpError) throw err
+      throw new TopUpError(
+        "mint-unreachable",
+        `the mint could not be asked about the top-up's proofs: ${
+          err instanceof Error ? err.message : err
+        }`,
+      )
+    }
     return runCardOperation(async (transceive) => {
       if (pin) await verifyCardPin(transceive, pin)
       return loadTopUp(deps, { id: record.id, transceive, card, mintStates })
@@ -226,10 +245,15 @@ export const useCardTopUp = () => {
  * store that cannot be read shows none here and writes nothing.
  *
  * `dismiss` drops one whose quote the mint still holds unpaid well after it
- * expired; it refuses anything that may still be paid.
+ * expired; it refuses anything that may still be paid. A refused dismiss
+ * reads the top-ups again, the same way (one the mint holds as paid is saved
+ * as paid by then, and gets minted), and still rejects, so the screen can
+ * say why it stays.
  */
 export const useUnfinishedTopUps = (cardPubkey: string | undefined) => {
   const [records, setRecords] = useState<TopUpRecord[]>([])
+  // The focused screen's read-again; none while it is not focused.
+  const refresh = useRef<(() => Promise<unknown>) | undefined>(undefined)
   useFocusEffect(
     useCallback(() => {
       if (!cardPubkey) return undefined
@@ -238,16 +262,25 @@ export const useUnfinishedTopUps = (cardPubkey: string | undefined) => {
         unfinishedTopUps({ store }, cardPubkey)
           .then((found) => live && setRecords(found))
           .catch(() => live && setRecords([]))
-      list()
-        .then(() => advanceTopUps(cardFreeDeps()))
-        .then(list, () => undefined)
+      const readAgain = () =>
+        list()
+          .then(() => advanceTopUps(cardFreeDeps()))
+          .then(list, () => undefined)
+      refresh.current = readAgain
+      readAgain()
       return () => {
         live = false
+        refresh.current = undefined
       }
     }, [cardPubkey]),
   )
   const dismiss = useCallback(async (id: string) => {
-    await cancelTopUp(cardFreeDeps(), id)
+    try {
+      await cancelTopUp(cardFreeDeps(), id)
+    } catch (err) {
+      refresh.current?.()
+      throw err
+    }
     setRecords((current) => current.filter((record) => record.id !== id))
   }, [])
   return { records, dismiss }

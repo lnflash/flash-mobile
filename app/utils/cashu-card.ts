@@ -43,7 +43,6 @@ export const INS = {
   GET_SLOT_STATUS: 0x14,
   SPEND_PROOF: 0x20,
   LOAD_PROOF: 0x30,
-  CLEAR_SPENT: 0x31,
   VERIFY_PIN: 0x40,
   SET_PIN: 0x41,
   CHANGE_PIN: 0x42,
@@ -531,35 +530,6 @@ export async function loadProof(
   })
   if (body.length !== 1) {
     throw new CardProtocolError(`LOAD_PROOF: expected 1-byte slot, got ${body.length}`)
-  }
-  return body[0]
-}
-
-/**
- * CLEAR_SPENT: zero-fill every spent slot so LOAD_PROOF can reuse it, and
- * return how many were freed. Gated like LOAD_PROOF (VERIFY_PIN first when a
- * PIN is set; 6982 otherwise); 6986 on a card locked by LOCK_CARD.
- *
- * Clearing can lose money. A spent slot is still owed until its proof settles
- * at the mint (cashu-javacard spec/CARD-FILE.md, "Why `spent` is required"):
- * the applet marks a slot spent BEFORE it signs, so a card lifted mid
- * SPEND_PROOF holds a proof the mint has never seen, whose nonce and C exist
- * only in that slot, and whose value only a re-sign from that slot recovers.
- * flash-pos never clears while any spend of the card is unsettled
- * (`hasUnsettledForCard`). So never call this unless the mint (NUT-07) holds
- * the proof of every spent slot on the card as SPENT, read in the same session
- * as the clear. The top-up never calls it; reclaiming slots belongs to the
- * sweep, which settles them first.
- */
-export async function clearSpent(transceive: Transceiver): Promise<number> {
-  const body = await send(transceive, INS.CLEAR_SPENT, {
-    le: 0x01,
-    context: "CLEAR_SPENT",
-  })
-  if (body.length !== 1) {
-    throw new CardProtocolError(
-      `CLEAR_SPENT: expected a 1-byte count, got ${body.length}`,
-    )
   }
   return body[0]
 }

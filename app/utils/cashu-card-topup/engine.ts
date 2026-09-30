@@ -9,7 +9,9 @@ import {
   hashToCurve,
   signMintQuote,
 } from "@cashu/cashu-ts"
+import { Network as NetworkLibGaloy, decodeInvoiceString } from "@galoymoney/client"
 
+import { networkForPaymentRequest } from "../../screens/send-bitcoin-screen/invoice-expiry"
 import {
   CardInfo,
   Transceiver,
@@ -27,7 +29,7 @@ import {
 } from "../cashu-card-outputs"
 import type { ProofState, TopUpMint } from "./mint"
 import type { TopUpStore } from "./store"
-import type { CardUnit, TopUpOutput, TopUpRecord } from "./types"
+import type { CardUnit, TopUpFailure, TopUpOutput, TopUpRecord } from "./types"
 
 /**
  * A card top-up, minted by the app at the mint it is connected to (ENG-616
@@ -40,6 +42,10 @@ import type { CardUnit, TopUpOutput, TopUpRecord } from "./types"
  * - the mint's own quote state, not the wallet's answer, decides whether the
  *   invoice was paid, and a record that was ever sent for payment is dropped
  *   only once the mint still holds it unpaid well after it expired;
+ * - how old a quote is comes from the phone's clock read against itself (the
+ *   time since the quote arrived), never from the phone's clock read against
+ *   the mint's (`quoteAge`), so a phone running fast or slow neither drops a
+ *   payment in flight nor pays late;
  * - a paid quote is minted as soon as the mint says so, card or no card
  *   (`advanceTopUps`): the mint issues a paid quote only until its expiry;
  * - a mint call whose answer was lost is recovered with NUT-09, never by
@@ -60,29 +66,18 @@ export const MAX_TOPUP_AMOUNT = 1_000_000
  * mint(): "quote expired"), and with MINT_QUOTE_TTL unset that is the
  * invoice's own expiry: phoenixd's for sat, five minutes for a Flash USD
  * invoice. A payment sent later could land with no time left to mint it. A
- * quote never sent for payment is quoted again instead.
+ * quote never sent for payment is quoted again instead. Measured by the
+ * quote's age (`pastPayWindow`).
  */
 export const PAY_WINDOW_MS = 2 * 60_000
 
 /**
- * How long past its `expiry` a quote the mint still holds unpaid is kept
- * before it is dropped. The expiry is on the mint's clock (the invoice's);
- * this covers a phone clock running ahead of it while a payment in flight can
- * still be accepted.
+ * How long past the end of its life a quote the mint still holds unpaid is
+ * kept before it is dropped: a payment sent just before the invoice expired
+ * can reach the mint after it. Both of `quoteIsDead`'s readings must be this
+ * far past the quote's life.
  */
 export const EXPIRY_GRACE_MS = 10 * 60_000
-
-export type TopUpFailure =
-  | "amount"
-  | "slots"
-  | "unit"
-  | "quote"
-  | "state"
-  | "not-found"
-  | "restore"
-  | "dleq"
-  | "mint-mismatch"
-  | "expired"
 
 export class TopUpError extends Error {
   constructor(readonly reason: TopUpFailure, message: string) {
@@ -104,7 +99,7 @@ const FINAL_FAILURES: readonly TopUpFailure[] = [
   "mint-mismatch",
   "expired",
 ]
-const isFinal = (err: unknown) =>
+const isFinal = (err: unknown): err is TopUpError =>
   err instanceof TopUpError && FINAL_FAILURES.includes(err.reason)
 
 /** What the wallet said about the payment. */
@@ -117,8 +112,14 @@ export type PayOutcome =
    * The wallet refused the payment before it executed, or IBEX reported it
    * failed: nothing left the wallet. Only an answer that proves it may read
    * as this (see the wallet's `pay`); anything else is `unknown`.
+   *
+   * `definitive`: IBEX's own verdict that the payment under this key ran and
+   * failed. The server caches it under the key and replays it to every retry
+   * (flash src/app/payments/idempotency.ts), so the key can never pay, and a
+   * retry answered this way retires it too. A refusal made before anything
+   * ran is not cached, and on a retry says nothing about the dispatch before.
    */
-  | { kind: "failed"; message?: string }
+  | { kind: "failed"; message?: string; definitive?: boolean }
   /** The dispatch may or may not have executed (a lost answer, a busy key). */
   | { kind: "unknown"; message?: string }
 
@@ -162,29 +163,70 @@ const load = async (deps: Pick<TopUpDeps, "store">, id: string): Promise<TopUpRe
   return record
 }
 
-const expiryMs = (record: TopUpRecord): number | undefined =>
-  record.quote.expiry === null ? undefined : record.quote.expiry * 1000
+/*
+ * How old a quote is. The quote's `expiry` is on the mint's clock, and a
+ * phone's clock can be minutes or hours from it, either way. Read against
+ * the phone's clock, a fresh quote on a phone two hours fast looks long dead,
+ * and on a phone half an hour slow a quote about to expire looks half an hour
+ * younger. So the engine judges a quote by its age on the phone's own clock:
+ * the time since the quote arrived (`quoteAge`), against the quote's life as
+ * the mint states it (`lifeMs`). The mint issued the invoice before the quote
+ * arrived, so the age never overstates, whatever the offset, as long as the
+ * clock does not move between the two readings (the send flow's
+ * `isInvoiceExpired` reasons the same way). The mint's `expiry` read on the
+ * phone's clock (`pastMintExpiry`) decides nothing alone; it only holds back
+ * a verdict the age alone must not give, as `isInvoiceExpired` does.
+ */
 
-/** Too little of the quote's life is left to send a payment for it. */
+/** The time since the record's quote arrived, in ms, on the phone's clock alone. */
+const quoteAge = (record: TopUpRecord, now: number): number => now - record.quote.quotedAt
+
+/**
+ * The phone's clock past the mint's `expiry` and `marginMs`. Right only while
+ * the phone's clock agrees with the mint's. It holds back a verdict the age
+ * alone would give after a clock correction: a phone slow when the quote
+ * arrived and set right since reads the quote as older than it is.
+ */
+const pastMintExpiry = (record: TopUpRecord, now: number, marginMs: number): boolean =>
+  record.quote.expiry !== null && now > record.quote.expiry * 1000 + marginMs
+
+/**
+ * Too little of the quote's life is left to send a payment for it: judged by
+ * the quote's age alone. Here the harmful verdict is "there is time", so the
+ * mint's `expiry` read on the phone's clock may neither hold this back (a
+ * phone running slow would pay late) nor fire it alone (a phone running fast
+ * could never pay). A clock that went back since the quote arrived hides how
+ * old the quote is, so such a quote is not paid either.
+ */
 const pastPayWindow = (record: TopUpRecord, now: number): boolean => {
-  const expiry = expiryMs(record)
-  return expiry !== undefined && now > expiry - PAY_WINDOW_MS
-}
-
-/** The mint would refuse to issue the quote now, paid or not. */
-const pastExpiry = (record: TopUpRecord, now: number): boolean => {
-  const expiry = expiryMs(record)
-  return expiry !== undefined && now > expiry
+  const { lifeMs } = record.quote
+  if (lifeMs === null) return false
+  const age = quoteAge(record, now)
+  return !(age >= 0 && age <= lifeMs - PAY_WINDOW_MS)
 }
 
 /**
- * The quote's invoice can no longer be paid, even on a phone clock running
- * ahead of the mint's. A quote with no expiry never dies.
+ * The quote's expiry has passed, so the mint refuses to issue it now, paid or
+ * not. The harmful verdict is yes (the top-up stops being minted), so both
+ * readings must agree, as in `quoteIsDead`.
  */
-export const quoteIsDead = (record: TopUpRecord, now: number): boolean => {
-  const expiry = expiryMs(record)
-  return expiry !== undefined && now > expiry + EXPIRY_GRACE_MS
-}
+const quoteExpired = (record: TopUpRecord, now: number): boolean =>
+  record.quote.lifeMs !== null &&
+  quoteAge(record, now) > record.quote.lifeMs &&
+  pastMintExpiry(record, now, 0)
+
+/**
+ * Nothing can pay the quote's invoice any more, not even a payment sent just
+ * before it expired. A record is dropped on this, so both readings must
+ * agree: the quote's age past its life and the grace, and the phone's clock
+ * past the mint's `expiry` and the grace. A phone running fast or slow is
+ * judged by the age; a slow one drops the quote only once its own clock
+ * passes the expiry too. A quote with no expiry never dies.
+ */
+export const quoteIsDead = (record: TopUpRecord, now: number): boolean =>
+  record.quote.lifeMs !== null &&
+  quoteAge(record, now) > record.quote.lifeMs + EXPIRY_GRACE_MS &&
+  pastMintExpiry(record, now, EXPIRY_GRACE_MS)
 
 /**
  * A payment of this record went out at some point (`everDispatched`; a
@@ -237,17 +279,36 @@ export type PrepareArgs = {
 }
 
 /**
+ * How long a quote lives, in ms: from its invoice's bolt11 timestamp to the
+ * quote's `expiry`, both from the mint's side. Undefined when the invoice
+ * cannot be read, or states no issue time before the expiry.
+ */
+const quoteLifeMs = (request: string, expiry: number): number | undefined => {
+  const network = networkForPaymentRequest(request)
+  if (!network) return undefined
+  try {
+    const { timestamp } = decodeInvoiceString(request, network as NetworkLibGaloy)
+    if (typeof timestamp !== "number" || !(timestamp < expiry)) return undefined
+    return (expiry - timestamp) * 1000
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * A NUT-04 quote locked (NUT-20) to a fresh key only this app holds, checked
- * to be the quote that was asked for.
+ * to be the quote that was asked for, with the phone's clock at its arrival
+ * and its life, so its age can be told later (`quoteAge`).
  */
 const lockedQuote = async (
-  deps: Pick<TopUpDeps, "mint">,
+  deps: Pick<TopUpDeps, "mint" | "now">,
   unit: CardUnit,
   amount: number,
 ): Promise<Pick<TopUpRecord, "quote" | "lockKey">> => {
   const lockKey = randomBytes(32)
   const lockPubkey = toHex(getPubKeyFromPrivKey(lockKey))
   const quote = await deps.mint.createQuote({ unit, amount, pubkey: lockPubkey })
+  const quotedAt = deps.now()
   if (
     quote.unit !== unit ||
     quote.amount !== amount ||
@@ -256,8 +317,20 @@ const lockedQuote = async (
   ) {
     throw new TopUpError("quote", "the mint quoted something other than what was asked")
   }
+  const lifeMs = quote.expiry === null ? null : quoteLifeMs(quote.request, quote.expiry)
+  if (lifeMs === undefined) {
+    // Without it the quote's age could be told only by comparing the
+    // phone's clock with the mint's, which is what `quoteAge` avoids.
+    throw new TopUpError("quote", "the mint's invoice does not say when it was issued")
+  }
   return {
-    quote: { id: quote.quote, request: quote.request, expiry: quote.expiry },
+    quote: {
+      id: quote.quote,
+      request: quote.request,
+      expiry: quote.expiry,
+      quotedAt,
+      lifeMs,
+    },
     lockKey: toHex(lockKey),
   }
 }
@@ -352,16 +425,31 @@ export type PayResult =
   | { status: "unknown"; message?: string }
   /**
    * Not sent: the quote has too little life left to be paid and minted, and
-   * an earlier dispatch rules out quoting again. The record stays until the
-   * mint says whether that dispatch landed.
+   * either an earlier dispatch rules out quoting again (the record stays
+   * until the mint says whether that dispatch landed), or a fresh quote has
+   * too little life too.
    */
   | { status: "expired" }
+
+/**
+ * The mint holds the quote's invoice as paid (any state but UNPAID): saved at
+ * once, so nothing reads this top-up as unpaid again (a Dismiss, a card-free
+ * pass). Only a record still quoted on that same quote changes.
+ */
+const markPaid = (
+  deps: Pick<TopUpDeps, "store">,
+  record: TopUpRecord,
+): Promise<TopUpRecord> =>
+  deps.store.update(record.id, (r) =>
+    r.state === "quoted" && r.quote.id === record.quote.id ? { ...r, state: "paid" } : r,
+  )
 
 /**
  * Pay the quote's invoice from the record's wallet. The mint is asked first:
  * an invoice it already holds as paid is never paid again, whatever the
  * wallet said last time. A quote near its expiry is never paid: a first
- * payment gets a new quote, a retry is refused.
+ * payment gets a new quote, checked again before it is paid, and a retry is
+ * refused.
  */
 export async function payTopUp(
   deps: TopUpDeps,
@@ -371,15 +459,18 @@ export async function payTopUp(
   if (record.state !== "quoted") return { record, result: { status: "paid" } }
 
   if ((await deps.mint.quoteState(record.quote.id)) !== "UNPAID") {
-    record = await deps.store.update(id, (r) =>
-      r.state === "quoted" ? { ...r, state: "paid" } : r,
-    )
+    record = await markPaid(deps, record)
     return { record, result: { status: "paid" } }
   }
 
   if (pastPayWindow(record, deps.now())) {
     if (everSent(record)) return { record, result: { status: "expired" } }
     record = await requote(deps, record)
+    // A quote whose whole life is shorter than the window, or a clock that
+    // moved while it was quoted, is not paid either.
+    if (pastPayWindow(record, deps.now())) {
+      return { record, result: { status: "expired" } }
+    }
   }
 
   const isRetry = record.payment.dispatched
@@ -421,16 +512,18 @@ export async function payTopUp(
     case "unknown":
       return { record, result: { status: "unknown", message: outcome.message } }
     case "failed":
-      if (isRetry) {
-        // This dispatch was refused, and says nothing about the earlier one
-        // whose answer was lost: it may still land. The server's contract is
-        // that such an answer is retried under the SAME key (flash
-        // src/app/payments/idempotency.ts), so this stays a retry of it.
+      if (isRetry && !outcome.definitive) {
+        // This dispatch was refused before it ran, and says nothing about the
+        // earlier one whose answer was lost: it may still land. The server's
+        // contract is that such an answer is retried under the SAME key
+        // (flash src/app/payments/idempotency.ts), so this stays a retry of it.
         return { record, result: { status: "unknown", message: outcome.message } }
       }
-      // The only dispatch under this key was refused: nothing is out. A
-      // fresh key for the next attempt (the server replays a cached failure
-      // to the old one). `everDispatched` stays: see `cancelTopUp`.
+      // Nothing is out under this key: its only dispatch was refused before
+      // it ran, or IBEX's verdict on the key is that the payment failed (the
+      // server caches that verdict and replays it to every retry under the
+      // key, so the key can never pay). A fresh key for the next attempt.
+      // `everDispatched` stays: see `cancelTopUp`.
       record = await deps.store.update(id, (r) => ({
         ...r,
         payment: { ...r.payment, idempotencyKey: deps.newId(), dispatched: false },
@@ -455,17 +548,22 @@ const restoreSignatures = async (
 
 type MintResult = { record: TopUpRecord; status: "minted" | "waiting" }
 
-const mintOnce = async (deps: CardFreeDeps, id: string): Promise<MintResult> => {
-  const record = await load(deps, id)
-  if (record.state === "minted" || record.state === "loaded") {
-    return { record, status: "minted" }
+const mintAttempt = async (deps: CardFreeDeps, id: string): Promise<MintResult> => {
+  const read = await load(deps, id)
+  if (read.state === "minted" || read.state === "loaded") {
+    return { record: read, status: "minted" }
   }
-  const quoteState = await deps.mint.quoteState(record.quote.id)
-  // UNPAID: the payment has not reached the mint. PENDING: a mint call for
-  // this quote is running right now, and ends ISSUED or PAID again.
-  if (quoteState === "UNPAID" || quoteState === "PENDING") {
-    return { record, status: "waiting" }
-  }
+  const quoteState = await deps.mint.quoteState(read.quote.id)
+  // UNPAID: the payment has not reached the mint.
+  if (quoteState === "UNPAID") return { record: read, status: "waiting" }
+  // Any other state means the invoice was paid: saved before anything else.
+  const record = read.state === "quoted" ? await markPaid(deps, read) : read
+  // Still quoted: quoted again since it was read, and the next ask is about
+  // its new quote.
+  if (record.state === "quoted") return { record, status: "waiting" }
+  // PENDING: a mint call for this quote is running right now, and ends
+  // ISSUED or PAID again.
+  if (quoteState === "PENDING") return { record, status: "waiting" }
 
   const outputs = record.outputs.map((saved) => fromSaved(saved, record.keysetId))
   const messages = outputs.map((output) => output.blindedMessage)
@@ -488,7 +586,7 @@ const mintOnce = async (deps: CardFreeDeps, id: string): Promise<MintResult> => 
       if (after !== "ISSUED") {
         // Nutshell refuses to mint a paid quote once its expiry has passed,
         // and will keep refusing: the value is at the mint, out of reach.
-        if (after === "PAID" && pastExpiry(record, deps.now())) {
+        if (after === "PAID" && quoteExpired(record, deps.now())) {
           throw new TopUpError(
             "expired",
             "the mint no longer issues this paid quote: its expiry has passed",
@@ -535,9 +633,30 @@ const mintOnce = async (deps: CardFreeDeps, id: string): Promise<MintResult> => 
     proofs: slots,
     // Nothing else can be minted from the quote now.
     lockKey: undefined,
+    mintRefused: undefined,
     state: "minted",
   }))
   return { record: saved, status: "minted" }
+}
+
+/**
+ * One mint of a top-up. A refusal the mint will repeat is saved on the paid
+ * record (`mintRefused`), so the card-free pass stops asking the mint about
+ * it; only the user asks again.
+ */
+const mintOnce = async (deps: CardFreeDeps, id: string): Promise<MintResult> => {
+  try {
+    return await mintAttempt(deps, id)
+  } catch (err) {
+    if (isFinal(err) && err.reason !== "not-found") {
+      const { reason } = err
+      await deps.store
+        .update(id, (r) => (r.state === "paid" ? { ...r, mintRefused: reason } : r))
+        // Unsaved, the next pass asks the mint once more: no harm.
+        .catch(() => undefined)
+    }
+    throw err
+  }
 }
 
 // One mint of a top-up at a time in this app: the screen and the card-free
@@ -561,6 +680,9 @@ export function mintTopUp(deps: CardFreeDeps, id: string): Promise<MintResult> {
 
 /** One record's card-free step. Resolves whether a payment for it may still land. */
 const advanceOne = async (deps: CardFreeDeps, record: TopUpRecord): Promise<boolean> => {
+  // A refusal the mint will repeat: asked again only when the user asks
+  // (Finish), never by a pass.
+  if (record.mintRefused) return false
   try {
     if (record.state === "quoted") {
       const state = await deps.mint.quoteState(record.quote.id)
@@ -575,12 +697,16 @@ const advanceOne = async (deps: CardFreeDeps, record: TopUpRecord): Promise<bool
         )
         return false
       }
+      // Any other state: the mint holds it paid. `mintTopUp` saves it as
+      // paid before it mints (`markPaid`), so a mint that fails, a quote past
+      // its expiry say, leaves a paid top-up, never a quote read as unpaid.
     }
     const { status } = await mintTopUp(deps, record.id)
     return status === "waiting" && !quoteIsDead(record, deps.now())
   } catch (err) {
-    // A refusal the mint will repeat waits for the user; anything else is
-    // asked again while the quote can still be minted.
+    // A refusal the mint will repeat is saved (`mintRefused`) and waits for
+    // the user; anything else is asked again while the quote can still be
+    // minted.
     return !isFinal(err) && !quoteIsDead(record, deps.now())
   }
 }
@@ -589,10 +715,13 @@ const advanceOne = async (deps: CardFreeDeps, record: TopUpRecord): Promise<bool
  * Move every saved top-up forward that needs no card, and drop the quotes
  * nobody can pay any more. Run on launch, on foreground, while a payment may
  * still land, and when the card screen is focused:
- * - a paid top-up (or a sent quote the mint now holds as paid) is minted at
- *   once, so its proofs are saved while the mint still issues the quote;
- * - a quote the mint still holds unpaid past its expiry and
- *   `EXPIRY_GRACE_MS` is dropped, lock key and all: nothing can pay it now.
+ * - a paid top-up (or a sent quote the mint now holds as paid, saved as paid
+ *   first) is minted at once, so its proofs are saved while the mint still
+ *   issues the quote;
+ * - a quote the mint still holds unpaid past its life and `EXPIRY_GRACE_MS`
+ *   (`quoteIsDead`) is dropped, lock key and all: nothing can pay it now;
+ * - a paid top-up the mint refused in a way it will repeat (`mintRefused`)
+ *   is left for the user, and never asked about again by a pass.
  * Minted and loaded top-ups need the card and are left alone. A mint that
  * cannot be reached is asked again on the next pass.
  *
@@ -651,11 +780,17 @@ export async function proofStatesForLoad(
  * written, a SPENT one never is, and a PENDING one (being spent right now)
  * waits for a later load, the record staying unfinished.
  *
- * Only empty slots are written to. Spent slots are never cleared: a spent
- * slot is owed until it settles at the mint (cashu-javacard
- * spec/CARD-FILE.md), and a burn whose signature never left the card can be
- * recovered only from its slot (flash-pos `hasUnsettledForCard`). A card
- * without the empty slots is refused before anything is written.
+ * Only empty slots are written to, and CLEAR_SPENT is never sent. That
+ * departs on purpose from the cashu-javacard spec, whose top-up flow sends
+ * CLEAR_SPENT before the loads: spec/NUT-XX.md:193, and spec/APDU.md:278
+ * ("Called after a top-up cycle to reclaim slot space") and :453, at v0.2.0,
+ * unchanged on the 0.3 branches (the spec fix: lnflash/cashu-javacard#27).
+ * flash-pos and cashu-client never send it either. A spent slot is owed
+ * until it settles at the mint (spec/CARD-FILE.md, "Why `spent` is
+ * required"), and a burn whose signature never left the card can be
+ * recovered only from its slot (flash-pos `hasUnsettledForCard`), so
+ * clearing it can destroy value. A card without the empty slots is refused
+ * before anything is written.
  */
 export type LoadArgs = {
   id: string
@@ -716,7 +851,9 @@ export async function loadTopUp(
  * Drop a top-up that can no longer take money: one never sent for payment,
  * or one whose invoice the mint still holds as unpaid well after it expired
  * (`quoteIsDead`). Anything else may be paid, or may still become paid,
- * even when the wallet's answer read as a refusal, and stays.
+ * even when the wallet's answer read as a refusal, and stays. One the mint
+ * holds as paid is saved as paid on the way, so it is minted, not offered
+ * for dropping again.
  */
 export async function cancelTopUp(deps: CardFreeDeps, id: string): Promise<void> {
   const record = await load(deps, id)
@@ -724,11 +861,12 @@ export async function cancelTopUp(deps: CardFreeDeps, id: string): Promise<void>
     throw new TopUpError("state", "a paid top-up cannot be cancelled")
   }
   if (everSent(record)) {
-    if (
-      !quoteIsDead(record, deps.now()) ||
-      (await deps.mint.quoteState(record.quote.id)) !== "UNPAID"
-    ) {
+    if (!quoteIsDead(record, deps.now())) {
       throw new TopUpError("state", "this payment may still land")
+    }
+    if ((await deps.mint.quoteState(record.quote.id)) !== "UNPAID") {
+      await markPaid(deps, record)
+      throw new TopUpError("state", "the mint holds this top-up's payment")
     }
   }
   const removed = await deps.store.removeIf(

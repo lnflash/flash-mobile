@@ -1,5 +1,5 @@
-import React, { useEffect } from "react"
-import { Image, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useState } from "react"
+import { AccessibilityInfo, Image, Platform, TouchableOpacity, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -47,6 +47,13 @@ export const FlashcardV2Screen = () => {
   const unfinishedTopUps = savedTopUps.filter(
     (record) => record.state !== "quoted" || record.payment.dispatched,
   )
+  // Why a Dismiss was refused: its payment reached the mint, or still may.
+  const [topUpNotice, setTopUpNotice] = useState<string>()
+  useEffect(() => {
+    if (topUpNotice && Platform.OS === "ios") {
+      AccessibilityInfo.announceForAccessibility(topUpNotice)
+    }
+  }, [topUpNotice])
   const tapFlashcard = useTapFlashcard()
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
@@ -105,8 +112,11 @@ export const FlashcardV2Screen = () => {
 
       {unfinishedTopUps.map((record) => {
         // A sent payment whose invoice expired long enough ago that nothing
-        // can pay it now: Dismiss asks the mint once more, and drops the
-        // top-up only if it still holds the invoice unpaid.
+        // can pay it now (by the quote's age, not the phone's clock against
+        // the mint's): Dismiss asks the mint once more, and drops the top-up
+        // only if it still holds the invoice unpaid. Only a quote: a paid
+        // top-up is never offered for dropping, even one the mint no longer
+        // issues (Finish says so).
         const expired = record.state === "quoted" && quoteIsDead(record, Date.now())
         return (
           <View
@@ -121,7 +131,13 @@ export const FlashcardV2Screen = () => {
               <TouchableOpacity
                 accessibilityRole="button"
                 testID="flashcard-v2-dismiss-topup"
-                onPress={() => dismissTopUp(record.id).catch(() => undefined)}
+                onPress={() => {
+                  setTopUpNotice(undefined)
+                  // Refused, the list is read again (useUnfinishedTopUps).
+                  dismissTopUp(record.id).catch(() =>
+                    setTopUpNotice(LL.FlashcardV2.topUpDismissRefused()),
+                  )
+                }}
               >
                 <Text type="p2" bold>
                   {LL.FlashcardV2.topUpDismiss()}
@@ -143,6 +159,17 @@ export const FlashcardV2Screen = () => {
           </View>
         )
       })}
+      <View accessibilityLiveRegion="polite">
+        {topUpNotice && (
+          <Text
+            type="p2"
+            style={styles.unfinishedNotice}
+            testID="flashcard-v2-topup-notice"
+          >
+            {topUpNotice}
+          </Text>
+        )}
+      </View>
 
       <View style={styles.details}>
         <DetailRow label={LL.FlashcardV2.slots()} value={slotSummary(cashuCard, LL)} />
@@ -457,6 +484,11 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   unfinishedText: {
     flex: 1,
+  },
+  unfinishedNotice: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    textAlign: "center",
   },
   btns: {
     flexDirection: "row",

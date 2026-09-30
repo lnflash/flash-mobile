@@ -48,7 +48,7 @@ const record = (over: Partial<TopUpRecord> = {}): TopUpRecord => ({
   unit: "sat",
   amount: 1000,
   keysetId: "0059534ce0bfa19a",
-  quote: { id: "q", request: "lnbc", expiry: null },
+  quote: { id: "q", request: "lnbc", expiry: null, quotedAt: 1, lifeMs: null },
   outputs: [],
   payment: {
     walletId: "cash",
@@ -604,6 +604,57 @@ describe("FlashcardV2TopUpScreen", () => {
 
     expect(errorText()).toBe(LL.FlashcardV2.topUpNoRoomOnCard())
     expect(mockCancel).not.toHaveBeenCalled()
+  })
+
+  it("a resumed load the mint cannot be asked about says so, and never sends the user tapping for a card", async () => {
+    mockParams = { topUpId: "topup-1" }
+    mockStoreGet.mockResolvedValue(record({ state: "minted", loadStarted: true }))
+    // The hook asks the mint (NUT-07) before the tap: offline, it never taps.
+    mockLoad.mockRejectedValueOnce(
+      new TopUpError("mint-unreachable", "Network request failed"),
+    )
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+
+    expect(errorText()).toBe(LL.FlashcardV2.topUpMintUnreachable())
+    expect(errorText()).not.toBe(LL.FlashcardV2.cardNotFound())
+    // Still on the load, to try again.
+    expect(screen.getByTestId("topup-tap")).toBeTruthy()
+  })
+
+  it("any other refusal of the load by the engine is not read as no card found either", async () => {
+    mockParams = { topUpId: "topup-1" }
+    mockStoreGet.mockResolvedValue(record({ state: "minted", loadStarted: true }))
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+
+    mockLoad.mockRejectedValueOnce(
+      new TopUpError("state", "the mint's word on a proof is missing"),
+    )
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    expect(errorText()).toBe(LL.FlashcardV2.topUpFailed())
+
+    mockLoad.mockRejectedValueOnce(new TopUpError("not-found", "gone"))
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    expect(errorText()).toBe(LL.FlashcardV2.topUpGone())
+  })
+
+  it("a top-up gone from this phone while the mint is asked says so, and not that it is saved", async () => {
+    mockMint.mockRejectedValueOnce(
+      new TopUpError("not-found", "top-up topup-1 is not saved"),
+    )
+    renderScreen()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    await act(async () => press(LL.FlashcardV2.topUpPay()))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("topup-working").props.children).toBe(
+        LL.FlashcardV2.topUpGone(),
+      ),
+    )
   })
 
   it("resumes a minted top-up at the load; a PIN card asks the PIN first and loads in the same tap", async () => {

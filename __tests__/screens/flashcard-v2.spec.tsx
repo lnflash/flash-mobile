@@ -3,7 +3,7 @@
  * and tells the truth about the card's balance and PIN state.
  */
 import * as React from "react"
-import { fireEvent, render, screen } from "@testing-library/react-native"
+import { act, fireEvent, render, screen } from "@testing-library/react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
 
 import { i18nObject } from "../../app/i18n/i18n-util"
@@ -386,21 +386,27 @@ describe("FlashcardV2Screen", () => {
     expect(screen.getAllByTestId("flashcard-v2-unfinished-topup")).toHaveLength(1)
   })
 
+  /** A quote of an hour's life, as old as `ageMs` by the phone's clock, expiring `expiryAgoMs` ago by it. */
+  const quoteAged = (ageMs: number, expiryAgoMs: number) => ({
+    expiry: Math.floor((Date.now() - expiryAgoMs) / 1000),
+    quotedAt: Date.now() - ageMs,
+    lifeMs: 60 * 60_000,
+  })
+
   it("offers Dismiss, not Finish, for a sent payment whose invoice expired long enough ago that nothing can pay it", () => {
-    const nowSeconds = Math.floor(Date.now() / 1000)
     const sent = { state: "quoted", amount: 500, unit: "sat" }
     mockUnfinishedTopUps = [
       {
         ...sent,
         id: "dead",
-        // Past its expiry and the grace for a phone clock running ahead.
-        quote: { expiry: nowSeconds - 11 * 60 },
+        // Past its life and the grace, by its age and by the mint's expiry.
+        quote: quoteAged(71 * 60_000, 11 * 60_000),
         payment: { dispatched: true, everDispatched: true },
       },
       {
         ...sent,
         id: "just-expired",
-        quote: { expiry: nowSeconds - 60 },
+        quote: quoteAged(61 * 60_000, 60_000),
         payment: { dispatched: true, everDispatched: true },
       },
     ]
@@ -417,6 +423,85 @@ describe("FlashcardV2Screen", () => {
     fireEvent.press(screen.getByTestId("flashcard-v2-dismiss-topup"))
     expect(mockDismissTopUp).toHaveBeenCalledWith("dead")
     expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it("never offers Dismiss on a phone clock running fast: a quote minutes old is not dead, whatever the clock says", () => {
+    mockUnfinishedTopUps = [
+      {
+        id: "young",
+        state: "quoted",
+        amount: 500,
+        unit: "sat",
+        // The phone's clock is two hours ahead of the mint's: the mint's
+        // expiry reads as long past, and the quote is five minutes old.
+        quote: quoteAged(5 * 60_000, 65 * 60_000),
+        payment: { dispatched: true, everDispatched: true },
+      },
+    ]
+    renderScreen()
+
+    expect(
+      screen.getByText(
+        "A top-up of 500 sats is waiting for its payment to reach the mint.",
+      ),
+    ).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-dismiss-topup")).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-finish-topup")).toBeTruthy()
+  })
+
+  it("shows a top-up paid for that the mint no longer issues as paid, with Finish (which says why), never as expired or with Dismiss", () => {
+    mockUnfinishedTopUps = [
+      {
+        id: "stranded",
+        state: "paid",
+        mintRefused: "expired",
+        amount: 1000,
+        unit: "sat",
+        // Long past its life: the payment settled while the app was closed.
+        quote: quoteAged(3 * 60 * 60_000, 2 * 60 * 60_000),
+        payment: { dispatched: true, everDispatched: true },
+      },
+    ]
+    renderScreen()
+
+    expect(
+      screen.getByText("1,000 sats is paid for and not on the card yet."),
+    ).toBeTruthy()
+    expect(
+      screen.queryByText(
+        "A top-up of 1,000 sats expired before its payment reached the mint.",
+      ),
+    ).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-dismiss-topup")).toBeNull()
+    fireEvent.press(screen.getByTestId("flashcard-v2-finish-topup"))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2TopUp", { topUpId: "stranded" })
+  })
+
+  it("says why a top-up stays when Dismiss is refused", async () => {
+    mockUnfinishedTopUps = [
+      {
+        id: "dead",
+        state: "quoted",
+        amount: 500,
+        unit: "sat",
+        quote: quoteAged(71 * 60_000, 11 * 60_000),
+        payment: { dispatched: true, everDispatched: true },
+      },
+    ]
+    mockDismissTopUp.mockRejectedValueOnce(
+      new Error("the mint holds this top-up's payment"),
+    )
+    renderScreen()
+    expect(screen.queryByTestId("flashcard-v2-topup-notice")).toBeNull()
+
+    await act(async () =>
+      fireEvent.press(screen.getByTestId("flashcard-v2-dismiss-topup")),
+    )
+
+    expect(mockDismissTopUp).toHaveBeenCalledWith("dead")
+    expect(screen.getByTestId("flashcard-v2-topup-notice").props.children).toBe(
+      LL.FlashcardV2.topUpDismissRefused(),
+    )
   })
 
   it("hides a quote whose last payment was refused: none of it is out", () => {

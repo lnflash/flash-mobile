@@ -195,9 +195,13 @@ const en: BaseTranslation = {
     topUpLoaded: "{amount} loaded onto the card.",
     topUpNoRoomOnCard:
       "The card doesn't have enough empty slots for these funds. They stay saved on this phone: finish loading them from the card's screen once it has room.",
+    topUpMintUnreachable:
+      "Couldn't check this top-up with the mint, so nothing was written to the card. Check your connection and try again.",
     topUpMintRefused:
       "The mint's answer didn't check out, so nothing was loaded onto the card. Your payment is recorded: contact support.",
     topUpFailed: "Something went wrong. Your top-up is saved: try again from the card's screen.",
+    topUpGone:
+      "This top-up is no longer saved on this phone. If you paid for it, contact support.",
     topUpPrepareFailed:
       "Couldn't set up the top-up with the mint, so nothing was paid. Check your connection and try again.",
     topUpInvoiceExpired:
@@ -218,6 +222,8 @@ const en: BaseTranslation = {
     topUpUnfinishedUnpaid: "A top-up of {amount} is waiting for its payment to reach the mint.",
     topUpUnfinishedExpired: "A top-up of {amount} expired before its payment reached the mint.",
     topUpDismiss: "Dismiss",
+    topUpDismissRefused:
+      "This top-up stays on this phone: its payment reached the mint, or still may.",
     topUpFinish: "Finish",
     topUpMemo: "Flashcard top-up",
     topUpDone: "Done",

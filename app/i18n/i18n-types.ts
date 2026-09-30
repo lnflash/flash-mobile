@@ -675,6 +675,10 @@ type RootTranslation = {
 		 */
 		topUpNoRoomOnCard: string
 		/**
+		 * C​o​u​l​d​n​'​t​ ​c​h​e​c​k​ ​t​h​i​s​ ​t​o​p​-​u​p​ ​w​i​t​h​ ​t​h​e​ ​m​i​n​t​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​w​a​s​ ​w​r​i​t​t​e​n​ ​t​o​ ​t​h​e​ ​c​a​r​d​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		topUpMintUnreachable: string
+		/**
 		 * T​h​e​ ​m​i​n​t​'​s​ ​a​n​s​w​e​r​ ​d​i​d​n​'​t​ ​c​h​e​c​k​ ​o​u​t​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​w​a​s​ ​l​o​a​d​e​d​ ​o​n​t​o​ ​t​h​e​ ​c​a​r​d​.​ ​Y​o​u​r​ ​p​a​y​m​e​n​t​ ​i​s​ ​r​e​c​o​r​d​e​d​:​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​.
 		 */
 		topUpMintRefused: string
@@ -682,6 +686,10 @@ type RootTranslation = {
 		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​Y​o​u​r​ ​t​o​p​-​u​p​ ​i​s​ ​s​a​v​e​d​:​ ​t​r​y​ ​a​g​a​i​n​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
 		 */
 		topUpFailed: string
+		/**
+		 * T​h​i​s​ ​t​o​p​-​u​p​ ​i​s​ ​n​o​ ​l​o​n​g​e​r​ ​s​a​v​e​d​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.​ ​I​f​ ​y​o​u​ ​p​a​i​d​ ​f​o​r​ ​i​t​,​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​.
+		 */
+		topUpGone: string
 		/**
 		 * C​o​u​l​d​n​'​t​ ​s​e​t​ ​u​p​ ​t​h​e​ ​t​o​p​-​u​p​ ​w​i​t​h​ ​t​h​e​ ​m​i​n​t​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​w​a​s​ ​p​a​i​d​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
@@ -737,6 +745,10 @@ type RootTranslation = {
 		 * D​i​s​m​i​s​s
 		 */
 		topUpDismiss: string
+		/**
+		 * T​h​i​s​ ​t​o​p​-​u​p​ ​s​t​a​y​s​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​:​ ​i​t​s​ ​p​a​y​m​e​n​t​ ​r​e​a​c​h​e​d​ ​t​h​e​ ​m​i​n​t​,​ ​o​r​ ​s​t​i​l​l​ ​m​a​y​.
+		 */
+		topUpDismissRefused: string
 		/**
 		 * F​i​n​i​s​h
 		 */
@@ -7931,6 +7943,10 @@ export type TranslationFunctions = {
 		 */
 		topUpNoRoomOnCard: () => LocalizedString
 		/**
+		 * Couldn't check this top-up with the mint, so nothing was written to the card. Check your connection and try again.
+		 */
+		topUpMintUnreachable: () => LocalizedString
+		/**
 		 * The mint's answer didn't check out, so nothing was loaded onto the card. Your payment is recorded: contact support.
 		 */
 		topUpMintRefused: () => LocalizedString
@@ -7938,6 +7954,10 @@ export type TranslationFunctions = {
 		 * Something went wrong. Your top-up is saved: try again from the card's screen.
 		 */
 		topUpFailed: () => LocalizedString
+		/**
+		 * This top-up is no longer saved on this phone. If you paid for it, contact support.
+		 */
+		topUpGone: () => LocalizedString
 		/**
 		 * Couldn't set up the top-up with the mint, so nothing was paid. Check your connection and try again.
 		 */
@@ -7990,6 +8010,10 @@ export type TranslationFunctions = {
 		 * Dismiss
 		 */
 		topUpDismiss: () => LocalizedString
+		/**
+		 * This top-up stays on this phone: its payment reached the mint, or still may.
+		 */
+		topUpDismissRefused: () => LocalizedString
 		/**
 		 * Finish
 		 */

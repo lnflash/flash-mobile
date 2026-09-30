@@ -1,9 +1,12 @@
 /**
  * Test doubles for the Cashu card top-up: a mint that really signs (BDHKE with
- * DLEQ, NUT-20 quote locks, NUT-09 restore, NUT-07 proof states) and refuses
- * a paid quote past its expiry as Nutshell does, and a card that stores
- * proofs the way the applet does, duplicates included.
+ * DLEQ, NUT-20 quote locks, NUT-09 restore, NUT-07 proof states), quotes real
+ * signed bolt11 invoices, and refuses a paid quote past its expiry as Nutshell
+ * does, and a card that stores proofs the way the applet does, duplicates
+ * included.
  */
+import { createHash } from "crypto"
+import { encode, sign } from "bolt11"
 import {
   Amount,
   MintKeys,
@@ -41,9 +44,37 @@ export type FakeMint = TopUpMint & {
   ttlSeconds: number
 }
 
+/** The mint's Lightning node key: it signs every quote's invoice, as phoenixd does. */
+const NODE_KEY = "11".repeat(32)
+
+/** A real bolt11 for quote `id`, `amount` sats, issued at `timestamp` (unix seconds). */
+const bolt11 = ({
+  id,
+  amount,
+  timestamp,
+  ttlSeconds,
+}: {
+  id: string
+  amount: number
+  timestamp: number
+  ttlSeconds: number
+}): string => {
+  const unsigned = encode({
+    satoshis: amount,
+    timestamp,
+    tags: [
+      { tagName: "payment_hash", data: createHash("sha256").update(id).digest("hex") },
+      { tagName: "description", data: "fake mint quote" },
+      { tagName: "expire_time", data: ttlSeconds },
+    ],
+  })
+  return sign(unsigned, NODE_KEY).paymentRequest as string
+}
+
 /**
- * `now` is the mint's clock in ms (a quote's expiry is on it, as Nutshell's
- * is on the invoice's); pass the engine's clock so the two agree.
+ * `now` is the mint's clock in ms: a quote's expiry and its invoice's issue
+ * time are on it, as Nutshell's are on the invoice's. Give the engine its own
+ * clock to model a phone whose clock is not the mint's.
  */
 export const createFakeMint = ({
   now = Date.now,
@@ -108,13 +139,14 @@ export const createFakeMint = ({
     createQuote: jest.fn(async ({ unit, amount, pubkey }) => {
       count += 1
       const id = `quote-${count}`
+      const issuedAt = nowSeconds()
       const quote: FakeQuote = {
         amount,
         unit,
         pubkey,
         state: "UNPAID",
-        request: `lnbc${amount}n1quote${count}`,
-        expiry: nowSeconds() + fake.ttlSeconds,
+        request: bolt11({ id, amount, timestamp: issuedAt, ttlSeconds: fake.ttlSeconds }),
+        expiry: issuedAt + fake.ttlSeconds,
       }
       quotes.set(id, quote)
       return { quote: id, ...quote }
@@ -169,7 +201,9 @@ export type FakeCard = {
 /**
  * A card answering GET_SLOT_STATUS, GET_PROOF, LOAD_PROOF and CLEAR_SPENT as
  * the v0.2.0 applet does: LOAD_PROOF takes the first empty slot and checks
- * nothing, so the same proof can be loaded twice.
+ * nothing, so the same proof can be loaded twice. The app never sends
+ * CLEAR_SPENT; the card answers it anyway, as a real one would, so the specs
+ * that it is never sent (`ins()`) check the APDUs, not a missing handler.
  */
 export const createFakeCard = (maxSlots = 32): FakeCard => {
   const slots: number[][] = Array.from({ length: maxSlots }, () =>

@@ -335,7 +335,27 @@ export const FlashcardV2TopUpScreen = () => {
       err.reason === "restore"
     )
       return LL.FlashcardV2.topUpMintRefused()
+    // Not "your top-up is saved": it is not.
+    if (err.reason === "not-found") return LL.FlashcardV2.topUpGone()
     return LL.FlashcardV2.topUpFailed()
+  }
+
+  /**
+   * A load the engine or the mint stopped before the card was written to:
+   * never "no card found", which would send the user tapping a card the phone
+   * never reached.
+   */
+  const loadFailure = (err: TopUpError): string => {
+    switch (err.reason) {
+      case "slots":
+        return LL.FlashcardV2.topUpNoRoomOnCard()
+      case "mint-unreachable":
+        return LL.FlashcardV2.topUpMintUnreachable()
+      case "not-found":
+        return LL.FlashcardV2.topUpGone()
+      default:
+        return LL.FlashcardV2.topUpFailed()
+    }
   }
 
   const mintUntilReady = async (record: TopUpRecord) => {
@@ -486,8 +506,8 @@ export const FlashcardV2TopUpScreen = () => {
       setStep({ name: "done", record: done })
     } catch (err) {
       if (err instanceof NfcError.UserCancel) return
-      if (err instanceof TopUpError && err.reason === "slots") {
-        setError(LL.FlashcardV2.topUpNoRoomOnCard())
+      if (err instanceof TopUpError) {
+        setError(loadFailure(err))
         return
       }
       const failure = pinFailure(err, cashuCard.version)

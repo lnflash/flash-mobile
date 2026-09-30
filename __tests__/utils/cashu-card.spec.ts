@@ -37,7 +37,6 @@ import {
   triesLeft,
   setCardPin,
   changeCardPin,
-  clearSpent,
 } from "../../app/utils/cashu-card"
 
 // SELECT is Case-4: the trailing 0x00 Le is load-bearing on iOS, where a
@@ -476,23 +475,6 @@ describe("VERIFY_PIN", () => {
   it("isValidCardPin accepts exactly 4 to 8 ASCII digits", () => {
     expect(["1234", "00000000", "12345"].every(isValidCardPin)).toBe(true)
     expect(["123", "123456789", "12a4", "١٢٣٤"].some(isValidCardPin)).toBe(false)
-  })
-})
-
-describe("CLEAR_SPENT", () => {
-  it("sends B0 31 00 00 with Le=1 and returns how many slots it freed", async () => {
-    const card = scriptedCard([[[0xb0, 0x31, 0x00, 0x00, 0x01], ok([4])]])
-    await expect(clearSpent(card.transceive)).resolves.toBe(4)
-  })
-
-  it("surfaces the card's refusal (6982: the PIN is set and not verified)", async () => {
-    const card = echoCard([0x69, 0x82])
-    await expect(clearSpent(card.transceive)).rejects.toMatchObject({ sw: 0x6982 })
-  })
-
-  it("refuses an answer that is not a one-byte count", async () => {
-    const card = echoCard(ok([1, 2]))
-    await expect(clearSpent(card.transceive)).rejects.toThrow(CardProtocolError)
   })
 })
 
