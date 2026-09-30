@@ -389,6 +389,7 @@ describe("FlashcardV2Screen", () => {
   /** A quote of an hour's life, as old as `ageMs` by the phone's clock, expiring `expiryAgoMs` ago by it. */
   const quoteAged = (ageMs: number, expiryAgoMs: number) => ({
     expiry: Math.floor((Date.now() - expiryAgoMs) / 1000),
+    requestedAt: Date.now() - ageMs,
     quotedAt: Date.now() - ageMs,
     lifeMs: 60 * 60_000,
   })

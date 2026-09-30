@@ -59,6 +59,13 @@ export type TopUpRecord = {
     /** Unix seconds on the mint's clock, or null when the mint sets none. */
     expiry: number | null
     /**
+     * The phone's clock, in ms, just before this quote was asked for. The
+     * mint's invoice is never older than the time since, so the pay window
+     * counts from this (`pastPayWindow` in the engine): the time the quote
+     * took to arrive counts against paying it.
+     */
+    requestedAt: number
+    /**
      * The phone's clock, in ms, when this quote arrived. Against the phone's
      * clock now, it says how old the quote is without comparing the phone's
      * clock with the mint's (`quoteAge` in the engine).

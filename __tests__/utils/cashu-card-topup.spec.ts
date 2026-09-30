@@ -160,6 +160,7 @@ describe("prepareTopUp", () => {
     expect(record.lockKey).toMatch(/^[0-9a-f]{64}$/)
     // When the quote arrived, on the phone's clock, and its life, off the invoice.
     expect(record.quote).toMatchObject({
+      requestedAt: clock,
       quotedAt: clock,
       lifeMs: mint.ttlSeconds.sat * 1000,
     })
@@ -448,9 +449,10 @@ describe("payTopUp", () => {
   it("sizes the pay window to the quote: a quarter of its life, between the least window and two minutes", () => {
     // A sat quote on phoenixd's hour-long invoice.
     expect(payWindowMs(3_600_000)).toBe(PAY_WINDOW_MS)
-    // A usd quote on a 60 s Flash invoice.
-    expect(payWindowMs(60_000)).toBe(15_000)
-    expect(payWindowMs(20_000)).toBe(MIN_PAY_WINDOW_MS)
+    expect(payWindowMs(240_000)).toBe(60_000)
+    // A usd quote on a 60 s Flash invoice: paid only in its first 20 s.
+    expect(payWindowMs(60_000)).toBe(MIN_PAY_WINDOW_MS)
+    expect(MIN_PAY_WINDOW_MS).toBe(40_000)
   })
 })
 
@@ -479,8 +481,8 @@ describe("a usd top-up, whose quote lives 60 s (IBEX's cap on the Flash invoice 
     const record = await prepareUsd()
     pay.mockResolvedValueOnce({ kind: "unknown" })
     await payTopUp(deps, record.id)
-    // 30 s in, 30 s left: more than the 15 s window.
-    clock += 30_000
+    // 15 s in, 45 s left: more than the 40 s window.
+    clock += 15_000
     settlesOnPay()
 
     await expect(payTopUp(deps, record.id)).resolves.toMatchObject({
@@ -498,10 +500,10 @@ describe("a usd top-up, whose quote lives 60 s (IBEX's cap on the Flash invoice 
     await expect(mintTopUp(deps, record.id)).resolves.toMatchObject({ status: "minted" })
   })
 
-  it("quotes again once a quote never sent is inside its last 15 s, and pays the new one", async () => {
+  it("quotes again once a quote never sent is past its first 20 s, and pays the new one", async () => {
     settlesOnPay()
     const record = await prepareUsd()
-    clock += 46_000
+    clock += 21_000
 
     const { result, record: after } = await payTopUp(deps, record.id)
 
@@ -514,17 +516,41 @@ describe("a usd top-up, whose quote lives 60 s (IBEX's cap on the Flash invoice 
     await expect(mintTopUp(deps, record.id)).resolves.toMatchObject({ status: "minted" })
   })
 
-  it("never retries a sent quote inside its last 15 s", async () => {
+  it("never retries a sent quote past its first 20 s", async () => {
     const record = await prepareUsd()
     pay.mockResolvedValueOnce({ kind: "unknown" })
     await payTopUp(deps, record.id)
-    clock += 46_000
+    clock += 21_000
 
     await expect(payTopUp(deps, record.id)).resolves.toMatchObject({
       result: { status: "expired" },
     })
     expect(pay).toHaveBeenCalledTimes(1)
     expect(mint.createQuote).toHaveBeenCalledTimes(1)
+  })
+
+  it("counts the time the quote took to arrive against paying it", async () => {
+    settlesOnPay()
+    // The mint takes 10 s to answer: the invoice is 10 s old when its quote arrives.
+    const real = (mint.createQuote as jest.Mock).getMockImplementation()!
+    ;(mint.createQuote as jest.Mock).mockImplementationOnce(async (args) => {
+      const quote = await real(args)
+      clock += 10_000
+      return quote
+    })
+    const record = await prepareUsd()
+    // 11 s after the quote arrived, 21 s after its invoice was issued.
+    clock += 11_000
+
+    const { result, record: after } = await payTopUp(deps, record.id)
+
+    expect(result).toEqual({ status: "paid" })
+    expect(mint.createQuote).toHaveBeenCalledTimes(2)
+    expect(after.quote.request).not.toBe(record.quote.request)
+    expect(pay).toHaveBeenCalledTimes(1)
+    expect(pay).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentRequest: after.quote.request }),
+    )
   })
 })
 

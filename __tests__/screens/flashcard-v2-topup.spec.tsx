@@ -48,7 +48,14 @@ const record = (over: Partial<TopUpRecord> = {}): TopUpRecord => ({
   unit: "sat",
   amount: 1000,
   keysetId: "0059534ce0bfa19a",
-  quote: { id: "q", request: "lnbc", expiry: null, quotedAt: 1, lifeMs: null },
+  quote: {
+    id: "q",
+    request: "lnbc",
+    expiry: null,
+    requestedAt: 1,
+    quotedAt: 1,
+    lifeMs: null,
+  },
   outputs: [],
   payment: {
     walletId: "cash",

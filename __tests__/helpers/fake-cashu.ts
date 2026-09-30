@@ -178,20 +178,33 @@ export const createFakeMint = ({
     quoteState: jest.fn(async (id: string) => quoteOf(id).state),
     mint: jest.fn(async ({ quote: id, outputs, signature }) => {
       const quote = quoteOf(id)
-      if (quote.state !== "PAID") throw new Error(`quote is ${quote.state}`)
-      if (!verifyMintQuoteSignature(quote.pubkey, id, outputs, signature)) {
-        throw new Error("the quote's NUT-20 signature does not verify")
+      // Nutshell cashu/mint/ledger.py mint() (main), in its order. Each
+      // refusal is a 400 that cashu-ts throws as MintOperationError(code,
+      // detail). A PAID quote refused after the state checks stays PAID.
+      if (outputs.some((o) => !byId(o.id))) {
+        throw new MintOperationError(12001, "keyset not found")
+      }
+      if (quote.state === "PENDING") {
+        throw new MintOperationError(20005, "Mint quote already pending.")
+      }
+      if (quote.state === "ISSUED") {
+        throw new MintOperationError(20002, "quote already issued")
+      }
+      if (quote.state !== "PAID") throw new MintOperationError(20001, "quote not paid")
+      if (outputs.some((o) => byId(o.id)?.keyset.unit !== quote.unit)) {
+        throw new MintOperationError(11000, "quote unit does not match output unit")
       }
       const total = outputs.reduce((sum, o) => sum + Amount.from(o.amount).toNumber(), 0)
-      if (total !== quote.amount) throw new Error("outputs do not add up to the quote")
-      if (outputs.some((o) => byId(o.id)?.keyset.unit !== quote.unit)) {
-        throw new Error("quote unit does not match output unit")
+      if (total !== quote.amount) {
+        throw new MintOperationError(11000, "amount to mint does not match quote amount")
       }
-      // Nutshell cashu/mint/ledger.py mint(): a PAID quote is refused once
-      // its expiry has passed, and stays PAID. Main raises QuoteExpiredError
-      // (code 20007); cashu-ts throws it as a MintOperationError.
+      // Past its expiry: main raises QuoteExpiredError (20007); 0.20.3 raised
+      // TransactionError (11000) with the same detail.
       if (quote.expiry !== null && quote.expiry < nowSeconds()) {
         throw new MintOperationError(20007, "quote expired")
+      }
+      if (!verifyMintQuoteSignature(quote.pubkey, id, outputs, signature)) {
+        throw new MintOperationError(20008, "Signature for mint request invalid")
       }
       const signatures = outputs.map(sign)
       outputs.forEach((output, i) => signed.set(output.B_, signatures[i]))

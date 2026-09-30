@@ -64,23 +64,28 @@ export const MAX_TOPUP_AMOUNT = 1_000_000
 
 /**
  * A payment is sent only while enough of its quote's life is left for it to
- * settle and be minted (`payWindowMs`). The mint issues a paid quote only
- * until the quote's `expiry` (Nutshell mint(): "quote expired"), and with
+ * be paid and minted (`payWindowMs`). The mint issues a paid quote only until
+ * the quote's `expiry` (Nutshell mint(): "quote expired"), and with
  * MINT_QUOTE_TTL unset that is the invoice's own expiry: phoenixd's for a sat
  * quote, and 60 s for a usd one. Forge's usd invoice is a Flash invoice, and
  * IBEX caps every non-sat receive invoice at 60 s (flash
  * src/domain/bitcoin/lightning/invoice-expiration.ts and
  * src/services/ibex/client.ts; the ENG-555 invoice in the send flow's
- * invoice-expiry.ts is one). So the window is a quarter of the quote's life,
- * at most this and at least MIN_PAY_WINDOW_MS: two minutes for a sat quote,
- * 15 s for a usd one, whose payment settles inside Flash. A payment sent later
- * could land with no time left to mint it. A quote never sent for payment is
- * quoted again instead. Measured by the quote's age (`pastPayWindow`).
+ * invoice-expiry.ts is one). A sat payment crosses Lightning to phoenixd. A
+ * usd one has no Lightning hop, but it is still two IBEX calls before the
+ * quote can be minted, and flash's IBEX client sets no timeout on either: the
+ * payment itself (lnInvoicePaymentSend pays through IBEX), then the mint's
+ * check of the invoice (Flash's lnInvoicePaymentStatus asks IBEX). So the
+ * window is a quarter of the quote's life, at most this and at least
+ * MIN_PAY_WINDOW_MS: two minutes for a sat quote, and 40 s for a usd one,
+ * which is paid only in its first 20 s. A payment sent later could land with
+ * no time left to mint it. A quote never sent for payment is quoted again
+ * instead. Counted from before the quote was asked for (`pastPayWindow`).
  */
 export const PAY_WINDOW_MS = 2 * 60_000
 
 /** The least time a quote must have left to be paid: see PAY_WINDOW_MS. */
-export const MIN_PAY_WINDOW_MS = 10_000
+export const MIN_PAY_WINDOW_MS = 40_000
 
 /** How much of a quote's life must be left to pay it, for a quote living `lifeMs`. */
 export const payWindowMs = (lifeMs: number): number =>
@@ -190,7 +195,10 @@ const load = async (deps: Pick<TopUpDeps, "store">, id: string): Promise<TopUpRe
  * clock does not move between the two readings (the send flow's
  * `isInvoiceExpired` reasons the same way). The mint's `expiry` read on the
  * phone's clock (`pastMintExpiry`) decides nothing alone; it only holds back
- * a verdict the age alone must not give, as `isInvoiceExpired` does.
+ * a verdict the age alone must not give, as `isInvoiceExpired` does. The pay
+ * window, whose harmful verdict is "there is time", counts from just before
+ * the quote was asked for instead (`requestedAt`): the invoice is never older
+ * than that, so the time the quote took to arrive counts against paying it.
  */
 
 /** The time since the record's quote arrived, in ms, on the phone's clock alone. */
@@ -207,16 +215,17 @@ const pastMintExpiry = (record: TopUpRecord, now: number, marginMs: number): boo
 
 /**
  * Too little of the quote's life is left to send a payment for it: judged by
- * the quote's age alone. Here the harmful verdict is "there is time", so the
- * mint's `expiry` read on the phone's clock may neither hold this back (a
- * phone running slow would pay late) nor fire it alone (a phone running fast
- * could never pay). A clock that went back since the quote arrived hides how
+ * the time since the quote was asked for alone, which the invoice's age never
+ * exceeds. Here the harmful verdict is "there is time", so the mint's
+ * `expiry` read on the phone's clock may neither hold this back (a phone
+ * running slow would pay late) nor fire it alone (a phone running fast could
+ * never pay). A clock that went back since the quote was asked for hides how
  * old the quote is, so such a quote is not paid either.
  */
 const pastPayWindow = (record: TopUpRecord, now: number): boolean => {
-  const { lifeMs } = record.quote
+  const { lifeMs, requestedAt } = record.quote
   if (lifeMs === null) return false
-  const age = quoteAge(record, now)
+  const age = now - requestedAt
   return !(age >= 0 && age <= lifeMs - payWindowMs(lifeMs))
 }
 
@@ -328,8 +337,9 @@ const quoteLifeMs = (request: string, expiry: number): number | undefined => {
 
 /**
  * A NUT-04 quote locked (NUT-20) to a fresh key only this app holds, checked
- * to be the quote that was asked for, with the phone's clock at its arrival
- * and its life, so its age can be told later (`quoteAge`).
+ * to be the quote that was asked for, with the phone's clock just before it
+ * was asked for and at its arrival, and its life, so its age can be told
+ * later (`pastPayWindow`, `quoteAge`).
  */
 const lockedQuote = async (
   deps: Pick<TopUpDeps, "mint" | "now">,
@@ -338,6 +348,7 @@ const lockedQuote = async (
 ): Promise<Pick<TopUpRecord, "quote" | "lockKey">> => {
   const lockKey = randomBytes(32)
   const lockPubkey = toHex(getPubKeyFromPrivKey(lockKey))
+  const requestedAt = deps.now()
   const quote = await deps.mint.createQuote({ unit, amount, pubkey: lockPubkey })
   const quotedAt = deps.now()
   if (
@@ -359,6 +370,7 @@ const lockedQuote = async (
       id: quote.quote,
       request: quote.request,
       expiry: quote.expiry,
+      requestedAt,
       quotedAt,
       lifeMs,
     },
@@ -497,8 +509,9 @@ export async function payTopUp(
   if (pastPayWindow(record, deps.now())) {
     if (everSent(record)) return { record, result: { status: "expired" } }
     record = await requote(deps, record)
-    // A quote whose whole life is shorter than MIN_PAY_WINDOW_MS, or a clock
-    // that moved while it was quoted, is not paid either.
+    // A quote whose whole life is shorter than MIN_PAY_WINDOW_MS, one that
+    // took too long to arrive, or a clock that moved while it was quoted, is
+    // not paid either.
     if (pastPayWindow(record, deps.now())) {
       return { record, result: { status: "expired" } }
     }
