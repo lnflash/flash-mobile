@@ -5,13 +5,26 @@ import {
   UpgradeVerificationStatus,
 } from "./slices/accountUpgradeSlice"
 
+import { initialFlashcardV2State } from "./slices/flashcardV2Slice"
+
 /**
  * `accountUpgrade` is persisted to AsyncStorage. Version 1 (ENG-608) replaced
  * `bankInfo.idDocument` (a react-native-image-picker Asset) with `identity`
  * and the raw ERPNext status strings with the verification enum. Any phone
  * that killed the app mid-flow before the update rehydrates the old shape.
+ *
+ * Version 2 (ENG-616) adds the persisted `flashcardV2` slice: the cards this
+ * phone has read. No existing data is transformed; the bump records that a new
+ * key is now part of the persisted tree, and the migration gives an older store
+ * the empty shape explicitly.
+ *
+ * A later field on `flashcardV2` itself (a top-up ledger, say) needs its own
+ * version and migration. The default reconciler, autoMergeLevel1, fills in a
+ * missing *top-level* key but hard-sets each persisted one wholesale, so a
+ * phone that saved `{ cards }` rehydrates without the new field no matter what
+ * the reducer's initial state says.
  */
-export const PERSIST_VERSION = 1
+export const PERSIST_VERSION = 2
 
 const LEGACY_STATUS: Record<string, UpgradeVerificationStatus> = {
   Pending: "UNDER_REVIEW",
@@ -47,8 +60,12 @@ export const migrateAccountUpgradeV1 = (state: any): any => {
   }
 }
 
+export const migrateFlashcardV2 = (state: any): any =>
+  state?.flashcardV2 ? state : { ...state, flashcardV2: initialFlashcardV2State }
+
 export const migrations = {
-  [PERSIST_VERSION]: migrateAccountUpgradeV1,
+  1: migrateAccountUpgradeV1,
+  [PERSIST_VERSION]: migrateFlashcardV2,
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

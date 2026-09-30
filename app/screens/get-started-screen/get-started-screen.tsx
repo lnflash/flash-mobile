@@ -13,8 +13,7 @@ import { DeviceAccountFailModal } from "./device-account-fail-modal"
 
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useIsFocused } from "@react-navigation/native"
-import { useActivityIndicator, useAppConfig, useFlashcard } from "@app/hooks"
+import { useActivityIndicator, useAppConfig, useTapFlashcard } from "@app/hooks"
 import { useCreateAccount } from "@app/hooks/useCreateAccount"
 
 // utils
@@ -30,13 +29,13 @@ const width = Dimensions.get("screen").width
 type Props = StackScreenProps<RootStackParamList, "getStarted">
 
 export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
-  const isFocused = useIsFocused()
   const { mode, colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { saveToken } = useAppConfig()
   const { toggleActivityIndicator } = useActivityIndicator()
   const { createDeviceAccountAndLogin, appcheckTokenLoading } = useCreateAccount()
-  const { lnurl, readFlashcard } = useFlashcard()
+  // The tap opens whichever card screen fits what was tapped (ENG-616).
+  const tapFlashcard = useTapFlashcard()
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -56,10 +55,6 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
       setSecretMenuCounter(0)
     }
   }, [navigation, secretMenuCounter])
-
-  useEffect(() => {
-    if (Boolean(lnurl) && isFocused) navigation.navigate("Card")
-  }, [lnurl])
 
   const handleCreateDeviceAccount = async () => {
     logGetStartedAction({
@@ -93,7 +88,7 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
 
   const onPressLogo = () => setSecretMenuCounter(secretMenuCounter + 1)
 
-  const onPressCard = () => readFlashcard()
+  const onPressCard = () => tapFlashcard()
 
   return (
     <Screen>
@@ -107,6 +102,9 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
           onPress={onPressCard}
           style={{ padding: 20 }}
           activeOpacity={0.5}
+          testID="get-started-read-card"
+          accessibilityRole="button"
+          accessibilityLabel={LL.CardScreen.readNfcCard()}
         >
           <Icon
             source={Nfc}

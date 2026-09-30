@@ -12,6 +12,7 @@ import { renderHook, act } from "@testing-library/react-native"
 const mockDispatch = jest.fn()
 const mockResetState = jest.fn()
 const mockResetFlashcard = jest.fn()
+const mockForgetCashuCard = jest.fn()
 const mockCacheReset = jest.fn(() => Promise.resolve())
 const mockDisconnect = jest.fn(() => Promise.resolve())
 const mockRemoveIdentityDir = jest.fn(() => Promise.resolve())
@@ -24,7 +25,10 @@ jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({ resetState: mockResetState }),
 }))
 jest.mock("@app/hooks/useFlashcard", () => ({
-  useFlashcard: () => ({ resetFlashcard: mockResetFlashcard }),
+  useFlashcard: () => ({
+    resetFlashcard: mockResetFlashcard,
+    forgetCashuCard: mockForgetCashuCard,
+  }),
 }))
 jest.mock("@apollo/client", () => ({
   useApolloClient: () => ({ cache: { reset: mockCacheReset } }),
@@ -76,5 +80,18 @@ describe("useLogout cleanUp", () => {
     )
     expect(mockResetState).toHaveBeenCalledTimes(1)
     expect(mockResetFlashcard).toHaveBeenCalledTimes(1)
+  })
+
+  it("forgets every Cashu card this phone read, so the next account starts with none (ENG-616)", async () => {
+    const { result } = renderHook(() => useLogout())
+    await act(async () => {
+      await result.current.cleanUp()
+    })
+
+    // The card on screen, and the persisted record of every card read.
+    expect(mockForgetCashuCard).toHaveBeenCalledTimes(1)
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "flashcardV2/resetFlashcardV2" }),
+    )
   })
 })

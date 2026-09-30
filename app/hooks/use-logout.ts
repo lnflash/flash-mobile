@@ -20,6 +20,7 @@ import { removeIdentityDir } from "@app/utils/identity-files"
 
 // store
 import { resetAccountUpgrade } from "@app/store/redux/slices/accountUpgradeSlice"
+import { resetFlashcardV2 } from "@app/store/redux/slices/flashcardV2Slice"
 
 const DEVICE_ACCOUNT_CREDENTIALS_KEY = "device-account"
 
@@ -27,7 +28,7 @@ const useLogout = () => {
   const client = useApolloClient()
   const dispatch = useAppDispatch()
   const { resetState } = usePersistentStateContext()
-  const { resetFlashcard } = useFlashcard()
+  const { resetFlashcard, forgetCashuCard } = useFlashcard()
 
   const [userLogoutMutation] = useUserLogoutMutation({
     fetchPolicy: "no-cache",
@@ -66,6 +67,10 @@ const useLogout = () => {
     dispatch(resetAccountUpgrade())
     resetState()
     resetFlashcard()
+    // ENG-616: the Cashu cards this phone read belong to the account that read
+    // them; the next account on the phone starts with none.
+    forgetCashuCard()
+    dispatch(resetFlashcardV2())
 
     if (clearDeviceCred) {
       await Keychain.resetInternetCredentials({ server: DEVICE_ACCOUNT_CREDENTIALS_KEY })

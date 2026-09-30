@@ -1,26 +1,7 @@
 import { useContext } from "react"
-import { TagEvent } from "react-native-nfc-manager"
-import { FlashcardContext } from "../contexts/Flashcard"
+import { FlashcardContext, FlashcardInterface } from "../contexts/Flashcard"
 
-type TransactionItem = {
-  date: string
-  sats: string
-}
-
-interface ContextProps {
-  tag?: TagEvent
-  k1?: string
-  callback?: string
-  lnurl?: string
-  balanceInSats?: number
-  transactions?: TransactionItem[]
-  loading?: boolean
-  error?: string
-  resetFlashcard: () => void
-  readFlashcard: (isPayment?: boolean) => void
-}
-
-export const useFlashcard = () => {
-  const context: ContextProps = useContext(FlashcardContext)
-  return context
-}
+// The context's own interface is the contract. This file used to carry a
+// hand-copied shadow of it, which is how #738's `cashuCard` field was added to
+// the provider and never became visible to a single screen (ENG-616).
+export const useFlashcard = (): FlashcardInterface => useContext(FlashcardContext)

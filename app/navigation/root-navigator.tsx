@@ -11,7 +11,7 @@ import {
 } from "../screens/authentication-screen"
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
-import { CardScreen, FlashcardTopup } from "../screens/card-screen"
+import { CardScreen, FlashcardTopup, FlashcardV2Screen } from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -610,6 +610,14 @@ export const RootStack = () => {
         name="Card"
         component={CardScreen}
         options={{ title: "", headerStyle: { backgroundColor: colors.background } }}
+      />
+      <RootNavigator.Screen
+        name="FlashcardV2"
+        component={FlashcardV2Screen}
+        options={{
+          title: LL.FlashcardV2.title(),
+          headerStyle: { backgroundColor: colors.background },
+        }}
       />
       <RootNavigator.Screen
         name="CashoutDetails"

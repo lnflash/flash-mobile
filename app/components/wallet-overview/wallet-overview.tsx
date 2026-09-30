@@ -13,7 +13,7 @@ import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useNavigation } from "@react-navigation/native"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { useBreez, useFlashcard } from "@app/hooks"
+import { useBreez, useFlashcard, useOpenFlashcard, useTapFlashcard } from "@app/hooks"
 
 // utils
 import {
@@ -32,7 +32,13 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const isAuthed = useIsAuthed()
   const { LL } = useI18nContext()
   const { btcWallet } = useBreez()
-  const { lnurl, balanceInSats, readFlashcard } = useFlashcard()
+  const { lnurl, balanceInSats } = useFlashcard()
+  // One rule for the tile and the Settings row, and every tap routed by what
+  // was tapped (ENG-616): see app/hooks/use-tap-flashcard.ts. The tile's sync
+  // refreshes the BoltCard in place, as it always has (the tile body is what
+  // opens Card); only a Cashu card tapped on it opens a screen, its own.
+  const openFlashcard = useOpenFlashcard()
+  const refreshFlashcard = useTapFlashcard({ openBoltCard: false })
 
   const { persistentState, updateState } = usePersistentStateContext()
   const { formatMoneyAmount, displayCurrency, moneyAmountToDisplayCurrencyString } =
@@ -147,11 +153,6 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
 
   const onPressBitcoin = () => navigateHandler("BTCTransactionHistory")
 
-  const onPressFlashcard = () => {
-    if (lnurl) navigation.navigate("Card")
-    else readFlashcard()
-  }
-
   return (
     <View style={{ marginHorizontal: 20 }}>
       <Balance
@@ -181,8 +182,8 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           amount={cardDisplayBalance}
           currency={displayCurrency}
           emptyText={LL.HomeScreen.addFlashcard()}
-          onPress={onPressFlashcard}
-          onPressRightBtn={() => readFlashcard()}
+          onPress={openFlashcard}
+          onPressRightBtn={refreshFlashcard}
           rightIcon={"sync"}
         />
       )}

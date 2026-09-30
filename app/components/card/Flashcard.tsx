@@ -13,6 +13,7 @@ import {
   useDisplayCurrency,
   useFlashcard,
   usePriceConversion,
+  useTapFlashcard,
   useUnauthedPriceConversion,
 } from "@app/hooks"
 import { useHideBalanceQuery } from "@app/graphql/generated"
@@ -36,7 +37,9 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const { balanceInSats, transactions, readFlashcard, resetFlashcard } = useFlashcard()
+  const { balanceInSats, transactions, resetFlashcard } = useFlashcard()
+  // A refresh that turns out to be a Cashu card opens the Cashu screen (ENG-616).
+  const tapFlashcard = useTapFlashcard()
   const { formatMoneyAmount } = useDisplayCurrency()
   const { convertMoneyAmount } = isAuthed
     ? usePriceConversion()
@@ -65,7 +68,13 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
       <View style={styles.balanceWrapper}>
         <HideableArea isContentVisible={hideBalance}>
           <Text type="h03">{formattedBalance}</Text>
-          <TouchableOpacity style={styles.sync} onPress={() => readFlashcard(false)}>
+          <TouchableOpacity
+            style={styles.sync}
+            onPress={tapFlashcard}
+            testID="flashcard-refresh"
+            accessibilityRole="button"
+            accessibilityLabel={LL.CardScreen.readNfcCard()}
+          >
             <Sync color={colors.icon02} width={32} height={32} />
           </TouchableOpacity>
         </HideableArea>

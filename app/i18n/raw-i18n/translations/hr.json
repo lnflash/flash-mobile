@@ -76,6 +76,28 @@
     "readNfcCard": "Read NFC card",
     "findFlashpoint": "Find a Flashpoint"
   },
+  "FlashcardV2": {
+    "title": "Flashcard",
+    "onCardBalance": "Stored on the card",
+    "amountInUnit": "{amount:string} {unit:string}",
+    "unitUnknown": "{amount:string} · unit unknown",
+    "empty": "Empty",
+    "slots": "Proof slots",
+    "slotSummary": "{unspent:number} loaded · {free:number} free of {max:number}",
+    "appletVersion": "Card software",
+    "cardId": "Card ID",
+    "bearerWarning": "The value lives on the card itself. If the card is lost, the funds are not recoverable.",
+    "noPinTitle": "No PIN on this card",
+    "noPinBody": "Anyone holding this card can spend from it or load it.",
+    "pinSetBypassableTitle": "Three wrong entries turn this PIN off",
+    "pinSetBypassableBody": "On this card's software, three wrong PIN entries in a row switch the PIN check off, and then anyone holding the card can spend from it. The PIN won't stop someone who has the card.",
+    "blockedOpenTitle": "This card no longer asks for a PIN",
+    "blockedOpenBody": "The PIN was entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. It can't be unblocked. Move the value off it.",
+    "blockedLockedTitle": "This card is blocked",
+    "blockedLockedBody": "The PIN was entered wrong too many times. The card refuses to spend and can't be unblocked.",
+    "pinUnknownTitle": "PIN state unknown",
+    "pinUnknownBody": "This app can't read this card's PIN state. Update the app before relying on the card's PIN."
+  },
   "Cashout": {
     "title": "Settle",
     "percentageToCashout": "Da se poravnaju %",

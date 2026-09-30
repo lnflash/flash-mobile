@@ -8,7 +8,7 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { PrimaryBtn } from "../buttons"
 
 // hooks
-import { useFlashcard } from "@app/hooks"
+import { useTapFlashcard } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useNavigation } from "@react-navigation/native"
 
@@ -21,7 +21,7 @@ const EmptyCard = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { readFlashcard } = useFlashcard()
+  const tapFlashcard = useTapFlashcard()
 
   const findFlashpoint = () => navigation.navigate("Map")
 
@@ -36,7 +36,7 @@ const EmptyCard = () => {
       </View>
       <PrimaryBtn
         label={LL.CardScreen.readNfcCard()}
-        onPress={() => readFlashcard(false)}
+        onPress={tapFlashcard}
         btnStyle={{ marginBottom: 10 }}
       />
       <PrimaryBtn

@@ -19,7 +19,7 @@ const persistConfig = {
   key: "root",
   version: PERSIST_VERSION,
   storage: AsyncStorage,
-  whitelist: ["accountUpgrade"],
+  whitelist: ["accountUpgrade", "flashcardV2"],
   migrate,
 }
 
