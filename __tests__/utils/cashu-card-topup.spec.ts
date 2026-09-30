@@ -132,17 +132,22 @@ describe("prepareTopUp", () => {
     await expect(prepare(1023, { card: { empty: 5, spent: 5 } })).resolves.toBeTruthy()
   })
 
-  it("refuses a quote for anything other than what was asked, and saves nothing", async () => {
-    ;(mint.createQuote as jest.Mock).mockResolvedValueOnce({
-      quote: "q",
-      request: "lnbc",
-      unit: "sat",
-      amount: 999,
-      state: "UNPAID",
-      expiry: null,
+  const wrongQuotes: [string, Record<string, unknown>][] = [
+    ["another amount", { amount: 999 }],
+    ["another unit", { unit: "usd" }],
+    ["a quote already paid", { state: "PAID" }],
+    ["a quote locked to another key", { pubkey: "02" + "11".repeat(32) }],
+  ]
+  wrongQuotes.forEach(([name, wrong]) => {
+    it(`refuses ${name} and saves nothing`, async () => {
+      const real = (mint.createQuote as jest.Mock).getMockImplementation()!
+      ;(mint.createQuote as jest.Mock).mockImplementationOnce(async (args) => ({
+        ...(await real(args)),
+        ...wrong,
+      }))
+      await expect(prepare(1000)).rejects.toMatchObject({ reason: "quote" })
+      expect(await deps.store.list()).toEqual([])
     })
-    await expect(prepare(1000)).rejects.toMatchObject({ reason: "quote" })
-    expect(await deps.store.list()).toEqual([])
   })
 })
 

@@ -10,7 +10,7 @@ import HideableArea from "@app/components/hideable-area/hideable-area"
 import type { CashuCardState } from "@app/contexts/Flashcard"
 import { useHideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useFlashcard, useTapFlashcard } from "@app/hooks"
+import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { blockedPinGatesSpend, CashuCardInfo } from "@app/utils/cashu-card"
@@ -38,6 +38,11 @@ export const FlashcardV2Screen = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { cashuCard, forgetCashuCard } = useFlashcard()
+  // Paid top-ups not on the card yet, and ones whose payment may still land.
+  // A quote that was never sent for payment is not shown: nothing was paid.
+  const unfinishedTopUps = useUnfinishedTopUps(cashuCard?.pubkey).filter(
+    (record) => record.state !== "quoted" || record.payment.dispatched,
+  )
   const tapFlashcard = useTapFlashcard()
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
@@ -94,6 +99,34 @@ export const FlashcardV2Screen = () => {
 
       <PinStateNotice pinState={cashuCard.pinState} version={cashuCard.version} />
 
+      {unfinishedTopUps.map((record) => {
+        const amount = formatUnitAmount(record.amount, record.unit, LL)
+        return (
+          <View
+            key={record.id}
+            style={styles.unfinished}
+            testID="flashcard-v2-unfinished-topup"
+          >
+            <Text type="p2" style={styles.unfinishedText}>
+              {record.state === "quoted"
+                ? LL.FlashcardV2.topUpUnfinishedUnpaid({ amount })
+                : LL.FlashcardV2.topUpUnfinishedPaid({ amount })}
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              testID="flashcard-v2-finish-topup"
+              onPress={() =>
+                navigation.navigate("FlashcardV2TopUp", { topUpId: record.id })
+              }
+            >
+              <Text type="p2" bold>
+                {LL.FlashcardV2.topUpFinish()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )
+      })}
+
       <View style={styles.details}>
         <DetailRow label={LL.FlashcardV2.slots()} value={slotSummary(cashuCard, LL)} />
         <DetailRow
@@ -112,6 +145,14 @@ export const FlashcardV2Screen = () => {
           {/* Only a PIN state the app can read gets a PIN action: a blocked
               PIN has no way back (ENG-617), and an unknown one is a card this
               app does not understand (see the notice above). */}
+          {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
+            <IconBtn
+              type="clear"
+              icon="down"
+              label={LL.FlashcardV2.topUp()}
+              onPress={() => navigation.navigate("FlashcardV2TopUp")}
+            />
+          )}
           {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
             <IconBtn
               type="clear"
@@ -379,6 +420,19 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 12,
+  },
+  unfinished: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.grey5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  unfinishedText: {
+    flex: 1,
   },
   btns: {
     flexDirection: "row",

@@ -28,6 +28,8 @@ const mockForgetCashuCard = jest.fn()
 const mockResetFlashcard = jest.fn()
 let mockCashuCard: CashuCardState | undefined
 let mockIsAuthed = true
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let mockUnfinishedTopUps: any[] = []
 // Undefined: the real per-version answer (no released applet keeps a blocked
 // card from spending, ENG-615). A spec sets it to render a version that does.
 let mockBlockedPinGatesSpend: boolean | undefined
@@ -62,6 +64,7 @@ jest.mock("@app/hooks", () => ({
     resetFlashcard: mockResetFlashcard,
   }),
   useTapFlashcard: () => mockTapFlashcard,
+  useUnfinishedTopUps: () => mockUnfinishedTopUps,
 }))
 jest.mock("@app/utils/cashu-card", () => {
   const actual = jest.requireActual("@app/utils/cashu-card")
@@ -111,6 +114,7 @@ describe("FlashcardV2Screen", () => {
     mockIsFocused = true
     mockBlockedPinGatesSpend = undefined
     mockCashuCard = card()
+    mockUnfinishedTopUps = []
   })
 
   it("shows the balance in the unit the mint named, slot summary, applet version and a short card id", () => {
@@ -304,6 +308,76 @@ describe("FlashcardV2Screen", () => {
     fireEvent.press(screen.getByText(LL.FlashcardV2.changePin()))
     expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "change" })
     expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+  })
+
+  it("offers Top up on a card whose PIN state it can read, opening a new top-up", () => {
+    ;(["unset", "set"] as const).forEach((pinState) => {
+      mockNavigate.mockClear()
+      mockCashuCard = card({ pinState })
+      const { unmount } = renderScreen()
+      fireEvent.press(screen.getByText(LL.FlashcardV2.topUp()))
+      expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2TopUp")
+      unmount()
+    })
+  })
+
+  it("offers no Top up on a blocked card, one whose PIN state it cannot read, or signed out", () => {
+    ;(["blocked", "unknown"] as const).forEach((pinState) => {
+      mockCashuCard = card({ pinState })
+      const { unmount } = renderScreen()
+      expect(screen.queryByText(LL.FlashcardV2.topUp())).toBeNull()
+      unmount()
+    })
+    mockCashuCard = card({ pinState: "set" })
+    mockIsAuthed = false
+    renderScreen()
+    expect(screen.queryByText(LL.FlashcardV2.topUp())).toBeNull()
+  })
+
+  it("lists a paid top-up that is not on the card yet, and Finish resumes it", () => {
+    mockUnfinishedTopUps = [
+      {
+        id: "t1",
+        state: "minted",
+        amount: 1000,
+        unit: "sat",
+        payment: { dispatched: true },
+      },
+    ]
+    renderScreen()
+
+    expect(
+      screen.getByText("1,000 sats is paid for and not on the card yet."),
+    ).toBeTruthy()
+    fireEvent.press(screen.getByTestId("flashcard-v2-finish-topup"))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2TopUp", { topUpId: "t1" })
+  })
+
+  it("says a sent payment may still be on its way, and hides a quote that was never paid", () => {
+    mockUnfinishedTopUps = [
+      {
+        id: "sent",
+        state: "quoted",
+        amount: 500,
+        unit: "sat",
+        payment: { dispatched: true },
+      },
+      {
+        id: "never",
+        state: "quoted",
+        amount: 800,
+        unit: "sat",
+        payment: { dispatched: false },
+      },
+    ]
+    renderScreen()
+
+    expect(
+      screen.getByText(
+        "A top-up of 500 sats is waiting for its payment to reach the mint.",
+      ),
+    ).toBeTruthy()
+    expect(screen.getAllByTestId("flashcard-v2-unfinished-topup")).toHaveLength(1)
   })
 
   it("offers no PIN action on a blocked card or one whose PIN state it cannot read", () => {

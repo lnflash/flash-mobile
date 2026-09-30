@@ -522,6 +522,194 @@ type RootTranslation = {
 		 * C​o​n​t​i​n​u​e
 		 */
 		next: string
+		/**
+		 * T​o​p​
+	​u​p
+		 */
+		topUp: string
+		/**
+		 * T​o​p​ ​u​p​ ​c​a​r​d
+		 */
+		topUpTitle: string
+		/**
+		 * C​a​r​d​ ​h​o​l​d​s
+		 */
+		topUpUnit: string
+		/**
+		 * S​a​t​s
+		 */
+		topUpUnitSat: string
+		/**
+		 * U​S​D
+		 */
+		topUpUnitUsd: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​{​u​n​i​t​}​,​ ​s​o​ ​a​ ​t​o​p​-​u​p​ ​a​d​d​s​ ​{​u​n​i​t​}​.
+		 * @param {unknown} unit
+		 */
+		topUpUnitFixed: RequiredParams<'unit' | 'unit'>
+		/**
+		 * P​a​i​d​ ​f​r​o​m​ ​y​o​u​r​ ​C​a​s​h​ ​w​a​l​l​e​t
+		 */
+		topUpPaidFrom: string
+		/**
+		 * A​v​a​i​l​a​b​l​e​:​ ​{​b​a​l​a​n​c​e​}
+		 * @param {unknown} balance
+		 */
+		topUpCashBalance: RequiredParams<'balance'>
+		/**
+		 * U​s​e​s​ ​{​n​e​e​d​e​d​}​ ​o​f​ ​t​h​e​ ​c​a​r​d​'​s​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​s​l​o​t​s
+		 * @param {number} free
+		 * @param {number} needed
+		 */
+		topUpSlots: RequiredParams<'free' | 'needed'>
+		/**
+		 * T​h​i​s​ ​a​m​o​u​n​t​ ​n​e​e​d​s​ ​{​n​e​e​d​e​d​}​ ​s​l​o​t​s​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​a​n​d​ ​i​t​ ​h​a​s​ ​{​f​r​e​e​}​.​ ​T​r​y​ ​a​ ​s​m​a​l​l​e​r​ ​a​m​o​u​n​t​.
+		 * @param {number} free
+		 * @param {number} needed
+		 */
+		topUpNoRoom: RequiredParams<'free' | 'needed'>
+		/**
+		 * A​ ​s​i​n​g​l​e​ ​t​o​p​-​u​p​ ​c​a​n​ ​b​e​ ​a​t​ ​m​o​s​t​ ​{​m​a​x​}​.
+		 * @param {unknown} max
+		 */
+		topUpTooMuch: RequiredParams<'max'>
+		/**
+		 * T​h​a​t​'​s​ ​m​o​r​e​ ​t​h​a​n​ ​y​o​u​r​ ​C​a​s​h​ ​w​a​l​l​e​t​ ​h​o​l​d​s​.
+		 */
+		topUpMoreThanBalance: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​n​o​ ​P​I​N​:​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​i​t​ ​c​a​n​ ​s​p​e​n​d​ ​w​h​a​t​ ​y​o​u​ ​l​o​a​d​ ​o​n​t​o​ ​i​t​.
+		 */
+		topUpNoPinWarning: string
+		/**
+		 * E​n​t​e​r​ ​t​h​e​ ​c​a​r​d​'​s​ ​P​I​N
+		 */
+		topUpPinTitle: string
+		/**
+		 * T​h​e​ ​c​a​r​d​ ​a​s​k​s​ ​f​o​r​ ​i​t​s​ ​P​I​N​ ​b​e​f​o​r​e​ ​i​t​ ​t​a​k​e​s​ ​n​e​w​ ​f​u​n​d​s​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​n​o​w​ ​t​o​ ​c​h​e​c​k​ ​t​h​e​ ​P​I​N​,​ ​b​e​f​o​r​e​ ​a​n​y​t​h​i​n​g​ ​i​s​ ​p​a​i​d​.
+		 */
+		topUpPinBody: string
+		/**
+		 * C​h​e​c​k​ ​P​I​N
+		 */
+		topUpCheckPin: string
+		/**
+		 * C​o​n​f​i​r​m​ ​t​o​p​-​u​p
+		 */
+		topUpConfirmTitle: string
+		/**
+		 * L​o​a​d​ ​o​n​t​o​ ​t​h​e​ ​c​a​r​d
+		 */
+		topUpConfirmLoad: string
+		/**
+		 * C​a​r​d
+		 */
+		topUpConfirmCard: string
+		/**
+		 * F​e​e
+		 */
+		topUpConfirmFee: string
+		/**
+		 * N​o​n​e
+		 */
+		topUpConfirmNoFee: string
+		/**
+		 * P​a​y
+		 */
+		topUpPay: string
+		/**
+		 * C​a​n​c​e​l
+		 */
+		topUpCancel: string
+		/**
+		 * P​a​y​i​n​g​…
+		 */
+		topUpPaying: string
+		/**
+		 * G​e​t​t​i​n​g​ ​t​h​e​ ​f​u​n​d​s​ ​r​e​a​d​y​…
+		 */
+		topUpMinting: string
+		/**
+		 * T​h​e​ ​p​a​y​m​e​n​t​ ​h​a​s​n​'​t​ ​r​e​a​c​h​e​d​ ​t​h​e​ ​m​i​n​t​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​l​e​a​v​e​ ​t​h​i​s​ ​s​c​r​e​e​n​:​ ​t​h​e​ ​t​o​p​-​u​p​ ​w​a​i​t​s​ ​o​n​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​ ​u​n​t​i​l​ ​i​t​ ​a​r​r​i​v​e​s​.
+		 */
+		topUpWaiting: string
+		/**
+		 * T​h​e​ ​p​a​y​m​e​n​t​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​l​e​f​t​ ​y​o​u​r​ ​w​a​l​l​e​t​.
+		 */
+		topUpPaymentFailed: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​c​o​n​f​i​r​m​ ​t​h​e​ ​p​a​y​m​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​ ​b​e​f​o​r​e​ ​y​o​u​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		topUpPaymentUnknown: string
+		/**
+		 * T​r​y​ ​a​g​a​i​n
+		 */
+		topUpRetry: string
+		/**
+		 * H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​t​h​e​ ​b​a​c​k​ ​o​f​ ​y​o​u​r​ ​p​h​o​n​e​ ​t​o​ ​l​o​a​d​ ​{​a​m​o​u​n​t​}​.
+		 * @param {unknown} amount
+		 */
+		topUpTapToLoad: RequiredParams<'amount'>
+		/**
+		 * L​o​a​d​ ​c​a​r​d
+		 */
+		topUpLoad: string
+		/**
+		 * {​a​m​o​u​n​t​}​ ​l​o​a​d​e​d​ ​o​n​t​o​ ​t​h​e​ ​c​a​r​d​.
+		 * @param {unknown} amount
+		 */
+		topUpLoaded: RequiredParams<'amount'>
+		/**
+		 * T​h​e​ ​c​a​r​d​ ​h​a​s​ ​n​o​ ​f​r​e​e​ ​s​l​o​t​s​ ​f​o​r​ ​t​h​e​s​e​ ​f​u​n​d​s​.​ ​S​p​e​n​d​ ​s​o​m​e​ ​o​f​ ​i​t​s​ ​b​a​l​a​n​c​e​,​ ​t​h​e​n​ ​f​i​n​i​s​h​ ​l​o​a​d​i​n​g​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
+		 */
+		topUpNoRoomOnCard: string
+		/**
+		 * T​h​e​ ​m​i​n​t​'​s​ ​a​n​s​w​e​r​ ​d​i​d​n​'​t​ ​c​h​e​c​k​ ​o​u​t​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​w​a​s​ ​l​o​a​d​e​d​ ​o​n​t​o​ ​t​h​e​ ​c​a​r​d​.​ ​Y​o​u​r​ ​p​a​y​m​e​n​t​ ​i​s​ ​r​e​c​o​r​d​e​d​:​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​.
+		 */
+		topUpMintRefused: string
+		/**
+		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​Y​o​u​r​ ​t​o​p​-​u​p​ ​i​s​ ​s​a​v​e​d​:​ ​t​r​y​ ​a​g​a​i​n​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
+		 */
+		topUpFailed: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​f​u​n​d​s​ ​i​n​ ​m​o​r​e​ ​t​h​a​n​ ​o​n​e​ ​u​n​i​t​,​ ​o​r​ ​f​u​n​d​s​ ​t​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​i​d​e​n​t​i​f​y​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​t​a​k​e​ ​a​ ​t​o​p​-​u​p​.
+		 */
+		topUpCantMixed: string
+		/**
+		 * T​h​i​s​ ​a​p​p​ ​h​a​s​n​'​t​ ​r​e​a​d​ ​w​h​i​c​h​ ​u​n​i​t​ ​t​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​y​e​t​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​,​ ​t​h​e​n​ ​t​o​p​ ​u​p​.
+		 */
+		topUpCantUnknownUnit: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​i​s​ ​b​l​o​c​k​e​d​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​t​a​k​e​ ​n​e​w​ ​f​u​n​d​s​.
+		 */
+		topUpCantBlocked: string
+		/**
+		 * T​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​r​e​a​d​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​s​t​a​t​e​,​ ​s​o​ ​i​t​ ​w​o​n​'​t​ ​l​o​a​d​ ​f​u​n​d​s​ ​o​n​t​o​ ​i​t​.
+		 */
+		topUpCantPinUnknown: string
+		/**
+		 * {​a​m​o​u​n​t​}​ ​i​s​ ​p​a​i​d​ ​f​o​r​ ​a​n​d​ ​n​o​t​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​y​e​t​.
+		 * @param {unknown} amount
+		 */
+		topUpUnfinishedPaid: RequiredParams<'amount'>
+		/**
+		 * A​ ​t​o​p​-​u​p​ ​o​f​ ​{​a​m​o​u​n​t​}​ ​i​s​ ​w​a​i​t​i​n​g​ ​f​o​r​ ​i​t​s​ ​p​a​y​m​e​n​t​ ​t​o​ ​r​e​a​c​h​ ​t​h​e​ ​m​i​n​t​.
+		 * @param {unknown} amount
+		 */
+		topUpUnfinishedUnpaid: RequiredParams<'amount'>
+		/**
+		 * F​i​n​i​s​h
+		 */
+		topUpFinish: string
+		/**
+		 * F​l​a​s​h​c​a​r​d​ ​t​o​p​-​u​p
+		 */
+		topUpMemo: string
+		/**
+		 * D​o​n​e
+		 */
+		topUpDone: string
 	}
 	Cashout: {
 		/**
@@ -7562,6 +7750,183 @@ export type TranslationFunctions = {
 		 * Continue
 		 */
 		next: () => LocalizedString
+		/**
+		 * Top
+	up
+		 */
+		topUp: () => LocalizedString
+		/**
+		 * Top up card
+		 */
+		topUpTitle: () => LocalizedString
+		/**
+		 * Card holds
+		 */
+		topUpUnit: () => LocalizedString
+		/**
+		 * Sats
+		 */
+		topUpUnitSat: () => LocalizedString
+		/**
+		 * USD
+		 */
+		topUpUnitUsd: () => LocalizedString
+		/**
+		 * This card holds {unit}, so a top-up adds {unit}.
+		 */
+		topUpUnitFixed: (arg: { unit: unknown }) => LocalizedString
+		/**
+		 * Paid from your Cash wallet
+		 */
+		topUpPaidFrom: () => LocalizedString
+		/**
+		 * Available: {balance}
+		 */
+		topUpCashBalance: (arg: { balance: unknown }) => LocalizedString
+		/**
+		 * Uses {needed} of the card's {free} free slots
+		 */
+		topUpSlots: (arg: { free: number, needed: number }) => LocalizedString
+		/**
+		 * This amount needs {needed} slots on the card and it has {free}. Try a smaller amount.
+		 */
+		topUpNoRoom: (arg: { free: number, needed: number }) => LocalizedString
+		/**
+		 * A single top-up can be at most {max}.
+		 */
+		topUpTooMuch: (arg: { max: unknown }) => LocalizedString
+		/**
+		 * That's more than your Cash wallet holds.
+		 */
+		topUpMoreThanBalance: () => LocalizedString
+		/**
+		 * This card has no PIN: anyone holding it can spend what you load onto it.
+		 */
+		topUpNoPinWarning: () => LocalizedString
+		/**
+		 * Enter the card's PIN
+		 */
+		topUpPinTitle: () => LocalizedString
+		/**
+		 * The card asks for its PIN before it takes new funds. Tap the card now to check the PIN, before anything is paid.
+		 */
+		topUpPinBody: () => LocalizedString
+		/**
+		 * Check PIN
+		 */
+		topUpCheckPin: () => LocalizedString
+		/**
+		 * Confirm top-up
+		 */
+		topUpConfirmTitle: () => LocalizedString
+		/**
+		 * Load onto the card
+		 */
+		topUpConfirmLoad: () => LocalizedString
+		/**
+		 * Card
+		 */
+		topUpConfirmCard: () => LocalizedString
+		/**
+		 * Fee
+		 */
+		topUpConfirmFee: () => LocalizedString
+		/**
+		 * None
+		 */
+		topUpConfirmNoFee: () => LocalizedString
+		/**
+		 * Pay
+		 */
+		topUpPay: () => LocalizedString
+		/**
+		 * Cancel
+		 */
+		topUpCancel: () => LocalizedString
+		/**
+		 * Paying…
+		 */
+		topUpPaying: () => LocalizedString
+		/**
+		 * Getting the funds ready…
+		 */
+		topUpMinting: () => LocalizedString
+		/**
+		 * The payment hasn't reached the mint yet. You can leave this screen: the top-up waits on the card's screen until it arrives.
+		 */
+		topUpWaiting: () => LocalizedString
+		/**
+		 * The payment didn't go through, so nothing left your wallet.
+		 */
+		topUpPaymentFailed: () => LocalizedString
+		/**
+		 * We couldn't confirm the payment. Check your transaction history before you try again.
+		 */
+		topUpPaymentUnknown: () => LocalizedString
+		/**
+		 * Try again
+		 */
+		topUpRetry: () => LocalizedString
+		/**
+		 * Hold the card to the back of your phone to load {amount}.
+		 */
+		topUpTapToLoad: (arg: { amount: unknown }) => LocalizedString
+		/**
+		 * Load card
+		 */
+		topUpLoad: () => LocalizedString
+		/**
+		 * {amount} loaded onto the card.
+		 */
+		topUpLoaded: (arg: { amount: unknown }) => LocalizedString
+		/**
+		 * The card has no free slots for these funds. Spend some of its balance, then finish loading from the card's screen.
+		 */
+		topUpNoRoomOnCard: () => LocalizedString
+		/**
+		 * The mint's answer didn't check out, so nothing was loaded onto the card. Your payment is recorded: contact support.
+		 */
+		topUpMintRefused: () => LocalizedString
+		/**
+		 * Something went wrong. Your top-up is saved: try again from the card's screen.
+		 */
+		topUpFailed: () => LocalizedString
+		/**
+		 * This card holds funds in more than one unit, or funds this app can't identify, so it can't take a top-up.
+		 */
+		topUpCantMixed: () => LocalizedString
+		/**
+		 * This app hasn't read which unit this card holds yet. Tap the card again, then top up.
+		 */
+		topUpCantUnknownUnit: () => LocalizedString
+		/**
+		 * This card's PIN is blocked, so it can't take new funds.
+		 */
+		topUpCantBlocked: () => LocalizedString
+		/**
+		 * This app can't read this card's PIN state, so it won't load funds onto it.
+		 */
+		topUpCantPinUnknown: () => LocalizedString
+		/**
+		 * {amount} is paid for and not on the card yet.
+		 */
+		topUpUnfinishedPaid: (arg: { amount: unknown }) => LocalizedString
+		/**
+		 * A top-up of {amount} is waiting for its payment to reach the mint.
+		 */
+		topUpUnfinishedUnpaid: (arg: { amount: unknown }) => LocalizedString
+		/**
+		 * Finish
+		 */
+		topUpFinish: () => LocalizedString
+		/**
+		 * Flashcard top-up
+		 */
+		topUpMemo: () => LocalizedString
+		/**
+		 * Done
+		 */
+		topUpDone: () => LocalizedString
 	}
 	Cashout: {
 		/**

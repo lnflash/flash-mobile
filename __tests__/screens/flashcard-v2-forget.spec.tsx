@@ -51,6 +51,9 @@ jest.mock("@app/i18n/i18n-react", () => ({
 jest.mock("@react-navigation/native", () => ({
   ...jest.requireActual("@react-navigation/native"),
   useNavigation: () => mockNavigation,
+  // No navigator here: a focus effect runs once, as on a focused screen.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  useFocusEffect: (effect: () => void) => require("react").useEffect(effect, [effect]),
 }))
 jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires

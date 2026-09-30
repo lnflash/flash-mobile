@@ -15,6 +15,7 @@ import {
   CardScreen,
   FlashcardTopup,
   FlashcardV2PinScreen,
+  FlashcardV2TopUpScreen,
   FlashcardV2Screen,
 } from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
@@ -634,6 +635,14 @@ export const RootStack = () => {
               : LL.FlashcardV2.changePinTitle(),
           headerStyle: { backgroundColor: colors.background },
         })}
+      />
+      <RootNavigator.Screen
+        name="FlashcardV2TopUp"
+        component={FlashcardV2TopUpScreen}
+        options={{
+          title: LL.FlashcardV2.topUpTitle(),
+          headerStyle: { backgroundColor: colors.background },
+        }}
       />
       <RootNavigator.Screen
         name="CashoutDetails"
