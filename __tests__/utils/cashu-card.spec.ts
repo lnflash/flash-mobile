@@ -706,6 +706,10 @@ describe("toHex", () => {
   it("zero-pads single-digit bytes", () => {
     expect(toHex([0, 1, 0xab])).toBe("0001ab")
   })
+
+  it("hex-encodes a Uint8Array too (a Uint8Array's own map would coerce the strings back to bytes)", () => {
+    expect(toHex(new Uint8Array([0x00, 0xff, 0x10, 0x0a]))).toBe("00ff100a")
+  })
 })
 
 describe("readCashuCard", () => {

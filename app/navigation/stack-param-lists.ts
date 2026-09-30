@@ -142,6 +142,8 @@ export type RootStackParamList = {
    * a tap; the PIN itself never leaves the screen's local state.
    */
   FlashcardV2Pin: { mode: "set" | "change" }
+  /** A saved top-up to resume, or none to start one. */
+  FlashcardV2TopUp: { topUpId?: string } | undefined
   Map: undefined
   accountScreen: undefined
   notificationSettingsScreen: undefined

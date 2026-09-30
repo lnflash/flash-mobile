@@ -3605,6 +3605,13 @@ export type AccountStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AccountStatusQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly defaultAccount: { readonly __typename: 'ConsumerAccount', readonly statusHeadline: AccountStatusHeadline, readonly id: string, readonly capabilities: { readonly __typename: 'AccountCapabilities', readonly verified: boolean, readonly bankPayout: boolean, readonly business: boolean, readonly usdAccount: boolean } } } | null };
 
+export type CardTopUpInvoicePaymentSendMutationVariables = Exact<{
+  input: LnInvoicePaymentInput;
+}>;
+
+
+export type CardTopUpInvoicePaymentSendMutation = { readonly __typename: 'Mutation', readonly lnInvoicePaymentSend: { readonly __typename: 'PaymentSendPayload', readonly status?: PaymentSendResult | null, readonly errors: ReadonlyArray<{ readonly __typename: 'GraphQLApplicationError', readonly code?: string | null, readonly message: string }> } };
+
 export type FygaroTopupAllowanceQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -7328,6 +7335,43 @@ export function useAccountStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOpti
 export type AccountStatusQueryHookResult = ReturnType<typeof useAccountStatusQuery>;
 export type AccountStatusLazyQueryHookResult = ReturnType<typeof useAccountStatusLazyQuery>;
 export type AccountStatusQueryResult = Apollo.QueryResult<AccountStatusQuery, AccountStatusQueryVariables>;
+export const CardTopUpInvoicePaymentSendDocument = gql`
+    mutation cardTopUpInvoicePaymentSend($input: LnInvoicePaymentInput!) {
+  lnInvoicePaymentSend(input: $input) {
+    errors {
+      code
+      message
+    }
+    status
+  }
+}
+    `;
+export type CardTopUpInvoicePaymentSendMutationFn = Apollo.MutationFunction<CardTopUpInvoicePaymentSendMutation, CardTopUpInvoicePaymentSendMutationVariables>;
+
+/**
+ * __useCardTopUpInvoicePaymentSendMutation__
+ *
+ * To run a mutation, you first call `useCardTopUpInvoicePaymentSendMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCardTopUpInvoicePaymentSendMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [cardTopUpInvoicePaymentSendMutation, { data, loading, error }] = useCardTopUpInvoicePaymentSendMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCardTopUpInvoicePaymentSendMutation(baseOptions?: Apollo.MutationHookOptions<CardTopUpInvoicePaymentSendMutation, CardTopUpInvoicePaymentSendMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CardTopUpInvoicePaymentSendMutation, CardTopUpInvoicePaymentSendMutationVariables>(CardTopUpInvoicePaymentSendDocument, options);
+      }
+export type CardTopUpInvoicePaymentSendMutationHookResult = ReturnType<typeof useCardTopUpInvoicePaymentSendMutation>;
+export type CardTopUpInvoicePaymentSendMutationResult = Apollo.MutationResult<CardTopUpInvoicePaymentSendMutation>;
+export type CardTopUpInvoicePaymentSendMutationOptions = Apollo.BaseMutationOptions<CardTopUpInvoicePaymentSendMutation, CardTopUpInvoicePaymentSendMutationVariables>;
 export const FygaroTopupAllowanceDocument = gql`
     query fygaroTopupAllowance {
   fygaroTopupAllowance {

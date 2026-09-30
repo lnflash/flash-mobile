@@ -98,25 +98,45 @@ const INS_LOAD = 0x30
  * read carries per-unit figures. LOAD_PROOF stands in for any op that moves
  * value: it takes the balance from 500 to 1500.
  */
-const makeSplitCard = () => {
+const makeSplitCard = ({ splitFailsAfterLoad = false } = {}) => {
   let balance = 500
+  let loaded = false
+  const statuses = [...SLOT_STATUSES]
+  const proofs: Record<number, number[]> = { 0: PROOF_SLOT }
   return async (bytes: number[]) => {
     switch (bytes[1]) {
       case INS_SELECT:
         return ok([0, 2])
       case 0x01:
-        return ok([0, 2, 32, 1, 7, 24, 0x07, 1])
+        return ok([0, 2, 32, loaded ? 2 : 1, 7, loaded ? 23 : 24, 0x07, 1])
       case 0x10:
         return ok(PUBKEY)
       case 0x11:
         return ok([0, 0, Math.floor(balance / 256) % 256, balance % 256])
       case 0x14:
-        return ok(SLOT_STATUSES)
+        if (loaded && splitFailsAfterLoad) throw new Error("Tag was lost")
+        return ok(statuses)
       case 0x13:
-        return ok(PROOF_SLOT)
-      case INS_LOAD:
+        return ok(proofs[bytes[2]] ?? PROOF_SLOT)
+      case INS_LOAD: {
+        // A 1000 proof under the same keyset lands in the first empty slot.
+        const slot = statuses.indexOf(0)
+        statuses[slot] = 1
+        proofs[slot] = [
+          0x01,
+          ...KEYSET,
+          0,
+          0,
+          0x03,
+          0xe8,
+          ...new Array(32).fill(0xef),
+          0x03,
+          ...new Array(32).fill(0x12),
+        ]
         balance = 1500
-        return ok([0x01])
+        loaded = true
+        return ok([slot])
+      }
       case 0x41:
         return ok([])
       default:
@@ -495,20 +515,20 @@ describe("FlashcardProvider runCardOperation", () => {
     })
   })
 
-  it("an op that moves value drops the per-unit figures, and a late mint answer does not restore them", async () => {
-    // The mint answers only when the spec says so: after the op has run.
-    let answerMint: (units: Record<string, string>) => void = () => {}
+  it("an op that moves value re-reads the keyset split in the same session and names its units; the old split's late answer never lands", async () => {
+    // The mint answers each lookup only when the spec says so.
+    const answers: ((units: Record<string, string>) => void)[] = []
     lookupUnits.mockImplementation(
       () =>
         new Promise((resolve) => {
-          answerMint = resolve
+          answers.push(resolve)
         }),
     )
     transceive.mockImplementation(makeSplitCard())
     await mount()
     await readCard()
     expect(latest?.cashuCard?.keysets).toEqual([{ keysetId: KEYSET_HEX, amount: 500 }])
-    await waitFor(() => expect(lookupUnits).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(answers).toHaveLength(1))
 
     await act(async () => {
       await latest?.runCardOperation(async (t) => {
@@ -516,30 +536,40 @@ describe("FlashcardProvider runCardOperation", () => {
       }, toHex(PUBKEY))
     })
 
-    // The new total stands; the split read at 500 no longer describes it.
+    // The new total, and the split read with it while the card was there.
     expect(latest?.cashuCard?.balance).toBe(1500)
-    expect(latest?.cashuCard?.keysets).toBeUndefined()
+    expect(latest?.cashuCard?.keysets).toEqual([{ keysetId: KEYSET_HEX, amount: 1500 }])
     expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+    await waitFor(() => expect(answers).toHaveLength(2))
 
+    // The answer about the split read at 500 arrives late: it does not land.
     await act(async () => {
-      answerMint({ [KEYSET_HEX]: "sat" })
+      answers[0]({ [KEYSET_HEX]: "sat" })
     })
     expect(latest?.cashuCard?.unitTotals).toBeUndefined()
-    expect(latest?.cashuCard?.balance).toBe(1500)
-    // Nor does the record: a unit for a total whose split nobody read would
-    // say every unspent proof is in it.
+    expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBeUndefined()
+
+    // The answer about the new split names the unit of the whole new total.
+    await act(async () => {
+      answers[1]({ [KEYSET_HEX]: "sat" })
+    })
+    expect(latest?.cashuCard?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 1500 }],
+      unknown: 0,
+    })
     const record = store.getState().flashcardV2.cards[toHex(PUBKEY)]
     expect(record.lastBalance).toBe(1500)
-    expect(record.unit).toBeUndefined()
+    expect(record.unit).toBe("sat")
   })
 
-  it("an op that moves value clears the unit the mint named on the card's record", async () => {
-    transceive.mockImplementation(makeSplitCard())
+  it("an op that moves value, when the split cannot be re-read, leaves the total 'unit unknown' and clears the record's unit", async () => {
+    transceive.mockImplementation(makeSplitCard({ splitFailsAfterLoad: true }))
     await mount()
     await readCard()
     await waitFor(() =>
       expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBe("sat"),
     )
+    lookupUnits.mockClear()
 
     await act(async () => {
       await latest?.runCardOperation(async (t) => {
@@ -547,6 +577,12 @@ describe("FlashcardProvider runCardOperation", () => {
       }, toHex(PUBKEY))
     })
 
+    expect(latest?.cashuCard?.balance).toBe(1500)
+    expect(latest?.cashuCard?.keysets).toBeUndefined()
+    expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+    // Nothing to ask the mint about: a unit for a total whose split nobody
+    // read would say every unspent proof is in it.
+    expect(lookupUnits).not.toHaveBeenCalled()
     const record = store.getState().flashcardV2.cards[toHex(PUBKEY)]
     expect(record.lastBalance).toBe(1500)
     expect(record.unit).toBeUndefined()

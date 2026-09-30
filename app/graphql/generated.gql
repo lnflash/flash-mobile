@@ -574,6 +574,18 @@ mutation captchaRequestAuthCode($input: CaptchaRequestAuthCodeInput!) {
   }
 }
 
+mutation cardTopUpInvoicePaymentSend($input: LnInvoicePaymentInput!) {
+  lnInvoicePaymentSend(input: $input) {
+    errors {
+      code
+      message
+      __typename
+    }
+    status
+    __typename
+  }
+}
+
 mutation createInvite($input: CreateInviteInput!) {
   createInvite(input: $input) {
     invite {

@@ -47,6 +47,7 @@ import { AppUpdateBoundary } from "./components/app-update/app-update-boundary"
 import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
+import { useTopUpMinter } from "./hooks/use-card-top-up"
 import { PersistGate } from "redux-persist/integration/react"
 import { useEffect } from "react"
 import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
@@ -59,6 +60,15 @@ import { AppState } from "react-native"
 //
 // alternatively, could try loadAllLocalesAsync()
 loadAllLocales()
+
+/**
+ * Mints a paid Cashu card top-up without the card, while the mint still
+ * issues it (ENG-616): see `useTopUpMinter`.
+ */
+const CardTopUpMinter = () => {
+  useTopUpMinter()
+  return null
+}
 
 /**
  * This is the root component of our app.
@@ -117,6 +127,7 @@ export const App = () => {
                                         gate. */}
                                     <NostrKeyEnsurer />
                                     <PushNotificationComponent />
+                                    <CardTopUpMinter />
                                     <BreezProvider>
                                       <FlashcardProvider>
                                         <InviteDeepLinkHandler>

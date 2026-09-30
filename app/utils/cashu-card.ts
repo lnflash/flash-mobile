@@ -567,8 +567,12 @@ export async function getSlotStatuses(
   })
 }
 
-export const toHex = (bytes: number[]): string =>
-  bytes.map((b) => b.toString(16).padStart(2, "0")).join("")
+/**
+ * Lower-case hex. Takes a Uint8Array too; `Array.from` because a Uint8Array's
+ * own `map` would coerce each hex string back into a byte.
+ */
+export const toHex = (bytes: ArrayLike<number>): string =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
 
 /** One proof slot as the card returns it, hex-encoded. */
 export interface CardProofSlot {
@@ -718,7 +722,7 @@ const failureLabel = (error: unknown): string => {
  * resolves undefined and the caller shows the total as "unit unknown". Only an
  * error name and a status word are logged.
  */
-const readKeysetSplit = async (
+export const readKeysetSplit = async (
   transceive: Transceiver,
   info: CardInfo,
 ): Promise<CardKeysetTotal[] | undefined> => {

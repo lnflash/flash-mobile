@@ -28,6 +28,37 @@ const coreJsFiles = () => {
 // Node.js core module polyfills for React Native 0.74+
 const nodeLibs = require("node-libs-react-native")
 
+// @cashu/cashu-ts v4 is ESM-only and declares no `main`, and so are the
+// @noble/@scure v2 packages nested under it: Metro can reach them only through
+// package `exports`. Switching exports resolution on for the whole app
+// re-resolves hundreds of modules that already ship (breez-sdk-spark moves
+// from lib/commonjs to lib/module, redux is bundled twice: flash-mobile#745),
+// so it is on only for a request FOR a @cashu package or FROM a file inside
+// one — which covers every nested dependency, and nothing the app already
+// bundles.
+const CASHU_PACKAGE = /[\\/]node_modules[\\/]@cashu[\\/]/
+const isCashuRequest = (context, moduleName) =>
+  moduleName.startsWith("@cashu/") || CASHU_PACKAGE.test(context.originModulePath)
+
+const resolveRequest = (context, moduleName, platform) =>
+  context.resolveRequest(
+    isCashuRequest(context, moduleName)
+      ? {
+          ...context,
+          // Metro's own option names, hence the camelcase exemptions.
+          // eslint-disable-next-line camelcase
+          unstable_enablePackageExports: true,
+          // cashu-ts's exports carry only import/default, so it lands on its
+          // ESM build either way; `require` first keeps anything it pulls
+          // that also ships CJS on the CJS build, as the rest of the app is.
+          // eslint-disable-next-line camelcase
+          unstable_conditionNames: ["require", "react-native"],
+        }
+      : context,
+    moduleName,
+    platform,
+  )
+
 module.exports = mergeConfig(defaultConfig, {
   transformer: {
     ...defaultConfig.transformer,
@@ -41,6 +72,7 @@ module.exports = mergeConfig(defaultConfig, {
   },
   resolver: {
     ...defaultConfig.resolver,
+    resolveRequest,
     assetExts: defaultConfig.resolver.assetExts.filter((ext) => ext !== "svg"),
     sourceExts: [...defaultConfig.resolver.sourceExts, "svg", "cjs", "json"],
     extraNodeModules: {

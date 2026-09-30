@@ -1,5 +1,5 @@
-import React, { useEffect } from "react"
-import { Image, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useState } from "react"
+import { AccessibilityInfo, Image, Platform, TouchableOpacity, View } from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
@@ -10,10 +10,11 @@ import HideableArea from "@app/components/hideable-area/hideable-area"
 import type { CashuCardState } from "@app/contexts/Flashcard"
 import { useHideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useFlashcard, useTapFlashcard } from "@app/hooks"
+import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { blockedPinGatesSpend, CashuCardInfo } from "@app/utils/cashu-card"
+import { TopUpRecord, quoteIsDead } from "@app/utils/cashu-card-topup"
 
 import FlashcardImage from "@app/assets/images/flashcard.png"
 import Sync from "@app/assets/icons/sync.svg"
@@ -38,6 +39,21 @@ export const FlashcardV2Screen = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { cashuCard, forgetCashuCard } = useFlashcard()
+  // Paid top-ups not on the card yet, and ones whose payment may still land.
+  // A quote with no payment out (never sent, or refused) is not shown.
+  const { records: savedTopUps, dismiss: dismissTopUp } = useUnfinishedTopUps(
+    cashuCard?.pubkey,
+  )
+  const unfinishedTopUps = savedTopUps.filter(
+    (record) => record.state !== "quoted" || record.payment.dispatched,
+  )
+  // Why a Dismiss was refused: its payment reached the mint, or still may.
+  const [topUpNotice, setTopUpNotice] = useState<string>()
+  useEffect(() => {
+    if (topUpNotice && Platform.OS === "ios") {
+      AccessibilityInfo.announceForAccessibility(topUpNotice)
+    }
+  }, [topUpNotice])
   const tapFlashcard = useTapFlashcard()
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
 
@@ -94,6 +110,67 @@ export const FlashcardV2Screen = () => {
 
       <PinStateNotice pinState={cashuCard.pinState} version={cashuCard.version} />
 
+      {unfinishedTopUps.map((record) => {
+        // A sent payment whose invoice expired long enough ago that nothing
+        // can pay it now (by the quote's age, not the phone's clock against
+        // the mint's): Dismiss asks the mint once more, and drops the top-up
+        // only if it still holds the invoice unpaid. Only a quote: a paid
+        // top-up is never offered for dropping, even one the mint no longer
+        // issues (Finish says so).
+        const expired = record.state === "quoted" && quoteIsDead(record, Date.now())
+        return (
+          <View
+            key={record.id}
+            style={styles.unfinished}
+            testID="flashcard-v2-unfinished-topup"
+          >
+            <Text type="p2" style={styles.unfinishedText}>
+              {unfinishedText(record, expired, LL)}
+            </Text>
+            {expired ? (
+              <TouchableOpacity
+                accessibilityRole="button"
+                testID="flashcard-v2-dismiss-topup"
+                onPress={() => {
+                  setTopUpNotice(undefined)
+                  // Refused, the list is read again (useUnfinishedTopUps).
+                  dismissTopUp(record.id).catch(() =>
+                    setTopUpNotice(LL.FlashcardV2.topUpDismissRefused()),
+                  )
+                }}
+              >
+                <Text type="p2" bold>
+                  {LL.FlashcardV2.topUpDismiss()}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                accessibilityRole="button"
+                testID="flashcard-v2-finish-topup"
+                onPress={() =>
+                  navigation.navigate("FlashcardV2TopUp", { topUpId: record.id })
+                }
+              >
+                <Text type="p2" bold>
+                  {LL.FlashcardV2.topUpFinish()}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )
+      })}
+      <View accessibilityLiveRegion="polite">
+        {topUpNotice && (
+          <Text
+            type="p2"
+            style={styles.unfinishedNotice}
+            testID="flashcard-v2-topup-notice"
+          >
+            {topUpNotice}
+          </Text>
+        )}
+      </View>
+
       <View style={styles.details}>
         <DetailRow label={LL.FlashcardV2.slots()} value={slotSummary(cashuCard, LL)} />
         <DetailRow
@@ -112,6 +189,14 @@ export const FlashcardV2Screen = () => {
           {/* Only a PIN state the app can read gets a PIN action: a blocked
               PIN has no way back (ENG-617), and an unknown one is a card this
               app does not understand (see the notice above). */}
+          {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
+            <IconBtn
+              type="clear"
+              icon="down"
+              label={LL.FlashcardV2.topUp()}
+              onPress={() => navigation.navigate("FlashcardV2TopUp")}
+            />
+          )}
           {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
             <IconBtn
               type="clear"
@@ -253,6 +338,13 @@ const DetailRow: React.FC<{ label: string; value: string; testID?: string }> = (
 
 type LLType = ReturnType<typeof useI18nContext>["LL"]
 
+const unfinishedText = (record: TopUpRecord, expired: boolean, LL: LLType): string => {
+  const amount = formatUnitAmount(record.amount, record.unit, LL)
+  if (record.state !== "quoted") return LL.FlashcardV2.topUpUnfinishedPaid({ amount })
+  if (expired) return LL.FlashcardV2.topUpUnfinishedExpired({ amount })
+  return LL.FlashcardV2.topUpUnfinishedUnpaid({ amount })
+}
+
 const slotSummary = (card: CashuCardInfo, LL: LLType) =>
   LL.FlashcardV2.slotSummary({
     unspent: card.unspent,
@@ -379,6 +471,24 @@ const useStyles = makeStyles(({ colors }) => ({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 12,
+  },
+  unfinished: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.grey5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  unfinishedText: {
+    flex: 1,
+  },
+  unfinishedNotice: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    textAlign: "center",
   },
   btns: {
     flexDirection: "row",
