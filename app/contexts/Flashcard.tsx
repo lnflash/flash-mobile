@@ -26,6 +26,7 @@ import {
   AppletNotSelectedError,
   CardError,
   CardInfo,
+  CardKeysetTotal,
   CashuCardInfo,
   Transceiver,
   WrongCardError,
@@ -33,6 +34,7 @@ import {
   getInfo,
   getPubkey,
   readCashuCard,
+  readKeysetSplit,
   selectApplet,
   toHex,
 } from "../utils/cashu-card"
@@ -397,16 +399,25 @@ export const FlashcardProvider = ({ children }: Props) => {
   const recordCardOperation = (
     pubkey: string,
     update: Partial<CardInfo> & { balance?: number },
+    keysets?: CardKeysetTotal[],
   ) => {
     const previous = cashuCardRef.current
     if (previous?.pubkey !== pubkey) return
     const moved = update.balance !== undefined && update.balance !== previous.balance
-    const card = { ...previous, ...update }
-    setCashuCard({
-      ...card,
-      keysets: moved ? undefined : previous.keysets,
+    const card: CashuCardState = {
+      ...previous,
+      ...update,
+      // A split read in the same session as the move replaces the old one.
+      keysets: moved ? keysets : previous.keysets,
       unitTotals: moved ? undefined : previous.unitTotals,
-    })
+    }
+    setCashuCard(card)
+    if (moved && keysets) {
+      // Name the units of the new split, off the NFC session; a newer read
+      // or a forget still wins (`resolveCashuUnits`).
+      cashuGeneration.current += 1
+      resolveCashuUnits(card, cashuGeneration.current)
+    }
     // Signed out, a card stays in memory only, as on a tap.
     if (isAuthed) {
       dispatch(
@@ -435,7 +446,13 @@ export const FlashcardProvider = ({ children }: Props) => {
     try {
       const info = await getInfo(transceive)
       const balance = await getCardBalance(transceive)
-      recordCardOperation(pubkey, { ...info, balance })
+      // An operation that moved value (a top-up) changed the card's keyset
+      // split too: read it while the card is still in the field, best
+      // effort, as a tap does, so the screen can name the units again.
+      const previous = cashuCardRef.current
+      const moved = previous?.pubkey === pubkey && balance !== previous.balance
+      const keysets = moved ? await readKeysetSplit(transceive, info) : undefined
+      recordCardOperation(pubkey, { ...info, balance }, keysets)
       return info
     } catch (err) {
       console.warn("Cashu card re-read after an operation failed:", describeError(err))

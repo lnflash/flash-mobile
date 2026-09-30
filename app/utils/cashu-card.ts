@@ -43,6 +43,7 @@ export const INS = {
   GET_SLOT_STATUS: 0x14,
   SPEND_PROOF: 0x20,
   LOAD_PROOF: 0x30,
+  CLEAR_SPENT: 0x31,
   VERIFY_PIN: 0x40,
   SET_PIN: 0x41,
   CHANGE_PIN: 0x42,
@@ -534,6 +535,26 @@ export async function loadProof(
   return body[0]
 }
 
+/**
+ * CLEAR_SPENT: empty every spent slot so LOAD_PROOF can reuse it, and return
+ * how many were freed. Gated like LOAD_PROOF (VERIFY_PIN first when a PIN is
+ * set; 6982 otherwise); 6986 on a card locked by LOCK_CARD. A spent slot holds
+ * nothing of value (the card burned it before it signed), so clearing one
+ * loses nothing.
+ */
+export async function clearSpent(transceive: Transceiver): Promise<number> {
+  const body = await send(transceive, INS.CLEAR_SPENT, {
+    le: 0x01,
+    context: "CLEAR_SPENT",
+  })
+  if (body.length !== 1) {
+    throw new CardProtocolError(
+      `CLEAR_SPENT: expected a 1-byte count, got ${body.length}`,
+    )
+  }
+  return body[0]
+}
+
 export type SlotStatus = "empty" | "unspent" | "spent"
 
 /**
@@ -567,8 +588,12 @@ export async function getSlotStatuses(
   })
 }
 
-export const toHex = (bytes: number[]): string =>
-  bytes.map((b) => b.toString(16).padStart(2, "0")).join("")
+/**
+ * Lower-case hex. Takes a Uint8Array too; `Array.from` because a Uint8Array's
+ * own `map` would coerce each hex string back into a byte.
+ */
+export const toHex = (bytes: ArrayLike<number>): string =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
 
 /** One proof slot as the card returns it, hex-encoded. */
 export interface CardProofSlot {
@@ -718,7 +743,7 @@ const failureLabel = (error: unknown): string => {
  * resolves undefined and the caller shows the total as "unit unknown". Only an
  * error name and a status word are logged.
  */
-const readKeysetSplit = async (
+export const readKeysetSplit = async (
   transceive: Transceiver,
   info: CardInfo,
 ): Promise<CardKeysetTotal[] | undefined> => {

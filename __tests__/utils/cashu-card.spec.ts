@@ -37,6 +37,7 @@ import {
   triesLeft,
   setCardPin,
   changeCardPin,
+  clearSpent,
 } from "../../app/utils/cashu-card"
 
 // SELECT is Case-4: the trailing 0x00 Le is load-bearing on iOS, where a
@@ -478,6 +479,23 @@ describe("VERIFY_PIN", () => {
   })
 })
 
+describe("CLEAR_SPENT", () => {
+  it("sends B0 31 00 00 with Le=1 and returns how many slots it freed", async () => {
+    const card = scriptedCard([[[0xb0, 0x31, 0x00, 0x00, 0x01], ok([4])]])
+    await expect(clearSpent(card.transceive)).resolves.toBe(4)
+  })
+
+  it("surfaces the card's refusal (6982: the PIN is set and not verified)", async () => {
+    const card = echoCard([0x69, 0x82])
+    await expect(clearSpent(card.transceive)).rejects.toMatchObject({ sw: 0x6982 })
+  })
+
+  it("refuses an answer that is not a one-byte count", async () => {
+    const card = echoCard(ok([1, 2]))
+    await expect(clearSpent(card.transceive)).rejects.toThrow(CardProtocolError)
+  })
+})
+
 describe("LOAD_PROOF", () => {
   const proof = {
     keysetId: KEYSET_HEX,
@@ -705,6 +723,10 @@ describe("SPEND_PROOF", () => {
 describe("toHex", () => {
   it("zero-pads single-digit bytes", () => {
     expect(toHex([0, 1, 0xab])).toBe("0001ab")
+  })
+
+  it("hex-encodes a Uint8Array too (a Uint8Array's own map would coerce the strings back to bytes)", () => {
+    expect(toHex(new Uint8Array([0x00, 0xff, 0x10, 0x0a]))).toBe("00ff100a")
   })
 })
 
