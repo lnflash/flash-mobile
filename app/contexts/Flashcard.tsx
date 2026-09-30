@@ -22,7 +22,21 @@ import {
 
 // utils
 import { toastShow } from "../utils/toast"
-import { CashuCardInfo, readCashuCard } from "../utils/cashu-card"
+import {
+  AppletNotSelectedError,
+  CardError,
+  CardInfo,
+  CashuCardInfo,
+  Transceiver,
+  WrongCardError,
+  getBalance as getCardBalance,
+  getInfo,
+  getPubkey,
+  readCashuCard,
+  selectApplet,
+  toHex,
+} from "../utils/cashu-card"
+import { extendCardTimeout } from "../utils/cashu-card-nfc"
 import {
   CardUnitTotals,
   soleUnit,
@@ -92,6 +106,24 @@ export type CashuCardState = CashuCardInfo & {
   unitTotals?: CardUnitTotals
 }
 
+/** How a caller of `runCardOperation` learns about, or vouches for, the card afterwards. */
+export type CardOperationOptions = {
+  /**
+   * What the operation proves about the card once it has succeeded: SET_PIN
+   * or CHANGE_PIN answering 9000 proves a PIN is set. Applied to the card on
+   * screen (and, signed in, to its record) only when the re-read after a
+   * successful operation is lost, so the screen never keeps showing the
+   * state the operation just changed.
+   */
+  assume?: Partial<CardInfo>
+  /**
+   * Called with what GET_INFO said when the card was re-read: after the
+   * operation succeeded, or after the card refused it. Not called when there
+   * was no re-read or it was lost.
+   */
+  onReread?: (info: CardInfo) => void
+}
+
 export interface FlashcardInterface {
   tag?: TagEvent
   k1?: string
@@ -112,6 +144,26 @@ export interface FlashcardInterface {
    */
   forgetCashuCard: () => void
   readFlashcard: (isPayment?: boolean) => Promise<FlashcardReadResult>
+  /**
+   * One more tap, for something that changes the card: PIN, load, spend.
+   * Opens a session, selects the applet, checks it is `expectedPubkey`'s card,
+   * runs `op`, re-reads the card (GET_INFO + GET_BALANCE) so `cashuCard` shows
+   * the result, and releases.
+   *
+   * The re-read never costs the operation its outcome: once `op` has
+   * succeeded its result is returned even if the card leaves before the
+   * re-read, with `options.assume` applied instead. A card that refused `op`
+   * (a `CardError`) is re-read too, because a refusal can change it (the
+   * third wrong PIN blocks it), and the refusal is then rethrown unchanged. A
+   * different card, a tag without the applet, or a lost channel gets no
+   * re-read. Every failure is rethrown after the release; the caller owns the
+   * message.
+   */
+  runCardOperation: <T>(
+    op: (transceive: Transceiver) => Promise<T>,
+    expectedPubkey: string,
+    options?: CardOperationOptions,
+  ) => Promise<T>
 }
 
 export const FlashcardContext = createContext<FlashcardInterface>({
@@ -127,6 +179,9 @@ export const FlashcardContext = createContext<FlashcardInterface>({
   resetFlashcard: () => {},
   forgetCashuCard: () => {},
   readFlashcard: async () => ({}),
+  runCardOperation: async () => {
+    throw new Error("FlashcardProvider is not mounted")
+  },
 })
 
 type Props = {
@@ -148,7 +203,16 @@ export const FlashcardProvider = ({ children }: Props) => {
   const [transactions, setTransactions] = useState<TransactionItem[]>()
   const [loading, setLoading] = useState<boolean>()
   const [error, setError] = useState<string>()
-  const [cashuCard, setCashuCard] = useState<CashuCardState>()
+  const [cashuCard, setCashuCardState] = useState<CashuCardState>()
+  // The Cashu card as the last write left it. An async flow (a card
+  // operation's re-read, a late mint answer) decides against this, never
+  // against the render that started it, which can predate a write the flow
+  // has to respect. Every write goes through `setCashuCard`.
+  const cashuCardRef = useRef<CashuCardState>()
+  const setCashuCard = (card: CashuCardState | undefined) => {
+    cashuCardRef.current = card
+    setCashuCardState(card)
+  }
   // Bumped by every Cashu read and every forget, so a mint lookup that
   // finishes late can tell it no longer describes the card on screen.
   const cashuGeneration = useRef(0)
@@ -307,9 +371,126 @@ export const FlashcardProvider = ({ children }: Props) => {
   const resolveCashuUnits = async (card: CashuCardInfo, generation: number) => {
     const unitTotals = await cardUnitTotals(card)
     if (!unitTotals || generation !== cashuGeneration.current) return
-    setCashuCard((current) => (current ? { ...current, unitTotals } : current))
+    // Totals belong to the split they were computed from. A card operation
+    // that moved value since then dropped that split, and the record's unit
+    // with it (`recordCardOperation`): a stale answer restores neither.
+    const current = cashuCardRef.current
+    if (!current || current.keysets !== card.keysets) return
+    setCashuCard({ ...current, unitTotals })
     if (isAuthed) {
       dispatch(cardUnitResolved({ pubkey: card.pubkey, unit: soleUnit(unitTotals) }))
+    }
+  }
+
+  /**
+   * Puts what a card operation learned on the card in context and, signed
+   * in, on its record. Only the card on screen is touched: the operation ran
+   * against it (`runCardOperation` checked the pubkey), and a card forgotten
+   * while the tap ran stays forgotten.
+   *
+   * The keyset split, and the units the mint named for it, describe the
+   * balance the tap read. A balance that changed leaves neither true, so both
+   * are dropped, in context and from the record's unit: the screen says
+   * "unit unknown" until the next read rather than show old per-unit figures
+   * beside a new total.
+   */
+  const recordCardOperation = (
+    pubkey: string,
+    update: Partial<CardInfo> & { balance?: number },
+  ) => {
+    const previous = cashuCardRef.current
+    if (previous?.pubkey !== pubkey) return
+    const moved = update.balance !== undefined && update.balance !== previous.balance
+    const card = { ...previous, ...update }
+    setCashuCard({
+      ...card,
+      keysets: moved ? undefined : previous.keysets,
+      unitTotals: moved ? undefined : previous.unitTotals,
+    })
+    // Signed out, a card stays in memory only, as on a tap.
+    if (isAuthed) {
+      dispatch(
+        cardSeen({
+          pubkey,
+          version: card.version,
+          pinState: card.pinState,
+          lastBalance: card.balance,
+          at: Date.now(),
+        }),
+      )
+      if (moved) dispatch(cardUnitResolved({ pubkey, unit: undefined }))
+    }
+  }
+
+  /**
+   * Re-reads the card after an operation (GET_INFO + GET_BALANCE) and records
+   * what it says. Best effort: resolves what GET_INFO said, or undefined when
+   * the card left first. The operation's own outcome stands either way, so a
+   * lost re-read is logged (error name only) and never thrown.
+   */
+  const rereadCard = async (
+    transceive: Transceiver,
+    pubkey: string,
+  ): Promise<CardInfo | undefined> => {
+    try {
+      const info = await getInfo(transceive)
+      const balance = await getCardBalance(transceive)
+      recordCardOperation(pubkey, { ...info, balance })
+      return info
+    } catch (err) {
+      console.warn("Cashu card re-read after an operation failed:", describeError(err))
+      return undefined
+    }
+  }
+
+  const runCardOperation = async <T,>(
+    op: (transceive: Transceiver) => Promise<T>,
+    expectedPubkey: string,
+    { assume, onReread }: CardOperationOptions = {},
+  ): Promise<T> => {
+    setVisible(true)
+    NfcManager.start()
+    try {
+      // IsoDep only: this tap is for the applet, never for an NDEF tag.
+      await NfcManager.requestTechnology(NfcTech.IsoDep)
+      // On-card work can outlive Android's 618 ms default (see the helper).
+      await extendCardTimeout()
+      const transceive: Transceiver = (bytes) =>
+        NfcManager.isoDepHandler.transceive(bytes)
+      // A fresh IsoDep channel resets the active applet; without a SELECT
+      // Android answers every command with 6E00 (flash-pos found this).
+      await selectApplet(transceive)
+      const pubkey = toHex(await getPubkey(transceive))
+      if (pubkey !== expectedPubkey) throw new WrongCardError(pubkey)
+
+      const reread = async () => {
+        const info = await rereadCard(transceive, expectedPubkey)
+        if (info) onReread?.(info)
+        return info
+      }
+
+      let result: T
+      try {
+        result = await op(transceive)
+      } catch (err) {
+        // The card answered and refused: the channel is alive and this is
+        // the card on screen (GET_PUBKEY above). A refusal can change the
+        // card, and the third wrong PIN blocks it, so read what it did before
+        // handing the refusal back unchanged. A lost channel, or a tag the
+        // applet cannot be selected on, gets no re-read.
+        if (err instanceof CardError && !(err instanceof AppletNotSelectedError)) {
+          await reread()
+        }
+        throw err
+      }
+      // The operation's outcome is settled: a card that leaves before the
+      // re-read must not turn a write that landed into a failure (a PIN the
+      // holder would then retype as the old one). What the operation itself
+      // proves stands in for the lost re-read.
+      if (!(await reread()) && assume) recordCardOperation(expectedPubkey, assume)
+      return result
+    } finally {
+      cancelTechnologyRequest()
     }
   }
 
@@ -467,6 +648,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         resetFlashcard,
         forgetCashuCard,
         readFlashcard,
+        runCardOperation,
       }}
     >
       {children}

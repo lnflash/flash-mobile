@@ -290,6 +290,32 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByText(/Anyone holding this card can spend/)).toBeNull()
   })
 
+  it("offers Set PIN on a card with none and Change PIN on a card with one, opening the PIN screen in that mode", () => {
+    mockCashuCard = card({ pinState: "unset" })
+    const { unmount } = renderScreen()
+    fireEvent.press(screen.getByText(LL.FlashcardV2.setPin()))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "set" })
+    expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
+    unmount()
+
+    mockNavigate.mockClear()
+    mockCashuCard = card({ pinState: "set" })
+    renderScreen()
+    fireEvent.press(screen.getByText(LL.FlashcardV2.changePin()))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "change" })
+    expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+  })
+
+  it("offers no PIN action on a blocked card or one whose PIN state it cannot read", () => {
+    ;(["blocked", "unknown"] as const).forEach((pinState) => {
+      mockCashuCard = card({ pinState })
+      const { unmount } = renderScreen()
+      expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
+      unmount()
+    })
+  })
+
   it("Remove card forgets the Cashu card, not the BoltCard", () => {
     renderScreen()
 
@@ -305,11 +331,24 @@ describe("FlashcardV2Screen", () => {
     renderScreen()
 
     expect(screen.queryByText(/Remove/)).toBeNull()
+    // The PIN action sits behind sign-in with Remove card.
+    expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
     expect(mockAddListener).toHaveBeenCalledWith("beforeRemove", expect.any(Function))
     const [, onLeave] = mockAddListener.mock.calls[0]
     onLeave()
     expect(mockForgetCashuCard).toHaveBeenCalledTimes(1)
     expect(mockResetFlashcard).not.toHaveBeenCalled()
+  })
+
+  it("offers no PIN action when signed out, on a card with a PIN or without one", () => {
+    mockIsAuthed = false
+    ;(["set", "unset"] as const).forEach((pinState) => {
+      mockCashuCard = card({ pinState })
+      const { unmount } = renderScreen()
+      expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
+      unmount()
+    })
   })
 
   it("leaves the screen when there is no card to show", () => {

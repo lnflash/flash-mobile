@@ -109,6 +109,25 @@ export const FlashcardV2Screen = () => {
 
       {isAuthed && (
         <View style={styles.btns}>
+          {/* Only a PIN state the app can read gets a PIN action: a blocked
+              PIN has no way back (ENG-617), and an unknown one is a card this
+              app does not understand (see the notice above). */}
+          {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
+            <IconBtn
+              type="clear"
+              icon="setting"
+              label={
+                cashuCard.pinState === "unset"
+                  ? LL.FlashcardV2.setPin()
+                  : LL.FlashcardV2.changePin()
+              }
+              onPress={() =>
+                navigation.navigate("FlashcardV2Pin", {
+                  mode: cashuCard.pinState === "unset" ? "set" : "change",
+                })
+              }
+            />
+          )}
           <IconBtn
             type="clear"
             icon="cardRemove"

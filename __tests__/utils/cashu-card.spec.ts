@@ -34,6 +34,9 @@ import {
   spendProof,
   toHex,
   verifyCardPin,
+  triesLeft,
+  setCardPin,
+  changeCardPin,
 } from "../../app/utils/cashu-card"
 
 // SELECT is Case-4: the trailing 0x00 Le is load-bearing on iOS, where a
@@ -972,5 +975,82 @@ describe("readCashuCard", () => {
     const instructions = card.sent.map((apdu) => apdu[1])
     expect(instructions).not.toContain(INS.SPEND_PROOF)
     expect(instructions).not.toContain(INS.LOAD_PROOF)
+  })
+})
+
+describe("PIN validation", () => {
+  it("accepts 4 to 8 digits and nothing else", () => {
+    expect(isValidCardPin("1234")).toBe(true)
+    expect(isValidCardPin("12345678")).toBe(true)
+    expect(isValidCardPin("123")).toBe(false)
+    expect(isValidCardPin("123456789")).toBe(false)
+    expect(isValidCardPin("12a4")).toBe(false)
+    expect(isValidCardPin("")).toBe(false)
+  })
+
+  it("decodes the tries left from 63CX and nothing else", () => {
+    expect(triesLeft(0x63c2)).toBe(2)
+    expect(triesLeft(0x63c0)).toBe(0)
+    expect(triesLeft(0x6983)).toBeUndefined()
+    expect(triesLeft(0x9000)).toBeUndefined()
+  })
+})
+
+describe("SET_PIN", () => {
+  it("sends the PIN as ASCII bytes with Lc, no Le", async () => {
+    const card = scriptedCard([
+      [[0xb0, 0x41, 0x00, 0x00, 0x04, 0x31, 0x32, 0x33, 0x34], ok([])],
+    ])
+    await expect(setCardPin(card.transceive, "1234")).resolves.toBeUndefined()
+  })
+
+  it("refuses an invalid PIN before anything reaches the card", async () => {
+    const card = echoCard(ok([]))
+    await expect(setCardPin(card.transceive, "12")).rejects.toThrow(CardProtocolError)
+    expect(card.sent).toEqual([])
+  })
+
+  it("surfaces a card that already has a PIN", async () => {
+    const card = echoCard([0x69, 0x85])
+    await expect(setCardPin(card.transceive, "1234")).rejects.toMatchObject({
+      sw: 0x6985,
+    })
+  })
+})
+
+describe("CHANGE_PIN", () => {
+  it("sends oldLen ‖ old ‖ new as ASCII with Lc, no Le", async () => {
+    const card = scriptedCard([
+      [
+        [
+          0xb0, 0x42, 0x00, 0x00, 0x0b, 0x04, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+          0x38, 0x39, 0x30,
+        ],
+        ok([]),
+      ],
+    ])
+    await expect(
+      changeCardPin(card.transceive, "1234", "567890"),
+    ).resolves.toBeUndefined()
+  })
+
+  it("refuses an invalid old or new PIN before anything reaches the card", async () => {
+    const card = echoCard(ok([]))
+    await expect(changeCardPin(card.transceive, "12", "5678")).rejects.toThrow(
+      CardProtocolError,
+    )
+    await expect(changeCardPin(card.transceive, "1234", "56")).rejects.toThrow(
+      CardProtocolError,
+    )
+    expect(card.sent).toEqual([])
+  })
+
+  it("surfaces an unverified session and a wrong old PIN as the card reports them", async () => {
+    await expect(
+      changeCardPin(echoCard([0x69, 0x82]).transceive, "1234", "5678"),
+    ).rejects.toMatchObject({ sw: 0x6982 })
+    await expect(
+      changeCardPin(echoCard([0x63, 0xc1]).transceive, "1234", "5678"),
+    ).rejects.toThrow("CHANGE_PIN failed: wrong PIN, 1 tries left (0x63C1)")
   })
 })

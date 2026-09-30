@@ -137,6 +137,11 @@ export type RootStackParamList = {
   Card: undefined
   /** The Cashu card screen (ENG-616). Reads the card from FlashcardContext. */
   FlashcardV2: undefined
+  /**
+   * Set (a card with no PIN yet) or change the Cashu card's PIN. Both end in
+   * a tap; the PIN itself never leaves the screen's local state.
+   */
+  FlashcardV2Pin: { mode: "set" | "change" }
   Map: undefined
   accountScreen: undefined
   notificationSettingsScreen: undefined

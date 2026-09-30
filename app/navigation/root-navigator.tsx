@@ -11,7 +11,12 @@ import {
 } from "../screens/authentication-screen"
 import { PinScreen } from "../screens/authentication-screen/pin-screen"
 import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen"
-import { CardScreen, FlashcardTopup, FlashcardV2Screen } from "../screens/card-screen"
+import {
+  CardScreen,
+  FlashcardTopup,
+  FlashcardV2PinScreen,
+  FlashcardV2Screen,
+} from "../screens/card-screen"
 import { ChatList } from "@app/screens/chat"
 import { DeveloperScreen } from "../screens/developer-screen"
 import { EarnQuiz, EarnSection } from "../screens/earns-screen"
@@ -618,6 +623,17 @@ export const RootStack = () => {
           title: LL.FlashcardV2.title(),
           headerStyle: { backgroundColor: colors.background },
         }}
+      />
+      <RootNavigator.Screen
+        name="FlashcardV2Pin"
+        component={FlashcardV2PinScreen}
+        options={({ route }) => ({
+          title:
+            route.params.mode === "set"
+              ? LL.FlashcardV2.setPinTitle()
+              : LL.FlashcardV2.changePinTitle(),
+          headerStyle: { backgroundColor: colors.background },
+        })}
       />
       <RootNavigator.Screen
         name="CashoutDetails"
