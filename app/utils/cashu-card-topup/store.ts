@@ -14,6 +14,10 @@ import type { TopUpRecord } from "./types"
  * Reads are strict. A Keychain failure or an unreadable value throws rather
  * than reading as "no top-ups": the next write would otherwise replace every
  * pending record with an empty list.
+ *
+ * The store trims only loaded records. A quote is dropped by the engine
+ * (`advanceTopUps`, `cancelTopUp`), which asks the mint first: whether an
+ * expired quote can still be paid is the mint's to say, not the store's.
  */
 const SERVER = "flashcard-v2-topups"
 const USERNAME = "topups"
@@ -76,6 +80,13 @@ export type TopUpStore = {
     change: (record: TopUpRecord) => TopUpRecord,
   ) => Promise<TopUpRecord>
   remove: (id: string) => Promise<void>
+  /**
+   * Remove the record only if it still passes `test` when its turn in the
+   * write queue comes: a decision to drop a record, made from an earlier
+   * read, must not drop one that changed since (a payment sent in between).
+   * Resolves whether it was removed.
+   */
+  removeIf: (id: string, test: (record: TopUpRecord) => boolean) => Promise<boolean>
 }
 
 export const createTopUpStore = (now: () => number = Date.now): TopUpStore => ({
@@ -103,5 +114,13 @@ export const createTopUpStore = (now: () => number = Date.now): TopUpStore => ({
     serialized(async () => {
       const records = await readAll()
       await writeAll(records.filter((r) => r.id !== id))
+    }),
+  removeIf: (id, test) =>
+    serialized(async () => {
+      const records = await readAll()
+      const record = records.find((r) => r.id === id)
+      if (!record || !test(record)) return false
+      await writeAll(records.filter((r) => r !== record))
+      return true
     }),
 })

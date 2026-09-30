@@ -549,6 +549,11 @@ type RootTranslation = {
 		 */
 		topUpUnitFixed: RequiredParams<'unit' | 'unit'>
 		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​a​ ​t​o​p​-​u​p​ ​i​n​ ​{​u​n​i​t​}​ ​s​t​i​l​l​ ​t​o​ ​f​i​n​i​s​h​,​ ​s​o​ ​a​ ​t​o​p​-​u​p​ ​a​d​d​s​ ​{​u​n​i​t​}​.
+		 * @param {unknown} unit
+		 */
+		topUpUnitCommitted: RequiredParams<'unit' | 'unit'>
+		/**
 		 * P​a​i​d​ ​f​r​o​m​ ​y​o​u​r​ ​C​a​s​h​ ​w​a​l​l​e​t
 		 */
 		topUpPaidFrom: string
@@ -563,6 +568,11 @@ type RootTranslation = {
 		 * @param {number} needed
 		 */
 		topUpSlots: RequiredParams<'free' | 'needed'>
+		/**
+		 * {​r​e​s​e​r​v​e​d​}​ ​o​f​ ​t​h​e​ ​c​a​r​d​'​s​ ​e​m​p​t​y​ ​s​l​o​t​s​ ​a​r​e​ ​h​e​l​d​ ​f​o​r​ ​t​o​p​-​u​p​s​ ​n​o​t​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​y​e​t​.
+		 * @param {number} reserved
+		 */
+		topUpSlotsReserved: RequiredParams<'reserved'>
 		/**
 		 * T​h​i​s​ ​a​m​o​u​n​t​ ​n​e​e​d​s​ ​{​n​e​e​d​e​d​}​ ​s​l​o​t​s​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​a​n​d​ ​i​t​ ​h​a​s​ ​{​f​r​e​e​}​.​ ​T​r​y​ ​a​ ​s​m​a​l​l​e​r​ ​a​m​o​u​n​t​.
 		 * @param {number} free
@@ -631,7 +641,7 @@ type RootTranslation = {
 		 */
 		topUpMinting: string
 		/**
-		 * T​h​e​ ​p​a​y​m​e​n​t​ ​h​a​s​n​'​t​ ​r​e​a​c​h​e​d​ ​t​h​e​ ​m​i​n​t​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​l​e​a​v​e​ ​t​h​i​s​ ​s​c​r​e​e​n​:​ ​t​h​e​ ​t​o​p​-​u​p​ ​w​a​i​t​s​ ​o​n​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​ ​u​n​t​i​l​ ​i​t​ ​a​r​r​i​v​e​s​.
+		 * T​h​e​ ​p​a​y​m​e​n​t​ ​h​a​s​n​'​t​ ​r​e​a​c​h​e​d​ ​t​h​e​ ​m​i​n​t​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​l​e​a​v​e​ ​t​h​i​s​ ​s​c​r​e​e​n​:​ ​w​h​i​l​e​ ​t​h​e​ ​a​p​p​ ​i​s​ ​o​p​e​n​ ​i​t​ ​k​e​e​p​s​ ​c​h​e​c​k​i​n​g​,​ ​a​n​d​ ​g​e​t​s​ ​t​h​e​ ​f​u​n​d​s​ ​r​e​a​d​y​ ​a​s​ ​s​o​o​n​ ​a​s​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​a​r​r​i​v​e​s​.​ ​T​h​e​n​ ​f​i​n​i​s​h​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
 		 */
 		topUpWaiting: string
 		/**
@@ -661,7 +671,7 @@ type RootTranslation = {
 		 */
 		topUpLoaded: RequiredParams<'amount'>
 		/**
-		 * T​h​e​ ​c​a​r​d​ ​h​a​s​ ​n​o​ ​f​r​e​e​ ​s​l​o​t​s​ ​f​o​r​ ​t​h​e​s​e​ ​f​u​n​d​s​.​ ​S​p​e​n​d​ ​s​o​m​e​ ​o​f​ ​i​t​s​ ​b​a​l​a​n​c​e​,​ ​t​h​e​n​ ​f​i​n​i​s​h​ ​l​o​a​d​i​n​g​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
+		 * T​h​e​ ​c​a​r​d​ ​d​o​e​s​n​'​t​ ​h​a​v​e​ ​e​n​o​u​g​h​ ​e​m​p​t​y​ ​s​l​o​t​s​ ​f​o​r​ ​t​h​e​s​e​ ​f​u​n​d​s​.​ ​T​h​e​y​ ​s​t​a​y​ ​s​a​v​e​d​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​:​ ​f​i​n​i​s​h​ ​l​o​a​d​i​n​g​ ​t​h​e​m​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​ ​o​n​c​e​ ​i​t​ ​h​a​s​ ​r​o​o​m​.
 		 */
 		topUpNoRoomOnCard: string
 		/**
@@ -672,6 +682,22 @@ type RootTranslation = {
 		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​Y​o​u​r​ ​t​o​p​-​u​p​ ​i​s​ ​s​a​v​e​d​:​ ​t​r​y​ ​a​g​a​i​n​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
 		 */
 		topUpFailed: string
+		/**
+		 * C​o​u​l​d​n​'​t​ ​s​e​t​ ​u​p​ ​t​h​e​ ​t​o​p​-​u​p​ ​w​i​t​h​ ​t​h​e​ ​m​i​n​t​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​w​a​s​ ​p​a​i​d​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		topUpPrepareFailed: string
+		/**
+		 * T​h​i​s​ ​t​o​p​-​u​p​'​s​ ​i​n​v​o​i​c​e​ ​h​a​s​ ​r​u​n​ ​o​u​t​ ​o​f​ ​t​i​m​e​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​b​e​ ​p​a​i​d​ ​n​o​w​.​ ​S​t​a​r​t​ ​a​ ​n​e​w​ ​t​o​p​-​u​p​.
+		 */
+		topUpInvoiceExpired: string
+		/**
+		 * T​h​e​ ​m​i​n​t​ ​w​o​n​'​t​ ​i​s​s​u​e​ ​t​h​i​s​ ​t​o​p​-​u​p​:​ ​i​t​s​ ​t​i​m​e​ ​r​a​n​ ​o​u​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​f​u​n​d​s​ ​w​e​r​e​ ​c​o​l​l​e​c​t​e​d​.​ ​Y​o​u​r​ ​p​a​y​m​e​n​t​ ​i​s​ ​r​e​c​o​r​d​e​d​:​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​.
+		 */
+		topUpMintExpired: string
+		/**
+		 * P​a​r​t​ ​o​f​ ​t​h​i​s​ ​t​o​p​-​u​p​ ​i​s​ ​b​e​i​n​g​ ​s​p​e​n​t​ ​a​t​ ​t​h​e​ ​m​i​n​t​ ​r​i​g​h​t​ ​n​o​w​.​ ​F​i​n​i​s​h​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​ ​i​n​ ​a​ ​f​e​w​ ​m​i​n​u​t​e​s​.
+		 */
+		topUpHeld: string
 		/**
 		 * T​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​f​u​n​d​s​ ​i​n​ ​m​o​r​e​ ​t​h​a​n​ ​o​n​e​ ​u​n​i​t​,​ ​o​r​ ​f​u​n​d​s​ ​t​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​i​d​e​n​t​i​f​y​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​t​a​k​e​ ​a​ ​t​o​p​-​u​p​.
 		 */
@@ -689,6 +715,10 @@ type RootTranslation = {
 		 */
 		topUpCantPinUnknown: string
 		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​a​ ​t​o​p​-​u​p​ ​i​n​ ​a​n​o​t​h​e​r​ ​u​n​i​t​ ​s​t​i​l​l​ ​t​o​ ​f​i​n​i​s​h​.​ ​F​i​n​i​s​h​ ​i​t​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​ ​f​i​r​s​t​.
+		 */
+		topUpCantUnfinishedUnit: string
+		/**
 		 * {​a​m​o​u​n​t​}​ ​i​s​ ​p​a​i​d​ ​f​o​r​ ​a​n​d​ ​n​o​t​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​y​e​t​.
 		 * @param {unknown} amount
 		 */
@@ -698,6 +728,15 @@ type RootTranslation = {
 		 * @param {unknown} amount
 		 */
 		topUpUnfinishedUnpaid: RequiredParams<'amount'>
+		/**
+		 * A​ ​t​o​p​-​u​p​ ​o​f​ ​{​a​m​o​u​n​t​}​ ​e​x​p​i​r​e​d​ ​b​e​f​o​r​e​ ​i​t​s​ ​p​a​y​m​e​n​t​ ​r​e​a​c​h​e​d​ ​t​h​e​ ​m​i​n​t​.
+		 * @param {unknown} amount
+		 */
+		topUpUnfinishedExpired: RequiredParams<'amount'>
+		/**
+		 * D​i​s​m​i​s​s
+		 */
+		topUpDismiss: string
 		/**
 		 * F​i​n​i​s​h
 		 */
@@ -7776,6 +7815,10 @@ export type TranslationFunctions = {
 		 */
 		topUpUnitFixed: (arg: { unit: unknown }) => LocalizedString
 		/**
+		 * This card has a top-up in {unit} still to finish, so a top-up adds {unit}.
+		 */
+		topUpUnitCommitted: (arg: { unit: unknown }) => LocalizedString
+		/**
 		 * Paid from your Cash wallet
 		 */
 		topUpPaidFrom: () => LocalizedString
@@ -7787,6 +7830,10 @@ export type TranslationFunctions = {
 		 * Uses {needed} of the card's {free} free slots
 		 */
 		topUpSlots: (arg: { free: number, needed: number }) => LocalizedString
+		/**
+		 * {reserved} of the card's empty slots are held for top-ups not on the card yet.
+		 */
+		topUpSlotsReserved: (arg: { reserved: number }) => LocalizedString
 		/**
 		 * This amount needs {needed} slots on the card and it has {free}. Try a smaller amount.
 		 */
@@ -7852,7 +7899,7 @@ export type TranslationFunctions = {
 		 */
 		topUpMinting: () => LocalizedString
 		/**
-		 * The payment hasn't reached the mint yet. You can leave this screen: the top-up waits on the card's screen until it arrives.
+		 * The payment hasn't reached the mint yet. You can leave this screen: while the app is open it keeps checking, and gets the funds ready as soon as the payment arrives. Then finish from the card's screen.
 		 */
 		topUpWaiting: () => LocalizedString
 		/**
@@ -7880,7 +7927,7 @@ export type TranslationFunctions = {
 		 */
 		topUpLoaded: (arg: { amount: unknown }) => LocalizedString
 		/**
-		 * The card has no free slots for these funds. Spend some of its balance, then finish loading from the card's screen.
+		 * The card doesn't have enough empty slots for these funds. They stay saved on this phone: finish loading them from the card's screen once it has room.
 		 */
 		topUpNoRoomOnCard: () => LocalizedString
 		/**
@@ -7891,6 +7938,22 @@ export type TranslationFunctions = {
 		 * Something went wrong. Your top-up is saved: try again from the card's screen.
 		 */
 		topUpFailed: () => LocalizedString
+		/**
+		 * Couldn't set up the top-up with the mint, so nothing was paid. Check your connection and try again.
+		 */
+		topUpPrepareFailed: () => LocalizedString
+		/**
+		 * This top-up's invoice has run out of time, so it can't be paid now. Start a new top-up.
+		 */
+		topUpInvoiceExpired: () => LocalizedString
+		/**
+		 * The mint won't issue this top-up: its time ran out before the funds were collected. Your payment is recorded: contact support.
+		 */
+		topUpMintExpired: () => LocalizedString
+		/**
+		 * Part of this top-up is being spent at the mint right now. Finish from the card's screen in a few minutes.
+		 */
+		topUpHeld: () => LocalizedString
 		/**
 		 * This card holds funds in more than one unit, or funds this app can't identify, so it can't take a top-up.
 		 */
@@ -7908,6 +7971,10 @@ export type TranslationFunctions = {
 		 */
 		topUpCantPinUnknown: () => LocalizedString
 		/**
+		 * This card has a top-up in another unit still to finish. Finish it from the card's screen first.
+		 */
+		topUpCantUnfinishedUnit: () => LocalizedString
+		/**
 		 * {amount} is paid for and not on the card yet.
 		 */
 		topUpUnfinishedPaid: (arg: { amount: unknown }) => LocalizedString
@@ -7915,6 +7982,14 @@ export type TranslationFunctions = {
 		 * A top-up of {amount} is waiting for its payment to reach the mint.
 		 */
 		topUpUnfinishedUnpaid: (arg: { amount: unknown }) => LocalizedString
+		/**
+		 * A top-up of {amount} expired before its payment reached the mint.
+		 */
+		topUpUnfinishedExpired: (arg: { amount: unknown }) => LocalizedString
+		/**
+		 * Dismiss
+		 */
+		topUpDismiss: () => LocalizedString
 		/**
 		 * Finish
 		 */

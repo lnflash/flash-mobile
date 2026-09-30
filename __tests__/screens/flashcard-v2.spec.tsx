@@ -30,6 +30,7 @@ let mockCashuCard: CashuCardState | undefined
 let mockIsAuthed = true
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let mockUnfinishedTopUps: any[] = []
+const mockDismissTopUp = jest.fn()
 // Undefined: the real per-version answer (no released applet keeps a blocked
 // card from spending, ENG-615). A spec sets it to render a version that does.
 let mockBlockedPinGatesSpend: boolean | undefined
@@ -64,7 +65,10 @@ jest.mock("@app/hooks", () => ({
     resetFlashcard: mockResetFlashcard,
   }),
   useTapFlashcard: () => mockTapFlashcard,
-  useUnfinishedTopUps: () => mockUnfinishedTopUps,
+  useUnfinishedTopUps: () => ({
+    records: mockUnfinishedTopUps,
+    dismiss: mockDismissTopUp,
+  }),
 }))
 jest.mock("@app/utils/cashu-card", () => {
   const actual = jest.requireActual("@app/utils/cashu-card")
@@ -360,14 +364,16 @@ describe("FlashcardV2Screen", () => {
         state: "quoted",
         amount: 500,
         unit: "sat",
-        payment: { dispatched: true },
+        quote: { expiry: null },
+        payment: { dispatched: true, everDispatched: true },
       },
       {
         id: "never",
         state: "quoted",
         amount: 800,
         unit: "sat",
-        payment: { dispatched: false },
+        quote: { expiry: null },
+        payment: { dispatched: false, everDispatched: false },
       },
     ]
     renderScreen()
@@ -378,6 +384,54 @@ describe("FlashcardV2Screen", () => {
       ),
     ).toBeTruthy()
     expect(screen.getAllByTestId("flashcard-v2-unfinished-topup")).toHaveLength(1)
+  })
+
+  it("offers Dismiss, not Finish, for a sent payment whose invoice expired long enough ago that nothing can pay it", () => {
+    const nowSeconds = Math.floor(Date.now() / 1000)
+    const sent = { state: "quoted", amount: 500, unit: "sat" }
+    mockUnfinishedTopUps = [
+      {
+        ...sent,
+        id: "dead",
+        // Past its expiry and the grace for a phone clock running ahead.
+        quote: { expiry: nowSeconds - 11 * 60 },
+        payment: { dispatched: true, everDispatched: true },
+      },
+      {
+        ...sent,
+        id: "just-expired",
+        quote: { expiry: nowSeconds - 60 },
+        payment: { dispatched: true, everDispatched: true },
+      },
+    ]
+    mockDismissTopUp.mockResolvedValue(undefined)
+    renderScreen()
+
+    expect(
+      screen.getByText(
+        "A top-up of 500 sats expired before its payment reached the mint.",
+      ),
+    ).toBeTruthy()
+    expect(screen.getAllByTestId("flashcard-v2-dismiss-topup")).toHaveLength(1)
+    expect(screen.getAllByTestId("flashcard-v2-finish-topup")).toHaveLength(1)
+    fireEvent.press(screen.getByTestId("flashcard-v2-dismiss-topup"))
+    expect(mockDismissTopUp).toHaveBeenCalledWith("dead")
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it("hides a quote whose last payment was refused: none of it is out", () => {
+    mockUnfinishedTopUps = [
+      {
+        id: "refused",
+        state: "quoted",
+        amount: 500,
+        unit: "sat",
+        quote: { expiry: null },
+        payment: { dispatched: false, everDispatched: true },
+      },
+    ]
+    renderScreen()
+    expect(screen.queryByTestId("flashcard-v2-unfinished-topup")).toBeNull()
   })
 
   it("offers no PIN action on a blocked card or one whose PIN state it cannot read", () => {

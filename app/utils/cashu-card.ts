@@ -536,11 +536,20 @@ export async function loadProof(
 }
 
 /**
- * CLEAR_SPENT: empty every spent slot so LOAD_PROOF can reuse it, and return
- * how many were freed. Gated like LOAD_PROOF (VERIFY_PIN first when a PIN is
- * set; 6982 otherwise); 6986 on a card locked by LOCK_CARD. A spent slot holds
- * nothing of value (the card burned it before it signed), so clearing one
- * loses nothing.
+ * CLEAR_SPENT: zero-fill every spent slot so LOAD_PROOF can reuse it, and
+ * return how many were freed. Gated like LOAD_PROOF (VERIFY_PIN first when a
+ * PIN is set; 6982 otherwise); 6986 on a card locked by LOCK_CARD.
+ *
+ * Clearing can lose money. A spent slot is still owed until its proof settles
+ * at the mint (cashu-javacard spec/CARD-FILE.md, "Why `spent` is required"):
+ * the applet marks a slot spent BEFORE it signs, so a card lifted mid
+ * SPEND_PROOF holds a proof the mint has never seen, whose nonce and C exist
+ * only in that slot, and whose value only a re-sign from that slot recovers.
+ * flash-pos never clears while any spend of the card is unsettled
+ * (`hasUnsettledForCard`). So never call this unless the mint (NUT-07) holds
+ * the proof of every spent slot on the card as SPENT, read in the same session
+ * as the clear. The top-up never calls it; reclaiming slots belongs to the
+ * sweep, which settles them first.
  */
 export async function clearSpent(transceive: Transceiver): Promise<number> {
   const body = await send(transceive, INS.CLEAR_SPENT, {

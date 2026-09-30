@@ -20,7 +20,7 @@ import { CashuCardState } from "@app/contexts/Flashcard"
 import { WalletCurrency, useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { getCashWallet } from "@app/graphql/wallets-utils"
-import { useCardTopUp } from "@app/hooks/use-card-top-up"
+import { nudgeTopUpMinter, useCardTopUp } from "@app/hooks/use-card-top-up"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { usePriceConversion } from "@app/hooks/use-price-conversion"
 import { useFlashcard } from "@app/hooks/useFlashcard"
@@ -42,6 +42,7 @@ import {
   TopUpError,
   TopUpRecord,
   cancelTopUp,
+  cardCommitments,
   mintTopUp,
   payTopUp,
   prepareTopUp,
@@ -52,7 +53,13 @@ import { formatUnitAmount, shortPubkey } from "./flashcard-v2"
 
 type LLType = TranslationFunctions
 
-/** How long to wait for the mint to see a payment before leaving it for later. */
+/**
+ * How long this screen waits for the mint to see a payment before offering to
+ * leave. The app keeps asking after that (`useTopUpMinter`) until the quote
+ * expires, and mints without the card: a sat top-up is a Lightning payment
+ * out of IBEX to the mint's phoenixd, not an intraledger one, so PENDING and
+ * a slow settle are normal.
+ */
 const MINT_POLL_MS = 1500
 const MINT_POLL_ATTEMPTS = 10
 const SW_PIN_BLOCKED = 0x6983
@@ -66,25 +73,42 @@ const sleep = (ms: number) =>
  * Whether this card can take a top-up, and in which unit (ENG-616 D1: a card
  * holds one unit, sats by default). A card holding value takes top-ups only
  * in that value's unit, so a card is never mixed; an empty card can take
- * either. A blocked PIN is refused outright: on v0.2.0 it spends for anyone
+ * either. A top-up paid for and not on the card yet commits the card to its
+ * unit just the same (`unfinishedUnits`), or it would land beside another.
+ * A blocked PIN is refused outright: on v0.2.0 it spends for anyone
  * (ENG-615), and on 0.3 it can never load again, so paid funds would be
  * stranded. A PIN state or a unit this app cannot read is refused too.
  */
 export type TopUpEligibility =
-  | { ok: true; unit: CardUnit | "choose" }
-  | { ok: false; reason: "blocked" | "pin-unknown" | "mixed" | "unit-unknown" }
+  /** `committed`: the unit is fixed by an unfinished top-up, not by the card's value. */
+  | { ok: true; unit: CardUnit | "choose"; committed?: boolean }
+  | {
+      ok: false
+      reason: "blocked" | "pin-unknown" | "mixed" | "unit-unknown" | "unfinished-unit"
+    }
 
-export const topUpEligibility = (card: CashuCardState): TopUpEligibility => {
+export const topUpEligibility = (
+  card: CashuCardState,
+  unfinishedUnits: readonly CardUnit[] = [],
+): TopUpEligibility => {
   if (card.pinState === "blocked") return { ok: false, reason: "blocked" }
   if (card.pinState === "unknown") return { ok: false, reason: "pin-unknown" }
-  if (card.balance === 0) return { ok: true, unit: "choose" }
-  const totals = card.unitTotals
-  if (!totals) return { ok: false, reason: "unit-unknown" }
-  if (totals.unknown > 0 || totals.byUnit.length !== 1)
-    return { ok: false, reason: "mixed" }
-  const [{ unit }] = totals.byUnit
-  if (unit !== "sat" && unit !== "usd") return { ok: false, reason: "mixed" }
-  return { ok: true, unit }
+  let cardUnit: CardUnit | undefined
+  if (card.balance > 0) {
+    const totals = card.unitTotals
+    if (!totals) return { ok: false, reason: "unit-unknown" }
+    if (totals.unknown > 0 || totals.byUnit.length !== 1)
+      return { ok: false, reason: "mixed" }
+    const [{ unit }] = totals.byUnit
+    if (unit !== "sat" && unit !== "usd") return { ok: false, reason: "mixed" }
+    cardUnit = unit
+  }
+  const units = new Set<CardUnit>(unfinishedUnits)
+  if (cardUnit) units.add(cardUnit)
+  if (units.size > 1) return { ok: false, reason: "unfinished-unit" }
+  const [only] = [...units]
+  if (!only) return { ok: true, unit: "choose" }
+  return cardUnit ? { ok: true, unit: only } : { ok: true, unit: only, committed: true }
 }
 
 const refusal = (reason: Exclude<TopUpEligibility, { ok: true }>["reason"], LL: LLType) =>
@@ -93,7 +117,10 @@ const refusal = (reason: Exclude<TopUpEligibility, { ok: true }>["reason"], LL: 
     "pin-unknown": LL.FlashcardV2.topUpCantPinUnknown(),
     "mixed": LL.FlashcardV2.topUpCantMixed(),
     "unit-unknown": LL.FlashcardV2.topUpCantUnknownUnit(),
+    "unfinished-unit": LL.FlashcardV2.topUpCantUnfinishedUnit(),
   }[reason])
+
+const NO_COMMITMENTS: { slots: number; units: CardUnit[] } = { slots: 0, units: [] }
 
 type Step =
   | { name: "loading" }
@@ -134,7 +161,13 @@ export const FlashcardV2TopUpScreen = () => {
   const { data } = useHomeAuthedQuery({ skip: !isAuthed, fetchPolicy: "cache-first" })
   const cashWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
-  const eligibility = cashuCard ? topUpEligibility(cashuCard) : undefined
+  // What the card's unfinished top-ups already hold of it: slots and unit.
+  // Read once for a new top-up; prepareTopUp checks them again, from the
+  // store, before anything is quoted.
+  const [commitments, setCommitments] = useState(NO_COMMITMENTS)
+  const eligibility = cashuCard
+    ? topUpEligibility(cashuCard, commitments.units)
+    : undefined
   const resumeId = params?.topUpId
   const [step, setStep] = useState<Step>(() => {
     if (resumeId) return { name: "loading" }
@@ -155,6 +188,15 @@ export const FlashcardV2TopUpScreen = () => {
 
   const stepRef = useRef(step)
   stepRef.current = step
+  // Set once the screen is on its way out: a quote that arrives after that
+  // is dropped, not left behind.
+  const leftRef = useRef(false)
+  useEffect(() => {
+    leftRef.current = false
+    return () => {
+      leftRef.current = true
+    }
+  }, [])
 
   // iOS has no live regions: an error is read out as it appears.
   useEffect(() => {
@@ -165,16 +207,52 @@ export const FlashcardV2TopUpScreen = () => {
     if (!cashuCard) navigation.goBack()
   }, [cashuCard, navigation])
 
-  // Leaving before paying drops the quote: nothing was dispatched, so nothing
-  // can land, and the card's screen should not offer to finish it.
+  // A new top-up: what the card's unfinished ones hold of it. One whose unit
+  // differs refuses this one; their slots are not free.
+  useEffect(() => {
+    if (resumeId || !cashuCard) return undefined
+    let live = true
+    deps.store.list().then(
+      (records) => {
+        const committed = cardCommitments(records, cashuCard.pubkey)
+        // Nothing held: nothing to change.
+        if (!live || (committed.slots === 0 && committed.units.length === 0)) return
+        setCommitments(committed)
+        const after = topUpEligibility(cashuCard, committed.units)
+        if (!after.ok) {
+          setStep((current) =>
+            current.name === "amount"
+              ? { name: "refused", message: refusal(after.reason, LL) }
+              : current,
+          )
+        } else if (after.unit !== "choose") {
+          setUnit(after.unit)
+        }
+      },
+      // Unreadable: prepareTopUp reads the store too, and refuses.
+      () => undefined,
+    )
+    return () => {
+      live = false
+    }
+    // Read once, for the card the screen opened on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Leaving before any payment was sent drops the quote: nothing can land,
+  // and the card's screen should not offer to finish it. A quote that was
+  // ever sent for payment stays, even after a refusal: only the mint can say
+  // it was not paid, once it has expired (`cancelTopUp`, `advanceTopUps`).
   useEffect(
     () =>
       navigation.addListener("beforeRemove", () => {
+        leftRef.current = true
         const current = stepRef.current
         if (
           current.name === "confirm" &&
           current.record.state === "quoted" &&
-          !current.record.payment.dispatched
+          !current.record.payment.dispatched &&
+          !current.record.payment.everDispatched
         ) {
           cancelTopUp(deps, current.record.id).catch(() => undefined)
         }
@@ -183,9 +261,15 @@ export const FlashcardV2TopUpScreen = () => {
   )
 
   const walletCurrency = unit === "sat" ? WalletCurrency.Btc : WalletCurrency.Usd
+  const unitName =
+    unit === "sat" ? LL.FlashcardV2.topUpUnitSat() : LL.FlashcardV2.topUpUnitUsd()
   const cardAmount =
     amount && convertMoneyAmount ? convertMoneyAmount(amount, walletCurrency).amount : 0
-  const freeSlots = cashuCard ? cashuCard.empty + cashuCard.spent : 0
+  // Empty slots only: a spent slot is owed until it settles at the mint, and
+  // this app never clears one. Those an unfinished top-up will take are not
+  // free either.
+  const reservedSlots = commitments.slots
+  const freeSlots = cashuCard ? Math.max(0, cashuCard.empty - reservedSlots) : 0
   const needed = cardAmount > 0 ? slotsNeeded(cardAmount) : 0
   const overBalance = (() => {
     if (!cashWallet || !convertMoneyAmount || cardAmount <= 0) return false
@@ -242,6 +326,18 @@ export const FlashcardV2TopUpScreen = () => {
     }
   }
 
+  const mintFailure = (err: unknown): string => {
+    if (!(err instanceof TopUpError)) return LL.FlashcardV2.topUpFailed()
+    if (err.reason === "expired") return LL.FlashcardV2.topUpMintExpired()
+    if (
+      err.reason === "dleq" ||
+      err.reason === "mint-mismatch" ||
+      err.reason === "restore"
+    )
+      return LL.FlashcardV2.topUpMintRefused()
+    return LL.FlashcardV2.topUpFailed()
+  }
+
   const mintUntilReady = async (record: TopUpRecord) => {
     setStep({ name: "working", record, message: LL.FlashcardV2.topUpMinting() })
     try {
@@ -253,6 +349,9 @@ export const FlashcardV2TopUpScreen = () => {
         }
         await sleep(MINT_POLL_MS)
       }
+      // The app keeps asking, and mints without the card, once this screen
+      // is gone.
+      nudgeTopUpMinter()
       setStep({
         name: "working",
         record,
@@ -260,19 +359,7 @@ export const FlashcardV2TopUpScreen = () => {
         canLeave: true,
       })
     } catch (err) {
-      const refused =
-        err instanceof TopUpError &&
-        (err.reason === "dleq" ||
-          err.reason === "mint-mismatch" ||
-          err.reason === "restore")
-      setStep({
-        name: "working",
-        record,
-        message: refused
-          ? LL.FlashcardV2.topUpMintRefused()
-          : LL.FlashcardV2.topUpFailed(),
-        canLeave: true,
-      })
+      setStep({ name: "working", record, message: mintFailure(err), canLeave: true })
     }
   }
 
@@ -286,15 +373,30 @@ export const FlashcardV2TopUpScreen = () => {
         unit,
         amount: cardAmount,
         walletId: cashWallet.id,
-        card: cashuCard,
+        card: {
+          empty: cashuCard.empty,
+          // The unit of the card's own value; an empty card has none.
+          unit:
+            eligibility?.ok && eligibility.unit !== "choose" && !eligibility.committed
+              ? eligibility.unit
+              : undefined,
+        },
       })
+      if (leftRef.current) {
+        // The screen was left while the mint answered: nothing was sent.
+        cancelTopUp(deps, record.id).catch(() => undefined)
+        return
+      }
       const fee = await feeFor(record)
       setStep({ name: "confirm", record, fee })
     } catch (err) {
+      // No record exists yet, so nothing was saved or paid.
       if (err instanceof TopUpError && err.reason === "slots") {
         setError(LL.FlashcardV2.topUpNoRoom({ needed, free: freeSlots }))
+      } else if (err instanceof TopUpError && err.reason === "unit") {
+        setError(LL.FlashcardV2.topUpCantUnfinishedUnit())
       } else {
-        setError(LL.FlashcardV2.topUpFailed())
+        setError(LL.FlashcardV2.topUpPrepareFailed())
       }
       setStep({ name: "amount" })
     } finally {
@@ -315,22 +417,53 @@ export const FlashcardV2TopUpScreen = () => {
   const pay = async (record: TopUpRecord, fee?: number) => {
     setError(undefined)
     setStep({ name: "working", record, message: LL.FlashcardV2.topUpPaying() })
+    let paid
     try {
-      const { record: after, result } = await payTopUp(deps, record.id)
-      if (result.status === "paid" || result.status === "pending") {
-        await mintUntilReady(after)
+      paid = await payTopUp(deps, record.id)
+    } catch {
+      // Thrown before the payment went out, or after: the saved record says
+      // which (an unreadable one says nothing, so the answer is unknown). One
+      // gone from the store was dropped as expired.
+      const saved = await deps.store.get(record.id).then(
+        (found) => found ?? null,
+        () => undefined,
+      )
+      if (saved === null) {
+        setStep({ name: "refused", message: LL.FlashcardV2.topUpInvoiceExpired() })
         return
       }
-      setStep({ name: "confirm", record: after, fee })
+      setStep({ name: "confirm", record: saved ?? record, fee })
+      const neverSent =
+        saved && !saved.payment.everDispatched && !saved.payment.dispatched
       setError(
-        result.status === "failed"
-          ? LL.FlashcardV2.topUpPaymentFailed()
+        neverSent
+          ? LL.FlashcardV2.topUpPrepareFailed()
           : LL.FlashcardV2.topUpPaymentUnknown(),
       )
-    } catch {
-      // payTopUp saves before it throws; asking the mint again settles it.
-      setStep({ name: "confirm", record, fee })
-      setError(LL.FlashcardV2.topUpPaymentUnknown())
+      return
+    }
+    const { record: after, result } = paid
+    switch (result.status) {
+      case "paid":
+      case "pending":
+        nudgeTopUpMinter()
+        await mintUntilReady(after)
+        return
+      case "expired":
+        // Not sent. The record stays until the mint says whether an earlier
+        // dispatch landed; the card's screen shows it meanwhile.
+        setStep({ name: "refused", message: LL.FlashcardV2.topUpInvoiceExpired() })
+        return
+      case "failed":
+        // Refused before it ran: nothing left the wallet.
+        setStep({ name: "confirm", record: after, fee })
+        setError(LL.FlashcardV2.topUpPaymentFailed())
+        return
+      case "unknown":
+        // May still land: the app watches the mint for it from here.
+        nudgeTopUpMinter()
+        setStep({ name: "confirm", record: after, fee })
+        setError(LL.FlashcardV2.topUpPaymentUnknown())
     }
   }
 
@@ -340,6 +473,12 @@ export const FlashcardV2TopUpScreen = () => {
     setError(undefined)
     try {
       const done = await load(record, cashuCard, pinToUse)
+      if (done.state !== "loaded") {
+        // Part of it is being spent at the mint right now: a later load
+        // asks the mint again.
+        setStep({ name: "refused", message: LL.FlashcardV2.topUpHeld() })
+        return
+      }
       const message = LL.FlashcardV2.topUpLoaded({
         amount: formatUnitAmount(done.amount, done.unit, LL),
       })
@@ -486,12 +625,9 @@ export const FlashcardV2TopUpScreen = () => {
               eligibility?.ok &&
               eligibility.unit !== "choose" && (
                 <Text type="caption" style={styles.center} testID="topup-unit-fixed">
-                  {LL.FlashcardV2.topUpUnitFixed({
-                    unit:
-                      unit === "sat"
-                        ? LL.FlashcardV2.topUpUnitSat()
-                        : LL.FlashcardV2.topUpUnitUsd(),
-                  })}
+                  {eligibility.committed
+                    ? LL.FlashcardV2.topUpUnitCommitted({ unit: unitName })
+                    : LL.FlashcardV2.topUpUnitFixed({ unit: unitName })}
                 </Text>
               )
             )}
@@ -506,6 +642,11 @@ export const FlashcardV2TopUpScreen = () => {
             {needed > 0 && !amountProblem && (
               <Text type="caption" style={styles.center} testID="topup-slots">
                 {LL.FlashcardV2.topUpSlots({ needed, free: freeSlots })}
+              </Text>
+            )}
+            {reservedSlots > 0 && (
+              <Text type="caption" style={styles.center} testID="topup-slots-reserved">
+                {LL.FlashcardV2.topUpSlotsReserved({ reserved: reservedSlots })}
               </Text>
             )}
             {amountProblem && (

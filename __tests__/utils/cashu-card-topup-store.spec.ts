@@ -27,7 +27,7 @@ const record = (id: string, over: Partial<TopUpRecord> = {}): TopUpRecord => ({
     walletId: "w",
     idempotencyKey: `key-${id}`,
     dispatched: false,
-    wentKeyless: false,
+    everDispatched: false,
   },
   loadStarted: false,
   state: "quoted",
@@ -104,6 +104,38 @@ describe("createTopUpStore", () => {
 
     const byId = Object.fromEntries((await store.list()).map((r) => [r.id, r.state]))
     expect(byId).toEqual({ a: "paid", b: "minted", c: "quoted" })
+  })
+
+  it("removes a record only if it still passes the test when its turn comes", async () => {
+    const store = createTopUpStore()
+    await store.put(record("a"))
+    await store.put(record("b"))
+
+    // A payment goes out for "a" while a drop decided from an earlier read waits its turn.
+    const [, removedA] = await Promise.all([
+      store.update("a", (r) => ({
+        ...r,
+        payment: { ...r.payment, dispatched: true, everDispatched: true },
+      })),
+      store.removeIf("a", (r) => !r.payment.everDispatched),
+    ])
+    expect(removedA).toBe(false)
+    await expect(store.removeIf("b", (r) => !r.payment.everDispatched)).resolves.toBe(
+      true,
+    )
+    await expect(store.removeIf("missing", () => true)).resolves.toBe(false)
+    expect((await store.list()).map((r) => r.id)).toEqual(["a"])
+  })
+
+  it("never reads a Keychain failure as nothing to remove", async () => {
+    const store = createTopUpStore()
+    await store.put(record("a"))
+    getCredentials.mockRejectedValueOnce(new Error("User interaction is not allowed"))
+
+    await expect(store.removeIf("a", () => true)).rejects.toThrow(
+      "User interaction is not allowed",
+    )
+    expect((await store.list()).map((r) => r.id)).toEqual(["a"])
   })
 
   it("keeps a failed write from blocking the ones queued after it", async () => {

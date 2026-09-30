@@ -53,18 +53,31 @@ export type TopUpRecord = {
   outputs: TopUpOutput[]
   payment: {
     walletId: string
+    /** Never sent without it: a top-up is paid only under its key. */
     idempotencyKey: string
-    /** Set before the first dispatch: from then on the outcome may be unknown. */
+    /**
+     * The retry flag. Set before a dispatch: while it is set a payment under
+     * `idempotencyKey` may be out, so the next dispatch is a retry of that
+     * key. Cleared, with a fresh key, only when a FIRST dispatch was refused
+     * provably before it executed.
+     */
     dispatched: boolean
-    /** A dispatch went out without the key (the server refused the field). */
-    wentKeyless: boolean
+    /**
+     * Set before the first dispatch and never cleared. From then on the record
+     * is dropped only once the mint still holds its quote unpaid well after the
+     * quote expired: an answer read as a refusal may be wrong, and only this
+     * record (its lock key) can mint a payment that lands anyway.
+     */
+    everDispatched: boolean
   }
   /** Set once minted: what each LOAD_PROOF writes. */
   proofs?: CardSlotProof[]
   /**
    * Set before the first LOAD_PROOF. From then on a proof may be on the card
    * without the app having seen the card's answer, so every later load reads
-   * the card's inventory first: the card itself accepts duplicates.
+   * the card's inventory first (the card itself accepts duplicates), and asks
+   * the mint about each proof the inventory does not find (a slot can be
+   * spent and cleared since).
    */
   loadStarted: boolean
   state: TopUpState

@@ -14,6 +14,7 @@ import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { blockedPinGatesSpend, CashuCardInfo } from "@app/utils/cashu-card"
+import { TopUpRecord, quoteIsDead } from "@app/utils/cashu-card-topup"
 
 import FlashcardImage from "@app/assets/images/flashcard.png"
 import Sync from "@app/assets/icons/sync.svg"
@@ -39,8 +40,11 @@ export const FlashcardV2Screen = () => {
   const { LL } = useI18nContext()
   const { cashuCard, forgetCashuCard } = useFlashcard()
   // Paid top-ups not on the card yet, and ones whose payment may still land.
-  // A quote that was never sent for payment is not shown: nothing was paid.
-  const unfinishedTopUps = useUnfinishedTopUps(cashuCard?.pubkey).filter(
+  // A quote with no payment out (never sent, or refused) is not shown.
+  const { records: savedTopUps, dismiss: dismissTopUp } = useUnfinishedTopUps(
+    cashuCard?.pubkey,
+  )
+  const unfinishedTopUps = savedTopUps.filter(
     (record) => record.state !== "quoted" || record.payment.dispatched,
   )
   const tapFlashcard = useTapFlashcard()
@@ -100,7 +104,10 @@ export const FlashcardV2Screen = () => {
       <PinStateNotice pinState={cashuCard.pinState} version={cashuCard.version} />
 
       {unfinishedTopUps.map((record) => {
-        const amount = formatUnitAmount(record.amount, record.unit, LL)
+        // A sent payment whose invoice expired long enough ago that nothing
+        // can pay it now: Dismiss asks the mint once more, and drops the
+        // top-up only if it still holds the invoice unpaid.
+        const expired = record.state === "quoted" && quoteIsDead(record, Date.now())
         return (
           <View
             key={record.id}
@@ -108,21 +115,31 @@ export const FlashcardV2Screen = () => {
             testID="flashcard-v2-unfinished-topup"
           >
             <Text type="p2" style={styles.unfinishedText}>
-              {record.state === "quoted"
-                ? LL.FlashcardV2.topUpUnfinishedUnpaid({ amount })
-                : LL.FlashcardV2.topUpUnfinishedPaid({ amount })}
+              {unfinishedText(record, expired, LL)}
             </Text>
-            <TouchableOpacity
-              accessibilityRole="button"
-              testID="flashcard-v2-finish-topup"
-              onPress={() =>
-                navigation.navigate("FlashcardV2TopUp", { topUpId: record.id })
-              }
-            >
-              <Text type="p2" bold>
-                {LL.FlashcardV2.topUpFinish()}
-              </Text>
-            </TouchableOpacity>
+            {expired ? (
+              <TouchableOpacity
+                accessibilityRole="button"
+                testID="flashcard-v2-dismiss-topup"
+                onPress={() => dismissTopUp(record.id).catch(() => undefined)}
+              >
+                <Text type="p2" bold>
+                  {LL.FlashcardV2.topUpDismiss()}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                accessibilityRole="button"
+                testID="flashcard-v2-finish-topup"
+                onPress={() =>
+                  navigation.navigate("FlashcardV2TopUp", { topUpId: record.id })
+                }
+              >
+                <Text type="p2" bold>
+                  {LL.FlashcardV2.topUpFinish()}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )
       })}
@@ -293,6 +310,13 @@ const DetailRow: React.FC<{ label: string; value: string; testID?: string }> = (
 }
 
 type LLType = ReturnType<typeof useI18nContext>["LL"]
+
+const unfinishedText = (record: TopUpRecord, expired: boolean, LL: LLType): string => {
+  const amount = formatUnitAmount(record.amount, record.unit, LL)
+  if (record.state !== "quoted") return LL.FlashcardV2.topUpUnfinishedPaid({ amount })
+  if (expired) return LL.FlashcardV2.topUpUnfinishedExpired({ amount })
+  return LL.FlashcardV2.topUpUnfinishedUnpaid({ amount })
+}
 
 const slotSummary = (card: CashuCardInfo, LL: LLType) =>
   LL.FlashcardV2.slotSummary({

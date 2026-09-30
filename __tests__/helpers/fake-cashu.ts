@@ -1,7 +1,8 @@
 /**
  * Test doubles for the Cashu card top-up: a mint that really signs (BDHKE with
- * DLEQ, NUT-20 quote locks, NUT-09 restore), and a card that stores proofs the
- * way the applet does, duplicates included.
+ * DLEQ, NUT-20 quote locks, NUT-09 restore, NUT-07 proof states) and refuses
+ * a paid quote past its expiry as Nutshell does, and a card that stores
+ * proofs the way the applet does, duplicates included.
  */
 import {
   Amount,
@@ -16,7 +17,7 @@ import {
 } from "@cashu/cashu-ts"
 
 import { PROOF_SIZE, Transceiver, toHex } from "../../app/utils/cashu-card"
-import type { QuoteState, TopUpMint } from "../../app/utils/cashu-card-topup"
+import type { ProofState, QuoteState, TopUpMint } from "../../app/utils/cashu-card-topup"
 
 type FakeQuote = {
   amount: number
@@ -34,9 +35,19 @@ export type FakeMint = TopUpMint & {
   settle: (quote: string) => void
   /** Every output the mint has signed, by B_. */
   signed: Map<string, SerializedBlindedSignature>
+  /** NUT-07: proofs the mint has seen spent (or pending), by Y. Others are UNSPENT. */
+  proofStatesByY: Map<string, ProofState>
+  /** How long a new quote lives, in seconds: phoenixd's createinvoice default. */
+  ttlSeconds: number
 }
 
-export const createFakeMint = (): FakeMint => {
+/**
+ * `now` is the mint's clock in ms (a quote's expiry is on it, as Nutshell's
+ * is on the invoice's); pass the engine's clock so the two agree.
+ */
+export const createFakeMint = ({
+  now = Date.now,
+}: { now?: () => number } = {}): FakeMint => {
   const pair = createNewMintKeys(21, undefined, { unit: "sat", versionByte: 0 })
   const keys: Record<string, string> = {}
   Object.entries(pair.pubKeys).forEach(([amount, key]) => {
@@ -53,6 +64,8 @@ export const createFakeMint = (): FakeMint => {
   } as MintKeys
   const quotes = new Map<string, FakeQuote>()
   const signed = new Map<string, SerializedBlindedSignature>()
+  const proofStatesByY = new Map<string, ProofState>()
+  const nowSeconds = () => Math.floor(now() / 1000)
   let count = 0
 
   const sign = (message: SerializedBlindedMessage): SerializedBlindedSignature => {
@@ -74,11 +87,13 @@ export const createFakeMint = (): FakeMint => {
     return quote
   }
 
-  return {
+  const fake: FakeMint = {
     url: "https://mint.test",
     keysetId: pair.keysetId,
     quotes,
     signed,
+    proofStatesByY,
+    ttlSeconds: 3600,
     settle: (id) => {
       quoteOf(id).state = "PAID"
     },
@@ -99,7 +114,7 @@ export const createFakeMint = (): FakeMint => {
         pubkey,
         state: "UNPAID",
         request: `lnbc${amount}n1quote${count}`,
-        expiry: 2_000_000_000,
+        expiry: nowSeconds() + fake.ttlSeconds,
       }
       quotes.set(id, quote)
       return { quote: id, ...quote }
@@ -113,6 +128,11 @@ export const createFakeMint = (): FakeMint => {
       }
       const total = outputs.reduce((sum, o) => sum + Amount.from(o.amount).toNumber(), 0)
       if (total !== quote.amount) throw new Error("outputs do not add up to the quote")
+      // Nutshell 0.20.3 cashu/mint/ledger.py mint(): a PAID quote is refused
+      // once its expiry has passed, and stays PAID.
+      if (quote.expiry !== null && quote.expiry < nowSeconds()) {
+        throw new Error("quote expired")
+      }
       const signatures = outputs.map(sign)
       outputs.forEach((output, i) => signed.set(output.B_, signatures[i]))
       quote.state = "ISSUED"
@@ -127,7 +147,11 @@ export const createFakeMint = (): FakeMint => {
         ),
       }
     }),
+    proofStates: jest.fn(async (Ys: string[]) =>
+      Ys.map((Y) => proofStatesByY.get(Y) ?? "UNSPENT"),
+    ),
   }
+  return fake
 }
 
 const SW_OK = [0x90, 0x00]

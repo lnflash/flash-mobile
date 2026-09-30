@@ -8,8 +8,19 @@ import {
 
 import type { CardUnit } from "./types"
 
-/** NUT-04 quote states: the mint's word on whether its invoice was paid. */
-export type QuoteState = "UNPAID" | "PAID" | "ISSUED"
+/**
+ * NUT-04 quote states: the mint's word on whether its invoice was paid.
+ * Nutshell also answers PENDING while a mint call for the quote is running
+ * (its MintQuoteState), which ends ISSUED, or PAID again if the call failed.
+ */
+export type QuoteState = "UNPAID" | "PAID" | "PENDING" | "ISSUED"
+
+const QUOTE_STATES: readonly string[] = ["UNPAID", "PAID", "PENDING", "ISSUED"]
+
+/** NUT-07 proof states: whether the mint has seen a proof spent. */
+export type ProofState = "UNSPENT" | "PENDING" | "SPENT"
+
+const PROOF_STATES: readonly string[] = ["UNSPENT", "PENDING", "SPENT"]
 
 export type TopUpQuote = {
   quote: string
@@ -44,6 +55,11 @@ export type TopUpMint = {
     outputs: SerializedBlindedMessage[]
     signatures: SerializedBlindedSignature[]
   }>
+  /**
+   * NUT-07: the state of each proof, by its Y = hash_to_curve(secret), in the
+   * order asked. Every Y must come back with a known state, or this throws.
+   */
+  proofStates: (Ys: string[]) => Promise<ProofState[]>
 }
 
 /**
@@ -110,8 +126,29 @@ export const createTopUpMint = (url: string): TopUpMint => {
         pubkey: quote.pubkey,
       }
     },
-    quoteState: async (quote) => (await mint.checkMintQuoteBolt11(quote)).state,
+    quoteState: async (quote) => {
+      // Typed as three states; Nutshell can also answer PENDING. Anything
+      // else is refused rather than read as "not unpaid", which is "paid".
+      const { state } = await mint.checkMintQuoteBolt11(quote)
+      if (!QUOTE_STATES.includes(state)) {
+        throw new TopUpMintError(`the mint answered an unknown quote state (${state})`)
+      }
+      return state as QuoteState
+    },
     mint: async (payload) => (await mint.mintBolt11(payload)).signatures,
     restore: (outputs) => mint.restore({ outputs }),
+    proofStates: async (Ys) => {
+      const { states } = await mint.check({ Ys })
+      // Paired by Y, not by position, as cashu-client's checkProofStates
+      // does: a verdict read against the wrong proof is worse than none.
+      const byY = new Map(states.map((entry) => [entry.Y.toLowerCase(), entry.state]))
+      return Ys.map((Y) => {
+        const state = byY.get(Y.toLowerCase())
+        if (state === undefined || !PROOF_STATES.includes(state)) {
+          throw new TopUpMintError(`the mint gave no known state for proof ${Y}`)
+        }
+        return state as ProofState
+      })
+    },
   }
 }
