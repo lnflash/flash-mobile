@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from "react"
-import { AccessibilityInfo, Image, Platform, TouchableOpacity, View } from "react-native"
+import {
+  AccessibilityInfo,
+  Platform,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
 import { StackNavigationProp } from "@react-navigation/stack"
 
 import { Screen } from "@app/components/screen"
 import { IconBtn } from "@app/components/buttons"
+import { FlashcardV2Art, flashcardV2ArtSize } from "@app/components/flashcard-v2-art"
 import HideableArea from "@app/components/hideable-area/hideable-area"
 import type { CashuCardState } from "@app/contexts/Flashcard"
 import { useHideBalanceQuery } from "@app/graphql/generated"
@@ -16,7 +23,6 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { blockedPinGatesSpend, CashuCardInfo } from "@app/utils/cashu-card"
 import { TopUpRecord, quoteIsDead } from "@app/utils/cashu-card-topup"
 
-import FlashcardImage from "@app/assets/images/flashcard.png"
 import Sync from "@app/assets/icons/sync.svg"
 
 /**
@@ -38,6 +44,8 @@ export const FlashcardV2Screen = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
+  const { width: windowWidth } = useWindowDimensions()
+  const art = flashcardV2ArtSize(windowWidth)
   const { cashuCard, forgetCashuCard } = useFlashcard()
   // Paid top-ups not on the card yet, and ones whose payment may still land.
   // A quote with no payment out (never sent, or refused) is not shown.
@@ -77,10 +85,26 @@ export const FlashcardV2Screen = () => {
 
   if (!cashuCard) return null
 
+  const last4 = cardLast4(cashuCard.pubkey)
+
   return (
     <Screen preset="scroll" backgroundColor={colors.background}>
-      <Image source={FlashcardImage} style={styles.flashcard} />
-      <View style={styles.top} />
+      {/* The card as printed (Flash Card v2 "Bearer"), the art flash-pos
+          draws. Its id is in the details below, so only a screen reader
+          hears it here, masked as flash-pos masks it. */}
+      <FlashcardV2Art
+        width={art.width}
+        style={styles.flashcard}
+        accessibilityLabel={
+          last4 ? LL.FlashcardV2.cardEnding({ last4 }) : LL.FlashcardV2.title()
+        }
+        testID="flashcard-v2-card-art"
+      />
+      {/* The card is drawn out of flow; this holds its place. */}
+      <View
+        style={{ paddingTop: CARD_TOP + art.height + CARD_GAP }}
+        testID="flashcard-v2-card-space"
+      />
 
       <View style={styles.balanceWrapper}>
         <HideableArea isContentVisible={hideBalance}>
@@ -419,14 +443,25 @@ export const balanceLines = (
 export const shortPubkey = (pubkey: string) =>
   pubkey.length > 16 ? `${pubkey.slice(0, 8)}…${pubkey.slice(-6)}` : pubkey
 
+/**
+ * The last four hex digits of the card's pubkey, upper case: the card as
+ * flash-pos masks it ("•••• 0C67", last4FromPubkey). Undefined for a key too
+ * short to have them.
+ */
+export const cardLast4 = (pubkey: string): string | undefined => {
+  const hex = pubkey.replace(/[^0-9a-f]/gi, "")
+  return hex.length >= 4 ? hex.slice(-4).toUpperCase() : undefined
+}
+
+/** The card's offset from the top of the screen, and the room kept under it. */
+const CARD_TOP = 10
+const CARD_GAP = 16
+
 const useStyles = makeStyles(({ colors }) => ({
-  top: {
-    paddingTop: 210,
-  },
   flashcard: {
     position: "absolute",
     alignSelf: "center",
-    top: 10,
+    top: CARD_TOP,
   },
   balanceWrapper: {
     minHeight: 56,
