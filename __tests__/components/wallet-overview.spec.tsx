@@ -28,6 +28,7 @@ jest.mock("@app/hooks", () => ({
   // flashcard-tap-call-sites.spec.tsx.
   useOpenFlashcard: () => jest.fn(),
   useTapFlashcard: () => jest.fn(),
+  useKnownCashuCard: () => undefined,
 }))
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({

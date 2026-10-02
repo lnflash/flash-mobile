@@ -42,8 +42,9 @@ export const useTapFlashcard = ({
 /**
  * The Home Flashcard tile and the Settings Flashcard row: open the card the app
  * already holds, else ask for a tap. One rule for both entry points, BoltCard
- * first: a linked BoltCard opens Card (the Home tile exists only for it and
- * shows its balance), then a Cashu card read this session opens FlashcardV2,
+ * first: a linked BoltCard opens Card (this Home tile shows its balance; a
+ * remembered Cashu card has a Home row of its own), then a Cashu card read
+ * this session opens FlashcardV2,
  * then a tap routed by `useTapFlashcard`. A BoltCard holder reaches the Cashu
  * card by tapping it on any read control, including the Home tile's sync and
  * Card's own refresh.

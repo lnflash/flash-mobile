@@ -42,6 +42,8 @@ jest.mock("@app/hooks", () => ({
     resetFlashcard: jest.fn(),
   }),
   useBreez: () => ({ btcWallet: { balance: 0 } }),
+  // No Cashu card remembered: only the BoltCard tile renders.
+  useKnownCashuCard: () => undefined,
   useDisplayCurrency: () => ({ formatMoneyAmount: () => "$1.00" }),
   usePriceConversion: () => ({ convertMoneyAmount: (amount: unknown) => amount }),
   useUnauthedPriceConversion: () => ({ convertMoneyAmount: (amount: unknown) => amount }),
