@@ -29,6 +29,7 @@ import {
   toUsdMoneyAmount,
 } from "@app/types/amounts"
 import { getCashWallet } from "@app/graphql/wallets-utils"
+import { FlashcardV2Art } from "@app/components/flashcard-v2-art"
 import type { KnownCard } from "@app/store/redux/slices/flashcardV2Slice"
 
 type Props = {
@@ -223,6 +224,20 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           onPress={openCashuCard}
           onPressRightBtn={tapFlashcard}
           testID="home-cashu-card"
+          iconNode={
+            // Decorative here: the row's title and amount say what it is.
+            <View
+              importantForAccessibility="no-hide-descendants"
+              accessibilityElementsHidden
+            >
+              <FlashcardV2Art
+                width={HOME_CARD_ART_WIDTH}
+                accessibilityLabel={LL.FlashcardV2.title()}
+                style={homeCardArtStyle}
+                testID="home-cashu-card-art"
+              />
+            </View>
+          }
           rightIcon={"sync"}
         />
       )}
@@ -231,6 +246,11 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
 }
 
 const grouped = new Intl.NumberFormat("en-US")
+
+/** The Bearer card art as the row's thumbnail: the width of the icon it replaces. */
+const HOME_CARD_ART_WIDTH = 54
+/** The art's drop shadow is sized for the card screen; a thumbnail goes without. */
+const homeCardArtStyle = { elevation: 0, shadowOpacity: 0 }
 
 /**
  * What a Cashu card held when this phone last read it, in the card's unit.
