@@ -27,6 +27,8 @@ export type AmountInputProps = {
   showValuesIfDisabled?: boolean
   big?: boolean
   newDesign?: boolean
+  /** Open the keypad as the field mounts, on a screen whose first job is taking an amount. */
+  initiallyOpen?: boolean
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -42,12 +44,13 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   showValuesIfDisabled = true,
   big = true,
   newDesign = false,
+  initiallyOpen = false,
 }) => {
   const { LL } = useI18nContext()
   const { formatMoneyAmount, getSecondaryAmountIfCurrencyIsDifferent } =
     useDisplayCurrency()
 
-  const [isSettingAmount, setIsSettingAmount] = React.useState(false)
+  const [isSettingAmount, setIsSettingAmount] = React.useState(initiallyOpen)
 
   const onSetAmount = (amount: MoneyAmount<WalletOrDisplayCurrency>) => {
     setAmount && setAmount(amount)
@@ -59,8 +62,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
 
   if (isNonZeroMoneyAmount(unitOfAccountAmount)) {
     const isBtcDenominatedCashWalletAmount =
-      (walletCurrency === WalletCurrency.Usd ||
-        walletCurrency === WalletCurrency.Usdt) &&
+      (walletCurrency === WalletCurrency.Usd || walletCurrency === WalletCurrency.Usdt) &&
       unitOfAccountAmount.currency === WalletCurrency.Btc
 
     const primaryAmount = convertMoneyAmount(unitOfAccountAmount, DisplayCurrency)

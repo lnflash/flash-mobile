@@ -159,15 +159,19 @@ jest.mock("@app/utils/cashu-card-topup", () => ({
   cancelTopUp: (...args: unknown[]) => mockCancel(...args),
 }))
 // The keypad modal is its own component; here one press sets the amount.
+let mockAmountInputProps: { initiallyOpen?: boolean } | undefined
 jest.mock("@app/components/amount-input", () => ({
-  AmountInput: ({ setAmount }: { setAmount: (a: unknown) => void }) => (
-    <TouchableOpacity
-      testID="amount-input"
-      onPress={() =>
-        setAmount({ amount: mockEntered, currency: "BTC", currencyCode: "BTC" })
-      }
-    />
-  ),
+  AmountInput: (props: { setAmount: (a: unknown) => void; initiallyOpen?: boolean }) => {
+    mockAmountInputProps = props
+    return (
+      <TouchableOpacity
+        testID="amount-input"
+        onPress={() =>
+          props.setAmount({ amount: mockEntered, currency: "BTC", currencyCode: "BTC" })
+        }
+      />
+    )
+  },
 }))
 
 const renderScreen = () =>
@@ -193,6 +197,7 @@ const errorText = () => screen.getByTestId("topup-error").props.children
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockAmountInputProps = undefined
   mockCard = card()
   mockParams = undefined
   mockUsdEnabled = false
@@ -286,6 +291,34 @@ describe("FlashcardV2TopUpScreen", () => {
       LL.FlashcardV2.topUpCantBlocked(),
     )
     expect(screen.queryByTestId("amount-input")).toBeNull()
+  })
+
+  it("opens the keypad as the amount step shows: a top-up's first job is its amount", () => {
+    renderScreen()
+    expect(mockAmountInputProps?.initiallyOpen).toBe(true)
+  })
+
+  it("waits to open the keypad while the unit is still to be chosen, and not once one is fixed", () => {
+    mockUsdEnabled = true
+    renderScreen()
+    expect(screen.getByTestId("topup-unit-usd")).toBeTruthy()
+    expect(mockAmountInputProps?.initiallyOpen).toBe(false)
+
+    screen.unmount()
+    mockCard = card({
+      balance: 500,
+      unspent: 1,
+      empty: 31,
+      unitTotals: { byUnit: [{ unit: "sat", amount: 500 }], unknown: 0 },
+    })
+    renderScreen()
+    expect(mockAmountInputProps?.initiallyOpen).toBe(true)
+  })
+
+  it("keeps the keypad shut once an amount is entered", () => {
+    renderScreen()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(mockAmountInputProps?.initiallyOpen).toBe(false)
   })
 
   it("hides USD while the flag is off", () => {
