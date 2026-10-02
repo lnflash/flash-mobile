@@ -37,6 +37,8 @@ type Props = {
   currency: string
   emptyText?: string
   rightIcon?: IconNamesType
+  /** Drawn in place of `icon`, for a thumbnail no icon set holds. */
+  iconNode?: React.ReactNode
   onPress: () => void
   onPressRightBtn?: () => void
   testID?: string
@@ -49,6 +51,7 @@ const Balance: React.FC<Props> = ({
   currency,
   emptyText,
   rightIcon,
+  iconNode,
   onPress,
   onPressRightBtn,
   testID,
@@ -61,7 +64,7 @@ const Balance: React.FC<Props> = ({
 
   return (
     <Wrapper onPress={onPress} activeOpacity={0.5} color={colors.layer} testID={testID}>
-      <Icon color={colors.icon01} />
+      {iconNode ?? <Icon color={colors.icon01} />}
       {!!amount ? (
         <>
           <ColumnWrapper>
