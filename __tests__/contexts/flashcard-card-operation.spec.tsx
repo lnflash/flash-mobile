@@ -562,6 +562,32 @@ describe("FlashcardProvider runCardOperation", () => {
     expect(record.unit).toBe("sat")
   })
 
+  it("an op that moves value is labelled at once when the mint named its keysets before", async () => {
+    transceive.mockImplementation(makeSplitCard())
+    await mount()
+    await readCard()
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    // The mint is slow to answer about the new split: the label does not wait.
+    lookupUnits.mockReturnValue(
+      new Promise(() => {
+        // never answers
+      }),
+    )
+
+    await act(async () => {
+      await latest?.runCardOperation(async (t) => {
+        await t(LOAD_APDU)
+      }, toHex(PUBKEY))
+    })
+
+    expect(latest?.cashuCard?.balance).toBe(1500)
+    expect(latest?.cashuCard?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 1500 }],
+      unknown: 0,
+    })
+    expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBe("sat")
+  })
+
   it("an op that moves value, when the split cannot be re-read, leaves the total 'unit unknown' and clears the record's unit", async () => {
     transceive.mockImplementation(makeSplitCard({ splitFailsAfterLoad: true }))
     await mount()

@@ -39,6 +39,13 @@ export type KnownCard = {
 
 export interface FlashcardV2Slice {
   cards: Record<string, KnownCard>
+  /**
+   * The unit the mint named for each keyset it has named, keyset id
+   * (lowercase hex) to unit. Public mint data: a keyset's unit never changes,
+   * so a read whose keysets are all here is named before the mint answers
+   * again. Absent until the mint first answers.
+   */
+  keysetUnits?: Record<string, string>
 }
 
 export const initialFlashcardV2State: FlashcardV2Slice = {
@@ -76,6 +83,10 @@ export const flashcardV2Slice = createSlice({
       const card = state.cards[action.payload.pubkey]
       if (card) card.unit = action.payload.unit
     },
+    /** The mint named these keysets' units: kept for the next read. */
+    keysetUnitsLearned: (state, action: PayloadAction<Record<string, string>>) => {
+      state.keysetUnits = { ...state.keysetUnits, ...action.payload }
+    },
     /** "Remove card": this phone forgets the card. */
     cardForgotten: (state, action: PayloadAction<{ pubkey: string }>) => {
       delete state.cards[action.payload.pubkey]
@@ -85,7 +96,12 @@ export const flashcardV2Slice = createSlice({
   },
 })
 
-export const { cardSeen, cardUnitResolved, cardForgotten, resetFlashcardV2 } =
-  flashcardV2Slice.actions
+export const {
+  cardSeen,
+  cardUnitResolved,
+  cardForgotten,
+  keysetUnitsLearned,
+  resetFlashcardV2,
+} = flashcardV2Slice.actions
 
 export default flashcardV2Slice.reducer
