@@ -13,11 +13,12 @@ import { Loading } from "./ActivityIndicatorContext"
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { useAppDispatch } from "@app/store/redux"
+import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
   cardForgotten,
   cardSeen,
   cardUnitResolved,
+  keysetUnitsLearned,
 } from "@app/store/redux/slices/flashcardV2Slice"
 
 // utils
@@ -41,6 +42,7 @@ import {
 import { extendCardTimeout } from "../utils/cashu-card-nfc"
 import {
   CardUnitTotals,
+  KeysetUnits,
   soleUnit,
   totalsByUnit,
   unitsForKeysets,
@@ -60,19 +62,20 @@ const describeError = (err: unknown): string => {
 
 /**
  * A card's unspent value per unit, as the mint names the unit of each keyset
- * on it. An empty card needs no lookup. Undefined when the tap could not read
- * the keyset split (there is nothing to ask the mint about), or when the mint
- * could not be asked or did not answer with a keyset list.
+ * on it, with the units the mint named (`units`, absent for an empty card,
+ * which needs no lookup). Undefined when the tap could not read the keyset
+ * split (there is nothing to ask the mint about), or when the mint could not
+ * be asked or did not answer with a keyset list.
  */
 const cardUnitTotals = async (
   card: CashuCardInfo,
-): Promise<CardUnitTotals | undefined> => {
+): Promise<{ unitTotals: CardUnitTotals; units?: KeysetUnits } | undefined> => {
   const { keysets } = card
   if (!keysets) return undefined
-  if (keysets.length === 0) return { byUnit: [], unknown: 0 }
+  if (keysets.length === 0) return { unitTotals: { byUnit: [], unknown: 0 } }
   try {
     const units = await unitsForKeysets(keysets.map((k) => k.keysetId))
-    return totalsByUnit(keysets, units)
+    return { unitTotals: totalsByUnit(keysets, units), units }
   } catch (err) {
     console.warn("Cashu mint keyset lookup failed:", describeError(err))
     return undefined
@@ -219,6 +222,20 @@ export const FlashcardProvider = ({ children }: Props) => {
   // finishes late can tell it no longer describes the card on screen.
   const cashuGeneration = useRef(0)
   const dispatch = useAppDispatch()
+  // What the mint has named before, kept across sessions: a split whose
+  // keysets are all named is labelled at once, before the mint answers again.
+  const knownKeysetUnits = useAppSelector((state) => state.flashcardV2.keysetUnits)
+  const knownKeysetUnitsRef = useRef(knownKeysetUnits)
+  knownKeysetUnitsRef.current = knownKeysetUnits
+
+  /** A split's units from what the mint named before; undefined unless it named them all. */
+  const knownUnitTotals = (keysets?: CardKeysetTotal[]): CardUnitTotals | undefined => {
+    if (!keysets) return undefined
+    const units = knownKeysetUnitsRef.current ?? {}
+    return keysets.every(({ keysetId }) => units[keysetId.toLowerCase()] !== undefined)
+      ? totalsByUnit(keysets, units)
+      : undefined
+  }
 
   useEffect(() => {
     loadFlashcard()
@@ -300,7 +317,8 @@ export const FlashcardProvider = ({ children }: Props) => {
         if (info) {
           // The card screen renders this; the caller navigates on the result.
           cashuGeneration.current += 1
-          setCashuCard(info)
+          const known = knownUnitTotals(info.keysets)
+          setCashuCard(known ? { ...info, unitTotals: known } : info)
           // A signed-in phone remembers the card: the applet keeps no history
           // of its own, so this device-local record is the only one (ENG-616).
           // A read while signed out stays in memory, as a BoltCard's does.
@@ -371,8 +389,12 @@ export const FlashcardProvider = ({ children }: Props) => {
    * or a forget, in the meantime wins.
    */
   const resolveCashuUnits = async (card: CashuCardInfo, generation: number) => {
-    const unitTotals = await cardUnitTotals(card)
-    if (!unitTotals || generation !== cashuGeneration.current) return
+    const answer = await cardUnitTotals(card)
+    if (!answer) return
+    // Facts about the mint's keysets: kept whatever the card does next.
+    if (answer.units && isAuthed) dispatch(keysetUnitsLearned(answer.units))
+    const { unitTotals } = answer
+    if (generation !== cashuGeneration.current) return
     // Totals belong to the split they were computed from. A card operation
     // that moved value since then dropped that split, and the record's unit
     // with it (`recordCardOperation`): a stale answer restores neither.
@@ -392,9 +414,10 @@ export const FlashcardProvider = ({ children }: Props) => {
    *
    * The keyset split, and the units the mint named for it, describe the
    * balance the tap read. A balance that changed leaves neither true, so both
-   * are dropped, in context and from the record's unit: the screen says
-   * "unit unknown" until the next read rather than show old per-unit figures
-   * beside a new total.
+   * are replaced: the new split is labelled at once when the mint has named
+   * all its keysets before, and is otherwise dropped, in context and from the
+   * record's unit, so the screen says "unit unknown" until the mint answers
+   * rather than show old per-unit figures beside a new total.
    */
   const recordCardOperation = (
     pubkey: string,
@@ -404,12 +427,14 @@ export const FlashcardProvider = ({ children }: Props) => {
     const previous = cashuCardRef.current
     if (previous?.pubkey !== pubkey) return
     const moved = update.balance !== undefined && update.balance !== previous.balance
+    // The new split is labelled at once when the mint named its keysets before.
+    const known = moved ? knownUnitTotals(keysets) : undefined
     const card: CashuCardState = {
       ...previous,
       ...update,
       // A split read in the same session as the move replaces the old one.
       keysets: moved ? keysets : previous.keysets,
-      unitTotals: moved ? undefined : previous.unitTotals,
+      unitTotals: moved ? known : previous.unitTotals,
     }
     setCashuCard(card)
     if (moved && keysets) {
@@ -429,7 +454,9 @@ export const FlashcardProvider = ({ children }: Props) => {
           at: Date.now(),
         }),
       )
-      if (moved) dispatch(cardUnitResolved({ pubkey, unit: undefined }))
+      if (moved) {
+        dispatch(cardUnitResolved({ pubkey, unit: known ? soleUnit(known) : undefined }))
+      }
     }
   }
 

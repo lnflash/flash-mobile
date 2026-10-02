@@ -5,7 +5,10 @@ import axios from "axios"
 import { buildSelectApdu } from "@app/utils/cashu-card"
 import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { store } from "@app/store/redux"
-import { resetFlashcardV2 } from "@app/store/redux/slices/flashcardV2Slice"
+import {
+  keysetUnitsLearned,
+  resetFlashcardV2,
+} from "@app/store/redux/slices/flashcardV2Slice"
 import {
   FlashcardSnapshot,
   PROVIDER_RENDER_TIMEOUT_MS,
@@ -230,6 +233,50 @@ describe("FlashcardProvider Cashu card orchestration", () => {
       }),
     )
     expect(knownCards()[PUBKEY_HEX].unit).toBe("sat")
+  })
+
+  it("labels a later read at once from the units the mint named before, without waiting on the mint", async () => {
+    tapCashuCard()
+    const { tap } = await mount()
+    await tap()
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    expect(store.getState().flashcardV2.keysetUnits).toEqual({ [KEYSET_HEX]: "sat" })
+
+    // The mint is slow this time: the read is labelled before it answers.
+    lookupUnits.mockReturnValue(
+      new Promise(() => {
+        // never answers
+      }),
+    )
+    await tap()
+    expect(latest?.cashuCard?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 500 }],
+      unknown: 0,
+    })
+  })
+
+  it("still waits on the mint for a card holding a keyset it has not named", async () => {
+    store.dispatch(keysetUnitsLearned({ ["ff".repeat(8)]: "usd" }))
+    tapCashuCard()
+    lookupUnits.mockReturnValue(
+      new Promise(() => {
+        // never answers
+      }),
+    )
+
+    await tapOnce()
+
+    expect(latest?.cashuCard?.balance).toBe(500)
+    expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+  })
+
+  it("a signed-out read keeps no keyset units for later", async () => {
+    tapCashuCard()
+
+    await tapOnce({ isAuthed: false })
+
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    expect(store.getState().flashcardV2.keysetUnits).toBeUndefined()
   })
 
   it("leaves the unit unknown, and the record's unit alone, when the mint cannot be asked", async () => {
