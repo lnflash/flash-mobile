@@ -1,21 +1,17 @@
 import { useAppSelector } from "@app/store/redux"
-import type { KnownCard } from "@app/store/redux/slices/flashcardV2Slice"
+import type {
+  FlashcardV2Slice,
+  KnownCard,
+} from "@app/store/redux/slices/flashcardV2Slice"
 
-/** The card read most recently, from the cards this phone remembers. */
-export const latestKnownCard = (
-  cards: Record<string, KnownCard>,
-): KnownCard | undefined => {
-  let latest: KnownCard | undefined
-  Object.values(cards).forEach((card) => {
-    if (!latest || card.lastSeenAt > latest.lastSeenAt) latest = card
-  })
-  return latest
-}
+/** The card attached to the app, from the cards this phone remembers. */
+export const attachedCard = (slice: FlashcardV2Slice): KnownCard | undefined =>
+  slice.attachedPubkey ? slice.cards[slice.attachedPubkey] : undefined
 
 /**
- * The Cashu card this phone read last (ENG-616), from `flashcardV2`: only a
- * signed-in read writes it, Remove card drops it, and logout clears them all.
- * Undefined when the phone remembers none.
+ * The Cashu card attached to the app (ENG-616): the one this phone read last
+ * while signed in, until Remove card detaches it. Logout forgets every card.
+ * Undefined when no card is attached.
  */
 export const useKnownCashuCard = (): KnownCard | undefined =>
-  useAppSelector((state) => latestKnownCard(state.flashcardV2.cards))
+  useAppSelector((state) => attachedCard(state.flashcardV2))
