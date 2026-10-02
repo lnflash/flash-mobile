@@ -72,6 +72,30 @@ describe("flashcardV2 slice — known cards", () => {
     expect(state.cards[other]).toBeDefined()
   })
 
+  it("a read attaches the card it read; forgetting it detaches it, and forgetting another card does not", () => {
+    const OTHER = "03" + "cd".repeat(32)
+    let state = reducer(undefined, seen({ pubkey: OTHER, at: 500 }))
+    expect(state.attachedPubkey).toBe(OTHER)
+    state = reducer(state, seen())
+    expect(state.attachedPubkey).toBe(PUBKEY)
+
+    state = reducer(state, cardForgotten({ pubkey: OTHER }))
+    expect(state.attachedPubkey).toBe(PUBKEY)
+
+    state = reducer(state, cardForgotten({ pubkey: PUBKEY }))
+    expect(state.attachedPubkey).toBeUndefined()
+    expect(state.cards).toEqual({})
+  })
+
+  it("forgetting the attached card leaves an older card on record, unattached", () => {
+    const OLD = "03" + "ae".repeat(32)
+    let state = reducer(undefined, seen({ pubkey: OLD, at: 500 }))
+    state = reducer(state, seen())
+    state = reducer(state, cardForgotten({ pubkey: PUBKEY }))
+    expect(Object.keys(state.cards)).toEqual([OLD])
+    expect(state.attachedPubkey).toBeUndefined()
+  })
+
   it("reset drops everything", () => {
     let state = reducer(undefined, seen())
     state = reducer(state, resetFlashcardV2())

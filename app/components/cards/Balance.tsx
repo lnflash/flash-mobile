@@ -39,6 +39,7 @@ type Props = {
   rightIcon?: IconNamesType
   onPress: () => void
   onPressRightBtn?: () => void
+  testID?: string
 }
 
 const Balance: React.FC<Props> = ({
@@ -50,6 +51,7 @@ const Balance: React.FC<Props> = ({
   rightIcon,
   onPress,
   onPressRightBtn,
+  testID,
 }) => {
   const { colors } = useTheme().theme
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
@@ -58,7 +60,7 @@ const Balance: React.FC<Props> = ({
   const RightIcon = icons[rightIcon ? rightIcon : "sync"]
 
   return (
-    <Wrapper onPress={onPress} activeOpacity={0.5} color={colors.layer}>
+    <Wrapper onPress={onPress} activeOpacity={0.5} color={colors.layer} testID={testID}>
       <Icon color={colors.icon01} />
       {!!amount ? (
         <>
