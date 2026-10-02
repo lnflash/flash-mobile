@@ -7,6 +7,7 @@ import reducer, {
   cardSeen,
   cardUnitResolved,
   initialFlashcardV2State,
+  keysetUnitsLearned,
   resetFlashcardV2,
 } from "@app/store/redux/slices/flashcardV2Slice"
 import {
@@ -70,6 +71,13 @@ describe("flashcardV2 slice — known cards", () => {
 
     expect(state.cards[PUBKEY]).toBeUndefined()
     expect(state.cards[other]).toBeDefined()
+  })
+
+  it("keeps the units the mint names, adding to what it named before", () => {
+    let state = reducer(undefined, keysetUnitsLearned({ aa: "sat" }))
+    state = reducer(state, keysetUnitsLearned({ bb: "usd" }))
+    expect(state.keysetUnits).toEqual({ aa: "sat", bb: "usd" })
+    expect(reducer(state, resetFlashcardV2()).keysetUnits).toBeUndefined()
   })
 
   it("reset drops everything", () => {
