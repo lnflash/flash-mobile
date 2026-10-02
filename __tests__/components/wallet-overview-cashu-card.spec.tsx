@@ -4,7 +4,7 @@ import { StyleSheet } from "react-native"
 import { act, fireEvent, render, screen, within } from "@testing-library/react-native"
 
 import WalletOverview from "../../app/components/wallet-overview/wallet-overview"
-import { latestKnownCard } from "../../app/hooks/use-known-cashu-card"
+import { attachedCard } from "../../app/hooks/use-known-cashu-card"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import type { KnownCard } from "../../app/store/redux/slices/flashcardV2Slice"
@@ -171,12 +171,15 @@ describe("WalletOverview: the Cashu card row", () => {
   })
 })
 
-describe("latestKnownCard", () => {
-  it("is the card read most recently, and none when the phone remembers none", () => {
+describe("attachedCard", () => {
+  it("is the card attached to the app, and none once it is detached, whatever else is on record", () => {
     const older = card({ pubkey: "03" + "ae".repeat(32), lastSeenAt: 1_000 })
-    const newer = card({ lastSeenAt: 2_000 })
-    expect(latestKnownCard({ [older.pubkey]: older, [newer.pubkey]: newer })).toBe(newer)
-    expect(latestKnownCard({ [newer.pubkey]: newer, [older.pubkey]: older })).toBe(newer)
-    expect(latestKnownCard({})).toBeUndefined()
+    const current = card({ lastSeenAt: 2_000 })
+    const cards = { [older.pubkey]: older, [current.pubkey]: current }
+    expect(attachedCard({ cards, attachedPubkey: current.pubkey })).toBe(current)
+    expect(attachedCard({ cards, attachedPubkey: older.pubkey })).toBe(older)
+    // Remove card detached it: an older card on record never shows instead.
+    expect(attachedCard({ cards })).toBeUndefined()
+    expect(attachedCard({ cards: {} })).toBeUndefined()
   })
 })
