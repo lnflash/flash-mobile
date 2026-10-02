@@ -202,6 +202,10 @@ export const FlashcardV2TopUpScreen = () => {
     eligibility?.ok && eligibility.unit !== "choose" ? eligibility.unit : "sat",
   )
   const [amount, setAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
+  // An empty card with USD on asks for the unit before the amount.
+  const choosingUnit = Boolean(
+    eligibility?.ok && eligibility.unit === "choose" && cashuCardUsdEnabled,
+  )
   const [pinEntry, setPinEntry] = useState("")
   // A PIN this session proved on the card; never stored.
   const [pin, setPin] = useState<string>()
@@ -644,7 +648,7 @@ export const FlashcardV2TopUpScreen = () => {
       case "amount":
         return (
           <>
-            {eligibility?.ok && eligibility.unit === "choose" && cashuCardUsdEnabled ? (
+            {choosingUnit ? (
               <View style={styles.units} accessibilityRole="radiogroup">
                 {(["sat", "usd"] as const).map((option) => (
                   <TouchableOpacity
@@ -682,6 +686,9 @@ export const FlashcardV2TopUpScreen = () => {
                 walletCurrency={walletCurrency}
                 setAmount={setAmount}
                 convertMoneyAmount={convertMoneyAmount}
+                // A top-up's first job is its amount: the keypad opens at
+                // once, unless the unit is still to be chosen.
+                initiallyOpen={!amount && !choosingUnit}
               />
             )}
             {needed > 0 && !amountProblem && (
