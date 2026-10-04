@@ -64,9 +64,14 @@ export const flashcardV2Slice = createSlice({
       const previous = state.cards[card.pubkey]
       state.cards[card.pubkey] = {
         ...card,
-        // A read never learns the unit; keep the last one the mint confirmed
-        // until `cardUnitResolved` says otherwise.
-        unit: previous?.unit,
+        // A read never learns the unit. Keep the last one the mint confirmed
+        // only while the balance it was named for still stands: a moved
+        // balance can be a reload in the other unit on another phone. The
+        // unit returns when `cardUnitResolved` names it again.
+        unit:
+          previous && previous.lastBalance === card.lastBalance
+            ? previous.unit
+            : undefined,
         lastSeenAt: at,
       }
       state.attachedPubkey = card.pubkey

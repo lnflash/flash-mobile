@@ -49,17 +49,29 @@ describe("flashcardV2 slice — known cards", () => {
     })
   })
 
-  it("a later read updates balance and PIN state but keeps the unit a read cannot learn", () => {
+  it("a later read with the same balance updates PIN state and keeps the unit a read cannot learn", () => {
     let state = reducer(undefined, seen())
     state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "usd" }))
-    state = reducer(state, seen({ lastBalance: 900, pinState: "blocked", at: 2_000 }))
+    state = reducer(state, seen({ pinState: "blocked", at: 2_000 }))
 
     expect(state.cards[PUBKEY]).toMatchObject({
-      lastBalance: 900,
+      lastBalance: 1500,
       pinState: "blocked",
       lastSeenAt: 2_000,
       unit: "usd",
     })
+  })
+
+  it("a read whose balance moved drops the unit until the mint names it again", () => {
+    // The card held 1,500 sats; it was spent and reloaded in USD elsewhere.
+    let state = reducer(undefined, seen())
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "sat" }))
+    state = reducer(state, seen({ lastBalance: 500, at: 2_000 }))
+    expect(state.cards[PUBKEY].lastBalance).toBe(500)
+    expect(state.cards[PUBKEY].unit).toBeUndefined()
+
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "usd" }))
+    expect(state.cards[PUBKEY].unit).toBe("usd")
   })
 
   it("forgetting a card drops it and only it", () => {
