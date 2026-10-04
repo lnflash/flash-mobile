@@ -5,8 +5,9 @@
  * call site: a control wired back to a raw `readFlashcard` (the bug this
  * replaces: a Cashu card tapped anywhere but Settings opened nothing) fails
  * here, and so does the Home tile's sync if it stops refreshing a BoltCard in
- * place. The FlashcardV2 refresh is pinned in flashcard-v2.spec.tsx, the
- * routing itself in use-tap-flashcard.spec.tsx.
+ * place, and the Home Cashu row's sync if it opens the card read this session
+ * instead of asking for a tap. The FlashcardV2 refresh is pinned in
+ * flashcard-v2.spec.tsx, the routing itself in use-tap-flashcard.spec.tsx.
  */
 import * as React from "react"
 import { fireEvent, render, screen } from "@testing-library/react-native"
@@ -29,19 +30,24 @@ const LL = i18nObject("en")
 const mockTapFlashcard = jest.fn(async (_options?: TapFlashcardOptions) => ({}))
 const mockOpenFlashcard = jest.fn(async () => {})
 const mockReadFlashcard = jest.fn(async () => ({}))
+/** Navigation by the call site itself, outside the tap and open hooks above. */
+const mockNavigate = jest.fn()
 /** The Cashu card attached to the app; a test that needs the Home row sets it. */
 let mockAttachedCard: KnownCard | undefined
+/** The Cashu card read this session; a test that needs one sets it. */
+let mockSessionCard: { pubkey: string } | undefined
 
 jest.mock("@app/hooks", () => ({
   useTapFlashcard: (options?: TapFlashcardOptions) => () => mockTapFlashcard(options),
   useOpenFlashcard: () => mockOpenFlashcard,
   // A linked BoltCard, so the Home tile renders, and no Cashu card read this
-  // session. `readFlashcard` is here only so a call site that still used it
-  // would be caught calling it.
+  // session unless a test reads one. `readFlashcard` is here only so a call
+  // site that still used it would be caught calling it.
   useFlashcard: () => ({
     lnurl: "lnurl1CARD",
     balanceInSats: 1234,
     transactions: [],
+    cashuCard: mockSessionCard,
     readFlashcard: mockReadFlashcard,
     resetFlashcard: jest.fn(),
   }),
@@ -89,7 +95,7 @@ jest.mock("@app/i18n/i18n-react", () => ({
 }))
 jest.mock("@react-navigation/native", () => ({
   ...jest.requireActual("@react-navigation/native"),
-  useNavigation: () => ({ navigate: jest.fn() }),
+  useNavigation: () => ({ navigate: mockNavigate }),
 }))
 jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -147,28 +153,35 @@ const renderInTheme = (element: React.ReactElement) =>
 /**
  * One routed tap. `options` is what the call site must pass: none means a
  * BoltCard opens Card, `{ openBoltCard: false }` means it refreshes in place.
+ * The call site itself navigates nowhere: what was tapped decides the screen.
  */
 const expectTapped = (options?: TapFlashcardOptions) => {
   expect(mockTapFlashcard).toHaveBeenCalledTimes(1)
   expect(mockTapFlashcard).toHaveBeenCalledWith(options)
   expect(mockOpenFlashcard).not.toHaveBeenCalled()
   expect(mockReadFlashcard).not.toHaveBeenCalled()
+  expect(mockNavigate).not.toHaveBeenCalled()
 }
 
 const expectOpened = () => {
   expect(mockOpenFlashcard).toHaveBeenCalledTimes(1)
   expect(mockTapFlashcard).not.toHaveBeenCalled()
   expect(mockReadFlashcard).not.toHaveBeenCalled()
+  expect(mockNavigate).not.toHaveBeenCalled()
 }
 
 beforeEach(() => {
   jest.clearAllMocks()
   mockAttachedCard = undefined
+  mockSessionCard = undefined
 })
+
+/** The Cashu card a test attaches, and reads this session when it needs to. */
+const cashuPubkey = "02" + "51".repeat(32)
 
 const attachCashuCard = () => {
   mockAttachedCard = {
-    pubkey: "02" + "51".repeat(32),
+    pubkey: cashuPubkey,
     version: "0.4",
     pinState: "unset",
     lastBalance: 1289,
@@ -238,6 +251,35 @@ describe("card tap call sites", () => {
 
   it("Home: the Cashu card row's sync routes the tap", () => {
     attachCashuCard()
+    renderInTheme(<WalletOverview setIsUnverifiedSeedModalVisible={jest.fn()} />)
+
+    fireEvent.press(screen.getByTestId("home-cashu-card-right"))
+
+    expectTapped()
+  })
+
+  // With a card read this session the two controls part: the body opens that
+  // read without a tap, and the sync still asks for one. Opening the session's
+  // read would show the balance it held then, stale after a spend at a till.
+  // The body test also proves the session's read reaches the row, so the sync
+  // test cannot pass for want of one.
+  it("Home: the Cashu card row's body opens the card read this session without a tap", () => {
+    attachCashuCard()
+    mockSessionCard = { pubkey: cashuPubkey }
+    renderInTheme(<WalletOverview setIsUnverifiedSeedModalVisible={jest.fn()} />)
+
+    fireEvent.press(screen.getByTestId("home-cashu-card-tile"))
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1)
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2")
+    expect(mockTapFlashcard).not.toHaveBeenCalled()
+    expect(mockOpenFlashcard).not.toHaveBeenCalled()
+    expect(mockReadFlashcard).not.toHaveBeenCalled()
+  })
+
+  it("Home: the Cashu card row's sync routes the tap even with a card read this session", () => {
+    attachCashuCard()
+    mockSessionCard = { pubkey: cashuPubkey }
     renderInTheme(<WalletOverview setIsUnverifiedSeedModalVisible={jest.fn()} />)
 
     fireEvent.press(screen.getByTestId("home-cashu-card-right"))
