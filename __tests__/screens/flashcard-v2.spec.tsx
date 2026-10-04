@@ -206,6 +206,35 @@ describe("FlashcardV2Screen", () => {
     expect(mockTapFlashcard).toHaveBeenCalledTimes(1)
   })
 
+  it("puts the card's actions right under the balance, above the PIN notice and the card details", () => {
+    mockCashuCard = card({ version: "0.2", pinState: "set" })
+
+    renderScreen()
+
+    // Document order in the rendered tree.
+    const tree = JSON.stringify(screen.toJSON())
+    const at = (marker: string) => {
+      const index = tree.indexOf(marker)
+      expect(index).toBeGreaterThan(-1)
+      return index
+    }
+    const balance = at(JSON.stringify(LL.FlashcardV2.onCardBalance()))
+    const pinNotice = at('"flashcard-v2-pin-bypassable"')
+    const details = at('"flashcard-v2-card-id"')
+    // Every action, not just the first: Remove card is the only one a blocked
+    // or unknown-PIN card gets, so it has to sit up here too.
+    ;[
+      LL.FlashcardV2.topUp(),
+      LL.FlashcardV2.changePin(),
+      LL.CardScreen.removeCard(),
+    ].forEach((label) => {
+      const action = at(JSON.stringify(label))
+      expect(balance).toBeLessThan(action)
+      expect(action).toBeLessThan(pinNotice)
+    })
+    expect(pinNotice).toBeLessThan(details)
+  })
+
   it("warns that a set PIN on a v0.2 card won't stop someone holding it", () => {
     // CashuApplet.java@v0.2.0:517-521: the third wrong VERIFY_PIN blocks the
     // PIN, and a blocked PIN gates nothing (:587-591, ENG-615). Next to the
