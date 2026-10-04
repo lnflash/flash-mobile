@@ -27,6 +27,12 @@ target 'LNFlash' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
+  # Breez SDK - Liquid 0.11.13: Breez deleted the GitHub repo both pods
+  # download from (2026-10). These podspecs are Breez's own, pointed at
+  # lnflash/breez-sdk-liquid-swift, an unmodified mirror (see its MIRROR.md),
+  # until the Liquid-to-Spark migration no longer needs the Liquid SDK.
+  pod 'BreezSDKLiquid', :podspec => './podspecs/BreezSDKLiquid.podspec.json'
+  pod 'breez_sdk_liquidFFI', :podspec => './podspecs/breez_sdk_liquidFFI.podspec.json'
   pod 'RNFS', :path => '../node_modules/react-native-fs'
   # Use xcframework variant for arm64 simulator (iOS 26+) support
   pod 'GT3Captcha-iOS-xcframework'
@@ -52,6 +58,12 @@ target 'LNFlash-Alt' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
+  # Breez SDK - Liquid 0.11.13: Breez deleted the GitHub repo both pods
+  # download from (2026-10). These podspecs are Breez's own, pointed at
+  # lnflash/breez-sdk-liquid-swift, an unmodified mirror (see its MIRROR.md),
+  # until the Liquid-to-Spark migration no longer needs the Liquid SDK.
+  pod 'BreezSDKLiquid', :podspec => './podspecs/BreezSDKLiquid.podspec.json'
+  pod 'breez_sdk_liquidFFI', :podspec => './podspecs/breez_sdk_liquidFFI.podspec.json'
   pod 'RNFS', :path => '../node_modules/react-native-fs'
   # Use xcframework variant for arm64 simulator (iOS 26+) support
   pod 'GT3Captcha-iOS-xcframework'

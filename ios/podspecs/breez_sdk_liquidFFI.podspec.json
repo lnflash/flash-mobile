@@ -1,0 +1,21 @@
+{
+  "name": "breez_sdk_liquidFFI",
+  "version": "0.11.13",
+  "license": {
+    "type": "MIT"
+  },
+  "summary": "Low-level bindings to the Breez Liquid SDK Rust API",
+  "homepage": "https://breez.technology",
+  "authors": {
+    "Breez": "contact@breez.technology"
+  },
+  "documentation_url": "https://sdk-doc.breez.technology",
+  "source": {
+    "http": "https://github.com/lnflash/breez-sdk-liquid-swift/releases/download/0.11.13/breez_sdk_liquidFFI.xcframework.zip",
+    "sha256": "613cec741ec850ca83561de8353553de9a2201685f94d7e2c306747404910241"
+  },
+  "platforms": {
+    "ios": "13.0"
+  },
+  "vendored_frameworks": "breez_sdk_liquidFFI.xcframework"
+}
