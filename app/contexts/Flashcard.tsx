@@ -678,6 +678,18 @@ export const FlashcardProvider = ({ children }: Props) => {
         <RNModal
           isVisible={visible && Platform.OS === "android"}
           onBackdropPress={cancelTechnologyRequest}
+          // Back reaches the sheet through react-native-modal's BackHandler
+          // listener (inline, no native dialog catches it), added when this
+          // provider mounts. BackHandler runs the newest listener first, so
+          // this one has to be added after React Navigation's. It is, only
+          // because NavigationContainer adds its listener while it renders
+          // nothing, waiting on the async getInitialURL
+          // (navigation-container-wrapper.tsx), and mounts this provider later.
+          // Mount the provider above NavigationContainerWrapper, or make
+          // getInitialURL synchronous, and Back on a card screen pops it and
+          // leaves the sheet and the read up. flashcard-scan-sheet.spec.tsx
+          // presses Back through the real container, so it catches the
+          // second; app.tsx marks the first.
           onBackButtonPress={cancelTechnologyRequest}
           backdropColor={mode === "dark" ? "rgb(57,57,57)" : "black"}
           backdropOpacity={mode === "dark" ? 0.7 : 0.5}

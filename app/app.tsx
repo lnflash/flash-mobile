@@ -129,6 +129,11 @@ export const App = () => {
                                     <PushNotificationComponent />
                                     <CardTopUpMinter />
                                     <BreezProvider>
+                                      {/* Inside NavigationContainerWrapper on
+                                          purpose: the scan sheet only gets
+                                          Back before React Navigation from
+                                          here. See the sheet in
+                                          contexts/Flashcard.tsx. */}
                                       <FlashcardProvider>
                                         <InviteDeepLinkHandler>
                                           <RootStack />
