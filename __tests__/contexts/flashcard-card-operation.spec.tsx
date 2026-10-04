@@ -15,7 +15,10 @@ import {
 import { CARD_TRANSCEIVE_TIMEOUT_MS } from "@app/utils/cashu-card-nfc"
 import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { store } from "@app/store/redux"
-import { resetFlashcardV2 } from "@app/store/redux/slices/flashcardV2Slice"
+import {
+  keysetUnitsLearned,
+  resetFlashcardV2,
+} from "@app/store/redux/slices/flashcardV2Slice"
 import {
   FlashcardSnapshot,
   PROVIDER_RENDER_TIMEOUT_MS,
@@ -47,7 +50,9 @@ jest.mock("@app/utils/cashu-mint", () => ({
 //   - every failure is rethrown, after the release, never swallowed
 //   - signed out, the card stays in memory: the op writes nothing to the store
 //   - the per-unit figures from the tap survive an op that moved no value, and
-//     are dropped (never left stale), with the record's unit, by one that did
+//     are replaced by one that did: labelled at once when the mint named the
+//     new split's keysets before, otherwise dropped (never left stale), with
+//     the record's unit
 
 const ok = (data: number[]) => [...data, 0x90, 0x00]
 const INS_SELECT = 0xa4
@@ -78,6 +83,9 @@ const makeCard = (pubkey: number[]) => {
 
 const KEYSET = [0x00, 0x59, 0x53, 0x4c, 0xe0, 0xbf, 0xa1, 0x9a]
 const KEYSET_HEX = "0059534ce0bfa19a"
+/** A keyset the mint names `usd`, beside KEYSET (`sat`) on a card holding both. */
+const USD_KEYSET = [0x00, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01]
+const USD_KEYSET_HEX = "00aabbccddeeff01"
 /** One unspent 500 proof in slot 0, the rest spent or empty. */
 const SLOT_STATUSES = [1, ...new Array(7).fill(2), ...new Array(24).fill(0)]
 const PROOF_SLOT = [
@@ -96,9 +104,10 @@ const INS_LOAD = 0x30
 /**
  * A card that also answers the keyset split (GET_SLOT_STATUS, GET_PROOF), so a
  * read carries per-unit figures. LOAD_PROOF stands in for any op that moves
- * value: it takes the balance from 500 to 1500.
+ * value: it takes the balance from 500 to 1500, loading 1000 under
+ * `loadKeyset` (KEYSET, the one the 500 is in, unless a spec says otherwise).
  */
-const makeSplitCard = ({ splitFailsAfterLoad = false } = {}) => {
+const makeSplitCard = ({ splitFailsAfterLoad = false, loadKeyset = KEYSET } = {}) => {
   let balance = 500
   let loaded = false
   const statuses = [...SLOT_STATUSES]
@@ -119,12 +128,12 @@ const makeSplitCard = ({ splitFailsAfterLoad = false } = {}) => {
       case 0x13:
         return ok(proofs[bytes[2]] ?? PROOF_SLOT)
       case INS_LOAD: {
-        // A 1000 proof under the same keyset lands in the first empty slot.
+        // A 1000 proof under `loadKeyset` lands in the first empty slot.
         const slot = statuses.indexOf(0)
         statuses[slot] = 1
         proofs[slot] = [
           0x01,
-          ...KEYSET,
+          ...loadKeyset,
           0,
           0,
           0x03,
@@ -589,6 +598,41 @@ describe("FlashcardProvider runCardOperation", () => {
       unknown: 0,
     })
     expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBe("sat")
+  })
+
+  it("an op that moves value into a second unit is labelled at once, and names no single unit on the card's record", async () => {
+    store.dispatch(keysetUnitsLearned({ [KEYSET_HEX]: "sat", [USD_KEYSET_HEX]: "usd" }))
+    transceive.mockImplementation(makeSplitCard({ loadKeyset: USD_KEYSET }))
+    await mount()
+    await readCard()
+    await waitFor(() =>
+      expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBe("sat"),
+    )
+    // The mint is slow to answer about the new split: the label does not wait.
+    lookupUnits.mockReturnValue(
+      new Promise(() => {
+        // never answers
+      }),
+    )
+
+    await act(async () => {
+      await latest?.runCardOperation(async (t) => {
+        await t(LOAD_APDU)
+      }, toHex(PUBKEY))
+    })
+
+    expect(latest?.cashuCard?.balance).toBe(1500)
+    expect(latest?.cashuCard?.unitTotals).toEqual({
+      byUnit: [
+        { unit: "sat", amount: 500 },
+        { unit: "usd", amount: 1000 },
+      ],
+      unknown: 0,
+    })
+    // Two units, so no one unit for the home row to value all 1500 in.
+    const record = store.getState().flashcardV2.cards[toHex(PUBKEY)]
+    expect(record.lastBalance).toBe(1500)
+    expect(record.unit).toBeUndefined()
   })
 
   it("an op that moves value, when the split cannot be re-read, leaves the total 'unit unknown' and clears the record's unit", async () => {

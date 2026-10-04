@@ -337,6 +337,9 @@ export const FlashcardProvider = ({ children }: Props) => {
             )
             // Labelled at once, so the record says the same: `cardSeen` just
             // cleared its unit if the balance moved, and the home row reads it.
+            // Unlabelled, the record keeps the unit `cardSeen` left it: one the
+            // mint named for this same balance stands, even when no keyset
+            // units were kept (a record from a build before `keysetUnits`).
             if (known) {
               dispatch(cardUnitResolved({ pubkey: info.pubkey, unit: soleUnit(known) }))
             }
