@@ -18,11 +18,13 @@ import { initialFlashcardV2State } from "./slices/flashcardV2Slice"
  * key is now part of the persisted tree, and the migration gives an older store
  * the empty shape explicitly.
  *
- * A later field on `flashcardV2` itself (a top-up ledger, say) needs its own
- * version and migration. The default reconciler, autoMergeLevel1, fills in a
- * missing *top-level* key but hard-sets each persisted one wholesale, so a
- * phone that saved `{ cards }` rehydrates without the new field no matter what
- * the reducer's initial state says.
+ * A later field on `flashcardV2` itself that starts with a value (a top-up
+ * ledger's `{}`, say) needs its own version and migration. The default
+ * reconciler, autoMergeLevel1, fills in a missing *top-level* key but hard-sets
+ * each persisted one wholesale, so a phone that saved `{ cards }` rehydrates
+ * without the new field no matter what the reducer's initial state says. An
+ * optional field that starts absent, as `attachedPubkey` does, needs neither:
+ * a rehydrated `{ cards }` leaves it absent, which is its initial state.
  */
 export const PERSIST_VERSION = 2
 

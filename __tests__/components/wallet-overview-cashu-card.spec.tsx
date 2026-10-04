@@ -1,9 +1,9 @@
 import * as React from "react"
 import { createTheme, ThemeProvider } from "@rneui/themed"
-import { act, fireEvent, render, screen } from "@testing-library/react-native"
+import { act, fireEvent, render, screen, within } from "@testing-library/react-native"
 
 import WalletOverview from "../../app/components/wallet-overview/wallet-overview"
-import { attachedCard } from "../../app/hooks/use-known-cashu-card"
+import { attachedCard } from "../../app/hooks/use-attached-cashu-card"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import type { KnownCard } from "../../app/store/redux/slices/flashcardV2Slice"
@@ -18,7 +18,7 @@ const card = (over: Partial<KnownCard> = {}): KnownCard => ({
   ...over,
 })
 
-let mockKnownCard: KnownCard | undefined
+let mockAttachedCard: KnownCard | undefined
 let mockSessionCard: { pubkey: string } | undefined
 const mockTap = jest.fn()
 const mockNavigate = jest.fn()
@@ -33,7 +33,8 @@ jest.mock("@app/hooks/use-display-currency", () => ({
   }),
 }))
 jest.mock("@app/hooks", () => ({
-  useBreez: () => ({ btcWallet: { balance: 0 } }),
+  // Not zero: a Bitcoin zero converted on Home can only be the card's.
+  useBreez: () => ({ btcWallet: { balance: 2_100 } }),
   // No BoltCard: only the Cashu card can show a Flashcard row.
   useFlashcard: () => ({
     lnurl: undefined,
@@ -42,7 +43,7 @@ jest.mock("@app/hooks", () => ({
   }),
   useOpenFlashcard: () => jest.fn(),
   useTapFlashcard: () => mockTap,
-  useKnownCashuCard: () => mockKnownCard,
+  useAttachedCashuCard: () => mockAttachedCard,
 }))
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({
@@ -80,7 +81,7 @@ const renderOverview = async () => {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockKnownCard = undefined
+  mockAttachedCard = undefined
   mockSessionCard = undefined
   // Only the card's figure converts to something the other rows never show.
   mockMoneyToDisplay.mockImplementation(
@@ -90,14 +91,14 @@ beforeEach(() => {
 })
 
 describe("WalletOverview: the Cashu card row", () => {
-  it("shows no Flashcard row when the phone remembers no card", async () => {
+  it("shows no Flashcard row when no card is attached", async () => {
     await renderOverview()
     expect(screen.queryByTestId("home-cashu-card")).toBeNull()
     expect(screen.queryByText(LL.HomeScreen.flashcard())).toBeNull()
   })
 
-  it("shows the remembered card with the balance it held at its last read", async () => {
-    mockKnownCard = card()
+  it("shows the attached card with the balance it held at its last read", async () => {
+    mockAttachedCard = card()
     await renderOverview()
 
     expect(screen.getByTestId("home-cashu-card")).toBeTruthy()
@@ -109,7 +110,7 @@ describe("WalletOverview: the Cashu card row", () => {
   })
 
   it("reads a USD card's balance as cents", async () => {
-    mockKnownCard = card({ unit: "usd", lastBalance: 250 })
+    mockAttachedCard = card({ unit: "usd", lastBalance: 250 })
     await renderOverview()
 
     expect(mockMoneyToDisplay).toHaveBeenCalledWith({
@@ -119,7 +120,7 @@ describe("WalletOverview: the Cashu card row", () => {
 
   it("shows the card's own figure, with no currency code, before the price is in", async () => {
     mockMoneyToDisplay.mockReturnValue(undefined)
-    mockKnownCard = card()
+    mockAttachedCard = card()
     await renderOverview()
 
     // An exact match: "1289 sats USD" would not match.
@@ -127,15 +128,34 @@ describe("WalletOverview: the Cashu card row", () => {
   })
 
   it("says the unit is unknown for a card whose unit the mint has not named", async () => {
-    mockKnownCard = card({ unit: undefined, lastBalance: 500 })
+    mockAttachedCard = card({ unit: undefined, lastBalance: 500 })
     await renderOverview()
 
     expect(screen.getByText(LL.FlashcardV2.unitUnknown({ amount: "500" }))).toBeTruthy()
     expect(screen.getByText(LL.HomeScreen.flashcard())).toBeTruthy()
   })
 
+  it("shows an empty card as zero in the display currency, though the mint named no unit", async () => {
+    // An empty card holds no proofs, so no unit is ever named for it. Only a
+    // Bitcoin zero converts to "$0.00" here: a USD zero, or any other row,
+    // would show "$9.99".
+    mockMoneyToDisplay.mockImplementation(
+      ({ moneyAmount }: { moneyAmount: { amount: number; currency: string } }) =>
+        moneyAmount.currency === "BTC" && moneyAmount.amount === 0 ? "$0.00" : "$9.99",
+    )
+    mockAttachedCard = card({ unit: undefined, lastBalance: 0 })
+    await renderOverview()
+
+    expect(mockMoneyToDisplay).toHaveBeenCalledWith({
+      moneyAmount: expect.objectContaining({ amount: 0, currency: "BTC" }),
+    })
+    const row = within(screen.getByTestId("home-cashu-card"))
+    expect(row.getByText(/\$0\.00/)).toBeTruthy()
+    expect(row.queryByText(LL.FlashcardV2.unitUnknown({ amount: "0" }))).toBeNull()
+  })
+
   it("opens the card read this session at once, and otherwise asks for a tap", async () => {
-    mockKnownCard = card()
+    mockAttachedCard = card()
     mockSessionCard = { pubkey: card().pubkey }
     await renderOverview()
     fireEvent.press(screen.getByText(LL.HomeScreen.flashcard()))

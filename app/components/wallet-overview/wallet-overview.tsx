@@ -14,9 +14,9 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useNavigation } from "@react-navigation/native"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import {
+  useAttachedCashuCard,
   useBreez,
   useFlashcard,
-  useKnownCashuCard,
   useOpenFlashcard,
   useTapFlashcard,
 } from "@app/hooks"
@@ -47,9 +47,9 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   // opens Card); only a Cashu card tapped on it opens a screen, its own.
   const openFlashcard = useOpenFlashcard()
   const refreshFlashcard = useTapFlashcard({ openBoltCard: false })
-  // The Cashu card this phone read last: shown with the balance it held then,
-  // and hidden when the phone remembers no card.
-  const knownCashuCard = useKnownCashuCard()
+  // The Cashu card attached to the app, with the balance it held at its last
+  // read; hidden when no card is attached, even if the phone remembers others.
+  const attachedCashuCard = useAttachedCashuCard()
   const tapFlashcard = useTapFlashcard()
 
   const { persistentState, updateState } = usePersistentStateContext()
@@ -167,7 +167,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
   const openCashuCard = () =>
     cashuCard ? navigation.navigate("FlashcardV2") : tapFlashcard()
 
-  const cashuCardAmount = knownCashuCard && knownCardAmount(knownCashuCard)
+  const cashuCardAmount = attachedCashuCard && knownCardAmount(attachedCashuCard)
   const cashuCardInDisplay =
     cashuCardAmount &&
     moneyAmountToDisplayCurrencyString({ moneyAmount: cashuCardAmount })
@@ -214,11 +214,11 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
           rightIcon={"sync"}
         />
       )}
-      {knownCashuCard && (
+      {attachedCashuCard && (
         <Balance
           icon="flashcard"
           title={LL.HomeScreen.flashcard()}
-          amount={cashuCardInDisplay || cashuCardOwn(knownCashuCard)}
+          amount={cashuCardInDisplay || cashuCardOwn(attachedCashuCard)}
           currency={cashuCardInDisplay ? displayCurrency : ""}
           onPress={openCashuCard}
           onPressRightBtn={tapFlashcard}

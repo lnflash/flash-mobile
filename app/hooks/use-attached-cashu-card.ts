@@ -11,7 +11,7 @@ export const attachedCard = (slice: FlashcardV2Slice): KnownCard | undefined =>
 /**
  * The Cashu card attached to the app (ENG-616): the one this phone read last
  * while signed in, until Remove card detaches it. Logout forgets every card.
- * Undefined when no card is attached.
+ * Undefined when no card is attached, even if the phone remembers others.
  */
-export const useKnownCashuCard = (): KnownCard | undefined =>
+export const useAttachedCashuCard = (): KnownCard | undefined =>
   useAppSelector((state) => attachedCard(state.flashcardV2))
