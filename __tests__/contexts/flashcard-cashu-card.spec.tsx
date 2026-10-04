@@ -48,6 +48,9 @@ const PUBKEY = [0x02, ...Array.from({ length: 32 }, (_, i) => i + 1)]
 const PUBKEY_HEX = PUBKEY.map((b) => b.toString(16).padStart(2, "0")).join("")
 const KEYSET = [0x00, 0x59, 0x53, 0x4c, 0xe0, 0xbf, 0xa1, 0x9a]
 const KEYSET_HEX = "0059534ce0bfa19a"
+/** A keyset the mint has never named, beside KEYSET on a card holding two. */
+const UNNAMED_KEYSET = [0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77]
+const UNNAMED_KEYSET_HEX = "0011223344556677"
 
 // A BoltCard payload; values are placeholders.
 const CARD_PAYLOAD = "lnurlw://card.test.flashapp.me/boltcard?p=PARAM_P&c=PARAM_C"
@@ -93,6 +96,34 @@ const cashuCard = async (bytes: number[]) => {
       throw new Error("unsupported")
   }
 }
+
+/** A big-endian u32, as the applet sends a balance or a proof amount. */
+const u32 = (n: number) => [24, 16, 8, 0].map((shift) => Math.floor(n / 2 ** shift) % 256)
+
+/**
+ * Answers like `cashuCard`, but holds one unspent proof per entry of
+ * `proofs`, in slots 0, 1, ... under the keyset given; the other slots are
+ * empty.
+ */
+const cardHolding =
+  (proofs: { keyset: number[]; amount: number }[]) => async (bytes: number[]) => {
+    switch (bytes[1]) {
+      case 0x01:
+        // v0.2, 32 slots, the proofs unspent, none spent, caps 0x07, PIN set.
+        return ok([0, 2, 32, proofs.length, 0, 32 - proofs.length, 0x07, 1])
+      case 0x11:
+        return ok(u32(proofs.reduce((sum, { amount }) => sum + amount, 0)))
+      case 0x14:
+        return ok([...proofs.map(() => 1), ...new Array(32 - proofs.length).fill(0)])
+      case 0x13: {
+        const { keyset, amount } = proofs[bytes[2]]
+        // Status, keyset id and amount, then PROOF_SLOT's nonce and C.
+        return ok([0x01, ...keyset, ...u32(amount), ...PROOF_SLOT.slice(13)])
+      }
+      default:
+        return cashuCard(bytes)
+    }
+  }
 
 const requestTechnology = NfcManager.requestTechnology as jest.Mock
 const transceive = NfcManager.isoDepHandler.transceive as jest.Mock
@@ -255,6 +286,32 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     })
   })
 
+  it("names the unit on the card's record at once too, so the home row says what the card screen says while the mint is slow", async () => {
+    tapCashuCard()
+    const { tap } = await mount()
+    await tap()
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    expect(knownCards()[PUBKEY_HEX]).toMatchObject({ lastBalance: 500, unit: "sat" })
+
+    // Spent at a POS since: 300 left under the same keyset, and the mint does
+    // not answer this time. The moved balance clears the record's unit
+    // (`cardSeen`); what the mint named before names it again at once.
+    transceive.mockImplementation(cardHolding([{ keyset: KEYSET, amount: 300 }]))
+    lookupUnits.mockReturnValue(
+      new Promise(() => {
+        // never answers
+      }),
+    )
+    await tap()
+
+    expect(latest?.cashuCard?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 300 }],
+      unknown: 0,
+    })
+    // The home row reads the record, not the card screen's state.
+    expect(knownCards()[PUBKEY_HEX]).toMatchObject({ lastBalance: 300, unit: "sat" })
+  })
+
   it("still waits on the mint for a card holding a keyset it has not named", async () => {
     store.dispatch(keysetUnitsLearned({ ["ff".repeat(8)]: "usd" }))
     tapCashuCard()
@@ -268,6 +325,34 @@ describe("FlashcardProvider Cashu card orchestration", () => {
 
     expect(latest?.cashuCard?.balance).toBe(500)
     expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+  })
+
+  it("still waits on the mint when it has named only some of the card's keysets", async () => {
+    store.dispatch(keysetUnitsLearned({ [KEYSET_HEX]: "sat" }))
+    tapCashuCard()
+    transceive.mockImplementation(
+      cardHolding([
+        { keyset: KEYSET, amount: 500 },
+        { keyset: UNNAMED_KEYSET, amount: 200 },
+      ]),
+    )
+    lookupUnits.mockReturnValue(
+      new Promise(() => {
+        // never answers
+      }),
+    )
+
+    await tapOnce()
+
+    // The split was read: one keyset the mint named before, one it never has.
+    expect(latest?.cashuCard?.keysets).toEqual([
+      { keysetId: KEYSET_HEX, amount: 500 },
+      { keysetId: UNNAMED_KEYSET_HEX, amount: 200 },
+    ])
+    // No figure with an "unknown" remainder before the mint answers: it may
+    // yet name the other keyset.
+    expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+    expect(knownCards()[PUBKEY_HEX].unit).toBeUndefined()
   })
 
   it("a signed-out read keeps no keyset units for later", async () => {

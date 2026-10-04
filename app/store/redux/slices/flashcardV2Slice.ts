@@ -29,10 +29,13 @@ export type KnownCard = {
   lastSeenAt: number
   /**
    * The mint's unit (NUT-02 keyset `unit`, e.g. `sat`, `usd`) when every
-   * unspent proof on the card is in that one unit, as the mint named it for
-   * the last read it answered. Absent for an empty card, a card holding more
-   * than one unit, or proofs in a keyset the mint does not list. A read alone
-   * cannot learn it: the card stores keyset ids, not units.
+   * unspent proof on the card is in that one unit, as the mint named it: for
+   * the last read it answered, or at once, from `keysetUnits`, for a later
+   * read or card operation whose keysets it had all named before. A read or
+   * operation that finds the balance moved clears it until one of those
+   * names it again. Absent for an empty card, a card holding more than one
+   * unit, or proofs in a keyset the mint does not list. A read alone cannot
+   * learn it: the card stores keyset ids, not units.
    */
   unit?: string
 }
@@ -84,9 +87,10 @@ export const flashcardV2Slice = createSlice({
       state.attachedPubkey = card.pubkey
     },
     /**
-     * The mint named the units of what the last read found. Sets the card's
-     * unit, or clears it (`unit` undefined) when there is no single one. Only a
-     * card already on record is touched: resolving a unit never invents one.
+     * The mint named the units of what the last read found, on that read or
+     * an earlier one (`keysetUnits`). Sets the card's unit, or clears it
+     * (`unit` undefined) when there is no single one. Only a card already on
+     * record is touched: resolving a unit never invents one.
      */
     cardUnitResolved: (
       state,

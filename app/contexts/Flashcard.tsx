@@ -103,10 +103,13 @@ export type FlashcardReadResult = {
 /** A Cashu card as the app holds it: what the card said, plus what the mint said. */
 export type CashuCardState = CashuCardInfo & {
   /**
-   * The card's unspent value per unit, once the mint has named the unit of
-   * each keyset on it. Undefined while that lookup is outstanding, after it
-   * failed, or when the tap could not read the keyset split at all: the
-   * screen then labels the card's figure "unit unknown".
+   * The card's unspent value per unit. Defined once every keyset on the card
+   * has a unit the mint named, on this read or an earlier one
+   * (`flashcardV2.keysetUnits`). The mint's answer for this split defines it
+   * too, counting a keyset the mint does not list toward `unknown`. Undefined
+   * while any keyset has never been named and the mint has not answered (its
+   * lookup is outstanding, or failed), or when the keyset split could not be
+   * read: the screen then labels the card's figure "unit unknown".
    */
   unitTotals?: CardUnitTotals
 }
@@ -332,6 +335,11 @@ export const FlashcardProvider = ({ children }: Props) => {
                 at: Date.now(),
               }),
             )
+            // Labelled at once, so the record says the same: `cardSeen` just
+            // cleared its unit if the balance moved, and the home row reads it.
+            if (known) {
+              dispatch(cardUnitResolved({ pubkey: info.pubkey, unit: soleUnit(known) }))
+            }
           }
           // The mint names the units; ask it off the NFC session, which the
           // finally below releases without waiting.
@@ -383,10 +391,14 @@ export const FlashcardProvider = ({ children }: Props) => {
   /**
    * Puts the mint's units on a Cashu card that was just read: per-unit totals
    * on the card in context and, signed in, the card's single unit (if it has
-   * exactly one) on its record. A mint that cannot be reached, or a tap that
-   * lost the keyset split, leaves the screen's figure labelled "unit unknown"
-   * and the record's unit as it was; the next read asks again. A newer read,
-   * or a forget, in the meantime wins.
+   * exactly one) on its record. A mint that cannot be reached leaves the card
+   * as the read labelled it, and the record's unit as the read left it: named
+   * from the units the mint named before (`flashcardV2.keysetUnits`) when it
+   * had named every keyset on the card. So the screen says "unit unknown"
+   * only when a keyset was never named, or when the read lost the keyset
+   * split and there is nothing to ask about. The next read asks again. A
+   * newer read, or a forget, in the meantime wins; signed in, the units the
+   * mint names are kept for later reads either way.
    */
   const resolveCashuUnits = async (card: CashuCardInfo, generation: number) => {
     const answer = await cardUnitTotals(card)

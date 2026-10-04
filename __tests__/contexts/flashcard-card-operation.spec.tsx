@@ -543,11 +543,14 @@ describe("FlashcardProvider runCardOperation", () => {
     await waitFor(() => expect(answers).toHaveLength(2))
 
     // The answer about the split read at 500 arrives late: it does not land.
+    expect(store.getState().flashcardV2.keysetUnits).toBeUndefined()
     await act(async () => {
       answers[0]({ [KEYSET_HEX]: "sat" })
     })
     expect(latest?.cashuCard?.unitTotals).toBeUndefined()
     expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBeUndefined()
+    // Its units are kept, though: they are facts about the mint, not the card.
+    expect(store.getState().flashcardV2.keysetUnits).toEqual({ [KEYSET_HEX]: "sat" })
 
     // The answer about the new split names the unit of the whole new total.
     await act(async () => {
