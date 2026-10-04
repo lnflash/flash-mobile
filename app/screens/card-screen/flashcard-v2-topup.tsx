@@ -184,7 +184,8 @@ export const FlashcardV2TopUpScreen = () => {
   // Read once for a new top-up; prepareTopUp checks them again, from the
   // store, before anything is quoted.
   const [commitments, setCommitments] = useState(NO_COMMITMENTS)
-  // Whether that read has settled, whatever it found: the keypad waits for it.
+  // Whether that read has settled, whatever it found: the amount field waits
+  // for it.
   const [commitmentsRead, setCommitmentsRead] = useState(false)
   const eligibility = cashuCard
     ? topUpEligibility(cashuCard, {
@@ -686,12 +687,12 @@ export const FlashcardV2TopUpScreen = () => {
                 </Text>
               )
             )}
-            {convertMoneyAmount && (
+            {/* The field waits for the unfinished top-ups to be read: one can
+                refuse this top-up or fix its unit, and initiallyOpen is read
+                only as the field mounts. It mounts once, so a keypad opened
+                from it is never taken down by the read. */}
+            {convertMoneyAmount && commitmentsRead && (
               <AmountInput
-                // initiallyOpen is read at mount: the field mounts again once
-                // the unfinished top-ups are read, which can refuse this one or
-                // fix its unit.
-                key={commitmentsRead ? "read" : "reading"}
                 unitOfAccountAmount={amount}
                 walletCurrency={walletCurrency}
                 // Paid from the Cash wallet whatever the card's unit, so the
@@ -699,9 +700,9 @@ export const FlashcardV2TopUpScreen = () => {
                 balanceWalletCurrency={cashWallet?.walletCurrency ?? WalletCurrency.Usd}
                 setAmount={setAmount}
                 convertMoneyAmount={convertMoneyAmount}
-                // A top-up's first job is its amount: once the read settles the
-                // keypad opens by itself, unless the card offers a choice of unit.
-                initiallyOpen={commitmentsRead && !amount && !offersUnitChoice}
+                // A top-up's first job is its amount: the keypad opens by
+                // itself, unless the card offers a choice of unit first.
+                initiallyOpen={!amount && !offersUnitChoice}
               />
             )}
             {needed > 0 && !amountProblem && (

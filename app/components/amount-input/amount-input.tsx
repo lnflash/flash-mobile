@@ -37,7 +37,7 @@ export type AmountInputProps = {
   /**
    * Open the keypad as the field mounts, on a screen whose first job is taking
    * an amount. Read once, at mount; later changes are ignored, so a screen that
-   * decides later remounts the field (a new `key`).
+   * decides later mounts the field once it has decided.
    */
   initiallyOpen?: boolean
 }
