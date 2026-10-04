@@ -6,14 +6,12 @@ import { v4 as uuidv4 } from "uuid"
 import {
   initializeBreezSDK,
   getInfo,
-  handleSparkMigration,
   registerLightningAddress,
   getLightningAddress,
 } from "@app/utils/breez-sdk"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useAddressScreenQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import SparkMigrationModal from "@app/components/spark-migration-modal"
 import {
   selectUsdtBalance,
   type UnverifiedSparkUsdtWallet,
@@ -94,33 +92,9 @@ export const BreezProvider = ({ children }: Props) => {
   const initializingRef = useRef(false)
   const updatingBalanceRef = useRef(false)
   const registeringExternalWalletRef = useRef(false)
-  const [migrating, setMigrating] = useState(false)
-  const [migrationModal, setMigrationModal] = useState(false)
-  const [migrationErr, setMigrationErr] = useState<string | undefined>()
   const [externalWalletLoading, setExternalWalletLoading] = useState(false)
   const [externalWalletError, setExternalWalletError] = useState<string | undefined>()
   const [breezReady, setBreezReady] = useState(false)
-
-  const onMigrate = async () => {
-    setMigrating(true)
-    const res = await handleSparkMigration(() => setMigrationModal(true))
-    if (res.success) {
-      updateState((state: any) => {
-        if (state)
-          return {
-            ...state,
-            sparkMigrationCompleted: true,
-          }
-        return undefined
-      })
-      if (res.err?.includes("Fee reimbursement failed")) {
-        setMigrationErr(res.err)
-      }
-    } else if (res.err) {
-      setMigrationErr(res.err)
-    }
-    setMigrating(false)
-  }
 
   useEffect(() => {
     if (Platform.OS === "ios" && Number(Platform.Version) < 13) {
@@ -277,12 +251,6 @@ export const BreezProvider = ({ children }: Props) => {
 
       // Register Lightning address
       await ensureLightningAddress()
-
-      // Trigger migration after Spark SDK is ready
-      if (!persistentState.sparkMigrationCompleted) {
-        await onMigrate()
-        await updateBalance()
-      }
     } catch (err: any) {
       Alert.alert("BTC wallet initialization failed", err.toString())
     } finally {
@@ -309,12 +277,6 @@ export const BreezProvider = ({ children }: Props) => {
       }}
     >
       {children}
-      <SparkMigrationModal
-        isVisible={migrationModal}
-        loading={migrating}
-        err={migrationErr}
-        closeModal={() => setMigrationModal(false)}
-      />
     </BreezContext.Provider>
   )
 }
