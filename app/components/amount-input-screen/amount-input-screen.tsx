@@ -50,6 +50,8 @@ export type AmountInputScreenProps = {
   initialAmount?: MoneyAmount<WalletOrDisplayCurrency>
   setAmount?: (amount: MoneyAmount<WalletOrDisplayCurrency>) => void
   walletCurrency: WalletCurrency
+  /** The wallet whose balance the header shows; defaults to `walletCurrency`. */
+  balanceWalletCurrency?: WalletCurrency
   convertMoneyAmount: ConvertMoneyAmount
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
   minAmount?: MoneyAmount<WalletOrDisplayCurrency>
@@ -154,6 +156,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   initialAmount,
   setAmount,
   walletCurrency,
+  balanceWalletCurrency,
   convertMoneyAmount,
   maxAmount,
   minAmount,
@@ -419,6 +422,7 @@ export const AmountInputScreen: React.FC<AmountInputScreenProps> = ({
   return (
     <AmountInputScreenUI
       walletCurrency={walletCurrency}
+      balanceWalletCurrency={balanceWalletCurrency}
       primaryCurrencyCode={primaryCurrencyInfo.currencyCode}
       primaryCurrencyFormattedAmount={formatNumberPadNumber(
         numberPadState.numberPadNumber,

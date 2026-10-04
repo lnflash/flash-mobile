@@ -159,15 +159,31 @@ jest.mock("@app/utils/cashu-card-topup", () => ({
   cancelTopUp: (...args: unknown[]) => mockCancel(...args),
 }))
 // The keypad modal is its own component; here one press sets the amount.
+type MockAmountInputProps = {
+  setAmount: (a: unknown) => void
+  initiallyOpen?: boolean
+  walletCurrency?: string
+  balanceWalletCurrency?: string
+}
+let mockAmountInputProps: MockAmountInputProps | undefined
+// AmountInput reads initiallyOpen once, as it mounts: what each mount read,
+// and what every render passed.
+let mockAmountInputMounts: (boolean | undefined)[] = []
+let mockInitiallyOpenSeen: (boolean | undefined)[] = []
 jest.mock("@app/components/amount-input", () => ({
-  AmountInput: ({ setAmount }: { setAmount: (a: unknown) => void }) => (
-    <TouchableOpacity
-      testID="amount-input"
-      onPress={() =>
-        setAmount({ amount: mockEntered, currency: "BTC", currencyCode: "BTC" })
-      }
-    />
-  ),
+  AmountInput: (props: MockAmountInputProps) => {
+    mockAmountInputProps = props
+    mockInitiallyOpenSeen.push(props.initiallyOpen)
+    React.useState(() => mockAmountInputMounts.push(props.initiallyOpen))
+    return (
+      <TouchableOpacity
+        testID="amount-input"
+        onPress={() =>
+          props.setAmount({ amount: mockEntered, currency: "BTC", currencyCode: "BTC" })
+        }
+      />
+    )
+  },
 }))
 
 const renderScreen = () =>
@@ -182,6 +198,13 @@ const renderScreen = () =>
       <FlashcardV2TopUpScreen />
     </ThemeProvider>,
   )
+// The screen reads the card's unfinished top-ups as it mounts, and shows the
+// amount field once that read settles. A test that awaits nothing else lets
+// the read settle first, inside act().
+const renderSettled = async () => {
+  renderScreen()
+  await act(async () => undefined)
+}
 
 const press = (text: string) => fireEvent.press(screen.getByText(text))
 const outputs = (count: number) =>
@@ -193,6 +216,9 @@ const errorText = () => screen.getByTestId("topup-error").props.children
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockAmountInputProps = undefined
+  mockAmountInputMounts = []
+  mockInitiallyOpenSeen = []
   mockCard = card()
   mockParams = undefined
   mockUsdEnabled = false
@@ -279,28 +305,132 @@ describe("topUpEligibility", () => {
 })
 
 describe("FlashcardV2TopUpScreen", () => {
-  it("refuses a blocked card before any amount is asked for", () => {
+  it("refuses a blocked card before any amount is asked for", async () => {
     mockCard = card({ pinState: "blocked" })
-    renderScreen()
+    await renderSettled()
     expect(screen.getByTestId("topup-refused").props.children).toBe(
       LL.FlashcardV2.topUpCantBlocked(),
     )
     expect(screen.queryByTestId("amount-input")).toBeNull()
   })
 
-  it("hides USD while the flag is off", () => {
+  it("opens the keypad once the card's unfinished top-ups are read: a top-up's first job is its amount", async () => {
     renderScreen()
+    // Not before: an unfinished top-up can refuse this one, or fix its unit.
+    expect(screen.queryByTestId("amount-input")).toBeNull()
+    await waitFor(() => expect(mockAmountInputMounts).toEqual([true]))
+  })
+
+  it("opens the keypad when the saved top-ups cannot be read: the quote refuses then", async () => {
+    mockStoreList.mockRejectedValue(new Error("User interaction is not allowed"))
+    renderScreen()
+    await waitFor(() => expect(mockAmountInputMounts).toEqual([true]))
+  })
+
+  it("never opens the keypad for a top-up an unfinished one refuses", async () => {
+    // Flag off: an unfinished USD top-up refuses a new one on an empty card.
+    mockStoreList.mockResolvedValue([
+      record({ unit: "usd", payment: { ...record().payment, dispatched: true } }),
+    ])
+    renderScreen()
+    await waitFor(() =>
+      expect(screen.getByTestId("topup-refused").props.children).toBe(
+        LL.FlashcardV2.topUpCantUsdUnfinished(),
+      ),
+    )
+    await act(async () => undefined)
+    // A keypad presented and then taken down at once can strand the modal on iOS.
+    expect(mockInitiallyOpenSeen).not.toContain(true)
+    // The refusal lands with the read: no field ever mounts.
+    expect(mockAmountInputMounts).toEqual([])
+  })
+
+  it("opens the keypad once an unfinished top-up fixes an empty card's unit", async () => {
+    mockUsdEnabled = true
+    mockStoreList.mockResolvedValue([
+      record({ unit: "usd", payment: { ...record().payment, dispatched: true } }),
+    ])
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("topup-unit-fixed")).toBeTruthy())
+    expect(screen.queryByTestId("topup-unit-sat")).toBeNull()
+    await waitFor(() => expect(mockAmountInputMounts).toEqual([true]))
+  })
+
+  it("leaves the keypad shut on a card that offers a unit choice", async () => {
+    mockUsdEnabled = true
+    renderScreen()
+    expect(screen.getByTestId("topup-unit-usd")).toBeTruthy()
+    // Shut once the read finds nothing that fixes the unit, and mounted once.
+    await act(async () => undefined)
+    expect(mockAmountInputMounts).toEqual([false])
+  })
+
+  it("opens the keypad on a card whose value fixes its unit, even with USD on", async () => {
+    mockUsdEnabled = true
+    mockCard = card({
+      balance: 500,
+      unspent: 1,
+      empty: 31,
+      unitTotals: { byUnit: [{ unit: "sat", amount: 500 }], unknown: 0 },
+    })
+    renderScreen()
+    await waitFor(() => expect(mockAmountInputMounts).toEqual([true]))
+  })
+
+  it("keeps the keypad shut once an amount is entered, also when a failed quote brings the field back", async () => {
+    mockCard = card({ pinState: "set" })
+    renderScreen()
+    await waitFor(() => expect(mockAmountInputProps?.initiallyOpen).toBe(true))
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(mockAmountInputProps?.initiallyOpen).toBe(false)
+    // Entering it does not mount the field again, which would take an open keypad down.
+    expect(mockAmountInputMounts).toEqual([true])
+
+    // The PIN step takes the field away; a quote that fails brings it back, shut.
+    await act(async () => press(LL.FlashcardV2.next()))
+    mockPrepare.mockRejectedValueOnce(new Error("Network request failed"))
+    typePin("1234")
+    await act(async () => press(LL.FlashcardV2.topUpCheckPin()))
+    expect(errorText()).toBe(LL.FlashcardV2.topUpPrepareFailed())
+    expect(mockAmountInputMounts).toEqual([true, false])
+  })
+
+  it("there is no field to tap before the read settles, and the field mounts once after it", async () => {
+    // The read waits its turn behind the store's other work: hold it there.
+    let settle: ((records: TopUpRecord[]) => void) | undefined
+    mockStoreList.mockReturnValue(
+      new Promise<TopUpRecord[]>((resolve) => {
+        settle = resolve
+      }),
+    )
+    renderScreen()
+    // A keypad opened from a field shown now would be taken down by the read.
+    expect(screen.queryByTestId("amount-input")).toBeNull()
+    expect(mockAmountInputMounts).toEqual([])
+
+    await act(async () => settle?.([]))
+    expect(mockAmountInputMounts).toEqual([true])
+  })
+
+  it("heads the keypad with the Cash wallet's balance: a top-up in sats is paid from it", async () => {
+    await renderSettled()
+    expect(mockAmountInputProps?.walletCurrency).toBe("BTC")
+    expect(mockAmountInputProps?.balanceWalletCurrency).toBe("USD")
+  })
+
+  it("hides USD while the flag is off", async () => {
+    await renderSettled()
     expect(screen.queryByTestId("topup-unit-usd")).toBeNull()
   })
 
-  it("with the flag off, a card holding USD takes no new top-up, and says why", () => {
+  it("with the flag off, a card holding USD takes no new top-up, and says why", async () => {
     mockCard = card({
       balance: 500,
       unspent: 1,
       empty: 31,
       unitTotals: { byUnit: [{ unit: "usd", amount: 500 }], unknown: 0 },
     })
-    renderScreen()
+    await renderSettled()
     expect(screen.getByTestId("topup-refused").props.children).toBe(
       LL.FlashcardV2.topUpCantUsd(),
     )
@@ -343,16 +473,16 @@ describe("FlashcardV2TopUpScreen", () => {
     expect(screen.getByTestId("topup-done")).toBeTruthy()
   })
 
-  it("with the flag on, an empty card can take USD", () => {
+  it("with the flag on, an empty card can take USD", async () => {
     mockUsdEnabled = true
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("topup-unit-usd"))
     expect(screen.getByTestId("topup-unit-usd").props.accessibilityState).toEqual({
       selected: true,
     })
   })
 
-  it("a card holding sats says top-ups add sats, even with the flag on", () => {
+  it("a card holding sats says top-ups add sats, even with the flag on", async () => {
     mockUsdEnabled = true
     mockCard = card({
       balance: 500,
@@ -360,17 +490,17 @@ describe("FlashcardV2TopUpScreen", () => {
       empty: 31,
       unitTotals: { byUnit: [{ unit: "sat", amount: 500 }], unknown: 0 },
     })
-    renderScreen()
+    await renderSettled()
     expect(screen.queryByTestId("topup-unit-usd")).toBeNull()
     expect(screen.getByTestId("topup-unit-fixed").props.children).toBe(
       LL.FlashcardV2.topUpUnitFixed({ unit: LL.FlashcardV2.topUpUnitSat() }),
     )
   })
 
-  it("will not continue with more slots than the card has empty: spent slots are not room", () => {
+  it("will not continue with more slots than the card has empty: spent slots are not room", async () => {
     mockCard = card({ empty: 5, spent: 20 })
     mockEntered = 1000 // six slots
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
       LL.FlashcardV2.topUpNoRoom({ needed: 6, free: 5 }),
@@ -446,7 +576,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("a top-up the mint could not prepare says nothing was paid, and stays on the amount", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     mockPrepare.mockRejectedValueOnce(new Error("Network request failed"))
     await act(async () => press(LL.FlashcardV2.next()))
@@ -462,18 +592,18 @@ describe("FlashcardV2TopUpScreen", () => {
     expect(screen.getByTestId("amount-input")).toBeTruthy()
   })
 
-  it("will not continue past the mint's limit for a single top-up", () => {
+  it("will not continue past the mint's limit for a single top-up", async () => {
     mockEntered = 1_000_001
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
       LL.FlashcardV2.topUpTooMuch({ max: "1,000,000 sats" }),
     )
   })
 
-  it("will not continue past the Cash wallet's balance", () => {
+  it("will not continue past the Cash wallet's balance", async () => {
     mockEntered = 60_000
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
       LL.FlashcardV2.topUpMoreThanBalance(),
@@ -481,7 +611,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("no PIN: amount, confirm, pay, load, done, and says anyone holding the card can spend it", async () => {
-    renderScreen()
+    await renderSettled()
     expect(screen.getByTestId("topup-no-pin")).toBeTruthy()
     fireEvent.press(screen.getByTestId("amount-input"))
     expect(screen.getByTestId("topup-slots").props.children).toBe(
@@ -521,7 +651,7 @@ describe("FlashcardV2TopUpScreen", () => {
 
   it("PIN set: the PIN is checked with a tap before anything is paid, then reused for the load", async () => {
     mockCard = card({ pinState: "set" })
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     expect(mockPrepare).not.toHaveBeenCalled()
@@ -540,7 +670,7 @@ describe("FlashcardV2TopUpScreen", () => {
   it("a wrong PIN at the check costs no payment and says how many tries are left", async () => {
     mockCard = card({ pinState: "set" })
     mockCheckPin.mockRejectedValueOnce(new CardError(0x63c2, "VERIFY_PIN"))
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     typePin("1111")
@@ -554,7 +684,7 @@ describe("FlashcardV2TopUpScreen", () => {
   it("the last wrong try ends the top-up before anything is paid", async () => {
     mockCard = card({ pinState: "set" })
     mockCheckPin.mockRejectedValueOnce(new CardError(0x6983, "VERIFY_PIN"))
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     typePin("1111")
@@ -569,7 +699,7 @@ describe("FlashcardV2TopUpScreen", () => {
   it("a cancelled PIN tap is no error", async () => {
     mockCard = card({ pinState: "set" })
     mockCheckPin.mockRejectedValueOnce(new NfcError.UserCancel())
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     typePin("1234")
@@ -579,7 +709,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("a failed payment stays on confirm with nothing left the wallet; an unknown one says to check history and retries", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
 
@@ -597,7 +727,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("leaving at confirm before paying drops the quote", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     mockCancel.mockResolvedValue(undefined)
@@ -607,7 +737,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("leaving after the payment was dispatched keeps the top-up, whose payment may still land", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     const dispatched = record({ payment: { ...record().payment, dispatched: true } })
@@ -633,7 +763,7 @@ describe("FlashcardV2TopUpScreen", () => {
     }) as typeof setTimeout)
     try {
       mockMint.mockResolvedValue({ record: record({ state: "paid" }), status: "waiting" })
-      renderScreen()
+      await renderSettled()
       fireEvent.press(screen.getByTestId("amount-input"))
       await act(async () => press(LL.FlashcardV2.next()))
       await act(async () => press(LL.FlashcardV2.topUpPay()))
@@ -656,7 +786,7 @@ describe("FlashcardV2TopUpScreen", () => {
 
   it("a mint answer that fails verification loads nothing and says to contact support", async () => {
     mockMint.mockRejectedValueOnce(new TopUpError("dleq", "bad"))
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     await act(async () => press(LL.FlashcardV2.topUpPay()))
@@ -671,7 +801,7 @@ describe("FlashcardV2TopUpScreen", () => {
 
   it("a card with no room at the load says so and keeps the top-up to finish later", async () => {
     mockLoad.mockRejectedValueOnce(new TopUpError("slots", "no room"))
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     await act(async () => press(LL.FlashcardV2.topUpPay()))
@@ -721,7 +851,7 @@ describe("FlashcardV2TopUpScreen", () => {
     mockMint.mockRejectedValueOnce(
       new TopUpError("not-found", "top-up topup-1 is not saved"),
     )
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     await act(async () => press(LL.FlashcardV2.topUpPay()))
@@ -766,7 +896,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("an unknown payment wakes the app's watch on the mint; a refused one does not", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
 
@@ -783,7 +913,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("leaving after a refused payment keeps the top-up: only the mint can let it go", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     const refused = record({
@@ -807,7 +937,7 @@ describe("FlashcardV2TopUpScreen", () => {
         }),
     )
     mockCancel.mockResolvedValue(undefined)
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     press(LL.FlashcardV2.next())
 
@@ -819,7 +949,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("a quote too close to its expiry to pay again is not paid: start a new top-up", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     mockPay.mockResolvedValueOnce({ record: record(), result: { status: "expired" } })
@@ -832,7 +962,7 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("a pay that failed before anything was sent says nothing was paid; after, that it is unknown", async () => {
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
 
@@ -859,7 +989,7 @@ describe("FlashcardV2TopUpScreen", () => {
 
   it("a paid quote the mint no longer issues says so, and to contact support", async () => {
     mockMint.mockRejectedValueOnce(new TopUpError("expired", "quote expired"))
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     await act(async () => press(LL.FlashcardV2.topUpPay()))
@@ -873,7 +1003,7 @@ describe("FlashcardV2TopUpScreen", () => {
 
   it("a load the mint holds part of for now says so, and loads nothing more from here", async () => {
     mockLoad.mockResolvedValueOnce(record({ state: "minted", loadStarted: true }))
-    renderScreen()
+    await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
     await act(async () => press(LL.FlashcardV2.topUpPay()))

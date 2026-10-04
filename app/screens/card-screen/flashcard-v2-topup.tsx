@@ -184,6 +184,9 @@ export const FlashcardV2TopUpScreen = () => {
   // Read once for a new top-up; prepareTopUp checks them again, from the
   // store, before anything is quoted.
   const [commitments, setCommitments] = useState(NO_COMMITMENTS)
+  // Whether that read has settled, whatever it found: the amount field waits
+  // for it.
+  const [commitmentsRead, setCommitmentsRead] = useState(false)
   const eligibility = cashuCard
     ? topUpEligibility(cashuCard, {
         unfinishedUnits: commitments.units,
@@ -202,6 +205,10 @@ export const FlashcardV2TopUpScreen = () => {
     eligibility?.ok && eligibility.unit !== "choose" ? eligibility.unit : "sat",
   )
   const [amount, setAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
+  // An empty card with USD on offers a choice of unit above the amount.
+  const offersUnitChoice = Boolean(
+    eligibility?.ok && eligibility.unit === "choose" && cashuCardUsdEnabled,
+  )
   const [pinEntry, setPinEntry] = useState("")
   // A PIN this session proved on the card; never stored.
   const [pin, setPin] = useState<string>()
@@ -234,7 +241,7 @@ export const FlashcardV2TopUpScreen = () => {
   useEffect(() => {
     if (resumeId || !cashuCard) return undefined
     let live = true
-    deps.store.list().then(
+    const read = deps.store.list().then(
       (records) => {
         const committed = cardCommitments(records, cashuCard.pubkey)
         // Nothing held: nothing to change.
@@ -257,6 +264,10 @@ export const FlashcardV2TopUpScreen = () => {
       // Unreadable: prepareTopUp reads the store too, and refuses.
       () => undefined,
     )
+    // Every arm settles it: something held, nothing held, or unreadable.
+    read.finally(() => {
+      if (live) setCommitmentsRead(true)
+    })
     return () => {
       live = false
     }
@@ -644,7 +655,7 @@ export const FlashcardV2TopUpScreen = () => {
       case "amount":
         return (
           <>
-            {eligibility?.ok && eligibility.unit === "choose" && cashuCardUsdEnabled ? (
+            {offersUnitChoice ? (
               <View style={styles.units} accessibilityRole="radiogroup">
                 {(["sat", "usd"] as const).map((option) => (
                   <TouchableOpacity
@@ -676,12 +687,22 @@ export const FlashcardV2TopUpScreen = () => {
                 </Text>
               )
             )}
-            {convertMoneyAmount && (
+            {/* The field waits for the unfinished top-ups to be read: one can
+                refuse this top-up or fix its unit, and initiallyOpen is read
+                only as the field mounts. It mounts once, so a keypad opened
+                from it is never taken down by the read. */}
+            {convertMoneyAmount && commitmentsRead && (
               <AmountInput
                 unitOfAccountAmount={amount}
                 walletCurrency={walletCurrency}
+                // Paid from the Cash wallet whatever the card's unit, so the
+                // keypad shows that wallet's balance.
+                balanceWalletCurrency={cashWallet?.walletCurrency ?? WalletCurrency.Usd}
                 setAmount={setAmount}
                 convertMoneyAmount={convertMoneyAmount}
+                // A top-up's first job is its amount: the keypad opens by
+                // itself, unless the card offers a choice of unit first.
+                initiallyOpen={!amount && !offersUnitChoice}
               />
             )}
             {needed > 0 && !amountProblem && (
