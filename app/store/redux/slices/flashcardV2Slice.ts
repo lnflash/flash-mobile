@@ -39,6 +39,12 @@ export type KnownCard = {
 
 export interface FlashcardV2Slice {
   cards: Record<string, KnownCard>
+  /**
+   * The card attached to the app: the one this phone read last, until Remove
+   * card detaches it. The home screen shows this card only; any other card
+   * the phone has read stays on record without showing. Absent until a read.
+   */
+  attachedPubkey?: string
 }
 
 export const initialFlashcardV2State: FlashcardV2Slice = {
@@ -58,11 +64,17 @@ export const flashcardV2Slice = createSlice({
       const previous = state.cards[card.pubkey]
       state.cards[card.pubkey] = {
         ...card,
-        // A read never learns the unit; keep the last one the mint confirmed
-        // until `cardUnitResolved` says otherwise.
-        unit: previous?.unit,
+        // A read never learns the unit. Keep the last one the mint confirmed
+        // only while the balance it was named for still stands: a moved
+        // balance can be a reload in the other unit on another phone. The
+        // unit returns when `cardUnitResolved` names it again.
+        unit:
+          previous && previous.lastBalance === card.lastBalance
+            ? previous.unit
+            : undefined,
         lastSeenAt: at,
       }
+      state.attachedPubkey = card.pubkey
     },
     /**
      * The mint named the units of what the last read found. Sets the card's
@@ -79,6 +91,7 @@ export const flashcardV2Slice = createSlice({
     /** "Remove card": this phone forgets the card. */
     cardForgotten: (state, action: PayloadAction<{ pubkey: string }>) => {
       delete state.cards[action.payload.pubkey]
+      if (state.attachedPubkey === action.payload.pubkey) delete state.attachedPubkey
     },
     /** Logout: forget every card. */
     resetFlashcardV2: () => initialFlashcardV2State,

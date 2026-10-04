@@ -30,6 +30,7 @@ jest.mock("@app/hooks", () => ({
   }),
   useOpenFlashcard: () => jest.fn(),
   useTapFlashcard: () => jest.fn(),
+  useAttachedCashuCard: () => undefined,
 }))
 jest.mock("@app/store/persistent-state", () => ({
   usePersistentStateContext: () => ({

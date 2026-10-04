@@ -49,17 +49,29 @@ describe("flashcardV2 slice — known cards", () => {
     })
   })
 
-  it("a later read updates balance and PIN state but keeps the unit a read cannot learn", () => {
+  it("a later read with the same balance updates PIN state and keeps the unit a read cannot learn", () => {
     let state = reducer(undefined, seen())
     state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "usd" }))
-    state = reducer(state, seen({ lastBalance: 900, pinState: "blocked", at: 2_000 }))
+    state = reducer(state, seen({ pinState: "blocked", at: 2_000 }))
 
     expect(state.cards[PUBKEY]).toMatchObject({
-      lastBalance: 900,
+      lastBalance: 1500,
       pinState: "blocked",
       lastSeenAt: 2_000,
       unit: "usd",
     })
+  })
+
+  it("a read whose balance moved drops the unit until the mint names it again", () => {
+    // The card held 1,500 sats; it was spent and reloaded in USD elsewhere.
+    let state = reducer(undefined, seen())
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "sat" }))
+    state = reducer(state, seen({ lastBalance: 500, at: 2_000 }))
+    expect(state.cards[PUBKEY].lastBalance).toBe(500)
+    expect(state.cards[PUBKEY].unit).toBeUndefined()
+
+    state = reducer(state, cardUnitResolved({ pubkey: PUBKEY, unit: "usd" }))
+    expect(state.cards[PUBKEY].unit).toBe("usd")
   })
 
   it("forgetting a card drops it and only it", () => {
@@ -70,6 +82,30 @@ describe("flashcardV2 slice — known cards", () => {
 
     expect(state.cards[PUBKEY]).toBeUndefined()
     expect(state.cards[other]).toBeDefined()
+  })
+
+  it("a read attaches the card it read; forgetting it detaches it, and forgetting another card does not", () => {
+    const OTHER = "03" + "cd".repeat(32)
+    let state = reducer(undefined, seen({ pubkey: OTHER, at: 500 }))
+    expect(state.attachedPubkey).toBe(OTHER)
+    state = reducer(state, seen())
+    expect(state.attachedPubkey).toBe(PUBKEY)
+
+    state = reducer(state, cardForgotten({ pubkey: OTHER }))
+    expect(state.attachedPubkey).toBe(PUBKEY)
+
+    state = reducer(state, cardForgotten({ pubkey: PUBKEY }))
+    expect(state.attachedPubkey).toBeUndefined()
+    expect(state.cards).toEqual({})
+  })
+
+  it("forgetting the attached card leaves an older card on record, unattached", () => {
+    const OLD = "03" + "ae".repeat(32)
+    let state = reducer(undefined, seen({ pubkey: OLD, at: 500 }))
+    state = reducer(state, seen())
+    state = reducer(state, cardForgotten({ pubkey: PUBKEY }))
+    expect(Object.keys(state.cards)).toEqual([OLD])
+    expect(state.attachedPubkey).toBeUndefined()
   })
 
   it("reset drops everything", () => {
