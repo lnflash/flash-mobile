@@ -17,6 +17,13 @@ import { AmountInputButton } from "./amount-input-button"
 export type AmountInputProps = {
   unitOfAccountAmount?: MoneyAmount<WalletOrDisplayCurrency>
   walletCurrency: WalletCurrency
+  /**
+   * The wallet whose balance the keypad's header shows, when the amount is
+   * paid from another wallet than `walletCurrency` names (a Cashu card top-up
+   * is entered in the card's unit and paid from the Cash wallet). Defaults to
+   * `walletCurrency`.
+   */
+  balanceWalletCurrency?: WalletCurrency
   convertMoneyAmount: ConvertMoneyAmount
   setAmount?: (moneyAmount: MoneyAmount<WalletOrDisplayCurrency>) => void
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
@@ -27,13 +34,18 @@ export type AmountInputProps = {
   showValuesIfDisabled?: boolean
   big?: boolean
   newDesign?: boolean
-  /** Open the keypad as the field mounts, on a screen whose first job is taking an amount. */
+  /**
+   * Open the keypad as the field mounts, on a screen whose first job is taking
+   * an amount. Read once, at mount; later changes are ignored, so a screen that
+   * decides later remounts the field (a new `key`).
+   */
   initiallyOpen?: boolean
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
   unitOfAccountAmount,
   walletCurrency,
+  balanceWalletCurrency,
   setAmount,
   maxAmount,
   minAmount,
@@ -119,6 +131,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         moneyAmount={unitOfAccountAmount}
         isOpen={isSettingAmount}
         walletCurrency={walletCurrency}
+        balanceWalletCurrency={balanceWalletCurrency}
         convertMoneyAmount={convertMoneyAmount}
         onSetAmount={onSetAmount}
         maxAmount={maxAmount}

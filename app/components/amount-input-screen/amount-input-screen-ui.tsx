@@ -30,6 +30,8 @@ export type MaxChipState = "available" | "computing" | "active" | "disabled"
 
 export type AmountInputScreenUIProps = {
   walletCurrency: WalletCurrency
+  /** The wallet whose balance the header shows; defaults to `walletCurrency`. */
+  balanceWalletCurrency?: WalletCurrency
   primaryCurrencySymbol?: string
   primaryCurrencyFormattedAmount?: string
   primaryCurrencyCode: string
@@ -50,6 +52,7 @@ export type AmountInputScreenUIProps = {
 
 export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   walletCurrency,
+  balanceWalletCurrency = walletCurrency,
   primaryCurrencySymbol,
   primaryCurrencyFormattedAmount,
   primaryCurrencyCode,
@@ -78,7 +81,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
   const balanceText = useMemo(() => {
     // Floor to whole spendable minor units before display conversion so the
     // header never shows a balance the user can't actually send (#690).
-    if (walletCurrency === WalletCurrency.Btc) {
+    if (balanceWalletCurrency === WalletCurrency.Btc) {
       return moneyAmountToDisplayCurrencyString({
         moneyAmount: toSpendableBalance(toBtcMoneyAmount(btcWallet?.balance ?? 0)),
       })
@@ -87,7 +90,12 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
     return moneyAmountToDisplayCurrencyString({
       moneyAmount: toSpendableBalance(toUsdMoneyAmount(usdWallet?.balance ?? 0)),
     })
-  }, [walletCurrency, btcWallet?.balance, data, moneyAmountToDisplayCurrencyString])
+  }, [
+    balanceWalletCurrency,
+    btcWallet?.balance,
+    data,
+    moneyAmountToDisplayCurrencyString,
+  ])
 
   return (
     <View
@@ -134,7 +142,12 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
               )}
             </View>
           </View>
-          <TouchableOpacity style={styles.close} onPress={goBack}>
+          <TouchableOpacity
+            style={styles.close}
+            onPress={goBack}
+            accessibilityRole="button"
+            accessibilityLabel={LL.common.close()}
+          >
             <Icon type="ionicon" name={"close"} size={40} />
           </TouchableOpacity>
         </View>

@@ -18,7 +18,7 @@ jest.mock("@app/hooks/use-display-currency", () => ({
 }))
 
 // The field and the keypad modal are their own components: here the field is
-// a button, and the modal shows only whether it is open.
+// a button, and the modal shows whether it is open and the way out it is given.
 jest.mock("../../app/components/amount-input/amount-input-button", () => {
   const mockReact = jest.requireActual<typeof React>("react")
   const { TouchableOpacity } =
@@ -30,10 +30,20 @@ jest.mock("../../app/components/amount-input/amount-input-button", () => {
 })
 jest.mock("../../app/components/amount-input/amount-input-modal", () => {
   const mockReact = jest.requireActual<typeof React>("react")
-  const { Text } = jest.requireActual<typeof import("react-native")>("react-native")
+  const { TouchableOpacity, View } =
+    jest.requireActual<typeof import("react-native")>("react-native")
   return {
-    AmountInputModal: ({ isOpen }: { isOpen: boolean }) =>
-      isOpen ? mockReact.createElement(Text, { testID: "keypad" }, "keypad") : null,
+    AmountInputModal: ({ isOpen, close }: { isOpen: boolean; close: () => void }) =>
+      isOpen
+        ? mockReact.createElement(
+            View,
+            { testID: "keypad" },
+            mockReact.createElement(TouchableOpacity, {
+              testID: "keypad-close",
+              onPress: close,
+            }),
+          )
+        : null,
   }
 })
 
@@ -58,5 +68,21 @@ describe("AmountInput", () => {
   it("opens the keypad as it mounts when asked to", () => {
     render(<AmountInput {...props} initiallyOpen />)
     expect(screen.getByTestId("keypad")).toBeTruthy()
+  })
+
+  it("lets a keypad that opened itself be closed, and keeps it closed while the prop still asks", () => {
+    render(<AmountInput {...props} initiallyOpen />)
+    fireEvent.press(screen.getByTestId("keypad-close"))
+    expect(screen.queryByTestId("keypad")).toBeNull()
+
+    // A caller with no amount yet keeps passing true: that must not reopen it.
+    screen.rerender(<AmountInput {...props} initiallyOpen />)
+    expect(screen.queryByTestId("keypad")).toBeNull()
+  })
+
+  it("reads initiallyOpen as it mounts only: turning it on later opens nothing", () => {
+    render(<AmountInput {...props} initiallyOpen={false} />)
+    screen.rerender(<AmountInput {...props} initiallyOpen />)
+    expect(screen.queryByTestId("keypad")).toBeNull()
   })
 })

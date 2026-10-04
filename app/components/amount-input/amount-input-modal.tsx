@@ -14,6 +14,8 @@ import { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 export type AmountInputModalProps = {
   moneyAmount?: MoneyAmount<WalletOrDisplayCurrency>
   walletCurrency: WalletCurrency
+  /** The wallet whose balance the keypad's header shows; defaults to `walletCurrency`. */
+  balanceWalletCurrency?: WalletCurrency
   convertMoneyAmount: ConvertMoneyAmount
   onSetAmount?: (moneyAmount: MoneyAmount<WalletOrDisplayCurrency>) => void
   maxAmount?: MoneyAmount<WalletOrDisplayCurrency>
@@ -26,6 +28,7 @@ export type AmountInputModalProps = {
 export const AmountInputModal: React.FC<AmountInputModalProps> = ({
   moneyAmount,
   walletCurrency,
+  balanceWalletCurrency,
   onSetAmount,
   maxAmount,
   minAmount,
@@ -36,13 +39,22 @@ export const AmountInputModal: React.FC<AmountInputModalProps> = ({
 }) => {
   const styles = useStyles()
 
+  // Android's back key, and its back gesture (enableOnBackInvokedCallback is
+  // off), reach a core Modal only as onRequestClose: without it, back does
+  // nothing while the keypad is up.
   return (
-    <Modal visible={isOpen} style={styles.modal} animationType="slide">
+    <Modal
+      visible={isOpen}
+      onRequestClose={close}
+      style={styles.modal}
+      animationType="slide"
+    >
       <SafeAreaView style={styles.amountInputScreenContainer}>
         <AmountInputScreen
           initialAmount={moneyAmount}
           convertMoneyAmount={convertMoneyAmount}
           walletCurrency={walletCurrency}
+          balanceWalletCurrency={balanceWalletCurrency}
           setAmount={onSetAmount}
           maxAmount={maxAmount}
           minAmount={minAmount}
