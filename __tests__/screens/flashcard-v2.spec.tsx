@@ -219,11 +219,19 @@ describe("FlashcardV2Screen", () => {
       return index
     }
     const balance = at(JSON.stringify(LL.FlashcardV2.onCardBalance()))
-    const actions = at(JSON.stringify(LL.FlashcardV2.topUp()))
     const pinNotice = at('"flashcard-v2-pin-bypassable"')
     const details = at('"flashcard-v2-card-id"')
-    expect(balance).toBeLessThan(actions)
-    expect(actions).toBeLessThan(pinNotice)
+    // Every action, not just the first: Remove card is the only one a blocked
+    // or unknown-PIN card gets, so it has to sit up here too.
+    ;[
+      LL.FlashcardV2.topUp(),
+      LL.FlashcardV2.changePin(),
+      LL.CardScreen.removeCard(),
+    ].forEach((label) => {
+      const action = at(JSON.stringify(label))
+      expect(balance).toBeLessThan(action)
+      expect(action).toBeLessThan(pinNotice)
+    })
     expect(pinNotice).toBeLessThan(details)
   })
 
