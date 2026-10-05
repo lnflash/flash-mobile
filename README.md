@@ -36,7 +36,6 @@ For developers looking to modify the IBEX integration, relevant code can be foun
 Flash leverages the Breez SDK - Spark (@breeztech/breez-sdk-spark-react-native) to provide advanced Lightning Network functionality. The Breez SDK enables:
 
 - Non-custodial Lightning payments with minimal setup
-- WebLN standard support for web application integration
 
 The Breez SDK integration handles much of the complexity of Lightning Network operations behind the scenes, allowing users to focus on making transactions without worrying about technical details like channel management, routing, or liquidity.
 
