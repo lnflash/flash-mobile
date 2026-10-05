@@ -381,12 +381,13 @@ export const formatUnitAmount = (amount: number, unit: string, LL: LLType): stri
 }
 
 /**
- * The card's figures, one per unit the mint named. Until the mint has answered
- * (or when it could not be asked, or the tap lost the keyset split so there
- * was nothing to ask it) the card's own total is shown labelled "unit
- * unknown", never bare: GET_BALANCE adds every keyset together and the card
- * stores no unit. Value in a keyset the mint does not list is shown the same
- * way.
+ * The card's figures, one per unit the mint named. While a keyset on the card
+ * has never been named (on this read or an earlier one:
+ * `flashcardV2.keysetUnits`) and the mint has not answered, or when the tap
+ * lost the keyset split so there was nothing to ask it, the card's own total
+ * is shown labelled "unit unknown", never bare: GET_BALANCE adds every keyset
+ * together and the card stores no unit. Value in a keyset the mint does not
+ * list is shown the same way.
  */
 export const balanceLines = (
   card: CashuCardState,
