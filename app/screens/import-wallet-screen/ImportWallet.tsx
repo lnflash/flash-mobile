@@ -79,7 +79,6 @@ const ImportWallet: React.FC<Props> = ({ navigation, route }) => {
           btcBalance: undefined,
           convertedBtcBalance: undefined,
           isAdvanceMode,
-          sparkMigrationCompleted: false,
         }
       return undefined
     })

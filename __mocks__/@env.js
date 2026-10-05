@@ -7,6 +7,5 @@ module.exports = {
   GREENLIGHT_PARTNER_CERT: "test-greenlight-partner-cert",
   GREENLIGHT_PARTNER_KEY: "test-greenlight-partner-key",
   INVITE_CODE: "test-invite-code",
-  MIGRATION_FEE_LNURL_W: "https://test.flashapp.me/lnurlw",
   MNEMONIC_WORDS: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
 }
