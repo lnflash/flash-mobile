@@ -1,8 +1,10 @@
 import React, { createContext, useEffect, useRef, useState } from "react"
-import { Dimensions, Modal, Platform, TouchableOpacity, View } from "react-native"
+import { Dimensions, Platform, View } from "react-native"
+import RNModal from "react-native-modal"
+import { SafeAreaView } from "react-native-safe-area-context"
 import NfcManager, { Ndef, TagEvent, NfcTech } from "react-native-nfc-manager"
 import * as Animatable from "react-native-animatable"
-import { makeStyles, Text } from "@rneui/themed"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { getParams } from "js-lnurl"
 import axios from "axios"
 
@@ -199,6 +201,7 @@ type Props = {
 export const FlashcardProvider = ({ children }: Props) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
+  const { mode } = useTheme().theme
 
   const { updateState, persistentState } = usePersistentStateContext()
 
@@ -710,16 +713,35 @@ export const FlashcardProvider = ({ children }: Props) => {
         runCardOperation,
       }}
     >
-      {children}
-      {loading && <Loading />}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={visible && Platform.OS === "android"}
-        onRequestClose={cancelTechnologyRequest}
-      >
-        <TouchableOpacity onPress={cancelTechnologyRequest} style={styles.backdrop}>
-          <View style={styles.container}>
+      {/* The frame the scan sheet renders inline in: the whole app. */}
+      <View style={styles.root}>
+        {children}
+        {loading && <Loading />}
+        <RNModal
+          isVisible={visible && Platform.OS === "android"}
+          onBackdropPress={cancelTechnologyRequest}
+          // Back reaches the sheet through react-native-modal's BackHandler
+          // listener (inline, no native dialog catches it), added when this
+          // provider mounts. BackHandler runs the newest listener first, so
+          // this one has to be added after React Navigation's. It is, only
+          // because NavigationContainer adds its listener while it renders
+          // nothing, waiting on the async getInitialURL
+          // (navigation-container-wrapper.tsx), and mounts this provider later.
+          // Mount the provider above NavigationContainerWrapper, or make
+          // getInitialURL synchronous, and Back on a card screen pops it and
+          // leaves the sheet and the read up. flashcard-scan-sheet.spec.tsx
+          // presses Back through the real container, so it catches the
+          // second; app.tsx marks the first.
+          onBackButtonPress={cancelTechnologyRequest}
+          backdropColor={mode === "dark" ? "rgb(57,57,57)" : "black"}
+          backdropOpacity={mode === "dark" ? 0.7 : 0.5}
+          style={styles.sheetModal}
+          // A bottom-pinned sheet. React Native's own Modal host measures
+          // it wrongly on Android under Fabric (#545): it drew off-screen, with no
+          // Cancel in reach. Inline, as modal-nfc renders (#674).
+          coverScreen={false}
+        >
+          <SafeAreaView edges={["bottom"]} style={styles.container}>
             <View style={styles.main}>
               <Text type="h02" bold>
                 Ready to Scan
@@ -734,21 +756,23 @@ export const FlashcardProvider = ({ children }: Props) => {
               </Animatable.View>
             </View>
             <PrimaryBtn type="clear" label="Cancel" onPress={cancelTechnologyRequest} />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+          </SafeAreaView>
+        </RNModal>
+      </View>
     </FlashcardContext.Provider>
   )
 }
 
-const useStyles = makeStyles(({ colors, mode }) => ({
+const useStyles = makeStyles(({ colors }) => ({
+  root: {
+    flex: 1,
+  },
   nfcScan: {
     marginVertical: 40,
   },
-  backdrop: {
-    flex: 1,
+  sheetModal: {
+    margin: 0,
     justifyContent: "flex-end",
-    backgroundColor: mode === "dark" ? "rgba(57,57,57,.7)" : "rgba(0,0,0,.5)",
   },
   container: {
     borderTopLeftRadius: 50,

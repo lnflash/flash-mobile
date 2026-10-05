@@ -16,7 +16,9 @@ import theme from "@app/rne-theme/theme"
  * records tapped cards into) and hands every render's context value to
  * `onSnapshot`, so a spec can drive `readFlashcard` and read the resulting
  * state back without rendering any UI of its own. `children` render inside
- * the provider next to the probe, for a spec that drives a real screen.
+ * the provider next to the probe, for a spec that drives a real screen, and
+ * `container` wraps the provider inside those contexts, as app.tsx wraps it
+ * in NavigationContainerWrapper.
  *
  * Module mocks (js-lnurl, axios, the toast) stay in each spec: `jest.mock`
  * is hoisted per test file, and the spec is what holds the mock references.
@@ -42,11 +44,18 @@ export type ProviderOptions = {
   /** The persistent-state `updateState`, so a spec can see what was written. */
   updateState?: jest.Mock
   children?: JSX.Element
+  /** What the provider mounts inside, e.g. the app's navigation container. */
+  container?: React.ComponentType<React.PropsWithChildren>
 }
 
 export const renderProvider = (
   onSnapshot: (snapshot: FlashcardSnapshot) => void,
-  { isAuthed = true, updateState = jest.fn(), children }: ProviderOptions = {},
+  {
+    isAuthed = true,
+    updateState = jest.fn(),
+    children,
+    container: Container = React.Fragment,
+  }: ProviderOptions = {},
 ) =>
   render(
     <Provider store={store}>
@@ -60,10 +69,12 @@ export const renderProvider = (
               resetState: jest.fn(),
             }}
           >
-            <FlashcardProvider>
-              <Probe onSnapshot={onSnapshot} />
-              {children ?? <></>}
-            </FlashcardProvider>
+            <Container>
+              <FlashcardProvider>
+                <Probe onSnapshot={onSnapshot} />
+                {children ?? <></>}
+              </FlashcardProvider>
+            </Container>
           </PersistentStateContext.Provider>
         </IsAuthedContextProvider>
       </ThemeProvider>
