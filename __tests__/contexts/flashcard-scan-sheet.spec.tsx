@@ -3,11 +3,14 @@ import {
   BackHandler,
   Modal,
   Platform,
+  StyleSheet,
   Text,
   TouchableWithoutFeedback,
 } from "react-native"
 import RNModal from "react-native-modal"
 import NfcManager from "react-native-nfc-manager"
+import { SafeAreaView } from "react-native-safe-area-context"
+import type { ReactTestInstance } from "react-test-renderer"
 import { ParamListBase, useIsFocused } from "@react-navigation/native"
 import { createStackNavigator, StackScreenProps } from "@react-navigation/stack"
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react-native"
@@ -43,10 +46,12 @@ jest.mock("react-native-bootsplash", () => ({
 // Android has no system NFC sheet, so the provider shows its own while a read
 // waits for a card. React Native's Modal host measures a bottom-pinned
 // sheet wrongly on Android under Fabric (#545): it drew this one off-screen, with no
-// Cancel in reach. These pin that it renders inline, that every way out ends
-// the read, and that Back reaches the sheet before React Navigation does. Jest
-// has no layout engine, so none of this proves the sheet draws right on a
-// device: that check stays a release gate (see the PR).
+// Cancel in reach. These pin that it renders inline, in the frame that holds the
+// app, with Cancel inside the bottom inset; that every way out ends the read; and
+// that Back reaches the sheet before React Navigation does. Jest has no layout
+// engine, so none of this proves the sheet draws right on a device. An API 35
+// emulator drew it right in both navigation modes (2026-10-04). The Pixel check
+// blocks the 0.7.3 Android RC as ENG-624, so it is tracked outside the PR body.
 
 const requestTechnology = NfcManager.requestTechnology as jest.Mock
 const cancelTechnologyRequest = NfcManager.cancelTechnologyRequest as jest.Mock
@@ -120,6 +125,36 @@ describe("the Android scan sheet", () => {
       fireEvent.press(screen.getByText("Cancel"))
       expect(cancelTechnologyRequest).toHaveBeenCalledTimes(1)
       await waitFor(() => expect(sheet().props.isVisible).toBe(false))
+    } finally {
+      os.restore()
+    }
+  })
+
+  it("keeps Cancel inside the bottom inset, in the frame that holds the app", async () => {
+    const os = jest.replaceProperty(Platform, "OS", "android")
+    try {
+      renderProvider(keepSnapshot, { children: <Text>the app</Text> })
+      await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
+      act(() => {
+        latest?.readFlashcard()
+      })
+      await waitFor(() => expect(sheet().props.isVisible).toBe(true))
+
+      // Under Android's forced edge-to-edge the navigation bar draws over the
+      // app, and only the bottom safe-area inset keeps Cancel above it. On the
+      // emulator Cancel ended one bar height plus the sheet's padding above the
+      // bottom, in gesture and in 3-button navigation. Bottom only: the sheet
+      // sits on the bottom edge, so a top inset would open a gap inside it.
+      const inset = within(sheet()).UNSAFE_getByType(SafeAreaView)
+      expect(inset.props.edges).toEqual(["bottom"])
+      expect(within(inset).getByText("Cancel")).toBeTruthy()
+
+      // Inline, the sheet covers its parent and nothing more, so its parent
+      // has to be the frame the whole app renders in.
+      const frame = sheet().parent
+      expect(frame).not.toBeNull()
+      expect(StyleSheet.flatten(frame?.props.style)).toMatchObject({ flex: 1 })
+      expect(within(frame as ReactTestInstance).getByText("the app")).toBeTruthy()
     } finally {
       os.restore()
     }
