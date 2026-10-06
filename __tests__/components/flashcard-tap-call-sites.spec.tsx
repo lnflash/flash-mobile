@@ -212,7 +212,9 @@ describe("card tap call sites", () => {
   })
 
   it("Card, a BoltCard shown: its refresh routes the tap, so a Cashu card opens its own screen", () => {
-    renderInTheme(<Flashcard onReload={jest.fn()} onTopup={jest.fn()} />)
+    renderInTheme(
+      <Flashcard onReload={jest.fn()} onTopup={jest.fn()} onRemove={jest.fn()} />,
+    )
 
     fireEvent.press(screen.getByTestId("flashcard-refresh"))
 
@@ -300,7 +302,9 @@ describe("icon-only read controls a screen reader can name", () => {
   // A test id must not double as the accessibility label: the control would
   // be announced as "flashcard-refresh".
   it("Card: the BoltCard refresh is a button labelled as a card read", () => {
-    renderInTheme(<Flashcard onReload={jest.fn()} onTopup={jest.fn()} />)
+    renderInTheme(
+      <Flashcard onReload={jest.fn()} onTopup={jest.fn()} onRemove={jest.fn()} />,
+    )
 
     const refresh = screen.getByTestId("flashcard-refresh")
 

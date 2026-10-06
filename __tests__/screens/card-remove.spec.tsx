@@ -120,9 +120,12 @@ describe("CardScreen (BoltCard) against the real provider", () => {
     expect(latest?.lnurl).toBeUndefined()
     expect(latest?.balanceInSats).toBeUndefined()
     expect(mockNavigation.goBack).toHaveBeenCalledTimes(1)
+    // The popped screen is still mounted for its exit animation, with the
+    // card gone: it must not show the empty state on the way out.
+    expect(screen.queryByText("No Cards Found")).toBeNull()
   })
 
-  it("a removal while the screen is not focused does not pop whatever is on top", async () => {
+  it("a press that lands while the screen is not focused clears the card without popping whatever is on top", async () => {
     mountScreen()
     await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
     await tapBoltCard()
