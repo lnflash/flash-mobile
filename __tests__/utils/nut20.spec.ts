@@ -7,7 +7,7 @@
  */
 import { schnorr } from "@noble/curves/secp256k1"
 import { bytesToHex, hexToBytes } from "@noble/curves/abstract/utils"
-import { Amount } from "@cashu/cashu-ts"
+import { Amount, signMintQuote as signMintQuoteLegacy } from "@cashu/cashu-ts"
 
 import {
   mintQuoteDigest,
@@ -49,7 +49,21 @@ const NUTSHELL_SIGNATURE =
 describe("NUT-20 mint quote signature (current message)", () => {
   it("builds the digest Nutshell builds, and not the legacy one", () => {
     expect(bytesToHex(mintQuoteDigest(QUOTE, OUTPUTS))).toBe(NUTSHELL_DIGEST)
-    expect(NUTSHELL_DIGEST).not.toBe(NUTSHELL_LEGACY_DIGEST)
+    expect(bytesToHex(mintQuoteDigest(QUOTE, OUTPUTS))).not.toBe(NUTSHELL_LEGACY_DIGEST)
+  })
+
+  it("rejects what cashu-ts 4.11's exported signMintQuote produces (the legacy message)", () => {
+    // The assertion that would have caught this in the first place: the
+    // library's signer is the one the engine used to call.
+    const legacy = signMintQuoteLegacy(PRIVATE_KEY, QUOTE, OUTPUTS)
+    expect(
+      verifyMintQuoteSignature({
+        pubkey: PUBLIC_KEY,
+        quoteId: QUOTE,
+        outputs: OUTPUTS,
+        signature: legacy,
+      }),
+    ).toBe(false)
   })
 
   it("accepts the mint's own signature over that digest", () => {
