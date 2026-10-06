@@ -5,6 +5,7 @@
  * does, and a card that stores proofs the way the applet does, duplicates
  * included. The mint has a sat and a usd keyset, as forge does.
  */
+import { verifyMintQuoteSignature } from "../../app/utils/cashu-card-topup/nut20"
 import { createHash } from "crypto"
 import { encode, sign } from "bolt11"
 import {
@@ -17,7 +18,6 @@ import {
   createDLEQProof,
   createNewMintKeys,
   pointFromHex,
-  verifyMintQuoteSignature,
 } from "@cashu/cashu-ts"
 
 import { PROOF_SIZE, Transceiver, toHex } from "../../app/utils/cashu-card"
@@ -203,7 +203,14 @@ export const createFakeMint = ({
       if (quote.expiry !== null && quote.expiry < nowSeconds()) {
         throw new MintOperationError(20007, "quote expired")
       }
-      if (!verifyMintQuoteSignature(quote.pubkey, id, outputs, signature)) {
+      if (
+        !verifyMintQuoteSignature({
+          pubkey: quote.pubkey,
+          quoteId: id,
+          outputs,
+          signature,
+        })
+      ) {
         throw new MintOperationError(20008, "Signature for mint request invalid")
       }
       const signatures = outputs.map(sign)

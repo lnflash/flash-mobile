@@ -17,9 +17,10 @@
  */
 import * as Keychain from "react-native-keychain"
 
-import { Amount, MintOperationError, hashToCurve, signMintQuote } from "@cashu/cashu-ts"
+import { Amount, MintOperationError, hashToCurve } from "@cashu/cashu-ts"
 
 import { toHex } from "../../app/utils/cashu-card"
+import { signMintQuote } from "../../app/utils/cashu-card-topup/nut20"
 import { buildCardP2PKSecret } from "../../app/utils/cashu-card-outputs"
 import {
   EXPIRY_GRACE_MS,
