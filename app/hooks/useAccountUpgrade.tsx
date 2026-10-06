@@ -93,6 +93,19 @@ export class EvidenceUploadError extends Error {
 
 const GENERIC_UPLOAD_ERROR = "Failed to upload photo. Please try again."
 
+/**
+ * Only the values a request actually has. The slice reducers spread their
+ * payload, so an empty or missing value would overwrite a default (country
+ * "Jamaica") or what the user already typed. A Bridge KYC upgrade request has
+ * no address and no bank account at all.
+ */
+const present = <T extends object>(values: T): Partial<T> =>
+  Object.fromEntries(
+    Object.entries(values).filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    ),
+  ) as Partial<T>
+
 export const useAccountUpgrade = () => {
   const dispatch = useAppDispatch()
   const { toggleActivityIndicator } = useActivityIndicator()
@@ -133,45 +146,59 @@ export const useAccountUpgrade = () => {
         ? parsePhoneNumber(upgradeData.phoneNumber)
         : undefined
       const verification = upgradeData.verification
+      const nextStatus = isVerificationStatus(verification.status)
+        ? verification.status
+        : undefined
+      const decision = {
+        status: nextStatus,
+        reasonCode: verification.reasonCode ?? undefined,
+        reasonMessage: verification.reasonMessage ?? undefined,
+      }
+      // An approved request has nothing left to edit, so it only updates the
+      // status card. Loading it into the form would overwrite a flow the user
+      // is part-way through, e.g. when an automatic Bridge KYC upgrade lands.
+      if (nextStatus === "APPROVED") {
+        dispatch(setAccountUpgrade(decision))
+        return
+      }
       dispatch(
-        setAccountUpgrade({
-          status: isVerificationStatus(verification.status)
-            ? verification.status
-            : undefined,
-          reasonCode: verification.reasonCode ?? undefined,
-          reasonMessage: verification.reasonMessage ?? undefined,
-          accountType: upgradeData.requestedLevel,
-        }),
+        setAccountUpgrade({ ...decision, accountType: upgradeData.requestedLevel }),
       )
       dispatch(
-        setPersonalInfo({
-          fullName: upgradeData.fullName,
-          countryCode: parsedPhone?.country,
-          phoneNumber: parsedPhone?.nationalNumber,
-          email: upgradeData.email,
-        }),
+        setPersonalInfo(
+          present({
+            fullName: upgradeData.fullName,
+            countryCode: parsedPhone?.country,
+            phoneNumber: parsedPhone?.nationalNumber,
+            email: upgradeData.email,
+          }),
+        ),
       )
       dispatch(
-        setBusinessInfo({
-          businessName: upgradeData.address.title,
-          businessAddress: upgradeData.address.line1,
-          city: upgradeData.address.city,
-          country: upgradeData.address.country,
-          line1: upgradeData.address.line1,
-          line2: upgradeData.address.line2,
-          postalCode: upgradeData.address.postalCode,
-          state: upgradeData.address.state,
-          terminalRequested: upgradeData.terminalsRequested,
-        }),
+        setBusinessInfo(
+          present({
+            businessName: upgradeData.address.title,
+            businessAddress: upgradeData.address.line1,
+            city: upgradeData.address.city,
+            country: upgradeData.address.country,
+            line1: upgradeData.address.line1,
+            line2: upgradeData.address.line2,
+            postalCode: upgradeData.address.postalCode,
+            state: upgradeData.address.state,
+            terminalRequested: upgradeData.terminalsRequested,
+          }),
+        ),
       )
       dispatch(
-        setBankInfo({
-          bankName: upgradeData.bankAccount?.bankName,
-          bankBranch: upgradeData.bankAccount?.bankBranch,
-          bankAccountType: upgradeData.bankAccount?.accountType,
-          currency: upgradeData.bankAccount?.currency,
-          accountNumber: upgradeData.bankAccount?.accountNumber,
-        }),
+        setBankInfo(
+          present({
+            bankName: upgradeData.bankAccount?.bankName,
+            bankBranch: upgradeData.bankAccount?.bankBranch,
+            bankAccountType: upgradeData.bankAccount?.accountType,
+            currency: upgradeData.bankAccount?.currency,
+            accountNumber: upgradeData.bankAccount?.accountNumber,
+          }),
+        ),
       )
     }
   }
