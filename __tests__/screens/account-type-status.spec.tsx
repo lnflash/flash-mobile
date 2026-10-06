@@ -15,6 +15,7 @@ const mockDispatch = jest.fn()
 
 let mockStatus: string | undefined
 let mockReasonMessage: string | undefined
+let mockCurrentLevel = "ONE"
 
 jest.mock("@app/store/redux", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
@@ -55,7 +56,7 @@ jest.mock("@app/hooks/use-bridge-kyc", () => ({
 }))
 jest.mock("@app/graphql/level-context", () => ({
   ...jest.requireActual("@app/graphql/level-context"),
-  useLevel: () => ({ currentLevel: "ONE" }),
+  useLevel: () => ({ currentLevel: mockCurrentLevel }),
 }))
 jest.mock("@app/components/topup-cashout-flow", () => ({
   BridgeKycModal: () => null,
@@ -87,6 +88,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockStatus = undefined
   mockReasonMessage = undefined
+  mockCurrentLevel = "ONE"
 })
 
 describe("AccountType status card", () => {
@@ -158,5 +160,15 @@ describe("AccountType status card", () => {
       expect.objectContaining({ payload: { accountType: "TWO", numOfSteps: 5 } }),
     )
     expect(mockNavigate).toHaveBeenCalledWith("PersonalInformation")
+  })
+
+  it("a Level 2 account without a bank account adds one directly", () => {
+    // e.g. upgraded on Bridge KYC: there is no level left to request.
+    mockCurrentLevel = "TWO"
+    const { getAllByText } = renderHub()
+    fireEvent.press(getAllByText(en.AccountUpgrade.bankCashoutTitle())[0])
+    expect(mockNavigate).toHaveBeenCalledWith("BankAccounts")
+    expect(mockNavigate).not.toHaveBeenCalledWith("PersonalInformation")
+    expect(mockDispatch).not.toHaveBeenCalled()
   })
 })

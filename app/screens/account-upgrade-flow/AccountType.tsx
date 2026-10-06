@@ -302,7 +302,12 @@ const AccountType: React.FC<Props> = ({ navigation }) => {
           title: LL.AccountUpgrade.bankCashoutTitle(),
           desc: LL.AccountUpgrade.bankCashoutDesc(),
           status: bankOn ? "on" : "available",
-          onPress: () => onPress(AccountLevel.Two),
+          // Already Level 2 without a bank account (e.g. upgraded on Bridge KYC):
+          // there is no level left to request, so add the account directly.
+          onPress: () =>
+            currentLevel === AccountLevel.Two
+              ? navigation.navigate("BankAccounts")
+              : onPress(AccountLevel.Two),
         })}
         {renderCapRow({
           icon: "logo-usd",

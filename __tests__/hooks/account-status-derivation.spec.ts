@@ -4,7 +4,8 @@
  * `headlineFromLevel` / `capabilitiesFromLevel` are the client-side stand-ins
  * for backends that don't expose `statusHeadline` / `capabilities` yet
  * (lnflash/flash#452). They must match the backend derivation exactly:
- * verified=L1+, bankPayout=L2+, business=L3, usdAccount orthogonal (Bridge KYC).
+ * verified=L1+, bankPayout=L3 (an L2 account needs a bank account on file, which
+ * the level alone can't show), business=L3, usdAccount orthogonal (Bridge KYC).
  */
 
 import { AccountLevel } from "@app/graphql/level-context"
@@ -48,10 +49,10 @@ describe("capabilitiesFromLevel", () => {
     })
   })
 
-  it("adds bankPayout at L2", () => {
+  it("does not imply bankPayout at L2: Bridge KYC upgrades reach L2 with no bank", () => {
     expect(capabilitiesFromLevel(AccountLevel.Two, false)).toEqual({
       verified: true,
-      bankPayout: true,
+      bankPayout: false,
       business: false,
       usdAccount: false,
     })
