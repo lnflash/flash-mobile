@@ -89,9 +89,10 @@ describe("useAccountStatus", () => {
     const { result } = renderHook(() => useAccountStatus())
 
     expect(result.current.statusHeadline).toBe("VERIFIED")
+    // Level 2 alone no longer implies a bank account (Bridge KYC upgrades).
     expect(result.current.capabilities).toEqual({
       verified: true,
-      bankPayout: true,
+      bankPayout: false,
       business: false,
       usdAccount: true,
     })
