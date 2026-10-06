@@ -162,6 +162,20 @@
     "jest/no-async-promise-executor": "off"
 
   },
+  "overrides": [
+    {
+      // Shared byte-for-byte with flash-pos, which lints it under its own
+      // config. Here it is checked against flash-pos's Prettier style (the
+      // override in prettier.config.js; `{}` drops this repo's options) and
+      // spared the two rules flash-pos's config does not hold it to.
+      "files": ["app/components/flashcard-v2-art/cardArtV2.tsx"],
+      "rules": {
+        "prettier/prettier": ["error", {}],
+        "no-plusplus": "off",
+        "max-params": "off"
+      }
+    }
+  ],
   "settings": {
     "react": {
       "version": "detect"

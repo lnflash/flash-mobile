@@ -346,6 +346,11 @@ type RootTranslation = {
 		 */
 		cardId: string
 		/**
+		 * F​l​a​s​h​c​a​r​d​ ​e​n​d​i​n​g​ ​{​l​a​s​t​4​}
+		 * @param {string} last4
+		 */
+		cardEnding: RequiredParams<'last4'>
+		/**
 		 * T​h​e​ ​v​a​l​u​e​ ​l​i​v​e​s​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​i​t​s​e​l​f​.​ ​I​f​ ​t​h​e​ ​c​a​r​d​ ​i​s​ ​l​o​s​t​,​ ​t​h​e​ ​f​u​n​d​s​ ​a​r​e​ ​n​o​t​ ​r​e​c​o​v​e​r​a​b​l​e​.
 		 */
 		bearerWarning: string
@@ -7635,6 +7640,10 @@ export type TranslationFunctions = {
 		 * Card ID
 		 */
 		cardId: () => LocalizedString
+		/**
+		 * Flashcard ending {last4}
+		 */
+		cardEnding: (arg: { last4: string }) => LocalizedString
 		/**
 		 * The value lives on the card itself. If the card is lost, the funds are not recoverable.
 		 */

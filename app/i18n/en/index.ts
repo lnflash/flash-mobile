@@ -98,6 +98,7 @@ const en: BaseTranslation = {
     slotSummary: "{unspent:number} loaded · {free:number} free of {max:number}",
     appletVersion: "Card software",
     cardId: "Card ID",
+    cardEnding: "Flashcard ending {last4:string}",
     bearerWarning:
       "The value lives on the card itself. If the card is lost, the funds are not recoverable.",
     noPinTitle: "No PIN on this card",

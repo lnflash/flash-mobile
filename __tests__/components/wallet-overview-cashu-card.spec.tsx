@@ -1,5 +1,6 @@
 import * as React from "react"
 import { createTheme, ThemeProvider } from "@rneui/themed"
+import { StyleSheet } from "react-native"
 import { act, fireEvent, render, screen, within } from "@testing-library/react-native"
 
 import WalletOverview from "../../app/components/wallet-overview/wallet-overview"
@@ -107,6 +108,24 @@ describe("WalletOverview: the Cashu card row", () => {
     expect(mockMoneyToDisplay).toHaveBeenCalledWith({
       moneyAmount: expect.objectContaining({ amount: 1289, currency: "BTC" }),
     })
+  })
+
+  it("draws the Bearer card as the row's thumbnail, the icon's width, with no shadow and hidden from screen readers", async () => {
+    mockAttachedCard = card()
+    await renderOverview()
+
+    const row = screen.getByTestId("home-cashu-card")
+    const art = within(row).getByTestId("home-cashu-card-art")
+    const style = StyleSheet.flatten(art.props.style)
+    expect(style.width).toBe(54)
+    expect(style.elevation).toBe(0)
+    expect(style.shadowOpacity).toBe(0)
+
+    const hidden = within(row).UNSAFE_getByProps({
+      importantForAccessibility: "no-hide-descendants",
+    })
+    expect(hidden.props.accessibilityElementsHidden).toBe(true)
+    expect(within(hidden).getByTestId("home-cashu-card-art")).toBe(art)
   })
 
   it("reads a USD card's balance as cents", async () => {

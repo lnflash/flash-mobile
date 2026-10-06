@@ -3,14 +3,17 @@
  * and tells the truth about the card's balance and PIN state.
  */
 import * as React from "react"
+import { Dimensions, Image, StyleSheet } from "react-native"
 import { act, fireEvent, render, screen } from "@testing-library/react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
+import type { ReactTestRendererJSON } from "react-test-renderer"
 
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import appTheme from "../../app/rne-theme/theme"
 import type { CashuCardState } from "../../app/contexts/Flashcard"
 import {
+  cardLast4,
   FlashcardV2Screen,
   formatUnitAmount,
   shortPubkey,
@@ -52,6 +55,8 @@ jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   require("../helpers/safe-area-context-mock").build(),
 )
+// The card art's <Svg> as plain host elements carrying the props it was given.
+jest.mock("react-native-svg", () => require("../helpers/svg-stub"))
 jest.mock("@app/graphql/generated", () => ({
   useHideBalanceQuery: () => ({ data: { hideBalance: false } }),
 }))
@@ -594,6 +599,105 @@ describe("FlashcardV2Screen", () => {
     })
   })
 
+  describe("the card", () => {
+    // jest's window is 750 dp wide; a spec that narrows it puts it back.
+    const initial = { window: Dimensions.get("window"), screen: Dimensions.get("screen") }
+    afterEach(() => {
+      act(() => Dimensions.set(initial))
+    })
+
+    const CARD = "flashcard-v2-card-art"
+
+    type Host = ReactTestRendererJSON
+    const hosts = (n: Host | string): Host[] =>
+      typeof n === "string" ? [] : [n, ...(n.children ?? []).flatMap(hosts)]
+    const isCard = (n: Host | string) => typeof n !== "string" && n.props.testID === CARD
+
+    /**
+     * The card's column as drawn: the card's style, whether it comes first,
+     * what comes next, and how far down the column that starts. In flow,
+     * nothing but the card's box and the margins between holds room.
+     */
+    const layout = () => {
+      const roots = screen.toJSON()
+      const column = (Array.isArray(roots) ? roots : [roots as Host])
+        .flatMap(hosts)
+        .find((n) => (n.children ?? []).some(isCard)) as Host
+      const kids = column.children as Host[]
+      const i = kids.findIndex(isCard)
+      const card = StyleSheet.flatten(kids[i].props.style)
+      const next = kids[i + 1]
+      const nextTop =
+        (card.marginTop ?? 0) +
+        card.height +
+        (card.marginBottom ?? 0) +
+        (StyleSheet.flatten(next.props.style)?.marginTop ?? 0)
+      return { first: i === 0, card, next, nextTop }
+    }
+
+    it("draws the Bearer card art where the old picture was: 320 dp wide, 10 dp down, the balance 16 dp under it", () => {
+      renderScreen()
+
+      const { first, card, next, nextTop } = layout()
+      expect(first).toBe(true)
+      expect(card.position).toBeUndefined()
+      expect(card).toMatchObject({
+        alignSelf: "center",
+        marginTop: 10,
+        marginBottom: 16,
+        width: 320,
+        height: 202,
+      })
+      // The balance is next in the column, 16 dp under the card.
+      expect(hosts(next).some((n) => n.props.testID === "flashcard-v2-balance-sat")).toBe(
+        true,
+      )
+      expect(nextTop).toBe(10 + 202 + 16)
+      // The card's own 320 x 202 artboard, stretched to the card (the card
+      // keeps its aspect, so nothing distorts).
+      const svgs = screen.getByTestId(CARD).findAll((n) => String(n.type) === "RNSVGSvg")
+      expect(svgs).toHaveLength(1)
+      expect(svgs[0].props).toMatchObject({
+        viewBox: "0 0 320 202",
+        preserveAspectRatio: "none",
+        width: "100%",
+        height: "100%",
+      })
+      // The old picture (the BoltCard's Jamaica art) is gone from this screen.
+      expect(
+        screen
+          .UNSAFE_queryAllByType(Image)
+          .filter((image) => /flashcard\.png$/.test(image.props.source?.testUri ?? "")),
+      ).toHaveLength(0)
+    })
+
+    it("narrows the card with the window, keeping 24 dp either side, and moves the balance with it", () => {
+      renderScreen()
+      expect(layout().card.width).toBe(320)
+
+      // Split screen, or a foldable folded or unfolded, with the screen open.
+      act(() => Dimensions.set({ ...initial, window: { ...initial.window, width: 360 } }))
+
+      const height = (312 * 202) / 320
+      const { card, nextTop } = layout()
+      expect(card.width).toBe(312)
+      expect(card.height).toBeCloseTo(height, 9)
+      expect(nextTop).toBeCloseTo(10 + height + 16, 9)
+    })
+
+    it("prints no id on the card's face, as the physical card has none: the details list it", () => {
+      mockCashuCard = card({ pubkey: "02" + "ab".repeat(30) + "0c67" })
+
+      renderScreen()
+
+      expect(screen.queryByText(/••••/)).toBeNull()
+      expect(screen.queryByText(/0C67/)).toBeNull()
+      expect(screen.getByTestId("flashcard-v2-card-id").props.children).toBe(
+        "02ababab…ab0c67",
+      )
+    })
+  })
+
   it("leaves the screen when there is no card to show", () => {
     mockCashuCard = undefined
 
@@ -678,6 +782,31 @@ describe("FlashcardV2Screen", () => {
       })
     })
 
+    it("reads the card as one image named by the last four of its key, masked as flash-pos masks it, one character at a time", () => {
+      mockCashuCard = card({ pubkey: "02" + "ab".repeat(30) + "0c67" })
+
+      renderScreen()
+
+      const art = screen.getByTestId("flashcard-v2-card-art")
+      expect(art.props.accessible).toBe(true)
+      expect(art.props.accessibilityRole).toBe("image")
+      // Spaced, so "0C67" is not read as a number, nor "BEEF" as a word.
+      expect(art.props.accessibilityLabel).toBe(
+        LL.FlashcardV2.cardEnding({ last4: "0 C 6 7" }),
+      )
+      expect(art.props.accessibilityLabel).toBe("Flashcard ending 0 C 6 7")
+    })
+
+    it("names the card by the screen's title when its key is too short to mask", () => {
+      mockCashuCard = card({ pubkey: "abc" })
+
+      renderScreen()
+
+      expect(screen.getByTestId("flashcard-v2-card-art").props.accessibilityLabel).toBe(
+        LL.FlashcardV2.title(),
+      )
+    })
+
     it("reads the balance and card id as their text, and names the refresh button", () => {
       renderScreen()
 
@@ -707,6 +836,22 @@ describe("formatUnitAmount", () => {
 
   it("shows any other unit as the mint's number and the mint's code", () => {
     expect(formatUnitAmount(1500, "msat", LL)).toBe("1,500 msat")
+  })
+})
+
+describe("cardLast4", () => {
+  it("takes the last four hex digits of the key in upper case, as flash-pos does", () => {
+    expect(cardLast4(PUBKEY)).toBe("ABAB")
+    expect(cardLast4("02" + "ab".repeat(30) + "0c67")).toBe("0C67")
+  })
+
+  it("reads past anything that is not hex", () => {
+    expect(cardLast4("02:ab:0c:67 ")).toBe("0C67")
+  })
+
+  it("has none for a key too short to hold four", () => {
+    expect(cardLast4("abc")).toBeUndefined()
+    expect(cardLast4("")).toBeUndefined()
   })
 })
 
