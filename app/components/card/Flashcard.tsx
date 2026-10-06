@@ -30,14 +30,16 @@ import { DisplayCurrency, toBtcMoneyAmount } from "@app/types/amounts"
 type Props = {
   onReload: () => void
   onTopup: () => void
+  /** "Remove card": the screen decides what follows (it closes). */
+  onRemove: () => void
 }
 
-const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
+const Flashcard: React.FC<Props> = ({ onReload, onTopup, onRemove }) => {
   const isAuthed = useIsAuthed()
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const { balanceInSats, transactions, resetFlashcard } = useFlashcard()
+  const { balanceInSats, transactions } = useFlashcard()
   // A refresh that turns out to be a Cashu card opens the Cashu screen (ENG-616).
   const tapFlashcard = useTapFlashcard()
   const { formatMoneyAmount } = useDisplayCurrency()
@@ -97,7 +99,7 @@ const Flashcard: React.FC<Props> = ({ onReload, onTopup }) => {
             type="clear"
             icon={"cardRemove"}
             label={LL.CardScreen.removeCard()}
-            onPress={resetFlashcard}
+            onPress={onRemove}
           />
         </View>
       )}
