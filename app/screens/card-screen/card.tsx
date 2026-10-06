@@ -97,13 +97,27 @@ export const CardScreen = () => {
       })
   }
 
+  // "Remove card" leaves nothing to show, so the screen closes — as the Cashu
+  // card screen does. Clearing the card alone left this screen up on its
+  // "No Cards Found" empty state, which is for arriving here without a card,
+  // not for having just removed one. Only while focused: a removal on the way
+  // out must not pop a second screen.
+  const onRemove = () => {
+    resetFlashcard()
+    if (navigation.isFocused()) navigation.goBack()
+  }
+
   return (
     <Screen
       keyboardOffset="navigationHeader"
       keyboardShouldPersistTaps="handled"
       backgroundColor={colors.background}
     >
-      {lnurl ? <Flashcard onReload={onReload} onTopup={onTopup} /> : <EmptyCard />}
+      {lnurl ? (
+        <Flashcard onReload={onReload} onTopup={onTopup} onRemove={onRemove} />
+      ) : (
+        <EmptyCard />
+      )}
     </Screen>
   )
 }
