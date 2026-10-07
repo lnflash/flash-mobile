@@ -9,7 +9,6 @@ import {
   hasValidDleq,
   hashToCurve,
   isMintOperationError,
-  signMintQuote,
 } from "@cashu/cashu-ts"
 import { Network as NetworkLibGaloy, decodeInvoiceString } from "@galoymoney/client"
 
@@ -29,6 +28,7 @@ import {
   randomBytes,
   splitPow2,
 } from "../cashu-card-outputs"
+import { signMintQuote } from "./nut20"
 import type { ProofState, TopUpMint } from "./mint"
 import type { TopUpStore } from "./store"
 import type { CardUnit, TopUpFailure, TopUpOutput, TopUpRecord } from "./types"

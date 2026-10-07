@@ -17,10 +17,10 @@ import {
   createDLEQProof,
   createNewMintKeys,
   pointFromHex,
-  verifyMintQuoteSignature,
 } from "@cashu/cashu-ts"
 
 import { PROOF_SIZE, Transceiver, toHex } from "../../app/utils/cashu-card"
+import { verifyMintQuoteSignature } from "../../app/utils/cashu-card-topup/nut20"
 import type {
   CardUnit,
   ProofState,
@@ -203,7 +203,14 @@ export const createFakeMint = ({
       if (quote.expiry !== null && quote.expiry < nowSeconds()) {
         throw new MintOperationError(20007, "quote expired")
       }
-      if (!verifyMintQuoteSignature(quote.pubkey, id, outputs, signature)) {
+      if (
+        !verifyMintQuoteSignature({
+          pubkey: quote.pubkey,
+          quoteId: id,
+          outputs,
+          signature,
+        })
+      ) {
         throw new MintOperationError(20008, "Signature for mint request invalid")
       }
       const signatures = outputs.map(sign)
