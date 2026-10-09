@@ -716,7 +716,11 @@ export const FlashcardV2TopUpScreen = () => {
                 only as the field mounts. It mounts once, so a keypad opened
                 from it is never taken down by the read. It waits for the
                 reclaim plan too: the room it checks amounts against is not
-                known until the mint has answered. */}
+                known until the mint has answered. That answer comes over the
+                network, so the wait is shown, not left as a gap. */}
+            {!(commitmentsRead && reclaimRead) && (
+              <ActivityIndicator color={colors.primary} testID="topup-amount-loading" />
+            )}
             {convertMoneyAmount && commitmentsRead && reclaimRead && (
               <AmountInput
                 unitOfAccountAmount={amount}

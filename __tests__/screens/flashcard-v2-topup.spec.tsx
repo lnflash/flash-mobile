@@ -427,9 +427,11 @@ describe("FlashcardV2TopUpScreen", () => {
     // A keypad opened from a field shown now would be taken down by the read.
     expect(screen.queryByTestId("amount-input")).toBeNull()
     expect(mockAmountInputMounts).toEqual([])
+    expect(screen.getByTestId("topup-amount-loading")).toBeTruthy()
 
     await act(async () => settle?.([]))
     expect(mockAmountInputMounts).toEqual([true])
+    expect(screen.queryByTestId("topup-amount-loading")).toBeNull()
   })
 
   it("heads the keypad with the Cash wallet's balance: a top-up in sats is paid from it", async () => {
@@ -1084,9 +1086,13 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     expect(screen.queryByTestId("amount-input")).toBeNull()
     expect(mockAmountInputMounts).toEqual([])
     expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
+    // The mint is asked over the network, so the wait is shown in the
+    // field's place rather than left as a gap under the unit caption.
+    expect(screen.getByTestId("topup-amount-loading")).toBeTruthy()
 
     await act(async () => settle?.({ reclaimable: 32, settling: 0 }))
     expect(mockAmountInputMounts).toEqual([true])
+    expect(screen.queryByTestId("topup-amount-loading")).toBeNull()
     fireEvent.press(screen.getByTestId("amount-input"))
     expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
     expect(screen.getByTestId("topup-slots").props.children).toBe(
@@ -1105,9 +1111,11 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     renderScreen()
     await act(async () => undefined)
     expect(mockAmountInputMounts).toEqual([])
+    expect(screen.getByTestId("topup-amount-loading")).toBeTruthy()
 
     await act(async () => refuse?.(new Error("Network request failed")))
     expect(mockAmountInputMounts).toEqual([true])
+    expect(screen.queryByTestId("topup-amount-loading")).toBeNull()
   })
 
   it("asks the mint about no spent slots on a card with none, or with a top-up to resume", async () => {
