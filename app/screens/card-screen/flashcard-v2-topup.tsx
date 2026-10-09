@@ -39,6 +39,8 @@ import {
 import {
   CardUnit,
   MAX_TOPUP_AMOUNT,
+  ReclaimPlan,
+  ReclaimResult,
   TopUpError,
   TopUpRecord,
   cancelTopUp,
@@ -139,7 +141,43 @@ const refusal = (reason: Exclude<TopUpEligibility, { ok: true }>["reason"], LL: 
     "usd-off-unfinished": LL.FlashcardV2.topUpCantUsdUnfinished(),
   }[reason])
 
+const mintFailure = (err: unknown, LL: LLType): string => {
+  if (!(err instanceof TopUpError)) return LL.FlashcardV2.topUpFailed()
+  if (err.reason === "expired") return LL.FlashcardV2.topUpMintExpired()
+  if (err.reason === "dleq" || err.reason === "mint-mismatch" || err.reason === "restore")
+    return LL.FlashcardV2.topUpMintRefused()
+  // Not "your top-up is saved": it is not.
+  if (err.reason === "not-found") return LL.FlashcardV2.topUpGone()
+  return LL.FlashcardV2.topUpFailed()
+}
+
+/**
+ * A load the engine or the mint stopped before the card was written to:
+ * never "no card found", which would send the user tapping a card the phone
+ * never reached. A card without the room says how many spent slots are still
+ * owed at the mint (the reclaim that ran in the same tap, `err.reclaim`):
+ * they are the room the next load tap may free.
+ */
+const loadFailure = (err: TopUpError, LL: LLType): string => {
+  switch (err.reason) {
+    case "slots": {
+      const settling = err.reclaim?.settling ?? 0
+      const noRoom = LL.FlashcardV2.topUpNoRoomOnCard()
+      return settling > 0
+        ? `${noRoom} ${LL.FlashcardV2.topUpSlotsSettling({ count: settling })}`
+        : noRoom
+    }
+    case "mint-unreachable":
+      return LL.FlashcardV2.topUpMintUnreachable()
+    case "not-found":
+      return LL.FlashcardV2.topUpGone()
+    default:
+      return LL.FlashcardV2.topUpFailed()
+  }
+}
+
 const NO_COMMITMENTS: { slots: number; units: CardUnit[] } = { slots: 0, units: [] }
+const NO_RECLAIM: ReclaimPlan = { reclaimable: 0, settling: 0 }
 
 type Step =
   | { name: "loading" }
@@ -150,7 +188,8 @@ type Step =
   | { name: "confirm"; record: TopUpRecord; fee?: number }
   | { name: "working"; record: TopUpRecord; message: string; canLeave?: boolean }
   | { name: "load"; record: TopUpRecord }
-  | { name: "done"; record: TopUpRecord }
+  /** `reclaim`: what the load tap's reclaim of spent slots found; none on a resume of a loaded top-up. */
+  | { name: "done"; record: TopUpRecord; reclaim?: ReclaimResult }
 
 /**
  * Top up a Cashu card from the Cash wallet (ENG-616 PR 2).
@@ -173,7 +212,7 @@ export const FlashcardV2TopUpScreen = () => {
   const { LL } = useI18nContext()
   const { cashuCardUsdEnabled } = useFeatureFlags()
   const { cashuCard } = useFlashcard()
-  const { deps, feeFor, checkPin, load } = useCardTopUp()
+  const { deps, feeFor, checkPin, load, reclaimPlanFor } = useCardTopUp()
   const { convertMoneyAmount } = usePriceConversion()
   const { formatMoneyAmount } = useDisplayCurrency()
   const isAuthed = useIsAuthed()
@@ -187,6 +226,14 @@ export const FlashcardV2TopUpScreen = () => {
   // Whether that read has settled, whatever it found: the amount field waits
   // for it.
   const [commitmentsRead, setCommitmentsRead] = useState(false)
+  // The spent slots the load tap will free (ENG-631): room for a new top-up,
+  // once the mint has said every one of them is settled. The amount field
+  // waits for the mint's answer the same way: on a card with no empty slot
+  // the room is 0 until then, and a field shown before it would refuse every
+  // amount, then change its mind a round-trip later.
+  const [reclaim, setReclaim] = useState<ReclaimPlan>(NO_RECLAIM)
+  // Whether that plan has settled: answered, refused, or never asked for.
+  const [reclaimRead, setReclaimRead] = useState(false)
   const eligibility = cashuCard
     ? topUpEligibility(cashuCard, {
         unfinishedUnits: commitments.units,
@@ -275,6 +322,11 @@ export const FlashcardV2TopUpScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useReclaimPlan(resumeId ? undefined : cashuCard, reclaimPlanFor, {
+    onPlan: setReclaim,
+    onSettled: () => setReclaimRead(true),
+  })
+
   // Leaving before any payment was sent drops the quote: nothing can land,
   // and the card's screen should not offer to finish it. A quote that was
   // ever sent for payment stays, even after a refusal: only the mint can say
@@ -301,11 +353,14 @@ export const FlashcardV2TopUpScreen = () => {
     unit === "sat" ? LL.FlashcardV2.topUpUnitSat() : LL.FlashcardV2.topUpUnitUsd()
   const cardAmount =
     amount && convertMoneyAmount ? convertMoneyAmount(amount, walletCurrency).amount : 0
-  // Empty slots only: a spent slot is owed until it settles at the mint, and
-  // this app never clears one. Those an unfinished top-up will take are not
-  // free either.
+  // Empty slots, plus the spent ones the load tap will free: a spent slot is
+  // owed until it settles at the mint, and counts only once the mint has said
+  // every spent slot on the card is settled (`reclaimPlan`). Those an
+  // unfinished top-up will take are not free either.
   const reservedSlots = commitments.slots
-  const freeSlots = cashuCard ? Math.max(0, cashuCard.empty - reservedSlots) : 0
+  const freeSlots = cashuCard
+    ? Math.max(0, cashuCard.empty + reclaim.reclaimable - reservedSlots)
+    : 0
   const needed = cardAmount > 0 ? slotsNeeded(cardAmount) : 0
   const overBalance = (() => {
     if (!cashWallet || !convertMoneyAmount || cardAmount <= 0) return false
@@ -362,38 +417,6 @@ export const FlashcardV2TopUpScreen = () => {
     }
   }
 
-  const mintFailure = (err: unknown): string => {
-    if (!(err instanceof TopUpError)) return LL.FlashcardV2.topUpFailed()
-    if (err.reason === "expired") return LL.FlashcardV2.topUpMintExpired()
-    if (
-      err.reason === "dleq" ||
-      err.reason === "mint-mismatch" ||
-      err.reason === "restore"
-    )
-      return LL.FlashcardV2.topUpMintRefused()
-    // Not "your top-up is saved": it is not.
-    if (err.reason === "not-found") return LL.FlashcardV2.topUpGone()
-    return LL.FlashcardV2.topUpFailed()
-  }
-
-  /**
-   * A load the engine or the mint stopped before the card was written to:
-   * never "no card found", which would send the user tapping a card the phone
-   * never reached.
-   */
-  const loadFailure = (err: TopUpError): string => {
-    switch (err.reason) {
-      case "slots":
-        return LL.FlashcardV2.topUpNoRoomOnCard()
-      case "mint-unreachable":
-        return LL.FlashcardV2.topUpMintUnreachable()
-      case "not-found":
-        return LL.FlashcardV2.topUpGone()
-      default:
-        return LL.FlashcardV2.topUpFailed()
-    }
-  }
-
   const mintUntilReady = async (record: TopUpRecord) => {
     setStep({ name: "working", record, message: LL.FlashcardV2.topUpMinting() })
     try {
@@ -415,7 +438,7 @@ export const FlashcardV2TopUpScreen = () => {
         canLeave: true,
       })
     } catch (err) {
-      setStep({ name: "working", record, message: mintFailure(err), canLeave: true })
+      setStep({ name: "working", record, message: mintFailure(err, LL), canLeave: true })
     }
   }
 
@@ -431,6 +454,7 @@ export const FlashcardV2TopUpScreen = () => {
         walletId: cashWallet.id,
         card: {
           empty: cashuCard.empty,
+          reclaimable: reclaim.reclaimable,
           // The unit of the card's own value; an empty card has none.
           unit:
             eligibility?.ok && eligibility.unit !== "choose" && !eligibility.committed
@@ -528,7 +552,7 @@ export const FlashcardV2TopUpScreen = () => {
     setBusy(true)
     setError(undefined)
     try {
-      const done = await load(record, cashuCard, pinToUse)
+      const { record: done, reclaim: freed } = await load(record, cashuCard, pinToUse)
       if (done.state !== "loaded") {
         // Part of it is being spent at the mint right now: a later load
         // asks the mint again.
@@ -539,11 +563,11 @@ export const FlashcardV2TopUpScreen = () => {
         amount: formatUnitAmount(done.amount, done.unit, LL),
       })
       AccessibilityInfo.announceForAccessibility(message)
-      setStep({ name: "done", record: done })
+      setStep({ name: "done", record: done, reclaim: freed })
     } catch (err) {
       if (err instanceof NfcError.UserCancel) return
       if (err instanceof TopUpError) {
-        setError(loadFailure(err))
+        setError(loadFailure(err, LL))
         return
       }
       const failure = pinFailure(err, cashuCard.version)
@@ -690,8 +714,14 @@ export const FlashcardV2TopUpScreen = () => {
             {/* The field waits for the unfinished top-ups to be read: one can
                 refuse this top-up or fix its unit, and initiallyOpen is read
                 only as the field mounts. It mounts once, so a keypad opened
-                from it is never taken down by the read. */}
-            {convertMoneyAmount && commitmentsRead && (
+                from it is never taken down by the read. It waits for the
+                reclaim plan too: the room it checks amounts against is not
+                known until the mint has answered. That answer comes over the
+                network, so the wait is shown, not left as a gap. */}
+            {!(commitmentsRead && reclaimRead) && (
+              <ActivityIndicator color={colors.primary} testID="topup-amount-loading" />
+            )}
+            {convertMoneyAmount && commitmentsRead && reclaimRead && (
               <AmountInput
                 unitOfAccountAmount={amount}
                 walletCurrency={walletCurrency}
@@ -707,7 +737,13 @@ export const FlashcardV2TopUpScreen = () => {
             )}
             {needed > 0 && !amountProblem && (
               <Text type="caption" style={styles.center} testID="topup-slots">
-                {LL.FlashcardV2.topUpSlots({ needed, free: freeSlots })}
+                {reclaim.reclaimable > 0
+                  ? LL.FlashcardV2.topUpSlotsReclaim({
+                      needed,
+                      free: freeSlots,
+                      reclaim: reclaim.reclaimable,
+                    })
+                  : LL.FlashcardV2.topUpSlots({ needed, free: freeSlots })}
               </Text>
             )}
             {reservedSlots > 0 && (
@@ -889,6 +925,7 @@ export const FlashcardV2TopUpScreen = () => {
             <Text type="p1" style={styles.center} testID="topup-done">
               {LL.FlashcardV2.topUpLoaded({ amount: amountText(step.record) })}
             </Text>
+            {step.reclaim && <ReclaimNotes reclaim={step.reclaim} />}
             <PrimaryBtn
               label={LL.FlashcardV2.topUpDone()}
               onPress={() => navigation.goBack()}
@@ -902,6 +939,66 @@ export const FlashcardV2TopUpScreen = () => {
     <Screen preset="scroll" backgroundColor={colors.background}>
       <View style={styles.content}>{body}</View>
     </Screen>
+  )
+}
+
+/**
+ * A new top-up: which of the card's spent slots the load tap will free, asked
+ * of the mint once, off the card, for the card the screen opened on (none on
+ * a resume: its amount is set). The tap asks again before it runs. An
+ * unanswered mint counts no spent slot as room.
+ *
+ * `onSettled` fires once the plan is known, whichever way: at once when
+ * there is nothing to ask about, or when the mint has answered or refused.
+ */
+const useReclaimPlan = (
+  card: Pick<CashuCardState, "pubkey" | "spentSlots"> | undefined,
+  planFor: (card: Pick<CashuCardState, "pubkey" | "spentSlots">) => Promise<ReclaimPlan>,
+  { onPlan, onSettled }: { onPlan: (plan: ReclaimPlan) => void; onSettled: () => void },
+) => {
+  useEffect(() => {
+    if (!card?.spentSlots?.length) {
+      onSettled()
+      return undefined
+    }
+    let live = true
+    planFor(card)
+      .then(
+        (plan) => live && onPlan(plan),
+        () => undefined,
+      )
+      .finally(() => {
+        if (live) onSettled()
+      })
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+}
+
+/**
+ * What the load tap's reclaim did: the spent slots it freed, and those still
+ * owed at the mint. The load went through, so the settling note is a note
+ * (`topUpSettlingNote`), not the "try again later" the `slots` refusal ends
+ * with (`topUpSlotsSettling`): there is nothing here to try again.
+ */
+const ReclaimNotes = ({ reclaim }: { reclaim: ReclaimResult }) => {
+  const styles = useStyles()
+  const { LL } = useI18nContext()
+  return (
+    <>
+      {reclaim.cleared > 0 && (
+        <Text type="caption" style={styles.center} testID="topup-reclaimed">
+          {LL.FlashcardV2.topUpReclaimed({ count: reclaim.cleared })}
+        </Text>
+      )}
+      {reclaim.settling > 0 && (
+        <Text type="caption" style={styles.center} testID="topup-settling">
+          {LL.FlashcardV2.topUpSettlingNote({ count: reclaim.settling })}
+        </Text>
+      )}
+    </>
   )
 }
 

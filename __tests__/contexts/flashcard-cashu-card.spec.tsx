@@ -78,9 +78,17 @@ const PROOF_SLOT = [
   ...new Array(32).fill(0xcd),
 ]
 
+/** A spent slot as GET_PROOF returns it: status 02, its nonce's first byte the slot index. */
+const spentSlot = (slot: number) => [
+  0x02,
+  ...PROOF_SLOT.slice(1, 13),
+  slot,
+  ...PROOF_SLOT.slice(14),
+]
+
 /**
  * Answers like a real Cashu card: SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE,
- * GET_SLOT_STATUS, GET_PROOF.
+ * GET_SLOT_STATUS, GET_PROOF (the unspent 500 in slot 0, spent slots 1-7).
  */
 const cashuCard = async (bytes: number[]) => {
   switch (bytes[1]) {
@@ -96,7 +104,7 @@ const cashuCard = async (bytes: number[]) => {
     case 0x14:
       return ok(SLOT_STATUSES)
     case 0x13:
-      return ok(PROOF_SLOT)
+      return ok(bytes[2] === 0 ? PROOF_SLOT : spentSlot(bytes[2]))
     default:
       throw new Error("unsupported")
   }
@@ -210,15 +218,17 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(requestTechnology).toHaveBeenCalledWith([NfcTech.IsoDep, NfcTech.Ndef])
     // The applet SELECT goes out first, verbatim, over the manager's handler.
     expect(transceive.mock.calls[0][0]).toEqual(buildSelectApdu())
-    // SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE, then GET_SLOT_STATUS and the
-    // one unspent slot's GET_PROOF — a read touches nothing else.
+    // SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE, then GET_SLOT_STATUS and a
+    // GET_PROOF per occupied slot, the seven spent ones included (ENG-631:
+    // the next top-up asks the mint about them) — a read touches nothing
+    // else, and never sends CLEAR_SPENT.
     expect(transceive.mock.calls.map((call) => call[0][1])).toEqual([
       INS_SELECT,
       0x01,
       0x10,
       0x11,
       0x14,
-      0x13,
+      ...new Array(8).fill(0x13),
     ])
     // The applet is the only thing this tap talks to: no NDEF read before the
     // SELECT (neither cardctl nor flash-pos sends one) and none after it.
@@ -237,6 +247,17 @@ describe("FlashcardProvider Cashu card orchestration", () => {
       keysets: [{ keysetId: KEYSET_HEX, amount: 500 }],
     }
     expect(result.cashuCard).toMatchObject(expected)
+    // The spent slots, data and all, in slot order: what the top-up's load
+    // tap will ask the mint about before it frees any of them.
+    expect(result.cashuCard?.spentSlots?.map((slot) => slot.slot)).toEqual([
+      1, 2, 3, 4, 5, 6, 7,
+    ])
+    expect(result.cashuCard?.spentSlots?.[0]).toMatchObject({
+      status: "spent",
+      keysetId: KEYSET_HEX,
+      amount: 500,
+      nonce: "01" + "ab".repeat(31),
+    })
     expect(result.boltCard).toBeUndefined()
     await waitFor(() => expect(latest?.cashuCard).toMatchObject(expected))
     // ...and the phone remembers the card: the applet keeps no history, so

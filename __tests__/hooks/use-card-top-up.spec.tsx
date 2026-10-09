@@ -18,8 +18,10 @@ import {
   useTopUpMinter,
   useUnfinishedTopUps,
 } from "../../app/hooks/use-card-top-up"
+import type { CardProofSlot } from "../../app/utils/cashu-card"
 import {
   PayArgs,
+  ReclaimResult,
   TopUpError,
   TopUpMintError,
   TopUpRecord,
@@ -33,6 +35,8 @@ const mockRunCardOperation = jest.fn()
 const mockVerifyCardPin = jest.fn()
 const mockLoadTopUp = jest.fn()
 const mockProofStates = jest.fn()
+const mockReclaimVerdicts = jest.fn()
+const mockReclaimSpentSlots = jest.fn()
 const mockUnfinished = jest.fn()
 const mockAdvance = jest.fn()
 const mockCancel = jest.fn()
@@ -63,6 +67,8 @@ jest.mock("@app/utils/cashu-card-topup", () => ({
   ...jest.requireActual("@app/utils/cashu-card-topup"),
   loadTopUp: (...args: unknown[]) => mockLoadTopUp(...args),
   proofStatesForLoad: (...args: unknown[]) => mockProofStates(...args),
+  reclaimVerdicts: (...args: unknown[]) => mockReclaimVerdicts(...args),
+  reclaimSpentSlots: (...args: unknown[]) => mockReclaimSpentSlots(...args),
   unfinishedTopUps: (...args: unknown[]) => mockUnfinished(...args),
   advanceTopUps: (...args: unknown[]) => mockAdvance(...args),
   cancelTopUp: (...args: unknown[]) => mockCancel(...args),
@@ -85,10 +91,31 @@ const KEY_REFUSED = new Error(
   'Variable "$input" got invalid value { walletId: "cash-wallet" }; Field "idempotencyKey" is not defined by type "LnInvoicePaymentInput".',
 )
 
+/** What a load tap's reclaim found on a card with no spent slots. */
+const NO_RECLAIM: ReclaimResult = { reclaimable: 0, settling: 0, cleared: 0, spent: 0 }
+/** A spent slot as the last tap read it. */
+const spentSlot = (slot: number): CardProofSlot => ({
+  slot,
+  status: "spent",
+  keysetId: "0059534ce0bfa19a",
+  amount: 1,
+  // Never all zero: that is a CLEAR_SPENT remnant, not a proof.
+  nonce: (slot + 1).toString(16).padStart(64, "0"),
+  C: "02" + "ab".repeat(32),
+})
+/** A card with `spent` spent slots, as the top-up screen hands it to `load`. */
+const cardWith = (spent: number) => ({
+  pubkey: "02ab",
+  maxSlots: 32,
+  spentSlots: Array.from({ length: spent }, (_, i) => spentSlot(i)),
+})
+
 beforeEach(() => {
   jest.clearAllMocks()
   mockAdvance.mockResolvedValue({ waiting: 0 })
   mockUnfinished.mockResolvedValue([])
+  mockReclaimVerdicts.mockResolvedValue(new Map())
+  mockReclaimSpentSlots.mockResolvedValue(NO_RECLAIM)
 })
 
 describe("useCardTopUp pay", () => {
@@ -282,7 +309,11 @@ describe("useCardTopUp feeFor", () => {
 })
 
 describe("useCardTopUp load", () => {
-  it("asks the mint about each proof before the tap, then runs VERIFY_PIN and the load in the one card session", async () => {
+  const record = { id: "t1", cardPubkey: "02ab" } as TopUpRecord
+  const tapRuns = () =>
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+
+  it("asks the mint about each proof before the tap, then runs VERIFY_PIN, the reclaim and the load in the one card session", async () => {
     const order: string[] = []
     const states = new Map([["n1", "SPENT"]])
     mockProofStates.mockImplementation(async () => {
@@ -290,6 +321,10 @@ describe("useCardTopUp load", () => {
       return states
     })
     mockVerifyCardPin.mockImplementation(async () => order.push("verify"))
+    mockReclaimSpentSlots.mockImplementation(async () => {
+      order.push("reclaim")
+      return NO_RECLAIM
+    })
     mockLoadTopUp.mockImplementation(async () => {
       order.push("load")
       return { state: "loaded" }
@@ -298,29 +333,151 @@ describe("useCardTopUp load", () => {
       order.push("tap")
       return op("transceive")
     })
-    const record = { id: "t1", cardPubkey: "02ab" } as TopUpRecord
+    const card = cardWith(0)
 
-    await hook().load(record, { maxSlots: 32 }, "1234")
+    const result = await hook().load(record, card, "1234")
 
     expect(mockProofStates).toHaveBeenCalledWith(expect.anything(), "t1")
     expect(mockRunCardOperation).toHaveBeenCalledWith(expect.any(Function), "02ab")
     expect(mockVerifyCardPin).toHaveBeenCalledWith("transceive", "1234")
+    expect(mockReclaimSpentSlots).toHaveBeenCalledWith("transceive", {
+      maxSlots: 32,
+      verdicts: new Map(),
+    })
     expect(mockLoadTopUp).toHaveBeenCalledWith(expect.anything(), {
       id: "t1",
       transceive: "transceive",
-      card: { maxSlots: 32 },
+      card,
       mintStates: states,
     })
-    expect(order).toEqual(["mint", "tap", "verify", "load"])
+    expect(order).toEqual(["mint", "tap", "verify", "reclaim", "load"])
+    expect(result).toEqual({ record: { state: "loaded" }, reclaim: NO_RECLAIM })
+  })
+
+  it("hands the reclaim's read of the card to the load, so the tap reads no slot twice", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    const inventory = {
+      statuses: ["spent", "unspent", ...new Array(30).fill("empty")],
+      spent: [spentSlot(0)],
+    }
+    mockReclaimSpentSlots.mockResolvedValue({
+      ...NO_RECLAIM,
+      settling: 1,
+      spent: 1,
+      inventory,
+    })
+    mockLoadTopUp.mockResolvedValue({ state: "loaded" })
+    tapRuns()
+
+    await hook().load(record, cardWith(1))
+
+    expect(mockLoadTopUp).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: "t1", transceive: "transceive", inventory }),
+    )
   })
 
   it("sends no VERIFY_PIN to a card without a PIN", async () => {
     mockProofStates.mockResolvedValue(undefined)
     mockLoadTopUp.mockResolvedValue({ state: "loaded" })
-    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+    tapRuns()
 
-    await hook().load({ id: "t1", cardPubkey: "02ab" } as TopUpRecord, { maxSlots: 32 })
+    await hook().load(record, cardWith(0))
     expect(mockVerifyCardPin).not.toHaveBeenCalled()
+  })
+
+  it("a card with no spent slots costs no mint call for the reclaim", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    mockLoadTopUp.mockResolvedValue({ state: "loaded" })
+    tapRuns()
+
+    await hook().load(record, cardWith(0))
+    await hook().load(record, { pubkey: "02ab", maxSlots: 32, spentSlots: undefined })
+    expect(mockReclaimVerdicts).not.toHaveBeenCalled()
+    expect(mockReclaimSpentSlots).toHaveBeenCalledTimes(2)
+  })
+
+  it("asks the mint about the card's spent slots before the tap, and hands the verdicts to the reclaim", async () => {
+    const order: string[] = []
+    const verdicts = new Map([[spentSlot(0).nonce, "SPENT"]])
+    mockProofStates.mockResolvedValue(undefined)
+    mockReclaimVerdicts.mockImplementation(async () => {
+      order.push("verdicts")
+      return verdicts
+    })
+    mockReclaimSpentSlots.mockResolvedValue({ ...NO_RECLAIM, cleared: 2, spent: 2 })
+    mockLoadTopUp.mockResolvedValue({ state: "loaded" })
+    mockRunCardOperation.mockImplementation(async (op) => {
+      order.push("tap")
+      return op("transceive")
+    })
+    const card = cardWith(2)
+
+    const result = await hook().load(record, card)
+
+    expect(mockReclaimVerdicts).toHaveBeenCalledWith(
+      expect.anything(),
+      "02ab",
+      card.spentSlots,
+    )
+    expect(mockReclaimSpentSlots).toHaveBeenCalledWith("transceive", {
+      maxSlots: 32,
+      verdicts,
+    })
+    expect(order).toEqual(["verdicts", "tap"])
+    expect(result.reclaim).toEqual({ ...NO_RECLAIM, cleared: 2, spent: 2 })
+  })
+
+  it("a mint that cannot say which spent slots are settled costs no tap: the reclaim runs without verdicts, and says what is still settling", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    mockReclaimVerdicts.mockRejectedValue(new Error("Network request failed"))
+    mockReclaimSpentSlots.mockResolvedValue({ ...NO_RECLAIM, settling: 2, spent: 2 })
+    mockLoadTopUp.mockResolvedValue({ state: "loaded" })
+    tapRuns()
+
+    const result = await hook().load(record, cardWith(2))
+
+    expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
+    expect(mockReclaimSpentSlots).toHaveBeenCalledWith("transceive", {
+      maxSlots: 32,
+      verdicts: undefined,
+    })
+    expect(mockLoadTopUp).toHaveBeenCalledTimes(1)
+    expect(result.reclaim).toEqual({ ...NO_RECLAIM, settling: 2, spent: 2 })
+  })
+
+  it("a load the engine refuses after the reclaim keeps its reason and carries what the reclaim found", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    const reclaim = { ...NO_RECLAIM, settling: 3, spent: 3 }
+    mockReclaimSpentSlots.mockResolvedValue(reclaim)
+    mockLoadTopUp.mockRejectedValue(new TopUpError("slots", "no room"))
+    tapRuns()
+
+    await expect(hook().load(record, cardWith(3))).rejects.toMatchObject({
+      reason: "slots",
+      message: "no room",
+      reclaim,
+    })
+  })
+
+  it("rethrows the engine's own error, so its stack still names the check that refused", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    const reclaim = { ...NO_RECLAIM, settling: 3, spent: 3 }
+    mockReclaimSpentSlots.mockResolvedValue(reclaim)
+    const refused = new TopUpError("slots", "no room")
+    mockLoadTopUp.mockRejectedValue(refused)
+    tapRuns()
+
+    await expect(hook().load(record, cardWith(3))).rejects.toBe(refused)
+    expect(refused.reclaim).toBe(reclaim)
+  })
+
+  it("anything else the tap throws is left as it is", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    mockLoadTopUp.mockRejectedValue(new Error("Tag was lost"))
+    tapRuns()
+
+    await expect(hook().load(record, cardWith(3))).rejects.toThrow("Tag was lost")
   })
 
   it("no tap when the mint cannot be asked about a resumed load's proofs, and the failure says the mint, not the card", async () => {
@@ -330,11 +487,13 @@ describe("useCardTopUp load", () => {
     ]
     for (const failure of failures) {
       mockProofStates.mockRejectedValueOnce(failure)
-      await expect(
-        hook().load({ id: "t1", cardPubkey: "02ab" } as TopUpRecord, { maxSlots: 32 }),
-      ).rejects.toMatchObject({ reason: "mint-unreachable" })
+      await expect(hook().load(record, cardWith(2))).rejects.toMatchObject({
+        reason: "mint-unreachable",
+      })
     }
     expect(mockRunCardOperation).not.toHaveBeenCalled()
+    // The spent slots were never asked about: that question comes after.
+    expect(mockReclaimVerdicts).not.toHaveBeenCalled()
   })
 
   it("keeps the engine's own refusal before the tap as it is", async () => {
@@ -342,10 +501,62 @@ describe("useCardTopUp load", () => {
       new TopUpError("not-found", "top-up t1 is not saved"),
     )
 
-    await expect(
-      hook().load({ id: "t1", cardPubkey: "02ab" } as TopUpRecord, { maxSlots: 32 }),
-    ).rejects.toMatchObject({ reason: "not-found" })
+    await expect(hook().load(record, cardWith(0))).rejects.toMatchObject({
+      reason: "not-found",
+    })
     expect(mockRunCardOperation).not.toHaveBeenCalled()
+  })
+})
+
+describe("useCardTopUp reclaimPlanFor", () => {
+  it("plans nothing for a card with no spent slots, without asking the mint", async () => {
+    await expect(hook().reclaimPlanFor(cardWith(0))).resolves.toEqual({
+      reclaimable: 0,
+      settling: 0,
+    })
+    await expect(
+      hook().reclaimPlanFor({ pubkey: "02ab", spentSlots: undefined }),
+    ).resolves.toEqual({ reclaimable: 0, settling: 0 })
+    expect(mockReclaimVerdicts).not.toHaveBeenCalled()
+  })
+
+  it("asks the mint about the spent slots and counts every one as room only when all are settled", async () => {
+    const card = cardWith(2)
+    const [a, b] = card.spentSlots
+    mockReclaimVerdicts.mockResolvedValueOnce(
+      new Map([
+        [a.nonce, "SPENT"],
+        [b.nonce, "SPENT"],
+      ]),
+    )
+    await expect(hook().reclaimPlanFor(card)).resolves.toEqual({
+      reclaimable: 2,
+      settling: 0,
+    })
+    expect(mockReclaimVerdicts).toHaveBeenCalledWith(
+      expect.anything(),
+      "02ab",
+      card.spentSlots,
+    )
+
+    mockReclaimVerdicts.mockResolvedValueOnce(
+      new Map([
+        [a.nonce, "SPENT"],
+        [b.nonce, "PENDING"],
+      ]),
+    )
+    await expect(hook().reclaimPlanFor(card)).resolves.toEqual({
+      reclaimable: 0,
+      settling: 1,
+    })
+  })
+
+  it("a mint that cannot be asked leaves every spent slot settling", async () => {
+    mockReclaimVerdicts.mockRejectedValueOnce(new Error("Network request failed"))
+    await expect(hook().reclaimPlanFor(cardWith(3))).resolves.toEqual({
+      reclaimable: 0,
+      settling: 3,
+    })
   })
 })
 

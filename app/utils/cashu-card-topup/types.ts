@@ -116,8 +116,9 @@ export type TopUpRecord = {
    * Set before the first LOAD_PROOF. From then on a proof may be on the card
    * without the app having seen the card's answer, so every later load reads
    * the card's inventory first (the card itself accepts duplicates), and asks
-   * the mint about each proof the inventory does not find (a slot can be
-   * spent and cleared since).
+   * the mint about each proof the inventory does not find: a slot can be
+   * spent and cleared since, by the load tap's own reclaim once the mint
+   * settled it (`reclaimSpentSlots`), or by another tool.
    */
   loadStarted: boolean
   state: TopUpState

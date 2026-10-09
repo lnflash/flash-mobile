@@ -233,6 +233,11 @@ export const FlashcardV2Screen = () => {
 
       <View style={styles.details}>
         <DetailRow label={LL.FlashcardV2.slots()} value={slotSummary(cashuCard, LL)} />
+        {cashuCard.spent > 0 && (
+          <Text type="caption" testID="flashcard-v2-slots-spent-note">
+            {LL.FlashcardV2.slotsSpentNote()}
+          </Text>
+        )}
         <DetailRow
           label={LL.FlashcardV2.appletVersion()}
           value={`v${cashuCard.version}`}
@@ -370,6 +375,7 @@ const unfinishedText = (record: TopUpRecord, expired: boolean, LL: LLType): stri
 const slotSummary = (card: CashuCardInfo, LL: LLType) =>
   LL.FlashcardV2.slotSummary({
     unspent: card.unspent,
+    spent: card.spent,
     free: card.empty,
     max: card.maxSlots,
   })

@@ -12,17 +12,25 @@
  *     anything is written to it;
  *   - a resumed load never writes a proof the card already holds, nor one the
  *     mint has already seen spent;
- *   - spent slots are never room and never cleared;
+ *   - spent slots are room only as `reclaimable`, and CLEAR_SPENT is sent by
+ *     the load tap's reclaim alone, only once the mint has settled every
+ *     spent slot (or the slot holds no proof); `loadTopUp` itself never clears;
  *   - a card's unfinished top-ups hold its slots and its unit.
  */
 import * as Keychain from "react-native-keychain"
 
 import { Amount, MintOperationError, hashToCurve } from "@cashu/cashu-ts"
 
-import { toHex } from "../../app/utils/cashu-card"
+import {
+  CardProofSlot,
+  getProof,
+  getSlotStatuses,
+  toHex,
+} from "../../app/utils/cashu-card"
 import { signMintQuote } from "../../app/utils/cashu-card-topup/nut20"
 import { buildCardP2PKSecret } from "../../app/utils/cashu-card-outputs"
 import {
+  CardInventory,
   EXPIRY_GRACE_MS,
   MIN_PAY_WINDOW_MS,
   PAY_WINDOW_MS,
@@ -41,6 +49,9 @@ import {
   payWindowMs,
   prepareTopUp,
   proofStatesForLoad,
+  reclaimPlan,
+  reclaimSpentSlots,
+  reclaimVerdicts,
   unfinishedTopUps,
 } from "../../app/utils/cashu-card-topup"
 import { FakeCard, FakeMint, createFakeCard, createFakeMint } from "../helpers/fake-cashu"
@@ -95,13 +106,17 @@ const yOf = (nonce: string) =>
 
 const nonceAt = (slot: number) => toHex(card.slots[slot].slice(13, 45))
 
-/** A load against the fake card, asking the mint first as the app does. */
-const loadOnCard = async (id: string) =>
+/**
+ * A load against the fake card, asking the mint first as the app does, and
+ * taking the reclaim's read of the card (`inventory`) when the tap has one.
+ */
+const loadOnCard = async (id: string, inventory?: CardInventory) =>
   loadTopUp(deps, {
     id,
     transceive: card.transceive,
     card: { maxSlots: 32 },
     mintStates: await proofStatesForLoad(deps, id),
+    inventory,
   })
 
 /** The first load's tap is lost after `landed` LOAD_PROOFs reach the card. */
@@ -191,13 +206,29 @@ describe("prepareTopUp", () => {
     await expect(prepare(1023, { card: { empty: 10 } })).resolves.toBeTruthy()
   })
 
-  it("never counts spent slots as room: a spent slot is owed until it settles, and is never cleared", async () => {
+  it("counts spent slots as room only as `reclaimable`: a spent slot is owed until the mint settles it", async () => {
     // Nine empty and twenty spent: the old rule (empty + spent) said yes.
     const spentCard = { empty: 9, spent: 20 }
     await expect(prepare(1023, { card: spentCard })).rejects.toMatchObject({
       reason: "slots",
     })
     expect(mint.createQuote).not.toHaveBeenCalled()
+    // The load tap's reclaim will free every spent slot (`reclaimPlan`): room.
+    await expect(
+      prepare(1023, { card: { ...spentCard, reclaimable: 20 } }),
+    ).resolves.toBeTruthy()
+  })
+
+  it("counts reclaimable slots against an unfinished top-up's hold like empty ones", async () => {
+    // Ten slots held by a minted top-up; zero empty and ten reclaimable is no room.
+    pay.mockResolvedValue({ kind: "paid" })
+    await minted(1023)
+    await expect(
+      prepare(1, { card: { empty: 0, reclaimable: 10 } }),
+    ).rejects.toMatchObject({ reason: "slots" })
+    await expect(
+      prepare(1, { card: { empty: 0, reclaimable: 11 } }),
+    ).resolves.toBeTruthy()
   })
 
   const wrongQuotes: [string, Record<string, unknown>][] = [
@@ -1108,7 +1139,7 @@ describe("loadTopUp", () => {
     expect(card.transceive).not.toHaveBeenCalled()
   })
 
-  it("never clears a spent slot: with too few empty ones it refuses before writing, and an unsettled burn stays readable", async () => {
+  it("never clears a spent slot itself: with too few empty ones it refuses before writing, and an unsettled burn stays readable", async () => {
     const record = await minted(1000)
     // 28 spent slots and 4 empty: six proofs do not fit. Slot 0 is a burn
     // whose signature never left the card, UNSPENT at the mint: only its
@@ -1148,6 +1179,462 @@ describe("loadTopUp", () => {
     const record = await prepare()
     await expect(loadOnCard(record.id)).rejects.toBeInstanceOf(TopUpError)
     expect(card.transceive).not.toHaveBeenCalled()
+  })
+
+  it("a spent slot a cut CLEAR_SPENT left behind does not stand for the record's proof: the mint decides whether it is written again", async () => {
+    // 7 sats: 4 + 2 + 1. The tap is cut after the 4 lands; it is then spent,
+    // and a CLEAR_SPENT cut short zeroes its keyset and amount but not its
+    // nonce. The nonce alone would say the 4 is on the card.
+    const record = await minted(7)
+    await cutLoadAfter(record.id, 1)
+    const four = nonceAt(0)
+    card.slots[0][0] = 2
+    card.slots[0].fill(0, 1, 13)
+
+    // UNSPENT at the mint (the burn's signature never left the card, and
+    // its slot no longer holds it): the proof is written again.
+    const after = await loadOnCard(record.id)
+
+    expect(after.state).toBe("loaded")
+    expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
+    expect(card.ins().filter((ins) => ins === 0x30)).toHaveLength(3)
+    expect(card.unspentNonces()).toContain(four)
+  })
+
+  it("the same remnant, SPENT at the mint, is not written again", async () => {
+    const record = await minted(7)
+    await cutLoadAfter(record.id, 1)
+    const four = nonceAt(0)
+    card.slots[0][0] = 2
+    card.slots[0].fill(0, 1, 13)
+    mint.proofStatesByY.set(yOf(four), "SPENT")
+
+    const after = await loadOnCard(record.id)
+
+    expect(after.state).toBe("loaded")
+    expect(card.unspentNonces()).toEqual(record.proofs?.slice(1).map((p) => p.nonce))
+  })
+})
+
+/** The spent slots on the fake card, as a tap reads them. */
+const spentSlotsOnCard = async (): Promise<CardProofSlot[]> => {
+  const statuses = await getSlotStatuses(card.transceive, 32)
+  const spent: CardProofSlot[] = []
+  for (const [slot, status] of statuses.entries()) {
+    if (status === "spent") spent.push(await getProof(card.transceive, slot))
+  }
+  return spent
+}
+
+/** Spend the card's slots at a till; the mint settles them when `settled`. */
+const spendAtTill = (slots: number[], settled = true) => {
+  slots.forEach((slot) => {
+    card.slots[slot][0] = 2
+    if (settled) mint.proofStatesByY.set(yOf(nonceAt(slot)), "SPENT")
+  })
+}
+
+/** secp256k1's generator, compressed: a C that is a point. */
+const ON_CURVE_C = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+
+/** Fill slots `from` up to `to` with proof-shaped spent slots, settled at the mint when `settled`. */
+const fillSpent = (from: number, to: number, settled = true) => {
+  const keyset = (mint.keysetId.match(/../g) ?? []).map((h) => parseInt(h, 16))
+  const cBytes = (ON_CURVE_C.match(/../g) ?? []).map((h) => parseInt(h, 16))
+  for (let slot = from; slot < to; slot += 1) {
+    const nonce = new Array(32).fill(0)
+    nonce[0] = 0x10 + slot
+    card.slots[slot] = [2, ...keyset, 0, 0, 0, 1, ...nonce, ...cBytes]
+    if (settled) mint.proofStatesByY.set(yOf(toHex(nonce)), "SPENT")
+  }
+}
+
+/** The reclaim as the load tap runs it: the verdicts asked before the tap, then the card. */
+const reclaimOnCard = async () => {
+  const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
+  card.transceive.mockClear()
+  return reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts })
+}
+
+describe("reclaimSpentSlots", () => {
+  let log: jest.SpyInstance
+  let warn: jest.SpyInstance
+
+  beforeEach(() => {
+    log = jest.spyOn(console, "log").mockImplementation(() => {})
+    warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    log.mockRestore()
+    warn.mockRestore()
+  })
+
+  /** A card holding 4 + 2 + 1 in slots 0-2, all spent at a till. */
+  const spentCard = async (settled = true) => {
+    const record = await minted(7)
+    await loadOnCard(record.id)
+    spendAtTill([0, 1, 2], settled)
+    return record
+  }
+
+  it("frees every spent slot once the mint has settled each: GET_SLOT_STATUS, a GET_PROOF per spent slot, then CLEAR_SPENT, and the card's count", async () => {
+    const record = await spentCard()
+    const before = record.proofs?.map((p) => yOf(p.nonce))
+
+    const result = await reclaimOnCard()
+
+    expect(result).toEqual({ reclaimable: 3, settling: 0, cleared: 3, spent: 3 })
+    // The read went stale with the clear: nothing is handed on to the load.
+    expect(result.inventory).toBeUndefined()
+    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13, 0x31])
+    expect(card.slots.every((slot) => slot[0] === 0)).toBe(true)
+    // The mint was asked about exactly those three, by Y.
+    expect(mint.proofStates).toHaveBeenCalledWith(before)
+    expect(log).toHaveBeenCalledWith("CLEAR_SPENT freed 3 settled slots")
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it("one spent slot the mint has as UNSPENT (a burn whose signature never left the card) holds every clear back", async () => {
+    await spentCard()
+    mint.proofStatesByY.delete(yOf(nonceAt(2)))
+    const before = card.slots.map((slot) => [...slot])
+
+    const result = await reclaimOnCard()
+
+    expect(result).toMatchObject({ reclaimable: 0, settling: 1, cleared: 0, spent: 3 })
+    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13])
+    expect(card.slots).toEqual(before)
+    // Nothing was cleared, so what was read still describes the card, and
+    // is handed on for the load to take instead of reading it again.
+    expect(result.inventory?.statuses).toEqual([
+      "spent",
+      "spent",
+      "spent",
+      ...new Array(29).fill("empty"),
+    ])
+    expect(result.inventory?.spent.map((slot) => slot.slot)).toEqual([0, 1, 2])
+    expect(result.inventory?.spent.map((slot) => slot.nonce)).toEqual(
+      [0, 1, 2].map(nonceAt),
+    )
+  })
+
+  it("one the mint has as PENDING (being redeemed right now) holds every clear back too", async () => {
+    await spentCard()
+    mint.proofStatesByY.set(yOf(nonceAt(1)), "PENDING")
+
+    const result = await reclaimOnCard()
+
+    expect(result).toMatchObject({ settling: 1, cleared: 0 })
+    expect(card.ins()).not.toContain(0x31)
+  })
+
+  it("no verdicts (the mint could not be asked before the tap) frees nothing, and every spent proof is settling", async () => {
+    await spentCard()
+    await expect(
+      reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts: undefined }),
+    ).resolves.toMatchObject({ reclaimable: 0, settling: 3, cleared: 0, spent: 3 })
+    expect(card.ins()).not.toContain(0x31)
+  })
+
+  it("a verdict map that does not name a slot's nonce frees nothing: a spent slot read since the mint was asked is owed until asked about", async () => {
+    await spentCard()
+    await expect(
+      reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts: new Map() }),
+    ).resolves.toMatchObject({ settling: 3, cleared: 0 })
+    expect(card.ins()).not.toContain(0x31)
+  })
+
+  it("a CLEAR_SPENT remnant (a spent slot whose data is not a proof) is freed without the mint's word", async () => {
+    // A tap cut mid-CLEAR_SPENT: the slot still reads 02 with its data zeroed.
+    card.slots[3] = [2, ...new Array(77).fill(0)]
+
+    const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
+    expect(mint.proofStates).not.toHaveBeenCalled()
+    card.transceive.mockClear()
+
+    await expect(
+      reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts }),
+    ).resolves.toEqual({ reclaimable: 1, settling: 0, cleared: 1, spent: 1 })
+    expect(card.ins()).toEqual([0x14, 0x13, 0x31])
+    expect(card.slots[3][0]).toBe(0)
+  })
+
+  it("a remnant beside settled proofs: the mint is asked about the proofs alone, and all are freed", async () => {
+    await spentCard()
+    card.slots[5] = [2, ...new Array(77).fill(0)]
+
+    const result = await reclaimOnCard()
+
+    expect(result).toEqual({ reclaimable: 4, settling: 0, cleared: 4, spent: 4 })
+    expect((mint.proofStates as jest.Mock).mock.calls[0][0]).toHaveLength(3)
+  })
+
+  it("a card with no spent slots gets no GET_PROOF and no CLEAR_SPENT", async () => {
+    const record = await minted(7)
+    await loadOnCard(record.id)
+
+    const result = await reclaimOnCard()
+
+    expect(result).toMatchObject({ reclaimable: 0, settling: 0, cleared: 0, spent: 0 })
+    expect(result.inventory).toEqual({
+      statuses: [...new Array(3).fill("unspent"), ...new Array(29).fill("empty")],
+      spent: [],
+    })
+    expect(card.ins()).toEqual([0x14])
+    expect(mint.proofStates).not.toHaveBeenCalled()
+  })
+
+  it("a card that frees fewer slots than were spent is reported, with the card's own count", async () => {
+    await spentCard()
+    const answer = card.transceive.getMockImplementation()
+    card.transceive.mockImplementation(async (apdu) =>
+      apdu[1] === 0x31 ? [1, 0x90, 0x00] : answer?.(apdu) ?? [0x6d, 0x00],
+    )
+
+    const result = await reclaimOnCard()
+
+    expect(result).toMatchObject({ cleared: 1, spent: 3 })
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("freed 1 slots where 3 were spent"),
+    )
+  })
+
+  it("the load tap: the reclaim frees a full card's settled slots, then the load fills the slots just freed", async () => {
+    // Six proofs to load onto a card with no empty slot: 32 spent, all settled.
+    const record = await minted(1000)
+    fillSpent(0, 32)
+    const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
+    expect(reclaimPlan(await spentSlotsOnCard(), verdicts)).toEqual({
+      reclaimable: 32,
+      settling: 0,
+    })
+    card.transceive.mockClear()
+
+    const reclaim = await reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts })
+    const after = await loadOnCard(record.id)
+
+    expect(reclaim).toMatchObject({ cleared: 32, settling: 0 })
+    expect(after.state).toBe("loaded")
+    expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
+    expect(card.ins()).toEqual([
+      0x14,
+      ...new Array(32).fill(0x13),
+      0x31,
+      0x14,
+      ...new Array(6).fill(0x30),
+    ])
+  })
+
+  it("the load tap on a full card with one unsettled spend: nothing is freed, and the load refuses with the slots it lacks", async () => {
+    const record = await minted(1000)
+    fillSpent(0, 31)
+    fillSpent(31, 32, false)
+    const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
+    card.transceive.mockClear()
+
+    const reclaim = await reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts })
+    await expect(loadOnCard(record.id, reclaim.inventory)).rejects.toMatchObject({
+      reason: "slots",
+    })
+
+    expect(reclaim).toMatchObject({ reclaimable: 0, settling: 1, cleared: 0, spent: 32 })
+    // The refusal cost the tap nothing beyond the reclaim's own read: the
+    // load took that read as given, and sent no GET_SLOT_STATUS or GET_PROOF.
+    expect(card.ins()).toEqual([0x14, ...new Array(32).fill(0x13)])
+    expect(await deps.store.get(record.id)).toMatchObject({
+      state: "minted",
+      loadStarted: false,
+    })
+  })
+
+  it("a first load after a reclaim that cleared nothing sends no GET_SLOT_STATUS of its own", async () => {
+    // Three spent slots, one of them still settling: nothing is cleared.
+    const spent = await minted(7)
+    await loadOnCard(spent.id)
+    spendAtTill([0, 1], true)
+    spendAtTill([2], false)
+    const record = await minted(1000)
+    const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
+    card.transceive.mockClear()
+
+    const reclaim = await reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts })
+    const after = await loadOnCard(record.id, reclaim.inventory)
+
+    expect(reclaim).toMatchObject({ cleared: 0, settling: 1, spent: 3 })
+    expect(after.state).toBe("loaded")
+    expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
+    // One GET_SLOT_STATUS for the whole tap, then straight to the loads.
+    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13, ...new Array(6).fill(0x30)])
+  })
+
+  it("a resumed load after a reclaim that cleared nothing reads only the unspent slots: the spent ones it takes from the reclaim's read", async () => {
+    // Six proofs; the first tap lands three, then one of those is spent at a
+    // till and the mint has not settled it: the reclaim frees nothing.
+    const record = await minted(1000)
+    await cutLoadAfter(record.id, 3)
+    spendAtTill([0], false)
+    const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
+    card.transceive.mockClear()
+
+    const reclaim = await reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts })
+    const after = await loadOnCard(record.id, reclaim.inventory)
+
+    expect(reclaim).toMatchObject({ cleared: 0, settling: 1, spent: 1 })
+    expect(after.state).toBe("loaded")
+    // The reclaim: GET_SLOT_STATUS and the one spent slot. The load: the two
+    // unspent slots alone (no second GET_SLOT_STATUS, no second read of slot
+    // 0), then the three proofs still to land.
+    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13, 0x30, 0x30, 0x30])
+    // The spent slot's proof came from the reclaim's read: it is the record's
+    // own, which the mint still has as UNSPENT, and was not written again.
+    const onCard = card.slots
+      .filter((slot) => slot[0] !== 0)
+      .map((slot) => toHex(slot.slice(13, 45)))
+    expect(onCard).toHaveLength(6)
+    expect(new Set(onCard)).toEqual(new Set(record.proofs?.map((p) => p.nonce)))
+  })
+
+  it("after a CLEAR_SPENT the load reads the card afresh: GET_SLOT_STATUS, then on a resumed load the unspent slots alone, the spent ones being gone", async () => {
+    const record = await minted(1000)
+    await cutLoadAfter(record.id, 3)
+    // Three settled spends in other slots: the reclaim frees them.
+    fillSpent(3, 6)
+    const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
+    card.transceive.mockClear()
+
+    const reclaim = await reclaimSpentSlots(card.transceive, { maxSlots: 32, verdicts })
+    const after = await loadOnCard(record.id, reclaim.inventory)
+
+    expect(reclaim).toMatchObject({ cleared: 3, settling: 0, spent: 3 })
+    expect(reclaim.inventory).toBeUndefined()
+    expect(after.state).toBe("loaded")
+    expect(card.ins()).toEqual([
+      0x14, 0x13, 0x13, 0x13, 0x31, 0x14, 0x13, 0x13, 0x13, 0x30, 0x30, 0x30,
+    ])
+    expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
+  })
+})
+
+describe("reclaimVerdicts", () => {
+  it("asks the mint about each proof-shaped spent slot by its Y, and answers by nonce", async () => {
+    const record = await minted(7)
+    await loadOnCard(record.id)
+    spendAtTill([0, 1], true)
+    spendAtTill([2], false)
+    const spent = await spentSlotsOnCard()
+
+    const verdicts = await reclaimVerdicts(deps, CARD, spent)
+
+    expect(mint.proofStates).toHaveBeenCalledWith(spent.map((slot) => yOf(slot.nonce)))
+    expect(verdicts).toEqual(
+      new Map([
+        [nonceAt(0), "SPENT"],
+        [nonceAt(1), "SPENT"],
+        [nonceAt(2), "UNSPENT"],
+      ]),
+    )
+  })
+
+  it("asks the mint nothing for no spent slots, or for remnants alone", async () => {
+    await expect(reclaimVerdicts(deps, CARD, [])).resolves.toEqual(new Map())
+    const remnant: CardProofSlot = {
+      slot: 0,
+      status: "spent",
+      keysetId: "0000000000000000",
+      amount: 0,
+      nonce: "00".repeat(32),
+      C: "00".repeat(33),
+    }
+    await expect(reclaimVerdicts(deps, CARD, [remnant])).resolves.toEqual(new Map())
+    expect(mint.proofStates).not.toHaveBeenCalled()
+  })
+
+  it("a mint that cannot be asked throws: the caller decides what that costs", async () => {
+    ;(mint.proofStates as jest.Mock).mockRejectedValueOnce(
+      new Error("Network request failed"),
+    )
+    const record = await minted(7)
+    await loadOnCard(record.id)
+    spendAtTill([0])
+    await expect(reclaimVerdicts(deps, CARD, await spentSlotsOnCard())).rejects.toThrow(
+      "Network request failed",
+    )
+  })
+})
+
+describe("reclaimPlan", () => {
+  const proof = (nonce: string): CardProofSlot => ({
+    slot: 0,
+    status: "spent",
+    keysetId: "0059534ce0bfa19a",
+    amount: 4,
+    nonce,
+    C: ON_CURVE_C,
+  })
+  const remnant: CardProofSlot = { ...proof("11".repeat(32)), amount: 0 }
+  const a = proof("aa".repeat(32))
+  const b = proof("bb".repeat(32))
+
+  const table: [
+    string,
+    CardProofSlot[],
+    Map<string, "UNSPENT" | "PENDING" | "SPENT"> | undefined,
+    { reclaimable: number; settling: number },
+  ][] = [
+    ["no spent slots", [], new Map(), { reclaimable: 0, settling: 0 }],
+    [
+      "every proof SPENT",
+      [a, b],
+      new Map([
+        [a.nonce, "SPENT"],
+        [b.nonce, "SPENT"],
+      ]),
+      { reclaimable: 2, settling: 0 },
+    ],
+    [
+      "one UNSPENT: none",
+      [a, b],
+      new Map([
+        [a.nonce, "SPENT"],
+        [b.nonce, "UNSPENT"],
+      ]),
+      { reclaimable: 0, settling: 1 },
+    ],
+    [
+      "one PENDING: none",
+      [a, b],
+      new Map([
+        [a.nonce, "PENDING"],
+        [b.nonce, "SPENT"],
+      ]),
+      { reclaimable: 0, settling: 1 },
+    ],
+    [
+      "a nonce the verdicts do not name: owed",
+      [a, b],
+      new Map([[a.nonce, "SPENT"]]),
+      { reclaimable: 0, settling: 1 },
+    ],
+    ["no verdicts: every proof owed", [a, b], undefined, { reclaimable: 0, settling: 2 }],
+    ["a remnant needs no verdict", [remnant], undefined, { reclaimable: 1, settling: 0 }],
+    [
+      "a remnant beside a SPENT proof: both",
+      [remnant, a],
+      new Map([[a.nonce, "SPENT"]]),
+      { reclaimable: 2, settling: 0 },
+    ],
+    [
+      "a remnant beside an UNSPENT proof: none",
+      [remnant, a],
+      new Map([[a.nonce, "UNSPENT"]]),
+      { reclaimable: 0, settling: 1 },
+    ],
+  ]
+  table.forEach(([name, slots, verdicts, expected]) => {
+    it(name, () => {
+      expect(reclaimPlan(slots, verdicts)).toEqual(expected)
+    })
   })
 })
 

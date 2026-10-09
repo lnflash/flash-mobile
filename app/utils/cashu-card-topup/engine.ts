@@ -15,9 +15,13 @@ import { Network as NetworkLibGaloy, decodeInvoiceString } from "@galoymoney/cli
 import { networkForPaymentRequest } from "../../screens/send-bitcoin-screen/invoice-expiry"
 import {
   CardInfo,
+  CardProofSlot,
+  SlotStatus,
   Transceiver,
+  clearSpent,
   getProof,
   getSlotStatuses,
+  isProofShaped,
   loadProof,
   toHex,
 } from "../cashu-card"
@@ -56,7 +60,9 @@ import type { CardUnit, TopUpFailure, TopUpOutput, TopUpRecord } from "./types"
  *   card, and a resumed load reads the card's inventory and asks the mint
  *   (NUT-07) before it writes, because the card itself accepts the same
  *   proof twice and cannot tell a proof the mint has already paid out;
- * - spent slots are never cleared: a spent slot is owed until it settles.
+ * - a spent slot is owed until it settles: CLEAR_SPENT is sent only by
+ *   `reclaimSpentSlots`, on the load tap, and only once the mint has settled
+ *   every spent slot on the card (NUT-07 SPENT) or the slot holds no proof.
  */
 
 /** forge's NUT-04 limit per quote, for both units. The mint enforces it too. */
@@ -100,7 +106,18 @@ export const payWindowMs = (lifeMs: number): number =>
 export const EXPIRY_GRACE_MS = 10 * 60_000
 
 export class TopUpError extends Error {
-  constructor(readonly reason: TopUpFailure, message: string) {
+  constructor(
+    readonly reason: TopUpFailure,
+    message: string,
+    /**
+     * What the reclaim that ran in the same tap found, when a load was
+     * refused after it (`useCardTopUp.load`): a `slots` refusal can then say
+     * how many spent slots are still settling at the mint. Set on the
+     * engine's own error after the fact, so the stack still names the check
+     * that refused.
+     */
+    public reclaim?: ReclaimResult,
+  ) {
     super(message)
     this.name = "TopUpError"
   }
@@ -310,12 +327,14 @@ export type PrepareArgs = {
   amount: number
   walletId: string
   /**
-   * The card as last read: its empty slots, and the unit of the value it
-   * holds (none when it is empty). Spent slots are not room: a spent slot is
-   * owed until it settles at the mint (cashu-javacard spec/CARD-FILE.md, "Why
-   * `spent` is required"), and this app never clears one.
+   * The card as last read: its empty slots, the unit of the value it holds
+   * (none when it is empty), and `reclaimable`, the spent slots the load tap
+   * will free first (`reclaimPlan`: every one of them, or none). Spent slots
+   * are never room by themselves: a spent slot is owed until it settles at
+   * the mint (cashu-javacard spec/CARD-FILE.md, "Why `spent` is required"),
+   * and only the mint's word (NUT-07 SPENT) on all of them makes them room.
    */
-  card: Pick<CardInfo, "empty"> & { unit?: CardUnit }
+  card: Pick<CardInfo, "empty"> & { unit?: CardUnit; reclaimable?: number }
 }
 
 /**
@@ -401,7 +420,7 @@ export async function prepareTopUp(
     )
   }
   const pieces = splitPow2(amount)
-  const room = args.card.empty - committed.slots
+  const room = args.card.empty + (args.card.reclaimable ?? 0) - committed.slots
   if (pieces.length > room) {
     throw new TopUpError(
       "slots",
@@ -789,12 +808,137 @@ export async function advanceTopUps(deps: CardFreeDeps): Promise<{ waiting: numb
 }
 
 /** Y = hash_to_curve(secret): how the mint knows a proof (NUT-00, NUT-07). */
-const proofY = (nonce: string, cardPubkey: string): string =>
+export const proofY = (nonce: string, cardPubkey: string): string =>
   toHex(
     hashToCurve(new TextEncoder().encode(buildCardP2PKSecret(nonce, cardPubkey))).toBytes(
       true,
     ),
   )
+
+/** The mint's NUT-07 verdict on each of a card's spent slots, by nonce. */
+export type ReclaimVerdicts = ReadonlyMap<string, ProofState>
+
+/**
+ * Before a load's tap: the mint's NUT-07 state of each proof-shaped spent
+ * slot the last card read found, by nonce, asked here so the card session
+ * never waits on the network. A CLEAR_SPENT remnant (`isProofShaped` false)
+ * holds no proof to ask about. Safe to ask ahead of the tap because SPENT is
+ * terminal: a verdict can go stale only from UNSPENT or PENDING to SPENT,
+ * never the other way, so a stale map withholds a clear, never grants one.
+ */
+export async function reclaimVerdicts(
+  deps: Pick<TopUpDeps, "mint">,
+  cardPubkey: string,
+  spentSlots: readonly CardProofSlot[],
+): Promise<ReclaimVerdicts> {
+  const proofs = spentSlots.filter(isProofShaped)
+  if (proofs.length === 0) return new Map()
+  const states = await deps.mint.proofStates(
+    proofs.map((slot) => proofY(slot.nonce, cardPubkey)),
+  )
+  return new Map(proofs.map((slot, i) => [slot.nonce, states[i]]))
+}
+
+/**
+ * Whether CLEAR_SPENT may free this spent slot: its data is not a proof (a
+ * CLEAR_SPENT remnant, which owes nothing), or the mint has settled the proof
+ * it holds. A proof the mint has as UNSPENT (a burn whose signature never
+ * left the card, which only its slot can recover) or PENDING (being redeemed
+ * right now) is owed, and holds the clear back.
+ */
+const clearable = (slot: CardProofSlot, verdicts: ReclaimVerdicts | undefined): boolean =>
+  !isProofShaped(slot) || verdicts?.get(slot.nonce) === "SPENT"
+
+export type ReclaimPlan = {
+  /** Spent slots the load tap will free: every one of them, or none. */
+  reclaimable: number
+  /** Spent slots still owed at the mint, which hold every clear back. */
+  settling: number
+}
+
+/**
+ * What a load tap's reclaim will do with these spent slots, given the mint's
+ * verdicts. CLEAR_SPENT frees every spent slot or none, so one slot still
+ * settling makes none reclaimable. No verdicts (the mint could not be asked)
+ * leaves every proof-shaped slot settling.
+ */
+export const reclaimPlan = (
+  spentSlots: readonly CardProofSlot[],
+  verdicts: ReclaimVerdicts | undefined,
+): ReclaimPlan => {
+  const settling = spentSlots.filter((slot) => !clearable(slot, verdicts)).length
+  return { reclaimable: settling === 0 ? spentSlots.length : 0, settling }
+}
+
+/**
+ * A card's slots as one read in a session found them: every slot's status
+ * (GET_SLOT_STATUS) and the contents of each spent one (GET_PROOF). Nothing
+ * but this session's own APDUs can change the card while it stays in the
+ * field, so the read holds until one of them (CLEAR_SPENT, LOAD_PROOF) does.
+ */
+export type CardInventory = {
+  statuses: readonly SlotStatus[]
+  /** The spent slots' contents, one per `"spent"` status. */
+  spent: readonly CardProofSlot[]
+}
+
+export type ReclaimResult = ReclaimPlan & {
+  /** What CLEAR_SPENT freed: the card's own count, 0 when it was not sent. */
+  cleared: number
+  /** Spent slots found on the card at the tap. */
+  spent: number
+  /**
+   * The card as the reclaim read it, for `loadTopUp` to take in place of a
+   * read of its own: set when no CLEAR_SPENT went out, so the read still
+   * holds. Absent once one did, whatever the card's count: the load reads
+   * the card again, and finds the spent slots gone.
+   */
+  inventory?: CardInventory
+}
+
+/**
+ * Inside the load tap, before `loadTopUp`: free the card's spent slots when
+ * every one of them may go. GET_SLOT_STATUS, then GET_PROOF for each spent
+ * slot, checked against `verdicts` (`reclaimVerdicts`, asked before the tap):
+ * CLEAR_SPENT goes out only when each spent slot is a remnant or mint-SPENT,
+ * and otherwise nothing is sent and the owed slots are counted (`settling`).
+ * A card with no spent slots gets no GET_PROOF and no CLEAR_SPENT.
+ *
+ * All or nothing because the applet's CLEAR_SPENT is: one burn whose
+ * signature never left the card keeps every settled slot occupied until it
+ * is redeemed or recovered. The card's own count of what it freed is logged;
+ * a count other than the spent slots read is a tap cut short or a change
+ * under the read, and logged as such. The slot a cut tap leaves (`02` with
+ * zeroed data) is a remnant the next reclaim frees.
+ *
+ * What was read is handed on (`inventory`) when nothing was cleared, so the
+ * load that follows in the same tap need not read it again: on a resumed
+ * load of a card with k spent and u unspent slots, that is the difference
+ * between u GET_PROOFs before the first LOAD_PROOF and 1 + k + u.
+ */
+export async function reclaimSpentSlots(
+  transceive: Transceiver,
+  { maxSlots, verdicts }: { maxSlots: number; verdicts?: ReclaimVerdicts },
+): Promise<ReclaimResult> {
+  const statuses = await getSlotStatuses(transceive, maxSlots)
+  const spent: CardProofSlot[] = []
+  for (let slot = 0; slot < statuses.length; slot += 1) {
+    if (statuses[slot] === "spent") spent.push(await getProof(transceive, slot))
+  }
+  const plan = reclaimPlan(spent, verdicts)
+  if (spent.length === 0 || plan.reclaimable === 0) {
+    return { ...plan, cleared: 0, spent: spent.length, inventory: { statuses, spent } }
+  }
+  const cleared = await clearSpent(transceive)
+  if (cleared === spent.length) {
+    console.log(`CLEAR_SPENT freed ${cleared} settled slots`)
+  } else {
+    console.warn(
+      `CLEAR_SPENT freed ${cleared} slots where ${spent.length} were spent: a tap cut short, or the card changed under the read`,
+    )
+  }
+  return { ...plan, cleared, spent: spent.length }
+}
 
 /**
  * Before a resumed load's tap: the mint's NUT-07 state of each of the
@@ -817,28 +961,40 @@ export async function proofStatesForLoad(
 
 /**
  * Write the minted proofs onto the card, inside one card session whose PIN
- * (if the card has one) the caller has already verified.
+ * (if the card has one) the caller has already verified, and whose spent
+ * slots `reclaimSpentSlots` has already dealt with.
  *
  * The first load saves `loadStarted` before its first LOAD_PROOF. Any later
  * load reads every occupied slot first and skips proofs already there, spent
  * or not: a LOAD_PROOF can land on the card and its answer be lost, and the
- * card takes the same proof twice. A proof the inventory does not find was
- * either never written, or written, spent and its slot cleared since, which
- * only the mint can tell apart (`mintStates`): only an UNSPENT one is
- * written, a SPENT one never is, and a PENDING one (being spent right now)
- * waits for a later load, the record staying unfinished.
+ * card takes the same proof twice. A spent slot whose data is not a proof (a
+ * CLEAR_SPENT remnant, `isProofShaped`) holds nothing of the record's. A
+ * proof the inventory does not find was either never written, or written,
+ * spent and its slot cleared since, which only the mint can tell apart
+ * (`mintStates`): only an UNSPENT one is written, a SPENT one never is, and a
+ * PENDING one (being spent right now) waits for a later load, the record
+ * staying unfinished.
  *
- * Only empty slots are written to, and CLEAR_SPENT is never sent. That
- * departs on purpose from the cashu-javacard spec, whose top-up flow sends
- * CLEAR_SPENT before the loads: spec/NUT-XX.md:193, and spec/APDU.md:278
- * ("Called after a top-up cycle to reclaim slot space") and :453, at v0.2.0,
- * unchanged on the 0.3 branches (the spec fix: lnflash/cashu-javacard#27).
- * flash-pos and cashu-client never send it either. A spent slot is owed
- * until it settles at the mint (spec/CARD-FILE.md, "Why `spent` is
- * required"), and a burn whose signature never left the card can be
- * recovered only from its slot (flash-pos `hasUnsettledForCard`), so
- * clearing it can destroy value. A card without the empty slots is refused
- * before anything is written.
+ * The reclaim that runs before this in the same tap has already read the
+ * statuses and every spent slot; when it cleared nothing, that read still
+ * holds and is taken as given (`inventory`), so a first load sends no
+ * GET_SLOT_STATUS of its own and a resumed load reads only the unspent
+ * slots. Without it (after a CLEAR_SPENT, or a load run on its own) the card
+ * is read afresh: GET_SLOT_STATUS, then on a resumed load a GET_PROOF per
+ * occupied slot, which after a full clear are the unspent ones alone.
+ *
+ * Only empty slots are written to, and `loadTopUp` itself never clears a
+ * spent slot. CLEAR_SPENT is sent only by `reclaimSpentSlots`, which the load
+ * tap runs before this, and only when every spent slot is a CLEAR_SPENT
+ * remnant or mint-SPENT (NUT-07): a burn whose signature never left the card
+ * can be recovered only from its slot (flash-pos `hasUnsettledForCard`), and
+ * a swap not yet made is UNSPENT or PENDING at the mint; either holds the
+ * clear back. That is narrower than the cashu-javacard spec's top-up flow,
+ * which clears before the loads unconditionally (spec/NUT-XX.md:193,
+ * spec/APDU.md "Called after a top-up cycle to reclaim slot space"), and
+ * narrower than flash-pos and cashu-client, which never clear. A card without
+ * the empty slots is refused before anything is written: with every spent
+ * slot still owed, nothing frees them, and the record stays minted.
  */
 export type LoadArgs = {
   id: string
@@ -847,11 +1003,16 @@ export type LoadArgs = {
   card: Pick<CardInfo, "maxSlots">
   /** Required for a resumed load: `proofStatesForLoad`, asked before the tap. */
   mintStates?: ReadonlyMap<string, ProofState>
+  /**
+   * The card as this session already read it and has not changed since
+   * (`reclaimSpentSlots`'s `inventory`), taken in place of a read of its own.
+   */
+  inventory?: CardInventory
 }
 
 export async function loadTopUp(
   deps: Pick<TopUpDeps, "store">,
-  { id, transceive, card, mintStates }: LoadArgs,
+  { id, transceive, card, mintStates, inventory }: LoadArgs,
 ): Promise<TopUpRecord> {
   const record = await load(deps, id)
   if (record.state === "loaded") return record
@@ -862,13 +1023,22 @@ export async function loadTopUp(
   if (record.loadStarted && !mintStates) {
     throw new TopUpError("state", "a resumed load needs the mint's word on each proof")
   }
-  const statuses = await getSlotStatuses(transceive, card.maxSlots)
+  const statuses =
+    inventory?.statuses ?? (await getSlotStatuses(transceive, card.maxSlots))
   let pending = proofs
   let held = 0
   if (record.loadStarted && mintStates) {
+    const spentRead = new Map(
+      (inventory?.spent ?? []).map((found) => [found.slot, found]),
+    )
     const onCard = new Set<string>()
     for (let slot = 0; slot < statuses.length; slot += 1) {
-      if (statuses[slot] !== "empty") onCard.add((await getProof(transceive, slot)).nonce)
+      if (statuses[slot] !== "empty") {
+        const found = spentRead.get(slot) ?? (await getProof(transceive, slot))
+        // A spent slot a cut CLEAR_SPENT left behind holds no proof: whether
+        // the record's proof is on the card is the mint's to say, not its.
+        if (found.status === "unspent" || isProofShaped(found)) onCard.add(found.nonce)
+      }
     }
     const missing = proofs.filter((proof) => !onCard.has(proof.nonce))
     const stateOf = (nonce: string): ProofState => {

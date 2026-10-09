@@ -30,6 +30,7 @@ import {
   CardError,
   CardInfo,
   CardKeysetTotal,
+  CardSlotRead,
   CashuCardInfo,
   Transceiver,
   WrongCardError,
@@ -436,15 +437,22 @@ export const FlashcardProvider = ({ children }: Props) => {
    * all its keysets before, and is otherwise dropped, in context and from the
    * record's unit, so the screen says "unit unknown" until the mint answers
    * rather than show old per-unit figures beside a new total.
+   *
+   * The spent slots describe the card's spent count the same way: a count
+   * that changed (a top-up's load tap freed the settled ones, ENG-631) or a
+   * balance that moved replaces them with the slots read in the same
+   * session, or drops them when that read was lost.
    */
   const recordCardOperation = (
     pubkey: string,
     update: Partial<CardInfo> & { balance?: number },
-    keysets?: CardKeysetTotal[],
+    slots?: CardSlotRead,
   ) => {
     const previous = cashuCardRef.current
     if (previous?.pubkey !== pubkey) return
     const moved = update.balance !== undefined && update.balance !== previous.balance
+    const spentChanged = update.spent !== undefined && update.spent !== previous.spent
+    const keysets = slots?.keysets
     // The new split is labelled at once when the mint named its keysets before.
     const known = moved ? knownUnitTotals(keysets) : undefined
     const card: CashuCardState = {
@@ -452,6 +460,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       ...update,
       // A split read in the same session as the move replaces the old one.
       keysets: moved ? keysets : previous.keysets,
+      spentSlots: moved || spentChanged ? slots?.spentSlots : previous.spentSlots,
       unitTotals: moved ? known : previous.unitTotals,
     }
     setCashuCard(card)
@@ -492,12 +501,16 @@ export const FlashcardProvider = ({ children }: Props) => {
       const info = await getInfo(transceive)
       const balance = await getCardBalance(transceive)
       // An operation that moved value (a top-up) changed the card's keyset
-      // split too: read it while the card is still in the field, best
-      // effort, as a tap does, so the screen can name the units again.
+      // split too, and one that freed spent slots (the top-up's reclaim,
+      // ENG-631) changed its spent count: read the slots while the card is
+      // still in the field, best effort, as a tap does, so the screen can
+      // name the units again and the next top-up knows what is still spent.
       const previous = cashuCardRef.current
-      const moved = previous?.pubkey === pubkey && balance !== previous.balance
-      const keysets = moved ? await readKeysetSplit(transceive, info) : undefined
-      recordCardOperation(pubkey, { ...info, balance }, keysets)
+      const same = previous?.pubkey === pubkey
+      const changed =
+        same && (balance !== previous.balance || info.spent !== previous.spent)
+      const slots = changed ? await readKeysetSplit(transceive, info) : undefined
+      recordCardOperation(pubkey, { ...info, balance }, slots)
       return info
     } catch (err) {
       console.warn("Cashu card re-read after an operation failed:", describeError(err))

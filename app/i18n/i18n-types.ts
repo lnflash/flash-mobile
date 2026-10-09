@@ -331,12 +331,17 @@ type RootTranslation = {
 		 */
 		slots: string
 		/**
-		 * {​u​n​s​p​e​n​t​}​ ​l​o​a​d​e​d​ ​·​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​o​f​ ​{​m​a​x​}
+		 * {​u​n​s​p​e​n​t​}​ ​l​o​a​d​e​d​ ​·​ ​{​s​p​e​n​t​}​ ​s​p​e​n​t​ ​·​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​o​f​ ​{​m​a​x​}
 		 * @param {number} free
 		 * @param {number} max
+		 * @param {number} spent
 		 * @param {number} unspent
 		 */
-		slotSummary: RequiredParams<'free' | 'max' | 'unspent'>
+		slotSummary: RequiredParams<'free' | 'max' | 'spent' | 'unspent'>
+		/**
+		 * S​p​e​n​t​ ​s​l​o​t​s​ ​a​r​e​ ​f​r​e​e​d​ ​o​n​ ​y​o​u​r​ ​n​e​x​t​ ​t​o​p​-​u​p​,​ ​o​n​c​e​ ​t​h​e​ ​m​i​n​t​ ​h​a​s​ ​s​e​t​t​l​e​d​ ​t​h​e​m​.
+		 */
+		slotsSpentNote: string
 		/**
 		 * C​a​r​d​ ​s​o​f​t​w​a​r​e
 		 */
@@ -573,6 +578,28 @@ type RootTranslation = {
 		 * @param {number} needed
 		 */
 		topUpSlots: RequiredParams<'free' | 'needed'>
+		/**
+		 * U​s​e​s​ ​{​n​e​e​d​e​d​}​ ​o​f​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​s​l​o​t​s​,​ ​{​r​e​c​l​a​i​m​}​ ​o​f​ ​t​h​e​m​ ​f​r​e​e​d​ ​f​r​o​m​ ​s​e​t​t​l​e​d​ ​s​p​e​n​d​s​ ​o​n​ ​l​o​a​d
+		 * @param {number} free
+		 * @param {number} needed
+		 * @param {number} reclaim
+		 */
+		topUpSlotsReclaim: RequiredParams<'free' | 'needed' | 'reclaim'>
+		/**
+		 * {​c​o​u​n​t​}​ ​s​p​e​n​t​ ​s​l​o​t​s​ ​f​r​e​e​d​.
+		 * @param {number} count
+		 */
+		topUpReclaimed: RequiredParams<'count'>
+		/**
+		 * {​c​o​u​n​t​}​ ​s​p​e​n​t​ ​s​l​o​t​s​ ​a​r​e​ ​s​t​i​l​l​ ​s​e​t​t​l​i​n​g​ ​a​t​ ​t​h​e​ ​m​i​n​t​ ​a​n​d​ ​c​a​n​'​t​ ​b​e​ ​f​r​e​e​d​ ​y​e​t​.​ ​T​r​y​ ​a​g​a​i​n​ ​l​a​t​e​r​.
+		 * @param {number} count
+		 */
+		topUpSlotsSettling: RequiredParams<'count'>
+		/**
+		 * {​c​o​u​n​t​}​ ​s​p​e​n​t​ ​s​l​o​t​s​ ​a​r​e​ ​s​t​i​l​l​ ​s​e​t​t​l​i​n​g​ ​a​t​ ​t​h​e​ ​m​i​n​t​ ​a​n​d​ ​s​t​a​y​ ​o​c​c​u​p​i​e​d​ ​f​o​r​ ​n​o​w​.
+		 * @param {number} count
+		 */
+		topUpSettlingNote: RequiredParams<'count'>
 		/**
 		 * {​r​e​s​e​r​v​e​d​}​ ​o​f​ ​t​h​e​ ​c​a​r​d​'​s​ ​e​m​p​t​y​ ​s​l​o​t​s​ ​a​r​e​ ​h​e​l​d​ ​f​o​r​ ​t​o​p​-​u​p​s​ ​n​o​t​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​y​e​t​.
 		 * @param {number} reserved
@@ -7629,9 +7656,13 @@ export type TranslationFunctions = {
 		 */
 		slots: () => LocalizedString
 		/**
-		 * {unspent} loaded · {free} free of {max}
+		 * {unspent} loaded · {spent} spent · {free} free of {max}
 		 */
-		slotSummary: (arg: { free: number, max: number, unspent: number }) => LocalizedString
+		slotSummary: (arg: { free: number, max: number, spent: number, unspent: number }) => LocalizedString
+		/**
+		 * Spent slots are freed on your next top-up, once the mint has settled them.
+		 */
+		slotsSpentNote: () => LocalizedString
 		/**
 		 * Card software
 		 */
@@ -7859,6 +7890,22 @@ export type TranslationFunctions = {
 		 * Uses {needed} of the card's {free} free slots
 		 */
 		topUpSlots: (arg: { free: number, needed: number }) => LocalizedString
+		/**
+		 * Uses {needed} of {free} free slots, {reclaim} of them freed from settled spends on load
+		 */
+		topUpSlotsReclaim: (arg: { free: number, needed: number, reclaim: number }) => LocalizedString
+		/**
+		 * {count} spent slots freed.
+		 */
+		topUpReclaimed: (arg: { count: number }) => LocalizedString
+		/**
+		 * {count} spent slots are still settling at the mint and can't be freed yet. Try again later.
+		 */
+		topUpSlotsSettling: (arg: { count: number }) => LocalizedString
+		/**
+		 * {count} spent slots are still settling at the mint and stay occupied for now.
+		 */
+		topUpSettlingNote: (arg: { count: number }) => LocalizedString
 		/**
 		 * {reserved} of the card's empty slots are held for top-ups not on the card yet.
 		 */
