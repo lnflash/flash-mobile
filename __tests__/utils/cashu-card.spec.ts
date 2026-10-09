@@ -16,6 +16,7 @@ import {
   blockedPinGatesSpend,
   buildApdu,
   buildSelectApdu,
+  clearSpent,
   describeStatusWord,
   getBalance,
   getInfo,
@@ -24,12 +25,15 @@ import {
   getPubkey,
   getSlotStatuses,
   getUnspentByKeyset,
+  isProofShaped,
   isValidCardPin,
   loadProof,
   parseBalance,
   parseInfo,
   parseResponse,
+  readCardSlots,
   readCashuCard,
+  readKeysetSplit,
   selectApplet,
   spendProof,
   toHex,
@@ -55,6 +59,8 @@ const GET_PROOF_COUNT = [0xb0, 0x12, 0x00, 0x00, 0x01]
 // spec/APDU.md GET_SLOT_STATUS: Le 20, one status byte for each of 32 slots.
 const GET_SLOT_STATUS_32 = [0xb0, 0x14, 0x00, 0x00, 0x20]
 const getProofApdu = (slot: number) => [0xb0, 0x13, slot, 0x00, PROOF_SIZE]
+// spec/APDU.md CLEAR_SPENT: Le 1, the count of slots freed.
+const CLEAR_SPENT = [0xb0, 0x31, 0x00, 0x00, 0x01]
 
 // version 0.2, 32 slots, 1 unspent, 7 spent, 24 empty, caps 0x07, PIN set.
 const INFO_BODY = [0, 2, 32, 1, 7, 24, 0x07, 1]
@@ -76,18 +82,46 @@ const OTHER_KEYSET = [0x00, 0xad, 0x26, 0x8c, 0x4d, 0x1f, 0x58, 0x26]
 const uint32 = (n: number) =>
   [2 ** 24, 2 ** 16, 2 ** 8, 1].map((d) => Math.floor(n / d) % 256)
 
-/** A 78-byte slot as GET_PROOF returns it (spec/APDU.md "Proof Slot Layout"). */
-const proofSlot = (status: number, amount: number, keyset: number[] = KEYSET) => [
+/**
+ * A 78-byte slot as GET_PROOF returns it (spec/APDU.md "Proof Slot Layout").
+ * `nonceByte` fills the nonce, so slots can be told apart.
+ */
+const proofSlot = (
+  status: number,
+  amount: number,
+  { keyset = KEYSET, nonceByte = 0xab }: { keyset?: number[]; nonceByte?: number } = {},
+) => [
   status,
   ...keyset,
   ...uint32(amount),
-  ...new Array(32).fill(0xab),
+  ...new Array(32).fill(nonceByte),
   0x02,
   ...new Array(32).fill(0xcd),
 ]
 
 /** INFO_BODY's slots: slot 0 unspent, then 7 spent, then 24 empty. */
 const SLOT_STATUSES = [1, ...new Array(7).fill(2), ...new Array(24).fill(0)]
+/** The seven spent slots of INFO_BODY's card: slot i holds 2^i, nonce bytes i. */
+const SPENT_SLOTS = [1, 2, 3, 4, 5, 6, 7]
+const spentScript = (): Array<[number[], number[]]> =>
+  SPENT_SLOTS.map((slot) => [
+    getProofApdu(slot),
+    ok(proofSlot(2, 2 ** slot, { nonceByte: slot })),
+  ])
+const spentSlotsRead = () =>
+  SPENT_SLOTS.map((slot) => ({
+    slot,
+    status: "spent",
+    keysetId: KEYSET_HEX,
+    amount: 2 ** slot,
+    nonce: slot.toString(16).padStart(2, "0").repeat(32),
+    C: "02" + "cd".repeat(32),
+  }))
+
+/** secp256k1's generator, compressed: a C that is a point. */
+const ON_CURVE_C = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+/** An x past the field order: no point has it. */
+const OFF_CURVE_C = "02" + "ff".repeat(32)
 
 const ok = (data: number[]) => [...data, 0x90, 0x00]
 const hex = (bytes: number[]) =>
@@ -641,7 +675,7 @@ describe("getUnspentByKeyset", () => {
       [[0xb0, 0x14, 0x00, 0x00, 0x08], ok(statuses)],
       [getProofApdu(0), ok(proofSlot(1, 16))],
       [getProofApdu(3), ok(proofSlot(1, 8))],
-      [getProofApdu(5), ok(proofSlot(1, 250, OTHER_KEYSET))],
+      [getProofApdu(5), ok(proofSlot(1, 250, { keyset: OTHER_KEYSET }))],
     ])
 
     await expect(getUnspentByKeyset(card.transceive, 8)).resolves.toEqual([
@@ -665,6 +699,184 @@ describe("getUnspentByKeyset", () => {
     await getUnspentByKeyset(card.transceive, 32)
     const instructions = card.sent.map((apdu) => apdu[1])
     expect(instructions).toEqual([INS.GET_SLOT_STATUS, INS.GET_PROOF])
+  })
+})
+
+describe("CLEAR_SPENT", () => {
+  it("sends the exact APDU: CLA b0, INS 31, Le 1, and returns the card's count of freed slots", async () => {
+    const card = scriptedCard([[CLEAR_SPENT, ok([7])]])
+    await expect(clearSpent(card.transceive)).resolves.toBe(7)
+    expect(card.sent).toEqual([[0xb0, 0x31, 0x00, 0x00, 0x01]])
+  })
+
+  it("rejects a count that is not one byte rather than guess what was freed", async () => {
+    await expect(clearSpent(echoCard(ok([])).transceive)).rejects.toThrow(
+      CardProtocolError,
+    )
+    await expect(clearSpent(echoCard(ok([1, 2])).transceive)).rejects.toThrow(
+      "CLEAR_SPENT: expected a 1-byte count, got 2",
+    )
+  })
+
+  it("surfaces a PIN-gated refusal as a CardError naming the command", async () => {
+    await expect(clearSpent(echoCard([0x69, 0x82]).transceive)).rejects.toMatchObject({
+      name: "CardError",
+      sw: 0x6982,
+      message: "CLEAR_SPENT failed: PIN required (0x6982)",
+    })
+  })
+})
+
+describe("isProofShaped (spec/CARD-FILE.md slot checks: a CLEAR_SPENT remnant is not a proof)", () => {
+  const proof = {
+    keysetId: KEYSET_HEX,
+    amount: 8,
+    nonce: "ab".repeat(32),
+    C: ON_CURVE_C,
+  }
+
+  it("accepts a slot whose amount is a power of two, whose C is a point, and whose nonce and keyset are set", () => {
+    expect(isProofShaped(proof)).toBe(true)
+    expect(isProofShaped({ ...proof, amount: 1 })).toBe(true)
+    expect(isProofShaped({ ...proof, amount: 2 ** 31 })).toBe(true)
+  })
+
+  const remnants: [string, Partial<typeof proof>][] = [
+    ["a zeroed amount", { amount: 0 }],
+    ["an amount that is no power of two", { amount: 3 }],
+    ["an amount past the 4-byte field", { amount: 2 ** 32 }],
+    ["a fractional amount", { amount: 2.5 }],
+    ["a C that is no point", { C: OFF_CURVE_C }],
+    ["a zeroed C", { C: "00".repeat(33) }],
+    ["a zeroed nonce", { nonce: "00".repeat(32) }],
+    ["a zeroed keyset id", { keysetId: "0000000000000000" }],
+  ]
+  remnants.forEach(([label, torn]) => {
+    it(`refuses ${label}`, () => {
+      expect(isProofShaped({ ...proof, ...torn })).toBe(false)
+    })
+  })
+})
+
+describe("readCardSlots", () => {
+  it("reads the slot map, then every occupied slot, and returns the unspent value per keyset beside the spent slots", async () => {
+    // slots 0 and 3 unspent under one keyset, 5 under another; 1 and 6 spent.
+    const statuses = [1, 2, 0, 1, 0, 1, 2, 0]
+    const card = scriptedCard([
+      [[0xb0, 0x14, 0x00, 0x00, 0x08], ok(statuses)],
+      [getProofApdu(0), ok(proofSlot(1, 16))],
+      [getProofApdu(1), ok(proofSlot(2, 4, { nonceByte: 0x11 }))],
+      [getProofApdu(3), ok(proofSlot(1, 8))],
+      [getProofApdu(5), ok(proofSlot(1, 250, { keyset: OTHER_KEYSET }))],
+      [getProofApdu(6), ok(proofSlot(2, 2, { keyset: OTHER_KEYSET, nonceByte: 0x66 }))],
+    ])
+
+    await expect(readCardSlots(card.transceive, 8)).resolves.toEqual({
+      keysets: [
+        { keysetId: KEYSET_HEX, amount: 24 },
+        { keysetId: hex(OTHER_KEYSET), amount: 250 },
+      ],
+      spentSlots: [
+        {
+          slot: 1,
+          status: "spent",
+          keysetId: KEYSET_HEX,
+          amount: 4,
+          nonce: "11".repeat(32),
+          C: "02" + "cd".repeat(32),
+        },
+        {
+          slot: 6,
+          status: "spent",
+          keysetId: hex(OTHER_KEYSET),
+          amount: 2,
+          nonce: "66".repeat(32),
+          C: "02" + "cd".repeat(32),
+        },
+      ],
+    })
+    // An empty slot is never read; the spent ones are, in slot order.
+    expect(card.sent).toEqual([
+      [0xb0, 0x14, 0x00, 0x00, 0x08],
+      getProofApdu(0),
+      getProofApdu(1),
+      getProofApdu(3),
+      getProofApdu(5),
+      getProofApdu(6),
+    ])
+  })
+
+  it("counts a slot as neither when its own status byte disagrees with the slot map", async () => {
+    const card = scriptedCard([
+      [[0xb0, 0x14, 0x00, 0x00, 0x02], ok([1, 2])],
+      // The map said spent; the slot says unspent (and the other way round).
+      [getProofApdu(0), ok(proofSlot(2, 16))],
+      [getProofApdu(1), ok(proofSlot(1, 8))],
+    ])
+    await expect(readCardSlots(card.transceive, 2)).resolves.toEqual({
+      keysets: [],
+      spentSlots: [],
+    })
+  })
+
+  it("reads only: never SPEND_PROOF, LOAD_PROOF or CLEAR_SPENT", async () => {
+    const card = scriptedCard([
+      [GET_SLOT_STATUS_32, ok(SLOT_STATUSES)],
+      [getProofApdu(0), ok(proofSlot(1, 500))],
+      ...spentScript(),
+    ])
+    await readCardSlots(card.transceive, 32)
+    const instructions = card.sent.map((apdu) => apdu[1])
+    expect(instructions).toEqual([
+      INS.GET_SLOT_STATUS,
+      ...new Array(8).fill(INS.GET_PROOF),
+    ])
+  })
+})
+
+describe("readKeysetSplit", () => {
+  let warn: jest.SpyInstance
+
+  beforeEach(() => {
+    warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    warn.mockRestore()
+  })
+
+  const info = (unspent: number, spent: number) =>
+    parseInfo([0, 2, 32, unspent, spent, 32 - unspent - spent, 0x07, 1])
+
+  it("reads the slots of a card holding nothing unspent but something spent: the spent slots are what the next top-up frees", async () => {
+    const card = scriptedCard([
+      [GET_SLOT_STATUS_32, ok([0, ...new Array(7).fill(2), ...new Array(24).fill(0)])],
+      ...spentScript(),
+    ])
+    await expect(readKeysetSplit(card.transceive, info(0, 7))).resolves.toEqual({
+      keysets: [],
+      spentSlots: spentSlotsRead(),
+    })
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it("sends nothing to a card with no occupied slot", async () => {
+    const card = scriptedCard([])
+    await expect(readKeysetSplit(card.transceive, info(0, 0))).resolves.toEqual({
+      keysets: [],
+      spentSlots: [],
+    })
+    expect(card.sent).toEqual([])
+  })
+
+  it("a spent slot the card refuses to read costs the whole read, split and spent slots alike", async () => {
+    const card = scriptedCard([
+      [GET_SLOT_STATUS_32, ok(SLOT_STATUSES)],
+      [getProofApdu(0), ok(proofSlot(1, 500))],
+      [getProofApdu(1), SW_UNKNOWN],
+    ])
+    await expect(readKeysetSplit(card.transceive, info(1, 7))).resolves.toBeUndefined()
+    expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: CardError 6F00")
   })
 })
 
@@ -723,7 +935,7 @@ describe("readCashuCard", () => {
     warn.mockRestore()
   })
 
-  /** INFO_BODY's card: one unspent 500 proof in slot 0. */
+  /** INFO_BODY's card: one unspent 500 proof in slot 0, spent slots 1-7. */
   const READ_SCRIPT: Array<[number[], number[]]> = [
     [SELECT_PACKAGE, ok([0, 2])],
     [GET_INFO, ok(INFO_BODY)],
@@ -731,9 +943,10 @@ describe("readCashuCard", () => {
     [GET_BALANCE, ok(BALANCE_BODY)],
     [GET_SLOT_STATUS_32, ok(SLOT_STATUSES)],
     [getProofApdu(0), ok(proofSlot(1, 500))],
+    ...spentScript(),
   ]
 
-  it("selects, then reads info, pubkey, balance and the unspent slots, in that order and nothing else", async () => {
+  it("selects, then reads info, pubkey, balance and every occupied slot, in that order and nothing else", async () => {
     const card = scriptedCard(READ_SCRIPT)
 
     await expect(readCashuCard(card.transceive)).resolves.toEqual({
@@ -748,6 +961,9 @@ describe("readCashuCard", () => {
       pubkey: hex(PUBKEY),
       balance: 500,
       keysets: [{ keysetId: KEYSET_HEX, amount: 500 }],
+      // The spent slots, data and all (ENG-631): the next top-up asks the
+      // mint about them before its load tap frees any.
+      spentSlots: spentSlotsRead(),
     })
     expect(card.sent).toEqual([
       SELECT_PACKAGE,
@@ -756,6 +972,7 @@ describe("readCashuCard", () => {
       GET_BALANCE,
       GET_SLOT_STATUS_32,
       getProofApdu(0),
+      ...SPENT_SLOTS.map(getProofApdu),
     ])
   })
 
@@ -770,6 +987,7 @@ describe("readCashuCard", () => {
     await expect(readCashuCard(card.transceive)).resolves.toMatchObject({
       balance: 0,
       keysets: [],
+      spentSlots: [],
     })
     expect(card.sent).toEqual([SELECT_PACKAGE, GET_INFO, GET_PUBKEY, GET_BALANCE])
   })
@@ -921,6 +1139,7 @@ describe("readCashuCard", () => {
       })
       // Not a partial split that would under-report the card: none at all.
       expect(info?.keysets).toBeUndefined()
+      expect(info?.spentSlots).toBeUndefined()
       // The second GET_PROOF was attempted; nothing after it.
       expect(card.sent).toEqual([
         SELECT_PACKAGE,
@@ -973,12 +1192,13 @@ describe("readCashuCard", () => {
     })
   })
 
-  it("spends and loads nothing — a read must never send SPEND_PROOF or LOAD_PROOF", async () => {
+  it("spends, loads and clears nothing — a read must never send SPEND_PROOF, LOAD_PROOF or CLEAR_SPENT", async () => {
     const card = scriptedCard(READ_SCRIPT)
     await readCashuCard(card.transceive)
     const instructions = card.sent.map((apdu) => apdu[1])
     expect(instructions).not.toContain(INS.SPEND_PROOF)
     expect(instructions).not.toContain(INS.LOAD_PROOF)
+    expect(instructions).not.toContain(INS.CLEAR_SPENT)
   })
 })
 

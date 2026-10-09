@@ -100,6 +100,7 @@ const PROOF_SLOT = [
   ...new Array(32).fill(0xcd),
 ]
 const INS_LOAD = 0x30
+const INS_CLEAR_SPENT = 0x31
 
 /**
  * A card that also answers the keyset split (GET_SLOT_STATUS, GET_PROOF), so a
@@ -110,14 +111,31 @@ const INS_LOAD = 0x30
 const makeSplitCard = ({ splitFailsAfterLoad = false, loadKeyset = KEYSET } = {}) => {
   let balance = 500
   let loaded = false
+  let spent = 7
   const statuses = [...SLOT_STATUSES]
   const proofs: Record<number, number[]> = { 0: PROOF_SLOT }
+  // Slots 1-7 are spent: status 02, the nonce's first byte the slot index.
+  const spentSlot = (slot: number) => [
+    0x02,
+    ...PROOF_SLOT.slice(1, 13),
+    slot,
+    ...PROOF_SLOT.slice(14),
+  ]
   return async (bytes: number[]) => {
     switch (bytes[1]) {
       case INS_SELECT:
         return ok([0, 2])
       case 0x01:
-        return ok([0, 2, 32, loaded ? 2 : 1, 7, loaded ? 23 : 24, 0x07, 1])
+        return ok([
+          0,
+          2,
+          32,
+          loaded ? 2 : 1,
+          spent,
+          31 - spent - (loaded ? 1 : 0),
+          0x07,
+          1,
+        ])
       case 0x10:
         return ok(PUBKEY)
       case 0x11:
@@ -126,7 +144,19 @@ const makeSplitCard = ({ splitFailsAfterLoad = false, loadKeyset = KEYSET } = {}
         if (loaded && splitFailsAfterLoad) throw new Error("Tag was lost")
         return ok(statuses)
       case 0x13:
-        return ok(proofs[bytes[2]] ?? PROOF_SLOT)
+        return ok(
+          proofs[bytes[2]] ??
+            (statuses[bytes[2]] === 2 ? spentSlot(bytes[2]) : PROOF_SLOT),
+        )
+      case INS_CLEAR_SPENT: {
+        // As the applet does: every spent slot freed, and the count answered.
+        const freed = statuses.filter((status) => status === 2).length
+        statuses.forEach((status, i) => {
+          if (status === 2) statuses[i] = 0
+        })
+        spent = 0
+        return ok([freed])
+      }
       case INS_LOAD: {
         // A 1000 proof under `loadKeyset` lands in the first empty slot.
         const slot = statuses.indexOf(0)
@@ -156,6 +186,7 @@ const makeSplitCard = ({ splitFailsAfterLoad = false, loadKeyset = KEYSET } = {}
 
 const SET_PIN_APDU = [0xb0, 0x41, 0x00, 0x00, 0x04, 0x31, 0x32, 0x33, 0x34]
 const LOAD_APDU = [0xb0, INS_LOAD, 0x00, 0x00, 0x01, 0x00]
+const CLEAR_SPENT_APDU = [0xb0, INS_CLEAR_SPENT, 0x00, 0x00, 0x01]
 const INS_VERIFY_PIN = 0x40
 const CARD_PIN = [0x31, 0x32, 0x33, 0x34]
 
@@ -522,6 +553,49 @@ describe("FlashcardProvider runCardOperation", () => {
       byUnit: [{ unit: "sat", amount: 500 }],
       unknown: 0,
     })
+  })
+
+  it("an op that frees spent slots re-reads them in the same session, and keeps the tap's per-unit figures: the balance did not move", async () => {
+    transceive.mockImplementation(makeSplitCard())
+    await mount()
+    await readCard()
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    const before = latest?.cashuCard
+    expect(before?.spent).toBe(7)
+    expect(before?.spentSlots?.map((slot) => slot.slot)).toEqual([1, 2, 3, 4, 5, 6, 7])
+
+    await act(async () => {
+      await latest?.runCardOperation(async (t) => {
+        await t(CLEAR_SPENT_APDU)
+      }, toHex(PUBKEY))
+    })
+
+    // The spent count moved, so the slots were read again: none left.
+    expect(latest?.cashuCard).toMatchObject({ balance: 500, spent: 0, empty: 31 })
+    expect(latest?.cashuCard?.spentSlots).toEqual([])
+    expect(sentIns().filter((ins) => ins === 0x13)).toHaveLength(1)
+    // The value did not move: the split and its units stand.
+    expect(latest?.cashuCard?.keysets).toBe(before?.keysets)
+    expect(latest?.cashuCard?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 500 }],
+      unknown: 0,
+    })
+  })
+
+  it("an op that moves no value and frees no slot reads no slots: the spent slots stand as the tap read them", async () => {
+    transceive.mockImplementation(makeSplitCard())
+    await mount()
+    await readCard()
+    const before = latest?.cashuCard
+
+    await act(async () => {
+      await latest?.runCardOperation(async (t) => {
+        await t(SET_PIN_APDU)
+      }, toHex(PUBKEY))
+    })
+
+    expect(sentIns()).not.toContain(0x14)
+    expect(latest?.cashuCard?.spentSlots).toBe(before?.spentSlots)
   })
 
   it("an op that moves value re-reads the keyset split in the same session and names its units; the old split's late answer never lands", async () => {

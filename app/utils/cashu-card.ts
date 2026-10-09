@@ -17,6 +17,7 @@
  * fallback SELECT goes out: see `selectApplet`. Command reference:
  * cashu-javacard `spec/APDU.md`; reference host driver `tools/cardctl/cardctl.py`.
  */
+import { secp256k1 } from "@noble/curves/secp256k1"
 
 /** 7-byte package AID. SELECT does prefix matching, so this also finds the applet. */
 export const CASHU_AID = [0xd2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x02]
@@ -43,6 +44,7 @@ export const INS = {
   GET_SLOT_STATUS: 0x14,
   SPEND_PROOF: 0x20,
   LOAD_PROOF: 0x30,
+  CLEAR_SPENT: 0x31,
   VERIFY_PIN: 0x40,
   SET_PIN: 0x41,
   CHANGE_PIN: 0x42,
@@ -534,6 +536,34 @@ export async function loadProof(
   return body[0]
 }
 
+/**
+ * CLEAR_SPENT: free every spent slot on the card, resolving to how many the
+ * card freed. On the wire `B0 31 00 00 01`. PIN-gated when set.
+ *
+ * ⚠️ A spent slot is owed until it settles at the mint: a burn whose signature
+ * never left the card can be recovered only from its slot, and clearing it
+ * destroys that value. This sends the command and nothing more; deciding that
+ * every spent slot may go is `reclaimSpentSlots` (cashu-card-topup/engine),
+ * which asks the mint (NUT-07) about each one first. Nothing else in this app
+ * sends it.
+ *
+ * The applet zeroes a slot's data before it marks the slot empty (D14,
+ * applet 0.4 and later), so a tap cut short here leaves a slot still `02`
+ * with some fields zeroed: `isProofShaped` tells such a remnant from a proof.
+ */
+export async function clearSpent(transceive: Transceiver): Promise<number> {
+  const body = await send(transceive, INS.CLEAR_SPENT, {
+    le: 0x01,
+    context: "CLEAR_SPENT",
+  })
+  if (body.length !== 1) {
+    throw new CardProtocolError(
+      `CLEAR_SPENT: expected a 1-byte count, got ${body.length}`,
+    )
+  }
+  return body[0]
+}
+
 export type SlotStatus = "empty" | "unspent" | "spent"
 
 /**
@@ -625,6 +655,47 @@ export async function getProof(
   }
 }
 
+const ALL_ZERO_HEX = /^0+$/
+
+/**
+ * Whether a slot's data is a proof at all: the card file's slot checks
+ * (cashu-javacard spec/CARD-FILE.md, "Slot"), which `cardctl dump` applies to
+ * a spent slot before writing it. The amount is a positive power of two the
+ * 4-byte field can hold (a mint keyset has no key for 3), `C` is a compressed
+ * point on secp256k1 (a prefix check alone passes half of all random bytes),
+ * and neither the nonce nor the keyset id is all zero.
+ *
+ * What fails these is a CLEAR_SPENT remnant: the applet zeroes keyset, amount,
+ * nonce, then `C` before it marks the slot empty, so a tap cut short there
+ * leaves a slot still `02` whose data is not a proof (the keyset is almost
+ * always the first to go). A remnant owes nothing at the mint. A tear that
+ * zeroed only part of `C` whose x still lands on the curve passes; the mint,
+ * asked about the Y such a slot rebuilds, has never seen it (UNSPENT), which
+ * blocks a reclaim rather than clearing a slot the checks cannot vouch for.
+ */
+export function isProofShaped(
+  slot: Pick<CardProofSlot, "keysetId" | "amount" | "nonce" | "C">,
+): boolean {
+  const { amount } = slot
+  // `n & (n - 1)` clears the lowest set bit: zero only for a power of two.
+  // Bitwise ops work on int32, which still answers right up to 2^32 - 1.
+  if (
+    !Number.isInteger(amount) ||
+    amount < 1 ||
+    amount > MAX_PROOF_AMOUNT ||
+    (amount & (amount - 1)) !== 0
+  ) {
+    return false
+  }
+  if (ALL_ZERO_HEX.test(slot.nonce) || ALL_ZERO_HEX.test(slot.keysetId)) return false
+  try {
+    secp256k1.ProjectivePoint.fromHex(slot.C)
+  } catch {
+    return false
+  }
+  return true
+}
+
 /** The unspent value on a card under one mint keyset. */
 export type CardKeysetTotal = {
   /** NUT-02 keyset id, 16 hex chars, as the slot stores it. */
@@ -634,29 +705,81 @@ export type CardKeysetTotal = {
 }
 
 /**
+ * GET_SLOT_STATUS, then GET_PROOF for each slot whose status is in `wanted`.
+ * A slot is kept only when its own status byte agrees with the status map:
+ * the two reads are separate APDUs, and a slot the map reports one way and
+ * the proof another is counted as neither. Reads only; nothing is spent.
+ */
+const readSlots = async (
+  transceive: Transceiver,
+  slotCount: number,
+  wanted: readonly SlotStatus[],
+): Promise<CardProofSlot[]> => {
+  const statuses = await getSlotStatuses(transceive, slotCount)
+  const proofs: CardProofSlot[] = []
+  // One APDU at a time: an IsoDep channel carries a single exchange.
+  for (const [slot, status] of statuses.entries()) {
+    if (wanted.includes(status)) {
+      const proof = await getProof(transceive, slot)
+      if (proof.status === status) proofs.push(proof)
+    }
+  }
+  return proofs
+}
+
+/** Unspent proofs summed per keyset, in the order their first proof sits on the card. */
+const totalsByKeyset = (proofs: readonly CardProofSlot[]): CardKeysetTotal[] => {
+  const totals = new Map<string, number>()
+  proofs.forEach((proof) => {
+    if (proof.status === "unspent") {
+      totals.set(proof.keysetId, (totals.get(proof.keysetId) ?? 0) + proof.amount)
+    }
+  })
+  return [...totals].map(([keysetId, amount]) => ({ keysetId, amount }))
+}
+
+/**
  * What the card holds, keyset by keyset: GET_SLOT_STATUS, then GET_PROOF for
  * each unspent slot — the same reads flash-pos plans a charge from. The card
  * stores a keyset id per proof and no unit at all, and its GET_BALANCE adds
  * every keyset together; the mint's keyset list is what turns these into
  * amounts in a unit (`app/utils/cashu-mint.ts`). Reads only; nothing is spent.
- * Keysets come back in the order their first proof sits on the card.
+ * Keysets come back in the order their first proof sits on the card. Spent
+ * and empty slots are never read: `readCardSlots` reads the spent ones too.
  */
 export async function getUnspentByKeyset(
   transceive: Transceiver,
   slotCount: number,
 ): Promise<CardKeysetTotal[]> {
-  const statuses = await getSlotStatuses(transceive, slotCount)
-  const totals = new Map<string, number>()
-  // One APDU at a time: an IsoDep channel carries a single exchange.
-  for (const [slot, status] of statuses.entries()) {
-    if (status === "unspent") {
-      const proof = await getProof(transceive, slot)
-      if (proof.status === "unspent") {
-        totals.set(proof.keysetId, (totals.get(proof.keysetId) ?? 0) + proof.amount)
-      }
-    }
+  return totalsByKeyset(await readSlots(transceive, slotCount, ["unspent"]))
+}
+
+/** Every occupied slot on a card: the unspent value per keyset, and the spent slots as they are. */
+export type CardSlotRead = {
+  keysets: CardKeysetTotal[]
+  /**
+   * The spent slots, in slot order, data and all. A spent slot is owed until
+   * the mint has settled it (NUT-07 SPENT), and only then may CLEAR_SPENT
+   * free it: these are what the top-up asks the mint about before its load
+   * tap (`reclaimVerdicts`). A CLEAR_SPENT remnant (`isProofShaped` false)
+   * is listed too; it owes nothing.
+   */
+  spentSlots: CardProofSlot[]
+}
+
+/**
+ * `getUnspentByKeyset`, plus every spent slot: GET_SLOT_STATUS, then a
+ * GET_PROOF per occupied slot. Reads only; nothing is spent or cleared.
+ */
+export async function readCardSlots(
+  transceive: Transceiver,
+  slotCount: number,
+): Promise<CardSlotRead> {
+  const proofs = await readSlots(transceive, slotCount, ["unspent", "spent"])
+  return {
+    keysets: totalsByKeyset(proofs),
+    spentSlots: proofs.filter((proof) => proof.status === "spent"),
   }
-  return [...totals].map(([keysetId, amount]) => ({ keysetId, amount }))
 }
 
 /**
@@ -706,6 +829,12 @@ export interface CashuCardInfo extends CardInfo {
    * it just cannot be put in a unit, so a screen shows it as "unit unknown".
    */
   keysets?: CardKeysetTotal[]
+  /**
+   * The card's spent slots, read with the split (`CardSlotRead.spentSlots`),
+   * and undefined whenever `keysets` is: the next top-up asks the mint about
+   * them before its load tap, and frees the settled ones (ENG-631).
+   */
+  spentSlots?: CardProofSlot[]
 }
 
 /** An error's class name, plus the status word when the card refused. */
@@ -715,20 +844,21 @@ const failureLabel = (error: unknown): string => {
 }
 
 /**
- * The balance split by keyset, best effort. It exists only to name units, and
- * it costs GET_SLOT_STATUS plus a GET_PROOF per unspent slot: up to 33 more
- * APDUs, each a chance for the card to leave the field. Once GET_BALANCE has
- * answered, losing the split must not lose the read, so any failure here
- * resolves undefined and the caller shows the total as "unit unknown". Only an
- * error name and a status word are logged.
+ * The balance split by keyset and the spent slots, best effort. The split
+ * exists only to name units, and the spent slots only to be asked about at the
+ * mint before a top-up's load tap; together they cost GET_SLOT_STATUS plus a
+ * GET_PROOF per occupied slot: up to 33 more APDUs, each a chance for the card
+ * to leave the field. Once GET_BALANCE has answered, losing them must not lose
+ * the read, so any failure here resolves undefined and the caller shows the
+ * total as "unit unknown". Only an error name and a status word are logged.
  */
 export const readKeysetSplit = async (
   transceive: Transceiver,
   info: CardInfo,
-): Promise<CardKeysetTotal[] | undefined> => {
-  if (info.unspent === 0) return []
+): Promise<CardSlotRead | undefined> => {
+  if (info.unspent === 0 && info.spent === 0) return { keysets: [], spentSlots: [] }
   try {
-    return await getUnspentByKeyset(transceive, info.maxSlots)
+    return await readCardSlots(transceive, info.maxSlots)
   } catch (error) {
     console.warn(`Cashu card keyset split skipped: ${failureLabel(error)}`)
     return undefined
@@ -738,7 +868,8 @@ export const readKeysetSplit = async (
 /**
  * The read-only round-trip over an open IsoDep channel:
  * SELECT → GET_INFO → GET_PUBKEY → GET_BALANCE, then GET_SLOT_STATUS and a
- * GET_PROOF per unspent slot when the card holds anything.
+ * GET_PROOF per occupied slot, spent ones included, when the card holds
+ * anything.
  *
  * Resolves null when the tag refuses both SELECT forms so the caller can fall
  * back to other card types: quietly when both say 6A82 (no such applet — an
@@ -748,8 +879,9 @@ export const readKeysetSplit = async (
  * secret, so it can be logged. Throws on a transport failure during SELECT,
  * and when GET_INFO, GET_PUBKEY or GET_BALANCE fails, refused or dropped: the
  * same four reads, and the same failure surface, as flash-pos `readCard`
- * (src/services/cashuCard.ts:393-405). The keyset split after them is best
- * effort (`readKeysetSplit`): its failure leaves `keysets` undefined.
+ * (src/services/cashuCard.ts:393-405). The slot read after them is best
+ * effort (`readKeysetSplit`): its failure leaves `keysets` and `spentSlots`
+ * undefined.
  */
 export const readCashuCard = async (
   transceive: Transceiver,
@@ -771,6 +903,12 @@ export const readCashuCard = async (
   const info = await getInfo(transceive)
   const pubkey = toHex(await getPubkey(transceive))
   const balance = await getBalance(transceive)
-  const keysets = await readKeysetSplit(transceive, info)
-  return { ...info, pubkey, balance, keysets }
+  const slots = await readKeysetSplit(transceive, info)
+  return {
+    ...info,
+    pubkey,
+    balance,
+    keysets: slots?.keysets,
+    spentSlots: slots?.spentSlots,
+  }
 }
