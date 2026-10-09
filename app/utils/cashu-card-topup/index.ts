@@ -18,7 +18,11 @@ export {
   payWindowMs,
   prepareTopUp,
   proofStatesForLoad,
+  proofY,
   quoteIsDead,
+  reclaimPlan,
+  reclaimSpentSlots,
+  reclaimVerdicts,
   slotsNeeded,
   unfinishedTopUps,
 } from "./engine"
@@ -29,6 +33,9 @@ export type {
   PayOutcome,
   PayResult,
   PrepareArgs,
+  ReclaimPlan,
+  ReclaimResult,
+  ReclaimVerdicts,
   TopUpDeps,
 } from "./engine"
 export { createMinterLoop } from "./minter"
