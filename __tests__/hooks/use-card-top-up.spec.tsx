@@ -354,6 +354,29 @@ describe("useCardTopUp load", () => {
     expect(result).toEqual({ record: { state: "loaded" }, reclaim: NO_RECLAIM })
   })
 
+  it("hands the reclaim's read of the card to the load, so the tap reads no slot twice", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    const inventory = {
+      statuses: ["spent", "unspent", ...new Array(30).fill("empty")],
+      spent: [spentSlot(0)],
+    }
+    mockReclaimSpentSlots.mockResolvedValue({
+      ...NO_RECLAIM,
+      settling: 1,
+      spent: 1,
+      inventory,
+    })
+    mockLoadTopUp.mockResolvedValue({ state: "loaded" })
+    tapRuns()
+
+    await hook().load(record, cardWith(1))
+
+    expect(mockLoadTopUp).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: "t1", transceive: "transceive", inventory }),
+    )
+  })
+
   it("sends no VERIFY_PIN to a card without a PIN", async () => {
     mockProofStates.mockResolvedValue(undefined)
     mockLoadTopUp.mockResolvedValue({ state: "loaded" })

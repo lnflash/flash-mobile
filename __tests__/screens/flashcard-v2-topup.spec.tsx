@@ -1140,9 +1140,10 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
     await act(async () => press(LL.FlashcardV2.topUpLoad()))
 
-    expect(screen.getByTestId("topup-settling").props.children).toBe(
-      LL.FlashcardV2.topUpSlotsSettling({ count: 2 }),
-    )
+    const note = screen.getByTestId("topup-settling").props.children
+    expect(note).toBe(LL.FlashcardV2.topUpSettlingNote({ count: 2 }))
+    // The load went through: nothing to try again, unlike the `slots` refusal.
+    expect(note).not.toContain("Try again")
     expect(screen.queryByTestId("topup-reclaimed")).toBeNull()
 
     // A card with nothing spent: the done step says only what was loaded.

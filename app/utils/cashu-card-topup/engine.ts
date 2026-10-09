@@ -16,6 +16,7 @@ import { networkForPaymentRequest } from "../../screens/send-bitcoin-screen/invo
 import {
   CardInfo,
   CardProofSlot,
+  SlotStatus,
   Transceiver,
   clearSpent,
   getProof,
@@ -867,11 +868,30 @@ export const reclaimPlan = (
   return { reclaimable: settling === 0 ? spentSlots.length : 0, settling }
 }
 
+/**
+ * A card's slots as one read in a session found them: every slot's status
+ * (GET_SLOT_STATUS) and the contents of each spent one (GET_PROOF). Nothing
+ * but this session's own APDUs can change the card while it stays in the
+ * field, so the read holds until one of them (CLEAR_SPENT, LOAD_PROOF) does.
+ */
+export type CardInventory = {
+  statuses: readonly SlotStatus[]
+  /** The spent slots' contents, one per `"spent"` status. */
+  spent: readonly CardProofSlot[]
+}
+
 export type ReclaimResult = ReclaimPlan & {
   /** What CLEAR_SPENT freed: the card's own count, 0 when it was not sent. */
   cleared: number
   /** Spent slots found on the card at the tap. */
   spent: number
+  /**
+   * The card as the reclaim read it, for `loadTopUp` to take in place of a
+   * read of its own: set when no CLEAR_SPENT went out, so the read still
+   * holds. Absent once one did, whatever the card's count: the load reads
+   * the card again, and finds the spent slots gone.
+   */
+  inventory?: CardInventory
 }
 
 /**
@@ -888,6 +908,11 @@ export type ReclaimResult = ReclaimPlan & {
  * a count other than the spent slots read is a tap cut short or a change
  * under the read, and logged as such. The slot a cut tap leaves (`02` with
  * zeroed data) is a remnant the next reclaim frees.
+ *
+ * What was read is handed on (`inventory`) when nothing was cleared, so the
+ * load that follows in the same tap need not read it again: on a resumed
+ * load of a card with k spent and u unspent slots, that is the difference
+ * between u GET_PROOFs before the first LOAD_PROOF and 1 + k + u.
  */
 export async function reclaimSpentSlots(
   transceive: Transceiver,
@@ -900,7 +925,7 @@ export async function reclaimSpentSlots(
   }
   const plan = reclaimPlan(spent, verdicts)
   if (spent.length === 0 || plan.reclaimable === 0) {
-    return { ...plan, cleared: 0, spent: spent.length }
+    return { ...plan, cleared: 0, spent: spent.length, inventory: { statuses, spent } }
   }
   const cleared = await clearSpent(transceive)
   if (cleared === spent.length) {
@@ -948,6 +973,14 @@ export async function proofStatesForLoad(
  * PENDING one (being spent right now) waits for a later load, the record
  * staying unfinished.
  *
+ * The reclaim that runs before this in the same tap has already read the
+ * statuses and every spent slot; when it cleared nothing, that read still
+ * holds and is taken as given (`inventory`), so a first load sends no
+ * GET_SLOT_STATUS of its own and a resumed load reads only the unspent
+ * slots. Without it (after a CLEAR_SPENT, or a load run on its own) the card
+ * is read afresh: GET_SLOT_STATUS, then on a resumed load a GET_PROOF per
+ * occupied slot, which after a full clear are the unspent ones alone.
+ *
  * Only empty slots are written to, and `loadTopUp` itself never clears a
  * spent slot. CLEAR_SPENT is sent only by `reclaimSpentSlots`, which the load
  * tap runs before this, and only when every spent slot is a CLEAR_SPENT
@@ -968,11 +1001,16 @@ export type LoadArgs = {
   card: Pick<CardInfo, "maxSlots">
   /** Required for a resumed load: `proofStatesForLoad`, asked before the tap. */
   mintStates?: ReadonlyMap<string, ProofState>
+  /**
+   * The card as this session already read it and has not changed since
+   * (`reclaimSpentSlots`'s `inventory`), taken in place of a read of its own.
+   */
+  inventory?: CardInventory
 }
 
 export async function loadTopUp(
   deps: Pick<TopUpDeps, "store">,
-  { id, transceive, card, mintStates }: LoadArgs,
+  { id, transceive, card, mintStates, inventory }: LoadArgs,
 ): Promise<TopUpRecord> {
   const record = await load(deps, id)
   if (record.state === "loaded") return record
@@ -983,14 +1021,18 @@ export async function loadTopUp(
   if (record.loadStarted && !mintStates) {
     throw new TopUpError("state", "a resumed load needs the mint's word on each proof")
   }
-  const statuses = await getSlotStatuses(transceive, card.maxSlots)
+  const statuses =
+    inventory?.statuses ?? (await getSlotStatuses(transceive, card.maxSlots))
   let pending = proofs
   let held = 0
   if (record.loadStarted && mintStates) {
+    const spentRead = new Map(
+      (inventory?.spent ?? []).map((found) => [found.slot, found]),
+    )
     const onCard = new Set<string>()
     for (let slot = 0; slot < statuses.length; slot += 1) {
       if (statuses[slot] !== "empty") {
-        const found = await getProof(transceive, slot)
+        const found = spentRead.get(slot) ?? (await getProof(transceive, slot))
         // A spent slot a cut CLEAR_SPENT left behind holds no proof: whether
         // the record's proof is on the card is the mint's to say, not its.
         if (found.status === "unspent" || isProofShaped(found)) onCard.add(found.nonce)

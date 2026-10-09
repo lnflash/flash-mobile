@@ -28,6 +28,7 @@ export {
 } from "./engine"
 export type {
   CardFreeDeps,
+  CardInventory,
   LoadArgs,
   PayArgs,
   PayOutcome,

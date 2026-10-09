@@ -954,7 +954,12 @@ const useReclaimPlan = (
   }, [])
 }
 
-/** What the load tap's reclaim did: the spent slots it freed, and those still owed at the mint. */
+/**
+ * What the load tap's reclaim did: the spent slots it freed, and those still
+ * owed at the mint. The load went through, so the settling note is a note
+ * (`topUpSettlingNote`), not the "try again later" the `slots` refusal ends
+ * with (`topUpSlotsSettling`): there is nothing here to try again.
+ */
 const ReclaimNotes = ({ reclaim }: { reclaim: ReclaimResult }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
@@ -967,7 +972,7 @@ const ReclaimNotes = ({ reclaim }: { reclaim: ReclaimResult }) => {
       )}
       {reclaim.settling > 0 && (
         <Text type="caption" style={styles.center} testID="topup-settling">
-          {LL.FlashcardV2.topUpSlotsSettling({ count: reclaim.settling })}
+          {LL.FlashcardV2.topUpSettlingNote({ count: reclaim.settling })}
         </Text>
       )}
     </>

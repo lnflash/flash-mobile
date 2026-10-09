@@ -238,6 +238,8 @@ export const useCardTopUp = () => {
    * each of its proofs, which it cannot do without (`mint-unreachable`,
    * nothing touches the card), and the verdicts on the spent slots, which it
    * can (no slot is freed, and the refusal says how many are still settling).
+   * The reclaim's read of the card is handed to the load when it still holds
+   * (`inventory`, nothing cleared), so no slot is read twice in the tap.
    * A load the engine refuses carries what the reclaim found (`reclaim`).
    */
   const load = async (
@@ -271,6 +273,9 @@ export const useCardTopUp = () => {
           transceive,
           card,
           mintStates,
+          // The reclaim's read of the card, when it still holds (no
+          // CLEAR_SPENT went out): the load reads nothing twice.
+          inventory: reclaim.inventory,
         })
         return { record: loaded, reclaim }
       } catch (err) {

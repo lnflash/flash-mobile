@@ -172,6 +172,8 @@ const en: BaseTranslation = {
     topUpReclaimed: "{count:number} spent slots freed.",
     topUpSlotsSettling:
       "{count:number} spent slots are still settling at the mint and can't be freed yet. Try again later.",
+    topUpSettlingNote:
+      "{count:number} spent slots are still settling at the mint and stay occupied for now.",
     topUpSlotsReserved:
       "{reserved:number} of the card's empty slots are held for top-ups not on the card yet.",
     topUpNoRoom:

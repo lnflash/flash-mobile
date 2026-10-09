@@ -596,6 +596,11 @@ type RootTranslation = {
 		 */
 		topUpSlotsSettling: RequiredParams<'count'>
 		/**
+		 * {​c​o​u​n​t​}​ ​s​p​e​n​t​ ​s​l​o​t​s​ ​a​r​e​ ​s​t​i​l​l​ ​s​e​t​t​l​i​n​g​ ​a​t​ ​t​h​e​ ​m​i​n​t​ ​a​n​d​ ​s​t​a​y​ ​o​c​c​u​p​i​e​d​ ​f​o​r​ ​n​o​w​.
+		 * @param {number} count
+		 */
+		topUpSettlingNote: RequiredParams<'count'>
+		/**
 		 * {​r​e​s​e​r​v​e​d​}​ ​o​f​ ​t​h​e​ ​c​a​r​d​'​s​ ​e​m​p​t​y​ ​s​l​o​t​s​ ​a​r​e​ ​h​e​l​d​ ​f​o​r​ ​t​o​p​-​u​p​s​ ​n​o​t​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​y​e​t​.
 		 * @param {number} reserved
 		 */
@@ -7897,6 +7902,10 @@ export type TranslationFunctions = {
 		 * {count} spent slots are still settling at the mint and can't be freed yet. Try again later.
 		 */
 		topUpSlotsSettling: (arg: { count: number }) => LocalizedString
+		/**
+		 * {count} spent slots are still settling at the mint and stay occupied for now.
+		 */
+		topUpSettlingNote: (arg: { count: number }) => LocalizedString
 		/**
 		 * {reserved} of the card's empty slots are held for top-ups not on the card yet.
 		 */
