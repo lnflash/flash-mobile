@@ -228,8 +228,12 @@ export const FlashcardV2TopUpScreen = () => {
   const [commitmentsRead, setCommitmentsRead] = useState(false)
   // The spent slots the load tap will free (ENG-631): room for a new top-up,
   // once the mint has said every one of them is settled. The amount field
-  // does not wait for this: it can only add room.
+  // waits for the mint's answer the same way: on a card with no empty slot
+  // the room is 0 until then, and a field shown before it would refuse every
+  // amount, then change its mind a round-trip later.
   const [reclaim, setReclaim] = useState<ReclaimPlan>(NO_RECLAIM)
+  // Whether that plan has settled: answered, refused, or never asked for.
+  const [reclaimRead, setReclaimRead] = useState(false)
   const eligibility = cashuCard
     ? topUpEligibility(cashuCard, {
         unfinishedUnits: commitments.units,
@@ -318,7 +322,10 @@ export const FlashcardV2TopUpScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useReclaimPlan(resumeId ? undefined : cashuCard, reclaimPlanFor, setReclaim)
+  useReclaimPlan(resumeId ? undefined : cashuCard, reclaimPlanFor, {
+    onPlan: setReclaim,
+    onSettled: () => setReclaimRead(true),
+  })
 
   // Leaving before any payment was sent drops the quote: nothing can land,
   // and the card's screen should not offer to finish it. A quote that was
@@ -707,8 +714,10 @@ export const FlashcardV2TopUpScreen = () => {
             {/* The field waits for the unfinished top-ups to be read: one can
                 refuse this top-up or fix its unit, and initiallyOpen is read
                 only as the field mounts. It mounts once, so a keypad opened
-                from it is never taken down by the read. */}
-            {convertMoneyAmount && commitmentsRead && (
+                from it is never taken down by the read. It waits for the
+                reclaim plan too: the room it checks amounts against is not
+                known until the mint has answered. */}
+            {convertMoneyAmount && commitmentsRead && reclaimRead && (
               <AmountInput
                 unitOfAccountAmount={amount}
                 walletCurrency={walletCurrency}
@@ -934,19 +943,29 @@ export const FlashcardV2TopUpScreen = () => {
  * of the mint once, off the card, for the card the screen opened on (none on
  * a resume: its amount is set). The tap asks again before it runs. An
  * unanswered mint counts no spent slot as room.
+ *
+ * `onSettled` fires once the plan is known, whichever way: at once when
+ * there is nothing to ask about, or when the mint has answered or refused.
  */
 const useReclaimPlan = (
   card: Pick<CashuCardState, "pubkey" | "spentSlots"> | undefined,
   planFor: (card: Pick<CashuCardState, "pubkey" | "spentSlots">) => Promise<ReclaimPlan>,
-  onPlan: (plan: ReclaimPlan) => void,
+  { onPlan, onSettled }: { onPlan: (plan: ReclaimPlan) => void; onSettled: () => void },
 ) => {
   useEffect(() => {
-    if (!card?.spentSlots?.length) return undefined
+    if (!card?.spentSlots?.length) {
+      onSettled()
+      return undefined
+    }
     let live = true
-    planFor(card).then(
-      (plan) => live && onPlan(plan),
-      () => undefined,
-    )
+    planFor(card)
+      .then(
+        (plan) => live && onPlan(plan),
+        () => undefined,
+      )
+      .finally(() => {
+        if (live) onSettled()
+      })
     return () => {
       live = false
     }

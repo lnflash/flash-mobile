@@ -279,8 +279,9 @@ export const useCardTopUp = () => {
         })
         return { record: loaded, reclaim }
       } catch (err) {
-        if (err instanceof TopUpError)
-          throw new TopUpError(err.reason, err.message, reclaim)
+        // The engine's own error, so its stack still points at the check
+        // that refused; the reclaim rides along for the `slots` message.
+        if (err instanceof TopUpError) err.reclaim = reclaim
         throw err
       }
     }, record.cardPubkey)

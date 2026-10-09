@@ -112,9 +112,11 @@ export class TopUpError extends Error {
     /**
      * What the reclaim that ran in the same tap found, when a load was
      * refused after it (`useCardTopUp.load`): a `slots` refusal can then say
-     * how many spent slots are still settling at the mint.
+     * how many spent slots are still settling at the mint. Set on the
+     * engine's own error after the fact, so the stack still names the check
+     * that refused.
      */
-    readonly reclaim?: ReclaimResult,
+    public reclaim?: ReclaimResult,
   ) {
     super(message)
     this.name = "TopUpError"

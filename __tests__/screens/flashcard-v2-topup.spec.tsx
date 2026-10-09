@@ -18,7 +18,12 @@ import {
   topUpEligibility,
 } from "../../app/screens/card-screen/flashcard-v2-topup"
 import { CardError, CardProofSlot } from "../../app/utils/cashu-card"
-import { ReclaimResult, TopUpError, TopUpRecord } from "../../app/utils/cashu-card-topup"
+import {
+  ReclaimPlan,
+  ReclaimResult,
+  TopUpError,
+  TopUpRecord,
+} from "../../app/utils/cashu-card-topup"
 
 loadLocale("en")
 const LL = i18nObject("en")
@@ -1059,6 +1064,50 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
       expect.anything(),
       expect.objectContaining({ card: { empty: 0, reclaimable: 32, unit: undefined } }),
     )
+  })
+
+  it("shows no amount field until the mint has said what the load tap will free: the room is not known before", async () => {
+    // The card this exists for: no empty slot, every slot spent and settled.
+    mockCard = card({ empty: 0, spent: 32, spentSlots: spentSlots(32) })
+    let settle: ((plan: ReclaimPlan) => void) | undefined
+    mockReclaimPlanFor.mockReturnValue(
+      new Promise<ReclaimPlan>((resolve) => {
+        settle = resolve
+      }),
+    )
+    mockEntered = 1000 // six slots
+    renderScreen()
+    // The unfinished top-ups are read; the plan is still out. A field shown
+    // now would say the card has no room, and send the user after a smaller
+    // amount, only to change its mind when the mint answers.
+    await act(async () => undefined)
+    expect(screen.queryByTestId("amount-input")).toBeNull()
+    expect(mockAmountInputMounts).toEqual([])
+    expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
+
+    await act(async () => settle?.({ reclaimable: 32, settling: 0 }))
+    expect(mockAmountInputMounts).toEqual([true])
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
+    expect(screen.getByTestId("topup-slots").props.children).toBe(
+      LL.FlashcardV2.topUpSlotsReclaim({ needed: 6, free: 32, reclaim: 32 }),
+    )
+  })
+
+  it("shows the amount field once a mint that cannot answer has refused: the room is what the card has", async () => {
+    mockCard = card({ empty: 5, spent: 20, spentSlots: spentSlots(20) })
+    let refuse: ((err: Error) => void) | undefined
+    mockReclaimPlanFor.mockReturnValue(
+      new Promise<ReclaimPlan>((_, reject) => {
+        refuse = reject
+      }),
+    )
+    renderScreen()
+    await act(async () => undefined)
+    expect(mockAmountInputMounts).toEqual([])
+
+    await act(async () => refuse?.(new Error("Network request failed")))
+    expect(mockAmountInputMounts).toEqual([true])
   })
 
   it("asks the mint about no spent slots on a card with none, or with a top-up to resume", async () => {

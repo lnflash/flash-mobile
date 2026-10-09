@@ -460,6 +460,18 @@ describe("useCardTopUp load", () => {
     })
   })
 
+  it("rethrows the engine's own error, so its stack still names the check that refused", async () => {
+    mockProofStates.mockResolvedValue(undefined)
+    const reclaim = { ...NO_RECLAIM, settling: 3, spent: 3 }
+    mockReclaimSpentSlots.mockResolvedValue(reclaim)
+    const refused = new TopUpError("slots", "no room")
+    mockLoadTopUp.mockRejectedValue(refused)
+    tapRuns()
+
+    await expect(hook().load(record, cardWith(3))).rejects.toBe(refused)
+    expect(refused.reclaim).toBe(reclaim)
+  })
+
   it("anything else the tap throws is left as it is", async () => {
     mockProofStates.mockResolvedValue(undefined)
     mockLoadTopUp.mockRejectedValue(new Error("Tag was lost"))
