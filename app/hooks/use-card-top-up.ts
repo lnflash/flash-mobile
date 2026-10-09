@@ -17,10 +17,13 @@ import {
   isIdempotencyKeyReuseError,
   isUnsupportedIdempotencyKeyError,
 } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
-import { CardInfo, verifyCardPin } from "@app/utils/cashu-card"
+import { CashuCardInfo, verifyCardPin } from "@app/utils/cashu-card"
 import {
   CardFreeDeps,
   PayOutcome,
+  ProofState,
+  ReclaimPlan,
+  ReclaimResult,
   TopUpDeps,
   TopUpError,
   TopUpMint,
@@ -32,6 +35,9 @@ import {
   createTopUpStore,
   loadTopUp,
   proofStatesForLoad,
+  reclaimPlan,
+  reclaimSpentSlots,
+  reclaimVerdicts,
   unfinishedTopUps,
 } from "@app/utils/cashu-card-topup"
 
@@ -205,17 +211,40 @@ export const useCardTopUp = () => {
     runCardOperation((transceive) => verifyCardPin(transceive, pin), cardPubkey)
 
   /**
-   * One tap: VERIFY_PIN when the card has a PIN, then the load, in the same
-   * session. A resumed load asks the mint about each proof first, before the
-   * tap, so the card session never waits on the network. When the mint
-   * cannot be asked, nothing touches the card, and the failure says so
-   * (`mint-unreachable`), not that no card was found.
+   * The mint's NUT-07 word on the card's spent slots, as the last read found
+   * them, or undefined when the mint could not be asked. Never fatal: a load
+   * without verdicts frees no slot and goes on with the empty ones.
+   */
+  const verdictsFor = async (
+    card: Pick<CashuCardInfo, "pubkey" | "spentSlots">,
+  ): Promise<ReadonlyMap<string, ProofState> | undefined> => {
+    if (!card.spentSlots?.length) return new Map()
+    return reclaimVerdicts(deps, card.pubkey, card.spentSlots).catch(() => undefined)
+  }
+
+  /**
+   * What the load tap's reclaim will do with the card's spent slots, for the
+   * amount step to count as room (ENG-631): asks the mint now, off the card.
+   */
+  const reclaimPlanFor = async (
+    card: Pick<CashuCardInfo, "pubkey" | "spentSlots">,
+  ): Promise<ReclaimPlan> => reclaimPlan(card.spentSlots ?? [], await verdictsFor(card))
+
+  /**
+   * One tap: VERIFY_PIN when the card has a PIN, then the reclaim of the
+   * card's settled spent slots (`reclaimSpentSlots`), then the load, in the
+   * same session. Everything the mint is asked is asked before the tap, so
+   * the card session never waits on the network: a resumed load's word on
+   * each of its proofs, which it cannot do without (`mint-unreachable`,
+   * nothing touches the card), and the verdicts on the spent slots, which it
+   * can (no slot is freed, and the refusal says how many are still settling).
+   * A load the engine refuses carries what the reclaim found (`reclaim`).
    */
   const load = async (
     record: TopUpRecord,
-    card: Pick<CardInfo, "maxSlots">,
+    card: Pick<CashuCardInfo, "pubkey" | "maxSlots" | "spentSlots">,
     pin?: string,
-  ): Promise<TopUpRecord> => {
+  ): Promise<{ record: TopUpRecord; reclaim: ReclaimResult }> => {
     let mintStates: Awaited<ReturnType<typeof proofStatesForLoad>>
     try {
       mintStates = await proofStatesForLoad(deps, record.id)
@@ -229,13 +258,30 @@ export const useCardTopUp = () => {
         }`,
       )
     }
+    const verdicts = await verdictsFor(card)
     return runCardOperation(async (transceive) => {
       if (pin) await verifyCardPin(transceive, pin)
-      return loadTopUp(deps, { id: record.id, transceive, card, mintStates })
+      const reclaim = await reclaimSpentSlots(transceive, {
+        maxSlots: card.maxSlots,
+        verdicts,
+      })
+      try {
+        const loaded = await loadTopUp(deps, {
+          id: record.id,
+          transceive,
+          card,
+          mintStates,
+        })
+        return { record: loaded, reclaim }
+      } catch (err) {
+        if (err instanceof TopUpError)
+          throw new TopUpError(err.reason, err.message, reclaim)
+        throw err
+      }
     }, record.cardPubkey)
   }
 
-  return { deps, feeFor, checkPin, load }
+  return { deps, feeFor, checkPin, load, reclaimPlanFor }
 }
 
 /**

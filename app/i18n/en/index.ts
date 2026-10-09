@@ -95,7 +95,9 @@ const en: BaseTranslation = {
     unitUnknown: "{amount:string} · unit unknown",
     empty: "Empty",
     slots: "Proof slots",
-    slotSummary: "{unspent:number} loaded · {free:number} free of {max:number}",
+    slotSummary:
+      "{unspent:number} loaded · {spent:number} spent · {free:number} free of {max:number}",
+    slotsSpentNote: "Spent slots are freed on your next top-up, once the mint has settled them.",
     appletVersion: "Card software",
     cardId: "Card ID",
     cardEnding: "Flashcard ending {last4:string}",
@@ -165,6 +167,11 @@ const en: BaseTranslation = {
     topUpPaidFrom: "Paid from your Cash wallet",
     topUpCashBalance: "Available: {balance}",
     topUpSlots: "Uses {needed:number} of the card's {free:number} free slots",
+    topUpSlotsReclaim:
+      "Uses {needed:number} of {free:number} free slots, {reclaim:number} of them freed from settled spends on load",
+    topUpReclaimed: "{count:number} spent slots freed.",
+    topUpSlotsSettling:
+      "{count:number} spent slots are still settling at the mint and can't be freed yet. Try again later.",
     topUpSlotsReserved:
       "{reserved:number} of the card's empty slots are held for top-ups not on the card yet.",
     topUpNoRoom:

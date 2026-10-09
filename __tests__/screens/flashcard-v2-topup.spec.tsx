@@ -17,8 +17,8 @@ import {
   FlashcardV2TopUpScreen,
   topUpEligibility,
 } from "../../app/screens/card-screen/flashcard-v2-topup"
-import { CardError } from "../../app/utils/cashu-card"
-import { TopUpError, TopUpRecord } from "../../app/utils/cashu-card-topup"
+import { CardError, CardProofSlot } from "../../app/utils/cashu-card"
+import { ReclaimResult, TopUpError, TopUpRecord } from "../../app/utils/cashu-card-topup"
 
 loadLocale("en")
 const LL = i18nObject("en")
@@ -82,6 +82,7 @@ const mockNudge = jest.fn()
 const mockFeeFor = jest.fn()
 const mockCheckPin = jest.fn()
 const mockLoad = jest.fn()
+const mockReclaimPlanFor = jest.fn()
 const mockPrepare = jest.fn()
 const mockPay = jest.fn()
 const mockMint = jest.fn()
@@ -148,6 +149,7 @@ jest.mock("@app/hooks/use-card-top-up", () => ({
     feeFor: mockFeeFor,
     checkPin: mockCheckPin,
     load: mockLoad,
+    reclaimPlanFor: mockReclaimPlanFor,
   }),
   nudgeTopUpMinter: () => mockNudge(),
 }))
@@ -213,6 +215,18 @@ const typePin = (digits: string) => {
   for (const d of digits) fireEvent.press(screen.getByTestId(`pin-${d}`))
 }
 const errorText = () => screen.getByTestId("topup-error").props.children
+/** What a load tap's reclaim found on a card with no spent slots. */
+const NO_RECLAIM: ReclaimResult = { reclaimable: 0, settling: 0, cleared: 0, spent: 0 }
+/** `count` spent slots, as the last tap read them. */
+const spentSlots = (count: number): CardProofSlot[] =>
+  Array.from({ length: count }, (_, i) => ({
+    slot: i,
+    status: "spent",
+    keysetId: "0059534ce0bfa19a",
+    amount: 1,
+    nonce: (i + 1).toString(16).padStart(64, "0"),
+    C: "02" + "ab".repeat(32),
+  }))
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -232,7 +246,8 @@ beforeEach(() => {
     result: { status: "paid" },
   })
   mockMint.mockResolvedValue({ record: record({ state: "minted" }), status: "minted" })
-  mockLoad.mockResolvedValue(record({ state: "loaded" }))
+  mockLoad.mockResolvedValue({ record: record({ state: "loaded" }), reclaim: NO_RECLAIM })
+  mockReclaimPlanFor.mockResolvedValue({ reclaimable: 0, settling: 0 })
 })
 
 describe("topUpEligibility", () => {
@@ -497,10 +512,13 @@ describe("FlashcardV2TopUpScreen", () => {
     )
   })
 
-  it("will not continue with more slots than the card has empty: spent slots are not room", async () => {
-    mockCard = card({ empty: 5, spent: 20 })
+  it("will not continue with more slots than the card has empty: spent slots the mint has not settled are not room", async () => {
+    mockCard = card({ empty: 5, spent: 20, spentSlots: spentSlots(20) })
+    // One of the twenty is still owed at the mint: none can be freed.
+    mockReclaimPlanFor.mockResolvedValue({ reclaimable: 0, settling: 1 })
     mockEntered = 1000 // six slots
     await renderSettled()
+    expect(mockReclaimPlanFor).toHaveBeenCalledWith(mockCard)
     fireEvent.press(screen.getByTestId("amount-input"))
     expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
       LL.FlashcardV2.topUpNoRoom({ needed: 6, free: 5 }),
@@ -571,7 +589,10 @@ describe("FlashcardV2TopUpScreen", () => {
     await act(async () => press(LL.FlashcardV2.next()))
     expect(mockPrepare).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ unit: "usd", card: { empty: 32, unit: undefined } }),
+      expect.objectContaining({
+        unit: "usd",
+        card: { empty: 32, reclaimable: 0, unit: undefined },
+      }),
     )
   })
 
@@ -1002,7 +1023,10 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 
   it("a load the mint holds part of for now says so, and loads nothing more from here", async () => {
-    mockLoad.mockResolvedValueOnce(record({ state: "minted", loadStarted: true }))
+    mockLoad.mockResolvedValueOnce({
+      record: record({ state: "minted", loadStarted: true }),
+      reclaim: NO_RECLAIM,
+    })
     await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
     await act(async () => press(LL.FlashcardV2.next()))
@@ -1014,5 +1038,123 @@ describe("FlashcardV2TopUpScreen", () => {
       LL.FlashcardV2.topUpHeld(),
     )
     expect(screen.queryByTestId("topup-done")).toBeNull()
+  })
+})
+
+describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
+  it("counts the spent slots the load tap will free as room: a card with no empty slot tops up once the mint has settled them all", async () => {
+    mockCard = card({ empty: 0, spent: 32, spentSlots: spentSlots(32) })
+    mockReclaimPlanFor.mockResolvedValue({ reclaimable: 32, settling: 0 })
+    mockEntered = 1000 // six slots
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+
+    expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
+    expect(screen.getByTestId("topup-slots").props.children).toBe(
+      LL.FlashcardV2.topUpSlotsReclaim({ needed: 6, free: 32, reclaim: 32 }),
+    )
+    await act(async () => press(LL.FlashcardV2.next()))
+    // The engine counts them too, as `reclaimable`, never as empty slots.
+    expect(mockPrepare).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ card: { empty: 0, reclaimable: 32, unit: undefined } }),
+    )
+  })
+
+  it("asks the mint about no spent slots on a card with none, or with a top-up to resume", async () => {
+    await renderSettled()
+    expect(mockReclaimPlanFor).not.toHaveBeenCalled()
+
+    mockParams = { topUpId: "topup-1" }
+    mockCard = card({ empty: 0, spent: 32, spentSlots: spentSlots(32) })
+    mockStoreGet.mockResolvedValue(record({ state: "minted" }))
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    expect(mockReclaimPlanFor).not.toHaveBeenCalled()
+  })
+
+  it("a mint that cannot say which spent slots are settled leaves them out of the room", async () => {
+    mockCard = card({ empty: 5, spent: 20, spentSlots: spentSlots(20) })
+    mockReclaimPlanFor.mockRejectedValue(new Error("Network request failed"))
+    mockEntered = 1000
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
+      LL.FlashcardV2.topUpNoRoom({ needed: 6, free: 5 }),
+    )
+  })
+
+  it("a card with no room whose spent slots are still settling says how many, and to try later", async () => {
+    mockLoad.mockRejectedValueOnce(
+      new TopUpError("slots", "no room", {
+        reclaimable: 0,
+        settling: 3,
+        cleared: 0,
+        spent: 3,
+      }),
+    )
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    await act(async () => press(LL.FlashcardV2.topUpPay()))
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+
+    expect(errorText()).toBe(
+      `${LL.FlashcardV2.topUpNoRoomOnCard()} ${LL.FlashcardV2.topUpSlotsSettling({
+        count: 3,
+      })}`,
+    )
+    // Still on the load, to try again once they settle.
+    expect(screen.getByTestId("topup-tap")).toBeTruthy()
+  })
+
+  it("the done step says how many spent slots the load tap freed", async () => {
+    mockLoad.mockResolvedValueOnce({
+      record: record({ state: "loaded" }),
+      reclaim: { reclaimable: 4, settling: 0, cleared: 4, spent: 4 },
+    })
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    await act(async () => press(LL.FlashcardV2.topUpPay()))
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+
+    expect(screen.getByTestId("topup-done")).toBeTruthy()
+    expect(screen.getByTestId("topup-reclaimed").props.children).toBe(
+      LL.FlashcardV2.topUpReclaimed({ count: 4 }),
+    )
+    expect(screen.queryByTestId("topup-settling")).toBeNull()
+  })
+
+  it("the done step says how many spent slots are still settling when the load fit without them, and nothing when there were none", async () => {
+    mockLoad.mockResolvedValueOnce({
+      record: record({ state: "loaded" }),
+      reclaim: { reclaimable: 0, settling: 2, cleared: 0, spent: 2 },
+    })
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    await act(async () => press(LL.FlashcardV2.topUpPay()))
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+
+    expect(screen.getByTestId("topup-settling").props.children).toBe(
+      LL.FlashcardV2.topUpSlotsSettling({ count: 2 }),
+    )
+    expect(screen.queryByTestId("topup-reclaimed")).toBeNull()
+
+    // A card with nothing spent: the done step says only what was loaded.
+    screen.unmount()
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    await act(async () => press(LL.FlashcardV2.topUpPay()))
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    expect(screen.getByTestId("topup-done")).toBeTruthy()
+    expect(screen.queryByTestId("topup-reclaimed")).toBeNull()
+    expect(screen.queryByTestId("topup-settling")).toBeNull()
   })
 })

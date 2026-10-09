@@ -132,7 +132,11 @@ describe("FlashcardV2Screen", () => {
     expect(screen.getByTestId("flashcard-v2-balance-sat").props.children).toBe(
       "1,500 sats",
     )
-    expect(screen.getByText("3 loaded · 24 free of 32")).toBeTruthy()
+    expect(screen.getByText("3 loaded · 5 spent · 24 free of 32")).toBeTruthy()
+    // Spent slots are freed by the top-up's load tap once settled (ENG-631).
+    expect(screen.getByTestId("flashcard-v2-slots-spent-note").props.children).toBe(
+      LL.FlashcardV2.slotsSpentNote(),
+    )
     expect(screen.getByText("v0.2")).toBeTruthy()
     expect(screen.getByTestId("flashcard-v2-card-id").props.children).toBe(
       shortPubkey(PUBKEY),
@@ -140,6 +144,15 @@ describe("FlashcardV2Screen", () => {
     // The full 66-char key is never on screen; the short form is enough to
     // tell two cards apart.
     expect(screen.queryByText(PUBKEY)).toBeNull()
+  })
+
+  it("says nothing about spent slots on a card with none", () => {
+    mockCashuCard = card({ spent: 0, empty: 29 })
+
+    renderScreen()
+
+    expect(screen.getByText("3 loaded · 0 spent · 29 free of 32")).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-slots-spent-note")).toBeNull()
   })
 
   it("never shows the card's figure bare: until the mint names the unit, it says the unit is unknown", () => {
