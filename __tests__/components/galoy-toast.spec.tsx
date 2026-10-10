@@ -6,7 +6,7 @@
  * manual-entry rescue toast into an app-killer (PR #678 review finding).
  */
 import * as React from "react"
-import { Text } from "react-native"
+import { StyleSheet, Text } from "react-native"
 import { render, act } from "@testing-library/react-native"
 import Toast from "react-native-toast-message"
 import ErrorBoundary from "react-native-error-boundary"
@@ -56,5 +56,32 @@ describe("GaloyToast type registry", () => {
     expect(screen.queryByTestId("error-fallback")).toBeNull()
     expect(screen.queryByText("Warning")).not.toBeNull()
     expect(screen.queryByText("Bank linking is unavailable right now")).not.toBeNull()
+  })
+})
+
+describe("GaloyToast layer", () => {
+  // On iOS a top toast rendered as a plain later sibling of the navigator is
+  // drawn behind any stack screen with a header (seen on the Flashcard screen
+  // after Remove PIN). The host therefore owns a full-screen layer with a
+  // zIndex, which must not swallow touches meant for the screen.
+  it("renders the host in its own absolute, non-blocking layer above the navigator", () => {
+    const screen = renderHost()
+    const layer = screen.getByTestId("toast-layer")
+    expect(layer.props.pointerEvents).toBe("box-none")
+    const style = StyleSheet.flatten(layer.props.style)
+    expect(style.position).toBe("absolute")
+    expect(style.top).toBe(0)
+    expect(style.bottom).toBe(0)
+    expect(style.left).toBe(0)
+    expect(style.right).toBe(0)
+    expect(style.zIndex).toBeGreaterThan(0)
+  })
+
+  it("still shows a top toast inside that layer", () => {
+    const screen = renderHost()
+    act(() => {
+      toastShow({ type: "success", position: "top", message: "PIN removed" })
+    })
+    expect(screen.queryByText("PIN removed")).not.toBeNull()
   })
 })
