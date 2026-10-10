@@ -2,11 +2,12 @@ import { gql } from "@apollo/client"
 import { useMobileUpdateQuery } from "@app/graphql/generated"
 
 import * as React from "react"
-import { AppState, Linking, Platform, Pressable, View } from "react-native"
+import { AppState, Linking, Platform, Pressable, StyleSheet, View } from "react-native"
 import DeviceInfo from "react-native-device-info"
 
 import { VersionComponent } from "@app/components/version"
 import { APP_STORE_LINK, CONTACT_EMAIL_ADDRESS, PLAY_STORE_LINK } from "@app/config"
+import { APP_UPDATE_GATE_LAYER_Z } from "@app/constants/layers"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { Text, makeStyles, useTheme } from "@rneui/themed"
 import ReactNativeModal from "react-native-modal"
@@ -217,8 +218,10 @@ export const AppUpdateGate: React.FC = () => {
   const { required } = useAppUpdateStatus()
 
   // A hard-blocked user has exactly two ways out of this modal, and both are
-  // buttons here. A toast would be swallowed behind the modal, so failures are
-  // rendered inline instead of leaving the tap a silent no-op.
+  // buttons here. A toast would be swallowed behind the modal — the gate's own
+  // layer (below) is deliberately stacked above the toast layer, see
+  // constants/layers — so failures are rendered inline instead of leaving the
+  // tap a silent no-op.
   const [openFailed, setOpenFailed] = React.useState(false)
   const [contactFailed, setContactFailed] = React.useState(false)
 
@@ -238,16 +241,37 @@ export const AppUpdateGate: React.FC = () => {
     [],
   )
 
+  // The gate's own layer. The modal renders inline (coverScreen={false},
+  // below), so it only outranks what sibling order and zIndex say it does.
+  // GaloyToast owns a zIndex'd full-screen layer of its own (needed to clear
+  // stack headers on iOS), and react-native-modal's inline container is only
+  // zIndex 2 — without this wrapper a toast would paint over the hard block.
+  // box-none: the wrapper takes no touches itself, so while the gate is not
+  // required it is inert and taps fall through to the app underneath.
   return (
-    <AppUpdateModal
-      isVisible={required}
-      linkUpgrade={linkUpgrade}
-      contactSupport={contactSupport}
-      openFailed={openFailed}
-      contactFailed={contactFailed}
-    />
+    <View
+      testID="app-update-gate-layer"
+      pointerEvents="box-none"
+      style={gateLayerStyles.layer}
+    >
+      <AppUpdateModal
+        isVisible={required}
+        linkUpgrade={linkUpgrade}
+        contactSupport={contactSupport}
+        openFailed={openFailed}
+        contactFailed={contactFailed}
+      />
+    </View>
   )
 }
+
+const gateLayerStyles = StyleSheet.create({
+  layer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: APP_UPDATE_GATE_LAYER_Z,
+    elevation: APP_UPDATE_GATE_LAYER_Z,
+  },
+})
 
 export const AppUpdateModal = ({
   linkUpgrade,
@@ -293,7 +317,8 @@ export const AppUpdateModal = ({
        * measured host would strand every hard-blocked user on a blank screen.
        * coverScreen={false} takes react-native-modal's inline render
        * path and measures correctly — note this makes paint order follow sibling
-       * order, which is why <AppUpdateGate /> is mounted last in app.tsx.
+       * order (and zIndex), which is why <AppUpdateGate /> is mounted last in
+       * app.tsx and wraps this modal in a layer stacked above the toast layer.
        */
       coverScreen={false}
     >

@@ -6,8 +6,8 @@
  * manual-entry rescue toast into an app-killer (PR #678 review finding).
  */
 import * as React from "react"
-import { Text } from "react-native"
-import { render, act } from "@testing-library/react-native"
+import { StyleSheet, Text } from "react-native"
+import { render, act, within } from "@testing-library/react-native"
 import Toast from "react-native-toast-message"
 import ErrorBoundary from "react-native-error-boundary"
 
@@ -19,6 +19,7 @@ jest.mock("@app/utils/analytics", () => ({
 }))
 
 import { GaloyToast } from "@app/components/galoy-toast"
+import { TOAST_LAYER_Z } from "@app/constants/layers"
 import { toastShow } from "@app/utils/toast"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 
@@ -56,5 +57,38 @@ describe("GaloyToast type registry", () => {
     expect(screen.queryByTestId("error-fallback")).toBeNull()
     expect(screen.queryByText("Warning")).not.toBeNull()
     expect(screen.queryByText("Bank linking is unavailable right now")).not.toBeNull()
+  })
+})
+
+describe("GaloyToast layer", () => {
+  // On iOS a top toast rendered as a plain later sibling of the navigator is
+  // drawn behind any stack screen with a header (seen on the Flashcard screen
+  // after Remove PIN). The host therefore owns a full-screen layer with a
+  // zIndex, which must not swallow touches meant for the screen.
+  it("renders the host in its own absolute, non-blocking layer above the navigator", () => {
+    const screen = renderHost()
+    const layer = screen.getByTestId("toast-layer")
+    expect(layer.props.pointerEvents).toBe("box-none")
+    const style = StyleSheet.flatten(layer.props.style)
+    expect(style.position).toBe("absolute")
+    expect(style.top).toBe(0)
+    expect(style.bottom).toBe(0)
+    expect(style.left).toBe(0)
+    expect(style.right).toBe(0)
+    // The shared constant, not just "positive": the forced-update gate stacks
+    // its own layer relative to this value (constants/layers.ts).
+    expect(style.zIndex).toBe(TOAST_LAYER_Z)
+    expect(style.elevation).toBe(TOAST_LAYER_Z)
+  })
+
+  it("still shows a top toast inside that layer", () => {
+    const screen = renderHost()
+    act(() => {
+      toastShow({ type: "success", position: "top", message: "PIN removed" })
+    })
+    // Scoped to the layer on purpose: a screen-wide query would still pass if
+    // the wrapper were deleted and the toast fell back to a plain sibling.
+    const layer = screen.getByTestId("toast-layer")
+    expect(within(layer).queryByText("PIN removed")).not.toBeNull()
   })
 })
