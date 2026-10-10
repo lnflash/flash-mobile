@@ -48,6 +48,7 @@ export const INS = {
   VERIFY_PIN: 0x40,
   SET_PIN: 0x41,
   CHANGE_PIN: 0x42,
+  CLEAR_PIN: 0x43,
 } as const
 
 /** Sends a raw APDU and resolves to the full response: data bytes + SW1 + SW2. */
@@ -240,6 +241,14 @@ export interface CardInfo {
   secp256k1Native: boolean
   schnorr: boolean
   /**
+   * GET_INFO capability bit 3 (0x08): the card answers CLEAR_PIN (0x43),
+   * applet 0.5 and later (spec/APDU.md, GET_INFO; decision D15). A build
+   * without it answers 0x43 with 6D00, so nothing sends CLEAR_PIN unless this
+   * is true. It says the command exists, not that a PIN is set: pair it with
+   * `pinState`.
+   */
+  clearPin: boolean
+  /**
    * GET_INFO byte 7: 0 unset, 1 set, 2 blocked (spec/APDU.md:58); `unknown`
    * for any other value.
    *
@@ -343,6 +352,7 @@ export function parseInfo(body: number[]): CardInfo {
     empty: body[5],
     secp256k1Native: (caps & 0x01) !== 0,
     schnorr: (caps & 0x02) !== 0,
+    clearPin: (caps & 0x08) !== 0,
     pinState: pinStates[body[7]] ?? "unknown",
   }
 }
@@ -437,9 +447,11 @@ export class WrongCardError extends Error {
 }
 
 /**
- * SET_PIN: once per card lifetime. Needs no authentication — the card ships
+ * SET_PIN: on a card with no PIN. Needs no authentication — the card ships
  * with no PIN, which is why setting one is the holder's first job — and
- * answers 6985 if one is already set. There is no way back to "no PIN".
+ * answers 6985 if one is already set. The way back to "no PIN" is
+ * `clearCardPin`, on a card whose `CardInfo.clearPin` is true (applet 0.5);
+ * on an older card there is none.
  */
 export async function setCardPin(transceive: Transceiver, pin: string): Promise<void> {
   await send(transceive, INS.SET_PIN, {
@@ -463,6 +475,27 @@ export async function changeCardPin(
   await send(transceive, INS.CHANGE_PIN, {
     data: [oldBytes.length, ...oldBytes, ...newBytes],
     context: "CHANGE_PIN",
+  })
+}
+
+/**
+ * CLEAR_PIN: `len ‖ pin`, the current PIN (spec/APDU.md, CLEAR_PIN; D15).
+ * Applet 0.5 and later only: send it only when `CardInfo.clearPin` is true,
+ * since an older build answers 6D00. The applet requires VERIFY_PIN in the
+ * same session (6982 otherwise, and always on a blocked card, which no
+ * session can verify) and checks the PIN again itself, so the caller verifies
+ * first and the PIN travels twice in one tap. A wrong PIN here costs a try
+ * (63CX) and ends the session's verification; 6986 is a card locked by
+ * LOCK_CARD. On 9000 the card is as SET_PIN found it: pinState 0, a fresh try
+ * counter, every gated command open to whoever holds the card. The state
+ * byte is written atomically, so a tap cut short here leaves the PIN set or
+ * removed, never half of either: VERIFY_PIN answers 6984 once it is gone.
+ */
+export async function clearCardPin(transceive: Transceiver, pin: string): Promise<void> {
+  const bytes = pinBytes(pin, "CLEAR_PIN")
+  await send(transceive, INS.CLEAR_PIN, {
+    data: [bytes.length, ...bytes],
+    context: "CLEAR_PIN",
   })
 }
 

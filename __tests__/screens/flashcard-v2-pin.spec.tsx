@@ -125,6 +125,7 @@ const reread = (pinState: CardInfo["pinState"]): CardInfo => ({
   empty: 24,
   secp256k1Native: true,
   schnorr: true,
+  clearPin: false,
   pinState,
 })
 

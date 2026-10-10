@@ -244,7 +244,23 @@ export type FakeCard = {
   ins: () => number[]
   /** The nonces held in unspent slots, in slot order. */
   unspentNonces: () => string[]
+  /** The PIN the card holds, or undefined once cleared (or never set). */
+  pin: () => string | undefined
+  /** Whether the session has verified the PIN (VERIFY_PIN 9000, nothing failed since). */
+  verified: () => boolean
+  /** Tries left before the PIN blocks. */
+  triesLeft: () => number
 }
+
+export type FakeCardOptions = {
+  /** A PIN the card ships with; none by default. */
+  pin?: string
+  /** Advertise and answer CLEAR_PIN (applet 0.5); a 0.4 card answers it 6D00. */
+  clearPin?: boolean
+}
+
+/** The applet's PIN try limit. */
+const PIN_TRIES = 3
 
 /**
  * A card answering GET_SLOT_STATUS, GET_PROOF, LOAD_PROOF and CLEAR_SPENT as
@@ -252,14 +268,91 @@ export type FakeCard = {
  * nothing, so the same proof can be loaded twice. The app never sends
  * CLEAR_SPENT; the card answers it anyway, as a real one would, so the specs
  * that it is never sent (`ins()`) check the APDUs, not a missing handler.
+ *
+ * GET_INFO, VERIFY_PIN and CLEAR_PIN follow spec/APDU.md (applet 0.5 for
+ * CLEAR_PIN, D15): VERIFY_PIN answers 6984 with no PIN, 6983 once blocked,
+ * 63CX on a wrong one and blocks on the third; CLEAR_PIN needs a verified
+ * session (6982), checks the PIN again with VERIFY_PIN's failure handling
+ * and ends the verification on a wrong one, refuses a bad length (6700), and
+ * on 9000 leaves the card with no PIN and a fresh try counter. The slot
+ * commands are not PIN-gated here. Without `clearPin` the card is a 0.4
+ * build: capability bit 3 clear and 6D00 to 0x43.
  */
-export const createFakeCard = (maxSlots = 32): FakeCard => {
+export const createFakeCard = (
+  maxSlots = 32,
+  { pin: initialPin, clearPin = false }: FakeCardOptions = {},
+): FakeCard => {
   const slots: number[][] = Array.from({ length: maxSlots }, () =>
     new Array(PROOF_SIZE).fill(0),
   )
+  let pin = initialPin
+  let verified = false
+  let tries = PIN_TRIES
+  let blocked = false
+  const pinOf = (bytes: number[]) => String.fromCharCode(...bytes)
+  /** A PIN check that failed: a try spent, the session's verification over. */
+  const wrongPin = () => {
+    verified = false
+    tries -= 1
+    if (tries === 0) {
+      blocked = true
+      return [0x69, 0x83]
+    }
+    return [0x63, 0xc0 + tries]
+  }
   const transceive = jest.fn(async (apdu: number[]) => {
     const [, ins, p1] = apdu
     switch (ins) {
+      case 0x01: {
+        const counts = slots.reduce(
+          (n, slot) => {
+            n[slot[0]] += 1
+            return n
+          },
+          [0, 0, 0],
+        )
+        const caps = 0x07 + (clearPin ? 0x08 : 0)
+        const pinState = blocked ? 2 : pin === undefined ? 0 : 1
+        return [
+          0,
+          clearPin ? 5 : 4,
+          maxSlots,
+          counts[1],
+          counts[2],
+          counts[0],
+          caps,
+          pinState,
+          ...SW_OK,
+        ]
+      }
+      case 0x40: {
+        if (pin === undefined) return [0x69, 0x84]
+        if (blocked) return [0x69, 0x83]
+        if (pinOf(apdu.slice(5, 5 + apdu[4])) !== pin) return wrongPin()
+        verified = true
+        tries = PIN_TRIES
+        return SW_OK
+      }
+      case 0x43: {
+        if (!clearPin) return [0x6d, 0x00]
+        if (!verified || blocked || pin === undefined) return [0x69, 0x82]
+        const lc = apdu[4]
+        const len = apdu[5]
+        if (
+          lc === undefined ||
+          len === undefined ||
+          len < 4 ||
+          len > 8 ||
+          lc !== len + 1
+        ) {
+          return [0x67, 0x00]
+        }
+        if (pinOf(apdu.slice(6, 6 + len)) !== pin) return wrongPin()
+        pin = undefined
+        verified = false
+        tries = PIN_TRIES
+        return SW_OK
+      }
       case 0x14:
         return [...slots.map((slot) => slot[0]), ...SW_OK]
       case 0x13:
@@ -291,6 +384,9 @@ export const createFakeCard = (maxSlots = 32): FakeCard => {
     ins: () => transceive.mock.calls.map(([apdu]) => apdu[1]),
     unspentNonces: () =>
       slots.filter((slot) => slot[0] === 1).map((slot) => toHex(slot.slice(13, 45))),
+    pin: () => pin,
+    verified: () => verified,
+    triesLeft: () => tries,
   }
 }
 

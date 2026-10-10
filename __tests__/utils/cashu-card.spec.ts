@@ -41,7 +41,9 @@ import {
   triesLeft,
   setCardPin,
   changeCardPin,
+  clearCardPin,
 } from "../../app/utils/cashu-card"
+import { createFakeCard } from "../helpers/fake-cashu"
 
 // SELECT is Case-4: the trailing 0x00 Le is load-bearing on iOS, where a
 // Case-3 SELECT makes CoreNFC send no Le and the applet version comes back
@@ -360,6 +362,7 @@ describe("GET_INFO", () => {
       empty: 24,
       secp256k1Native: true,
       schnorr: true,
+      clearPin: false,
       pinState: "set",
     })
   })
@@ -380,6 +383,20 @@ describe("GET_INFO", () => {
     const info = parseInfo([0, 2, 32, 0, 0, 32, 0x02, 0])
     expect(info.secp256k1Native).toBe(false)
     expect(info.schnorr).toBe(true)
+    expect(info.clearPin).toBe(false)
+  })
+
+  // spec/APDU.md GET_INFO, capability bit 3: CLEAR_PIN (0x43) is answered,
+  // applet 0.5 and later. The bit alone decides; the version says nothing.
+  it("decodes the CLEAR_PIN capability (bit 3) on its own, whatever the version", () => {
+    const withBit = parseInfo([0, 4, 32, 0, 0, 32, 0x08, 1])
+    expect(withBit.clearPin).toBe(true)
+    expect(withBit.secp256k1Native).toBe(false)
+    expect(withBit.schnorr).toBe(false)
+    expect(parseInfo([0, 5, 32, 0, 0, 32, 0x0f, 1]).clearPin).toBe(true)
+    expect(parseInfo([0, 5, 32, 0, 0, 32, 0x07, 1]).clearPin).toBe(false)
+    // Reserved bits 4-7 never read as the capability.
+    expect(parseInfo([0, 5, 32, 0, 0, 32, 0xf7, 1]).clearPin).toBe(false)
   })
 
   it("rejects a short info block rather than reading undefined bytes", () => {
@@ -957,6 +974,7 @@ describe("readCashuCard", () => {
       empty: 24,
       secp256k1Native: true,
       schnorr: true,
+      clearPin: false,
       pinState: "set",
       pubkey: hex(PUBKEY),
       balance: 500,
@@ -1276,5 +1294,136 @@ describe("CHANGE_PIN", () => {
     await expect(
       changeCardPin(echoCard([0x63, 0xc1]).transceive, "1234", "5678"),
     ).rejects.toThrow("CHANGE_PIN failed: wrong PIN, 1 tries left (0x63C1)")
+  })
+})
+
+describe("CLEAR_PIN (ENG-633, applet 0.5)", () => {
+  it("sends len ‖ pin as ASCII with Lc one more than the PIN, no Le", async () => {
+    const card = scriptedCard([
+      [[0xb0, 0x43, 0x00, 0x00, 0x05, 0x04, 0x31, 0x32, 0x33, 0x34], ok([])],
+    ])
+    await expect(clearCardPin(card.transceive, "1234")).resolves.toBeUndefined()
+    expect(card.sent[0][1]).toBe(INS.CLEAR_PIN)
+  })
+
+  it("sends an eight-digit PIN, the applet's longest", async () => {
+    const card = scriptedCard([
+      [
+        [
+          0xb0, 0x43, 0x00, 0x00, 0x09, 0x08, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+          0x38,
+        ],
+        ok([]),
+      ],
+    ])
+    await expect(clearCardPin(card.transceive, "12345678")).resolves.toBeUndefined()
+  })
+
+  it("refuses an invalid PIN before anything reaches the card", async () => {
+    const card = echoCard(ok([]))
+    await expect(clearCardPin(card.transceive, "12")).rejects.toThrow(CardProtocolError)
+    await expect(clearCardPin(card.transceive, "١٢٣٤")).rejects.toThrow(CardProtocolError)
+    expect(card.sent).toEqual([])
+  })
+
+  it("never echoes the PIN in the refusal", async () => {
+    const card = echoCard(ok([]))
+    const error = await clearCardPin(card.transceive, "98x7").catch((e) => e)
+    expect(error.message).not.toContain("98x7")
+  })
+
+  // Every status word spec/APDU.md lists for CLEAR_PIN, plus the 6D00 a 0.4
+  // build answers: each reaches the caller as the card said it, named.
+  const refusals: [number[], number, string][] = [
+    [[0x69, 0x82], 0x6982, "CLEAR_PIN failed: PIN required (0x6982)"],
+    [[0x63, 0xc1], 0x63c1, "CLEAR_PIN failed: wrong PIN, 1 tries left (0x63C1)"],
+    [[0x69, 0x83], 0x6983, "CLEAR_PIN failed: PIN blocked (0x6983)"],
+    [[0x69, 0x86], 0x6986, "CLEAR_PIN failed: card is locked against writes (0x6986)"],
+    [[0x67, 0x00], 0x6700, "CLEAR_PIN failed: wrong length (0x6700)"],
+    [[0x6d, 0x00], 0x6d00, "CLEAR_PIN failed: unsupported command (0x6D00)"],
+  ]
+  refusals.forEach(([response, sw, message]) => {
+    it(`surfaces ${sw.toString(16).toUpperCase()} as the card reports it`, async () => {
+      const error = await clearCardPin(echoCard(response).transceive, "1234").catch(
+        (e) => e,
+      )
+      expect(error).toBeInstanceOf(CardError)
+      expect(error).toMatchObject({ sw, context: "CLEAR_PIN" })
+      expect(error.message).toBe(message)
+    })
+  })
+
+  describe("against a card that follows the spec", () => {
+    const info = async (card: ReturnType<typeof createFakeCard>) =>
+      getInfo(card.transceive)
+
+    it("after VERIFY_PIN in the same session, removes the PIN: GET_INFO then reads unset, with the capability still set", async () => {
+      const card = createFakeCard(32, { pin: "1234", clearPin: true })
+      expect(await info(card)).toMatchObject({ pinState: "set", clearPin: true })
+
+      await verifyCardPin(card.transceive, "1234")
+      await expect(clearCardPin(card.transceive, "1234")).resolves.toBeUndefined()
+
+      expect(card.pin()).toBeUndefined()
+      expect(card.triesLeft()).toBe(3)
+      expect(await info(card)).toMatchObject({ pinState: "unset", clearPin: true })
+      // The PIN is gone: VERIFY_PIN says so, and SET_PIN's slot is open.
+      await expect(verifyCardPin(card.transceive, "1234")).rejects.toMatchObject({
+        sw: 0x6984,
+      })
+      expect(card.ins()).toEqual([0x01, 0x40, 0x43, 0x01, 0x40])
+    })
+
+    it("is refused without a verified session, and the PIN stays", async () => {
+      const card = createFakeCard(32, { pin: "1234", clearPin: true })
+      await expect(clearCardPin(card.transceive, "1234")).rejects.toMatchObject({
+        sw: 0x6982,
+      })
+      expect(card.pin()).toBe("1234")
+    })
+
+    it("a wrong PIN costs a try and ends the session's verification, so the next CLEAR_PIN is refused even with the right PIN", async () => {
+      const card = createFakeCard(32, { pin: "1234", clearPin: true })
+      await verifyCardPin(card.transceive, "1234")
+      await expect(clearCardPin(card.transceive, "1111")).rejects.toMatchObject({
+        sw: 0x63c2,
+      })
+      expect(card.triesLeft()).toBe(2)
+      expect(card.verified()).toBe(false)
+      await expect(clearCardPin(card.transceive, "1234")).rejects.toMatchObject({
+        sw: 0x6982,
+      })
+      expect(card.pin()).toBe("1234")
+      // VERIFY_PIN again restores the session and the counter; then it clears.
+      await verifyCardPin(card.transceive, "1234")
+      expect(card.triesLeft()).toBe(3)
+      await expect(clearCardPin(card.transceive, "1234")).resolves.toBeUndefined()
+      expect(card.pin()).toBeUndefined()
+    })
+
+    it("a blocked PIN cannot be cleared: no session verifies it, so CLEAR_PIN answers 6982 with the right PIN", async () => {
+      const card = createFakeCard(32, { pin: "1234", clearPin: true })
+      for (const sw of [0x63c2, 0x63c1, 0x6983]) {
+        await expect(verifyCardPin(card.transceive, "0000")).rejects.toMatchObject({ sw })
+      }
+      expect(await info(card)).toMatchObject({ pinState: "blocked" })
+      await expect(verifyCardPin(card.transceive, "1234")).rejects.toMatchObject({
+        sw: 0x6983,
+      })
+      await expect(clearCardPin(card.transceive, "1234")).rejects.toMatchObject({
+        sw: 0x6982,
+      })
+      expect(card.pin()).toBe("1234")
+    })
+
+    it("a card without the capability (applet 0.4) answers 6D00, and GET_INFO never advertised it", async () => {
+      const card = createFakeCard(32, { pin: "1234" })
+      expect(await info(card)).toMatchObject({ pinState: "set", clearPin: false })
+      await verifyCardPin(card.transceive, "1234")
+      await expect(clearCardPin(card.transceive, "1234")).rejects.toMatchObject({
+        sw: 0x6d00,
+      })
+      expect(card.pin()).toBe("1234")
+    })
   })
 })

@@ -95,6 +95,7 @@ const card = (overrides: Partial<CashuCardState> = {}): CashuCardState => ({
   empty: 24,
   secp256k1Native: true,
   schnorr: true,
+  clearPin: false,
   pinState: "set",
   pubkey: PUBKEY,
   balance: 1500,
