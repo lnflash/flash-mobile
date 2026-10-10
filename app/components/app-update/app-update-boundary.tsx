@@ -13,6 +13,13 @@ import { AppUpdateGate, AppUpdateProvider } from "./app-update"
  * gate would draw over a block that has no dismiss. Keeping the gate inside this
  * component means a later edit to `app.tsx` cannot reorder it by accident.
  *
+ * Sibling order is not the whole story: a sibling with its own `zIndex` beats
+ * a later sibling without one. `GaloyToast` is such a sibling — it owns a
+ * full-screen layer with a zIndex so a top toast clears stack headers on iOS —
+ * so the gate wraps its modal in a layer of its own, one step higher. Both
+ * values live in `constants/layers.ts`; a toast must never paint over the
+ * hard block, which is why the gate renders its failures inline.
+ *
  * Second, `app.tsx` cannot be rendered under jest — it pulls in Firebase,
  * reanimated and a pile of native modules at import time — so the wiring is only
  * testable once it lives somewhere that can be mounted on its own.

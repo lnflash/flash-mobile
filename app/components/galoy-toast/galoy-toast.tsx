@@ -8,6 +8,8 @@ import Toast, {
   BaseToastProps,
 } from "react-native-toast-message"
 
+import { TOAST_LAYER_Z } from "@app/constants/layers"
+
 // Same palette the success/error presets above use inline (grandfathered);
 // new entries go through StyleSheet + named colors to satisfy lint.
 const warningAccentColor = "#ffb020"
@@ -24,7 +26,14 @@ const styles = StyleSheet.create({
   // Flashcard screen after Remove PIN: the title hid under the header. The
   // layer takes no touches itself (box-none), so the toast's own gestures
   // still work and taps fall through to the screen.
-  layer: { ...StyleSheet.absoluteFillObject, zIndex: 9999, elevation: 9999 },
+  //
+  // The forced-update gate (AppUpdateGate) owns a sibling layer one step above
+  // this one, so a toast never paints over a hard block — see constants/layers.
+  layer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: TOAST_LAYER_Z,
+    elevation: TOAST_LAYER_Z,
+  },
 })
 
 const toastConfig = {

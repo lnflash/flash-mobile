@@ -7,7 +7,7 @@
  */
 import * as React from "react"
 import { StyleSheet, Text } from "react-native"
-import { render, act } from "@testing-library/react-native"
+import { render, act, within } from "@testing-library/react-native"
 import Toast from "react-native-toast-message"
 import ErrorBoundary from "react-native-error-boundary"
 
@@ -19,6 +19,7 @@ jest.mock("@app/utils/analytics", () => ({
 }))
 
 import { GaloyToast } from "@app/components/galoy-toast"
+import { TOAST_LAYER_Z } from "@app/constants/layers"
 import { toastShow } from "@app/utils/toast"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 
@@ -74,7 +75,10 @@ describe("GaloyToast layer", () => {
     expect(style.bottom).toBe(0)
     expect(style.left).toBe(0)
     expect(style.right).toBe(0)
-    expect(style.zIndex).toBeGreaterThan(0)
+    // The shared constant, not just "positive": the forced-update gate stacks
+    // its own layer relative to this value (constants/layers.ts).
+    expect(style.zIndex).toBe(TOAST_LAYER_Z)
+    expect(style.elevation).toBe(TOAST_LAYER_Z)
   })
 
   it("still shows a top toast inside that layer", () => {
@@ -82,6 +86,9 @@ describe("GaloyToast layer", () => {
     act(() => {
       toastShow({ type: "success", position: "top", message: "PIN removed" })
     })
-    expect(screen.queryByText("PIN removed")).not.toBeNull()
+    // Scoped to the layer on purpose: a screen-wide query would still pass if
+    // the wrapper were deleted and the toast fell back to a plain sibling.
+    const layer = screen.getByTestId("toast-layer")
+    expect(within(layer).queryByText("PIN removed")).not.toBeNull()
   })
 })
