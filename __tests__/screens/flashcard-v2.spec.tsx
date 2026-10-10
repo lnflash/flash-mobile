@@ -869,6 +869,18 @@ describe("FlashcardV2Screen Remove PIN (CLEAR_PIN, applet 0.5)", () => {
     expect(remove).toBeLessThan(pinNotice)
   })
 
+  it("makes four actions: the row wraps, so a 360dp phone keeps its gutters instead of clipping the outer buttons", () => {
+    mockCashuCard = card({ version: "0.5", pinState: "set", clearPin: true })
+    renderScreen()
+
+    const row = screen.getByTestId("flashcard-v2-actions")
+    expect(row.props.children.filter(Boolean)).toHaveLength(4)
+    const style = StyleSheet.flatten(row.props.style)
+    expect(style.flexDirection).toBe("row")
+    expect(style.flexWrap).toBe("wrap")
+    expect(style.rowGap).toBeGreaterThan(0)
+  })
+
   it("is not offered on a card without the capability, whatever its version", () => {
     ;["0.2", "0.4", "0.5", "9.9"].forEach((version) => {
       mockCashuCard = card({ version, pinState: "set", clearPin: false })

@@ -32,6 +32,13 @@ type Step = "current" | "new" | "confirm" | "remove"
 
 type PinMode = RootStackParamList["FlashcardV2Pin"]["mode"]
 
+/** The steps of each flow, in order: the last one is the step the tap runs from. */
+const STEPS: Record<PinMode, Step[]> = {
+  set: ["new", "confirm"],
+  change: ["current", "new", "confirm"],
+  remove: ["current", "remove"],
+}
+
 type LLType = ReturnType<typeof useI18nContext>["LL"]
 
 /** A status word as the log shows it, e.g. "6F00". */
@@ -127,11 +134,7 @@ export const FlashcardV2PinScreen = () => {
   // Whether this card answers CLEAR_PIN: the set-PIN warning says so.
   const removable = cashuCard?.clearPin ?? false
 
-  const steps: Step[] = {
-    set: ["new", "confirm"] as Step[],
-    change: ["current", "new", "confirm"] as Step[],
-    remove: ["current", "remove"] as Step[],
-  }[params.mode]
+  const steps = STEPS[params.mode]
   // The step the tap runs from: a failure that keeps the PINs returns here.
   const lastStep = steps.length - 1
   const [stepIndex, setStepIndex] = useState(0)
@@ -318,7 +321,8 @@ export const FlashcardV2PinScreen = () => {
     current: LL.FlashcardV2.currentPin(),
     new: LL.FlashcardV2.newPin(),
     confirm: LL.FlashcardV2.confirmPin(),
-    remove: LL.FlashcardV2.removePinTitle(),
+    // Its own words: the navigator header above already says "Remove card PIN".
+    remove: LL.FlashcardV2.removePinStep(),
   }[step]
   // The remove step takes no digits: it says what a card with no PIN is and
   // carries the one button that taps.

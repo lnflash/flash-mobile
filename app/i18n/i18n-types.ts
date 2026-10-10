@@ -427,6 +427,10 @@ type RootTranslation = {
 		 */
 		removePinTitle: string
 		/**
+		 * R​e​m​o​v​e​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​?
+		 */
+		removePinStep: string
+		/**
 		 * C​u​r​r​e​n​t​ ​P​I​N
 		 */
 		currentPin: string
@@ -7791,6 +7795,10 @@ export type TranslationFunctions = {
 		 * Remove card PIN
 		 */
 		removePinTitle: () => LocalizedString
+		/**
+		 * Remove this card's PIN?
+		 */
+		removePinStep: () => LocalizedString
 		/**
 		 * Current PIN
 		 */

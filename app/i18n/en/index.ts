@@ -123,6 +123,7 @@ const en: BaseTranslation = {
     setPinTitle: "Set card PIN",
     changePinTitle: "Change card PIN",
     removePinTitle: "Remove card PIN",
+    removePinStep: "Remove this card's PIN?",
     currentPin: "Current PIN",
     newPin: "New PIN",
     confirmPin: "Confirm new PIN",

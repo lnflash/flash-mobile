@@ -131,7 +131,7 @@ export const FlashcardV2Screen = () => {
       </Text>
 
       {isAuthed && (
-        <View style={styles.btns}>
+        <View style={styles.btns} testID="flashcard-v2-actions">
           {/* Only a PIN state the app can read gets a PIN action: a blocked
               PIN has no way back (ENG-617), and an unknown one is a card this
               app does not understand (see the notice below). */}
@@ -541,6 +541,10 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   btns: {
     flexDirection: "row",
+    // Four actions (Top up, Change PIN, Remove PIN, Remove card) are 384pt
+    // at IconBtn's 96pt each: wider than a 360dp phone, so a fourth wraps.
+    flexWrap: "wrap",
+    rowGap: 8,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 16,

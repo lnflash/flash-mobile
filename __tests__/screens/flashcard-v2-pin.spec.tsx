@@ -18,6 +18,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 import { createTheme, ThemeProvider } from "@rneui/themed"
 
 import type { CardOperationOptions } from "../../app/contexts/Flashcard"
+import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import appTheme from "../../app/rne-theme/theme"
 import { FlashcardV2PinScreen } from "../../app/screens/card-screen/flashcard-v2-pin"
@@ -863,7 +864,7 @@ describe("FlashcardV2PinScreen remove (ENG-633: CLEAR_PIN, applet 0.5)", () => {
     expect(title()).toBe("Current PIN")
     type(current)
     next()
-    expect(title()).toBe("Remove card PIN")
+    expect(title()).toBe("Remove this card's PIN?")
   }
 
   /** Presses Remove PIN: the tap. */
@@ -872,6 +873,16 @@ describe("FlashcardV2PinScreen remove (ENG-633: CLEAR_PIN, applet 0.5)", () => {
       fireEvent.press(screen.getByText("Remove PIN"))
     })
   }
+
+  it('heads the confirmation step in its own words, not the navigator header\'s "Remove card PIN" stacked twice', () => {
+    enterCurrent()
+
+    const LL = i18nObject("en")
+    const stepHeading = title()
+    expect(stepHeading).toBe(LL.FlashcardV2.removePinStep())
+    // The header above the screen (root-navigator.tsx) shows removePinTitle.
+    expect(stepHeading).not.toBe(LL.FlashcardV2.removePinTitle())
+  })
 
   it("asks the current PIN, then says plainly what a card with no PIN is before the tap", () => {
     enterCurrent()
@@ -980,7 +991,7 @@ describe("FlashcardV2PinScreen remove (ENG-633: CLEAR_PIN, applet 0.5)", () => {
     await waitFor(() => expect(pinError()).toBe(CLEAR_UNCERTAIN))
     expect(sent).toEqual([VERIFY_1234, CLEAR_1234])
     // Back at the confirmation, the current PIN still standing.
-    expect(title()).toBe("Remove card PIN")
+    expect(title()).toBe("Remove this card's PIN?")
     expect(screen.getByText("Remove PIN")).toBeTruthy()
     expect(mockGoBack).not.toHaveBeenCalled()
     expect(mockToast).not.toHaveBeenCalled()
@@ -1065,7 +1076,7 @@ describe("FlashcardV2PinScreen remove (ENG-633: CLEAR_PIN, applet 0.5)", () => {
 
     await waitFor(() => expect(capturedOp).toBeDefined())
     expect(screen.queryByTestId("pin-error")).toBeNull()
-    expect(title()).toBe("Remove card PIN")
+    expect(title()).toBe("Remove this card's PIN?")
     expect(mockGoBack).not.toHaveBeenCalled()
 
     // The current PIN was kept: the next tap sends it.
@@ -1087,7 +1098,7 @@ describe("FlashcardV2PinScreen remove (ENG-633: CLEAR_PIN, applet 0.5)", () => {
       enterCurrent()
       await removeNow()
       await waitFor(() => expect(screen.getByTestId("pin-error")).toBeTruthy())
-      expect(title()).toBe("Remove card PIN")
+      expect(title()).toBe("Remove this card's PIN?")
       expect(mockGoBack).not.toHaveBeenCalled()
       screen.unmount()
     }
