@@ -6,6 +6,10 @@
  * blocked PIN does depends on the card's firmware (ENG-615), and the copy
  * says which. A tap that fails before any PIN reaches the card keeps the PINs
  * typed, and a tap lost after SET_PIN went out is settled by the next one.
+ *
+ * ENG-633: the same screen removes the PIN on a card that answers CLEAR_PIN
+ * (applet 0.5): the current PIN, a confirmation that says what a card with no
+ * PIN is, then VERIFY then CLEAR in one tap.
  */
 import * as React from "react"
 import { AccessibilityInfo } from "react-native"
@@ -14,6 +18,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 import { createTheme, ThemeProvider } from "@rneui/themed"
 
 import type { CardOperationOptions } from "../../app/contexts/Flashcard"
+import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import appTheme from "../../app/rne-theme/theme"
 import { FlashcardV2PinScreen } from "../../app/screens/card-screen/flashcard-v2-pin"
@@ -24,6 +29,7 @@ import {
   WrongCardError,
   Transceiver,
 } from "../../app/utils/cashu-card"
+import { createFakeCard } from "../helpers/fake-cashu"
 
 loadLocale("en")
 
@@ -34,8 +40,10 @@ const mockToast = jest.fn()
 // switches the PIN check off (false). No shipped version freezes yet, so the
 // freezing branch is reached through the mock.
 let mockBlockFreezes = false
-let mockMode: "set" | "change" = "change"
+let mockMode: "set" | "change" | "remove" = "change"
 let mockPinState: "unset" | "set" = "set"
+// Whether the card on screen answers CLEAR_PIN (GET_INFO capability bit 3).
+let mockClearPin = false
 // Captures the operation the screen hands the provider, so a spec can run it
 // against a scripted card and see the exact APDUs.
 let capturedOp: ((t: Transceiver) => Promise<void>) | undefined
@@ -69,7 +77,13 @@ jest.mock("@app/utils/toast", () => ({
 }))
 jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
-    cashuCard: { pubkey: PUBKEY, pinState: mockPinState, balance: 0, version: "0.2" },
+    cashuCard: {
+      pubkey: PUBKEY,
+      pinState: mockPinState,
+      balance: 0,
+      version: "0.2",
+      clearPin: mockClearPin,
+    },
     runCardOperation: async (
       op: (t: Transceiver) => Promise<void>,
       pubkey: string,
@@ -125,6 +139,7 @@ const reread = (pinState: CardInfo["pinState"]): CardInfo => ({
   empty: 24,
   secp256k1Native: true,
   schnorr: true,
+  clearPin: false,
   pinState,
 })
 
@@ -134,8 +149,10 @@ const CHANGE_1234_5678 = [
 ]
 const SET_2468 = [0xb0, 0x41, 0x00, 0x00, 0x04, 0x32, 0x34, 0x36, 0x38]
 const SET_5678 = [0xb0, 0x41, 0x00, 0x00, 0x04, 0x35, 0x36, 0x37, 0x38]
+const CLEAR_1234 = [0xb0, 0x43, 0x00, 0x00, 0x05, 0x04, 0x31, 0x32, 0x33, 0x34]
 const INS_SET_PIN = 0x41
 const INS_CHANGE_PIN = 0x42
+const INS_CLEAR_PIN = 0x43
 const OK = [0x90, 0x00]
 const ALREADY_SET = [0x69, 0x85]
 
@@ -171,6 +188,26 @@ const CHANGE_UNCERTAIN =
   "The tap was cut short while the card was saving the new PIN. It may already use the new PIN: try the new one first."
 const ALREADY_HAS_PIN = "This card already has a PIN. Change it instead."
 
+/**
+ * The last-try outcome ends the flow on this screen: the whole message in
+ * the status area (a toast would cut it at two lines), no pad to type on, and
+ * the card screen only once the holder presses Close.
+ */
+const expectFlowEnded = async (message: string) => {
+  await waitFor(() => expect(pinError()).toBe(message))
+  expect(mockToast).not.toHaveBeenCalled()
+  expect(screen.queryByTestId("pin-1")).toBeNull()
+  expect(screen.queryByText("Continue")).toBeNull()
+  expect(mockGoBack).not.toHaveBeenCalled()
+  fireEvent.press(screen.getByText("Close"))
+  expect(mockGoBack).toHaveBeenCalledTimes(1)
+}
+
+const FROZEN =
+  "The PIN has been entered wrong too many times. The card is blocked and must be replaced."
+const OPEN =
+  "The PIN has been entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. Move the value off it."
+
 describe("FlashcardV2PinScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -181,6 +218,7 @@ describe("FlashcardV2PinScreen", () => {
     mockMode = "change"
     mockPinState = "set"
     mockBlockFreezes = false
+    mockClearPin = false
   })
 
   it("change: asks current, new, confirm, then verifies and changes in one tap", async () => {
@@ -294,26 +332,6 @@ describe("FlashcardV2PinScreen", () => {
       next()
     })
   }
-
-  /**
-   * The last-try outcome ends the flow on this screen: the whole message in
-   * the status area (a toast would cut it at two lines), no pad to type on, and
-   * the card screen only once the holder presses Close.
-   */
-  const expectFlowEnded = async (message: string) => {
-    await waitFor(() => expect(pinError()).toBe(message))
-    expect(mockToast).not.toHaveBeenCalled()
-    expect(screen.queryByTestId("pin-1")).toBeNull()
-    expect(screen.queryByText("Continue")).toBeNull()
-    expect(mockGoBack).not.toHaveBeenCalled()
-    fireEvent.press(screen.getByText("Close"))
-    expect(mockGoBack).toHaveBeenCalledTimes(1)
-  }
-
-  const FROZEN =
-    "The PIN has been entered wrong too many times. The card is blocked and must be replaced."
-  const OPEN =
-    "The PIN has been entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. Move the value off it."
 
   const firmwares = [
     {
@@ -779,5 +797,326 @@ describe("FlashcardV2PinScreen", () => {
     // TalkBack reads the status area as it changes; VoiceOver is told.
     expect(screen.getByTestId("pin-status").props.accessibilityLiveRegion).toBe("polite")
     expect(announce).toHaveBeenCalledWith(error.props.children)
+  })
+})
+
+// ENG-633: a card that answers CLEAR_PIN can have its PIN taken off again,
+// so "never removed" would be false on it. The capability decides, and the
+// firmware's blocked-PIN behaviour is still said alongside.
+describe("FlashcardV2PinScreen set: on a card whose PIN can be removed (CLEAR_PIN), the warning says so", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    capturedOp = undefined
+    capturedPubkey = undefined
+    capturedOptions = undefined
+    mockRunResult = async () => {}
+    mockBlockFreezes = false
+    mockMode = "set"
+    mockPinState = "unset"
+    mockClearPin = true
+  })
+
+  it("and still says three wrong entries switch the PIN check off on v0.2.0", () => {
+    renderScreen()
+    expect(screen.getByText(/changed or removed on this card/)).toBeTruthy()
+    expect(screen.getByText(/switch the PIN check off/)).toBeTruthy()
+    expect(screen.queryByText(/never removed/)).toBeNull()
+    expect(screen.queryByText(/block the card for good/)).toBeNull()
+  })
+
+  it("and still says three wrong entries block the card on firmware that freezes it", () => {
+    mockBlockFreezes = true
+    renderScreen()
+    expect(screen.getByText(/changed or removed on this card/)).toBeTruthy()
+    expect(screen.getByText(/block the card for good/)).toBeTruthy()
+    expect(screen.queryByText(/never removed/)).toBeNull()
+    expect(screen.queryByText(/switch the PIN check off/)).toBeNull()
+  })
+})
+
+describe("FlashcardV2PinScreen remove (ENG-633: CLEAR_PIN, applet 0.5)", () => {
+  const REMOVED =
+    "PIN removed. Anyone holding this card can now spend from it or load it."
+  const REMOVED_EARLIER =
+    "PIN removed. The card removed it during the tap that was cut short."
+  const CLEAR_UNCERTAIN =
+    "The tap was cut short while the card was removing the PIN. Tap the card again to finish: if the PIN is already gone, the card says so."
+  const NO_PIN = "This card has no PIN to remove."
+  const LOCKED_REMOVE =
+    "This card is locked against changes, so its PIN can't be removed."
+  const BEARER = "Anyone holding this card can spend from it or load it."
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    capturedOp = undefined
+    capturedPubkey = undefined
+    capturedOptions = undefined
+    mockRunResult = async () => {}
+    mockBlockFreezes = false
+    mockMode = "remove"
+    mockPinState = "set"
+    mockClearPin = true
+  })
+
+  /** Types the current PIN and reaches the confirmation step. */
+  const enterCurrent = (current = "1234") => {
+    renderScreen()
+    expect(title()).toBe("Current PIN")
+    type(current)
+    next()
+    expect(title()).toBe("Remove this card's PIN?")
+  }
+
+  /** Presses Remove PIN: the tap. */
+  const removeNow = async () => {
+    await act(async () => {
+      fireEvent.press(screen.getByText("Remove PIN"))
+    })
+  }
+
+  it('heads the confirmation step in its own words, not the navigator header\'s "Remove card PIN" stacked twice', () => {
+    enterCurrent()
+
+    const LL = i18nObject("en")
+    const stepHeading = title()
+    expect(stepHeading).toBe(LL.FlashcardV2.removePinStep())
+    // The header above the screen (root-navigator.tsx) shows removePinTitle.
+    expect(stepHeading).not.toBe(LL.FlashcardV2.removePinTitle())
+  })
+
+  it("asks the current PIN, then says plainly what a card with no PIN is before the tap", () => {
+    enterCurrent()
+
+    expect(screen.getByTestId("pin-remove-confirm")).toBeTruthy()
+    expect(screen.getByText(BEARER)).toBeTruthy()
+    expect(screen.getByText(/The card will stop asking for a PIN/)).toBeTruthy()
+    expect(
+      screen.getByText("Hold the card to the back of your phone to apply"),
+    ).toBeTruthy()
+    // No digits to type here: one button, and nothing has reached a card.
+    expect(screen.queryByTestId("pin-1")).toBeNull()
+    expect(screen.queryByText("Continue")).toBeNull()
+    expect(screen.getByText("Remove PIN")).toBeTruthy()
+    expect(capturedOp).toBeUndefined()
+  })
+
+  it("verifies then clears in one tap, assumes no PIN if the re-read is lost, and says the card is now a bearer card", async () => {
+    enterCurrent()
+    await removeNow()
+
+    await waitFor(() => expect(capturedOp).toBeDefined())
+    expect(capturedPubkey).toBe(PUBKEY)
+    // A 9000 to CLEAR_PIN proves the PIN is gone even if the re-read is lost.
+    expect(capturedOptions?.assume).toEqual({ pinState: "unset" })
+    const sent = await runCapturedOp()
+    expect(sent).toEqual([VERIFY_1234, CLEAR_1234])
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "success", message: REMOVED }),
+    )
+    expect(announce).toHaveBeenCalledWith(REMOVED)
+    expect(JSON.stringify(mockToast.mock.calls)).not.toContain("1234")
+  })
+
+  it("against a card that follows the spec: VERIFY_PIN then CLEAR_PIN, and the card is left with no PIN", async () => {
+    const card = createFakeCard(32, { pin: "1234", clearPin: true })
+    mockRunResult = async (op) => {
+      await op(card.transceive)
+    }
+    enterCurrent()
+    await removeNow()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(card.ins()).toEqual([0x40, 0x43])
+    expect(card.pin()).toBeUndefined()
+    expect(announce).toHaveBeenCalledWith(REMOVED)
+  })
+
+  it("a wrong current PIN says how many tries are left and asks for it again", async () => {
+    const card = createFakeCard(32, { pin: "1234", clearPin: true })
+    mockRunResult = async (op) => {
+      await op(card.transceive)
+    }
+    enterCurrent("1111")
+    await removeNow()
+
+    await waitFor(() =>
+      expect(pinError()).toBe(
+        "Wrong PIN. Tries left before the PIN check switches off: 2.",
+      ),
+    )
+    expect(title()).toBe("Current PIN")
+    // VERIFY_PIN refused it: CLEAR_PIN never went out, the PIN stays.
+    expect(card.ins()).toEqual([0x40])
+    expect(card.pin()).toBe("1234")
+    expect(card.triesLeft()).toBe(2)
+    expect(mockGoBack).not.toHaveBeenCalled()
+    expect(mockToast).not.toHaveBeenCalled()
+  })
+
+  it("on firmware that freezes a blocked card, a wrong PIN counts toward the block the same way", async () => {
+    mockBlockFreezes = true
+    mockRunResult = async () => {
+      throw new CardError(0x63c1, "VERIFY_PIN")
+    }
+    enterCurrent("1111")
+    await removeNow()
+
+    await waitFor(() =>
+      expect(pinError()).toBe("Wrong PIN. Tries left before the card blocks: 1."),
+    )
+    expect(title()).toBe("Current PIN")
+  })
+
+  it("a blocked PIN ends the flow: no session can verify it, so nothing can clear it", async () => {
+    mockRunResult = async (_op, options) => {
+      options?.onReread?.({ ...reread("blocked"), clearPin: true })
+      throw new CardError(0x6983, "VERIFY_PIN")
+    }
+    enterCurrent("1111")
+    await removeNow()
+
+    await expectFlowEnded(OPEN)
+  })
+
+  it("a tap lost once CLEAR_PIN went out keeps the PIN typed and says the card may already have none", async () => {
+    const sent: number[][] = []
+    mockRunResult = tapReaching((apdu) => {
+      if (apdu[1] === INS_CLEAR_PIN) throw new Error("Tag was lost")
+      return OK
+    }, sent)
+    enterCurrent()
+    await removeNow()
+
+    await waitFor(() => expect(pinError()).toBe(CLEAR_UNCERTAIN))
+    expect(sent).toEqual([VERIFY_1234, CLEAR_1234])
+    // Back at the confirmation, the current PIN still standing.
+    expect(title()).toBe("Remove this card's PIN?")
+    expect(screen.getByText("Remove PIN")).toBeTruthy()
+    expect(mockGoBack).not.toHaveBeenCalled()
+    expect(mockToast).not.toHaveBeenCalled()
+  })
+
+  it("after a cut-short CLEAR_PIN, a 6984 from VERIFY_PIN on the retry is the PIN removed: the earlier clear landed", async () => {
+    mockRunResult = cutShortAt(INS_CLEAR_PIN)
+    enterCurrent()
+    await removeNow()
+    await waitFor(() => expect(pinError()).toBe(CLEAR_UNCERTAIN))
+
+    const sent: number[][] = []
+    mockRunResult = answering(0x40, [0x69, 0x84], sent)
+    await removeNow()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(sent).toEqual([VERIFY_1234])
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "success", message: REMOVED_EARLIER }),
+    )
+    expect(announce).toHaveBeenCalledWith(REMOVED_EARLIER)
+    expect(capturedOptions?.assume).toEqual({ pinState: "unset" })
+  })
+
+  it("after a cut-short CLEAR_PIN, a retry the card accepts is a plain PIN removed", async () => {
+    mockRunResult = cutShortAt(INS_CLEAR_PIN)
+    enterCurrent()
+    await removeNow()
+    await waitFor(() => expect(pinError()).toBe(CLEAR_UNCERTAIN))
+
+    const sent: number[][] = []
+    mockRunResult = tapReaching(() => OK, sent)
+    await removeNow()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(sent).toEqual([VERIFY_1234, CLEAR_1234])
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "success", message: REMOVED }),
+    )
+  })
+
+  it("a 6984 with no cut-short tap before it is a card that has no PIN: the flow ends", async () => {
+    mockRunResult = async (_op, options) => {
+      options?.onReread?.({ ...reread("unset"), clearPin: true })
+      throw new CardError(0x6984, "VERIFY_PIN")
+    }
+    enterCurrent()
+    await removeNow()
+
+    await expectFlowEnded(NO_PIN)
+  })
+
+  it("a card locked against writes (6986) says the PIN can't be removed and starts over", async () => {
+    mockRunResult = async () => {
+      throw new CardError(0x6986, "CLEAR_PIN")
+    }
+    enterCurrent()
+    await removeNow()
+
+    await waitFor(() => expect(pinError()).toBe(LOCKED_REMOVE))
+    expect(title()).toBe("Current PIN")
+    expect(pinError()).not.toMatch(/0x|6986|failed/)
+  })
+
+  it("a tap lost during VERIFY_PIN, before CLEAR_PIN went out, asks for the current PIN again", async () => {
+    mockRunResult = cutShortAt(0x40)
+    enterCurrent()
+    await removeNow()
+
+    await waitFor(() =>
+      expect(pinError()).toBe("No Cashu card found. Hold the card steady and try again."),
+    )
+    expect(title()).toBe("Current PIN")
+  })
+
+  it("a cancelled sheet before any PIN reached the card is no error: the confirmation stays", async () => {
+    mockRunResult = async () => {
+      throw new NfcError.UserCancel()
+    }
+    enterCurrent()
+    await removeNow()
+
+    await waitFor(() => expect(capturedOp).toBeDefined())
+    expect(screen.queryByTestId("pin-error")).toBeNull()
+    expect(title()).toBe("Remove this card's PIN?")
+    expect(mockGoBack).not.toHaveBeenCalled()
+
+    // The current PIN was kept: the next tap sends it.
+    const sent: number[][] = []
+    mockRunResult = tapReaching(() => OK, sent)
+    await removeNow()
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(sent).toEqual([VERIFY_1234, CLEAR_1234])
+  })
+
+  it("a different card, or a tag without the applet, keeps the PIN typed", async () => {
+    for (const error of [
+      new WrongCardError("03ff"),
+      new AppletNotSelectedError(0x6a82, 0x6a82),
+    ]) {
+      mockRunResult = async () => {
+        throw error
+      }
+      enterCurrent()
+      await removeNow()
+      await waitFor(() => expect(screen.getByTestId("pin-error")).toBeTruthy())
+      expect(title()).toBe("Remove this card's PIN?")
+      expect(mockGoBack).not.toHaveBeenCalled()
+      screen.unmount()
+    }
+  })
+
+  it("an unexpected refusal's status word goes to the log, not the screen", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    mockRunResult = async () => {
+      throw new CardError(0x6d00, "CLEAR_PIN")
+    }
+    enterCurrent()
+    await removeNow()
+
+    await waitFor(() =>
+      expect(pinError()).toBe("The card refused the change. Try again."),
+    )
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/CLEAR_PIN.*CardError 6D00/))
+    expect(JSON.stringify(warn.mock.calls)).not.toMatch(/1234/)
+    warn.mockRestore()
   })
 })

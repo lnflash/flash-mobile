@@ -95,6 +95,7 @@ const card = (overrides: Partial<CashuCardState> = {}): CashuCardState => ({
   empty: 24,
   secp256k1Native: true,
   schnorr: true,
+  clearPin: false,
   pinState: "set",
   pubkey: PUBKEY,
   balance: 1500,
@@ -834,6 +835,76 @@ describe("FlashcardV2Screen", () => {
       expect(refresh.props.accessibilityRole).toBe("button")
       expect(refresh.props.accessibilityLabel).toBe(LL.CardScreen.readNfcCard())
     })
+  })
+})
+
+// ENG-633: CLEAR_PIN exists on applet 0.5 and later, advertised by GET_INFO
+// capability bit 3; a 0.4 build answers it 6D00. The bit decides, never
+// the version.
+describe("FlashcardV2Screen Remove PIN (CLEAR_PIN, applet 0.5)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockIsAuthed = true
+    mockIsFocused = true
+    mockBlockedPinGatesSpend = undefined
+    mockCashuCard = card()
+    mockUnfinishedTopUps = []
+  })
+
+  it("is offered on a card with a PIN that answers CLEAR_PIN, next to Change PIN, and opens the PIN screen in remove mode", () => {
+    mockCashuCard = card({ version: "0.5", pinState: "set", clearPin: true })
+    renderScreen()
+
+    expect(screen.getByText(LL.FlashcardV2.changePin())).toBeTruthy()
+    fireEvent.press(screen.getByText(LL.FlashcardV2.removePin()))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "remove" })
+
+    // With the other actions: under the balance, above the PIN notice.
+    const tree = JSON.stringify(screen.toJSON())
+    const balance = tree.indexOf(JSON.stringify(LL.FlashcardV2.onCardBalance()))
+    const remove = tree.indexOf(JSON.stringify(LL.FlashcardV2.removePin()))
+    const pinNotice = tree.indexOf('"flashcard-v2-pin-bypassable"')
+    expect(balance).toBeGreaterThan(-1)
+    expect(balance).toBeLessThan(remove)
+    expect(remove).toBeLessThan(pinNotice)
+  })
+
+  it("makes four actions: the row wraps, so a 360dp phone keeps its gutters instead of clipping the outer buttons", () => {
+    mockCashuCard = card({ version: "0.5", pinState: "set", clearPin: true })
+    renderScreen()
+
+    const row = screen.getByTestId("flashcard-v2-actions")
+    expect(row.props.children.filter(Boolean)).toHaveLength(4)
+    const style = StyleSheet.flatten(row.props.style)
+    expect(style.flexDirection).toBe("row")
+    expect(style.flexWrap).toBe("wrap")
+    expect(style.rowGap).toBeGreaterThan(0)
+  })
+
+  it("is not offered on a card without the capability, whatever its version", () => {
+    ;["0.2", "0.4", "0.5", "9.9"].forEach((version) => {
+      mockCashuCard = card({ version, pinState: "set", clearPin: false })
+      const { unmount } = renderScreen()
+      expect(screen.getByText(LL.FlashcardV2.changePin())).toBeTruthy()
+      expect(screen.queryByText(LL.FlashcardV2.removePin())).toBeNull()
+      unmount()
+    })
+  })
+
+  it("is not offered without a PIN to remove: unset, blocked (no session can verify it) or unknown", () => {
+    ;(["unset", "blocked", "unknown"] as const).forEach((pinState) => {
+      mockCashuCard = card({ version: "0.5", pinState, clearPin: true })
+      const { unmount } = renderScreen()
+      expect(screen.queryByText(LL.FlashcardV2.removePin())).toBeNull()
+      unmount()
+    })
+  })
+
+  it("is not offered when signed out", () => {
+    mockIsAuthed = false
+    mockCashuCard = card({ version: "0.5", pinState: "set", clearPin: true })
+    renderScreen()
+    expect(screen.queryByText(LL.FlashcardV2.removePin())).toBeNull()
   })
 })
 

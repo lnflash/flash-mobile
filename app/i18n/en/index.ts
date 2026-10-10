@@ -119,8 +119,11 @@ const en: BaseTranslation = {
       "This app can't read this card's PIN state. Update the app before relying on the card's PIN.",
     setPin: "Set\nPIN",
     changePin: "Change\nPIN",
+    removePin: "Remove\nPIN",
     setPinTitle: "Set card PIN",
     changePinTitle: "Change card PIN",
+    removePinTitle: "Remove card PIN",
+    removePinStep: "Remove this card's PIN?",
     currentPin: "Current PIN",
     newPin: "New PIN",
     confirmPin: "Confirm new PIN",
@@ -131,9 +134,22 @@ const en: BaseTranslation = {
       "Once set, a PIN can be changed but never removed. Three wrong entries block the card for good, so pick one you will remember.",
     setPinWarningOpen:
       "Once set, a PIN can be changed but never removed. Pick one you will remember: on this card's software, three wrong entries in a row switch the PIN check off.",
+    setPinWarningRemovable:
+      "A PIN can be changed or removed on this card, with the current PIN. Three wrong entries block the card for good, so pick one you will remember.",
+    setPinWarningRemovableOpen:
+      "A PIN can be changed or removed on this card, with the current PIN. Pick one you will remember: on this card's software, three wrong entries in a row switch the PIN check off.",
     tapToApply: "Hold the card to the back of your phone to apply",
     pinSet: "PIN set. The card now asks for it before it spends or loads.",
     pinChanged: "PIN changed.",
+    removePinBody:
+      "The card will stop asking for a PIN before it spends or loads. You can set a new one later.",
+    removePinConfirm: "Remove PIN",
+    removePinDone: "PIN removed. Anyone holding this card can now spend from it or load it.",
+    removePinDoneEarlier:
+      "PIN removed. The card removed it during the tap that was cut short.",
+    removePinUncertain:
+      "The tap was cut short while the card was removing the PIN. Tap the card again to finish: if the PIN is already gone, the card says so.",
+    pinAlreadyUnset: "This card has no PIN to remove.",
     wrongPin: "Wrong PIN. Tries left before the card blocks: {tries:number}.",
     wrongPinOpen:
       "Wrong PIN. Tries left before the PIN check switches off: {tries:number}.",
@@ -144,6 +160,7 @@ const en: BaseTranslation = {
     wrongCard: "That is a different card. Tap the card this screen is showing.",
     notCashuCard: "That isn't a Cashu card. Tap the card this screen is showing.",
     cardLocked: "This card is locked against changes, so its PIN can't be set or changed.",
+    cardLockedRemove: "This card is locked against changes, so its PIN can't be removed.",
     cardRefused: "The card refused the change. Try again.",
     pinChangeUncertain:
       "The tap was cut short while the card was saving the new PIN. It may already use the new PIN: try the new one first.",

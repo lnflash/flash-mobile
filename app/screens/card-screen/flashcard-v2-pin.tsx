@@ -19,6 +19,7 @@ import {
   WrongCardError,
   blockedPinGatesSpend,
   changeCardPin,
+  clearCardPin,
   isValidCardPin,
   setCardPin,
   triesLeft,
@@ -26,9 +27,17 @@ import {
 } from "@app/utils/cashu-card"
 import { toastShow } from "@app/utils/toast"
 
-type Step = "current" | "new" | "confirm"
+/** `remove` is the confirmation step of the remove flow: no digits, one button. */
+type Step = "current" | "new" | "confirm" | "remove"
 
 type PinMode = RootStackParamList["FlashcardV2Pin"]["mode"]
+
+/** The steps of each flow, in order: the last one is the step the tap runs from. */
+const STEPS: Record<PinMode, Step[]> = {
+  set: ["new", "confirm"],
+  change: ["current", "new", "confirm"],
+  remove: ["current", "remove"],
+}
 
 type LLType = ReturnType<typeof useI18nContext>["LL"]
 
@@ -37,6 +46,8 @@ const swHex = (sw: number) => sw.toString(16).toUpperCase().padStart(4, "0")
 
 /** SET_PIN's answer on a card that already has a PIN (spec/APDU.md, SET_PIN). */
 const SW_PIN_ALREADY_SET = 0x6985
+/** VERIFY_PIN's answer on a card with no PIN (spec/APDU.md, VERIFY_PIN). */
+const SW_NO_PIN_SET = 0x6984
 
 /** What one tap told the screen besides what it threw. Filled in while the tap runs. */
 type TapReport = {
@@ -46,8 +57,8 @@ type TapReport = {
    */
   pinSent: boolean
   /**
-   * SET_PIN or CHANGE_PIN reached the wire: a tap lost after this may or may
-   * not have left the new PIN on the card.
+   * SET_PIN, CHANGE_PIN or CLEAR_PIN reached the wire: a tap lost after this
+   * may or may not have left the new PIN state on the card.
    */
   pinWriteSent: boolean
   /**
@@ -55,6 +66,11 @@ type TapReport = {
    * the card saved that one before the earlier tap lost its answer.
    */
   earlierSetLanded: boolean
+  /**
+   * VERIFY_PIN answered 6984 (no PIN) after an earlier, cut-short CLEAR_PIN:
+   * the card removed the PIN before that tap lost its answer.
+   */
+  earlierClearLanded: boolean
   /** What GET_INFO said when the card was re-read after the operation. */
   after?: CardInfo
 }
@@ -73,15 +89,19 @@ type Failure = {
   keepPins?: boolean
   /** SET_PIN went out and its answer was lost: the card may already hold the new PIN. */
   setInDoubt?: boolean
+  /** CLEAR_PIN went out and its answer was lost: the card may already have no PIN. */
+  clearInDoubt?: boolean
 }
 
 /**
- * Set or change the Cashu card's PIN (ENG-616).
+ * Set, change or remove the Cashu card's PIN (ENG-616, ENG-633).
  *
  * The PINs live in this screen's state and nowhere else: not in the store,
  * not in a log. Everything the card does with them happens inside one tap at
- * the end — VERIFY_PIN then CHANGE_PIN in the same session, or SET_PIN alone
- * on a card that has none yet. Verifying first matters on v0.2.0 firmware:
+ * the end — VERIFY_PIN then CHANGE_PIN in the same session, VERIFY_PIN then
+ * CLEAR_PIN to remove it (applet 0.5, offered only on a card whose
+ * `clearPin` capability is set), or SET_PIN alone on a card that has none
+ * yet. Verifying first matters on v0.2.0 firmware:
  * CHANGE_PIN's own failed checks burn tries without ever marking the PIN
  * blocked, which would freeze the card for its owner too. A wrong current PIN
  * costs one of the card's three tries and the screen says how many are left.
@@ -97,7 +117,10 @@ type Failure = {
  * (CashuApplet.java@v0.2.0:538-539; 0.3: 574-575), so a tap lost after it went
  * out keeps the new PIN too, and says the card may already use it. Tapping
  * again with that PIN finishes the job either way: a card that already has it
- * answers 6985, which here means the earlier write landed.
+ * answers 6985, which here means the earlier write landed. CLEAR_PIN writes
+ * its one byte atomically, so a tap lost after it went out left the PIN set
+ * or gone: tapping again settles it, and a 6984 from VERIFY_PIN then means
+ * the earlier clear landed.
  */
 export const FlashcardV2PinScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -108,9 +131,12 @@ export const FlashcardV2PinScreen = () => {
   const { cashuCard, runCardOperation } = useFlashcard()
   // Whether three wrong entries freeze this card or switch its PIN off.
   const blockFreezes = cashuCard ? blockedPinGatesSpend(cashuCard.version) : false
+  // Whether this card answers CLEAR_PIN: the set-PIN warning says so.
+  const removable = cashuCard?.clearPin ?? false
 
-  const steps: Step[] =
-    params.mode === "set" ? ["new", "confirm"] : ["current", "new", "confirm"]
+  const steps = STEPS[params.mode]
+  // The step the tap runs from: a failure that keeps the PINs returns here.
+  const lastStep = steps.length - 1
   const [stepIndex, setStepIndex] = useState(0)
   const [entry, setEntry] = useState("")
   const [current, setCurrent] = useState("")
@@ -123,6 +149,8 @@ export const FlashcardV2PinScreen = () => {
   // Each PIN a cut-short tap sent with SET_PIN: the card may hold any one of
   // them. Kept only while this screen is open, like the PINs themselves.
   const [unansweredSetPins, setUnansweredSetPins] = useState<string[]>([])
+  // A cut-short tap sent CLEAR_PIN: the card may already have no PIN.
+  const [unansweredClear, setUnansweredClear] = useState(false)
 
   // iOS has no live regions (the status area below is one on Android), so an
   // error is read out as it appears.
@@ -131,7 +159,7 @@ export const FlashcardV2PinScreen = () => {
   }, [error])
 
   const step = steps[stepIndex]
-  const canContinue = isValidCardPin(entry) && !busy
+  const canContinue = step === "remove" ? !busy : isValidCardPin(entry) && !busy
 
   const onDigit = (d: string) => {
     setError(undefined)
@@ -139,6 +167,10 @@ export const FlashcardV2PinScreen = () => {
   }
 
   const advance = () => {
+    if (step === "remove") {
+      apply()
+      return
+    }
     if (step === "current") {
       setCurrent(entry)
     } else if (step === "new") {
@@ -171,6 +203,7 @@ export const FlashcardV2PinScreen = () => {
       pinSent: false,
       pinWriteSent: false,
       earlierSetLanded: false,
+      earlierClearLanded: false,
     }
     // When `next` is the only PIN a cut-short SET_PIN carried, a 6985 to it
     // means the card holds it: the card was read with no PIN, and nothing
@@ -200,6 +233,27 @@ export const FlashcardV2PinScreen = () => {
               }
               throw err
             }
+          } else if (params.mode === "remove") {
+            tap.pinSent = true
+            try {
+              await verifyCardPin(transceive, current)
+            } catch (err) {
+              // A 6984 here, after a tap cut short on CLEAR_PIN, means that
+              // clear landed: the card had a PIN when it was read, and
+              // nothing else on this screen removes one. Returning makes
+              // this tap a success, so the provider re-reads the card.
+              if (
+                err instanceof CardError &&
+                err.sw === SW_NO_PIN_SET &&
+                unansweredClear
+              ) {
+                tap.earlierClearLanded = true
+                return
+              }
+              throw err
+            }
+            tap.pinWriteSent = true
+            await clearCardPin(transceive, current)
           } else {
             tap.pinSent = true
             await verifyCardPin(transceive, current)
@@ -209,10 +263,11 @@ export const FlashcardV2PinScreen = () => {
         },
         cashuCard.pubkey,
         {
-          // A 9000 to either command, or the 6985 above, leaves the card
-          // with a PIN set, whether or not it stays in the field for the
-          // re-read.
-          assume: { pinState: "set" },
+          // A 9000 to SET_PIN or CHANGE_PIN, or the 6985 above, leaves the
+          // card with a PIN set; a 9000 to CLEAR_PIN, or the 6984 above,
+          // leaves it with none. Either way, whether or not the card stays
+          // in the field for the re-read.
+          assume: { pinState: params.mode === "remove" ? "unset" : "set" },
           onReread: (info) => {
             tap.after = info
           },
@@ -231,7 +286,7 @@ export const FlashcardV2PinScreen = () => {
       // lost answer like any other, below.
       if (err instanceof NfcError.UserCancel && !tap.pinSent) {
         setError(undefined)
-        setStepIndex(steps.indexOf("confirm"))
+        setStepIndex(lastStep)
         return
       }
       const failure = describeFailure(
@@ -251,11 +306,12 @@ export const FlashcardV2PinScreen = () => {
       if (failure.setInDoubt) {
         setUnansweredSetPins((pins) => (pins.includes(next) ? pins : [...pins, next]))
       }
+      if (failure.clearInDoubt) setUnansweredClear(true)
       setError(failure.message)
-      // The confirmation alone while the PINs typed still stand. Otherwise
-      // the first step: the current PIN was wrong, the card refused the PIN,
-      // or a lost answer leaves which PIN is current in doubt.
-      setStepIndex(failure.keepPins ? steps.indexOf("confirm") : 0)
+      // The last step alone while the PINs typed still stand. Otherwise the
+      // first step: the current PIN was wrong, the card refused the PIN, or
+      // a lost answer leaves which PIN is current in doubt.
+      setStepIndex(failure.keepPins ? lastStep : 0)
     } finally {
       setBusy(false)
     }
@@ -265,7 +321,12 @@ export const FlashcardV2PinScreen = () => {
     current: LL.FlashcardV2.currentPin(),
     new: LL.FlashcardV2.newPin(),
     confirm: LL.FlashcardV2.confirmPin(),
+    // Its own words: the navigator header above already says "Remove card PIN".
+    remove: LL.FlashcardV2.removePinStep(),
   }[step]
+  // The remove step takes no digits: it says what a card with no PIN is and
+  // carries the one button that taps.
+  const confirmingRemove = step === "remove" && !finished
 
   // Plain testIDs below: `testProps` would label each element with its id, so
   // a screen reader would say "pin-error" instead of the error.
@@ -275,7 +336,17 @@ export const FlashcardV2PinScreen = () => {
         <Text type="h02" testID="pin-step-title" accessibilityRole="header">
           {title}
         </Text>
-        {!finished && (
+        {confirmingRemove && (
+          <View style={styles.body} testID="pin-remove-confirm">
+            <Text type="p2" style={styles.bodyText}>
+              {LL.FlashcardV2.removePinBody()}
+            </Text>
+            <Text type="p2" bold style={styles.bodyText}>
+              {LL.FlashcardV2.noPinBody()}
+            </Text>
+          </View>
+        )}
+        {!finished && step !== "remove" && (
           <>
             <Text type="caption">{LL.FlashcardV2.pinLength()}</Text>
             <Text
@@ -300,17 +371,15 @@ export const FlashcardV2PinScreen = () => {
           )}
           {params.mode === "set" && step === "new" && !error && (
             <Text type="caption" style={styles.warning}>
-              {blockFreezes
-                ? LL.FlashcardV2.setPinWarning()
-                : LL.FlashcardV2.setPinWarningOpen()}
+              {setPinWarning(removable, blockFreezes, LL)}
             </Text>
           )}
-          {step === "confirm" && !error && (
+          {(step === "confirm" || step === "remove") && !error && (
             <Text type="caption">{LL.FlashcardV2.tapToApply()}</Text>
           )}
         </View>
       </View>
-      {!finished && (
+      {!finished && step !== "remove" && (
         <PinPad
           onDigit={onDigit}
           onBackspace={() => setEntry((e) => e.slice(0, -1))}
@@ -322,7 +391,11 @@ export const FlashcardV2PinScreen = () => {
           <PrimaryBtn label={LL.common.close()} onPress={() => navigation.goBack()} />
         ) : (
           <PrimaryBtn
-            label={LL.FlashcardV2.next()}
+            label={
+              step === "remove"
+                ? LL.FlashcardV2.removePinConfirm()
+                : LL.FlashcardV2.next()
+            }
             disabled={!canContinue}
             loading={busy}
             onPress={advance}
@@ -333,9 +406,31 @@ export const FlashcardV2PinScreen = () => {
   )
 }
 
+/**
+ * What the new-PIN step says a PIN commits the holder to, by what this card
+ * can do: whether its PIN can be removed again (CLEAR_PIN, applet 0.5: the
+ * capability, never the version) and what three wrong entries do to it
+ * (`blockedPinGatesSpend`).
+ */
+const setPinWarning = (removable: boolean, blockFreezes: boolean, LL: LLType): string => {
+  if (removable) {
+    return blockFreezes
+      ? LL.FlashcardV2.setPinWarningRemovable()
+      : LL.FlashcardV2.setPinWarningRemovableOpen()
+  }
+  return blockFreezes
+    ? LL.FlashcardV2.setPinWarning()
+    : LL.FlashcardV2.setPinWarningOpen()
+}
+
 /** What to tell the holder about a tap that worked. */
 const successMessage = (mode: PinMode, tap: TapReport, LL: LLType): string => {
   if (mode === "change") return LL.FlashcardV2.pinChanged()
+  if (mode === "remove") {
+    return tap.earlierClearLanded
+      ? LL.FlashcardV2.removePinDoneEarlier()
+      : LL.FlashcardV2.removePinDone()
+  }
   return tap.earlierSetLanded ? LL.FlashcardV2.pinSetEarlier() : LL.FlashcardV2.pinSet()
 }
 
@@ -387,10 +482,26 @@ const describeFailure = (
         return { message: blockedPinMessage(after, version, LL), final: true }
       case SW_PIN_ALREADY_SET:
         return { message: LL.FlashcardV2.pinAlreadySet() }
+      case SW_NO_PIN_SET:
+        // VERIFY_PIN on a card with no PIN. In the remove flow there is
+        // nothing left to do: the refusal's re-read has already shown the
+        // card screen a card with none. (With a cut-short CLEAR_PIN before
+        // it, the operation turned this into a success instead.)
+        if (mode === "remove") {
+          return { message: LL.FlashcardV2.pinAlreadyUnset(), final: true }
+        }
+        console.warn(`Cashu card refused ${err.context}: ${err.name} ${swHex(err.sw)}`)
+        return { message: LL.FlashcardV2.cardRefused() }
       case 0x6986:
-        // LOCK_CARD was run on this card: SET_PIN and CHANGE_PIN both refuse
-        // (CashuApplet.java@v0.2.0:530, 543).
-        return { message: LL.FlashcardV2.cardLocked() }
+        // LOCK_CARD was run on this card: SET_PIN, CHANGE_PIN and CLEAR_PIN
+        // all refuse (CashuApplet.java@v0.2.0:530, 543; spec/APDU.md,
+        // CLEAR_PIN).
+        return {
+          message:
+            mode === "remove"
+              ? LL.FlashcardV2.cardLockedRemove()
+              : LL.FlashcardV2.cardLocked(),
+        }
       default:
         console.warn(`Cashu card refused ${err.context}: ${err.name} ${swHex(err.sw)}`)
         return { message: LL.FlashcardV2.cardRefused() }
@@ -409,6 +520,17 @@ const describeFailure = (
         message: LL.FlashcardV2.pinSetUncertain(),
         keepPins: true,
         setInDoubt: true,
+      }
+    }
+    // CLEAR_PIN writes its one byte atomically (spec/APDU.md, CLEAR_PIN):
+    // the PIN is gone or it is not, and the current PIN typed is right
+    // either way. Tapping again settles it: 9000 removes it, and a 6984 from
+    // VERIFY_PIN says the earlier clear landed.
+    if (mode === "remove") {
+      return {
+        message: LL.FlashcardV2.removePinUncertain(),
+        keepPins: true,
+        clearInDoubt: true,
       }
     }
     // Once CHANGE_PIN was sent the card may have saved the new PIN before
@@ -463,6 +585,13 @@ const useStyles = makeStyles(({ colors }) => ({
   status: {
     alignItems: "center",
     gap: 8,
+  },
+  body: {
+    gap: 12,
+    marginVertical: 12,
+  },
+  bodyText: {
+    textAlign: "center",
   },
   error: {
     color: colors.error,

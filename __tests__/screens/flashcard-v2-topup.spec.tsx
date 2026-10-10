@@ -39,6 +39,7 @@ const card = (over: Partial<CashuCardState> = {}): CashuCardState => ({
   empty: 32,
   secp256k1Native: true,
   schnorr: true,
+  clearPin: false,
   pinState: "unset",
   balance: 0,
   keysets: [],
