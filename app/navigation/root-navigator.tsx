@@ -629,10 +629,11 @@ export const RootStack = () => {
         name="FlashcardV2Pin"
         component={FlashcardV2PinScreen}
         options={({ route }) => ({
-          title:
-            route.params.mode === "set"
-              ? LL.FlashcardV2.setPinTitle()
-              : LL.FlashcardV2.changePinTitle(),
+          title: {
+            set: LL.FlashcardV2.setPinTitle(),
+            change: LL.FlashcardV2.changePinTitle(),
+            remove: LL.FlashcardV2.removePinTitle(),
+          }[route.params.mode],
           headerStyle: { backgroundColor: colors.background },
         })}
       />

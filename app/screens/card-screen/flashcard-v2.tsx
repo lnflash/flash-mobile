@@ -159,6 +159,18 @@ export const FlashcardV2Screen = () => {
               }
             />
           )}
+          {/* Only a card that answers CLEAR_PIN (applet 0.5, GET_INFO
+              capability bit 3) gets Remove PIN: an older build answers it
+              with 6D00. Keyed on the capability, not the version, so a 0.4
+              card never sees it and a later card needs no list. */}
+          {cashuCard.pinState === "set" && cashuCard.clearPin && (
+            <IconBtn
+              type="clear"
+              icon="lockOpen"
+              label={LL.FlashcardV2.removePin()}
+              onPress={() => navigation.navigate("FlashcardV2Pin", { mode: "remove" })}
+            />
+          )}
           <IconBtn
             type="clear"
             icon="cardRemove"

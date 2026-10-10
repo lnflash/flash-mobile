@@ -141,7 +141,8 @@ export type RootStackParamList = {
    * Set (a card with no PIN yet) or change the Cashu card's PIN. Both end in
    * a tap; the PIN itself never leaves the screen's local state.
    */
-  FlashcardV2Pin: { mode: "set" | "change" }
+  /** `remove` only on a card whose `clearPin` capability is set (applet 0.5). */
+  FlashcardV2Pin: { mode: "set" | "change" | "remove" }
   /** A saved top-up to resume, or none to start one. */
   FlashcardV2TopUp: { topUpId?: string } | undefined
   Map: undefined

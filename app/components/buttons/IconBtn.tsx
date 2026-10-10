@@ -11,6 +11,7 @@ import Setting from "@app/assets/icons/setting.svg"
 import CardRemove from "@app/assets/icons/card-remove.svg"
 import Dollar from "@app/assets/icons/dollar-new.svg"
 import ArrowUpDown from "@app/assets/icons/arrow-up-down.svg"
+import LockOpen from "@app/assets/icons/lock-open.svg"
 
 const icons = {
   up: ArrowUp,
@@ -21,6 +22,7 @@ const icons = {
   cardRemove: CardRemove,
   dollar: Dollar,
   upDown: ArrowUpDown,
+  lockOpen: LockOpen,
 }
 
 type IconNamesType = keyof typeof icons
