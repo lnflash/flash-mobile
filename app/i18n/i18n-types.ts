@@ -410,6 +410,11 @@ type RootTranslation = {
 		 */
 		changePin: string
 		/**
+		 * R​e​m​o​v​e​
+	​P​I​N
+		 */
+		removePin: string
+		/**
 		 * S​e​t​ ​c​a​r​d​ ​P​I​N
 		 */
 		setPinTitle: string
@@ -417,6 +422,10 @@ type RootTranslation = {
 		 * C​h​a​n​g​e​ ​c​a​r​d​ ​P​I​N
 		 */
 		changePinTitle: string
+		/**
+		 * R​e​m​o​v​e​ ​c​a​r​d​ ​P​I​N
+		 */
+		removePinTitle: string
 		/**
 		 * C​u​r​r​e​n​t​ ​P​I​N
 		 */
@@ -450,6 +459,14 @@ type RootTranslation = {
 		 */
 		setPinWarningOpen: string
 		/**
+		 * A​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​o​r​ ​r​e​m​o​v​e​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​,​ ​w​i​t​h​ ​t​h​e​ ​c​u​r​r​e​n​t​ ​P​I​N​.​ ​T​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​b​l​o​c​k​ ​t​h​e​ ​c​a​r​d​ ​f​o​r​ ​g​o​o​d​,​ ​s​o​ ​p​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​.
+		 */
+		setPinWarningRemovable: string
+		/**
+		 * A​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​o​r​ ​r​e​m​o​v​e​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​,​ ​w​i​t​h​ ​t​h​e​ ​c​u​r​r​e​n​t​ ​P​I​N​.​ ​P​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​:​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​,​ ​t​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​i​n​ ​a​ ​r​o​w​ ​s​w​i​t​c​h​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​.
+		 */
+		setPinWarningRemovableOpen: string
+		/**
 		 * H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​t​h​e​ ​b​a​c​k​ ​o​f​ ​y​o​u​r​ ​p​h​o​n​e​ ​t​o​ ​a​p​p​l​y
 		 */
 		tapToApply: string
@@ -461,6 +478,30 @@ type RootTranslation = {
 		 * P​I​N​ ​c​h​a​n​g​e​d​.
 		 */
 		pinChanged: string
+		/**
+		 * T​h​e​ ​c​a​r​d​ ​w​i​l​l​ ​s​t​o​p​ ​a​s​k​i​n​g​ ​f​o​r​ ​a​ ​P​I​N​ ​b​e​f​o​r​e​ ​i​t​ ​s​p​e​n​d​s​ ​o​r​ ​l​o​a​d​s​.​ ​Y​o​u​ ​c​a​n​ ​s​e​t​ ​a​ ​n​e​w​ ​o​n​e​ ​l​a​t​e​r​.
+		 */
+		removePinBody: string
+		/**
+		 * R​e​m​o​v​e​ ​P​I​N
+		 */
+		removePinConfirm: string
+		/**
+		 * P​I​N​ ​r​e​m​o​v​e​d​.​ ​A​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​n​o​w​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​ ​o​r​ ​l​o​a​d​ ​i​t​.
+		 */
+		removePinDone: string
+		/**
+		 * P​I​N​ ​r​e​m​o​v​e​d​.​ ​T​h​e​ ​c​a​r​d​ ​r​e​m​o​v​e​d​ ​i​t​ ​d​u​r​i​n​g​ ​t​h​e​ ​t​a​p​ ​t​h​a​t​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​.
+		 */
+		removePinDoneEarlier: string
+		/**
+		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​r​e​m​o​v​i​n​g​ ​t​h​e​ ​P​I​N​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​:​ ​i​f​ ​t​h​e​ ​P​I​N​ ​i​s​ ​a​l​r​e​a​d​y​ ​g​o​n​e​,​ ​t​h​e​ ​c​a​r​d​ ​s​a​y​s​ ​s​o​.
+		 */
+		removePinUncertain: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​n​o​ ​P​I​N​ ​t​o​ ​r​e​m​o​v​e​.
+		 */
+		pinAlreadyUnset: string
 		/**
 		 * W​r​o​n​g​ ​P​I​N​.​ ​T​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​c​a​r​d​ ​b​l​o​c​k​s​:​ ​{​t​r​i​e​s​}​.
 		 * @param {number} tries
@@ -491,6 +532,10 @@ type RootTranslation = {
 		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​ ​a​g​a​i​n​s​t​ ​c​h​a​n​g​e​s​,​ ​s​o​ ​i​t​s​ ​P​I​N​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​ ​o​r​ ​c​h​a​n​g​e​d​.
 		 */
 		cardLocked: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​ ​a​g​a​i​n​s​t​ ​c​h​a​n​g​e​s​,​ ​s​o​ ​i​t​s​ ​P​I​N​ ​c​a​n​'​t​ ​b​e​ ​r​e​m​o​v​e​d​.
+		 */
+		cardLockedRemove: string
 		/**
 		 * T​h​e​ ​c​a​r​d​ ​r​e​f​u​s​e​d​ ​t​h​e​ ​c​h​a​n​g​e​.​ ​T​r​y​ ​a​g​a​i​n​.
 		 */
@@ -7730,6 +7775,11 @@ export type TranslationFunctions = {
 		 */
 		changePin: () => LocalizedString
 		/**
+		 * Remove
+	PIN
+		 */
+		removePin: () => LocalizedString
+		/**
 		 * Set card PIN
 		 */
 		setPinTitle: () => LocalizedString
@@ -7737,6 +7787,10 @@ export type TranslationFunctions = {
 		 * Change card PIN
 		 */
 		changePinTitle: () => LocalizedString
+		/**
+		 * Remove card PIN
+		 */
+		removePinTitle: () => LocalizedString
 		/**
 		 * Current PIN
 		 */
@@ -7770,6 +7824,14 @@ export type TranslationFunctions = {
 		 */
 		setPinWarningOpen: () => LocalizedString
 		/**
+		 * A PIN can be changed or removed on this card, with the current PIN. Three wrong entries block the card for good, so pick one you will remember.
+		 */
+		setPinWarningRemovable: () => LocalizedString
+		/**
+		 * A PIN can be changed or removed on this card, with the current PIN. Pick one you will remember: on this card's software, three wrong entries in a row switch the PIN check off.
+		 */
+		setPinWarningRemovableOpen: () => LocalizedString
+		/**
 		 * Hold the card to the back of your phone to apply
 		 */
 		tapToApply: () => LocalizedString
@@ -7781,6 +7843,30 @@ export type TranslationFunctions = {
 		 * PIN changed.
 		 */
 		pinChanged: () => LocalizedString
+		/**
+		 * The card will stop asking for a PIN before it spends or loads. You can set a new one later.
+		 */
+		removePinBody: () => LocalizedString
+		/**
+		 * Remove PIN
+		 */
+		removePinConfirm: () => LocalizedString
+		/**
+		 * PIN removed. Anyone holding this card can now spend from it or load it.
+		 */
+		removePinDone: () => LocalizedString
+		/**
+		 * PIN removed. The card removed it during the tap that was cut short.
+		 */
+		removePinDoneEarlier: () => LocalizedString
+		/**
+		 * The tap was cut short while the card was removing the PIN. Tap the card again to finish: if the PIN is already gone, the card says so.
+		 */
+		removePinUncertain: () => LocalizedString
+		/**
+		 * This card has no PIN to remove.
+		 */
+		pinAlreadyUnset: () => LocalizedString
 		/**
 		 * Wrong PIN. Tries left before the card blocks: {tries}.
 		 */
@@ -7809,6 +7895,10 @@ export type TranslationFunctions = {
 		 * This card is locked against changes, so its PIN can't be set or changed.
 		 */
 		cardLocked: () => LocalizedString
+		/**
+		 * This card is locked against changes, so its PIN can't be removed.
+		 */
+		cardLockedRemove: () => LocalizedString
 		/**
 		 * The card refused the change. Try again.
 		 */
