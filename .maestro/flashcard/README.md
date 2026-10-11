@@ -72,6 +72,19 @@ maestro test \
 
 The app must be a Debug build (so `__DEV__` holds) installed on a booted
 simulator. `FORCE_BUNDLING=1` embeds the JS bundle so it runs without Metro.
+Sign it ad hoc, as the workflow does; do not build it unsigned
+(`CODE_SIGNING_ALLOWED=NO`). An unsigned app has no Keychain on the simulator,
+and the top-up store lives there, so `topup` stops at "Couldn't set up the
+top-up with the mint" while every other flow passes:
+
+```sh
+FORCE_BUNDLING=1 xcodebuild -workspace ios/LNFlash.xcworkspace -scheme LNFlash \
+  -configuration Debug -sdk iphonesimulator -derivedDataPath build \
+  -destination 'platform=iOS Simulator,name=<booted simulator>' \
+  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+  build
+xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Flash.app
+```
 
 ## Prerequisites for CI (operator actions)
 

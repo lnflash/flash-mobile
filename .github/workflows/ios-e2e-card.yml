@@ -187,7 +187,11 @@ jobs:
           xcode-version: latest-stable
 
       # Debug, so __DEV__ holds and the dev card links work; FORCE_BUNDLING
-      # embeds the JS bundle, so the app runs without Metro.
+      # embeds the JS bundle, so the app runs without Metro. Signed ad hoc
+      # ("-", no team, no profile), not unsigned: an app built with
+      # CODE_SIGNING_ALLOWED=NO gets no Keychain on the simulator (securityd
+      # answers -34018), and the top-up store lives there, so `topup` fails at
+      # "Couldn't set up the top-up with the mint" before any mint request.
       - name: Build iOS (Debug, simulator, bundled)
         run: |
           set -o pipefail
@@ -198,8 +202,18 @@ jobs:
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
             build | xcpretty --color
+          # An unsigned app fails here, not 30 minutes later in `topup`: the
+          # simulator reads the app's entitlements from this section, which
+          # only a signed build has.
+          app=build/Build/Products/Debug-iphonesimulator/Flash.app
+          codesign --verify "$app"
+          if ! otool -l "$app/Flash" | grep -q "sectname __entitlements"; then
+            echo "::error::Flash.app has no simulated entitlements: the Keychain will refuse it"
+            exit 1
+          fi
 
       - name: Boot the simulator and install the app
         run: |
