@@ -1776,6 +1776,34 @@ describe("a top-up belongs to the mint that issued it", () => {
     expect((await deps.store.get(record.id))?.state).toBe("quoted")
   })
 
+  it("reads a mint URL spelled another way (case, trailing slash) as the same mint", async () => {
+    // Every production record holds the literal CASHU_MINT_URL. A cosmetic
+    // edit to it must not orphan the paid-but-unminted top-ups already saved.
+    const forge = {
+      ...createFakeMint({ now: () => clock }),
+      url: "https://forge.flashapp.me",
+    }
+    const forgeDeps = { ...deps, mint: forge }
+    const record = await prepareTopUp(forgeDeps, {
+      cardPubkey: CARD,
+      unit: "sat",
+      amount: 1000,
+      walletId: WALLET,
+      card: EMPTY_CARD,
+    })
+    expect(record.mintUrl).toBe("https://forge.flashapp.me")
+    pay.mockResolvedValueOnce({ kind: "pending" })
+    await payTopUp(forgeDeps, record.id)
+    forge.settle(record.quote.id)
+
+    const respelled = {
+      ...forgeDeps,
+      mint: { ...forge, url: "https://Forge.flashapp.me/" },
+    }
+    await expect(advanceTopUps(respelled)).resolves.toEqual({ waiting: 0 })
+    expect((await deps.store.get(record.id))?.state).toBe("minted")
+  })
+
   it("proofStatesForLoad never asks another mint about a top-up's proofs", async () => {
     const record = await minted()
     await deps.store.update(record.id, (r) => ({ ...r, loadStarted: true }))

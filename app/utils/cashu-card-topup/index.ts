@@ -39,6 +39,7 @@ export type {
   ReclaimVerdicts,
   TopUpDeps,
 } from "./engine"
+export { mintKey, sameMint } from "./mint-url"
 export { createMinterLoop } from "./minter"
 export type { MinterLoop, MinterLoopOptions } from "./minter"
 export { topUpAmountProblem } from "./amount-problem"

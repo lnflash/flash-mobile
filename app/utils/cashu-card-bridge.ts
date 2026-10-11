@@ -18,6 +18,7 @@
 import { CASHU_MINT_URL } from "@app/config/appinfo"
 
 import type { PayOutcome } from "./cashu-card-topup/engine"
+import { sameMint } from "./cashu-card-topup/mint-url"
 import { Transceiver, toHex } from "./cashu-card"
 import { CARD_TRANSCEIVE_TIMEOUT_MS } from "./cashu-card-nfc"
 
@@ -102,17 +103,36 @@ export const getCardBridge = (): CardBridgeConfig | undefined =>
 export const cardMintUrl = (): string => getCardBridge()?.mintUrl ?? CASHU_MINT_URL
 
 /**
- * `{kind: "paid"}` when the dev pay stub is on: a bridge with `stubPay` and
- * a dev mint that is not the production one. Undefined otherwise, and always
- * in a release build: the top-up then pays the mint's invoice for real.
+ * `{kind: "paid"}` when the dev pay stub is on FOR `mintUrl`, the mint the
+ * top-up being paid is bound to: a bridge with `stubPay` whose dev mint is
+ * that same mint, and not the production one. Bound to the record's mint,
+ * not to whatever the bridge says now, so a bridge set after a screen
+ * quoted the production mint never marks that quote paid. Undefined
+ * otherwise, and always in a release build: the top-up then pays the mint's
+ * invoice for real.
  */
-export const stubbedPayOutcome = (): PayOutcome | undefined => {
+export const stubbedPayOutcome = (mintUrl: string): PayOutcome | undefined => {
   const config = getCardBridge()
-  if (!config?.stubPay || !config.mintUrl || isProductionMint(config.mintUrl)) {
+  if (
+    !config?.stubPay ||
+    !config.mintUrl ||
+    !sameMint(config.mintUrl, mintUrl) ||
+    isProductionMint(mintUrl)
+  ) {
     return undefined
   }
   return { kind: "paid" }
 }
+
+/**
+ * Whether a top-up bound to `mintUrl` must not be paid for real: a dev mint
+ * the bridge no longer points at (the bridge was cleared or moved after the
+ * screen quoted it). Its invoice is a dev mint's, most likely a FakeWallet
+ * one, and nothing should leave the Cash wallet for it. Always false for the
+ * production mint, and so always false in a release build.
+ */
+export const isStaleDevMint = (mintUrl: string): boolean =>
+  !isProductionMint(mintUrl) && !sameMint(mintUrl, cardMintUrl())
 
 const fromHex = (hex: unknown): number[] => {
   if (typeof hex !== "string" || hex.length % 2 !== 0 || !/^[0-9a-fA-F]*$/.test(hex)) {

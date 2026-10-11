@@ -85,6 +85,8 @@ let beforeRemove: (() => void) | undefined
 const mockGoBack = jest.fn()
 const mockStoreGet = jest.fn()
 const mockStoreList = jest.fn()
+/** The mint the screen's deps were built against; undefined: the bridge's mint now. */
+let mockDepsMintUrl: string | undefined
 const mockNudge = jest.fn()
 const mockFeeFor = jest.fn()
 const mockCheckPin = jest.fn()
@@ -152,7 +154,15 @@ jest.mock("@app/hooks/use-display-currency", () => ({
 }))
 jest.mock("@app/hooks/use-card-top-up", () => ({
   useCardTopUp: () => ({
-    deps: { store: { get: mockStoreGet, list: mockStoreList } },
+    deps: {
+      store: { get: mockStoreGet, list: mockStoreList },
+      mint: {
+        url:
+          mockDepsMintUrl ??
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          require("../../app/utils/cashu-card-bridge").cardMintUrl(),
+      },
+    },
     feeFor: mockFeeFor,
     checkPin: mockCheckPin,
     load: mockLoad,
@@ -244,6 +254,7 @@ beforeEach(() => {
   mockParams = undefined
   mockUsdEnabled = false
   mockEntered = 1000
+  mockDepsMintUrl = undefined
   beforeRemove = undefined
   mockStoreList.mockResolvedValue([])
   mockFeeFor.mockResolvedValue(0)
@@ -1084,6 +1095,14 @@ describe("FlashcardV2TopUpScreen: the development pay stub (ENG-634)", () => {
     fireEvent.press(screen.getByTestId("amount-input"))
     expect(screen.getByTestId("topup-amount-problem-no-room")).toBeTruthy()
     expect(screen.queryByTestId("topup-amount-problem-over-balance")).toBeNull()
+  })
+
+  it("checks the balance when the screen quotes the production mint: a stub set after it mounted is not its own", async () => {
+    mockDepsMintUrl = "https://forge.flashapp.me"
+    mockEntered = 60_000
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(screen.getByTestId("topup-amount-problem-over-balance")).toBeTruthy()
   })
 
   it("a release build (__DEV__ false) checks the balance, whatever was set", async () => {

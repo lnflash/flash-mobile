@@ -391,14 +391,15 @@ export const FlashcardV2TopUpScreen = () => {
         ).amount
       : undefined
   // The development pay stub (ENG-634) skips the payment, so the Cash balance
-  // does not limit it; a release build has no stub and always checks.
+  // does not limit it; a release build has no stub and always checks. Judged
+  // against the mint this screen quotes at (`deps.mint`), as `pay` judges it.
   const amountProblemKind = topUpAmountProblem({
     amount: cardAmount,
     needed,
     freeSlots,
     cost,
     balance: cashWallet?.balance,
-    payStubbed: stubbedPayOutcome() !== undefined,
+    payStubbed: stubbedPayOutcome(deps.mint.url) !== undefined,
   })
   const amountProblem =
     amountProblemKind &&

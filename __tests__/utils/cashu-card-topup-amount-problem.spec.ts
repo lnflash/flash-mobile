@@ -76,7 +76,7 @@ describe("topUpAmountProblem", () => {
       mintUrl: "http://localhost:3338",
       stubPay: true,
     })
-    const payStubbed = () => stubbedPayOutcome() !== undefined
+    const payStubbed = () => stubbedPayOutcome("http://localhost:3338") !== undefined
     expect(topUpAmountProblem(check({ cost: 60_000, payStubbed: payStubbed() }))).toBe(
       undefined,
     )

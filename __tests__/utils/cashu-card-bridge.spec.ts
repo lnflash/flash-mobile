@@ -15,6 +15,7 @@ import {
   getCardBridge,
   isDevLink,
   isProductionMint,
+  isStaleDevMint,
   parseCardBridgeLink,
   setCardBridge,
   stubbedPayOutcome,
@@ -121,15 +122,43 @@ describe("isProductionMint", () => {
 describe("stubbedPayOutcome", () => {
   it("is paid only with the stub on and a dev mint set", () => {
     setCardBridge({ url: BRIDGE, mintUrl: MINT, stubPay: true })
-    expect(stubbedPayOutcome()).toEqual({ kind: "paid" })
+    expect(stubbedPayOutcome(MINT)).toEqual({ kind: "paid" })
   })
 
   it("is undefined with the stub off, with no bridge, or with no dev mint", () => {
-    expect(stubbedPayOutcome()).toBeUndefined()
+    expect(stubbedPayOutcome(MINT)).toBeUndefined()
     setCardBridge({ url: BRIDGE, mintUrl: MINT, stubPay: false })
-    expect(stubbedPayOutcome()).toBeUndefined()
+    expect(stubbedPayOutcome(MINT)).toBeUndefined()
     setCardBridge({ url: BRIDGE })
-    expect(stubbedPayOutcome()).toBeUndefined()
+    expect(stubbedPayOutcome(MINT)).toBeUndefined()
+  })
+
+  it("is bound to the top-up's mint: never paid for the production mint or another dev mint", () => {
+    setCardBridge({ url: BRIDGE, mintUrl: MINT, stubPay: true })
+    // A quote the production mint issued before the bridge was set.
+    expect(stubbedPayOutcome(CASHU_MINT_URL)).toBeUndefined()
+    expect(stubbedPayOutcome("https://Forge.flashapp.me/")).toBeUndefined()
+    // A quote another dev mint issued.
+    expect(stubbedPayOutcome("http://localhost:4448")).toBeUndefined()
+    // The same dev mint, spelled another way.
+    expect(stubbedPayOutcome(`${MINT}/`)).toEqual({ kind: "paid" })
+  })
+})
+
+describe("isStaleDevMint", () => {
+  it("is never true for the production mint, bridge or not", () => {
+    expect(isStaleDevMint(CASHU_MINT_URL)).toBe(false)
+    setCardBridge({ url: BRIDGE, mintUrl: MINT, stubPay: true })
+    expect(isStaleDevMint(CASHU_MINT_URL)).toBe(false)
+  })
+
+  it("is false for the bridge's own dev mint, true once the bridge lets go of it", () => {
+    setCardBridge({ url: BRIDGE, mintUrl: MINT, stubPay: true })
+    expect(isStaleDevMint(MINT)).toBe(false)
+    setCardBridge({ url: BRIDGE, mintUrl: "http://localhost:4448" })
+    expect(isStaleDevMint(MINT)).toBe(true)
+    setCardBridge(undefined)
+    expect(isStaleDevMint(MINT)).toBe(true)
   })
 })
 
@@ -139,7 +168,7 @@ describe("in a release build (__DEV__ false)", () => {
     setDev(false)
     expect(getCardBridge()).toBeUndefined()
     expect(cardMintUrl()).toBe(CASHU_MINT_URL)
-    expect(stubbedPayOutcome()).toBeUndefined()
+    expect(stubbedPayOutcome(MINT)).toBeUndefined()
     setCardBridge(undefined)
     setDev(true)
     // The release build's clear was a no-op too: the dev bridge is still here.

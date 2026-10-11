@@ -327,6 +327,34 @@ describe("useCardTopUp with a development build's card bridge (ENG-634)", () => 
     expect(mockSend).toHaveBeenCalledTimes(1)
   })
 
+  it("never stubs a production-mint quote when the stub bridge arrives after the screen mounted", async () => {
+    const { deps } = hook()
+    expect(deps.mint.url).toBe("https://forge.flashapp.me")
+    // A dev link sets the stub bridge while the screen is open: its quotes
+    // are still forge's, and forge's invoice is paid for real or not at all.
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT, stubPay: true })
+    answer(PaymentSendResult.Pending)
+    await expect(deps.pay(args())).resolves.toEqual({ kind: "pending" })
+    expect(mockSend).toHaveBeenCalledTimes(1)
+  })
+
+  it("never pays a dev mint's quote for real once the bridge is cleared after the screen mounted", async () => {
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT, stubPay: true })
+    const { deps } = hook()
+    expect(deps.mint.url).toBe(DEV_MINT)
+    setCardBridge(undefined)
+    await expect(deps.pay(args())).resolves.toMatchObject({ kind: "failed" })
+    expect(mockSend).not.toHaveBeenCalled()
+  })
+
+  it("never pays a dev mint's quote for real once the bridge moves to another dev mint", async () => {
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT })
+    const { deps } = hook()
+    setCardBridge({ url: BRIDGE, mintUrl: "http://localhost:4448", stubPay: true })
+    await expect(deps.pay(args())).resolves.toMatchObject({ kind: "failed" })
+    expect(mockSend).not.toHaveBeenCalled()
+  })
+
   it("keeps one mint client per mint, and a new one when the dev mint changes", () => {
     const forge = topUpMint()
     expect(forge.url).toBe("https://forge.flashapp.me")

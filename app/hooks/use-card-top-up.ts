@@ -17,7 +17,11 @@ import {
   isUnsupportedIdempotencyKeyError,
 } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 import { CashuCardInfo, verifyCardPin } from "@app/utils/cashu-card"
-import { cardMintUrl, stubbedPayOutcome } from "@app/utils/cashu-card-bridge"
+import {
+  cardMintUrl,
+  isStaleDevMint,
+  stubbedPayOutcome,
+} from "@app/utils/cashu-card-bridge"
 import {
   CardFreeDeps,
   PayOutcome,
@@ -74,7 +78,11 @@ export const topUpMint = (): TopUpMint => {
   return connectedMint
 }
 /** What the card-free steps need: the mint and the store, no wallet, no card. */
-const cardFreeDeps = (): CardFreeDeps => ({ mint: topUpMint(), store, now: Date.now })
+const cardFreeDeps = (mint: TopUpMint = topUpMint()): CardFreeDeps => ({
+  mint,
+  store,
+  now: Date.now,
+})
 
 /**
  * Error codes flash's lnInvoicePaymentSend returns only for a payment refused
@@ -151,16 +159,31 @@ export const useCardTopUp = () => {
   })
   const [lnUsdInvoiceFeeProbe] = useLnUsdInvoiceFeeProbeMutation()
 
-  const deps: TopUpDeps = useMemo(
-    () => ({
-      ...cardFreeDeps(),
+  const deps: TopUpDeps = useMemo(() => {
+    // The mint these deps quote, pay and mint at, fixed for the screen's
+    // life. The engine pays only a record bound to it (`ofThisMint`), so
+    // `pay` judges the dev stub against it, never the bridge's mint of the
+    // moment: a dev link arriving after the screen mounted cannot pair the
+    // stub with a production quote, nor turn a dev quote into a real payment.
+    const mint = topUpMint()
+    return {
+      ...cardFreeDeps(mint),
       newId: uuidv4,
       pay: async ({ walletId, paymentRequest, idempotencyKey }): Promise<PayOutcome> => {
         // Development builds only, against a dev mint that is never the
         // production one (ENG-634): a FakeWallet mint marks its own quote
         // paid, so nothing is sent. Undefined in a release build.
-        const stub = stubbedPayOutcome()
+        const stub = stubbedPayOutcome(mint.url)
         if (stub) return stub
+        // A dev mint the bridge has since let go of: its invoice is never
+        // paid from the Cash wallet. Refused before anything is sent, so
+        // nothing left the wallet. Never true for the production mint.
+        if (isStaleDevMint(mint.url)) {
+          return {
+            kind: "failed",
+            message: "the card bridge no longer points at this top-up's dev mint",
+          }
+        }
         let answer
         try {
           // Always with the key, never the send flow's keyless fallback: a
@@ -192,9 +215,8 @@ export const useCardTopUp = () => {
         }
         return readPaymentAnswer(answer)
       },
-    }),
-    [payInvoice, LL],
-  )
+    }
+  }, [payInvoice, LL])
 
   /** The Cash wallet's fee to pay the top-up's invoice, in cents; undefined if it cannot be probed. */
   const feeFor = async (record: TopUpRecord): Promise<number | undefined> => {

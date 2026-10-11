@@ -57,7 +57,7 @@ describeWithCardsim("top-up against cardsim and a FakeWallet mint", () => {
       store: createTopUpStore(),
       now: Date.now,
       newId: () => `cardsim-${Date.now()}-${(ids += 1)}`,
-      pay: async () => stubbedPayOutcome() ?? { kind: "unknown" },
+      pay: async () => stubbedPayOutcome(mintUrl) ?? { kind: "unknown" },
     }
     const verdicts = await reclaimVerdicts(deps, card.pubkey, card.spentSlots)
     const plan = reclaimPlan(card.spentSlots, verdicts)

@@ -32,6 +32,7 @@ import {
   randomBytes,
   splitPow2,
 } from "../cashu-card-outputs"
+import { sameMint } from "./mint-url"
 import { signMintQuote } from "./nut20"
 import type { ProofState, TopUpMint } from "./mint"
 import type { TopUpStore } from "./store"
@@ -205,9 +206,11 @@ const load = async (deps: Pick<TopUpDeps, "store">, id: string): Promise<TopUpRe
  * proofs exist only at the mint that issued them (`mintUrl`), and a
  * development build can point the card at another mint (`cardMintUrl` in
  * use-card-top-up), so a store can hold top-ups of two mints at once.
+ * Compared as mints, not strings (`sameMint`): a production record must
+ * never be orphaned by a cosmetic edit to `CASHU_MINT_URL`.
  */
 const ofThisMint = (record: TopUpRecord, mint: Pick<TopUpMint, "url">): boolean =>
-  record.mintUrl === mint.url
+  sameMint(record.mintUrl, mint.url)
 
 /**
  * `load`, refused for a top-up another mint issued: never asked about, paid,
