@@ -217,6 +217,35 @@ jobs:
       - name: Point Xcode's script phases at this job's node
         run: echo "export NODE_BINARY=$(command -v node)" > ios/.xcode.env.local
 
+      # The runner image varies: one had an iPhone 16, another had no simulator
+      # devices at all for its iOS runtime. Create our own: the newest
+      # available iOS runtime, then the newest plain `iPhone N` that runtime
+      # itself supports (picking them separately can pair a device the runtime
+      # rejects). Same recipe as flash-pos's card e2e job.
+      - name: Create a simulator
+        run: |
+          read -r RUNTIME DEVICE_TYPE < <(xcrun simctl list runtimes available -j | node -e '
+            const num = (a, b) => a.localeCompare(b, undefined, { numeric: true });
+            const r = JSON.parse(require("fs").readFileSync(0, "utf8")).runtimes
+              .filter(x => x.platform === "iOS" && x.isAvailable)
+              .sort((a, b) => num(a.version, b.version))
+              .at(-1);
+            const d = (r?.supportedDeviceTypes ?? [])
+              .filter(t => /^iPhone \d+$/.test(t.name))
+              .sort((a, b) => num(a.name, b.name))
+              .at(-1);
+            console.log(r?.identifier ?? "", d?.identifier ?? "");') || true
+          echo "runtime: ${RUNTIME:-<none>}"
+          echo "device type: ${DEVICE_TYPE:-<none>}"
+          if [ -z "$RUNTIME" ] || [ -z "$DEVICE_TYPE" ]; then
+            echo "::error::No available iOS runtime with a supported plain iPhone device type."
+            xcrun simctl list runtimes available
+            exit 1
+          fi
+          SIM=$(xcrun simctl create flashcard-e2e "$DEVICE_TYPE" "$RUNTIME")
+          echo "SIM_ID=$SIM" >> "$GITHUB_ENV"
+          echo "simulator $SIM ($DEVICE_TYPE, $RUNTIME)"
+
       # The raw xcodebuild output goes to a file (xcpretty drops the text a
       # failing script phase prints) and is uploaded when the job fails. The
       # build runs without the session token in its environment, so neither
@@ -230,7 +259,7 @@ jobs:
             -scheme LNFlash \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination "id=$SIM_ID" \
             -derivedDataPath build \
             CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
@@ -247,9 +276,9 @@ jobs:
 
       - name: Boot the simulator and install the app
         run: |
-          xcrun simctl boot "iPhone 16" || true
-          xcrun simctl bootstatus "iPhone 16" -b
-          xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Flash.app
+          xcrun simctl boot "$SIM_ID" || true
+          xcrun simctl bootstatus "$SIM_ID" -b
+          xcrun simctl install "$SIM_ID" build/Build/Products/Debug-iphonesimulator/Flash.app
 
       - name: Install Maestro
         run: |
