@@ -153,8 +153,14 @@ jobs:
               '{query: "mutation userLogin($input: UserLoginInput!) { userLogin(input: $input) { authToken errors { message } } }", variables: {input: {phone: $phone, code: $code}}}')
             # The hosted runner's connection to the Test instance drops now and then
             # (TLS SSL_ERROR_SYSCALL, connection reset): retry before failing an hour-long job.
-            token=$(curl -fsS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
-              -H "content-type: application/json" -d "$body" | jq -r '.data.userLogin.authToken // empty')
+            answer=$(curl -fsS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
+              -H "content-type: application/json" -d "$body")
+            token=$(echo "$answer" | jq -r '.data.userLogin.authToken // empty')
+            # Say why there is no token: the errors carry no secret (the token is the
+            # only secret in the answer, and there is none when they are set).
+            if [ -z "$token" ]; then
+              echo "::error::userLogin returned no token: $(echo "$answer" | jq -c '.errors // .data.userLogin.errors')"
+            fi
             # This run's own session: the revoke step below ends it.
             if [ -n "$token" ]; then echo "E2E_TOKEN_MINTED=1" >> "$GITHUB_ENV"; fi
           fi
