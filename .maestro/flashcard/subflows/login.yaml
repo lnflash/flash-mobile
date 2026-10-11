@@ -8,10 +8,10 @@ appId: com.lnflash
     clearKeychain: true
     permissions:
       all: deny
-# A cold start keeps the splash up until Remote Config's fetch settles
+# A cold start keeps the splash up until Remote Config's fetch settles or
+# REMOTE_CONFIG_GATE_MS (5 s) passes, whichever is first
 # (FeatureFlagContextProvider renders nothing before then for a signed-out
-# app). On a hosted runner that fetch can run to its 60 s HTTP timeout, so the
-# first screen can take longer than that to appear.
+# app). The 150 s timeout is a ceiling for a slow simulator boot, not the wait.
 - extendedWaitUntil:
     visible:
       id: get-started-logo

@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext, useEffect } from "react"
+import React, { useState, createContext, useContext, useEffect, useRef } from "react"
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import { useAppConfig } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
@@ -40,6 +40,14 @@ getRemoteConfig().setConfigSettings({
   minimumFetchIntervalMillis: 0,
 })
 
+// How long a signed-out cold start waits on Remote Config before showing the
+// app anyway. Past this, the app runs on the values already active: the
+// defaults above, or what a previous launch fetched and activated. The fetch
+// keeps going and updates the flags in-session when it lands. Without the
+// bound, a slow or dead network held the splash for the fetch's whole 60 s
+// HTTP timeout, or forever (ENG-634).
+export const REMOTE_CONFIG_GATE_MS = 5000
+
 export const FeatureFlagContext = createContext<FeatureFlags>(defaultFeatureFlags)
 
 export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
@@ -54,7 +62,14 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
     appConfig: { galoyInstance },
   } = useAppConfig()
 
+  const mounted = useRef(true)
+
   useEffect(() => {
+    mounted.current = true
+    const gate = setTimeout(() => {
+      if (mounted.current) setRemoteConfigReady(true)
+    }, REMOTE_CONFIG_GATE_MS)
+
     ;(async () => {
       try {
         await getRemoteConfig().fetchAndActivate()
@@ -67,6 +82,7 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
         const cashuCardUsdEnabled = getRemoteConfig()
           .getValue(CashuCardUsdEnabledKey)
           .asBoolean()
+        if (!mounted.current) return
         setRemoteConfig({
           deviceAccountEnabledRestAuth,
           bridgeTopupEnabled,
@@ -75,9 +91,15 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
       } catch (err) {
         console.error("Error fetching remote config: ", err)
       } finally {
-        setRemoteConfigReady(true)
+        clearTimeout(gate)
+        if (mounted.current) setRemoteConfigReady(true)
       }
     })()
+
+    return () => {
+      mounted.current = false
+      clearTimeout(gate)
+    }
   }, [])
 
   const featureFlags = {
