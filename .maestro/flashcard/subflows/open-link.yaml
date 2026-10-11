@@ -3,6 +3,11 @@
 appId: com.lnflash
 ---
 - openLink: ${LINK}
+# The prompt slides in a moment after the link is sent: a check made at once
+# misses it, and a prompt left up is a system alert that outlives the app and
+# covers every later flow (run 38177699648). Let it settle, then look.
+- waitForAnimationToEnd:
+    timeout: 3000
 - runFlow:
     when:
       visible: "Open in .Flash.\\?"

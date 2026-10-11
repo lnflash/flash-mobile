@@ -11,11 +11,21 @@ appId: com.lnflash
 # A cold start keeps the splash up until Remote Config's fetch settles or
 # REMOTE_CONFIG_GATE_MS (5 s) passes, whichever is first
 # (FeatureFlagContextProvider renders nothing before then for a signed-out
-# app). The 150 s timeout is a ceiling for a slow simulator boot, not the wait.
-- extendedWaitUntil:
-    visible:
-      id: get-started-logo
-    timeout: 150000
+# app). The 3 x 50 s below is a ceiling for a slow simulator boot, not the wait.
+# An "Open in “Flash”?" prompt left over from an earlier flow is a system
+# alert: it survives the relaunch and hides the app. Dismiss it while waiting.
+- retry:
+    maxRetries: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Open in .Flash.\\?"
+          commands:
+            - tapOn: "Cancel"
+      - extendedWaitUntil:
+          visible:
+            id: get-started-logo
+          timeout: 50000
 # Setting the bridge also hides LogBox, whose toasts cover the token field.
 - runFlow:
     file: open-link.yaml
@@ -28,6 +38,11 @@ appId: com.lnflash
 - retry:
     maxRetries: 3
     commands:
+      - runFlow:
+          when:
+            visible: "Open in .Flash.\\?"
+          commands:
+            - tapOn: "Open"
       - runFlow:
           when:
             visible:
