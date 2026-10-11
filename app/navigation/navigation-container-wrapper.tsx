@@ -11,6 +11,7 @@ import * as React from "react"
 import { useRef } from "react"
 import { Linking } from "react-native"
 import { useIsAuthed } from "../graphql/is-authed-context"
+import { isDevLink } from "../utils/cashu-card-bridge"
 import { RootStackParamList } from "./stack-param-lists"
 import { useTheme } from "@rneui/themed"
 
@@ -103,6 +104,11 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
       if (url && url.includes("invite")) {
         return null
       }
+      // Dev card links are handled by useDevCardLinks (ENG-634), never by a
+      // route: ":payment" would read one as a payment destination.
+      if (isDevLink(url)) {
+        return null
+      }
       if (Boolean(url) && isAuthed && !isAppLocked) {
         return url
       }
@@ -115,6 +121,10 @@ export const NavigationContainerWrapper: React.FC<React.PropsWithChildren> = ({
         console.log("onReceiveURL", { hasUrl: Boolean(url) })
         // Invite URLs are handled by InviteDeepLinkHandler, not the navigation container
         if (url && url.includes("invite")) {
+          return
+        }
+        // Dev card links are handled by useDevCardLinks (ENG-634).
+        if (isDevLink(url)) {
           return
         }
         listener(url)

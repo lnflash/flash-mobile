@@ -6,6 +6,8 @@ import { useBetaQuery, useLevelQuery } from "@app/graphql/generated"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { toastShow } from "@app/utils/toast"
+import { getCardBridge, setCardBridge } from "@app/utils/cashu-card-bridge"
+import { useTapFlashcard } from "@app/hooks/use-tap-flashcard"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { Button, Text, makeStyles } from "@rneui/themed"
@@ -18,6 +20,109 @@ import { addDeviceToken } from "../../utils/notifications"
 import { testProps } from "../../utils/testProps"
 
 const usingHermes = typeof HermesInternal === "object" && HermesInternal !== null
+
+/** The card fixtures `scripts/e2e/card-fixtures.ts serve` provisions on cardsim. */
+const CARD_FIXTURES = ["fresh", "loaded", "spent", "full", "blocked"] as const
+
+/**
+ * Development builds only (ENG-634): point the card flows at cardsim and a
+ * local mint, load a card fixture, and tap. The same controls the e2e flows
+ * reach by deep link (`flash://dev/card-bridge`, `flash://dev/card-tap`).
+ */
+const CardBridgeControls: React.FC = () => {
+  const styles = useStyles()
+  const tapFlashcard = useTapFlashcard()
+  const [bridgeUrl, setBridgeUrl] = React.useState("http://localhost:9876")
+  const [mintUrl, setMintUrl] = React.useState("http://localhost:3338")
+  const [fixturesUrl, setFixturesUrl] = React.useState("http://localhost:9877")
+  const [config, setConfig] = React.useState(getCardBridge())
+
+  const applyBridge = () => {
+    try {
+      setCardBridge({ url: bridgeUrl, mintUrl, stubPay: true })
+      setConfig(getCardBridge())
+    } catch (err) {
+      Alert.alert(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  const loadFixture = async (name: (typeof CARD_FIXTURES)[number]) => {
+    try {
+      const response = await fetch(`${fixturesUrl.replace(/\/+$/, "")}/load/${name}`, {
+        method: "POST",
+      })
+      toastShow({
+        message: `Fixture ${name}: ${response.ok ? "loaded" : response.status}`,
+        type: response.ok ? "success" : "error",
+      })
+    } catch (err) {
+      toastShow({ message: `Fixture ${name}: ${String(err)}`, type: "error" })
+    }
+  }
+
+  return (
+    <View>
+      <Text style={styles.textHeader}>Card bridge (cardsim)</Text>
+      <Text selectable {...testProps("Card bridge state")}>
+        Card bridge: {config ? `${config.url} mint ${config.mintUrl}` : "off (NFC)"}
+      </Text>
+      <GaloyInput
+        {...testProps("Card bridge URL")}
+        label="Card bridge URL"
+        autoCapitalize="none"
+        autoCorrect={false}
+        value={bridgeUrl}
+        onChangeText={setBridgeUrl}
+      />
+      <GaloyInput
+        {...testProps("Card mint URL")}
+        label="Card mint URL"
+        autoCapitalize="none"
+        autoCorrect={false}
+        value={mintUrl}
+        onChangeText={setMintUrl}
+      />
+      <GaloyInput
+        {...testProps("Card fixtures URL")}
+        label="Card fixtures URL"
+        autoCapitalize="none"
+        autoCorrect={false}
+        value={fixturesUrl}
+        onChangeText={setFixturesUrl}
+      />
+      <Button
+        title="Use card bridge"
+        containerStyle={styles.button}
+        onPress={applyBridge}
+        {...testProps("Use card bridge")}
+      />
+      <Button
+        title="Clear card bridge"
+        containerStyle={styles.button}
+        onPress={() => {
+          setCardBridge(undefined)
+          setConfig(getCardBridge())
+        }}
+        {...testProps("Clear card bridge")}
+      />
+      <Button
+        title="Tap card"
+        containerStyle={styles.button}
+        onPress={() => tapFlashcard()}
+        {...testProps("Tap card")}
+      />
+      {CARD_FIXTURES.map((name) => (
+        <Button
+          key={name}
+          title={`Fixture: ${name}`}
+          containerStyle={styles.button}
+          onPress={() => loadFixture(name)}
+          {...testProps(`Fixture ${name}`)}
+        />
+      ))}
+    </View>
+  )
+}
 
 export const DeveloperScreen: React.FC = () => {
   const styles = useStyles()
@@ -163,6 +268,7 @@ export const DeveloperScreen: React.FC = () => {
                 })
               }}
             />
+            <CardBridgeControls />
           </>
         )}
         <View>

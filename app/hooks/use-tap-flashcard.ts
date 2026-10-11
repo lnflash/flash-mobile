@@ -1,9 +1,11 @@
-import { useCallback } from "react"
+import { useCallback, useEffect, useRef } from "react"
+import { Linking } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 
 import type { FlashcardReadResult } from "@app/contexts/Flashcard"
 import type { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { parseCardBridgeLink, setCardBridge } from "@app/utils/cashu-card-bridge"
 
 import { useFlashcard } from "./useFlashcard"
 
@@ -61,4 +63,44 @@ export const useOpenFlashcard = (): (() => Promise<void>) => {
       await tapFlashcard()
     }
   }, [lnurl, cashuCard, navigation, tapFlashcard])
+}
+
+/**
+ * Development builds only (ENG-634): acts on the dev card links the e2e flows
+ * open, at launch and while running, signed in or not.
+ * `flash://dev/card-bridge?...` sets or clears the simulated card
+ * (`setCardBridge`); `flash://dev/card-tap` asks for a tap as the card
+ * controls do, which with a bridge set reads cardsim and opens FlashcardV2.
+ * The navigation container ignores these links (`isDevLink`). Mounted once,
+ * inside FlashcardProvider and the navigation container (RootStack). Does
+ * nothing in a release build: `parseCardBridgeLink` answers undefined there.
+ */
+export const useDevCardLinks = (): void => {
+  const tapFlashcard = useTapFlashcard()
+  // The listener is added once; it always calls the latest tap.
+  const tap = useRef(tapFlashcard)
+  tap.current = tapFlashcard
+  useEffect(() => {
+    if (!__DEV__) return undefined
+    const handle = (url: string | null) => {
+      const link = url ? parseCardBridgeLink(url) : undefined
+      if (!link) return
+      if (link.kind === "tap") {
+        tap
+          .current()
+          .catch((err) =>
+            console.warn("dev card tap failed:", err instanceof Error ? err.name : err),
+          )
+        return
+      }
+      try {
+        setCardBridge(link.config)
+      } catch (err) {
+        console.warn("dev card bridge refused:", err instanceof Error ? err.message : err)
+      }
+    }
+    Linking.getInitialURL().then(handle, () => undefined)
+    const subscription = Linking.addEventListener("url", ({ url }) => handle(url))
+    return () => subscription.remove()
+  }, [])
 }
