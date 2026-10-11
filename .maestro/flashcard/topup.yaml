@@ -1,8 +1,9 @@
 # A top-up of a card with two spent slots the mint holds SPENT: the load tap
 # frees them (CLEAR_SPENT, ENG-631) and loads the new proofs. The dev pay stub
 # stands in for the Cash wallet's payment (a FakeWallet mint marks its own
-# quote paid); the amount check against the Cash balance stays real, so the
-# signed-in account needs a little Cash (README.md).
+# quote paid), and with it on the Cash balance does not limit the amount, so
+# the flow needs no funded account. A release build always checks the balance
+# (topUpAmountProblem, and its spec).
 appId: com.lnflash
 name: Flashcard top-up with reclaim
 tags: [flashcard]
@@ -27,11 +28,14 @@ tags: [flashcard]
     id: "Key 1"
 - tapOn:
     id: amount-input-set
-# Refused here when the signed-in account's Cash cannot cover the amount: the
-# Test account needs a little Cash (README.md, prerequisites).
+# The card has room once the spent slots are reclaimed, and the stub lifts
+# the balance check: no refusal of any kind.
 - assertNotVisible:
-    id: topup-amount-problem
-    label: The Test account's Cash balance covers the top-up
+    id: topup-amount-problem-no-room
+- assertNotVisible:
+    id: topup-amount-problem-over-balance
+- assertNotVisible:
+    id: topup-amount-problem-too-much
 - tapOn:
     id: topup-next
 - extendedWaitUntil:

@@ -22,8 +22,12 @@ tags: [flashcard]
     id: "Key 1"
 - tapOn:
     id: amount-input-set
+# The no-room reason, not just any refusal: the Test account's Cash balance
+# would refuse it too without the pay stub, and that must not pass for this.
 - assertVisible:
-    id: topup-amount-problem
+    id: topup-amount-problem-no-room
+- assertNotVisible:
+    id: topup-amount-problem-over-balance
 - assertVisible:
     id: topup-next
     enabled: false

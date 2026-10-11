@@ -17,6 +17,19 @@ on:
       - "app/hooks/use-card-top-up.ts"
       - "app/hooks/use-tap-flashcard.ts"
       - "app/screens/card-screen/**"
+      # What the flows tap and type into on the way to the card screens: a
+      # renamed testID here breaks them as surely as one in card-screen/.
+      - "app/components/card/PinPad.tsx"
+      - "app/components/buttons/**"
+      - "app/components/amount-input/**"
+      - "app/components/amount-input-screen/**"
+      - "app/components/currency-keyboard/**"
+      - "app/utils/testProps.ts"
+      # The dev-link wiring (useDevCardLinks mount, the linking guard) and the
+      # sign-in path (logo taps, developer screen token field).
+      - "app/navigation/**"
+      - "app/screens/developer-screen/**"
+      - "app/screens/get-started-screen/**"
       - ".maestro/**"
       - "scripts/e2e/**"
       - ".github/workflows/ios-e2e-card.yml"
@@ -59,20 +72,22 @@ jobs:
         run: yarn install --frozen-lockfile
 
       # The card and the mint come up first: a broken stack fails in minutes,
-      # before the iOS build.
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: zulu
-          java-version: "17"
-          cache: maven
-
+      # before the iOS build. cashu-javacard is checked out before Java: the
+      # Maven cache keys on cardsim's pom.xml, and this workspace has none.
       - name: Checkout cashu-javacard (cardsim)
         uses: actions/checkout@v4
         with:
           repository: lnflash/cashu-javacard
           ref: ${{ env.CASHU_JAVACARD_REF }}
           path: .e2e/cashu-javacard
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: .e2e/cashu-javacard/tools/cardsim/pom.xml
 
       - name: Start the card bridge
         run: |
@@ -106,7 +121,7 @@ jobs:
           nohup node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve --port 9877 \
             --bridge "$BRIDGE_URL" --mint "$MINT_URL" > .e2e/fixtures.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS "$FIXTURES_URL/health" > /dev/null && break; sleep 1; done
-          for fixture in fresh loaded spent full blocked; do
+          for fixture in fresh loaded spent full blocked loaded-0.4; do
             curl -fsS -X POST "$FIXTURES_URL/load/$fixture"; echo
           done
 
@@ -120,7 +135,8 @@ jobs:
         run: yarn test __tests__/integration/card-topup-cardsim.spec.ts
 
       # The Test instance, never production, with the review account. Its
-      # session token is masked in the log.
+      # session token is masked in the log, kept out of the uploaded results,
+      # and, when this run minted it, revoked at the end of the job.
       - name: Sign in on the Test instance
         env:
           E2E_TOKEN_SECRET: ${{ secrets.E2E_TOKEN }}
@@ -137,6 +153,8 @@ jobs:
               '{query: "mutation userLogin($input: UserLoginInput!) { userLogin(input: $input) { authToken errors { message } } }", variables: {input: {phone: $phone, code: $code}}}')
             token=$(curl -fsS https://api.test.flashapp.me/graphql \
               -H "content-type: application/json" -d "$body" | jq -r '.data.userLogin.authToken // empty')
+            # This run's own session: the revoke step below ends it.
+            if [ -n "$token" ]; then echo "E2E_TOKEN_MINTED=1" >> "$GITHUB_ENV"; fi
           fi
           if [ -z "$token" ]; then
             echo "::error::No Test-instance session token"
@@ -205,6 +223,23 @@ jobs:
             --env E2E_TOKEN="$E2E_TOKEN" \
             .maestro/flashcard/
 
+      # The repository is public, and so are its artifacts. Maestro's own
+      # maestro.log and commands-*.json under ~/.maestro/tests record every
+      # inputText, the session token login.yaml types among them, so only the
+      # screenshots go up from there. What does go up is scrubbed of the token
+      # first, in case a failure message quotes it.
+      - name: Scrub the session token from the results
+        if: always()
+        run: |
+          [ -n "$E2E_TOKEN" ] || exit 0
+          for f in .e2e/*.log .e2e/maestro-junit.xml; do
+            if [ -f "$f" ]; then perl -pi -e 's/\Q$ENV{E2E_TOKEN}\E/***/g' "$f"; fi
+          done
+          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml 2>/dev/null; then
+            echo "::error::The session token is still in the results"
+            exit 1
+          fi
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
@@ -213,5 +248,22 @@ jobs:
           path: |
             .e2e/*.log
             .e2e/maestro-junit.xml
-            ~/.maestro/tests/**
+            ~/.maestro/tests/**/*.png
           if-no-files-found: ignore
+          retention-days: 7
+
+      # A session this run minted dies with it (flash's userLogout ends the
+      # Kratos session the bearer token names; deviceToken is required by the
+      # schema and names no device here). An E2E_TOKEN secret is left alone:
+      # revoking it would break the next run, so rotating it is the operator's.
+      - name: Revoke this run's session
+        if: always() && env.E2E_TOKEN_MINTED == '1'
+        run: |
+          answer=$(curl -sS https://api.test.flashapp.me/graphql \
+            -H "content-type: application/json" \
+            -H "authorization: Bearer $E2E_TOKEN" \
+            -d '{"query":"mutation userLogout($input: UserLogoutInput!) { userLogout(input: $input) { success errors { message } } }","variables":{"input":{"deviceToken":"ci-e2e-flashcard"}}}')
+          if [ "$(echo "$answer" | jq -r '.data.userLogout.success // false')" != "true" ]; then
+            echo "::error::The Test-instance session was not revoked: $(echo "$answer" | jq -c '.errors // .data.userLogout.errors')"
+            exit 1
+          fi

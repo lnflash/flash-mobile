@@ -2,7 +2,7 @@
  * Card fixture loader for the Flashcard e2e flows (ENG-634).
  *
  *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL]
- *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|loaded|spent|full|blocked> [--bridge URL] [--mint URL]
+ *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|loaded|spent|full|blocked|loaded-0.4> [--bridge URL] [--mint URL]
  *
  * `serve` answers `POST /load/<name>` with the fixture's summary (the Maestro
  * flows and the developer screen call it); `load` provisions one and exits.
@@ -12,7 +12,7 @@
  * are only paid by real payments. See `card-fixtures-lib.ts` for what each
  * fixture holds.
  */
-import { createServer } from "http"
+import { RequestListener, createServer } from "http"
 import { Mint } from "@cashu/cashu-ts"
 
 import { toHex } from "../../app/utils/cashu-card"
@@ -45,10 +45,19 @@ const bridgeRequest = async (bridge: string, path: string, body?: unknown) => {
   return JSON.parse(text) as { hex?: string }
 }
 
-/** cardsim over HTTP. An APDU is never retried: a replayed LOAD_PROOF burns a second slot. */
+/**
+ * cardsim over HTTP, as tools/cardsim/client.cjs speaks it. An APDU is never
+ * retried: a replayed LOAD_PROOF burns a second slot.
+ */
 export const bridgeCard = (bridge: string): FixtureCard => ({
   reset: async () => {
     await bridgeRequest(bridge, "/reset")
+  },
+  // POST /fixture with only `appletVersion`: the version mask, nothing else
+  // (CardSim.java, /fixture and Version masks). It gates /apdu only, so the
+  // fixture's own APDUs after it see the older build too.
+  mask: async (version) => {
+    await bridgeRequest(bridge, "/fixture", { appletVersion: version })
   },
   transceive: async (apdu) => {
     const { hex } = await bridgeRequest(bridge, "/apdu", { hex: toHex(apdu) })
@@ -69,6 +78,51 @@ export const fixtureMint = (url: string): FixtureMint => {
     mint: topUpMint.mint,
     proofStates: topUpMint.proofStates,
     swap: async (inputs, outputs) => (await mint.swap({ inputs, outputs })).signatures,
+  }
+}
+
+/**
+ * The `serve` endpoints: `GET /health`, and `POST /load/<fixture>`, which
+ * answers the fixture's summary, or 500 `{error: "fixture failed", fixture}`
+ * with the detail in the log only. One fixture at a time: the card is one card.
+ */
+export const fixtureHandler = (
+  deps: FixtureDeps,
+  health: { bridge: string; mint: string },
+): RequestListener => {
+  let queue: Promise<unknown> = Promise.resolve()
+  return (req, res) => {
+    const reply = (status: number, body: unknown) => {
+      res.writeHead(status, { "content-type": "application/json" })
+      res.end(JSON.stringify(body))
+    }
+    const match = /^\/load\/([a-z0-9.-]+)$/.exec(req.url ?? "")
+    if (req.method === "GET" && req.url === "/health") {
+      reply(200, { ok: true, ...health })
+      return
+    }
+    if (req.method !== "POST" || !match) {
+      reply(404, { error: "POST /load/<fixture>" })
+      return
+    }
+    const name = match[1]
+    if (!isFixtureName(name)) {
+      reply(404, { error: "no such fixture", fixtures: FIXTURE_NAMES })
+      return
+    }
+    queue = queue.then(
+      () =>
+        loadFixture(name, deps).then(
+          (summary) => reply(200, summary),
+          (err) => {
+            // The detail goes to the log (uploaded by CI), not to the caller:
+            // a constant format string, and no error text in the reply.
+            console.error("card-fixtures: %s failed:", name, err)
+            reply(500, { error: "fixture failed", fixture: name })
+          },
+        ),
+      () => undefined,
+    )
   }
 }
 
@@ -112,39 +166,7 @@ const main = async () => {
   if (command !== "serve") usage()
 
   const port = Number(option(args, "--port", "9877"))
-  // One fixture at a time: the card is one card.
-  let queue: Promise<unknown> = Promise.resolve()
-  const server = createServer((req, res) => {
-    const reply = (status: number, body: unknown) => {
-      res.writeHead(status, { "content-type": "application/json" })
-      res.end(JSON.stringify(body))
-    }
-    const match = /^\/load\/([a-z]+)$/.exec(req.url ?? "")
-    if (req.method === "GET" && req.url === "/health") {
-      reply(200, { ok: true, bridge, mint: mintUrl })
-      return
-    }
-    if (req.method !== "POST" || !match) {
-      reply(404, { error: "POST /load/<fixture>" })
-      return
-    }
-    const name = match[1]
-    if (!isFixtureName(name)) {
-      reply(404, { error: `no fixture ${name}; one of ${FIXTURE_NAMES.join(", ")}` })
-      return
-    }
-    queue = queue.then(
-      () =>
-        loadFixture(name, deps).then(
-          (summary) => reply(200, summary),
-          (err) => {
-            console.error(`card-fixtures: ${name} failed:`, err)
-            reply(500, { error: err instanceof Error ? err.message : String(err) })
-          },
-        ),
-      () => undefined,
-    )
-  })
+  const server = createServer(fixtureHandler(deps, { bridge, mint: mintUrl }))
   // Loopback only, like cardsim: nothing off this machine provisions its card.
   server.listen(port, "127.0.0.1", () => {
     console.log(

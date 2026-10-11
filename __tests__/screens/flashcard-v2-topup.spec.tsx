@@ -18,6 +18,7 @@ import {
   topUpEligibility,
 } from "../../app/screens/card-screen/flashcard-v2-topup"
 import { CardError, CardProofSlot } from "../../app/utils/cashu-card"
+import { setCardBridge } from "../../app/utils/cashu-card-bridge"
 import {
   ReclaimPlan,
   ReclaimResult,
@@ -528,7 +529,7 @@ describe("FlashcardV2TopUpScreen", () => {
     await renderSettled()
     expect(mockReclaimPlanFor).toHaveBeenCalledWith(mockCard)
     fireEvent.press(screen.getByTestId("amount-input"))
-    expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
+    expect(screen.getByTestId("topup-amount-problem-no-room").props.children).toBe(
       LL.FlashcardV2.topUpNoRoom({ needed: 6, free: 5 }),
     )
     press(LL.FlashcardV2.next())
@@ -556,7 +557,7 @@ describe("FlashcardV2TopUpScreen", () => {
       ),
     )
     fireEvent.press(screen.getByTestId("amount-input"))
-    expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
+    expect(screen.getByTestId("topup-amount-problem-no-room").props.children).toBe(
       LL.FlashcardV2.topUpNoRoom({ needed: 6, free: 2 }),
     )
   })
@@ -625,7 +626,7 @@ describe("FlashcardV2TopUpScreen", () => {
     mockEntered = 1_000_001
     await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
-    expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
+    expect(screen.getByTestId("topup-amount-problem-too-much").props.children).toBe(
       LL.FlashcardV2.topUpTooMuch({ max: "1,000,000 sats" }),
     )
   })
@@ -634,7 +635,7 @@ describe("FlashcardV2TopUpScreen", () => {
     mockEntered = 60_000
     await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
-    expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
+    expect(screen.getByTestId("topup-amount-problem-over-balance").props.children).toBe(
       LL.FlashcardV2.topUpMoreThanBalance(),
     )
   })
@@ -1049,6 +1050,53 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 })
 
+describe("FlashcardV2TopUpScreen: the development pay stub (ENG-634)", () => {
+  type Dev = { __DEV__: boolean }
+  const setDev = (value: boolean) => {
+    ;(globalThis as unknown as Dev).__DEV__ = value
+  }
+  beforeEach(() => {
+    setDev(true)
+    setCardBridge({
+      url: "http://localhost:9876",
+      mintUrl: "http://localhost:3338",
+      stubPay: true,
+    })
+  })
+  afterEach(() => {
+    setDev(true)
+    setCardBridge(undefined)
+  })
+
+  it("lets an amount past the Cash balance through: the stub pays nothing", async () => {
+    mockEntered = 60_000
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(screen.queryByTestId(/^topup-amount-problem/)).toBeNull()
+    await act(async () => press(LL.FlashcardV2.next()))
+    expect(mockPrepare).toHaveBeenCalled()
+  })
+
+  it("still refuses an amount the card has no room for", async () => {
+    mockCard = card({ empty: 5 })
+    mockEntered = 60_000
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(screen.getByTestId("topup-amount-problem-no-room")).toBeTruthy()
+    expect(screen.queryByTestId("topup-amount-problem-over-balance")).toBeNull()
+  })
+
+  it("a release build (__DEV__ false) checks the balance, whatever was set", async () => {
+    setDev(false)
+    mockEntered = 60_000
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    expect(screen.getByTestId("topup-amount-problem-over-balance").props.children).toBe(
+      LL.FlashcardV2.topUpMoreThanBalance(),
+    )
+  })
+})
+
 describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
   it("counts the spent slots the load tap will free as room: a card with no empty slot tops up once the mint has settled them all", async () => {
     mockCard = card({ empty: 0, spent: 32, spentSlots: spentSlots(32) })
@@ -1057,7 +1105,7 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
 
-    expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
+    expect(screen.queryByTestId(/^topup-amount-problem/)).toBeNull()
     expect(screen.getByTestId("topup-slots").props.children).toBe(
       LL.FlashcardV2.topUpSlotsReclaim({ needed: 6, free: 32, reclaim: 32 }),
     )
@@ -1086,7 +1134,7 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     await act(async () => undefined)
     expect(screen.queryByTestId("amount-input")).toBeNull()
     expect(mockAmountInputMounts).toEqual([])
-    expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
+    expect(screen.queryByTestId(/^topup-amount-problem/)).toBeNull()
     // The mint is asked over the network, so the wait is shown in the
     // field's place rather than left as a gap under the unit caption.
     expect(screen.getByTestId("topup-amount-loading")).toBeTruthy()
@@ -1095,7 +1143,7 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     expect(mockAmountInputMounts).toEqual([true])
     expect(screen.queryByTestId("topup-amount-loading")).toBeNull()
     fireEvent.press(screen.getByTestId("amount-input"))
-    expect(screen.queryByTestId("topup-amount-problem")).toBeNull()
+    expect(screen.queryByTestId(/^topup-amount-problem/)).toBeNull()
     expect(screen.getByTestId("topup-slots").props.children).toBe(
       LL.FlashcardV2.topUpSlotsReclaim({ needed: 6, free: 32, reclaim: 32 }),
     )
@@ -1137,7 +1185,7 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     mockEntered = 1000
     await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
-    expect(screen.getByTestId("topup-amount-problem").props.children).toBe(
+    expect(screen.getByTestId("topup-amount-problem-no-room").props.children).toBe(
       LL.FlashcardV2.topUpNoRoom({ needed: 6, free: 5 }),
     )
   })

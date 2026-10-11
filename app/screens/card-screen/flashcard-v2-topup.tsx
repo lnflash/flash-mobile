@@ -36,11 +36,13 @@ import {
   isValidCardPin,
   triesLeft,
 } from "@app/utils/cashu-card"
+import { stubbedPayOutcome } from "@app/utils/cashu-card-bridge"
 import {
   CardUnit,
   MAX_TOPUP_AMOUNT,
   ReclaimPlan,
   ReclaimResult,
+  TopUpAmountProblem,
   TopUpError,
   TopUpRecord,
   cancelTopUp,
@@ -49,11 +51,30 @@ import {
   payTopUp,
   prepareTopUp,
   slotsNeeded,
+  topUpAmountProblem,
 } from "@app/utils/cashu-card-topup"
 
 import { formatUnitAmount, shortPubkey } from "./flashcard-v2"
 
 type LLType = TranslationFunctions
+
+/** What the amount step says for a `topUpAmountProblem` reason. */
+const amountProblemText = (
+  LL: LLType,
+  kind: TopUpAmountProblem,
+  { unit, needed, free }: { unit: CardUnit; needed: number; free: number },
+): string => {
+  switch (kind) {
+    case "too-much":
+      return LL.FlashcardV2.topUpTooMuch({
+        max: formatUnitAmount(MAX_TOPUP_AMOUNT, unit, LL),
+      })
+    case "no-room":
+      return LL.FlashcardV2.topUpNoRoom({ needed, free })
+    case "over-balance":
+      return LL.FlashcardV2.topUpMoreThanBalance()
+  }
+}
 
 /**
  * How long this screen waits for the mint to see a payment before offering to
@@ -362,25 +383,26 @@ export const FlashcardV2TopUpScreen = () => {
     ? Math.max(0, cashuCard.empty + reclaim.reclaimable - reservedSlots)
     : 0
   const needed = cardAmount > 0 ? slotsNeeded(cardAmount) : 0
-  const overBalance = (() => {
-    if (!cashWallet || !convertMoneyAmount || cardAmount <= 0) return false
-    const cost = convertMoneyAmount(
-      { amount: cardAmount, currency: walletCurrency, currencyCode: walletCurrency },
-      cashWallet.walletCurrency,
-    )
-    // An unknown balance is not a reason to refuse: the payment answers for it.
-    return typeof cashWallet.balance === "number" && cost.amount > cashWallet.balance
-  })()
-  const amountProblem = (() => {
-    if (cardAmount > MAX_TOPUP_AMOUNT) {
-      return LL.FlashcardV2.topUpTooMuch({
-        max: formatUnitAmount(MAX_TOPUP_AMOUNT, unit, LL),
-      })
-    }
-    if (needed > freeSlots) return LL.FlashcardV2.topUpNoRoom({ needed, free: freeSlots })
-    if (overBalance) return LL.FlashcardV2.topUpMoreThanBalance()
-    return undefined
-  })()
+  const cost =
+    cashWallet && convertMoneyAmount && cardAmount > 0
+      ? convertMoneyAmount(
+          { amount: cardAmount, currency: walletCurrency, currencyCode: walletCurrency },
+          cashWallet.walletCurrency,
+        ).amount
+      : undefined
+  // The development pay stub (ENG-634) skips the payment, so the Cash balance
+  // does not limit it; a release build has no stub and always checks.
+  const amountProblemKind = topUpAmountProblem({
+    amount: cardAmount,
+    needed,
+    freeSlots,
+    cost,
+    balance: cashWallet?.balance,
+    payStubbed: stubbedPayOutcome() !== undefined,
+  })
+  const amountProblem =
+    amountProblemKind &&
+    amountProblemText(LL, amountProblemKind, { unit, needed, free: freeSlots })
 
   const pinFailure = (
     err: unknown,
@@ -753,7 +775,12 @@ export const FlashcardV2TopUpScreen = () => {
               </Text>
             )}
             {amountProblem && (
-              <Text type="p2" style={styles.error} testID="topup-amount-problem">
+              // One testID per reason: the e2e flows tell no room from no balance.
+              <Text
+                type="p2"
+                style={styles.error}
+                testID={`topup-amount-problem-${amountProblemKind}`}
+              >
                 {amountProblem}
               </Text>
             )}

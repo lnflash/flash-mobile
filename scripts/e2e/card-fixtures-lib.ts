@@ -54,7 +54,14 @@ import {
 import type { TopUpMint } from "../../app/utils/cashu-card-topup/mint"
 import { signMintQuote } from "../../app/utils/cashu-card-topup/nut20"
 
-export const FIXTURE_NAMES = ["fresh", "loaded", "spent", "full", "blocked"] as const
+export const FIXTURE_NAMES = [
+  "fresh",
+  "loaded",
+  "spent",
+  "full",
+  "blocked",
+  "loaded-0.4",
+] as const
 export type FixtureName = (typeof FIXTURE_NAMES)[number]
 
 export const isFixtureName = (name: string): name is FixtureName =>
@@ -85,10 +92,22 @@ export const FULL_SLOTS = 32
 export const INS_SET_PUK = 0x44
 export const INS_UNBLOCK_PIN = 0x45
 
+/**
+ * An older applet build cardsim can answer as (CardSim.java, Version masks):
+ * 0.4 has no CLEAR_PIN and no PUK, 0.5 no PUK.
+ */
+export type MaskedVersion = "0.4" | "0.5"
+
 /** The card: a fresh one on `reset`, and its APDU channel. */
 export type FixtureCard = {
   /** A brand-new card, applet as installed: no PIN, no PUK, no proofs. */
   reset: () => Promise<void>
+  /**
+   * From here on, the card answers every APDU as `version` would: SELECT and
+   * GET_INFO rewritten, the instructions it lacked answered 6D00. Until the
+   * next `reset`.
+   */
+  mask: (version: MaskedVersion) => Promise<void>
   transceive: Transceiver
 }
 
@@ -118,6 +137,10 @@ export type FixtureDeps = {
 export type FixtureSummary = {
   name: FixtureName
   pubkey: string
+  /** SELECT's version, through any mask: "0.4" for `loaded-0.4`. */
+  version: string
+  /** GET_INFO capability bit 3: the card answers CLEAR_PIN (Remove PIN). */
+  clearPin: boolean
   balance: number
   pinState: CardInfo["pinState"]
   unspent: number
@@ -268,6 +291,8 @@ const blockPin = async (transceive: Transceiver) => {
  * - `spent`: `loaded`, with slots 1 and 2 spent and redeemed at the mint.
  * - `full`: 32 slots of 1 sat, no PIN.
  * - `blocked`: `loaded`, with the PIN blocked by three wrong tries.
+ * - `loaded-0.4`: an applet 0.4 card (no CLEAR_PIN, no PUK) holding the
+ *   `loaded` proofs and PIN, and no PUK: no 0.4 build could hold one.
  *
  * Every fixture starts from `reset` and ends with a SELECT, so the app's
  * first command finds an unverified session, as a fresh tap does.
@@ -279,6 +304,11 @@ export const loadFixture = async (
   const { card, log = () => undefined } = deps
   const { transceive } = card
   await card.reset()
+  // Masked before the first APDU, on a brand-new card: a mask over a card
+  // that already holds a PUK would be a card no 0.4 build could be
+  // (CardSim.java, Version masks). Everything after goes through the mask, as
+  // the app's own APDUs will.
+  if (name === "loaded-0.4") await card.mask("0.4")
   await selectApplet(transceive)
   const pubkey = toHex(await getPubkey(transceive))
   log(`card ${pubkey}: ${name}`)
@@ -286,6 +316,14 @@ export const loadFixture = async (
   if (name === "full") {
     const { slots } = await mintToCard(deps, pubkey, new Array(FULL_SLOTS).fill(1))
     await loadSlots(transceive, slots)
+  }
+
+  if (name === "loaded-0.4") {
+    const { slots } = await mintToCard(deps, pubkey, LOADED_AMOUNTS)
+    // Proofs while the card has no PIN, then the PIN. No SET_PUK: a 0.4 card
+    // answers it 6D00.
+    await loadSlots(transceive, slots)
+    await setCardPin(transceive, FIXTURE_PIN)
   }
 
   if (name === "loaded" || name === "spent" || name === "blocked") {
@@ -321,6 +359,8 @@ export const loadFixture = async (
   const summary: FixtureSummary = {
     name,
     pubkey,
+    version: info.version,
+    clearPin: info.clearPin,
     balance,
     pinState: info.pinState,
     unspent: info.unspent,

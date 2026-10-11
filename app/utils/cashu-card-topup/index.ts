@@ -41,3 +41,5 @@ export type {
 } from "./engine"
 export { createMinterLoop } from "./minter"
 export type { MinterLoop, MinterLoopOptions } from "./minter"
+export { topUpAmountProblem } from "./amount-problem"
+export type { TopUpAmountCheck, TopUpAmountProblem } from "./amount-problem"
