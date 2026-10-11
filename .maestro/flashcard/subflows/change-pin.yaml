@@ -1,0 +1,19 @@
+# The Change PIN screen, one attempt: CURRENT, then NEW twice. The card is
+# tapped (over the bridge) on the last NEXT.
+appId: com.lnflash
+---
+- runFlow:
+    file: pin-entry.yaml
+    env:
+      PIN: ${CURRENT}
+      NEXT_ID: pin-next
+- runFlow:
+    file: pin-entry.yaml
+    env:
+      PIN: ${NEW}
+      NEXT_ID: pin-next
+- runFlow:
+    file: pin-entry.yaml
+    env:
+      PIN: ${NEW}
+      NEXT_ID: pin-next

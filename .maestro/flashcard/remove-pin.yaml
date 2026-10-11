@@ -1,0 +1,29 @@
+# The holder removes the PIN (CLEAR_PIN, applet 0.5+): the card spends with no PIN again.
+appId: com.lnflash
+name: Flashcard remove PIN
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: loaded
+- tapOn:
+    id: flashcard-v2-action-remove-pin
+- runFlow:
+    file: subflows/pin-entry.yaml
+    env:
+      PIN: "1234"
+      NEXT_ID: pin-next
+- assertVisible:
+    id: pin-remove-confirm
+- tapOn:
+    id: pin-next
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-no-pin
+    timeout: 20000
+- assertVisible:
+    id: flashcard-v2-action-set-pin
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.pinState === 0}

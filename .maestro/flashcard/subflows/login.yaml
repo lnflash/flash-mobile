@@ -1,0 +1,43 @@
+# Signs in on the Test instance with E2E_TOKEN from a clean install, then
+# relaunches into the signed-in app. Top-up records live in the Keychain, so
+# the Keychain is cleared too: a leftover one would change the next flow's path.
+appId: com.lnflash
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible:
+      id: get-started-logo
+    timeout: 60000
+# Three taps on the logo open the developer screen.
+- tapOn:
+    id: get-started-logo
+    repeat: 3
+    delay: 150
+- scrollUntilVisible:
+    element:
+      id: "Test Button"
+- tapOn:
+    id: "Test Button"
+# The token field empties when the instance changes: type it after.
+- scrollUntilVisible:
+    element:
+      id: "Input access token"
+- tapOn:
+    id: "Input access token"
+- inputText: ${E2E_TOKEN}
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "Save Changes"
+    direction: UP
+- tapOn:
+    id: "Save Changes"
+- extendedWaitUntil:
+    visible: "Token Present: true"
+    timeout: 20000
+- launchApp:
+    stopApp: true

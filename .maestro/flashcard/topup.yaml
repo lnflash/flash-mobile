@@ -1,0 +1,61 @@
+# A top-up of a card with two spent slots the mint holds SPENT: the load tap
+# frees them (CLEAR_SPENT, ENG-631) and loads the new proofs. The dev pay stub
+# stands in for the Cash wallet's payment (a FakeWallet mint marks its own
+# quote paid); the amount check against the Cash balance stays real, so the
+# signed-in account needs a little Cash (README.md).
+appId: com.lnflash
+name: Flashcard top-up with reclaim
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: spent
+# The unit is the mint's to name; the top-up refuses a card without one.
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-balance-sat
+    timeout: 20000
+- tapOn:
+    id: flashcard-v2-action-topup
+- extendedWaitUntil:
+    visible:
+      id: "Key 1"
+    timeout: 20000
+- tapOn:
+    id: "Key 1"
+- tapOn:
+    id: amount-input-set
+- tapOn:
+    id: topup-next
+- extendedWaitUntil:
+    visible:
+      id: topup-pin-entry
+    timeout: 20000
+- runFlow:
+    file: subflows/pin-entry.yaml
+    env:
+      PIN: "1234"
+      NEXT_ID: topup-pin-submit
+- extendedWaitUntil:
+    visible:
+      id: topup-pay
+    timeout: 30000
+- tapOn:
+    id: topup-pay
+- extendedWaitUntil:
+    visible:
+      id: topup-load
+    timeout: 60000
+- tapOn:
+    id: topup-load
+- extendedWaitUntil:
+    visible:
+      id: topup-done
+    timeout: 30000
+- assertVisible:
+    id: topup-reclaimed
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.counts.spent === 0}
+- assertTrue: ${output.card.balance > 16}

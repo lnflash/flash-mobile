@@ -1,0 +1,208 @@
+# Flashcard e2e (ENG-634): Maestro flows on an iOS simulator against the real
+# cashu-javacard applet in jCardSim (cardsim) and a local Nutshell on
+# FakeWallet. Advisory: nightly, on demand, and on PRs that touch the card
+# path; not a required check. See .maestro/flashcard/README.md.
+name: iOS e2e (Flashcard)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+  pull_request:
+    paths:
+      - "app/contexts/Flashcard.tsx"
+      - "app/utils/cashu-card*"
+      - "app/utils/cashu-card-topup/**"
+      - "app/utils/cashu-mint.ts"
+      - "app/hooks/use-card-top-up.ts"
+      - "app/hooks/use-tap-flashcard.ts"
+      - "app/screens/card-screen/**"
+      - ".maestro/**"
+      - "scripts/e2e/**"
+      - ".github/workflows/ios-e2e-card.yml"
+
+concurrency:
+  group: ios-e2e-card-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # lnflash/cashu-javacard main with tools/cardsim (ENG-634, #33).
+  CASHU_JAVACARD_REF: 7a961021e0b563c75b6968320bf1b098c0ef07f0
+  # Nutshell. 0.20.3 (what forge runs) no longer installs: the breez-sdk-spark
+  # range it pins is gone from PyPI. marshmallow and limits are capped because
+  # 0.21.0 leaves them open and their current majors break its startup.
+  NUTSHELL_VERSION: "0.21.0"
+  MAESTRO_VERSION: "2.10.0"
+  BRIDGE_URL: http://localhost:9876
+  MINT_URL: http://localhost:3338
+  FIXTURES_URL: http://localhost:9877
+
+jobs:
+  flashcard-e2e:
+    name: Flashcard flows (iOS simulator)
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      # The card and the mint come up first: a broken stack fails in minutes,
+      # before the iOS build.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+          cache: maven
+
+      - name: Checkout cashu-javacard (cardsim)
+        uses: actions/checkout@v4
+        with:
+          repository: lnflash/cashu-javacard
+          ref: ${{ env.CASHU_JAVACARD_REF }}
+          path: .e2e/cashu-javacard
+
+      - name: Start the card bridge
+        run: |
+          mvn -B -q -f .e2e/cashu-javacard/tools/cardsim/pom.xml package -DskipTests
+          nohup java -jar .e2e/cashu-javacard/tools/cardsim/target/cardsim.jar --port 9876 \
+            > .e2e/cardsim.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS "$BRIDGE_URL/state" > /dev/null && break; sleep 1; done
+          curl -fsS "$BRIDGE_URL/state" > /dev/null
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # VERSION=0.19.2 makes Nutshell derive a v1 keyset id (8 bytes) on first
+      # start, as forge's keysets are: a card slot cannot hold a v2 id.
+      - name: Start the mint (Nutshell, FakeWallet)
+        run: |
+          python -m pip install "cashu==${NUTSHELL_VERSION}" "marshmallow<4" "limits<4"
+          mkdir -p .e2e/mint
+          cd .e2e/mint
+          VERSION=0.19.2 MINT_PRIVATE_KEY=ci-e2e-only \
+            MINT_BACKEND_BOLT11_SAT=FakeWallet MINT_LISTEN_PORT=3338 \
+            MINT_INPUT_FEE_PPK=0 MINT_RATE_LIMIT=FALSE FAKEWALLET_DELAY_INCOMING_PAYMENT=0 \
+            nohup mint > ../mint.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS "$MINT_URL/v1/keysets" > /dev/null && break; sleep 1; done
+          curl -fsS "$MINT_URL/v1/keysets"
+
+      - name: Start the fixture server and smoke every fixture
+        run: |
+          nohup node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve --port 9877 \
+            --bridge "$BRIDGE_URL" --mint "$MINT_URL" > .e2e/fixtures.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS "$FIXTURES_URL/health" > /dev/null && break; sleep 1; done
+          for fixture in fresh loaded spent full blocked; do
+            curl -fsS -X POST "$FIXTURES_URL/load/$fixture"; echo
+          done
+
+      # The Test instance, never production, with the review account. Its
+      # session token is masked in the log.
+      - name: Sign in on the Test instance
+        env:
+          E2E_TOKEN_SECRET: ${{ secrets.E2E_TOKEN }}
+          E2E_TEST_PHONE: ${{ secrets.E2E_TEST_PHONE }}
+          E2E_TEST_CODE: ${{ secrets.E2E_TEST_CODE }}
+        run: |
+          token="$E2E_TOKEN_SECRET"
+          if [ -z "$token" ]; then
+            if [ -z "$E2E_TEST_PHONE" ] || [ -z "$E2E_TEST_CODE" ]; then
+              echo "::error::Set E2E_TOKEN, or E2E_TEST_PHONE and E2E_TEST_CODE (.maestro/flashcard/README.md)"
+              exit 1
+            fi
+            body=$(jq -n --arg phone "$E2E_TEST_PHONE" --arg code "$E2E_TEST_CODE" \
+              '{query: "mutation userLogin($input: UserLoginInput!) { userLogin(input: $input) { authToken errors { message } } }", variables: {input: {phone: $phone, code: $code}}}')
+            token=$(curl -fsS https://api.test.flashapp.me/graphql \
+              -H "content-type: application/json" -d "$body" | jq -r '.data.userLogin.authToken // empty')
+          fi
+          if [ -z "$token" ]; then
+            echo "::error::No Test-instance session token"
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "E2E_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install Ruby dependencies
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+
+      - name: Install CocoaPods
+        run: bundle exec pod install --project-directory=ios
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      # Debug, so __DEV__ holds and the dev card links work; FORCE_BUNDLING
+      # embeds the JS bundle, so the app runs without Metro.
+      - name: Build iOS (Debug, simulator, bundled)
+        run: |
+          set -o pipefail
+          FORCE_BUNDLING=1 xcodebuild \
+            -workspace ios/LNFlash.xcworkspace \
+            -scheme LNFlash \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcpretty --color
+
+      - name: Boot the simulator and install the app
+        run: |
+          xcrun simctl boot "iPhone 16" || true
+          xcrun simctl bootstatus "iPhone 16" -b
+          xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/LNFlash.app
+
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run the Flashcard flows
+        timeout-minutes: 40
+        run: |
+          maestro test \
+            --format junit --output .e2e/maestro-junit.xml \
+            --env BRIDGE_URL="$BRIDGE_URL" \
+            --env MINT_URL="$MINT_URL" \
+            --env FIXTURES_URL="$FIXTURES_URL" \
+            --env E2E_TOKEN="$E2E_TOKEN" \
+            .maestro/flashcard/
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flashcard-e2e
+          path: |
+            .e2e/*.log
+            .e2e/maestro-junit.xml
+            ~/.maestro/tests/**
+          if-no-files-found: ignore

@@ -1,0 +1,25 @@
+# The holder changes the PIN: VERIFY_PIN then CHANGE_PIN in one tap.
+appId: com.lnflash
+name: Flashcard change PIN
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: loaded
+- tapOn:
+    id: flashcard-v2-action-change-pin
+- runFlow:
+    file: subflows/change-pin.yaml
+    env:
+      CURRENT: "1234"
+      NEW: "5678"
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-change-pin
+    timeout: 20000
+- runScript:
+    file: scripts/verify-pin.js
+    env:
+      PIN: "5678"

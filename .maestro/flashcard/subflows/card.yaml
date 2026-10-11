@@ -1,0 +1,15 @@
+# Points the app at cardsim and the local mint, provisions FIXTURE on the card
+# and taps it: the card screen opens on what the tap read. The bridge is not
+# persisted by the app, so every flow sets it again after its launch.
+appId: com.lnflash
+---
+- openLink: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1
+- runScript:
+    file: ../scripts/load-fixture.js
+    env:
+      FIXTURE: ${FIXTURE}
+- openLink: flash://dev/card-tap
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-card-art
+    timeout: 30000

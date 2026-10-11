@@ -1,0 +1,36 @@
+# A wrong PIN on one tap, the right one on the next: the second tap starts a
+# new session (SELECT drops the first tap's state on cardsim, as a new NFC
+# session does on a card), so it succeeds with one try spent and two left.
+appId: com.lnflash
+name: Flashcard PIN session per tap
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: loaded
+- tapOn:
+    id: flashcard-v2-action-change-pin
+- runFlow:
+    file: subflows/change-pin.yaml
+    env:
+      CURRENT: "9999"
+      NEW: "5678"
+- extendedWaitUntil:
+    visible:
+      id: pin-error
+    timeout: 20000
+- runFlow:
+    file: subflows/change-pin.yaml
+    env:
+      CURRENT: "1234"
+      NEW: "5678"
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-change-pin
+    timeout: 20000
+- runScript:
+    file: scripts/verify-pin.js
+    env:
+      PIN: "5678"

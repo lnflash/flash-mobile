@@ -1,0 +1,49 @@
+# Three wrong current PINs block the card: the screen says so and offers no
+# top-up. UNBLOCK_PIN with the fixture PUK (no in-app screen for it yet, so
+# straight to cardsim), a fresh tap, and the PIN is set again.
+appId: com.lnflash
+name: Flashcard PIN blocked
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: loaded
+- tapOn:
+    id: flashcard-v2-action-change-pin
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          file: subflows/change-pin.yaml
+          env:
+            CURRENT: "9999"
+            NEW: "5678"
+      - extendedWaitUntil:
+          visible:
+            id: pin-error
+          timeout: 20000
+- tapOn:
+    id: pin-close
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-blocked
+    timeout: 20000
+- assertNotVisible:
+    id: flashcard-v2-action-topup
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.pinState === 2}
+- runScript: scripts/unblock-pin.js
+- tapOn:
+    id: flashcard-v2-refresh
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-change-pin
+    timeout: 20000
+- assertNotVisible:
+    id: flashcard-v2-blocked
+- runScript:
+    file: scripts/verify-pin.js
+    env:
+      PIN: "1234"
