@@ -8,10 +8,14 @@ appId: com.lnflash
     clearKeychain: true
     permissions:
       all: deny
+# A cold start keeps the splash up until Remote Config's fetch settles
+# (FeatureFlagContextProvider renders nothing before then for a signed-out
+# app). On a hosted runner that fetch can run to its 60 s HTTP timeout, so the
+# first screen can take longer than that to appear.
 - extendedWaitUntil:
     visible:
       id: get-started-logo
-    timeout: 60000
+    timeout: 150000
 # Setting the bridge also hides LogBox, whose toasts cover the token field.
 - runFlow:
     file: open-link.yaml
@@ -46,3 +50,11 @@ appId: com.lnflash
     timeout: 20000
 - launchApp:
     stopApp: true
+# The relaunch is a cold start too, with the same wait. A dev link sent before
+# the app is up is dropped, so the signed-in app must be showing first. "Home"
+# is the home tab's testID, which is its English title: the workflow pins the
+# simulator to en_US.
+- extendedWaitUntil:
+    visible:
+      id: Home
+    timeout: 150000

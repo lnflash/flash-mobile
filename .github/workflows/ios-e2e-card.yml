@@ -237,10 +237,14 @@ jobs:
             exit 1
           fi
 
+      # English, so the one testID that is a translated title (the home tab's
+      # "Home", which login.yaml waits on) reads the same on every runner image.
       - name: Boot the simulator and install the app
         run: |
           xcrun simctl boot "iPhone 16" || true
           xcrun simctl bootstatus "iPhone 16" -b
+          xcrun simctl spawn booted defaults write -g AppleLanguages -array en
+          xcrun simctl spawn booted defaults write -g AppleLocale -string en_US
           xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Flash.app
 
       - name: Install Maestro
@@ -248,8 +252,10 @@ jobs:
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
+      # Every flow starts the app cold twice (clean install, then signed in),
+      # and each cold start can sit on the splash for a minute: see login.yaml.
       - name: Run the Flashcard flows
-        timeout-minutes: 40
+        timeout-minutes: 60
         run: |
           maestro test \
             --format junit --output .e2e/maestro-junit.xml \
@@ -258,6 +264,15 @@ jobs:
             --env FIXTURES_URL="$FIXTURES_URL" \
             --env E2E_TOKEN="$E2E_TOKEN" \
             .maestro/flashcard/
+
+      # The app's own log (JS console, Firebase, errors) from the flows, for
+      # what the screenshots cannot show: why a screen did not come up.
+      - name: Collect the app's log
+        if: always()
+        run: |
+          xcrun simctl spawn booted log show --last 75m --style compact --info --debug \
+            --predicate 'process == "Flash"' > .e2e/app.log 2>&1 || true
+          wc -l .e2e/app.log
 
       # The repository is public, and so are its artifacts. Maestro's own
       # maestro.log and commands-*.json under ~/.maestro/tests record every
@@ -268,8 +283,12 @@ jobs:
         if: always()
         run: |
           [ -n "$E2E_TOKEN" ] || exit 0
+          # Any Kratos session token, not just this one: a token typed with a
+          # character dropped is still most of the real one.
           for f in .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log; do
-            if [ -f "$f" ]; then perl -pi -e 's/\Q$ENV{E2E_TOKEN}\E/***/g' "$f"; fi
+            if [ -f "$f" ]; then
+              perl -pi -e 's/\Q$ENV{E2E_TOKEN}\E/***/g; s/ory_st_[A-Za-z0-9]+/ory_st_***/g' "$f"
+            fi
           done
           if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log 2>/dev/null; then
             echo "::error::The session token is still in the results"
