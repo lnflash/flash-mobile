@@ -56,7 +56,7 @@ env:
 jobs:
   flashcard-e2e:
     name: Flashcard flows (iOS simulator)
-    runs-on: macos-15
+    runs-on: macos-15-xlarge
     timeout-minutes: 90
     steps:
       - name: Checkout
