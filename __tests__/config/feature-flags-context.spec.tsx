@@ -7,6 +7,11 @@
  * happened, so the app sat on the splash. Now the gate opens on whichever comes
  * first: the fetch settling or REMOTE_CONFIG_GATE_MS. A fetch that lands after
  * the gate opened still updates the flags.
+ *
+ * Until the fetch lands, the flags are the ACTIVE values: what a previous
+ * launch fetched and activated, else the hard-coded defaults. RN Firebase's JS
+ * cache is empty (every key "static") until the native side answers
+ * setDefaults, so a static key reads as its default, not as false.
  */
 import * as React from "react"
 import { Text } from "react-native"
@@ -35,13 +40,17 @@ const remoteConfig = getRemoteConfig() as unknown as {
   getValue: jest.Mock
 }
 
-// Every key reads true once "fetched", the opposite of the defaults for two of
-// the three, so a fetched value is told apart from a default one.
+// Every key reads the opposite of its default once "fetched", so a fetched
+// value is told apart from a default one.
 const FETCHED: Record<string, boolean> = {
   deviceAccountEnabledRestAuth: false,
   bridgeTopupEnabled: true,
   cashuCardUsdEnabled: true,
 }
+
+// What RN Firebase's JS cache holds, as getValue reads it: undefined is a key
+// it does not hold yet (source "static", asBoolean false).
+let active: Record<string, boolean | undefined> = {}
 
 type Deferred = { resolve: () => void; reject: (err: Error) => void }
 
@@ -50,7 +59,11 @@ const deferFetch = (): Deferred => {
   remoteConfig.fetchAndActivate.mockImplementation(
     () =>
       new Promise<void>((resolve, reject) => {
-        deferred.resolve = resolve
+        deferred.resolve = () => {
+          // fetchAndActivate's constants replace the cache before it resolves.
+          active = { ...FETCHED }
+          resolve()
+        }
         deferred.reject = reject
       }),
   )
@@ -87,8 +100,10 @@ describe("FeatureFlagContextProvider startup gate", () => {
     mockCurrentLevel = "NonAuth"
     remoteConfig.fetchAndActivate.mockReset()
     remoteConfig.getValue.mockReset()
+    active = {}
     remoteConfig.getValue.mockImplementation((key: string) => ({
-      asBoolean: () => FETCHED[key],
+      asBoolean: () => active[key] ?? false,
+      getSource: () => (active[key] === undefined ? "static" : "remote"),
     }))
     errorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
   })
@@ -130,8 +145,43 @@ describe("FeatureFlagContextProvider startup gate", () => {
       jest.advanceTimersByTime(1)
     })
 
+    // Nothing was ever activated and nothing was fetched: every key is
+    // "static" and reads as its default, so device stays true.
     expect(screen.getByTestId("flags").props.children).toBe(DEFAULT_FLAGS)
-    expect(remoteConfig.getValue).not.toHaveBeenCalled()
+  })
+
+  it("opens the gate on the previously activated values when the fetch never resolves", async () => {
+    // A previous launch fetched and activated deviceAccountEnabledRestAuth =
+    // false; this launch's fetch hangs.
+    active = { deviceAccountEnabledRestAuth: false }
+    deferFetch()
+    const screen = renderProvider()
+
+    await act(async () => {
+      jest.advanceTimersByTime(REMOTE_CONFIG_GATE_MS)
+    })
+
+    expect(screen.getByTestId("flags").props.children).toBe(
+      "device:false bridge:false usd:false",
+    )
+  })
+
+  it("picks up the activated values once the native side loads them, before the gate", async () => {
+    // First render: the JS cache is still empty, so the defaults.
+    deferFetch()
+    const screen = renderProvider()
+    // Then setDefaults answers with a previous launch's activated values.
+    active = { deviceAccountEnabledRestAuth: false, bridgeTopupEnabled: true }
+    await flush()
+    expect(screen.queryByTestId("flags")).toBeNull()
+
+    await act(async () => {
+      jest.advanceTimersByTime(REMOTE_CONFIG_GATE_MS)
+    })
+
+    expect(screen.getByTestId("flags").props.children).toBe(
+      "device:false bridge:true usd:false",
+    )
   })
 
   it("updates the flags when the fetch resolves after the gate opened", async () => {
@@ -163,7 +213,20 @@ describe("FeatureFlagContextProvider startup gate", () => {
       "Error fetching remote config: ",
       expect.any(Error),
     )
-    expect(remoteConfig.getValue).not.toHaveBeenCalled()
+  })
+
+  it("keeps the previously activated values when the fetch rejects", async () => {
+    active = { deviceAccountEnabledRestAuth: false }
+    const fetch = deferFetch()
+    const screen = renderProvider()
+
+    await act(async () => {
+      fetch.reject(new Error("network down"))
+    })
+
+    expect(screen.getByTestId("flags").props.children).toBe(
+      "device:false bridge:false usd:false",
+    )
   })
 
   it("renders children at once for a signed-in level, whatever the fetch does", () => {

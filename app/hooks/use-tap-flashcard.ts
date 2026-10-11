@@ -72,8 +72,9 @@ export const useOpenFlashcard = (): (() => Promise<void>) => {
  * (`setCardBridge`); `flash://dev/card-tap` asks for a tap as the card
  * controls do, which with a bridge set reads cardsim and opens FlashcardV2.
  * The navigation container ignores these links (`isDevLink`). Mounted once,
- * inside FlashcardProvider and the navigation container (RootStack). Does
- * nothing in a release build: `parseCardBridgeLink` answers undefined there.
+ * through `DevCardLinks`, inside FlashcardProvider and the navigation
+ * container. Does nothing in a release build: `parseCardBridgeLink` answers
+ * undefined there.
  */
 export const useDevCardLinks = (): void => {
   const tapFlashcard = useTapFlashcard()
@@ -106,4 +107,16 @@ export const useDevCardLinks = (): void => {
     const subscription = Linking.addEventListener("url", ({ url }) => handle(url))
     return () => subscription.remove()
   }, [])
+}
+
+/**
+ * `useDevCardLinks` in a component of its own, rendering nothing, which
+ * app.tsx mounts only in a development build (`__DEV__ &&`). The hook reads
+ * FlashcardContext (through `useTapFlashcard`), whose value is a new object on
+ * every provider render: called from RootStack, it re-rendered the whole
+ * screen list on every card state change, in release builds too.
+ */
+export const DevCardLinks = (): null => {
+  useDevCardLinks()
+  return null
 }

@@ -28,7 +28,6 @@ import { MapScreen } from "../screens/map-screen/map-screen"
 import { PriceHistoryScreen } from "../screens/price/price-history-screen"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
-import { useDevCardLinks } from "@app/hooks/use-tap-flashcard"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import {
   ConversionConfirmationScreen,
@@ -174,8 +173,6 @@ export const RootStack = () => {
   const { colors } = useTheme().theme
   const styles = useStyles()
   const isAuthed = useIsAuthed()
-  // Development builds only: the e2e flows' simulated card (ENG-634).
-  useDevCardLinks()
 
   // Check if intro screen is displayed twice.
   const initialRouteName = isAuthed ? "authenticationCheck" : "getStarted"

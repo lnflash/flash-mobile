@@ -48,6 +48,7 @@ import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
 import { useTopUpMinter } from "./hooks/use-card-top-up"
+import { DevCardLinks } from "./hooks/use-tap-flashcard"
 import { PersistGate } from "redux-persist/integration/react"
 import { useEffect } from "react"
 import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
@@ -135,9 +136,17 @@ export const App = () => {
                                           here. See the sheet in
                                           contexts/Flashcard.tsx. */}
                                       <FlashcardProvider>
-                                        <InviteDeepLinkHandler>
-                                          <RootStack />
-                                        </InviteDeepLinkHandler>
+                                        <>
+                                          {/* Development builds only: the e2e
+                                              flows' simulated card (ENG-634).
+                                              Its own component, so its
+                                              FlashcardContext read re-renders
+                                              nothing else. */}
+                                          {__DEV__ && <DevCardLinks />}
+                                          <InviteDeepLinkHandler>
+                                            <RootStack />
+                                          </InviteDeepLinkHandler>
+                                        </>
                                       </FlashcardProvider>
                                     </BreezProvider>
                                     <GaloyToast />

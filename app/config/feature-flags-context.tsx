@@ -34,26 +34,47 @@ const defaultFeatureFlags = {
   cashuCardUsdEnabled: false,
 }
 
-getRemoteConfig().setDefaults(defaultRemoteConfig)
+// Resolves once the native side has handed JS its values: the defaults above
+// and whatever a previous launch fetched and activated. Until then the JS
+// cache is empty and every getValue reads "static".
+const nativeValuesLoaded = getRemoteConfig().setDefaults(defaultRemoteConfig)
 
 getRemoteConfig().setConfigSettings({
   minimumFetchIntervalMillis: 0,
 })
 
 // How long a signed-out cold start waits on Remote Config before showing the
-// app anyway. Past this, the app runs on the values already active: the
-// defaults above, or what a previous launch fetched and activated. The fetch
-// keeps going and updates the flags in-session when it lands. Without the
-// bound, a slow or dead network held the splash for the fetch's whole 60 s
-// HTTP timeout, or forever (ENG-634).
+// app anyway. Past this, the app runs on the values already active
+// (`readActive`): what a previous launch fetched and activated, else the
+// defaults above. The fetch keeps going and updates the flags in-session when
+// it lands. Without the bound, a slow or dead network held the splash for the
+// fetch's whole 60 s HTTP timeout, or forever (ENG-634).
 export const REMOTE_CONFIG_GATE_MS = 5000
+
+/**
+ * The values active right now, without fetching: what a previous launch
+ * fetched and activated, else the defaults above. A key the JS cache does not
+ * hold yet (source "static", before `nativeValuesLoaded`) reads as its
+ * default here, not as the static `false`.
+ */
+const readActive = (): RemoteConfig => {
+  const read = (key: keyof RemoteConfig): boolean => {
+    const value = getRemoteConfig().getValue(key)
+    return value.getSource() === "static" ? defaultRemoteConfig[key] : value.asBoolean()
+  }
+  return {
+    [DeviceAccountEnabledKey]: read(DeviceAccountEnabledKey),
+    [BridgeTopupEnabledKey]: read(BridgeTopupEnabledKey),
+    [CashuCardUsdEnabledKey]: read(CashuCardUsdEnabledKey),
+  }
+}
 
 export const FeatureFlagContext = createContext<FeatureFlags>(defaultFeatureFlags)
 
 export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
-  const [remoteConfig, setRemoteConfig] = useState<RemoteConfig>(defaultRemoteConfig)
+  const [remoteConfig, setRemoteConfig] = useState<RemoteConfig>(readActive)
 
   const { currentLevel } = useLevel()
   const [remoteConfigReady, setRemoteConfigReady] = useState(false)
@@ -70,24 +91,21 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
       if (mounted.current) setRemoteConfigReady(true)
     }, REMOTE_CONFIG_GATE_MS)
 
+    // The previously activated values, as soon as the native side hands them
+    // over (a local read, well inside the gate), so a gate that opens before
+    // the fetch lands runs on them and not on the hard-coded defaults. Read
+    // whenever it lands: the JS cache always holds the latest active values.
+    nativeValuesLoaded.then(
+      () => {
+        if (mounted.current) setRemoteConfig(readActive())
+      },
+      () => undefined,
+    )
     ;(async () => {
       try {
         await getRemoteConfig().fetchAndActivate()
-        const deviceAccountEnabledRestAuth = getRemoteConfig()
-          .getValue(DeviceAccountEnabledKey)
-          .asBoolean()
-        const bridgeTopupEnabled = getRemoteConfig()
-          .getValue(BridgeTopupEnabledKey)
-          .asBoolean()
-        const cashuCardUsdEnabled = getRemoteConfig()
-          .getValue(CashuCardUsdEnabledKey)
-          .asBoolean()
         if (!mounted.current) return
-        setRemoteConfig({
-          deviceAccountEnabledRestAuth,
-          bridgeTopupEnabled,
-          cashuCardUsdEnabled,
-        })
+        setRemoteConfig(readActive())
       } catch (err) {
         console.error("Error fetching remote config: ", err)
       } finally {

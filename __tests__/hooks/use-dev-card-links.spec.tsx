@@ -5,10 +5,13 @@
  * toasts cover the bottom of the screen the flows tap. Nothing happens in a
  * release build, and nothing but flash://dev/ links is acted on.
  */
+import * as fs from "fs"
+import * as path from "path"
+import * as React from "react"
 import { Linking, LogBox } from "react-native"
-import { renderHook, waitFor } from "@testing-library/react-native"
+import { render, renderHook, waitFor } from "@testing-library/react-native"
 
-import { useDevCardLinks } from "@app/hooks/use-tap-flashcard"
+import { DevCardLinks, useDevCardLinks } from "@app/hooks/use-tap-flashcard"
 import { getCardBridge, setCardBridge } from "@app/utils/cashu-card-bridge"
 
 const mockNavigate = jest.fn()
@@ -119,5 +122,38 @@ describe("useDevCardLinks", () => {
     await waitFor(() => expect(urlListener).toBeDefined())
     unmount()
     expect(remove).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("DevCardLinks", () => {
+  it("runs the dev card links and renders nothing", async () => {
+    ;(Linking.getInitialURL as jest.Mock).mockResolvedValue(BRIDGE_LINK)
+    const { toJSON } = render(<DevCardLinks />)
+    expect(toJSON()).toBeNull()
+    await waitFor(() =>
+      expect(getCardBridge()).toMatchObject({ url: "http://localhost:9876" }),
+    )
+  })
+
+  // The hook reads FlashcardContext, whose value is a new object on every
+  // provider render. Called from RootStack it re-rendered every screen on
+  // each card state change, release builds included: only its own
+  // component, mounted in development builds, may call it.
+  const source = (file: string) =>
+    fs.readFileSync(path.join(__dirname, "../../app", file), "utf8")
+
+  it("is mounted from app.tsx in development builds only, inside FlashcardProvider", () => {
+    const app = source("app.tsx")
+    const provider = app.indexOf("<FlashcardProvider>")
+    const mounted = app.indexOf("{__DEV__ && <DevCardLinks />}")
+    expect(provider).toBeGreaterThan(-1)
+    expect(mounted).toBeGreaterThan(provider)
+    expect(mounted).toBeLessThan(app.indexOf("</FlashcardProvider>"))
+    expect(app.match(/<DevCardLinks \/>/g)).toHaveLength(1)
+  })
+
+  it("is not called from RootStack, which would subscribe it to FlashcardContext", () => {
+    const rootNavigator = source("navigation/root-navigator.tsx")
+    expect(rootNavigator).not.toMatch(/useDevCardLinks|useTapFlashcard|useFlashcard/)
   })
 })

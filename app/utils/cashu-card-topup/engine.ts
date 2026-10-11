@@ -200,6 +200,31 @@ const load = async (deps: Pick<TopUpDeps, "store">, id: string): Promise<TopUpRe
   return record
 }
 
+/**
+ * Whether a saved top-up is the mint's in hand. A quote, its payment and its
+ * proofs exist only at the mint that issued them (`mintUrl`), and a
+ * development build can point the card at another mint (`cardMintUrl` in
+ * use-card-top-up), so a store can hold top-ups of two mints at once.
+ */
+const ofThisMint = (record: TopUpRecord, mint: Pick<TopUpMint, "url">): boolean =>
+  record.mintUrl === mint.url
+
+/**
+ * `load`, refused for a top-up another mint issued: never asked about, paid,
+ * minted or dropped through the wrong mint, where its quote is unknown. The
+ * record is left as it is, for when its own mint is back in hand.
+ */
+const loadForMint = async (
+  deps: Pick<TopUpDeps, "store" | "mint">,
+  id: string,
+): Promise<TopUpRecord> => {
+  const record = await load(deps, id)
+  if (!ofThisMint(record, deps.mint)) {
+    throw new TopUpError("state", "the top-up belongs to another mint")
+  }
+  return record
+}
+
 /*
  * How old a quote is. The quote's `expiry` is on the mint's clock, and a
  * phone's clock can be minutes or hours from it, either way. Read against
@@ -517,7 +542,7 @@ export async function payTopUp(
   deps: TopUpDeps,
   id: string,
 ): Promise<{ record: TopUpRecord; result: PayResult }> {
-  let record = await load(deps, id)
+  let record = await loadForMint(deps, id)
   if (record.state !== "quoted") return { record, result: { status: "paid" } }
 
   if ((await deps.mint.quoteState(record.quote.id)) !== "UNPAID") {
@@ -712,6 +737,10 @@ const mintAttempt = async (deps: CardFreeDeps, id: string): Promise<MintResult> 
  * it; only the user asks again.
  */
 const mintOnce = async (deps: CardFreeDeps, id: string): Promise<MintResult> => {
+  // Refused before the try: a top-up of another mint is not the mint's to
+  // refuse, and must not be saved as `mintRefused`, which would stop every
+  // later pass once its own mint is back.
+  await loadForMint(deps, id)
   try {
     return await mintAttempt(deps, id)
   } catch (err) {
@@ -735,7 +764,8 @@ const minting = new Map<string, Promise<MintResult>>()
  * proofs. `waiting` while the mint has not seen the payment. Every proof is
  * DLEQ-checked against the mint's published key and checked to rebuild on
  * this card before it is saved; nothing that fails either check is kept.
- * Needs no card: run it as soon as the mint may say PAID.
+ * Needs no card: run it as soon as the mint may say PAID. A top-up another
+ * mint issued is refused (`state`), and left as it is.
  */
 export function mintTopUp(deps: CardFreeDeps, id: string): Promise<MintResult> {
   const running = minting.get(id)
@@ -789,15 +819,18 @@ const advanceOne = async (deps: CardFreeDeps, record: TopUpRecord): Promise<bool
  *   (`quoteIsDead`) is dropped, lock key and all: nothing can pay it now;
  * - a paid top-up the mint refused in a way it will repeat (`mintRefused`)
  *   is left for the user, and never asked about again by a pass.
- * Minted and loaded top-ups need the card and are left alone. A mint that
- * cannot be reached is asked again on the next pass.
+ * Minted and loaded top-ups need the card and are left alone, and so is a
+ * top-up another mint issued (`ofThisMint`). A mint that cannot be reached is
+ * asked again on the next pass.
  *
  * Resolves how many top-ups are still waiting on a payment that may land,
  * so the caller knows whether to ask again.
  */
 export async function advanceTopUps(deps: CardFreeDeps): Promise<{ waiting: number }> {
   const records = (await deps.store.list()).filter(
-    (record) => record.state === "quoted" || record.state === "paid",
+    (record) =>
+      (record.state === "quoted" || record.state === "paid") &&
+      ofThisMint(record, deps.mint),
   )
   let waiting = 0
   // One record at a time, gently: forge rate-limits its API per IP.
@@ -950,7 +983,7 @@ export async function proofStatesForLoad(
   deps: Pick<TopUpDeps, "mint" | "store">,
   id: string,
 ): Promise<Map<string, ProofState> | undefined> {
-  const record = await load(deps, id)
+  const record = await loadForMint(deps, id)
   const { proofs } = record
   if (record.state !== "minted" || !record.loadStarted || !proofs) return undefined
   const states = await deps.mint.proofStates(
@@ -1071,10 +1104,11 @@ export async function loadTopUp(
  * (`quoteIsDead`). Anything else may be paid, or may still become paid,
  * even when the wallet's answer read as a refusal, and stays. One the mint
  * holds as paid is saved as paid on the way, so it is minted, not offered
- * for dropping again.
+ * for dropping again. A top-up another mint issued is refused (`state`): only
+ * its own mint can say whether it was paid.
  */
 export async function cancelTopUp(deps: CardFreeDeps, id: string): Promise<void> {
-  const record = await load(deps, id)
+  const record = await loadForMint(deps, id)
   if (record.state !== "quoted") {
     throw new TopUpError("state", "a paid top-up cannot be cancelled")
   }
