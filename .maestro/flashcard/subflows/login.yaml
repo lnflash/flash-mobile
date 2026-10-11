@@ -12,6 +12,11 @@ appId: com.lnflash
     visible:
       id: get-started-logo
     timeout: 60000
+# Setting the bridge also hides LogBox, whose toasts cover the token field.
+- runFlow:
+    file: open-link.yaml
+    env:
+      LINK: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1
 # Three taps on the logo open the developer screen.
 - tapOn:
     id: get-started-logo

@@ -27,6 +27,11 @@ tags: [flashcard]
     id: "Key 1"
 - tapOn:
     id: amount-input-set
+# Refused here when the signed-in account's Cash cannot cover the amount: the
+# Test account needs a little Cash (README.md, prerequisites).
+- assertNotVisible:
+    id: topup-amount-problem
+    label: The Test account's Cash balance covers the top-up
 - tapOn:
     id: topup-next
 - extendedWaitUntil:

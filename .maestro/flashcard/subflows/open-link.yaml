@@ -1,0 +1,10 @@
+# Opens LINK in the app. iOS can ask "Open in “Flash”?" first (it does for a
+# link that arrives while the app is starting): confirm it when it does.
+appId: com.lnflash
+---
+- openLink: ${LINK}
+- runFlow:
+    when:
+      visible: "Open in .Flash.\\?"
+    commands:
+      - tapOn: "Open"

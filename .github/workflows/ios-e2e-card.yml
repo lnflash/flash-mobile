@@ -110,6 +110,15 @@ jobs:
             curl -fsS -X POST "$FIXTURES_URL/load/$fixture"; echo
           done
 
+      # The top-up engine and the dev card transport against the same card
+      # and mint, below the UI: no wallet, so no sign-in needed.
+      - name: Top-up against cardsim (jest, opt-in spec)
+        env:
+          CARDSIM_URL: ${{ env.BRIDGE_URL }}
+          CARD_MINT_URL: ${{ env.MINT_URL }}
+          CARD_FIXTURES_URL: ${{ env.FIXTURES_URL }}
+        run: yarn test __tests__/integration/card-topup-cardsim.spec.ts
+
       # The Test instance, never production, with the review account. Its
       # session token is masked in the log.
       - name: Sign in on the Test instance
@@ -178,7 +187,7 @@ jobs:
         run: |
           xcrun simctl boot "iPhone 16" || true
           xcrun simctl bootstatus "iPhone 16" -b
-          xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/LNFlash.app
+          xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Flash.app
 
       - name: Install Maestro
         run: |

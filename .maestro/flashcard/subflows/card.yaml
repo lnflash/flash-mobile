@@ -1,15 +1,26 @@
 # Points the app at cardsim and the local mint, provisions FIXTURE on the card
 # and taps it: the card screen opens on what the tap read. The bridge is not
-# persisted by the app, so every flow sets it again after its launch.
+# persisted by the app, so every flow sets it again after its launch. A link
+# that lands while the app is still starting is dropped, hence the retry: a
+# tap without the bridge only toasts that this device has no NFC.
 appId: com.lnflash
 ---
-- openLink: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1
 - runScript:
     file: ../scripts/load-fixture.js
     env:
       FIXTURE: ${FIXTURE}
-- openLink: flash://dev/card-tap
-- extendedWaitUntil:
-    visible:
-      id: flashcard-v2-card-art
-    timeout: 30000
+- retry:
+    maxRetries: 3
+    commands:
+      - runFlow:
+          file: open-link.yaml
+          env:
+            LINK: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1
+      - runFlow:
+          file: open-link.yaml
+          env:
+            LINK: flash://dev/card-tap
+      - extendedWaitUntil:
+          visible:
+            id: flashcard-v2-card-art
+          timeout: 15000
