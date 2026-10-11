@@ -43,6 +43,7 @@ import {
   toHex,
 } from "../utils/cashu-card"
 import { extendCardTimeout } from "../utils/cashu-card-nfc"
+import { bridgeTransceiver, getCardBridge } from "../utils/cashu-card-bridge"
 import {
   CardUnitTotals,
   KeysetUnits,
@@ -259,6 +260,9 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   const readFlashcard = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
+    // A development build's simulated card (cardsim) needs no NFC: a
+    // simulator has none.
+    if (getCardBridge()) return handleTag(isPayment)
     const isSupported = await NfcManager.isSupported()
     const isEnabled = await NfcManager.isEnabled()
 
@@ -283,9 +287,11 @@ export const FlashcardProvider = ({ children }: Props) => {
 
   const handleTag = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
     let boltCard = false
+    // Development builds only: the card is cardsim, over HTTP (ENG-634).
+    const bridge = getCardBridge()
     try {
       setVisible(true)
-      NfcManager.start()
+      if (!bridge) NfcManager.start()
       // One NFC session covers both card types. A Cashu card is an IsoDep
       // JavaCard applet (lnflash/cashu-javacard); a BoltCard is an NDEF tag.
       // The request resolves with the tech the tapped card connected as, so
@@ -301,12 +307,16 @@ export const FlashcardProvider = ({ children }: Props) => {
       // read (NfcManager.m readNDEFWithCompletionHandler) that would SELECT
       // the NDEF application on a Cashu card, which has none, before we had
       // spoken to the applet at all.
-      const tech = await NfcManager.requestTechnology([NfcTech.IsoDep, NfcTech.Ndef])
+      const tech = bridge
+        ? NfcTech.IsoDep
+        : await NfcManager.requestTechnology([NfcTech.IsoDep, NfcTech.Ndef])
       if (tech === NfcTech.IsoDep) {
         let info: CashuCardInfo | null
         try {
-          info = await readCashuCard((bytes) =>
-            NfcManager.isoDepHandler.transceive(bytes),
+          info = await readCashuCard(
+            bridge
+              ? bridgeTransceiver(bridge.url)
+              : (bytes) => NfcManager.isoDepHandler.transceive(bytes),
           )
         } catch (err) {
           // The card answered SELECT (or the channel itself dropped), so this
@@ -356,6 +366,8 @@ export const FlashcardProvider = ({ children }: Props) => {
         // The applet SELECT was refused: not a Cashu card. Parse the same
         // tag's NDEF message below.
       }
+      // A bridge carries APDUs only: there is no NDEF tag behind it.
+      if (bridge) return {}
       const tag = await NfcManager.getTag()
       if (tag && tag.id) {
         const ndefRecord = tag?.ndefMessage?.[0]
@@ -523,17 +535,25 @@ export const FlashcardProvider = ({ children }: Props) => {
     expectedPubkey: string,
     { assume, onReread }: CardOperationOptions = {},
   ): Promise<T> => {
+    // Development builds only: the card is cardsim, over HTTP (ENG-634).
+    const bridge = getCardBridge()
     setVisible(true)
-    NfcManager.start()
+    if (!bridge) NfcManager.start()
     try {
-      // IsoDep only: this tap is for the applet, never for an NDEF tag.
-      await NfcManager.requestTechnology(NfcTech.IsoDep)
-      // On-card work can outlive Android's 618 ms default (see the helper).
-      await extendCardTimeout()
-      const transceive: Transceiver = (bytes) =>
-        NfcManager.isoDepHandler.transceive(bytes)
+      let transceive: Transceiver
+      if (bridge) {
+        transceive = bridgeTransceiver(bridge.url)
+      } else {
+        // IsoDep only: this tap is for the applet, never for an NDEF tag.
+        await NfcManager.requestTechnology(NfcTech.IsoDep)
+        // On-card work can outlive Android's 618 ms default (see the helper).
+        await extendCardTimeout()
+        transceive = (bytes) => NfcManager.isoDepHandler.transceive(bytes)
+      }
       // A fresh IsoDep channel resets the active applet; without a SELECT
-      // Android answers every command with 6E00 (flash-pos found this).
+      // Android answers every command with 6E00 (flash-pos found this). On
+      // the bridge, SELECT is what ends the previous "tap": it drops a
+      // verified PIN as a new NFC session does.
       await selectApplet(transceive)
       const pubkey = toHex(await getPubkey(transceive))
       if (pubkey !== expectedPubkey) throw new WrongCardError(pubkey)
@@ -677,7 +697,8 @@ export const FlashcardProvider = ({ children }: Props) => {
 
   const cancelTechnologyRequest = () => {
     setVisible(false)
-    NfcManager.cancelTechnologyRequest()
+    // A bridge tap opened no NFC session.
+    if (!getCardBridge()) NfcManager.cancelTechnologyRequest()
   }
 
   const resetFlashcard = async () => {

@@ -14,10 +14,12 @@ import { PaymentSendResult } from "../../app/graphql/generated"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import {
   nudgeTopUpMinter,
+  topUpMint,
   useCardTopUp,
   useTopUpMinter,
   useUnfinishedTopUps,
 } from "../../app/hooks/use-card-top-up"
+import { setCardBridge } from "../../app/utils/cashu-card-bridge"
 import type { CardProofSlot } from "../../app/utils/cashu-card"
 import {
   PayArgs,
@@ -279,6 +281,69 @@ describe("useCardTopUp pay", () => {
   it("any other thrown error is left to the engine, which reads it as unknown", async () => {
     mockSend.mockRejectedValueOnce(new Error("Network request failed"))
     await expect(hook().deps.pay(args())).rejects.toThrow("Network request failed")
+  })
+})
+
+describe("useCardTopUp with a development build's card bridge (ENG-634)", () => {
+  type Dev = { __DEV__: boolean }
+  const setDev = (value: boolean) => {
+    ;(globalThis as unknown as Dev).__DEV__ = value
+  }
+  const BRIDGE = "http://localhost:9876"
+  const DEV_MINT = "http://localhost:3338"
+
+  afterEach(() => {
+    setDev(true)
+    setCardBridge(undefined)
+  })
+
+  it("skips the payment, as paid, only with the pay stub on and a dev mint", async () => {
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT, stubPay: true })
+    await expect(hook().deps.pay(args())).resolves.toEqual({ kind: "paid" })
+    expect(mockSend).not.toHaveBeenCalled()
+  })
+
+  it("pays for real with a bridge whose pay stub is off", async () => {
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT, stubPay: false })
+    answer(PaymentSendResult.Pending)
+    await expect(hook().deps.pay(args())).resolves.toEqual({ kind: "pending" })
+    expect(mockSend).toHaveBeenCalledTimes(1)
+  })
+
+  it("pays for real in a release build, whatever was set", async () => {
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT, stubPay: true })
+    setDev(false)
+    answer(PaymentSendResult.Pending)
+    await expect(hook().deps.pay(args())).resolves.toEqual({ kind: "pending" })
+    expect(mockSend).toHaveBeenCalledTimes(1)
+  })
+
+  it("the stub never pairs with the production mint: such a bridge is refused, and payments stay real", async () => {
+    expect(() =>
+      setCardBridge({ url: BRIDGE, mintUrl: "https://forge.flashapp.me", stubPay: true }),
+    ).toThrow()
+    answer(PaymentSendResult.Pending)
+    await expect(hook().deps.pay(args())).resolves.toEqual({ kind: "pending" })
+    expect(mockSend).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps one mint client per mint, and a new one when the dev mint changes", () => {
+    const forge = topUpMint()
+    expect(forge.url).toBe("https://forge.flashapp.me")
+    expect(topUpMint()).toBe(forge)
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT })
+    const dev = topUpMint()
+    expect(dev.url).toBe(DEV_MINT)
+    expect(topUpMint()).toBe(dev)
+    setCardBridge(undefined)
+    expect(topUpMint().url).toBe("https://forge.flashapp.me")
+  })
+
+  it("mints at the production mint in a release build, whatever was set", () => {
+    setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT })
+    setDev(false)
+    expect(topUpMint().url).toBe("https://forge.flashapp.me")
+    expect(hook().deps.mint.url).toBe("https://forge.flashapp.me")
   })
 })
 
