@@ -178,8 +178,15 @@ jobs:
           key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
           restore-keys: pods-${{ runner.os }}-
 
+      # From ios/, not `--project-directory=ios` from the root: the Podfile's
+      # post_install resolves its paths against Dir.pwd (Pods/Target Support
+      # Files, the bitcode strip list), so from the root it finds nothing and
+      # skips every Xcode 16/26 fixup. One of those turns library evolution off
+      # in Pods-LNFlash.*.xcconfig; left on, the app target fails with "using
+      # bridging headers with module interfaces is unsupported".
       - name: Install CocoaPods
-        run: bundle exec pod install --project-directory=ios
+        working-directory: ios
+        run: bundle exec pod install
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
