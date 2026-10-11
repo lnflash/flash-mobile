@@ -176,13 +176,18 @@ export const DeveloperScreen: React.FC = () => {
         newRestUrl !== currentGaloyInstance.authUrl ||
         newLnAddressHostname !== currentGaloyInstance.lnAddressHostname))
 
+  // Picking another instance empties the token field and picking the current
+  // one restores the stored token. Keyed on the instance id, not the instance
+  // object: a re-render that hands over a new object for the same instance
+  // must not wipe a token that is being typed.
+  const currentGaloyInstanceId = currentGaloyInstance.id
   React.useEffect(() => {
-    if (newGaloyInstance === currentGaloyInstance.id) {
+    if (newGaloyInstance === currentGaloyInstanceId) {
       setNewToken(token)
     } else {
       setNewToken("")
     }
-  }, [newGaloyInstance, currentGaloyInstance, token])
+  }, [newGaloyInstance, currentGaloyInstanceId, token])
 
   const handleSave = async () => {
     await logout(false)
