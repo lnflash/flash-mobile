@@ -280,13 +280,28 @@ jobs:
               sample "$pid" 2 -file ".e2e/samples/flash-$(date +%H%M%S).txt" > /dev/null 2>&1 || true
             done ) &
           echo $! > .e2e/sampler.pid
-          maestro test \
-            --format junit --output .e2e/maestro-junit.xml \
-            --env BRIDGE_URL="$BRIDGE_URL" \
-            --env MINT_URL="$MINT_URL" \
-            --env FIXTURES_URL="$FIXTURES_URL" \
-            --env E2E_TOKEN="$E2E_TOKEN" \
-            .maestro/flashcard/
+          # Maestro's XCTest driver sometimes never comes up on the hosted Mac
+          # ("iOS driver not ready in time" after the full 5 min, before any
+          # flow runs). That is the runner, not the app: start again once.
+          run_flows() {
+            maestro test \
+              --format junit --output .e2e/maestro-junit.xml \
+              --env BRIDGE_URL="$BRIDGE_URL" \
+              --env MINT_URL="$MINT_URL" \
+              --env FIXTURES_URL="$FIXTURES_URL" \
+              --env E2E_TOKEN="$E2E_TOKEN" \
+              .maestro/flashcard/ 2>&1 | tee "$1"
+          }
+          set +e -o pipefail
+          run_flows .e2e/maestro-1.log
+          status=$?
+          if [ $status -ne 0 ] && grep -q "iOS driver not ready in time" .e2e/maestro-1.log; then
+            echo "::warning::Maestro's iOS driver did not start; restarting it once"
+            xcrun simctl terminate booted dev.mobile.maestro-driver-iosUITests.xctrunner > /dev/null 2>&1 || true
+            run_flows .e2e/maestro-2.log
+            status=$?
+          fi
+          exit $status
 
       - name: Stop the log stream and the sampler
         if: always()
