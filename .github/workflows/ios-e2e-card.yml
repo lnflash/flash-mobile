@@ -192,10 +192,25 @@ jobs:
       # CODE_SIGNING_ALLOWED=NO gets no Keychain on the simulator (securityd
       # answers -34018), and the top-up store lives there, so `topup` fails at
       # "Couldn't set up the top-up with the mint" before any mint request.
+      # Xcode's script phases (Hermes' "Replace Hermes for the right
+      # configuration", "Bundle React Native code and images") take node from
+      # NODE_BINARY, which ios/.xcode.env and the tracked .xcode.env.local set
+      # from `nvm which`. The macOS runner has no nvm, so NODE_BINARY comes out
+      # empty, RN's find-node fallback only edits PATH, and the Hermes phase
+      # runs `"" replace_hermes_version.js`: exit 127, the build fails. Point
+      # it at the node setup-node installed. .local is sourced last, so it wins.
+      - name: Point Xcode's script phases at this job's node
+        run: echo "export NODE_BINARY=$(command -v node)" > ios/.xcode.env.local
+
+      # The raw xcodebuild output goes to a file (xcpretty drops the text a
+      # failing script phase prints) and is uploaded when the job fails. The
+      # build runs without the session token in its environment, so neither
+      # the log nor anything the build embeds can carry it.
       - name: Build iOS (Debug, simulator, bundled)
         run: |
           set -o pipefail
-          FORCE_BUNDLING=1 xcodebuild \
+          mkdir -p build
+          env -u E2E_TOKEN FORCE_BUNDLING=1 xcodebuild \
             -workspace ios/LNFlash.xcworkspace \
             -scheme LNFlash \
             -configuration Debug \
@@ -204,7 +219,7 @@ jobs:
             -derivedDataPath build \
             CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
-            build | xcpretty --color
+            build 2>&1 | tee build/xcodebuild-e2e.log | xcpretty --color
           # An unsigned app fails here, not 30 minutes later in `topup`: the
           # simulator reads the app's entitlements from this section, which
           # only a signed build has.
@@ -246,10 +261,10 @@ jobs:
         if: always()
         run: |
           [ -n "$E2E_TOKEN" ] || exit 0
-          for f in .e2e/*.log .e2e/maestro-junit.xml; do
+          for f in .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log; do
             if [ -f "$f" ]; then perl -pi -e 's/\Q$ENV{E2E_TOKEN}\E/***/g' "$f"; fi
           done
-          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml 2>/dev/null; then
+          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log 2>/dev/null; then
             echo "::error::The session token is still in the results"
             exit 1
           fi
@@ -263,6 +278,16 @@ jobs:
             .e2e/*.log
             .e2e/maestro-junit.xml
             ~/.maestro/tests/**/*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Only on failure: the raw log runs to tens of megabytes.
+      - name: Upload the raw xcodebuild log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-e2e-log
+          path: build/xcodebuild-e2e.log
           if-no-files-found: ignore
           retention-days: 7
 
