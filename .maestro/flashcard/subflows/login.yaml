@@ -21,24 +21,47 @@ appId: com.lnflash
     file: open-link.yaml
     env:
       LINK: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1
-# Three taps on the logo open the developer screen.
-- tapOn:
-    id: get-started-logo
-    repeat: 3
-    delay: 150
-- scrollUntilVisible:
-    element:
-      id: "Test Button"
+# Three taps on the logo open the developer screen. Retried: taps that land
+# before the Get Started screen takes touches leave it where it was. The
+# counter keeps earlier taps, and the tap is skipped once the logo is gone, so
+# a developer screen that opened late is not tapped through.
+- retry:
+    maxRetries: 3
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: get-started-logo
+          commands:
+            - tapOn:
+                id: get-started-logo
+                repeat: 3
+                delay: 150
+      - scrollUntilVisible:
+          element:
+            id: "Test Button"
 - tapOn:
     id: "Test Button"
 # The token field empties when the instance changes: type it after.
 - scrollUntilVisible:
     element:
       id: "Input access token"
-- tapOn:
-    id: "Input access token"
-- inputText: ${E2E_TOKEN}
-- hideKeyboard
+# The field is a secure entry, so iOS reports its value as one bullet per
+# character, never the text. Matching that count catches a token that lost
+# characters on the way in (still "present" after saving, but rejected by the
+# server); the token is retyped until it matches.
+- evalScript: ${output.tokenMask = '•'.repeat(E2E_TOKEN.length)}
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "Input access token"
+      - eraseText: 200
+      - inputText: ${E2E_TOKEN}
+      - hideKeyboard
+      - assertVisible:
+          id: "Input access token"
+          text: ${output.tokenMask}
 - scrollUntilVisible:
     element:
       id: "Save Changes"
