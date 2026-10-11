@@ -132,7 +132,9 @@ describe("MyReferrals screen", () => {
     expect(screen.getByText("Pending rewards: 1")).toBeTruthy()
   })
 
-  it("never renders money copy when rewards are disabled", () => {
+  it("shows a paid row's amount but hides promise copy when rewards are disabled", () => {
+    // ENG-641: allowlisted referrals are paid while the instance flag stays off.
+    // A paid amount (myRewardCents present) must show; promise copy must not.
     mockUseReferralRewardFlag.mockReturnValue({
       referralRewardEnabled: false,
       loading: false,
@@ -144,17 +146,77 @@ describe("MyReferrals screen", () => {
           status: InviteStatus.Accepted,
           myRewardCents: 500,
           rewardPending: false,
+          contact: "bob@x.com",
+        }),
+        invite({
+          id: "pend",
+          status: InviteStatus.Accepted,
+          myRewardCents: null,
+          rewardPending: true,
+          contact: "carol@x.com",
         }),
       ],
-      { totalEarnedCents: 500, acceptedCount: 1 },
+      { totalEarnedCents: 500, acceptedCount: 2, pendingRewardCount: 1 },
     )
     const screen = renderScreen()
-    // Gated: joined-count header instead of earnings; row shows plain "Joined".
+    // Paid row shows its amount regardless of the flag.
+    expect(screen.getByText("Joined — you earned $5.00")).toBeTruthy()
+    // Pending row stays plain "Joined": no promise while the flag is off.
+    expect(screen.getByText("Joined")).toBeTruthy()
+    expect(screen.queryByText("Joined — reward pending")).toBeNull()
+    // Header agrees with the paid row, but the pending count stays hidden.
+    expect(screen.getByText("Total earned")).toBeTruthy()
+    expect(screen.getByText("$5.00")).toBeTruthy()
+    expect(screen.queryByText("Friends joined")).toBeNull()
+    expect(screen.queryByText(/Pending rewards/)).toBeNull()
+  })
+
+  it("keeps the friends-joined header when rewards are disabled and nothing is earned", () => {
+    mockUseReferralRewardFlag.mockReturnValue({
+      referralRewardEnabled: false,
+      loading: false,
+    })
+    withData(
+      [
+        invite({
+          id: "pend",
+          status: InviteStatus.Accepted,
+          myRewardCents: null,
+          rewardPending: true,
+        }),
+      ],
+      { totalEarnedCents: 0, acceptedCount: 1, pendingRewardCount: 1 },
+    )
+    const screen = renderScreen()
     expect(screen.getByText("Friends joined")).toBeTruthy()
+    expect(screen.getByText("1")).toBeTruthy()
     expect(screen.queryByText("Total earned")).toBeNull()
+    expect(screen.queryByText(/Pending rewards/)).toBeNull()
     expect(screen.queryByText(/earned/)).toBeNull()
     expect(screen.getByText("Joined")).toBeTruthy()
   })
+  ;[true, false].forEach((enabled) =>
+    it(`treats a zero reward amount as no amount (rewards enabled: ${enabled})`, () => {
+      mockUseReferralRewardFlag.mockReturnValue({
+        referralRewardEnabled: enabled,
+        loading: false,
+      })
+      withData(
+        [
+          invite({
+            id: "zero",
+            status: InviteStatus.Accepted,
+            myRewardCents: 0,
+            rewardPending: false,
+          }),
+        ],
+        { totalEarnedCents: 0, acceptedCount: 1 },
+      )
+      const screen = renderScreen()
+      expect(screen.getByText("Joined")).toBeTruthy()
+      expect(screen.queryByText(/you earned/)).toBeNull()
+    }),
+  )
 
   it("labels sent and expired invites as lifecycle rows", () => {
     withData([

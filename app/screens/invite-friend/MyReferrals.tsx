@@ -12,9 +12,13 @@ import {
 import { useReferralRewardFlag } from "@app/hooks"
 
 // A user's own referral history: every invite they sent, what happened to it,
-// and — only while referral rewards are enabled instance-wide — what they
-// earned. Reward copy is gated on the same backend flag as the home-screen
-// invite card so this screen can never promise money the backend won't pay.
+// and what they earned. A paid reward always shows: the backend fills
+// `myRewardCents` only once the inviter leg has paid, which can happen while
+// the instance-wide flag is off (allowlisted payouts), so the "Total earned"
+// header also shows whenever something has been earned. Promise copy — the
+// "reward pending" row and the pending-count line — stays gated on the same
+// backend flag as the home-screen invite card, so this screen can never
+// promise money the backend won't pay.
 
 const formatCents = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
@@ -32,10 +36,14 @@ export const MyReferrals: React.FC = () => {
   })
 
   const referrals = data?.myReferrals
+  // Show earnings once anything has been paid, even with the flag off, so the
+  // header agrees with the paid rows below it.
+  const showEarnings =
+    referralRewardEnabled || (referrals ? referrals.totalEarnedCents > 0 : false)
 
   const statusLine = (row: ReferralRow): { label: string; tone: "ok" | "muted" } => {
     if (row.status === InviteStatus.Accepted) {
-      if (referralRewardEnabled && row.myRewardCents) {
+      if (row.myRewardCents) {
         return {
           label: LL.MyReferrals.earned({ amount: formatCents(row.myRewardCents) }),
           tone: "ok",
@@ -75,7 +83,7 @@ export const MyReferrals: React.FC = () => {
       <View style={styles.container}>
         {referrals && (
           <View style={styles.header}>
-            {referralRewardEnabled ? (
+            {showEarnings ? (
               <>
                 <Text type="caption" color={colors.grey3}>
                   {LL.MyReferrals.totalEarned()}
@@ -83,7 +91,7 @@ export const MyReferrals: React.FC = () => {
                 <Text style={styles.headline} type="h1" bold>
                   {formatCents(referrals.totalEarnedCents)}
                 </Text>
-                {referrals.pendingRewardCount > 0 && (
+                {referralRewardEnabled && referrals.pendingRewardCount > 0 && (
                   <Text type="p3" color={colors.grey3}>
                     {LL.MyReferrals.pendingCount({
                       count: referrals.pendingRewardCount,
