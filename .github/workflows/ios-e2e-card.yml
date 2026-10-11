@@ -151,7 +151,9 @@ jobs:
             fi
             body=$(jq -n --arg phone "$E2E_TEST_PHONE" --arg code "$E2E_TEST_CODE" \
               '{query: "mutation userLogin($input: UserLoginInput!) { userLogin(input: $input) { authToken errors { message } } }", variables: {input: {phone: $phone, code: $code}}}')
-            token=$(curl -fsS https://api.test.flashapp.me/graphql \
+            # The hosted runner's connection to the Test instance drops now and then
+            # (TLS SSL_ERROR_SYSCALL, connection reset): retry before failing an hour-long job.
+            token=$(curl -fsS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
               -H "content-type: application/json" -d "$body" | jq -r '.data.userLogin.authToken // empty')
             # This run's own session: the revoke step below ends it.
             if [ -n "$token" ]; then echo "E2E_TOKEN_MINTED=1" >> "$GITHUB_ENV"; fi
@@ -343,7 +345,7 @@ jobs:
       - name: Revoke this run's session
         if: always() && env.E2E_TOKEN_MINTED == '1'
         run: |
-          answer=$(curl -sS https://api.test.flashapp.me/graphql \
+          answer=$(curl -sS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
             -H "content-type: application/json" \
             -H "authorization: Bearer $E2E_TOKEN" \
             -d '{"query":"mutation userLogout($input: UserLogoutInput!) { userLogout(input: $input) { success errors { message } } }","variables":{"input":{"deviceToken":"ci-e2e-flashcard"}}}')
