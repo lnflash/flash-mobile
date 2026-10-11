@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react"
-import { Linking } from "react-native"
+import { Linking, LogBox } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 
@@ -95,6 +95,9 @@ export const useDevCardLinks = (): void => {
       }
       try {
         setCardBridge(link.config)
+        // A bridge means the e2e flows are driving this build: LogBox's
+        // toasts sit over the bottom of every screen and take their taps.
+        LogBox.ignoreAllLogs(link.config !== undefined)
       } catch (err) {
         console.warn("dev card bridge refused:", err instanceof Error ? err.message : err)
       }
