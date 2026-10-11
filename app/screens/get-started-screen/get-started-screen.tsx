@@ -93,7 +93,8 @@ export const GetStartedScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <Screen>
       <LogoWrapper>
-        <Pressable onPress={onPressLogo}>
+        {/* A plain testID: the e2e flows open the developer screen here. */}
+        <Pressable onPress={onPressLogo} testID="get-started-logo">
           <Image source={AppLogo} />
         </Pressable>
       </LogoWrapper>

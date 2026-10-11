@@ -388,7 +388,11 @@ export const FlashcardV2PinScreen = () => {
       )}
       <View style={styles.footer}>
         {finished ? (
-          <PrimaryBtn label={LL.common.close()} onPress={() => navigation.goBack()} />
+          <PrimaryBtn
+            label={LL.common.close()}
+            onPress={() => navigation.goBack()}
+            testID="pin-close"
+          />
         ) : (
           <PrimaryBtn
             label={
@@ -399,6 +403,7 @@ export const FlashcardV2PinScreen = () => {
             disabled={!canContinue}
             loading={busy}
             onPress={advance}
+            testID="pin-next"
           />
         )}
       </View>

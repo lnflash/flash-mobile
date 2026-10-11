@@ -673,6 +673,7 @@ export const FlashcardV2TopUpScreen = () => {
             <PrimaryBtn
               label={LL.FlashcardV2.topUpDone()}
               onPress={() => navigation.goBack()}
+              testID="topup-close"
             />
           </>
         )
@@ -782,6 +783,7 @@ export const FlashcardV2TopUpScreen = () => {
               disabled={cardAmount <= 0 || Boolean(amountProblem) || !cashWallet || busy}
               loading={busy}
               onPress={continueFromAmount}
+              testID="topup-next"
             />
           </>
         )
@@ -825,6 +827,7 @@ export const FlashcardV2TopUpScreen = () => {
               disabled={!isValidCardPin(pinEntry) || busy}
               loading={busy}
               onPress={submitPin}
+              testID="topup-pin-submit"
             />
           </>
         )
@@ -872,6 +875,7 @@ export const FlashcardV2TopUpScreen = () => {
                   : LL.FlashcardV2.topUpPay()
               }
               onPress={() => pay(step.record, step.fee)}
+              testID="topup-pay"
             />
             {!step.record.payment.dispatched && (
               <PrimaryBtn
@@ -916,6 +920,7 @@ export const FlashcardV2TopUpScreen = () => {
               loading={busy}
               disabled={busy}
               onPress={() => loadCard(step.record, pin)}
+              testID="topup-load"
             />
           </>
         )
@@ -929,6 +934,7 @@ export const FlashcardV2TopUpScreen = () => {
             <PrimaryBtn
               label={LL.FlashcardV2.topUpDone()}
               onPress={() => navigation.goBack()}
+              testID="topup-close"
             />
           </>
         )

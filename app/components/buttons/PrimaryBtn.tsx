@@ -16,6 +16,8 @@ type Props = {
   btnStyle?: StyleProp<ViewStyle>
   txtStyle?: StyleProp<TextStyle>
   onPress?: () => void
+  /** A plain testID on the button, for e2e flows; the label stays what a screen reader says. */
+  testID?: string
 }
 
 const PrimaryBtn: React.FC<Props> = ({
@@ -26,6 +28,7 @@ const PrimaryBtn: React.FC<Props> = ({
   btnStyle = {},
   txtStyle = {},
   onPress = () => {},
+  testID,
 }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
@@ -38,6 +41,7 @@ const PrimaryBtn: React.FC<Props> = ({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.5}
+      testID={testID}
     >
       {loading ? (
         <ActivityIndicator color={colors.primary} />
