@@ -237,14 +237,10 @@ jobs:
             exit 1
           fi
 
-      # English, so the one testID that is a translated title (the home tab's
-      # "Home", which login.yaml waits on) reads the same on every runner image.
       - name: Boot the simulator and install the app
         run: |
           xcrun simctl boot "iPhone 16" || true
           xcrun simctl bootstatus "iPhone 16" -b
-          xcrun simctl spawn booted defaults write -g AppleLanguages -array en
-          xcrun simctl spawn booted defaults write -g AppleLocale -string en_US
           xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/Flash.app
 
       - name: Install Maestro
@@ -254,8 +250,13 @@ jobs:
 
       # Every flow starts the app cold twice (clean install, then signed in),
       # and each cold start can sit on the splash for a minute: see login.yaml.
+      # The XCTest driver Maestro installs can take minutes to come up on a
+      # hosted runner; its default startup timeout ended one run before any
+      # flow started.
       - name: Run the Flashcard flows
         timeout-minutes: 60
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: "300000"
         run: |
           maestro test \
             --format junit --output .e2e/maestro-junit.xml \
@@ -304,6 +305,9 @@ jobs:
             .e2e/*.log
             .e2e/maestro-junit.xml
             ~/.maestro/tests/**/*.png
+          # .e2e is a dot directory: without this the logs and the JUnit
+          # report are silently left out and only the screenshots go up.
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
 
