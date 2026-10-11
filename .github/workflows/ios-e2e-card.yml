@@ -134,43 +134,6 @@ jobs:
           CARD_FIXTURES_URL: ${{ env.FIXTURES_URL }}
         run: yarn test __tests__/integration/card-topup-cardsim.spec.ts
 
-      # The Test instance, never production, with the review account. Its
-      # session token is masked in the log, kept out of the uploaded results,
-      # and, when this run minted it, revoked at the end of the job.
-      - name: Sign in on the Test instance
-        env:
-          E2E_TOKEN_SECRET: ${{ secrets.E2E_TOKEN }}
-          E2E_TEST_PHONE: ${{ secrets.E2E_TEST_PHONE }}
-          E2E_TEST_CODE: ${{ secrets.E2E_TEST_CODE }}
-        run: |
-          token="$E2E_TOKEN_SECRET"
-          if [ -z "$token" ]; then
-            if [ -z "$E2E_TEST_PHONE" ] || [ -z "$E2E_TEST_CODE" ]; then
-              echo "::error::Set E2E_TOKEN, or E2E_TEST_PHONE and E2E_TEST_CODE (.maestro/flashcard/README.md)"
-              exit 1
-            fi
-            body=$(jq -n --arg phone "$E2E_TEST_PHONE" --arg code "$E2E_TEST_CODE" \
-              '{query: "mutation userLogin($input: UserLoginInput!) { userLogin(input: $input) { authToken errors { message } } }", variables: {input: {phone: $phone, code: $code}}}')
-            # The hosted runner's connection to the Test instance drops now and then
-            # (TLS SSL_ERROR_SYSCALL, connection reset): retry before failing an hour-long job.
-            answer=$(curl -fsS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
-              -H "content-type: application/json" -d "$body")
-            token=$(echo "$answer" | jq -r '.data.userLogin.authToken // empty')
-            # Say why there is no token: the errors carry no secret (the token is the
-            # only secret in the answer, and there is none when they are set).
-            if [ -z "$token" ]; then
-              echo "::error::userLogin returned no token: $(echo "$answer" | jq -c '.errors // .data.userLogin.errors')"
-            fi
-            # This run's own session: the revoke step below ends it.
-            if [ -n "$token" ]; then echo "E2E_TOKEN_MINTED=1" >> "$GITHUB_ENV"; fi
-          fi
-          if [ -z "$token" ]; then
-            echo "::error::No Test-instance session token"
-            exit 1
-          fi
-          echo "::add-mask::$token"
-          echo "E2E_TOKEN=$token" >> "$GITHUB_ENV"
-
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -284,6 +247,46 @@ jobs:
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      # Signed in last, just before the flows: the session token then never
+      # sits in the environment of the install steps (bundle, pods, the
+      # Maestro installer) that run third-party code.
+      # The Test instance, never production, with the review account. Its
+      # session token is masked in the log, kept out of the uploaded results,
+      # and, when this run minted it, revoked at the end of the job.
+      - name: Sign in on the Test instance
+        env:
+          E2E_TOKEN_SECRET: ${{ secrets.E2E_TOKEN }}
+          E2E_TEST_PHONE: ${{ secrets.E2E_TEST_PHONE }}
+          E2E_TEST_CODE: ${{ secrets.E2E_TEST_CODE }}
+        run: |
+          token="$E2E_TOKEN_SECRET"
+          if [ -z "$token" ]; then
+            if [ -z "$E2E_TEST_PHONE" ] || [ -z "$E2E_TEST_CODE" ]; then
+              echo "::error::Set E2E_TOKEN, or E2E_TEST_PHONE and E2E_TEST_CODE (.maestro/flashcard/README.md)"
+              exit 1
+            fi
+            body=$(jq -n --arg phone "$E2E_TEST_PHONE" --arg code "$E2E_TEST_CODE" \
+              '{query: "mutation userLogin($input: UserLoginInput!) { userLogin(input: $input) { authToken errors { message } } }", variables: {input: {phone: $phone, code: $code}}}')
+            # The hosted runner's connection to the Test instance drops now and then
+            # (TLS SSL_ERROR_SYSCALL, connection reset): retry before failing an hour-long job.
+            answer=$(curl -fsS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
+              -H "content-type: application/json" -d "$body")
+            token=$(echo "$answer" | jq -r '.data.userLogin.authToken // empty')
+            # Say why there is no token: the errors carry no secret (the token is the
+            # only secret in the answer, and there is none when they are set).
+            if [ -z "$token" ]; then
+              echo "::error::userLogin returned no token: $(echo "$answer" | jq -c '.errors // .data.userLogin.errors')"
+            fi
+            # This run's own session: the revoke step below ends it.
+            if [ -n "$token" ]; then echo "E2E_TOKEN_MINTED=1" >> "$GITHUB_ENV"; fi
+          fi
+          if [ -z "$token" ]; then
+            echo "::error::No Test-instance session token"
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "E2E_TOKEN=$token" >> "$GITHUB_ENV"
 
       # Every flow starts the app cold twice (clean install, then signed in),
       # and each cold start can sit on the splash for a minute: see login.yaml.
