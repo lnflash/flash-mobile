@@ -4,7 +4,6 @@ import { gql } from "@apollo/client"
 import { useFocusEffect } from "@react-navigation/native"
 import { v4 as uuidv4 } from "uuid"
 
-import { CASHU_MINT_URL } from "@app/config/appinfo"
 import {
   HomeAuthedDocument,
   PaymentSendResult,
@@ -18,6 +17,11 @@ import {
   isUnsupportedIdempotencyKeyError,
 } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 import { CashuCardInfo, verifyCardPin } from "@app/utils/cashu-card"
+import {
+  cardMintUrl,
+  isStaleDevMint,
+  stubbedPayOutcome,
+} from "@app/utils/cashu-card-bridge"
 import {
   CardFreeDeps,
   PayOutcome,
@@ -61,15 +65,24 @@ gql`
 
 // One store for the whole app: its write queue is what keeps two screens from
 // saving over each other. One client for the connected mint, so its keysets
-// are fetched once.
+// are fetched once; a new one only when a development build points the card
+// at another mint (`cardMintUrl`). A saved top-up stays bound to the mint
+// that issued it (`mintUrl`): the engine neither asks about, pays, mints nor
+// drops one through another mint, so one started against a dev mint is left
+// alone by the production one, and the other way round.
 const store = createTopUpStore()
 let connectedMint: TopUpMint | undefined
-const mint = (): TopUpMint => {
-  connectedMint ??= createTopUpMint(CASHU_MINT_URL)
+export const topUpMint = (): TopUpMint => {
+  const url = cardMintUrl()
+  if (connectedMint?.url !== url) connectedMint = createTopUpMint(url)
   return connectedMint
 }
 /** What the card-free steps need: the mint and the store, no wallet, no card. */
-const cardFreeDeps = (): CardFreeDeps => ({ mint: mint(), store, now: Date.now })
+const cardFreeDeps = (mint: TopUpMint = topUpMint()): CardFreeDeps => ({
+  mint,
+  store,
+  now: Date.now,
+})
 
 /**
  * Error codes flash's lnInvoicePaymentSend returns only for a payment refused
@@ -146,11 +159,31 @@ export const useCardTopUp = () => {
   })
   const [lnUsdInvoiceFeeProbe] = useLnUsdInvoiceFeeProbeMutation()
 
-  const deps: TopUpDeps = useMemo(
-    () => ({
-      ...cardFreeDeps(),
+  const deps: TopUpDeps = useMemo(() => {
+    // The mint these deps quote, pay and mint at, fixed for the screen's
+    // life. The engine pays only a record bound to it (`ofThisMint`), so
+    // `pay` judges the dev stub against it, never the bridge's mint of the
+    // moment: a dev link arriving after the screen mounted cannot pair the
+    // stub with a production quote, nor turn a dev quote into a real payment.
+    const mint = topUpMint()
+    return {
+      ...cardFreeDeps(mint),
       newId: uuidv4,
       pay: async ({ walletId, paymentRequest, idempotencyKey }): Promise<PayOutcome> => {
+        // Development builds only, against a dev mint that is never the
+        // production one (ENG-634): a FakeWallet mint marks its own quote
+        // paid, so nothing is sent. Undefined in a release build.
+        const stub = stubbedPayOutcome(mint.url)
+        if (stub) return stub
+        // A dev mint the bridge has since let go of: its invoice is never
+        // paid from the Cash wallet. Refused before anything is sent, so
+        // nothing left the wallet. Never true for the production mint.
+        if (isStaleDevMint(mint.url)) {
+          return {
+            kind: "failed",
+            message: "the card bridge no longer points at this top-up's dev mint",
+          }
+        }
         let answer
         try {
           // Always with the key, never the send flow's keyless fallback: a
@@ -182,9 +215,8 @@ export const useCardTopUp = () => {
         }
         return readPaymentAnswer(answer)
       },
-    }),
-    [payInvoice, LL],
-  )
+    }
+  }, [payInvoice, LL])
 
   /** The Cash wallet's fee to pay the top-up's invoice, in cents; undefined if it cannot be probed. */
   const feeFor = async (record: TopUpRecord): Promise<number | undefined> => {

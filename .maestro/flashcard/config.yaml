@@ -1,0 +1,6 @@
+# Flashcard e2e flows (ENG-634). Every top-level flow runs; subflows/ and
+# scripts/ are their building blocks. See README.md.
+flows:
+  - "*"
+executionOrder:
+  continueOnFailure: true

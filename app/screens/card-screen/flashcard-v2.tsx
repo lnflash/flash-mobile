@@ -141,6 +141,7 @@ export const FlashcardV2Screen = () => {
               icon="down"
               label={LL.FlashcardV2.topUp()}
               onPress={() => navigation.navigate("FlashcardV2TopUp")}
+              testID="flashcard-v2-action-topup"
             />
           )}
           {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
@@ -157,6 +158,11 @@ export const FlashcardV2Screen = () => {
                   mode: cashuCard.pinState === "unset" ? "set" : "change",
                 })
               }
+              testID={
+                cashuCard.pinState === "unset"
+                  ? "flashcard-v2-action-set-pin"
+                  : "flashcard-v2-action-change-pin"
+              }
             />
           )}
           {/* Only a card that answers CLEAR_PIN (applet 0.5, GET_INFO
@@ -169,6 +175,7 @@ export const FlashcardV2Screen = () => {
               icon="lockOpen"
               label={LL.FlashcardV2.removePin()}
               onPress={() => navigation.navigate("FlashcardV2Pin", { mode: "remove" })}
+              testID="flashcard-v2-action-remove-pin"
             />
           )}
           <IconBtn

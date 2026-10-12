@@ -183,6 +183,7 @@ export const AmountInputScreenUI: React.FC<AmountInputScreenUIProps> = ({
           onPress={onSetAmountPress ? onSetAmountPress : () => {}}
           label={LL.AmountInputScreen.setAmount()}
           btnStyle={styles.btnStyle}
+          testID="amount-input-set"
         />
       </View>
     </View>

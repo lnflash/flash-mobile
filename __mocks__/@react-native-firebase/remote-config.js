@@ -2,6 +2,7 @@ const configValue = {
   asBoolean: () => false,
   asNumber: () => 0,
   asString: () => "",
+  getSource: () => "remote",
 }
 
 const remoteConfig = {

@@ -1,0 +1,408 @@
+# Flashcard e2e (ENG-634): Maestro flows on an iOS simulator against the real
+# cashu-javacard applet in jCardSim (cardsim) and a local Nutshell on
+# FakeWallet. Advisory: nightly, on demand, and on PRs that touch the card
+# path; not a required check. See .maestro/flashcard/README.md.
+name: iOS e2e (Flashcard)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+  pull_request:
+    paths:
+      - "app/contexts/Flashcard.tsx"
+      - "app/utils/cashu-card*"
+      - "app/utils/cashu-card-topup/**"
+      - "app/utils/cashu-mint.ts"
+      - "app/hooks/use-card-top-up.ts"
+      - "app/hooks/use-tap-flashcard.ts"
+      - "app/screens/card-screen/**"
+      # What the flows tap and type into on the way to the card screens: a
+      # renamed testID here breaks them as surely as one in card-screen/.
+      - "app/components/card/PinPad.tsx"
+      - "app/components/buttons/**"
+      - "app/components/amount-input/**"
+      - "app/components/amount-input-screen/**"
+      - "app/components/currency-keyboard/**"
+      - "app/utils/testProps.ts"
+      # The dev-link wiring (useDevCardLinks mount, the linking guard) and the
+      # sign-in path (logo taps, developer screen token field).
+      - "app/navigation/**"
+      - "app/screens/developer-screen/**"
+      - "app/screens/get-started-screen/**"
+      - ".maestro/**"
+      - "scripts/e2e/**"
+      - ".github/workflows/ios-e2e-card.yml"
+
+concurrency:
+  group: ios-e2e-card-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # lnflash/cashu-javacard main with tools/cardsim (ENG-634, #33).
+  CASHU_JAVACARD_REF: 7a961021e0b563c75b6968320bf1b098c0ef07f0
+  # Nutshell. 0.20.3 (what forge runs) no longer installs: the breez-sdk-spark
+  # range it pins is gone from PyPI. marshmallow and limits are capped because
+  # 0.21.0 leaves them open and their current majors break its startup.
+  NUTSHELL_VERSION: "0.21.0"
+  MAESTRO_VERSION: "2.10.0"
+  BRIDGE_URL: http://localhost:9876
+  MINT_URL: http://localhost:3338
+  FIXTURES_URL: http://localhost:9877
+
+jobs:
+  flashcard-e2e:
+    name: Flashcard flows (iOS simulator)
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      # The card and the mint come up first: a broken stack fails in minutes,
+      # before the iOS build. cashu-javacard is checked out before Java: the
+      # Maven cache keys on cardsim's pom.xml, and this workspace has none.
+      - name: Checkout cashu-javacard (cardsim)
+        uses: actions/checkout@v4
+        with:
+          repository: lnflash/cashu-javacard
+          ref: ${{ env.CASHU_JAVACARD_REF }}
+          path: .e2e/cashu-javacard
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: .e2e/cashu-javacard/tools/cardsim/pom.xml
+
+      - name: Start the card bridge
+        run: |
+          mvn -B -q -f .e2e/cashu-javacard/tools/cardsim/pom.xml package -DskipTests
+          nohup java -jar .e2e/cashu-javacard/tools/cardsim/target/cardsim.jar --port 9876 \
+            > .e2e/cardsim.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS "$BRIDGE_URL/state" > /dev/null && break; sleep 1; done
+          curl -fsS "$BRIDGE_URL/state" > /dev/null
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # VERSION=0.19.2 makes Nutshell derive a v1 keyset id (8 bytes) on first
+      # start, as forge's keysets are: a card slot cannot hold a v2 id.
+      - name: Start the mint (Nutshell, FakeWallet)
+        run: |
+          python -m pip install "cashu==${NUTSHELL_VERSION}" "marshmallow<4" "limits<4"
+          mkdir -p .e2e/mint
+          cd .e2e/mint
+          VERSION=0.19.2 MINT_PRIVATE_KEY=ci-e2e-only \
+            MINT_BACKEND_BOLT11_SAT=FakeWallet MINT_LISTEN_PORT=3338 \
+            MINT_INPUT_FEE_PPK=0 MINT_RATE_LIMIT=FALSE FAKEWALLET_DELAY_INCOMING_PAYMENT=0 \
+            nohup mint > ../mint.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS "$MINT_URL/v1/keysets" > /dev/null && break; sleep 1; done
+          curl -fsS "$MINT_URL/v1/keysets"
+
+      - name: Start the fixture server and smoke every fixture
+        run: |
+          nohup node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve --port 9877 \
+            --bridge "$BRIDGE_URL" --mint "$MINT_URL" > .e2e/fixtures.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS "$FIXTURES_URL/health" > /dev/null && break; sleep 1; done
+          for fixture in fresh loaded spent full blocked loaded-0.4; do
+            curl -fsS -X POST "$FIXTURES_URL/load/$fixture"; echo
+          done
+
+      # The top-up engine and the dev card transport against the same card
+      # and mint, below the UI: no wallet, so no sign-in needed.
+      - name: Top-up against cardsim (jest, opt-in spec)
+        env:
+          CARDSIM_URL: ${{ env.BRIDGE_URL }}
+          CARD_MINT_URL: ${{ env.MINT_URL }}
+          CARD_FIXTURES_URL: ${{ env.FIXTURES_URL }}
+        run: yarn test __tests__/integration/card-topup-cardsim.spec.ts
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install Ruby dependencies
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+
+      # From ios/, not `--project-directory=ios` from the root: the Podfile's
+      # post_install resolves its paths against Dir.pwd (Pods/Target Support
+      # Files, the bitcode strip list), so from the root it finds nothing and
+      # skips every Xcode 16/26 fixup. One of those turns library evolution off
+      # in Pods-LNFlash.*.xcconfig; left on, the app target fails with "using
+      # bridging headers with module interfaces is unsupported".
+      - name: Install CocoaPods
+        working-directory: ios
+        run: bundle exec pod install
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      # Debug, so __DEV__ holds and the dev card links work; FORCE_BUNDLING
+      # embeds the JS bundle, so the app runs without Metro. Signed ad hoc
+      # ("-", no team, no profile), not unsigned: an app built with
+      # CODE_SIGNING_ALLOWED=NO gets no Keychain on the simulator (securityd
+      # answers -34018), and the top-up store lives there, so `topup` fails at
+      # "Couldn't set up the top-up with the mint" before any mint request.
+      # Xcode's script phases (Hermes' "Replace Hermes for the right
+      # configuration", "Bundle React Native code and images") take node from
+      # NODE_BINARY, which ios/.xcode.env and the tracked .xcode.env.local set
+      # from `nvm which`. The macOS runner has no nvm, so NODE_BINARY comes out
+      # empty, RN's find-node fallback only edits PATH, and the Hermes phase
+      # runs `"" replace_hermes_version.js`: exit 127, the build fails. Point
+      # it at the node setup-node installed. .local is sourced last, so it wins.
+      - name: Point Xcode's script phases at this job's node
+        run: echo "export NODE_BINARY=$(command -v node)" > ios/.xcode.env.local
+
+      # The runner image varies: one had an iPhone 16, another had no simulator
+      # devices at all for its iOS runtime. Create our own: the newest
+      # available iOS runtime, then the newest plain `iPhone N` that runtime
+      # itself supports (picking them separately can pair a device the runtime
+      # rejects). Same recipe as flash-pos's card e2e job.
+      - name: Create a simulator
+        run: |
+          read -r RUNTIME DEVICE_TYPE < <(xcrun simctl list runtimes available -j | node -e '
+            const num = (a, b) => a.localeCompare(b, undefined, { numeric: true });
+            const r = JSON.parse(require("fs").readFileSync(0, "utf8")).runtimes
+              .filter(x => x.platform === "iOS" && x.isAvailable)
+              .sort((a, b) => num(a.version, b.version))
+              .at(-1);
+            const d = (r?.supportedDeviceTypes ?? [])
+              .filter(t => /^iPhone \d+$/.test(t.name))
+              .sort((a, b) => num(a.name, b.name))
+              .at(-1);
+            console.log(r?.identifier ?? "", d?.identifier ?? "");') || true
+          echo "runtime: ${RUNTIME:-<none>}"
+          echo "device type: ${DEVICE_TYPE:-<none>}"
+          if [ -z "$RUNTIME" ] || [ -z "$DEVICE_TYPE" ]; then
+            echo "::error::No available iOS runtime with a supported plain iPhone device type."
+            xcrun simctl list runtimes available
+            exit 1
+          fi
+          SIM=$(xcrun simctl create flashcard-e2e "$DEVICE_TYPE" "$RUNTIME")
+          echo "SIM_ID=$SIM" >> "$GITHUB_ENV"
+          echo "simulator $SIM ($DEVICE_TYPE, $RUNTIME)"
+
+      # The raw xcodebuild output goes to a file (xcpretty drops the text a
+      # failing script phase prints) and is uploaded when the job fails. The
+      # build runs without the session token in its environment, so neither
+      # the log nor anything the build embeds can carry it.
+      - name: Build iOS (Debug, simulator, bundled)
+        run: |
+          set -o pipefail
+          mkdir -p build
+          env -u E2E_TOKEN FORCE_BUNDLING=1 xcodebuild \
+            -workspace ios/LNFlash.xcworkspace \
+            -scheme LNFlash \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "id=$SIM_ID" \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+            build 2>&1 | tee build/xcodebuild-e2e.log | xcpretty --color
+          # An unsigned app fails here, not 30 minutes later in `topup`: the
+          # simulator reads the app's entitlements from this section, which
+          # only a signed build has.
+          app=build/Build/Products/Debug-iphonesimulator/Flash.app
+          codesign --verify "$app"
+          if ! otool -l "$app/Flash" | grep -q "sectname __entitlements"; then
+            echo "::error::Flash.app has no simulated entitlements: the Keychain will refuse it"
+            exit 1
+          fi
+
+      - name: Boot the simulator and install the app
+        run: |
+          xcrun simctl boot "$SIM_ID" || true
+          xcrun simctl bootstatus "$SIM_ID" -b
+          xcrun simctl install "$SIM_ID" build/Build/Products/Debug-iphonesimulator/Flash.app
+
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      # Signed in last, just before the flows: the session token then never
+      # sits in the environment of the install steps (bundle, pods, the
+      # Maestro installer) that run third-party code.
+      # The Test instance, never production, with the review account. Its
+      # session token is masked in the log, kept out of the uploaded results,
+      # and, when this run minted it, revoked at the end of the job.
+      - name: Sign in on the Test instance
+        env:
+          E2E_TOKEN_SECRET: ${{ secrets.E2E_TOKEN }}
+          E2E_TEST_PHONE: ${{ secrets.E2E_TEST_PHONE }}
+          E2E_TEST_CODE: ${{ secrets.E2E_TEST_CODE }}
+        run: |
+          token="$E2E_TOKEN_SECRET"
+          if [ -z "$token" ]; then
+            if [ -z "$E2E_TEST_PHONE" ] || [ -z "$E2E_TEST_CODE" ]; then
+              echo "::error::Set E2E_TOKEN, or E2E_TEST_PHONE and E2E_TEST_CODE (.maestro/flashcard/README.md)"
+              exit 1
+            fi
+            body=$(jq -n --arg phone "$E2E_TEST_PHONE" --arg code "$E2E_TEST_CODE" \
+              '{query: "mutation userLogin($input: UserLoginInput!) { userLogin(input: $input) { authToken errors { message } } }", variables: {input: {phone: $phone, code: $code}}}')
+            # The hosted runner's connection to the Test instance drops now and then
+            # (TLS SSL_ERROR_SYSCALL, connection reset): retry before failing an hour-long job.
+            answer=$(curl -fsS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
+              -H "content-type: application/json" -d "$body")
+            token=$(echo "$answer" | jq -r '.data.userLogin.authToken // empty')
+            # Say why there is no token: the errors carry no secret (the token is the
+            # only secret in the answer, and there is none when they are set).
+            if [ -z "$token" ]; then
+              echo "::error::userLogin returned no token: $(echo "$answer" | jq -c '.errors // .data.userLogin.errors')"
+            fi
+            # This run's own session: the revoke step below ends it.
+            if [ -n "$token" ]; then echo "E2E_TOKEN_MINTED=1" >> "$GITHUB_ENV"; fi
+          fi
+          if [ -z "$token" ]; then
+            echo "::error::No Test-instance session token"
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "E2E_TOKEN=$token" >> "$GITHUB_ENV"
+
+      # Every flow starts the app cold twice (clean install, then signed in),
+      # and each cold start can sit on the splash for a minute: see login.yaml.
+      # The XCTest driver Maestro installs can take minutes to come up on a
+      # hosted runner; its default startup timeout ended one run before any
+      # flow started.
+      - name: Run the Flashcard flows
+        timeout-minutes: 60
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: "300000"
+        # Alongside the flows: the app's log streamed live (its JS console is
+        # info level, which `log show` cannot read back once it has aged out
+        # of memory), and a stack sample of the running app every 100 s, so a
+        # launch that never leaves the splash shows where its threads wait.
+        run: |
+          mkdir -p .e2e/samples
+          xcrun simctl spawn booted log stream --level info --style compact \
+            --predicate 'process == "Flash" AND (subsystem == "com.facebook.react.log" OR messageType >= 16 OR senderImagePath ENDSWITH "Flash.debug.dylib")' \
+            > .e2e/app.log 2>&1 &
+          echo $! > .e2e/log-stream.pid
+          ( while sleep 100; do
+              pid=$(pgrep -nx Flash) || continue
+              sample "$pid" 2 -file ".e2e/samples/flash-$(date +%H%M%S).txt" > /dev/null 2>&1 || true
+            done ) &
+          echo $! > .e2e/sampler.pid
+          # Maestro's XCTest driver sometimes never comes up on the hosted Mac
+          # ("iOS driver not ready in time" after the full 5 min, before any
+          # flow runs). That is the runner, not the app: start again once.
+          run_flows() {
+            maestro test \
+              --format junit --output .e2e/maestro-junit.xml \
+              --env BRIDGE_URL="$BRIDGE_URL" \
+              --env MINT_URL="$MINT_URL" \
+              --env FIXTURES_URL="$FIXTURES_URL" \
+              --env E2E_TOKEN="$E2E_TOKEN" \
+              .maestro/flashcard/ 2>&1 | tee "$1"
+          }
+          set +e -o pipefail
+          run_flows .e2e/maestro-1.log
+          status=$?
+          if [ $status -ne 0 ] && grep -q "iOS driver not ready in time" .e2e/maestro-1.log; then
+            echo "::warning::Maestro's iOS driver did not start; restarting it once"
+            xcrun simctl terminate booted dev.mobile.maestro-driver-iosUITests.xctrunner > /dev/null 2>&1 || true
+            run_flows .e2e/maestro-2.log
+            status=$?
+          fi
+          exit $status
+
+      - name: Stop the log stream and the sampler
+        if: always()
+        run: |
+          for f in .e2e/log-stream.pid .e2e/sampler.pid; do
+            if [ -f "$f" ]; then kill "$(cat "$f")" 2> /dev/null || true; fi
+          done
+          wc -l .e2e/app.log || true
+          ls .e2e/samples || true
+
+      # The repository is public, and so are its artifacts. Maestro's own
+      # maestro.log and commands-*.json under ~/.maestro/tests record every
+      # inputText, the session token login.yaml types among them, so only the
+      # screenshots go up from there. What does go up is scrubbed of the token
+      # first, in case a failure message quotes it.
+      - name: Scrub the session token from the results
+        if: always()
+        run: |
+          [ -n "$E2E_TOKEN" ] || exit 0
+          # Any Kratos session token, not just this one: a token typed with a
+          # character dropped is still most of the real one.
+          for f in .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log; do
+            if [ -f "$f" ]; then
+              perl -pi -e 's/\Q$ENV{E2E_TOKEN}\E/***/g; s/ory_st_[A-Za-z0-9]+/ory_st_***/g' "$f"
+            fi
+          done
+          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log 2>/dev/null; then
+            echo "::error::The session token is still in the results"
+            exit 1
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flashcard-e2e
+          path: |
+            .e2e/*.log
+            .e2e/maestro-junit.xml
+            .e2e/samples/*.txt
+            ~/.maestro/tests/**/*.png
+          # .e2e is a dot directory: without this the logs and the JUnit
+          # report are silently left out and only the screenshots go up.
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Only on failure: the raw log runs to tens of megabytes.
+      - name: Upload the raw xcodebuild log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-e2e-log
+          path: build/xcodebuild-e2e.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # A session this run minted dies with it (flash's userLogout ends the
+      # Kratos session the bearer token names; deviceToken is required by the
+      # schema and names no device here). An E2E_TOKEN secret is left alone:
+      # revoking it would break the next run, so rotating it is the operator's.
+      - name: Revoke this run's session
+        if: always() && env.E2E_TOKEN_MINTED == '1'
+        run: |
+          answer=$(curl -sS --retry 4 --retry-all-errors --retry-delay 15 https://api.test.flashapp.me/graphql \
+            -H "content-type: application/json" \
+            -H "authorization: Bearer $E2E_TOKEN" \
+            -d '{"query":"mutation userLogout($input: UserLogoutInput!) { userLogout(input: $input) { success errors { message } } }","variables":{"input":{"deviceToken":"ci-e2e-flashcard"}}}')
+          if [ "$(echo "$answer" | jq -r '.data.userLogout.success // false')" != "true" ]; then
+            echo "::error::The Test-instance session was not revoked: $(echo "$answer" | jq -c '.errors // .data.userLogout.errors')"
+            exit 1
+          fi

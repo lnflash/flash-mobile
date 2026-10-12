@@ -1,0 +1,36 @@
+# A fresh card gets its first PIN: SET_PIN over the bridge.
+appId: com.lnflash
+name: Flashcard set PIN
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: fresh
+- assertVisible:
+    id: flashcard-v2-no-pin
+- tapOn:
+    id: flashcard-v2-action-set-pin
+- assertVisible:
+    id: pin-entry
+- runFlow:
+    file: subflows/pin-entry.yaml
+    env:
+      PIN: "1234"
+      NEXT_ID: pin-next
+- runFlow:
+    file: subflows/pin-entry.yaml
+    env:
+      PIN: "1234"
+      NEXT_ID: pin-next
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-change-pin
+    timeout: 20000
+- assertNotVisible:
+    id: flashcard-v2-no-pin
+- runScript:
+    file: scripts/verify-pin.js
+    env:
+      PIN: "1234"

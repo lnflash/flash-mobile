@@ -11,6 +11,7 @@ import {
   totalsByUnit,
   unitsForKeysets,
 } from "../../app/utils/cashu-mint"
+import { setCardBridge } from "../../app/utils/cashu-card-bridge"
 
 jest.mock("axios", () => ({ get: jest.fn() }))
 
@@ -143,6 +144,39 @@ describe("unitsForKeysets", () => {
       "https://forge.flashapp.me/v1/keysets",
       expect.anything(),
     )
+  })
+
+  describe("with a development build's dev mint (ENG-634)", () => {
+    type Dev = { __DEV__: boolean }
+    afterEach(() => {
+      ;(globalThis as unknown as Dev).__DEV__ = true
+      setCardBridge(undefined)
+    })
+
+    it("defaults to the dev mint while a card bridge names one", async () => {
+      setCardBridge({ url: "http://localhost:9876", mintUrl: "http://localhost:3338" })
+      get.mockResolvedValue({ data: keysetsBody([{ id: SAT, unit: "sat" }]) })
+      await unitsForKeysets([SAT])
+      expect(get).toHaveBeenCalledWith(
+        "http://localhost:3338/v1/keysets",
+        expect.anything(),
+      )
+      expect(get).not.toHaveBeenCalledWith(
+        "https://forge.flashapp.me/v1/keysets",
+        expect.anything(),
+      )
+    })
+
+    it("never in a release build", async () => {
+      setCardBridge({ url: "http://localhost:9876", mintUrl: "http://localhost:3339" })
+      ;(globalThis as unknown as Dev).__DEV__ = false
+      get.mockResolvedValue({ data: keysetsBody([{ id: SAT, unit: "sat" }]) })
+      await unitsForKeysets([SAT])
+      expect(get).not.toHaveBeenCalledWith(
+        "http://localhost:3339/v1/keysets",
+        expect.anything(),
+      )
+    })
   })
 })
 

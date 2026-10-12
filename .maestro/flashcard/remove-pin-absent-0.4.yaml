@@ -1,0 +1,24 @@
+# An applet 0.4 card (no CLEAR_PIN, capability bit 3 clear) with a PIN: the
+# card screen offers Change PIN and no Remove PIN, since a 0.4 build answers
+# CLEAR_PIN with 6D00 (spec/APDU.md GET_INFO capability bits; ENG-634 design,
+# "0.4-card compatibility"). cardsim masks the card as 0.4 (CardSim.java,
+# Version masks); the fixture is loaded-0.4.
+appId: com.lnflash
+name: Flashcard 0.4 card has no Remove PIN
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: loaded-0.4
+- runScript: scripts/card-state.js
+# The mask is on and the card holds a PIN: the screen read a 0.4 card with a PIN.
+- assertTrue: ${output.card.appletVersion === "0.4"}
+- assertTrue: ${output.card.pinState === 1}
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-change-pin
+    timeout: 20000
+- assertNotVisible:
+    id: flashcard-v2-action-remove-pin

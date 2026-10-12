@@ -32,9 +32,11 @@ type Props = {
   icon: IconNamesType
   label: string
   onPress: () => void
+  /** A plain testID on the button, for e2e flows; the label stays what a screen reader says. */
+  testID?: string
 }
 
-const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress }) => {
+const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress, testID }) => {
   const { colors } = useTheme().theme
   const styles = useStyles()
   const Icon = icons[icon]
@@ -45,6 +47,7 @@ const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress }) => {
         style={[styles.base, styles[type]]}
         onPress={onPress}
         activeOpacity={0.5}
+        testID={testID}
       >
         <Icon color={colors.icon01} width={30} height={30} />
       </TouchableOpacity>

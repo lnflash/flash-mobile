@@ -11,13 +11,16 @@ import {
   Amount,
   MintKeys,
   MintOperationError,
+  Proof,
   SerializedBlindedMessage,
   SerializedBlindedSignature,
   createBlindSignature,
   createDLEQProof,
   createNewMintKeys,
+  hashToCurve,
   pointFromHex,
 } from "@cashu/cashu-ts"
+import { schnorr, secp256k1 } from "@noble/curves/secp256k1"
 
 import { PROOF_SIZE, Transceiver, toHex } from "../../app/utils/cashu-card"
 import { verifyMintQuoteSignature } from "../../app/utils/cashu-card-topup/nut20"
@@ -54,6 +57,17 @@ export type FakeMint = TopUpMint & {
    * forge's usd backend creates.
    */
   ttlSeconds: Record<CardUnit, number>
+  /**
+   * NUT-03 swap of P2PK-locked inputs (the card's proofs): each input needs a
+   * NUT-11 witness, the BIP-340 signature of SHA-256(secret) by the key its
+   * secret locks to, and must not be spent already. The inputs turn SPENT
+   * (`proofStatesByY`) and the outputs are signed, as Nutshell does. Fees are
+   * the keyset's `input_fee_ppk`, 0 here.
+   */
+  swap: (
+    inputs: Proof[],
+    outputs: SerializedBlindedMessage[],
+  ) => Promise<SerializedBlindedSignature[]>
 }
 
 /** The mint's Lightning node key: it signs every quote's invoice, as phoenixd does. */
@@ -230,6 +244,35 @@ export const createFakeMint = ({
     proofStates: jest.fn(async (Ys: string[]) =>
       Ys.map((Y) => proofStatesByY.get(Y) ?? "UNSPENT"),
     ),
+    swap: jest.fn(async (inputs: Proof[], outputs: SerializedBlindedMessage[]) => {
+      const total = (items: { amount: Proof["amount"] }[]) =>
+        items.reduce((sum, item) => sum + Amount.from(item.amount).toNumber(), 0)
+      if (total(inputs) !== total(outputs)) {
+        throw new MintOperationError(11000, "inputs and outputs do not balance")
+      }
+      const Ys = inputs.map((input) =>
+        toHex(hashToCurve(new TextEncoder().encode(input.secret)).toBytes(true)),
+      )
+      inputs.forEach((input, i) => {
+        if (proofStatesByY.get(Ys[i]) === "SPENT") {
+          throw new MintOperationError(11001, "Token already spent.")
+        }
+        const [kind, { data }] = JSON.parse(input.secret)
+        const witness =
+          typeof input.witness === "string" ? JSON.parse(input.witness) : input.witness
+        const signature = witness?.signatures?.[0]
+        const message = createHash("sha256").update(input.secret).digest()
+        if (
+          kind !== "P2PK" ||
+          typeof signature !== "string" ||
+          !schnorr.verify(signature, message, (data as string).slice(2))
+        ) {
+          throw new MintOperationError(10001, "no valid signature provided for input.")
+        }
+      })
+      Ys.forEach((Y) => proofStatesByY.set(Y, "SPENT"))
+      return outputs.map(sign)
+    }),
   }
   return fake
 }
@@ -257,6 +300,15 @@ export type FakeCardOptions = {
   pin?: string
   /** Advertise and answer CLEAR_PIN (applet 0.5); a 0.4 card answers it 6D00. */
   clearPin?: boolean
+  /**
+   * The rest of an applet 0.6 (spec/APDU.md), signing with this key: SELECT
+   * (which ends the session's PIN verification, as a new tap does),
+   * GET_PUBKEY, GET_BALANCE, SET_PIN, SET_PUK and SPEND_PROOF, with
+   * LOAD_PROOF, SET_PUK and SPEND_PROOF gated on a verified session once a
+   * PIN is set. Implies `clearPin`. Without it the card is as described
+   * above and answers those 6D00.
+   */
+  applet?: { privateKey: Uint8Array }
 }
 
 /** The applet's PIN try limit. */
@@ -280,8 +332,10 @@ const PIN_TRIES = 3
  */
 export const createFakeCard = (
   maxSlots = 32,
-  { pin: initialPin, clearPin = false }: FakeCardOptions = {},
+  { pin: initialPin, clearPin: clearPinOption = false, applet }: FakeCardOptions = {},
 ): FakeCard => {
+  const clearPin = clearPinOption || applet !== undefined
+  let puk: string | undefined
   const slots: number[][] = Array.from({ length: maxSlots }, () =>
     new Array(PROOF_SIZE).fill(0),
   )
@@ -300,7 +354,59 @@ export const createFakeCard = (
     }
     return [0x63, 0xc0 + tries]
   }
+  /** A PIN-gated command: refused while a PIN is set (or blocked) and not verified. */
+  const gated = () => applet !== undefined && (pin !== undefined || blocked) && !verified
+  const appletCommand = (apdu: number[]): number[] | undefined => {
+    if (!applet) return undefined
+    const [cla, ins, p1] = apdu
+    const data = apdu.slice(5, 5 + (apdu[4] ?? 0))
+    if (cla === 0x00 && ins === 0xa4) {
+      verified = false
+      return [0, 6, ...SW_OK]
+    }
+    switch (ins) {
+      case 0x10:
+        return [...secp256k1.getPublicKey(applet.privateKey, true), ...SW_OK]
+      case 0x11: {
+        // The slot's 4-byte big-endian amount, after status and keyset id.
+        const balance = slots
+          .filter((slot) => slot[0] === 1)
+          .reduce(
+            (sum, slot) =>
+              sum + new DataView(Uint8Array.from(slot.slice(9, 13)).buffer).getUint32(0),
+            0,
+          )
+        const bytes = new Uint8Array(4)
+        new DataView(bytes.buffer).setUint32(0, balance)
+        return [...bytes, ...SW_OK]
+      }
+      case 0x41:
+        if (pin !== undefined || blocked) return [0x69, 0x85]
+        pin = pinOf(data)
+        tries = PIN_TRIES
+        return SW_OK
+      case 0x44:
+        if (puk !== undefined) return [0x6a, 0x89]
+        if (gated()) return [0x69, 0x82]
+        puk = pinOf(data.slice(1, 1 + data[0]))
+        return SW_OK
+      case 0x30:
+        return gated() ? [0x69, 0x82] : undefined
+      case 0x20: {
+        if (gated()) return [0x69, 0x82]
+        if (slots[p1][0] === 0) return [0x6a, 0x88]
+        if (slots[p1][0] === 2) return [0x69, 0x85]
+        // The slot burns before the card signs, as the applet does.
+        slots[p1][0] = 2
+        return [...schnorr.sign(Uint8Array.from(data), applet.privateKey), ...SW_OK]
+      }
+      default:
+        return undefined
+    }
+  }
   const transceive = jest.fn(async (apdu: number[]) => {
+    const answered = appletCommand(apdu)
+    if (answered) return answered
     const [, ins, p1] = apdu
     switch (ins) {
       case 0x01: {
@@ -311,11 +417,11 @@ export const createFakeCard = (
           },
           [0, 0, 0],
         )
-        const caps = 0x07 + (clearPin ? 0x08 : 0)
+        const caps = 0x07 + (clearPin ? 0x08 : 0) + (applet ? 0x10 : 0)
         const pinState = blocked ? 2 : pin === undefined ? 0 : 1
         return [
           0,
-          clearPin ? 5 : 4,
+          applet ? 6 : clearPin ? 5 : 4,
           maxSlots,
           counts[1],
           counts[2],

@@ -12,9 +12,8 @@
  */
 import axios from "axios"
 
-import { CASHU_MINT_URL } from "@app/config/appinfo"
-
 import type { CardKeysetTotal } from "./cashu-card"
+import { cardMintUrl } from "./cashu-card-bridge"
 
 /** Keyset id (lowercase hex) → the unit the mint gives for it, e.g. "sat". */
 export type KeysetUnits = Record<string, string>
@@ -77,11 +76,13 @@ const keysetUnits = (mintUrl: string, refresh: boolean): Promise<KeysetUnits> =>
  * for the app session and fetched again once when it lacks one of the ids, so
  * a keyset the mint added since the last fetch is picked up. Ids the mint still
  * does not list are simply absent from the result. Rejects when the mint cannot
- * be reached or answers with something that is not a keyset list.
+ * be reached or answers with something that is not a keyset list. The mint
+ * is `CASHU_MINT_URL` unless a development build set a dev mint
+ * (`cardMintUrl`).
  */
 export const unitsForKeysets = async (
   keysetIds: string[],
-  mintUrl: string = CASHU_MINT_URL,
+  mintUrl: string = cardMintUrl(),
 ): Promise<KeysetUnits> => {
   const listsAll = (units: KeysetUnits) =>
     keysetIds.every((id) => units[id.toLowerCase()] !== undefined)

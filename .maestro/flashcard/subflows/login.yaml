@@ -1,0 +1,105 @@
+# Signs in on the Test instance with E2E_TOKEN from a clean install, then
+# relaunches into the signed-in app. Top-up records live in the Keychain, so
+# the Keychain is cleared too: a leftover one would change the next flow's path.
+appId: com.lnflash
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    permissions:
+      all: deny
+# A cold start keeps the splash up until Remote Config's fetch settles or
+# REMOTE_CONFIG_GATE_MS (5 s) passes, whichever is first
+# (FeatureFlagContextProvider renders nothing before then for a signed-out
+# app). The 3 x 50 s below is a ceiling for a slow simulator boot, not the wait.
+# An "Open in “Flash”?" prompt left over from an earlier flow is a system
+# alert: it survives the relaunch and hides the app. Dismiss it while waiting.
+- retry:
+    maxRetries: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Open in .Flash.\\?"
+          commands:
+            - tapOn: "Cancel"
+      - extendedWaitUntil:
+          visible:
+            id: get-started-logo
+          timeout: 50000
+# Setting the bridge also hides LogBox, whose toasts cover the token field.
+- runFlow:
+    file: open-link.yaml
+    env:
+      LINK: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1
+# Three taps on the logo open the developer screen. Retried: taps that land
+# before the Get Started screen takes touches leave it where it was. The
+# counter keeps earlier taps, and the tap is skipped once the logo is gone, so
+# a developer screen that opened late is not tapped through.
+- retry:
+    maxRetries: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Open in .Flash.\\?"
+          commands:
+            - tapOn: "Open"
+      - runFlow:
+          when:
+            visible:
+              id: get-started-logo
+          commands:
+            - tapOn:
+                id: get-started-logo
+                repeat: 3
+                delay: 150
+      - scrollUntilVisible:
+          element:
+            id: "Test Button"
+- tapOn:
+    id: "Test Button"
+# The token field empties when the instance changes: type it after.
+- scrollUntilVisible:
+    element:
+      id: "Input access token"
+# The field is a secure entry, so iOS reports its value as one bullet per
+# character, never the text. Matching that count catches a token that lost
+# characters on the way in (still "present" after saving, but rejected by the
+# server); the token is retyped until it matches.
+- evalScript: ${output.tokenMask = '•'.repeat(E2E_TOKEN.length)}
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "Input access token"
+      - eraseText: 200
+      - inputText: ${E2E_TOKEN}
+      - hideKeyboard
+      - assertVisible:
+          id: "Input access token"
+          text: ${output.tokenMask}
+- scrollUntilVisible:
+    element:
+      id: "Save Changes"
+    direction: UP
+- tapOn:
+    id: "Save Changes"
+- extendedWaitUntil:
+    visible: "Token Present: true"
+    timeout: 20000
+# The relaunch is a cold start too. A dev link sent before the app is up is
+# dropped, so the signed-in app must be showing first. "Home" is the home
+# tab's testID, which is its title: English on the hosted runner's
+# simulators, as on a default local one. The signed-in splash waits on the
+# first GraphQL answer from the Test instance, which the hosted runner's
+# connection sometimes never delivers (run 38181954592: no answer in 150 s,
+# while the next eight relaunches got one at once). Relaunch, as a person
+# would, rather than wait on a request that will not come back.
+- retry:
+    maxRetries: 3
+    commands:
+      - launchApp:
+          stopApp: true
+      - extendedWaitUntil:
+          visible:
+            id: Home
+          timeout: 60000

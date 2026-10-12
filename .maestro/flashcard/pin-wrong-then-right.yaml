@@ -1,0 +1,51 @@
+# A wrong current PIN on one Change PIN attempt costs a try, and the right one
+# on the next attempt changes the PIN and puts the try counter back at three
+# (VERIFY_PIN success resets it, spec/APDU.md VERIFY_PIN).
+#
+# This does not prove the second tap starts a new session: a wrong PIN already
+# ends the session's verification (spec/APDU.md, Session State), so the right
+# PIN would succeed with or without a SELECT. That every bridge tap sends
+# SELECT is pinned by __tests__/contexts/flashcard-card-bridge.spec.tsx.
+appId: com.lnflash
+name: Flashcard wrong PIN, then the right one
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: loaded
+- tapOn:
+    id: flashcard-v2-action-change-pin
+- runFlow:
+    file: subflows/change-pin.yaml
+    env:
+      CURRENT: "9999"
+      NEW: "5678"
+- extendedWaitUntil:
+    visible:
+      id: pin-error
+    timeout: 20000
+# The app's wrong PIN cost one try (3 -> 2); this costs another (2 -> 1).
+- runScript:
+    file: scripts/wrong-pin.js
+    env:
+      EXPECT_SW: "63C1"
+- runFlow:
+    file: subflows/change-pin.yaml
+    env:
+      CURRENT: "1234"
+      NEW: "5678"
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-change-pin
+    timeout: 20000
+# Back at three: one more wrong PIN leaves two (63C2), not none.
+- runScript:
+    file: scripts/wrong-pin.js
+    env:
+      EXPECT_SW: "63C2"
+- runScript:
+    file: scripts/verify-pin.js
+    env:
+      PIN: "5678"

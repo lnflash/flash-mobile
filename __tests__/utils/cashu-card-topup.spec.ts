@@ -1700,6 +1700,122 @@ describe("cancelTopUp", () => {
   })
 })
 
+describe("a top-up belongs to the mint that issued it", () => {
+  // A development build can point the card at another mint (the card bridge,
+  // ENG-634), so the store can hold top-ups of two mints. Each is asked about
+  // only at its own: the other mint does not know its quote.
+  let other: FakeMint
+  let otherDeps: TopUpDeps
+
+  beforeEach(() => {
+    other = { ...createFakeMint({ now: () => clock }), url: "https://other-mint.test" }
+    otherDeps = { ...deps, mint: other }
+  })
+
+  const otherMintCalls = () =>
+    [other.quoteState, other.mint, other.restore, other.proofStates].reduce(
+      (sum, fn) => sum + (fn as jest.Mock).mock.calls.length,
+      0,
+    )
+
+  it("advanceTopUps leaves another mint's top-up alone, and its own mint advances it", async () => {
+    const record = await prepare()
+    pay.mockResolvedValueOnce({ kind: "pending" })
+    await payTopUp(deps, record.id)
+    mint.settle(record.quote.id)
+    const saved = await deps.store.get(record.id)
+
+    await expect(advanceTopUps(otherDeps)).resolves.toEqual({ waiting: 0 })
+    expect(otherMintCalls()).toBe(0)
+    expect(await deps.store.get(record.id)).toEqual(saved)
+
+    await expect(advanceTopUps(deps)).resolves.toEqual({ waiting: 0 })
+    expect((await deps.store.get(record.id))?.state).toBe("minted")
+  })
+
+  it("mintTopUp refuses another mint's top-up without saving a refusal, and its own mint mints it", async () => {
+    settlesOnPay()
+    const record = await prepare()
+    await payTopUp(deps, record.id)
+    const saved = await deps.store.get(record.id)
+    expect(saved?.state).toBe("paid")
+
+    await expect(mintTopUp(otherDeps, record.id)).rejects.toMatchObject({
+      reason: "state",
+      message: "the top-up belongs to another mint",
+    })
+    expect(otherMintCalls()).toBe(0)
+    // No `mintRefused`: a later pass at its own mint still mints it.
+    expect(await deps.store.get(record.id)).toEqual(saved)
+
+    await expect(advanceTopUps(deps)).resolves.toEqual({ waiting: 0 })
+    expect((await deps.store.get(record.id))?.state).toBe("minted")
+  })
+
+  it("cancelTopUp refuses another mint's top-up and keeps it; its own mint drops it", async () => {
+    const record = await prepare()
+
+    await expect(cancelTopUp(otherDeps, record.id)).rejects.toMatchObject({
+      reason: "state",
+      message: "the top-up belongs to another mint",
+    })
+    expect(await deps.store.get(record.id)).toBeTruthy()
+
+    await cancelTopUp(deps, record.id)
+    expect(await deps.store.list()).toEqual([])
+  })
+
+  it("payTopUp never pays another mint's quote", async () => {
+    const record = await prepare()
+
+    await expect(payTopUp(otherDeps, record.id)).rejects.toMatchObject({
+      reason: "state",
+    })
+    expect(pay).not.toHaveBeenCalled()
+    expect(otherMintCalls()).toBe(0)
+    expect((await deps.store.get(record.id))?.state).toBe("quoted")
+  })
+
+  it("reads a mint URL spelled another way (case, trailing slash) as the same mint", async () => {
+    // Every production record holds the literal CASHU_MINT_URL. A cosmetic
+    // edit to it must not orphan the paid-but-unminted top-ups already saved.
+    const forge = {
+      ...createFakeMint({ now: () => clock }),
+      url: "https://forge.flashapp.me",
+    }
+    const forgeDeps = { ...deps, mint: forge }
+    const record = await prepareTopUp(forgeDeps, {
+      cardPubkey: CARD,
+      unit: "sat",
+      amount: 1000,
+      walletId: WALLET,
+      card: EMPTY_CARD,
+    })
+    expect(record.mintUrl).toBe("https://forge.flashapp.me")
+    pay.mockResolvedValueOnce({ kind: "pending" })
+    await payTopUp(forgeDeps, record.id)
+    forge.settle(record.quote.id)
+
+    const respelled = {
+      ...forgeDeps,
+      mint: { ...forge, url: "https://Forge.flashapp.me/" },
+    }
+    await expect(advanceTopUps(respelled)).resolves.toEqual({ waiting: 0 })
+    expect((await deps.store.get(record.id))?.state).toBe("minted")
+  })
+
+  it("proofStatesForLoad never asks another mint about a top-up's proofs", async () => {
+    const record = await minted()
+    await deps.store.update(record.id, (r) => ({ ...r, loadStarted: true }))
+
+    await expect(proofStatesForLoad(otherDeps, record.id)).rejects.toMatchObject({
+      reason: "state",
+    })
+    expect(otherMintCalls()).toBe(0)
+    await expect(proofStatesForLoad(deps, record.id)).resolves.toBeInstanceOf(Map)
+  })
+})
+
 describe("unfinishedTopUps", () => {
   it("lists a card's top-ups that still need a payment, a mint or a tap, oldest first", async () => {
     const first = await prepare(8)

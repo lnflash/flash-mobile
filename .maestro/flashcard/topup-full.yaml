@@ -1,0 +1,35 @@
+# A card with every slot full: the top-up says there is no room and goes no further.
+appId: com.lnflash
+name: Flashcard top-up refused on a full card
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/card.yaml
+    env:
+      FIXTURE: full
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-balance-sat
+    timeout: 20000
+- tapOn:
+    id: flashcard-v2-action-topup
+- extendedWaitUntil:
+    visible:
+      id: "Key 1"
+    timeout: 20000
+- tapOn:
+    id: "Key 1"
+- tapOn:
+    id: amount-input-set
+# The no-room reason, not just any refusal: the Test account's Cash balance
+# would refuse it too without the pay stub, and that must not pass for this.
+- assertVisible:
+    id: topup-amount-problem-no-room
+- assertNotVisible:
+    id: topup-amount-problem-over-balance
+- assertVisible:
+    id: topup-next
+    enabled: false
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.counts.unspent === 32}

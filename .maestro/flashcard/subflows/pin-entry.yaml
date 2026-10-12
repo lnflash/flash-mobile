@@ -1,0 +1,14 @@
+# Types the four-digit PIN on the card PIN pad (pin-<digit> keys), then
+# presses the button NEXT_ID.
+appId: com.lnflash
+---
+- tapOn:
+    id: pin-${PIN.charAt(0)}
+- tapOn:
+    id: pin-${PIN.charAt(1)}
+- tapOn:
+    id: pin-${PIN.charAt(2)}
+- tapOn:
+    id: pin-${PIN.charAt(3)}
+- tapOn:
+    id: ${NEXT_ID}
