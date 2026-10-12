@@ -86,13 +86,20 @@ appId: com.lnflash
 - extendedWaitUntil:
     visible: "Token Present: true"
     timeout: 20000
-- launchApp:
-    stopApp: true
-# The relaunch is a cold start too, with the same wait. A dev link sent before
-# the app is up is dropped, so the signed-in app must be showing first. "Home"
-# is the home tab's testID, which is its title: English on the hosted runner's
-# simulators, as on a default local one.
-- extendedWaitUntil:
-    visible:
-      id: Home
-    timeout: 150000
+# The relaunch is a cold start too. A dev link sent before the app is up is
+# dropped, so the signed-in app must be showing first. "Home" is the home
+# tab's testID, which is its title: English on the hosted runner's
+# simulators, as on a default local one. The signed-in splash waits on the
+# first GraphQL answer from the Test instance, which the hosted runner's
+# connection sometimes never delivers (run 38181954592: no answer in 150 s,
+# while the next eight relaunches got one at once). Relaunch, as a person
+# would, rather than wait on a request that will not come back.
+- retry:
+    maxRetries: 3
+    commands:
+      - launchApp:
+          stopApp: true
+      - extendedWaitUntil:
+          visible:
+            id: Home
+          timeout: 60000
