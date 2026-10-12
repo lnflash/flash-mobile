@@ -85,7 +85,7 @@ If you wish to contribute, please see [CONTRIBUTING.MD](./CONTRIBUTING.MD)
    yarn android
    ```
 
-The app is built and pushed to the App Store and Play Store on demand with CircleCI.
+The app is built and pushed to the App Store and Play Store with GitHub Actions (`.github/workflows/ios-deploy.yml`, `ios-alt-deploy.yml`, `android-deploy.yml`), which run the lanes in `fastlane/`.
 
 ### Development with Backend
 
