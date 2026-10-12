@@ -18,7 +18,6 @@
     "graphql-check": "graphql-inspector validate app/graphql/generated.gql \"app/graphql/{public-schema.graphql,local-schema.gql}\" --apollo --noStrictFragments",
     "coverage": "jest --runInBand --coverage",
     "fastlane-update": "(cd ios && bundle update fastlane && cd ../android && bundle update fastlane)",
-    "increment": "(cd ios && fastlane ios increment && cd ../android && echo 'fastlane android increment')",
     "get-stories": "sb-rn-get-stories --config-path=./.storybook",
     "storybook-watcher": "sb-rn-watcher --config-path=./.storybook",
     "storybook": "yarn get-stories && yarn start",
