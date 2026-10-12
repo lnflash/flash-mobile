@@ -62,8 +62,6 @@ ios/AppStore_io.galoy.app.mobileprovision
 ios/fastlane/report.xml
 app/services/lnd/generated/*
 android/api-8350101450647692243-59029-b9bec84a7e5a.json
-android/fastlane/report.xml
-android/fastlane/metadata/android/en-US/
 android/app/release/
 android/app/google-services.json
 
