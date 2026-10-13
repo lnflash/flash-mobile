@@ -14,7 +14,7 @@ import { Screen } from "@app/components/screen"
 import { IconBtn } from "@app/components/buttons"
 import { FlashcardV2Art, flashcardV2ArtWidth } from "@app/components/flashcard-v2-art"
 import HideableArea from "@app/components/hideable-area/hideable-area"
-import type { CashuCardState } from "@app/contexts/Flashcard"
+import { CardOwnership, CashuCardState, cardOwnership } from "@app/contexts/Flashcard"
 import { useHideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
@@ -88,8 +88,10 @@ export const FlashcardV2Screen = () => {
   if (!cashuCard) return null
 
   const last4 = cardLast4(cashuCard.pubkey)
-  // The card took this phone's key as its owner's (`ownerKeySource`).
-  const ownedHere = cashuCard.hasOwner && cashuCard.ownerKeySource !== undefined
+  // The card took this phone's key as its owner's (`ownerKeySource`); or it
+  // refused it; or the read tap could not settle which (`cardOwnership`).
+  const ownership = cardOwnership(cashuCard)
+  const ownedHere = ownership === "mine"
   // A blocked PIN takes no load but the owner's: the grant needs no PIN.
   const canTopUp =
     cashuCard.hasOwner &&
@@ -283,7 +285,7 @@ export const FlashcardV2Screen = () => {
         )}
         <DetailRow
           label={LL.FlashcardV2.ownerRow()}
-          value={ownerText(cashuCard.hasOwner, ownedHere, LL)}
+          value={ownerText(ownership, LL)}
           testID="flashcard-v2-owner"
         />
         <DetailRow
@@ -396,22 +398,38 @@ export const cardNotices = (
   }
   // The day's window has rolled as often as its owner allows between
   // refreshes: the card's limits stay where they are until its owner's phone,
-  // online, refreshes it at a tap (decision 16).
+  // online, refreshes it at a tap (decision 16). Only the owner's phone sends
+  // REFRESH (`tendCard`), so only it is told to tap; any other phone is told
+  // whose phone can (the spec is silent on what other phones show).
   if (card.hasOwner && card.record && card.record.rolls >= card.record.rollBudget) {
     notices.push({
       testID: "flashcard-v2-refresh-needed",
       title: LL.FlashcardV2.refreshNeededTitle(),
-      body: LL.FlashcardV2.refreshNeededBody(),
+      body: ownedHere
+        ? LL.FlashcardV2.refreshNeededBody()
+        : LL.FlashcardV2.refreshNeededOtherBody(),
       severe: false,
     })
   }
   return notices
 }
 
-/** Who owns the card, as the details say it. */
-const ownerText = (hasOwner: boolean, ownedHere: boolean, LL: LLType): string => {
-  if (!hasOwner) return LL.FlashcardV2.ownerNone()
-  return ownedHere ? LL.FlashcardV2.ownerThisPhone() : LL.FlashcardV2.ownerOther()
+/**
+ * Who owns the card, as the details say it. "Another phone" only once the
+ * card refused this phone's proof (`6A91`, `6A90`) or this phone holds no key
+ * for it: a tap that could not settle it says so instead.
+ */
+const ownerText = (ownership: CardOwnership, LL: LLType): string => {
+  switch (ownership) {
+    case "none":
+      return LL.FlashcardV2.ownerNone()
+    case "mine":
+      return LL.FlashcardV2.ownerThisPhone()
+    case "other":
+      return LL.FlashcardV2.ownerOther()
+    case "unknown":
+      return LL.FlashcardV2.ownerUnconfirmed()
+  }
 }
 
 const DetailRow: React.FC<{ label: string; value: string; testID?: string }> = ({

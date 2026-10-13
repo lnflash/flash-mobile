@@ -79,7 +79,9 @@ export const limitsFromFields = (fields: {
  * the owner's thirteen-byte SET_LIMIT, so the budget the owner chose is the
  * one the card holds.
  *
- * Every field opens at what the card said on its last read: the daily
+ * Every field opens at what the card said on its last read (a tap, or the
+ * re-read after an operation, which reads GET_CARD too, so a budget saved
+ * here is the one the field reopens at): the daily
  * limit and the allowance from GET_INFO, the budget from GET_CARD, and the
  * payment limit from the GET_INFO the read tap asked under the owner's grant
  * (`ownerPaymentLimit`), the only time the card says it (cashu-javacard
@@ -179,7 +181,14 @@ export const FlashcardV2LimitsScreen = () => {
         },
         cashuCard.pubkey,
         {
-          assume: { dailyLimit: limits.day, allowance: limits.allowance },
+          // The budget is GET_CARD's to say, and the re-read reads it; this
+          // stands in when the re-read is lost, so the field never reopens at
+          // the budget before this save, which the next save would write back.
+          assume: {
+            dailyLimit: limits.day,
+            allowance: limits.allowance,
+            record: { dailyLimit: limits.day, rollBudget: limits.rollBudget },
+          },
           learned: (set) => ({ ownerPaymentLimit: set.payment }),
         },
       )
@@ -298,7 +307,7 @@ const LimitField: React.FC<{
   const { colors } = useTheme().theme
   return (
     <View style={styles.field}>
-      <Text type="p2" bold>
+      <Text type="p2" bold testID={`${testID}-label`}>
         {label}
       </Text>
       <TextInput

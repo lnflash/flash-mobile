@@ -389,7 +389,12 @@ describe("FlashcardV2LimitsScreen", () => {
       allowance: 250,
       rollBudget: 12,
     })
-    expect(capturedOptions?.assume).toEqual({ dailyLimit: 5000, allowance: 250 })
+    // A lost re-read keeps the budget just written, not the one the field opened at.
+    expect(capturedOptions?.assume).toEqual({
+      dailyLimit: 5000,
+      allowance: 250,
+      record: { dailyLimit: 5000, rollBudget: 12 },
+    })
     expect(store.getState().flashcardV2.cards[card.pubkey].limits).toMatchObject({
       day: 5000,
       payment: 1000,

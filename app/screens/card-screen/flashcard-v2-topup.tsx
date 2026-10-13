@@ -16,7 +16,7 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { PinPad } from "@app/components/card/PinPad"
 import { Screen } from "@app/components/screen"
 import { useFeatureFlags } from "@app/config/feature-flags-context"
-import { CashuCardState } from "@app/contexts/Flashcard"
+import { CashuCardState, cardOwnership } from "@app/contexts/Flashcard"
 import { WalletCurrency, useHomeAuthedQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { getCashWallet } from "@app/graphql/wallets-utils"
@@ -100,10 +100,10 @@ const sleep = (ms: number) =>
  * unit just the same (`unfinishedUnits`), or it would land beside another.
  * A card with no owner takes no load at all (6A90), so it is set up first
  * (`not-set-up`). A blocked PIN is refused unless this phone is the card's
- * owner, as the card said at the read (`ownedHere`: `ownerKeySource`, set only
- * once the card took this phone's key): the owner's grant loads without the
- * PIN, and anyone else's load would need it, so a blocked card owned by
- * another phone is refused before any quote. A PIN state or a unit this app cannot
+ * owner, as the card said at the read (`cardOwnership` is `mine`: the card
+ * took this phone's key): the owner's grant loads without the PIN, and anyone
+ * else's load would need it, so a blocked card owned by another phone, or one
+ * whose owner the read could not settle, is refused before any quote. A PIN state or a unit this app cannot
  * read is refused too.
  * While `usdEnabled` (the cashuCardUsdEnabled flag) is off, a card whose
  * unit is USD takes no new top-up: flash-pos charges every card proof as
@@ -126,6 +126,21 @@ export type TopUpEligibility =
         | "usd-off-unfinished"
     }
 
+/**
+ * Whether the top-up asks for the card's PIN before paying. This phone is the
+ * card's owner (the card took its key at the read): its load tap needs no PIN.
+ * A phone the card refused (`6A91`) is asked before paying. One whose
+ * ownership the read could not settle is not: its load tap offers the owner's
+ * grant first and asks for the PIN only if the card refuses it (`not-owner`),
+ * so an owner is never asked for a PIN it may not have.
+ */
+export const asksForPinBeforePaying = (
+  card: Pick<
+    CashuCardState,
+    "pinState" | "hasOwner" | "ownerKeySource" | "ownerUnsettled"
+  >,
+): boolean => card.pinState === "set" && cardOwnership(card) === "other"
+
 export const topUpEligibility = (
   card: CashuCardState,
   {
@@ -134,7 +149,7 @@ export const topUpEligibility = (
   }: { unfinishedUnits?: readonly CardUnit[]; usdEnabled: boolean },
 ): TopUpEligibility => {
   if (!card.hasOwner) return { ok: false, reason: "not-set-up" }
-  const ownedHere = card.ownerKeySource !== undefined
+  const ownedHere = cardOwnership(card) === "mine"
   if (card.pinState === "blocked" && !ownedHere) return { ok: false, reason: "blocked" }
   if (card.pinState === "unknown") return { ok: false, reason: "pin-unknown" }
   let cardUnit: CardUnit | undefined
@@ -442,10 +457,7 @@ export const FlashcardV2TopUpScreen = () => {
     amountProblemKind &&
     amountProblemText(LL, amountProblemKind, { unit, needed, free: freeSlots })
 
-  // This phone is the card's owner (the card took its key at the read): its
-  // load tap needs no PIN. Anyone else is asked for the PIN before paying.
-  const ownedHere = cashuCard?.ownerKeySource !== undefined
-  const asksForPin = cashuCard?.pinState === "set" && !ownedHere
+  const asksForPin = cashuCard !== undefined && asksForPinBeforePaying(cashuCard)
 
   const readyToLoad = (record: TopUpRecord) => {
     setError(undefined)

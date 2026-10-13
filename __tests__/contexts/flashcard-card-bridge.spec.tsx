@@ -151,7 +151,14 @@ describe("FlashcardProvider with a card bridge (development builds)", () => {
     })
     expect(result).toBe("done")
     expect(sent()[0]).toEqual(buildSelectApdu())
-    expect(sent().map((apdu) => apdu[1])).toEqual([INS_SELECT, 0x10, 0x41, 0x01, 0x11])
+    expect(sent().map((apdu) => apdu[1])).toEqual([
+      INS_SELECT,
+      0x10,
+      0x41,
+      0x01,
+      0x11,
+      0x16,
+    ])
     await waitFor(() => expect(latest?.cashuCard?.pinState).toBe("set"))
     expectNoNfc()
   })
@@ -207,7 +214,14 @@ describe("FlashcardProvider with a card bridge (development builds)", () => {
       }
     })
     expect(thrown).toBeInstanceOf(CardError)
-    expect(sent().map((apdu) => apdu[1])).toEqual([INS_SELECT, 0x10, 0x40, 0x01, 0x11])
+    expect(sent().map((apdu) => apdu[1])).toEqual([
+      INS_SELECT,
+      0x10,
+      0x40,
+      0x01,
+      0x11,
+      0x16,
+    ])
     expectNoNfc()
   })
 

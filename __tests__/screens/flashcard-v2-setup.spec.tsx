@@ -185,7 +185,12 @@ describe("FlashcardV2SetupScreen", () => {
     expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
     expect(card.now()).toBe(HEADER_VECTORS[2].time)
     expect(capturedOptions).toEqual({
-      assume: { hasOwner: true, recordSet: true, pinState: "set" },
+      assume: {
+        hasOwner: true,
+        recordSet: true,
+        pinState: "set",
+        record: { recordSet: true },
+      },
       learned: { ownerKeySource: "seed" },
     })
     expect(mockToast).toHaveBeenCalledWith(
@@ -206,7 +211,11 @@ describe("FlashcardV2SetupScreen", () => {
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
     expect(order).toEqual(["1", "32", "saved", "43"])
     expect(card.pin()).toBeUndefined()
-    expect(capturedOptions?.assume).toEqual({ hasOwner: true, recordSet: true })
+    expect(capturedOptions?.assume).toEqual({
+      hasOwner: true,
+      recordSet: true,
+      record: { recordSet: true },
+    })
   })
 
   it("sends no anchor when the phone has no tip header: SET_OWNER carries the key alone", async () => {

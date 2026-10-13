@@ -175,6 +175,8 @@ export const FlashcardV2SetupScreen = () => {
             hasOwner: true,
             recordSet: true,
             ...(pin ? { pinState: "set" as const } : {}),
+            // GET_CARD's record set flag; the re-read reads the record whole.
+            record: { recordSet: true },
           },
           learned: { ownerKeySource: key.source },
         },

@@ -35,7 +35,11 @@ tags: [flashcard]
     id: limits-roll-budget
 - eraseText: 12
 - inputText: "12"
-- hideKeyboard
+# iOS's number pad has no dismiss key, so `hideKeyboard` cannot close it: a tap
+# outside the field does (the ScrollView's keyboardShouldPersistTaps is "never").
+# The budget's own label, right above the field, is on screen whatever scrolled.
+- tapOn:
+    id: limits-roll-budget-label
 - tapOn:
     id: limits-save
 - extendedWaitUntil:

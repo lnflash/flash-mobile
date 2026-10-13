@@ -237,9 +237,12 @@ const en: BaseTranslation = {
       "The PIN was entered wrong too many times. Only the phone that owns this card can unblock it.",
     refreshNeededTitle: "This card needs a refresh",
     refreshNeededBody: "Open Flash while online and tap your card to refresh it.",
+    refreshNeededOtherBody:
+      "The phone that owns this card needs to refresh it. Open Flash on that phone while online and tap the card.",
     ownerRow: "Owner",
     ownerThisPhone: "This phone",
     ownerOther: "Another phone",
+    ownerUnconfirmed: "Not confirmed: tap the card again",
     ownerNone: "None yet",
     notOwner: "This phone isn't this card's owner, so it can't change that.",
     noOwner: "This card has no owner yet. Set it up first.",

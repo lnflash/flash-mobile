@@ -245,10 +245,10 @@ describe("FlashcardProvider runCardOperation", () => {
     expect(requestTechnology).toHaveBeenCalledTimes(1)
     expect(requestTechnology).toHaveBeenCalledWith(NfcTech.IsoDep)
     // SELECT, GET_PUBKEY (the identity check), the op's APDU, then the
-    // re-read: GET_INFO and GET_BALANCE.
+    // re-read: GET_INFO, GET_BALANCE and GET_CARD (the record an op can change).
     const sent = transceive.mock.calls.map((c) => c[0])
     expect(sent[0]).toEqual(buildSelectApdu())
-    expect(sent.map((a) => a[1])).toEqual([INS_SELECT, 0x10, 0x41, 0x01, 0x11])
+    expect(sent.map((a) => a[1])).toEqual([INS_SELECT, 0x10, 0x41, 0x01, 0x11, 0x16])
     expect(op).toHaveBeenCalledTimes(1)
     expect(cancelTechnologyRequest).toHaveBeenCalledTimes(1)
     expect(getTag).not.toHaveBeenCalled()
@@ -319,8 +319,8 @@ describe("FlashcardProvider runCardOperation", () => {
     expect(thrown).toBe(refusal)
     expect(thrown).toBeInstanceOf(CardError)
     expect((thrown as CardError).sw).toBe(0x63c2)
-    // SELECT, GET_PUBKEY, the refused VERIFY_PIN, then GET_INFO + GET_BALANCE.
-    expect(sentIns()).toEqual([INS_SELECT, 0x10, INS_VERIFY_PIN, 0x01, 0x11])
+    // SELECT, GET_PUBKEY, the refused VERIFY_PIN, then GET_INFO + GET_BALANCE + GET_CARD.
+    expect(sentIns()).toEqual([INS_SELECT, 0x10, INS_VERIFY_PIN, 0x01, 0x11, 0x16])
     expect(onReread).toHaveBeenCalledTimes(1)
     expect(onReread).toHaveBeenCalledWith(expect.objectContaining({ pinState: "set" }))
     expect(cancelTechnologyRequest).toHaveBeenCalledTimes(1)

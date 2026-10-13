@@ -793,6 +793,10 @@ type RootTranslation = {
 		 */
 		refreshNeededBody: string
 		/**
+		 * T​h​e​ ​p​h​o​n​e​ ​t​h​a​t​ ​o​w​n​s​ ​t​h​i​s​ ​c​a​r​d​ ​n​e​e​d​s​ ​t​o​ ​r​e​f​r​e​s​h​ ​i​t​.​ ​O​p​e​n​ ​F​l​a​s​h​ ​o​n​ ​t​h​a​t​ ​p​h​o​n​e​ ​w​h​i​l​e​ ​o​n​l​i​n​e​ ​a​n​d​ ​t​a​p​ ​t​h​e​ ​c​a​r​d​.
+		 */
+		refreshNeededOtherBody: string
+		/**
 		 * O​w​n​e​r
 		 */
 		ownerRow: string
@@ -804,6 +808,10 @@ type RootTranslation = {
 		 * A​n​o​t​h​e​r​ ​p​h​o​n​e
 		 */
 		ownerOther: string
+		/**
+		 * N​o​t​ ​c​o​n​f​i​r​m​e​d​:​ ​t​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n
+		 */
+		ownerUnconfirmed: string
 		/**
 		 * N​o​n​e​ ​y​e​t
 		 */
@@ -8260,6 +8268,10 @@ export type TranslationFunctions = {
 		 */
 		refreshNeededBody: () => LocalizedString
 		/**
+		 * The phone that owns this card needs to refresh it. Open Flash on that phone while online and tap the card.
+		 */
+		refreshNeededOtherBody: () => LocalizedString
+		/**
 		 * Owner
 		 */
 		ownerRow: () => LocalizedString
@@ -8271,6 +8283,10 @@ export type TranslationFunctions = {
 		 * Another phone
 		 */
 		ownerOther: () => LocalizedString
+		/**
+		 * Not confirmed: tap the card again
+		 */
+		ownerUnconfirmed: () => LocalizedString
 		/**
 		 * None yet
 		 */

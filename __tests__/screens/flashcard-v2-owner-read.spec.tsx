@@ -24,12 +24,16 @@ import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { INS, selectApplet, verifyCardPin } from "@app/utils/cashu-card"
 import { deriveOwnerKey } from "@app/utils/cashu-card-owner"
 import {
+  OwnerKeyStoreError,
   SEED_SERVER,
   ownerKeyStore,
   resetSeedCache,
 } from "@app/utils/cashu-card-owner-store"
 import { FlashcardV2Screen } from "../../app/screens/card-screen/flashcard-v2"
-import { topUpEligibility } from "../../app/screens/card-screen/flashcard-v2-topup"
+import {
+  asksForPinBeforePaying,
+  topUpEligibility,
+} from "../../app/screens/card-screen/flashcard-v2-topup"
 import {
   FAKE_OWNER_KEY,
   FakeCard,
@@ -174,6 +178,58 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
     expect(topUpEligibility(readCard(), { usdEnabled: false })).toMatchObject({
       ok: true,
     })
+    expect(asksForPinBeforePaying(readCard())).toBe(true)
+  })
+
+  it("a Keychain that cannot be read in the read tap leaves the owner unconfirmed, never 'Another phone': the PIN is not asked before paying, and the owner's actions wait for a tap that settles it", async () => {
+    await ownerKeyStore.put(PUBKEY_HEX, {
+      privateKey: DEVICE_KEY,
+      source: "device",
+      createdAt: 1,
+    })
+    jest
+      .spyOn(ownerKeyStore, "get")
+      .mockRejectedValue(new OwnerKeyStoreError("the saved owner keys cannot be read"))
+    await mountScreen()
+
+    await tapCard({ owner: DEVICE_KEY })
+
+    // Nothing was offered: the key could not be read.
+    expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
+    expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
+    expect(latest?.cashuCard?.ownerUnsettled).toBe(true)
+    expect(owner()).toBe(LL.FlashcardV2.ownerUnconfirmed())
+    expect(owner()).not.toBe(LL.FlashcardV2.ownerOther())
+    // The load tap offers the grant first, and asks for the PIN only on a refusal.
+    expect(asksForPinBeforePaying(readCard())).toBe(false)
+    expect(topUpEligibility(readCard(), { usdEnabled: false })).toMatchObject({
+      ok: true,
+    })
+    expect(screen.queryByTestId("flashcard-v2-action-limits")).toBeNull()
+
+    // The next tap, with the Keychain back, settles it as this phone's.
+    jest.restoreAllMocks()
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+    await tapCard({ owner: DEVICE_KEY })
+    expect(latest?.cashuCard?.ownerKeySource).toBe("device")
+    expect(latest?.cashuCard?.ownerUnsettled).toBeUndefined()
+    expect(owner()).toBe(LL.FlashcardV2.ownerThisPhone())
+  })
+
+  it("a locked card with no refresh due is not asked whose it is: the owner is unconfirmed, not 'Another phone'", async () => {
+    await ownerKeyStore.put(PUBKEY_HEX, {
+      privateKey: DEVICE_KEY,
+      source: "device",
+      createdAt: 1,
+    })
+    await mountScreen()
+
+    await tapCard({ owner: DEVICE_KEY, locked: true, rolls: 0 })
+
+    expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
+    expect(card.ins()).not.toContain(INS.REFRESH)
+    expect(latest?.cashuCard?.ownerUnsettled).toBe(true)
+    expect(owner()).toBe(LL.FlashcardV2.ownerUnconfirmed())
   })
 
   it("a blocked card another phone owns is refused before any quote, and says only that phone can unblock it", async () => {
@@ -327,6 +383,26 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
       expect(card.ins()).not.toContain(INS.REFRESH)
       expect(latest?.cashuCard?.record.rolls).toBe(7)
       expect(screen.getByTestId("flashcard-v2-refresh-needed")).toBeTruthy()
+      // Tapping it again on this phone changes nothing: it names the owner's phone.
+      expect(screen.getByText(LL.FlashcardV2.refreshNeededOtherBody())).toBeTruthy()
+      expect(screen.queryByText(LL.FlashcardV2.refreshNeededBody())).toBeNull()
+    })
+
+    it("an owned card whose refresh could not be sent (no tip header yet) tells its owner to tap it online (decision 16)", async () => {
+      await ownerKeyStore.put(PUBKEY_HEX, {
+        privateKey: DEVICE_KEY,
+        source: "device",
+        createdAt: 1,
+      })
+      await mountScreen()
+
+      await tapCard({ owner: DEVICE_KEY, rolls: 7, limits: { rollBudget: 7 } })
+
+      expect(card.ins()).not.toContain(INS.REFRESH)
+      expect(owner()).toBe(LL.FlashcardV2.ownerThisPhone())
+      expect(screen.getByTestId("flashcard-v2-refresh-needed")).toBeTruthy()
+      expect(screen.getByText(LL.FlashcardV2.refreshNeededBody())).toBeTruthy()
+      expect(screen.queryByText(LL.FlashcardV2.refreshNeededOtherBody())).toBeNull()
     })
 
     // A locked card answers ALLOW_LOAD 6986 (spec/APDU.md, ALLOW_LOAD) and
