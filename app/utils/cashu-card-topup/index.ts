@@ -1,9 +1,10 @@
 export * from "./types"
-export { createTopUpStore, TopUpStoreError } from "./store"
+export { createTopUpStore, fromFormat1, TopUpStoreError } from "./store"
 export type { TopUpStore } from "./store"
 export { createTopUpMint, TopUpMintError } from "./mint"
 export type { ProofState, QuoteState, TopUpMint, TopUpQuote } from "./mint"
 export {
+  CARD_FORMAT,
   EXPIRY_GRACE_MS,
   MAX_TOPUP_AMOUNT,
   MIN_PAY_WINDOW_MS,
@@ -12,6 +13,7 @@ export {
   advanceTopUps,
   cancelTopUp,
   cardCommitments,
+  isCurrentFormat,
   loadTopUp,
   mintTopUp,
   payTopUp,

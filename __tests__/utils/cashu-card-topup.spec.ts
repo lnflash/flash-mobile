@@ -59,7 +59,7 @@ import { FakeCard, FakeMint, createFakeCard, createFakeMint } from "../helpers/f
 const CARD = "02" + "ab".repeat(32)
 const OTHER_CARD = "03" + "cd".repeat(32)
 const WALLET = "btc-wallet-id"
-const EMPTY_CARD = { empty: 32 }
+const EMPTY_CARD = { empty: 32, hasOwner: true }
 
 let clock: number
 let mint: FakeMint
@@ -76,13 +76,18 @@ const settlesOnPay = (outcome: PayOutcome = { kind: "paid" }) =>
     return outcome
   })
 
-const prepare = (amount = 1000, over: Partial<Parameters<typeof prepareTopUp>[1]> = {}) =>
+type PrepareOver = Omit<Partial<Parameters<typeof prepareTopUp>[1]>, "card"> & {
+  card?: Partial<Parameters<typeof prepareTopUp>[1]["card"]>
+}
+
+/** A top-up prepared for a card with an owner (2.0: an ownerless card takes none). */
+const prepare = (amount = 1000, { card: cardOver, ...over }: PrepareOver = {}) =>
   prepareTopUp(deps, {
     cardPubkey: CARD,
     unit: "sat",
     amount,
     walletId: WALLET,
-    card: EMPTY_CARD,
+    card: { ...EMPTY_CARD, ...cardOver },
     ...over,
   })
 
@@ -139,7 +144,8 @@ beforeEach(async () => {
   jest.clearAllMocks()
   clock = 1_000
   mint = createFakeMint({ now: () => clock })
-  card = createFakeCard()
+  // A small card: the engine's slot logic is the same at 32 places as at 128.
+  card = createFakeCard(32)
   pay = jest.fn(async (_args: PayArgs) => ({ kind: "paid" } as PayOutcome))
   ids = 0
   deps = {
@@ -1192,13 +1198,27 @@ describe("loadTopUp", () => {
     card.slots[0].fill(0, 1, 13)
 
     // UNSPENT at the mint (the burn's signature never left the card, and
-    // its slot no longer holds it): the proof is written again.
-    const after = await loadOnCard(record.id)
+    // its slot no longer holds it): the proof is written again. A 2.0 card
+    // refuses it while the remnant still holds its nonce (6A94), so the 4 is
+    // held and the record stays unfinished; the rest load.
+    const held = await loadOnCard(record.id)
 
-    expect(after.state).toBe("loaded")
-    expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
+    expect(held.state).toBe("minted")
     expect(card.ins().filter((ins) => ins === 0x30)).toHaveLength(3)
+    expect(card.unspentNonces()).toEqual(record.proofs?.slice(1).map((p) => p.nonce))
+
+    // The next load tap's reclaim frees the remnant (it holds no proof), and
+    // the 4 is written then.
+    card.transceive.mockClear()
+    const reclaim = await reclaimSpentSlots(card.transceive, {
+      maxSlots: 32,
+      verdicts: new Map(),
+    })
+    expect(reclaim.cleared).toBe(1)
+    const after = await loadOnCard(record.id, reclaim.inventory)
+    expect(after.state).toBe("loaded")
     expect(card.unspentNonces()).toContain(four)
+    expect(card.unspentNonces()).toHaveLength(3)
   })
 
   it("the same remnant, SPENT at the mint, is not written again", async () => {
@@ -1244,7 +1264,7 @@ const fillSpent = (from: number, to: number, settled = true) => {
   for (let slot = from; slot < to; slot += 1) {
     const nonce = new Array(32).fill(0)
     nonce[0] = 0x10 + slot
-    card.slots[slot] = [2, ...keyset, 0, 0, 0, 1, ...nonce, ...cBytes]
+    card.slots[slot] = [2, ...keyset, 0, 0, 0, 1, ...nonce, ...cBytes, 0, 0, 0, 0]
     if (settled) mint.proofStatesByY.set(yOf(toHex(nonce)), "SPENT")
   }
 }
@@ -1347,7 +1367,7 @@ describe("reclaimSpentSlots", () => {
 
   it("a CLEAR_SPENT remnant (a spent slot whose data is not a proof) is freed without the mint's word", async () => {
     // A tap cut mid-CLEAR_SPENT: the slot still reads 02 with its data zeroed.
-    card.slots[3] = [2, ...new Array(77).fill(0)]
+    card.slots[3] = [2, ...new Array(81).fill(0)]
 
     const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
     expect(mint.proofStates).not.toHaveBeenCalled()
@@ -1362,7 +1382,7 @@ describe("reclaimSpentSlots", () => {
 
   it("a remnant beside settled proofs: the mint is asked about the proofs alone, and all are freed", async () => {
     await spentCard()
-    card.slots[5] = [2, ...new Array(77).fill(0)]
+    card.slots[5] = [2, ...new Array(81).fill(0)]
 
     const result = await reclaimOnCard()
 
@@ -1545,6 +1565,7 @@ describe("reclaimVerdicts", () => {
       amount: 0,
       nonce: "00".repeat(32),
       C: "00".repeat(33),
+      date: 0,
     }
     await expect(reclaimVerdicts(deps, CARD, [remnant])).resolves.toEqual(new Map())
     expect(mint.proofStates).not.toHaveBeenCalled()
@@ -1571,6 +1592,7 @@ describe("reclaimPlan", () => {
     amount: 4,
     nonce,
     C: ON_CURVE_C,
+    date: 0,
   })
   const remnant: CardProofSlot = { ...proof("11".repeat(32)), amount: 0 }
   const a = proof("aa".repeat(32))
@@ -1831,5 +1853,123 @@ describe("unfinishedTopUps", () => {
 
     const unfinished = await unfinishedTopUps(deps, CARD.toUpperCase())
     expect(unfinished.map((r) => r.id)).toEqual([first.id])
+  })
+})
+
+describe("card protocol 2.0 (ENG-675)", () => {
+  it("refuses a top-up for a card with no owner before anything is quoted or paid", async () => {
+    settlesOnPay()
+    await expect(prepare(1000, { card: { hasOwner: false } })).rejects.toMatchObject({
+      reason: "owner-unset",
+    })
+    expect(mint.createQuote).not.toHaveBeenCalled()
+    expect(mint.activeKeyset).not.toHaveBeenCalled()
+    expect(pay).not.toHaveBeenCalled()
+    await expect(deps.store.list()).resolves.toEqual([])
+  })
+
+  it("saves every new top-up as a 2.0 record of format-4 pieces", async () => {
+    const record = await prepare(8)
+    expect(record).toMatchObject({ version: 2, cardFormat: 4 })
+    expect(
+      record.outputs.every((o) => o.secret.endsWith('"tags":[["sigflag","SIG_ALL"]]}]')),
+    ).toBe(true)
+  })
+
+  it("loads each piece with the mint's DLEQ proof: LOAD_PROOF P1 = 1, 177 bytes, one piece to a command", async () => {
+    const record = await minted(7)
+    await loadOnCard(record.id)
+    const loads = card.transceive.mock.calls
+      .map(([apdu]) => apdu)
+      .filter((a) => a[1] === 0x30)
+    expect(loads).toHaveLength(3)
+    loads.forEach((apdu) => {
+      expect(apdu.slice(2, 5)).toEqual([0x01, 0x00, 177])
+      expect(apdu[apdu.length - 1]).toBe(0x02)
+    })
+    // The card kept each proof beside its piece: e, s and the blinding factor r.
+    expect([...card.dleqs.keys()]).toEqual([0, 1, 2])
+    record.proofs?.forEach((proof, slot) => {
+      expect(toHex(card.dleqs.get(slot) ?? [])).toBe(
+        proof.dleq.e + proof.dleq.s + proof.dleq.r,
+      )
+    })
+  })
+
+  it("a piece the card answers is already on it (6A94) counts as loaded, and nothing is sent again", async () => {
+    const record = await minted(7)
+    const [first] = record.proofs ?? []
+    // The first piece is on the card already, unspent: a load whose answer was lost.
+    card.slots[5] = [
+      1,
+      ...Array.from(Buffer.from(first.keysetId, "hex")),
+      0,
+      0,
+      0,
+      first.amount,
+      ...Array.from(Buffer.from(first.nonce, "hex")),
+      ...Array.from(Buffer.from(first.C, "hex")),
+      0,
+      0,
+      0,
+      0,
+    ]
+    const after = await loadOnCard(record.id)
+    expect(after.state).toBe("loaded")
+    expect(card.ins().filter((ins) => ins === 0x30)).toHaveLength(3)
+    expect(card.unspentNonces()).toHaveLength(3)
+  })
+
+  describe("a top-up saved before 2.0 (cardFormat 0): kept for a human, never paid, minted, loaded or dropped", () => {
+    const zeroX = async (state: TopUpRecord["state"]) => {
+      const record = await prepare(8)
+      return deps.store.update(record.id, (r) => ({ ...r, cardFormat: 0, state }))
+    }
+
+    it("payTopUp and cancelTopUp refuse it, and the mint is never asked", async () => {
+      const record = await zeroX("quoted")
+      ;(mint.quoteState as jest.Mock).mockClear()
+      await expect(payTopUp(deps, record.id)).rejects.toMatchObject({
+        reason: "needs-update",
+      })
+      await expect(cancelTopUp(deps, record.id)).rejects.toMatchObject({
+        reason: "needs-update",
+      })
+      expect(mint.quoteState).not.toHaveBeenCalled()
+      expect(pay).not.toHaveBeenCalled()
+      await expect(deps.store.get(record.id)).resolves.toMatchObject({ state: "quoted" })
+    })
+
+    it("mintTopUp and the card-free pass leave a paid one alone", async () => {
+      const record = await zeroX("paid")
+      ;(mint.quoteState as jest.Mock).mockClear()
+      await expect(mintTopUp(deps, record.id)).rejects.toMatchObject({
+        reason: "needs-update",
+      })
+      await expect(advanceTopUps(deps)).resolves.toEqual({ waiting: 0 })
+      expect(mint.quoteState).not.toHaveBeenCalled()
+      expect(mint.mint).not.toHaveBeenCalled()
+      // Not saved as refused by the mint either: the mint never saw it.
+      const kept = await deps.store.get(record.id)
+      expect(kept?.state).toBe("paid")
+      expect(kept?.mintRefused).toBeUndefined()
+    })
+
+    it("loadTopUp refuses a minted one before anything reaches the card", async () => {
+      const done = await minted(8)
+      const record = await deps.store.update(done.id, (r) => ({ ...r, cardFormat: 0 }))
+      card.transceive.mockClear()
+      await expect(loadOnCard(record.id)).rejects.toMatchObject({
+        reason: "needs-update",
+      })
+      expect(card.transceive).not.toHaveBeenCalled()
+    })
+
+    it("is still listed as unfinished for its card", async () => {
+      const record = await zeroX("paid")
+      await expect(unfinishedTopUps(deps, CARD)).resolves.toEqual([
+        expect.objectContaining({ id: record.id, cardFormat: 0 }),
+      ])
+    })
   })
 })

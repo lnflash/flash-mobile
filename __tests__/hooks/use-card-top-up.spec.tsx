@@ -42,6 +42,9 @@ const mockReclaimSpentSlots = jest.fn()
 const mockUnfinished = jest.fn()
 const mockAdvance = jest.fn()
 const mockCancel = jest.fn()
+const mockAllowLoad = jest.fn()
+const mockOwnerKeyFor = jest.fn()
+const mockSaveOwnerKey = jest.fn()
 
 jest.mock("@app/graphql/generated", () => ({
   ...jest.requireActual("@app/graphql/generated"),
@@ -64,6 +67,15 @@ jest.mock("@react-navigation/native", () => ({
 jest.mock("@app/utils/cashu-card", () => ({
   ...jest.requireActual("@app/utils/cashu-card"),
   verifyCardPin: (...args: unknown[]) => mockVerifyCardPin(...args),
+}))
+jest.mock("@app/utils/cashu-card-owner", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-owner"),
+  allowLoad: (...args: unknown[]) => mockAllowLoad(...args),
+}))
+jest.mock("@app/utils/cashu-card-owner-store", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-owner-store"),
+  ownerKeyFor: (...args: unknown[]) => mockOwnerKeyFor(...args),
+  saveOwnerKey: (...args: unknown[]) => mockSaveOwnerKey(...args),
 }))
 jest.mock("@app/utils/cashu-card-topup", () => ({
   ...jest.requireActual("@app/utils/cashu-card-topup"),
@@ -104,12 +116,22 @@ const spentSlot = (slot: number): CardProofSlot => ({
   // Never all zero: that is a CLEAR_SPENT remnant, not a proof.
   nonce: (slot + 1).toString(16).padStart(64, "0"),
   C: "02" + "ab".repeat(32),
+  date: 0,
 })
-/** A card with `spent` spent slots, as the top-up screen hands it to `load`. */
-const cardWith = (spent: number) => ({
+type LoadCard = Parameters<ReturnType<typeof useCardTopUp>["load"]>[1]
+/**
+ * A card with `spent` spent slots, as the top-up screen hands it to `load`: by
+ * default one with no PIN that another phone owns (so it loads with no
+ * grant and no PIN).
+ */
+const cardWith = (spent: number, over: Partial<LoadCard> = {}): LoadCard => ({
   pubkey: "02ab",
   maxSlots: 32,
   spentSlots: Array.from({ length: spent }, (_, i) => spentSlot(i)),
+  pinState: "unset",
+  sealed: false,
+  hasOwner: false,
+  ...over,
 })
 
 beforeEach(() => {
@@ -118,6 +140,9 @@ beforeEach(() => {
   mockUnfinished.mockResolvedValue([])
   mockReclaimVerdicts.mockResolvedValue(new Map())
   mockReclaimSpentSlots.mockResolvedValue(NO_RECLAIM)
+  mockOwnerKeyFor.mockResolvedValue(undefined)
+  mockSaveOwnerKey.mockResolvedValue(undefined)
+  mockAllowLoad.mockResolvedValue(undefined)
 })
 
 describe("useCardTopUp pay", () => {
@@ -426,13 +451,16 @@ describe("useCardTopUp load", () => {
       order.push("tap")
       return op("transceive")
     })
-    const card = cardWith(0)
+    const card = cardWith(0, { pinState: "set" })
 
     const result = await hook().load(record, card, "1234")
 
     expect(mockProofStates).toHaveBeenCalledWith(expect.anything(), "t1")
     expect(mockRunCardOperation).toHaveBeenCalledWith(expect.any(Function), "02ab")
-    expect(mockVerifyCardPin).toHaveBeenCalledWith("transceive", "1234")
+    expect(mockVerifyCardPin).toHaveBeenCalledWith("transceive", "1234", {
+      sealed: false,
+      cardPubkey: "02ab",
+    })
     expect(mockReclaimSpentSlots).toHaveBeenCalledWith("transceive", {
       maxSlots: 32,
       verdicts: new Map(),
@@ -485,7 +513,7 @@ describe("useCardTopUp load", () => {
     tapRuns()
 
     await hook().load(record, cardWith(0))
-    await hook().load(record, { pubkey: "02ab", maxSlots: 32, spentSlots: undefined })
+    await hook().load(record, cardWith(0, { spentSlots: undefined }))
     expect(mockReclaimVerdicts).not.toHaveBeenCalled()
     expect(mockReclaimSpentSlots).toHaveBeenCalledTimes(2)
   })
@@ -601,6 +629,127 @@ describe("useCardTopUp load", () => {
   })
 })
 
+describe("useCardTopUp load, card protocol 2.0: the owner's grant (ENG-675)", () => {
+  const record = { id: "t1", cardPubkey: "02ab" } as TopUpRecord
+  const OWNER = { privateKey: "42".repeat(32), source: "seed", saved: false }
+
+  beforeEach(() => {
+    mockProofStates.mockResolvedValue(undefined)
+    mockLoadTopUp.mockResolvedValue({ state: "loaded" })
+  })
+
+  it("the owner's phone sends ALLOW_LOAD, then the reclaim and the load, all in the one tap, and no PIN", async () => {
+    const order: string[] = []
+    mockOwnerKeyFor.mockImplementation(async () => {
+      order.push("key")
+      return OWNER
+    })
+    mockAllowLoad.mockImplementation(async () => order.push("grant"))
+    mockReclaimSpentSlots.mockImplementation(async () => {
+      order.push("reclaim")
+      return NO_RECLAIM
+    })
+    mockLoadTopUp.mockImplementation(async () => {
+      order.push("load")
+      return { state: "loaded" }
+    })
+    mockRunCardOperation.mockImplementation(async (op) => {
+      order.push("tap")
+      return op("transceive")
+    })
+
+    await hook().load(record, cardWith(0, { hasOwner: true, pinState: "set" }), "1234")
+
+    // The key is found before the tap (a seed's derivation takes a moment);
+    // the grant is per tap, so it and the load share one.
+    expect(order).toEqual(["key", "tap", "grant", "reclaim", "load"])
+    expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
+    expect(mockAllowLoad).toHaveBeenCalledWith("transceive", expect.any(Function))
+    expect(mockVerifyCardPin).not.toHaveBeenCalled()
+    expect(mockOwnerKeyFor).toHaveBeenCalledWith("02ab")
+    // A seed-derived key the card took is saved for next time.
+    expect(mockSaveOwnerKey).toHaveBeenCalledWith("02ab", OWNER)
+  })
+
+  it("a grant refused (6A91: not this phone's card) falls back to the PIN in the same tap", async () => {
+    mockOwnerKeyFor.mockResolvedValue(OWNER)
+    const { CardError } = jest.requireActual("@app/utils/cashu-card")
+    mockAllowLoad.mockRejectedValue(new CardError(0x6a91, "ALLOW_LOAD"))
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+
+    await hook().load(record, cardWith(0, { hasOwner: true, pinState: "set" }), "1234")
+
+    expect(mockVerifyCardPin).toHaveBeenCalledWith(
+      "transceive",
+      "1234",
+      expect.anything(),
+    )
+    expect(mockLoadTopUp).toHaveBeenCalledTimes(1)
+    expect(mockSaveOwnerKey).not.toHaveBeenCalled()
+  })
+
+  it("a grant refused with no PIN to fall back to stops before any load APDU: the screen asks for the PIN", async () => {
+    mockOwnerKeyFor.mockResolvedValue(OWNER)
+    const { CardError } = jest.requireActual("@app/utils/cashu-card")
+    mockAllowLoad.mockRejectedValue(new CardError(0x6a91, "ALLOW_LOAD"))
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+
+    await expect(
+      hook().load(record, cardWith(0, { hasOwner: true, pinState: "set" })),
+    ).rejects.toMatchObject({ reason: "not-owner" })
+    expect(mockReclaimSpentSlots).not.toHaveBeenCalled()
+    expect(mockLoadTopUp).not.toHaveBeenCalled()
+  })
+
+  it("a card with no PIN that another phone owns loads with no grant and no PIN", async () => {
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+    await hook().load(record, cardWith(0, { hasOwner: true, pinState: "unset" }))
+    expect(mockAllowLoad).not.toHaveBeenCalled()
+    expect(mockVerifyCardPin).not.toHaveBeenCalled()
+    expect(mockLoadTopUp).toHaveBeenCalledTimes(1)
+  })
+
+  it("a card that leaves during ALLOW_LOAD is a lost tap: no PIN fallback, nothing loaded", async () => {
+    mockOwnerKeyFor.mockResolvedValue(OWNER)
+    mockAllowLoad.mockRejectedValue(new Error("Tag was lost"))
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+
+    await expect(
+      hook().load(record, cardWith(0, { hasOwner: true, pinState: "set" }), "1234"),
+    ).rejects.toThrow("Tag was lost")
+    expect(mockVerifyCardPin).not.toHaveBeenCalled()
+    expect(mockLoadTopUp).not.toHaveBeenCalled()
+  })
+
+  it("never retries a load: a load that fails is thrown, once", async () => {
+    mockOwnerKeyFor.mockResolvedValue(OWNER)
+    mockLoadTopUp.mockRejectedValue(new Error("Tag was lost"))
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+
+    await expect(hook().load(record, cardWith(0, { hasOwner: true }))).rejects.toThrow(
+      "Tag was lost",
+    )
+    expect(mockLoadTopUp).toHaveBeenCalledTimes(1)
+    expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
+  })
+
+  it("asks for no owner key for a card with no owner", async () => {
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+    await hook().load(record, cardWith(0))
+    expect(mockOwnerKeyFor).not.toHaveBeenCalled()
+  })
+
+  it("checkPin sends VERIFY_PIN in the form the card takes", async () => {
+    mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
+    await hook().checkPin({ pubkey: "02ab", sealed: true }, "1234")
+    expect(mockVerifyCardPin).toHaveBeenCalledWith("transceive", "1234", {
+      sealed: true,
+      cardPubkey: "02ab",
+    })
+    expect(mockRunCardOperation).toHaveBeenCalledWith(expect.any(Function), "02ab")
+  })
+})
+
 describe("useCardTopUp reclaimPlanFor", () => {
   it("plans nothing for a card with no spent slots, without asking the mint", async () => {
     await expect(hook().reclaimPlanFor(cardWith(0))).resolves.toEqual({
@@ -615,7 +764,7 @@ describe("useCardTopUp reclaimPlanFor", () => {
 
   it("asks the mint about the spent slots and counts every one as room only when all are settled", async () => {
     const card = cardWith(2)
-    const [a, b] = card.spentSlots
+    const [a, b] = card.spentSlots ?? []
     mockReclaimVerdicts.mockResolvedValueOnce(
       new Map([
         [a.nonce, "SPENT"],

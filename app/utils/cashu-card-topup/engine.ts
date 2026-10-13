@@ -64,6 +64,13 @@ import type { CardUnit, TopUpFailure, TopUpOutput, TopUpRecord } from "./types"
  * - a spent slot is owed until it settles: CLEAR_SPENT is sent only by
  *   `reclaimSpentSlots`, on the load tap, and only once the mint has settled
  *   every spent slot on the card (NUT-07 SPENT) or the slot holds no proof.
+ *
+ * Card protocol 2.0 (ENG-675): every output is a format-4 SIG_ALL piece, and
+ * each goes on the card with the mint's DLEQ proof beside it (LOAD_PROOF
+ * P1 = 1). A card with no owner takes no top-up (`owner-unset`, refused before
+ * anything is quoted). A record saved before 2.0 (`cardFormat` 0) holds a 0.x
+ * card's pieces: it is kept untouched, and never paid, minted, loaded or
+ * dropped here (`needs-update`).
  */
 
 /** forge's NUT-04 limit per quote, for both units. The mint enforces it too. */
@@ -130,6 +137,7 @@ export class TopUpError extends Error {
  * card-free pass stops asking about them; the screen still offers a retry.
  */
 const FINAL_FAILURES: readonly TopUpFailure[] = [
+  "needs-update",
   "state",
   "not-found",
   "restore",
@@ -201,6 +209,28 @@ const load = async (deps: Pick<TopUpDeps, "store">, id: string): Promise<TopUpRe
   return record
 }
 
+/** The format of the pieces this app's top-ups make: the 2.0 card's. */
+export const CARD_FORMAT = 4
+
+/** A record of this protocol's pieces (`cardFormat` 4), not a 0.x card's. */
+export const isCurrentFormat = (record: Pick<TopUpRecord, "cardFormat">): boolean =>
+  record.cardFormat === CARD_FORMAT
+
+/**
+ * A record saved before card protocol 2.0 is refused by every step that
+ * would pay, mint, load or drop it: its pieces are a 0.x card's, and an
+ * operator sweeps them (architect's decision 8).
+ */
+const refuseOldFormat = (record: TopUpRecord): TopUpRecord => {
+  if (!isCurrentFormat(record)) {
+    throw new TopUpError(
+      "needs-update",
+      "this top-up was made for a card that needs an update: it is kept for a human",
+    )
+  }
+  return record
+}
+
 /**
  * Whether a saved top-up is the mint's in hand. A quote, its payment and its
  * proofs exist only at the mint that issued them (`mintUrl`), and a
@@ -225,7 +255,7 @@ const loadForMint = async (
   if (!ofThisMint(record, deps.mint)) {
     throw new TopUpError("state", "the top-up belongs to another mint")
   }
-  return record
+  return refuseOldFormat(record)
 }
 
 /*
@@ -355,14 +385,16 @@ export type PrepareArgs = {
   amount: number
   walletId: string
   /**
-   * The card as last read: its empty slots, the unit of the value it holds
-   * (none when it is empty), and `reclaimable`, the spent slots the load tap
-   * will free first (`reclaimPlan`: every one of them, or none). Spent slots
-   * are never room by themselves: a spent slot is owed until it settles at
-   * the mint (cashu-javacard spec/CARD-FILE.md, "Why `spent` is required"),
-   * and only the mint's word (NUT-07 SPENT) on all of them makes them room.
+   * The card as last read: whether it has an owner, its empty slots, the
+   * unit of the value it holds (none when it is empty), and `reclaimable`,
+   * the spent slots the load tap will free first (`reclaimPlan`: every one of
+   * them, or none). Spent slots are never room by themselves: a spent slot is
+   * owed until it settles at the mint (cashu-javacard spec/CARD-FILE.md, "Why
+   * `spent` is required"), and only the mint's word (NUT-07 SPENT) on all of
+   * them makes them room. A card with no owner takes no load (LOAD_PROOF
+   * answers 6A90), so it takes no top-up either.
    */
-  card: Pick<CardInfo, "empty"> & { unit?: CardUnit; reclaimable?: number }
+  card: Pick<CardInfo, "empty" | "hasOwner"> & { unit?: CardUnit; reclaimable?: number }
 }
 
 /**
@@ -435,6 +467,10 @@ export async function prepareTopUp(
   args: PrepareArgs,
 ): Promise<TopUpRecord> {
   const { amount, unit } = args
+  // Before anything is quoted or paid: an ownerless card refuses every load.
+  if (!args.card.hasOwner) {
+    throw new TopUpError("owner-unset", "the card has no owner: set it up first")
+  }
   if (!Number.isSafeInteger(amount) || amount < 1 || amount > MAX_TOPUP_AMOUNT) {
     throw new TopUpError("amount", `a top-up is 1 to ${MAX_TOPUP_AMOUNT}, got ${amount}`)
   }
@@ -465,7 +501,8 @@ export async function prepareTopUp(
   const { quote, lockKey } = await lockedQuote(deps, unit, amount)
   const at = deps.now()
   return deps.store.put({
-    version: 1,
+    version: 2,
+    cardFormat: CARD_FORMAT,
     id: deps.newId(),
     cardPubkey,
     mintUrl: deps.mint.url,
@@ -833,7 +870,9 @@ export async function advanceTopUps(deps: CardFreeDeps): Promise<{ waiting: numb
   const records = (await deps.store.list()).filter(
     (record) =>
       (record.state === "quoted" || record.state === "paid") &&
-      ofThisMint(record, deps.mint),
+      ofThisMint(record, deps.mint) &&
+      // A 0.x card's top-up is left for a human: never asked about, minted or dropped.
+      isCurrentFormat(record),
   )
   let waiting = 0
   // One record at a time, gently: forge rate-limits its API per IP.
@@ -996,9 +1035,10 @@ export async function proofStatesForLoad(
 }
 
 /**
- * Write the minted proofs onto the card, inside one card session whose PIN
- * (if the card has one) the caller has already verified, and whose spent
- * slots `reclaimSpentSlots` has already dealt with.
+ * Write the minted proofs onto the card, inside one card session the caller
+ * has already opened for loading (the owner's grant, ALLOW_LOAD; or the PIN
+ * verified; or a card with no PIN), and whose spent slots
+ * `reclaimSpentSlots` has already dealt with.
  *
  * The first load saves `loadStarted` before its first LOAD_PROOF. Any later
  * load reads every occupied slot first and skips proofs already there, spent
@@ -1034,7 +1074,7 @@ export async function proofStatesForLoad(
  */
 export type LoadArgs = {
   id: string
-  /** An open card session; VERIFY_PIN already done when the card has a PIN. */
+  /** An open card session, opened for loading: ALLOW_LOAD, or VERIFY_PIN when the card has a PIN. */
   transceive: Transceiver
   card: Pick<CardInfo, "maxSlots">
   /** Required for a resumed load: `proofStatesForLoad`, asked before the tap. */
@@ -1050,7 +1090,7 @@ export async function loadTopUp(
   deps: Pick<TopUpDeps, "store">,
   { id, transceive, card, mintStates, inventory }: LoadArgs,
 ): Promise<TopUpRecord> {
-  const record = await load(deps, id)
+  const record = refuseOldFormat(await load(deps, id))
   if (record.state === "loaded") return record
   const { proofs } = record
   if (record.state !== "minted" || !proofs) {
@@ -1063,6 +1103,10 @@ export async function loadTopUp(
     inventory?.statuses ?? (await getSlotStatuses(transceive, card.maxSlots))
   let pending = proofs
   let held = 0
+  // Nonces this tap found in spent slots, remnants included: a 2.0 card
+  // refuses to load a piece whose nonce is in any slot (6A94), so one of these
+  // answering "already on the card" is not on it to spend.
+  const inSpentSlot = new Set<string>()
   if (record.loadStarted && mintStates) {
     const spentRead = new Map(
       (inventory?.spent ?? []).map((found) => [found.slot, found]),
@@ -1071,6 +1115,7 @@ export async function loadTopUp(
     for (let slot = 0; slot < statuses.length; slot += 1) {
       if (statuses[slot] !== "empty") {
         const found = spentRead.get(slot) ?? (await getProof(transceive, slot))
+        if (found.status === "spent") inSpentSlot.add(found.nonce)
         // A spent slot a cut CLEAR_SPENT left behind holds no proof: whether
         // the record's proof is on the card is the mint's to say, not its.
         if (found.status === "unspent" || isProofShaped(found)) onCard.add(found.nonce)
@@ -1096,7 +1141,17 @@ export async function loadTopUp(
   if (!record.loadStarted) {
     await deps.store.update(id, (r) => ({ ...r, loadStarted: true }))
   }
-  for (const proof of pending) await loadProof(transceive, proof)
+  // One piece to a command, with the mint's DLEQ proof (P1 = 1). A 6A94 is a
+  // piece already on the card (`alreadyOnCard`): an earlier load whose answer
+  // was lost landed, and it counts as loaded. Unless this tap found its nonce
+  // in a spent slot (a remnant a cut CLEAR_SPENT left, whose piece the mint
+  // still holds unspent): then it is not on the card to spend, and the record
+  // stays unfinished until a reclaim frees that slot and a later load writes
+  // it. Never retried: one APDU per piece, once.
+  for (const proof of pending) {
+    const result = await loadProof(transceive, proof)
+    if (result.alreadyOnCard && inSpentSlot.has(proof.nonce)) held += 1
+  }
   if (held > 0) return load(deps, id)
   return deps.store.update(id, (r) => ({ ...r, state: "loaded" }))
 }

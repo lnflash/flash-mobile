@@ -16,7 +16,16 @@ import {
   isIdempotencyKeyReuseError,
   isUnsupportedIdempotencyKeyError,
 } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
-import { CashuCardInfo, verifyCardPin } from "@app/utils/cashu-card"
+import {
+  CardError,
+  CashuCardInfo,
+  SW_NO_OWNER,
+  SW_OWNER_PROOF,
+  Transceiver,
+  verifyCardPin,
+} from "@app/utils/cashu-card"
+import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
+import { OwnerKey, ownerKeyFor, saveOwnerKey } from "@app/utils/cashu-card-owner-store"
 import {
   cardMintUrl,
   isStaleDevMint,
@@ -239,8 +248,12 @@ export const useCardTopUp = () => {
   }
 
   /** One tap: VERIFY_PIN, so a wrong PIN is found before anything is paid. */
-  const checkPin = (cardPubkey: string, pin: string) =>
-    runCardOperation((transceive) => verifyCardPin(transceive, pin), cardPubkey)
+  const checkPin = (card: Pick<CashuCardInfo, "pubkey" | "sealed">, pin: string) =>
+    runCardOperation(
+      (transceive) =>
+        verifyCardPin(transceive, pin, { sealed: card.sealed, cardPubkey: card.pubkey }),
+      card.pubkey,
+    )
 
   /**
    * The mint's NUT-07 word on the card's spent slots, as the last read found
@@ -263,20 +276,67 @@ export const useCardTopUp = () => {
   ): Promise<ReclaimPlan> => reclaimPlan(card.spentSlots ?? [], await verdictsFor(card))
 
   /**
-   * One tap: VERIFY_PIN when the card has a PIN, then the reclaim of the
-   * card's settled spent slots (`reclaimSpentSlots`), then the load, in the
-   * same session. Everything the mint is asked is asked before the tap, so
-   * the card session never waits on the network: a resumed load's word on
-   * each of its proofs, which it cannot do without (`mint-unreachable`,
+   * Opens the tap for loading, the way this card and phone allow (spec/APDU.md,
+   * LOAD_PROOF): the owner's grant (ALLOW_LOAD) when this phone holds a key
+   * for the card, else the PIN, else nothing on a card with no PIN. A grant
+   * the card refuses (6A91: not this phone's card; 6A90: no owner) falls back
+   * to the PIN. Without a PIN to fall back to, a card with one refuses here,
+   * before any load APDU (`not-owner`): the screen asks for the PIN and taps
+   * again. The grant is per tap, so it is asked for in the tap that loads.
+   * A seed-derived key the card took is saved for next time.
+   */
+  const openForLoading = async (
+    transceive: Transceiver,
+    card: Pick<CashuCardInfo, "pubkey" | "pinState" | "sealed">,
+    { pin, owner }: { pin?: string; owner?: OwnerKey },
+  ) => {
+    if (owner) {
+      try {
+        await allowLoad(transceive, ownerSigner(owner.privateKey))
+        await saveOwnerKey(card.pubkey, owner).catch(() => undefined)
+        return
+      } catch (err) {
+        const refused =
+          err instanceof CardError &&
+          (err.sw === SW_OWNER_PROOF || err.sw === SW_NO_OWNER)
+        if (!refused) throw err
+      }
+    }
+    if (pin) {
+      await verifyCardPin(transceive, pin, {
+        sealed: card.sealed,
+        cardPubkey: card.pubkey,
+      })
+      return
+    }
+    if (card.pinState !== "unset") {
+      throw new TopUpError(
+        "not-owner",
+        "the card wants its PIN: this phone is not its owner",
+      )
+    }
+  }
+
+  /**
+   * One tap: the owner's grant, or VERIFY_PIN (`openForLoading`), then the
+   * reclaim of the card's settled spent slots (`reclaimSpentSlots`), then the
+   * load, in the same session. Everything the mint is asked is asked before
+   * the tap, and the owner key is found before it too (a seed's derivation
+   * takes a moment), so the card session never waits: a resumed load's word
+   * on each of its proofs, which it cannot do without (`mint-unreachable`,
    * nothing touches the card), and the verdicts on the spent slots, which it
    * can (no slot is freed, and the refusal says how many are still settling).
    * The reclaim's read of the card is handed to the load when it still holds
    * (`inventory`, nothing cleared), so no slot is read twice in the tap.
    * A load the engine refuses carries what the reclaim found (`reclaim`).
+   * Nothing in the tap is retried: a load APDU goes out once.
    */
   const load = async (
     record: TopUpRecord,
-    card: Pick<CashuCardInfo, "pubkey" | "maxSlots" | "spentSlots">,
+    card: Pick<
+      CashuCardInfo,
+      "pubkey" | "maxSlots" | "spentSlots" | "pinState" | "sealed" | "hasOwner"
+    >,
     pin?: string,
   ): Promise<{ record: TopUpRecord; reclaim: ReclaimResult }> => {
     let mintStates: Awaited<ReturnType<typeof proofStatesForLoad>>
@@ -293,8 +353,11 @@ export const useCardTopUp = () => {
       )
     }
     const verdicts = await verdictsFor(card)
+    const owner = card.hasOwner
+      ? await ownerKeyFor(card.pubkey).catch(() => undefined)
+      : undefined
     return runCardOperation(async (transceive) => {
-      if (pin) await verifyCardPin(transceive, pin)
+      await openForLoading(transceive, card, { pin, owner })
       const reclaim = await reclaimSpentSlots(transceive, {
         maxSlots: card.maxSlots,
         verdicts,

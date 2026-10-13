@@ -42,9 +42,29 @@ export type TopUpFailure =
   | "expired"
   /** The mint could not be asked (NUT-07, before a load's tap): the card was not touched. */
   | "mint-unreachable"
+  /** The card has no owner yet: it takes no top-up until it is set up (refused before any quote). */
+  | "owner-unset"
+  /** The card refused this phone's owner proof and no PIN was given (`6A91`). */
+  | "not-owner"
+  /**
+   * A top-up saved for a 0.x card (`cardFormat` 0): its pieces are locked to
+   * that card's key with SIG_INPUTS, and no 2.0 card can hold them. Kept
+   * untouched, never minted, loaded or re-signed: an operator sweeps it.
+   */
+  | "needs-update"
+
+/**
+ * The format of the pieces a top-up's outputs become: 4, the 2.0 card's
+ * SIG_ALL pieces (`buildCardP2PKSecret`), for every record this app saves now;
+ * 0 for a record saved before card protocol 2.0 (store format 1), whose
+ * SIG_INPUTS pieces only a 0.x card could hold (`needs-update`).
+ */
+export type CardFormat = 0 | 4
 
 export type TopUpRecord = {
-  version: 1
+  version: 2
+  /** See `CardFormat`. */
+  cardFormat: CardFormat
   id: string
   cardPubkey: string
   mintUrl: string
