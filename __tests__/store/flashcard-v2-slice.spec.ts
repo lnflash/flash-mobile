@@ -184,6 +184,20 @@ describe("flashcardV2 slice — limits (ENG-675)", () => {
     })
   })
 
+  it("takes the card's own payment limit from a read under the owner's grant, over the one this phone set", () => {
+    // Another phone with the same key changed it to 0; the card said so here.
+    let state = reducer(undefined, seen())
+    state = reducer(
+      state,
+      cardLimitsSet({
+        pubkey: PUBKEY,
+        limits: { day: 5000, payment: 1000, allowance: 250, rollBudget: 7 },
+      }),
+    )
+    state = reducer(state, seen({ limits: { day: 5000, payment: 0, allowance: 250 } }))
+    expect(state.cards[PUBKEY].limits.payment).toBe(0)
+  })
+
   it("drops it once the card reads with no owner: it changed hands", () => {
     let state = reducer(undefined, seen())
     state = reducer(

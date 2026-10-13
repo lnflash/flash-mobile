@@ -922,6 +922,10 @@ type RootTranslation = {
 		 */
 		limitsPaymentKept: string
 		/**
+		 * L​a​s​t​ ​k​n​o​w​n​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.​ ​A​n​o​t​h​e​r​ ​p​h​o​n​e​ ​w​i​t​h​ ​y​o​u​r​ ​k​e​y​ ​m​a​y​ ​h​a​v​e​ ​c​h​a​n​g​e​d​ ​i​t​.​ ​L​e​a​v​e​ ​i​t​ ​a​s​ ​i​t​ ​i​s​ ​t​o​ ​k​e​e​p​ ​t​h​e​ ​c​a​r​d​'​s​ ​o​w​n​.
+		 */
+		limitsPaymentLastKnown: string
+		/**
 		 * S​p​e​n​d​ ​w​i​t​h​o​u​t​ ​P​I​N​ ​(​s​a​t​s​ ​a​ ​d​a​y​)
 		 */
 		limitsAllowance: string
@@ -8384,6 +8388,10 @@ export type TranslationFunctions = {
 		 * Leave blank to keep the card's limit
 		 */
 		limitsPaymentKept: () => LocalizedString
+		/**
+		 * Last known on this phone. Another phone with your key may have changed it. Leave it as it is to keep the card's own.
+		 */
+		limitsPaymentLastKnown: () => LocalizedString
 		/**
 		 * Spend without PIN (sats a day)
 		 */

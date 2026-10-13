@@ -28,7 +28,10 @@ export type KnownCardLimits = {
   day: number
   /** The no-PIN allowance, sats a day; 0 is none. */
   allowance: number
-  /** The limit on one payment, as this phone last set it; absent when it never did. */
+  /**
+   * The limit on one payment, as the card last said it to this phone under
+   * the owner's grant, or as this phone last set it; absent when neither.
+   */
   payment?: number
   /** How often the day's window may roll between the owner's refreshes. */
   rollBudget?: number
@@ -104,10 +107,12 @@ export const flashcardV2Slice = createSlice({
         ...card,
         limits: {
           ...card.limits,
-          // A read never sees the one-payment limit (it is said only under the
-          // owner's grant): the last one this phone set stands, until the card
-          // changes hands (no owner at this read).
-          ...(card.owned && previous?.limits?.payment !== undefined
+          // The one-payment limit is said only under the owner's grant. A read
+          // that had it brings the card's own; one that did not keeps the last
+          // this phone knew, until the card changes hands (no owner at this read).
+          ...(card.limits.payment === undefined &&
+          card.owned &&
+          previous?.limits?.payment !== undefined
             ? { payment: previous.limits.payment }
             : {}),
         },

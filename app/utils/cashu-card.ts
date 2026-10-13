@@ -1417,7 +1417,7 @@ export interface CashuCardInfo extends CardInfo {
  * The read round-trip over an open IsoDep channel:
  * SELECT → GET_INFO (P1 = 1) → GET_PUBKEY → AUTH → GET_CARD → [`afterAuth`:
  * the clock and the owner] → [GET_CARD, and GET_INFO, again when
- * `afterAuth` changed the card] → GET_BALANCE, then the slots (GET_PIECES
+ * `afterAuth` changed the card; GET_INFO again under the owner's grant] → GET_BALANCE, then the slots (GET_PIECES
  * pages, GET_PROOF per spent slot) when the card holds anything. Nothing but
  * `afterAuth` writes.
  *
@@ -1454,6 +1454,12 @@ export type ReadChanges = {
   clockMoved?: boolean
   /** REFRESH succeeded: the roll count is 0 now. GET_CARD is read again. */
   refreshed?: boolean
+  /**
+   * The owner's grant (ALLOW_LOAD) is live for the rest of the tap: GET_INFO
+   * is read again, so its `paymentLimit` is the card's own limit on one
+   * payment, which the card says only under the grant (GET_INFO bytes 30-33).
+   */
+  granted?: boolean
 }
 
 /** What a read tap knows once the card has proved its key: `ReadOptions.afterAuth`. */
@@ -1487,7 +1493,10 @@ export const readCashuCard = async (
   // (cashu-javacard spec/APDU.md, SET_HEADER, REFRESH and GET_CARD): a
   // REFRESH set the roll count to 0, a header taken changed the record's last
   // header, and a clock that moved changed what GET_INFO reports against it.
-  const info = changes?.clockMoved ? await getInfo(transceive) : read
+  // Under the owner's grant GET_INFO also says the limit on one payment, as
+  // Foxy asks it again once it knows the phone is the owner.
+  const info =
+    changes?.clockMoved || changes?.granted ? await getInfo(transceive) : read
   const record =
     changes?.clockMoved || changes?.refreshed
       ? await getCardRecord(transceive)

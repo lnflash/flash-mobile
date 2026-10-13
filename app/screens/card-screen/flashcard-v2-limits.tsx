@@ -79,17 +79,23 @@ export const limitsFromFields = (fields: {
  * the owner's thirteen-byte SET_LIMIT, so the budget the owner chose is the
  * one the card holds.
  *
- * SET_LIMIT always writes all three limits, and the card says its payment
- * limit only under the owner's grant (cashu-javacard spec/APDU.md, GET_INFO
- * bytes 30-33, and ALLOW_LOAD). So the payment limit is shown as this phone
- * last set it, or blank when this phone never did (a phone restored from the
- * seed, or a record cleared since). What this phone last set is not always
- * what the card holds: another phone with the same owner key (the same seed,
- * decision 14) may have changed it since. So a payment field the owner left
- * as the screen opened it is never written as it stands: the save tap asks
- * for the grant, reads the card's own payment limit (GET_INFO) and writes
- * that back unchanged with the other limits. Only a payment limit the owner
- * typed here is written as typed.
+ * Every field opens at what the card said on its last read: the daily
+ * limit and the allowance from GET_INFO, the budget from GET_CARD, and the
+ * payment limit from the GET_INFO the read tap asked under the owner's grant
+ * (`ownerPaymentLimit`), the only time the card says it (cashu-javacard
+ * spec/APDU.md, GET_INFO bytes 30-33, and ALLOW_LOAD). What this phone
+ * stored is not always what the card holds: another phone with the same
+ * owner key (the same seed, decision 14) may have changed it since. So the
+ * stored payment limit is shown only when the card has not said its own to
+ * this phone (a dev bridge's card, say), and is labelled as last known; with
+ * neither, the field is blank.
+ *
+ * SET_LIMIT always writes all three limits. A payment field the owner left as
+ * the screen opened it is never written as it stands: the save tap asks for
+ * the grant, reads the card's own payment limit (GET_INFO) and writes that
+ * back unchanged with the other limits, so a limit changed between the read
+ * and the save is not silently restored. Only a payment limit the owner typed
+ * here is written as typed.
  */
 export const FlashcardV2LimitsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -103,10 +109,16 @@ export const FlashcardV2LimitsScreen = () => {
   )
 
   const [day, setDay] = useState(String(cashuCard?.dailyLimit ?? 0))
-  // Undefined when this phone never set it: the card's own is read at the save.
-  const knownPayment = known?.limits?.payment
+  // The card's own, from its last read under the grant; else what this phone
+  // stored, labelled as last known; else blank. The card's is read at the save.
+  const cardPayment = cashuCard?.ownerPaymentLimit
+  const storedPayment = known?.limits?.payment
+  const shownPayment = cardPayment ?? storedPayment
+  const [lastKnownPayment] = useState(
+    cardPayment === undefined && storedPayment !== undefined,
+  )
   // The payment field as the screen opened it: left so, the card's is kept.
-  const [openedPayment] = useState(knownPayment === undefined ? "" : String(knownPayment))
+  const [openedPayment] = useState(shownPayment === undefined ? "" : String(shownPayment))
   const [payment, setPayment] = useState(openedPayment)
   const [allowance, setAllowance] = useState(String(cashuCard?.allowance ?? 0))
   const [rollBudget, setRollBudget] = useState(
@@ -152,7 +164,7 @@ export const FlashcardV2LimitsScreen = () => {
         return
       }
       const sign = ownerSigner(owner.privateKey)
-      const written = await runCardOperation(
+      const written = await runCardOperation<CardLimits>(
         async (transceive) => {
           let toWrite = limits
           if (keepCardPayment) {
@@ -166,7 +178,10 @@ export const FlashcardV2LimitsScreen = () => {
           return toWrite
         },
         cashuCard.pubkey,
-        { assume: { dailyLimit: limits.day, allowance: limits.allowance } },
+        {
+          assume: { dailyLimit: limits.day, allowance: limits.allowance },
+          learned: (set) => ({ ownerPaymentLimit: set.payment }),
+        },
       )
       dispatch(
         cardLimitsSet({
@@ -214,11 +229,12 @@ export const FlashcardV2LimitsScreen = () => {
         <LimitField
           label={LL.FlashcardV2.limitsPayment()}
           note={LL.FlashcardV2.limitsPaymentNote()}
+          remark={lastKnownPayment ? LL.FlashcardV2.limitsPaymentLastKnown() : undefined}
           value={payment}
           onChange={change(setPayment)}
           editable={!busy}
           placeholder={
-            knownPayment === undefined ? LL.FlashcardV2.limitsPaymentKept() : undefined
+            shownPayment === undefined ? LL.FlashcardV2.limitsPaymentKept() : undefined
           }
           testID="limits-payment"
         />
@@ -274,8 +290,10 @@ const LimitField: React.FC<{
   editable: boolean
   /** Shown while the field is blank. */
   placeholder?: string
+  /** Said of the value the field opened at, above what the field does. */
+  remark?: string
   testID: string
-}> = ({ label, note, value, onChange, editable, placeholder, testID }) => {
+}> = ({ label, note, value, onChange, editable, placeholder, remark, testID }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   return (
@@ -291,10 +309,15 @@ const LimitField: React.FC<{
         placeholder={placeholder}
         placeholderTextColor={colors.grey3}
         accessibilityLabel={label}
-        accessibilityHint={placeholder}
+        accessibilityHint={remark ?? placeholder}
         editable={editable}
         testID={testID}
       />
+      {remark && (
+        <Text type="caption" style={styles.note} testID={`${testID}-remark`}>
+          {remark}
+        </Text>
+      )}
       <Text type="caption" style={styles.note}>
         {note}
       </Text>

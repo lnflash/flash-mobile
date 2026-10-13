@@ -302,6 +302,57 @@ describe("FlashcardV2LimitsScreen", () => {
     expect(field("limits-roll-budget").props.value).toBe("12")
   })
 
+  const seenOwned = (pubkey: string) =>
+    store.dispatch(
+      cardSeen({
+        pubkey,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 0,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 5000, allowance: 250 },
+        at: 1,
+      }),
+    )
+
+  it("opens the payment field at the card's own limit from its last read, over what this phone stored: another phone with the same key removed it", () => {
+    // This phone set 5000; phone B (same seed) has since set 0, and the card
+    // said 0 under the owner's grant at the last read.
+    mockCard = cashuCardState({
+      pubkey: card.pubkey,
+      dailyLimit: 5000,
+      allowance: 250,
+      ownerPaymentLimit: 0,
+    })
+    seenOwned(card.pubkey)
+    store.dispatch(
+      cardLimitsSet({
+        pubkey: card.pubkey,
+        limits: { day: 5000, payment: 5000, allowance: 250, rollBudget: 7 },
+      }),
+    )
+    renderScreen()
+    expect(field("limits-payment").props.value).toBe("0")
+    expect(screen.queryByTestId("limits-payment-remark")).toBeNull()
+  })
+
+  it("labels a stored payment limit as last known when the card has not said its own to this phone", () => {
+    mockCard = cashuCardState({ pubkey: card.pubkey, dailyLimit: 5000, allowance: 250 })
+    seenOwned(card.pubkey)
+    store.dispatch(
+      cardLimitsSet({
+        pubkey: card.pubkey,
+        limits: { day: 5000, payment: 1000, allowance: 250, rollBudget: 7 },
+      }),
+    )
+    renderScreen()
+    expect(field("limits-payment").props.value).toBe("1000")
+    expect(screen.getByTestId("limits-payment-remark").props.children).toBe(
+      LL.FlashcardV2.limitsPaymentLastKnown(),
+    )
+  })
+
   it("saves with one tap of the owner's thirteen-byte SET_LIMIT, the budget included, and remembers what it set", async () => {
     store.dispatch(
       cardSeen({

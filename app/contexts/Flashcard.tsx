@@ -107,8 +107,16 @@ const cardUnitTotals = async (
 
 const width = Dimensions.get("screen").width
 
-/** What a read tap learned about the card's owner: the key the card took, if this phone's. */
-type TapOwnership = { key?: OwnerKey }
+/** What a read tap learned about the card's owner. */
+type TapOwnership = {
+  /** The key the card took, if this phone's. */
+  key?: OwnerKey
+  /**
+   * The card granted this phone ALLOW_LOAD in the tap, so the GET_INFO read
+   * after it says the card's limit on one payment (`paymentLimit`).
+   */
+  granted?: boolean
+}
 
 type TransactionItem = {
   date: string
@@ -155,21 +163,38 @@ export type CashuCardState = CashuCardInfo & {
    * a seed derives one for every card.
    */
   ownerKeySource?: OwnerKeySource
+  /**
+   * The card's limit on one payment, sats (0 is none), as the card said it
+   * to this phone: under the owner's grant in the read tap (GET_INFO bytes
+   * 30-33 after ALLOW_LOAD), or as this phone's SET_LIMIT wrote it since.
+   * Undefined when this phone has had no such answer for the card on screen
+   * (another phone's card, a locked one, the dev bridge's): the card says 0
+   * to anyone else whatever it holds, so `paymentLimit` alone says nothing.
+   * Kept apart from `paymentLimit` so a re-read without the grant (after a
+   * PIN change, say) never turns it into that 0.
+   */
+  ownerPaymentLimit?: number
 }
 
 /**
  * Bytes 29, 30-33 and 38-41 of GET_INFO describe this tap only, or what the
  * card owes nobody: what the store keeps of a card's limits is what the owner
- * set, as far as a read can see it.
+ * set, as far as a read can see it. The limit on one payment (bytes 30-33)
+ * is the card's only under the owner's grant, so it is passed in apart, as
+ * `ownerPaymentLimit`, and left out when the card did not say it to this phone.
  */
-const limitsOf = (info: CardInfo, record?: CardRecord) => ({
+const limitsOf = (info: CardInfo, record?: CardRecord, payment?: number) => ({
   day: info.dailyLimit,
   allowance: info.allowance,
   ...(record ? { rollBudget: record.rollBudget, rolls: record.rolls } : {}),
+  ...(payment === undefined ? {} : { payment }),
 })
 
+/** What an operation teaches this phone about the card that no re-read can say. */
+type LearnedFromOperation = Pick<CashuCardState, "ownerKeySource" | "ownerPaymentLimit">
+
 /** How a caller of `runCardOperation` learns about, or vouches for, the card afterwards. */
-export type CardOperationOptions = {
+export type CardOperationOptions<T = unknown> = {
   /**
    * What the operation proves about the card once it has succeeded: SET_PIN
    * or CHANGE_PIN answering 9000 proves a PIN is set. Applied to the card on
@@ -180,11 +205,13 @@ export type CardOperationOptions = {
   assume?: Partial<CardInfo>
   /**
    * What the operation taught this phone about the card that no re-read can
-   * say (ENG-675): whose key its owner is (`ownerKeySource`, after a setup).
-   * Applied to the card on screen once the operation has succeeded, re-read
-   * or not.
+   * say (ENG-675): whose key its owner is (`ownerKeySource`, after a setup),
+   * or the limit on one payment its owner's SET_LIMIT wrote
+   * (`ownerPaymentLimit`), which the card says only under the grant. Given
+   * as is, or worked out from the operation's result. Applied to the card on
+   * screen once the operation has succeeded, re-read or not.
    */
-  learned?: Pick<CashuCardState, "ownerKeySource">
+  learned?: LearnedFromOperation | ((result: T) => LearnedFromOperation)
   /**
    * Called with what GET_INFO said when the card was re-read: after the
    * operation succeeded, or after the card refused it. Not called when there
@@ -231,7 +258,7 @@ export interface FlashcardInterface {
   runCardOperation: <T>(
     op: (transceive: Transceiver) => Promise<T>,
     expectedPubkey: string,
-    options?: CardOperationOptions,
+    options?: CardOperationOptions<T>,
   ) => Promise<T>
 }
 
@@ -415,10 +442,13 @@ export const FlashcardProvider = ({ children }: Props) => {
           // The card screen renders this; the caller navigates on the result.
           cashuGeneration.current += 1
           const known = knownUnitTotals(info.keysets)
+          // Under the grant the read's GET_INFO said the card's payment limit.
+          const ownerPaymentLimit = ownership.granted ? info.paymentLimit : undefined
           setCashuCard({
             ...info,
             ...(known ? { unitTotals: known } : {}),
             ...(ownership.key ? { ownerKeySource: ownership.key.source } : {}),
+            ...(ownerPaymentLimit === undefined ? {} : { ownerPaymentLimit }),
           })
           // A signed-in phone remembers the card: the applet keeps no history
           // of its own, so this device-local record is the only one (ENG-616).
@@ -432,7 +462,7 @@ export const FlashcardProvider = ({ children }: Props) => {
                 lastBalance: info.balance,
                 owned: info.hasOwner,
                 needsUpdate: false,
-                limits: limitsOf(info, info.record),
+                limits: limitsOf(info, info.record, ownerPaymentLimit),
                 at: Date.now(),
               }),
             )
@@ -538,6 +568,8 @@ export const FlashcardProvider = ({ children }: Props) => {
     } else if (info.hasOwner) {
       try {
         ownership.key = await confirmOwnerKey(transceive, pubkey)
+        // Every key but the dev bridge's was offered as ALLOW_LOAD's proof.
+        ownership.granted = ownership.key !== undefined && ownership.key.source !== "dev"
       } catch (err) {
         console.warn("Cashu card owner check skipped:", describeCardFailure(err))
       }
@@ -554,7 +586,11 @@ export const FlashcardProvider = ({ children }: Props) => {
         }
       }
     }
-    return { clockMoved: now !== info.now, refreshed }
+    return {
+      clockMoved: now !== info.now,
+      refreshed,
+      granted: ownership.granted === true,
+    }
   }
 
   /**
@@ -642,7 +678,7 @@ export const FlashcardProvider = ({ children }: Props) => {
           lastBalance: card.balance,
           owned: card.hasOwner,
           needsUpdate: false,
-          limits: limitsOf(card, card.record),
+          limits: limitsOf(card, card.record, card.ownerPaymentLimit),
           at: Date.now(),
         }),
       )
@@ -686,7 +722,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   const runCardOperation = async <T,>(
     op: (transceive: Transceiver) => Promise<T>,
     expectedPubkey: string,
-    { assume, onReread, learned }: CardOperationOptions = {},
+    { assume, onReread, learned }: CardOperationOptions<T> = {},
   ): Promise<T> => {
     // Development builds only: the card is cardsim, over HTTP (ENG-634).
     const bridge = getCardBridge()
@@ -738,7 +774,8 @@ export const FlashcardProvider = ({ children }: Props) => {
       if (!(await reread()) && assume) recordCardOperation(expectedPubkey, assume)
       if (learned) {
         const current = cashuCardRef.current
-        if (current?.pubkey === expectedPubkey) setCashuCard({ ...current, ...learned })
+        const facts = typeof learned === "function" ? learned(result) : learned
+        if (current?.pubkey === expectedPubkey) setCashuCard({ ...current, ...facts })
       }
       return result
     } finally {

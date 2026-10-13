@@ -1567,6 +1567,15 @@ describe("readCashuCard", () => {
     ])
   })
 
+  it("asks GET_INFO again once the tap holds the owner's grant, so the payment limit it returns is the one the card says only under the grant", async () => {
+    const card = loadedCard()
+    const afterAuth = jest.fn(async () => ({ granted: true }))
+    await readCashuCard(card.transceive, { afterAuth })
+    const ins = card.ins()
+    const authAt = ins.indexOf(INS.GET_CARD)
+    expect(ins.slice(authAt + 1).filter((i) => i === INS.GET_INFO)).toHaveLength(1)
+  })
+
   it("asks GET_CARD again once the tap work refreshed the card, so the roll count it returns is the card's 0, not the 7 it read before", async () => {
     const card = createFakeCard(MAX_SLOTS, { rolls: 7 })
     const [, , newest] = HEADER_VECTORS

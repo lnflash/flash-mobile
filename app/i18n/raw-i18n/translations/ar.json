@@ -1513,6 +1513,7 @@
     "limitsPayment": "Single payment limit (sats)",
     "limitsPaymentNote": "A larger payment makes the till wait while the card works. 0 is no limit.",
     "limitsPaymentKept": "Leave blank to keep the card's limit",
+    "limitsPaymentLastKnown": "Last known on this phone. Another phone with your key may have changed it. Leave it as it is to keep the card's own.",
     "limitsAllowance": "Spend without PIN (sats a day)",
     "limitsAllowanceNote": "What the card pays in a day without asking for its PIN. 0 always asks.",
     "limitsAllowanceNoPin": "This card has no PIN, so there is nothing to spend without.",
