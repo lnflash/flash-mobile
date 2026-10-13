@@ -9,6 +9,9 @@
  * card (`createFakeCard`) answers as the applet does; the real applet is
  * `__tests__/integration/card-topup-cardsim.spec.ts`'s.
  */
+import { readFileSync } from "fs"
+import { join } from "path"
+
 import { schnorr, secp256k1 } from "@noble/curves/secp256k1"
 
 import {
@@ -389,24 +392,28 @@ describe("SELECT", () => {
     ])
   })
 
-  it("builds the package-AID SELECT by default and the applet-AID one on request", () => {
-    expect(buildSelectApdu()).toEqual(SELECT_PACKAGE)
+  it("builds the applet-AID SELECT by default and the package-AID one on request", () => {
+    expect(buildSelectApdu()).toEqual(SELECT_APPLET)
     expect(buildSelectApdu(CASHU_APPLET_AID)).toEqual(SELECT_APPLET)
+    expect(buildSelectApdu(CASHU_AID)).toEqual(SELECT_PACKAGE)
   })
 
-  it("selects with the package AID first and returns the version body, 02 00", async () => {
-    const card = scriptedCard([[SELECT_PACKAGE, ok([2, 0])]])
+  // ENG-681: on a card installed opener first, the package AID (a partial
+  // name) reaches the opener, so the full applet AID goes first, as Foxy's
+  // wallet sends it.
+  it("selects with the full applet AID first and returns the version body, 02 00, sending nothing else", async () => {
+    const card = scriptedCard([[SELECT_APPLET, ok([2, 0])]])
     await expect(selectApplet(card.transceive)).resolves.toEqual([2, 0])
-    expect(card.sent).toEqual([SELECT_PACKAGE])
+    expect(card.sent).toEqual([SELECT_APPLET])
   })
 
-  it("falls back to the instance AID when the package AID is refused", async () => {
+  it("falls back to the package AID when the applet AID is refused", async () => {
     const card = scriptedCard([
-      [SELECT_PACKAGE, SW_FILE_NOT_FOUND],
-      [SELECT_APPLET, ok([2, 0])],
+      [SELECT_APPLET, SW_FILE_NOT_FOUND],
+      [SELECT_PACKAGE, ok([2, 0])],
     ])
     await expect(selectApplet(card.transceive)).resolves.toEqual([2, 0])
-    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE])
   })
 
   const otherRefusals: [string, number[]][] = [
@@ -415,22 +422,23 @@ describe("SELECT", () => {
     ["6F00", SW_UNKNOWN],
   ]
   otherRefusals.forEach(([label, sw]) => {
-    it(`falls back to the instance AID on ${label}, not only on 6A82`, async () => {
+    it(`falls back to the package AID on ${label}, not only on 6A82`, async () => {
       const card = scriptedCard([
-        [SELECT_PACKAGE, sw],
-        [SELECT_APPLET, ok([2, 0])],
+        [SELECT_APPLET, sw],
+        [SELECT_PACKAGE, ok([2, 0])],
       ])
       await expect(selectApplet(card.transceive)).resolves.toEqual([2, 0])
-      expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+      expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE])
     })
   })
 
   it("treats a response too short to carry a status word as a refusal", async () => {
     const card = scriptedCard([
-      [SELECT_PACKAGE, [0x90]],
-      [SELECT_APPLET, ok([2, 0])],
+      [SELECT_APPLET, [0x90]],
+      [SELECT_PACKAGE, ok([2, 0])],
     ])
     await expect(selectApplet(card.transceive)).resolves.toEqual([2, 0])
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE])
   })
 
   it("a 0.x card (its withdrawn AID answers) needs an update, and nothing further is sent", async () => {
@@ -442,7 +450,7 @@ describe("SELECT", () => {
     const error = await selectApplet(card.transceive).catch((e) => e)
     expect(error).toBeInstanceOf(CardNeedsUpdateError)
     expect(error.found).toBe("0.x")
-    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET, SELECT_LEGACY])
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE, SELECT_LEGACY])
   })
 
   it("a Foxy 1.x card needs an update too, and nothing further is sent", async () => {
@@ -456,16 +464,16 @@ describe("SELECT", () => {
       name: "CardNeedsUpdateError",
       found: "1.x",
     })
-    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET, SELECT_LEGACY, SELECT_FOXY])
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE, SELECT_LEGACY, SELECT_FOXY])
   })
 
-  it("a card under the 2.0 AID reporting an older major version needs an update", async () => {
-    const card = scriptedCard([[SELECT_PACKAGE, ok([1, 20])]])
+  it("a card under the full applet AID reporting an older major version needs an update, and the package AID is not tried", async () => {
+    const card = scriptedCard([[SELECT_APPLET, ok([1, 20])]])
     await expect(selectApplet(card.transceive)).rejects.toMatchObject({
       name: "CardNeedsUpdateError",
       found: "older",
     })
-    expect(card.sent).toEqual([SELECT_PACKAGE])
+    expect(card.sent).toEqual([SELECT_APPLET])
   })
 
   // cashu-javacard tools/cardsim/README.md, Old cards: any SELECT answer that
@@ -502,17 +510,90 @@ describe("SELECT", () => {
       expect(error.found).toBe("refused")
       // Not read as another kind of card: no withdrawn AID, no NDEF.
       expect(error).not.toBeInstanceOf(AppletNotSelectedError)
-      expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+      expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE])
     })
   })
 
-  it("a card under the 2.0 AID reporting a newer major version needs an update too: this app speaks 2.x only", async () => {
-    const card = scriptedCard([[SELECT_PACKAGE, ok([3, 0])]])
+  it("a card under the full applet AID reporting a newer major version needs an update too: this app speaks 2.x only", async () => {
+    const card = scriptedCard([[SELECT_APPLET, ok([3, 0])]])
     await expect(selectApplet(card.transceive)).rejects.toMatchObject({
       name: "CardNeedsUpdateError",
       found: "newer",
     })
-    expect(card.sent).toEqual([SELECT_PACKAGE])
+    expect(card.sent).toEqual([SELECT_APPLET])
+  })
+
+  // ENG-681: the package AID is a partial name. A 9000 to it with no 02 xx
+  // version is not the applet (a J3R180 with the opener installed first
+  // answers it with a bare 9000), so it is neither "needs an update" nor a
+  // refusal: the read goes on to the withdrawn AIDs as after 6A82.
+  const notTheApplet: [string, number[]][] = [
+    ["no body (the opener)", []],
+    ["an older version", [1, 20]],
+    ["a newer version", [3, 0]],
+    ["a version three bytes long", [2, 0, 0]],
+    ["a single byte", [2]],
+  ]
+  notTheApplet.forEach(([label, body]) => {
+    it(`a 9000 to the package AID with ${label} falls through after the applet AID said 6A82: not a Cashu card`, async () => {
+      const card = scriptedCard([
+        [SELECT_APPLET, SW_FILE_NOT_FOUND],
+        [SELECT_PACKAGE, ok(body)],
+        [SELECT_LEGACY, SW_FILE_NOT_FOUND],
+        [SELECT_FOXY, SW_FILE_NOT_FOUND],
+      ])
+      const error = await selectApplet(card.transceive).catch((e) => e)
+      expect(error).toBeInstanceOf(AppletNotSelectedError)
+      expect(error).not.toBeInstanceOf(CardNeedsUpdateError)
+      expect(error).toMatchObject({ sw: 0x6a82, packageSw: 0x9000, appletSw: 0x6a82 })
+      expect(card.sent).toEqual([
+        SELECT_APPLET,
+        SELECT_PACKAGE,
+        SELECT_LEGACY,
+        SELECT_FOXY,
+      ])
+    })
+  })
+
+  it("a bare 9000 to the package AID still lets a withdrawn AID say the card needs an update", async () => {
+    const card = scriptedCard([
+      [SELECT_APPLET, SW_FILE_NOT_FOUND],
+      [SELECT_PACKAGE, ok([])],
+      [SELECT_LEGACY, ok([0, 6])],
+    ])
+    await expect(selectApplet(card.transceive)).rejects.toMatchObject({
+      name: "CardNeedsUpdateError",
+      found: "0.x",
+    })
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE, SELECT_LEGACY])
+  })
+
+  it("a bare 9000 to the package AID after the applet AID refused with 6999 is still a refusal: needs an update", async () => {
+    const card = scriptedCard([
+      [SELECT_APPLET, SW_APPLET_SELECT_FAILED],
+      [SELECT_PACKAGE, ok([])],
+    ])
+    await expect(selectApplet(card.transceive)).rejects.toMatchObject({
+      name: "CardNeedsUpdateError",
+      found: "refused",
+    })
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE])
+  })
+
+  it("selects a 2.0 card installed opener first (the package AID reaches the opener) with the full applet AID alone", async () => {
+    const card = createFakeCard(MAX_SLOTS, { opener: true })
+    await expect(selectApplet(card.transceive)).resolves.toEqual([2, 0])
+    expect(card.transceive.mock.calls.map(([apdu]) => apdu)).toEqual([SELECT_APPLET])
+    // The applet holds the selection: GET_INFO answers, not the opener's 6D00.
+    await expect(getInfo(card.transceive)).resolves.toMatchObject({ version: "2.0" })
+  })
+
+  it("the fake opener-first card answers as the J3R180 did: a bare 9000 to the package AID and 6D00 to what follows", async () => {
+    const card = createFakeCard(MAX_SLOTS, { opener: true })
+    await expect(card.transceive(SELECT_PACKAGE)).resolves.toEqual([0x90, 0x00])
+    await expect(card.transceive(GET_INFO)).resolves.toEqual([0x6d, 0x00])
+    await expect(card.transceive(SELECT_APPLET)).resolves.toEqual(ok([2, 0]))
+    await expect(getInfo(card.transceive)).resolves.toMatchObject({ version: "2.0" })
   })
 
   it("rejects with both 2.0 status words when no Cashu AID selects and both 2.0 forms said 6A82", async () => {
@@ -543,6 +624,28 @@ describe("SELECT", () => {
     expect(error).toMatchObject({ sw: 0x6a82, packageSw: 0x6a82, appletSw: 0x6a82 })
   })
 
+  // CoreNFC connects only to a tag answering an AID the app lists, and tries
+  // them in the listed order when it finds one; the full applet AID goes
+  // ahead of the package AID, which an opener-first card answers instead.
+  it("lists every AID selectApplet sends in Info.plist, the full applet AID ahead of the package AID", () => {
+    const plist = readFileSync(join(__dirname, "../../ios/LNFlash/Info.plist"), "utf8")
+    const key = "com.apple.developer.nfc.readersession.iso7816.select-identifiers"
+    const array = plist.slice(plist.indexOf(key)).match(/<array>([\s\S]*?)<\/array>/)
+    const listed = Array.from(
+      (array?.[1] ?? "").matchAll(/<string>([0-9A-F]+)<\/string>/g),
+      (match) => match[1],
+    )
+    const hexOf = (aid: number[]) => toHex(aid).toUpperCase()
+    ;[CASHU_APPLET_AID, CASHU_AID, LEGACY_CASHU_AID, FOXY_LEGACY_AID].forEach((aid) =>
+      expect(listed).toContain(hexOf(aid)),
+    )
+    expect(listed.indexOf(hexOf(CASHU_APPLET_AID))).toBeLessThan(
+      listed.indexOf(hexOf(CASHU_AID)),
+    )
+    // The NDEF application AIDs a BoltCard answers stay listed.
+    expect(listed).toEqual(expect.arrayContaining(["D2760000850100", "D2760000850101"]))
+  })
+
   it("rethrows a transport failure instead of retrying on a dead handle", async () => {
     const sent: number[][] = []
     const transceive = async (bytes: number[]) => {
@@ -550,7 +653,7 @@ describe("SELECT", () => {
       throw new Error("Tag was lost")
     }
     await expect(selectApplet(transceive)).rejects.toThrow("Tag was lost")
-    expect(sent).toEqual([SELECT_PACKAGE])
+    expect(sent).toEqual([SELECT_APPLET])
   })
 })
 
@@ -1592,6 +1695,23 @@ describe("readCashuCard", () => {
     expect(card.ins().filter((ins) => ins === INS.GET_CARD)).toHaveLength(2)
   })
 
+  it("reads a 2.0 card installed opener first in full: the applet AID reaches the applet, the package AID is never sent (ENG-681)", async () => {
+    const card = createFakeCard(MAX_SLOTS, { pin: "1234", opener: true })
+    card.slots[0] = proofSlot(1, 500)
+    const info = await readCashuCard(card.transceive)
+    expect(info).toMatchObject({
+      version: "2.0",
+      pinState: "set",
+      hasOwner: true,
+      pubkey: card.pubkey,
+      balance: 500,
+    })
+    expect(card.transceive.mock.calls[0][0]).toEqual(SELECT_APPLET)
+    expect(card.transceive.mock.calls.map(([apdu]) => apdu)).not.toContainEqual(
+      SELECT_PACKAGE,
+    )
+  })
+
   it("a card that needs an update throws, and nothing but the SELECT commands is sent", async () => {
     const card = createFakeCard(MAX_SLOTS, { legacy: "0.x" })
     await expect(readCashuCard(card.transceive)).rejects.toBeInstanceOf(
@@ -1618,7 +1738,7 @@ describe("readCashuCard", () => {
       [SELECT_FOXY, SW_FILE_NOT_FOUND],
     ])
     await expect(readCashuCard(card.transceive)).resolves.toBeNull()
-    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET, SELECT_LEGACY, SELECT_FOXY])
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE, SELECT_LEGACY, SELECT_FOXY])
     expect(warn).not.toHaveBeenCalled()
   })
 
@@ -1630,7 +1750,7 @@ describe("readCashuCard", () => {
     await expect(readCashuCard(card.transceive)).rejects.toBeInstanceOf(
       CardNeedsUpdateError,
     )
-    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+    expect(card.sent).toEqual([SELECT_APPLET, SELECT_PACKAGE])
   })
 
   it("a transport failure on SELECT propagates instead of reading as not-a-Cashu-card", async () => {
@@ -1642,14 +1762,14 @@ describe("readCashuCard", () => {
 
   it("genuine status failures before the balance throw a CardError naming the command", async () => {
     const infoFails = scriptedCard([
-      [SELECT_PACKAGE, ok([2, 0])],
+      [SELECT_APPLET, ok([2, 0])],
       [GET_INFO, SW_UNKNOWN],
     ])
     await expect(readCashuCard(infoFails.transceive)).rejects.toThrow(
       "GET_INFO failed: the card failed to sign (0x6F00)",
     )
     const pubkeyFails = scriptedCard([
-      [SELECT_PACKAGE, ok([2, 0])],
+      [SELECT_APPLET, ok([2, 0])],
       [GET_INFO, ok(INFO_BODY)],
       [GET_PUBKEY, SW_UNKNOWN],
     ])

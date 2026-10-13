@@ -27,9 +27,19 @@ import { sha256 } from "@noble/hashes/sha256"
 
 import { cardPinBlock, cardSeal, parseCardPinKey } from "./cashu-card-seal"
 
-/** The 2.0 package AID: "CASHUCARD" after the proprietary RID byte F0. */
+/**
+ * The 2.0 package AID: "CASHUCARD" after the proprietary RID byte F0. Sent
+ * only after the applet AID fails (ENG-681): on a card installed as
+ * cashu-javacard documents it, the opener (`F0 CASHUCARD 4D`) goes on first,
+ * and a SELECT by this partial name reaches the opener, not the applet. It
+ * answers 9000 with no version, and the next command 6D00.
+ */
 export const CASHU_AID = [0xf0, 0x43, 0x41, 0x53, 0x48, 0x55, 0x43, 0x41, 0x52, 0x44]
-/** The applet instance AID: the package AID and 01, for a reader that declines a partial name. */
+/**
+ * The applet instance AID: the package AID and 01. The only name that
+ * reaches the applet on every 2.0 card, opener or not, so it is the one
+ * sent first, as Foxy's wallet does.
+ */
 export const CASHU_APPLET_AID = [...CASHU_AID, 0x01]
 /**
  * The withdrawn 0.x AID (NFC Forum RID). Sent only to tell a card that needs
@@ -283,9 +293,10 @@ export function buildApdu(
  * (no Le) as expectedResponseLength -1, CoreNFC then sends no Le, and the card
  * answers with a status word only — the applet version would come back empty.
  * Every AID here is also listed in ios/LNFlash/Info.plist
- * (`iso7816.select-identifiers`): CoreNFC connects only to those.
+ * (`iso7816.select-identifiers`): CoreNFC connects only to those. With no
+ * AID given it selects by the applet AID, the one `selectApplet` sends first.
  */
-export const buildSelectApdu = (aid: number[] = CASHU_AID): number[] => [
+export const buildSelectApdu = (aid: number[] = CASHU_APPLET_AID): number[] => [
   0x00,
   0xa4,
   0x04,
@@ -346,13 +357,15 @@ const readU32 = (bytes: number[], at: number): number =>
   ((bytes[at] << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3]) >>> 0
 
 /**
- * Neither 2.0 SELECT form selected the applet, both answered `6A82` (the
- * card's runtime: no such application), and no withdrawn Cashu AID selected
- * either: a tag with no Cashu applet on it, an NTAG 424 BoltCard among them.
- * The caller may read it as another kind of card. A 2.0 SELECT answered with
- * any other status word is a card that knows the AID and still refused, and
- * is `CardNeedsUpdateError` instead (`selectApplet`). `sw` is the
- * applet-AID answer.
+ * Neither 2.0 SELECT form selected the applet and no withdrawn Cashu AID
+ * selected either: a tag with no Cashu applet on it, an NTAG 424 BoltCard
+ * among them. The applet AID answered `6A82` (the card's runtime: no such
+ * application), and the package AID `6A82` too, or 9000 with no `02 xx`
+ * version (a cashu-javacard opener, or whatever else answers to the partial
+ * name). The caller may read it as another kind of card. A 2.0 SELECT
+ * answered with any other status word is a card that knows the AID and still
+ * refused, and is `CardNeedsUpdateError` instead (`selectApplet`). `sw` is
+ * the applet-AID answer.
  */
 export class AppletNotSelectedError extends CardError {
   constructor(readonly packageSw: number, readonly appletSw: number) {
@@ -378,35 +391,56 @@ const checkVersion = (body: number[]): number[] => {
   return body
 }
 
+/** A version body this app speaks: exactly `02 xx`. */
+const isProtocolVersion = (body: number[]): boolean =>
+  body.length === 2 && body[0] === PROTOCOL_MAJOR
+
 /**
- * SELECT the 2.0 applet: the package AID first (prefix match), then the
- * instance AID after any refusal of the first, as cardctl's `select()` does.
- * Resolves the version body (`02 00`).
+ * SELECT the 2.0 applet: the instance AID first, then the package AID after
+ * any refusal of the first (ENG-681). Resolves the version body (`02 00`).
+ *
+ * The instance AID goes first because the package AID is a partial name: on
+ * a card installed as cashu-javacard documents it (the opener `F0 CASHUCARD
+ * 4D`, then the applet `F0 CASHUCARD 01`, then the tag), a SELECT by it
+ * reaches the opener, which answers 9000 with no version body and 6D00 to
+ * what follows. Foxy's wallet selects the full AID only.
+ *
+ * - The instance AID answers 9000: the card is 2.0 when the body is `02 xx`,
+ *   and needs an update for any other version (`CardNeedsUpdateError`
+ *   "older", "newer"; a body too short is `CardProtocolError`).
+ * - Otherwise the package AID: 9000 with exactly `02 xx` is the applet (a
+ *   reader or card that takes the partial name only). 9000 with any other
+ *   body is not the applet (the opener, say): it is not a refusal and does
+ *   not mean an update; the read goes on as if the package AID said `6A82`.
  *
  * The cardsim contract (cashu-javacard tools/cardsim/README.md, Old cards;
  * spec/NUT-XX.md, AID assignment; spec/APDU.md, the AID) treats any SELECT
  * answer that is not `02xx 9000` as "This card needs an update". So when
  * neither 2.0 form selects:
- * - either one answered anything but `6A82` (`6999`, `6E00`, `6283`, `6A81`,
- *   a response too short to carry a status word): `CardNeedsUpdateError`,
+ * - either one refused with anything but `6A82` (`6999`, `6E00`, `6283`,
+ *   `6A81`, a response too short to carry a status word): `CardNeedsUpdateError`,
  *   with nothing further sent;
- * - both answered `6A82`: the withdrawn AIDs are tried, the 0.x one and then
- *   Foxy's 1.x. A card that answers either with 9000 needs an update too.
- *   Anything else rejects with `AppletNotSelectedError`, and the caller may
- *   read the tag as another kind of card (a BoltCard says `6A82`).
- * A card under the 2.0 AID whose major version is not 2 needs an update.
+ * - both answered `6A82` (or the package AID the 9000 above): the withdrawn
+ *   AIDs are tried, the 0.x one and then Foxy's 1.x. A card that answers
+ *   either with 9000 needs an update too. Anything else rejects with
+ *   `AppletNotSelectedError`, and the caller may read the tag as another kind
+ *   of card (a BoltCard says `6A82`).
  *
  * A transport failure (the card left the field) is not a refusal: it
  * propagates at once, with no further SELECT on a dead handle.
  */
 export async function selectApplet(transceive: Transceiver): Promise<number[]> {
-  const packageResponse = await transceive(buildSelectApdu(CASHU_AID))
-  const packageSw = statusWordOf(packageResponse)
-  if (packageSw === SW_OK) return checkVersion(packageResponse.slice(0, -2))
   const appletResponse = await transceive(buildSelectApdu(CASHU_APPLET_AID))
   const appletSw = statusWordOf(appletResponse)
   if (appletSw === SW_OK) return checkVersion(appletResponse.slice(0, -2))
-  if (packageSw !== SW_FILE_NOT_FOUND || appletSw !== SW_FILE_NOT_FOUND) {
+  const packageResponse = await transceive(buildSelectApdu(CASHU_AID))
+  const packageSw = statusWordOf(packageResponse)
+  if (packageSw === SW_OK) {
+    const body = packageResponse.slice(0, -2)
+    if (isProtocolVersion(body)) return body
+  }
+  const packageRefused = packageSw !== SW_OK && packageSw !== SW_FILE_NOT_FOUND
+  if (appletSw !== SW_FILE_NOT_FOUND || packageRefused) {
     throw new CardNeedsUpdateError("refused")
   }
   if (statusWordOf(await transceive(buildSelectApdu(LEGACY_CASHU_AID))) === SW_OK) {
