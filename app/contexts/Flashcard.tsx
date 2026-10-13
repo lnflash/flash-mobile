@@ -27,9 +27,13 @@ import {
 import { toastShow } from "../utils/toast"
 import {
   AppletNotSelectedError,
+  AuthenticatedTap,
+  CardAuthError,
   CardError,
   CardInfo,
   CardKeysetTotal,
+  CardNeedsUpdateError,
+  CardRecord,
   CardSlotRead,
   CashuCardInfo,
   Transceiver,
@@ -44,6 +48,13 @@ import {
 } from "../utils/cashu-card"
 import { extendCardTimeout } from "../utils/cashu-card-nfc"
 import { bridgeTransceiver, getCardBridge } from "../utils/cashu-card-bridge"
+import { feedHeader, keptHeader, refreshTipHeader } from "../utils/cashu-card-headers"
+import { ownerSigner, refreshCard } from "../utils/cashu-card-owner"
+import {
+  OwnerKeySource,
+  ownerKeyFor,
+  savedOwnerKeyFor,
+} from "../utils/cashu-card-owner-store"
 import {
   CardUnitTotals,
   KeysetUnits,
@@ -100,6 +111,11 @@ type TransactionItem = {
 export type FlashcardReadResult = {
   /** A Cashu card (ENG-616): what the card screen will show. */
   cashuCard?: CashuCardInfo
+  /**
+   * A Cashu card of an older protocol (0.x, Foxy 1.x): "This card needs an
+   * update" was shown, nothing was read from it, and nothing was written.
+   */
+  needsUpdate?: boolean
   /** A BoltCard whose balance page loaded: the BoltCard screen has a card to show. */
   boltCard?: boolean
 }
@@ -116,7 +132,27 @@ export type CashuCardState = CashuCardInfo & {
    * read: the screen then labels the card's figure "unit unknown".
    */
   unitTotals?: CardUnitTotals
+  /**
+   * Where this phone's key for the card's owner would come from, when the
+   * card has an owner and the phone holds a key it may be (ENG-675): `seed`
+   * or `device` for one saved here or derived from the seed, `dev` for the
+   * development bridge's. Undefined for a card with no owner, or one this
+   * phone has no key for. Whether the card takes the key is the card's to
+   * say at the next owner's command (`6A91`).
+   */
+  ownerKeySource?: OwnerKeySource
 }
+
+/**
+ * Bytes 29, 30-33 and 38-41 of GET_INFO describe this tap only, or what the
+ * card owes nobody: what the store keeps of a card's limits is what the owner
+ * set, as far as a read can see it.
+ */
+const limitsOf = (info: CardInfo, record?: CardRecord) => ({
+  day: info.dailyLimit,
+  allowance: info.allowance,
+  ...(record ? { rollBudget: record.rollBudget, rolls: record.rolls } : {}),
+})
 
 /** How a caller of `runCardOperation` learns about, or vouches for, the card afterwards. */
 export type CardOperationOptions = {
@@ -128,6 +164,13 @@ export type CardOperationOptions = {
    * state the operation just changed.
    */
   assume?: Partial<CardInfo>
+  /**
+   * What the operation taught this phone about the card that no re-read can
+   * say (ENG-675): whose key its owner is (`ownerKeySource`, after a setup).
+   * Applied to the card on screen once the operation has succeeded, re-read
+   * or not.
+   */
+  learned?: Pick<CashuCardState, "ownerKeySource">
   /**
    * Called with what GET_INFO said when the card was re-read: after the
    * operation succeeded, or after the card refused it. Not called when there
@@ -260,6 +303,9 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   const readFlashcard = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
+    // The card's clock is fed from the newest header the phone holds; ask for
+    // the tip now, off the tap, which never waits for it.
+    refreshTipHeader().catch(() => undefined)
     // A development build's simulated card (cardsim) needs no NFC: a
     // simulator has none.
     if (getCardBridge()) return handleTag(isPayment)
@@ -317,16 +363,31 @@ export const FlashcardProvider = ({ children }: Props) => {
             bridge
               ? bridgeTransceiver(bridge.url)
               : (bytes) => NfcManager.isoDepHandler.transceive(bytes),
+            { afterAuth: tendCardClock },
           )
         } catch (err) {
+          // A card of an older protocol: nothing more was sent to it, and it
+          // is not a BoltCard either. The notice, then the tap is over.
+          if (err instanceof CardNeedsUpdateError) {
+            toastShow({
+              position: "top",
+              message:
+                "This card needs an update. Flash can't use it yet. Nothing was read from it or written to it.",
+              type: "error",
+            })
+            return { needsUpdate: true }
+          }
           // The card answered SELECT (or the channel itself dropped), so this
           // tap is over: it must not be re-read as a BoltCard. Every NDEF-side
           // failure toasts, so this one does too. Rethrowing keeps the outer
           // catch as the only logging site and the finally as the only release.
+          // A card that could not prove its key (AUTH) shows and stores nothing.
           toastShow({
             position: "top",
             message:
-              "Couldn't read the card. Hold your phone steady against it and try again.",
+              err instanceof CardAuthError
+                ? "This card couldn't prove it's a genuine Flash card. Nothing from it was shown or saved."
+                : "Couldn't read the card. Hold your phone steady against it and try again.",
             type: "error",
           })
           throw err
@@ -346,6 +407,9 @@ export const FlashcardProvider = ({ children }: Props) => {
                 version: info.version,
                 pinState: info.pinState,
                 lastBalance: info.balance,
+                owned: info.hasOwner,
+                needsUpdate: false,
+                limits: limitsOf(info, info.record),
                 at: Date.now(),
               }),
             )
@@ -358,9 +422,11 @@ export const FlashcardProvider = ({ children }: Props) => {
               dispatch(cardUnitResolved({ pubkey: info.pubkey, unit: soleUnit(known) }))
             }
           }
-          // The mint names the units; ask it off the NFC session, which the
-          // finally below releases without waiting.
+          // The mint names the units, and the Keychain whether this phone may
+          // be the owner; ask both off the NFC session, which the finally
+          // below releases without waiting.
           resolveCashuUnits(info, cashuGeneration.current)
+          resolveOwnerKey(info, cashuGeneration.current)
           return { cashuCard: info }
         }
         // The applet SELECT was refused: not a Cashu card. Parse the same
@@ -405,6 +471,64 @@ export const FlashcardProvider = ({ children }: Props) => {
       cancelTechnologyRequest()
     }
     return boltCard ? { boltCard } : {}
+  }
+
+  /**
+   * In a read tap, once the card has proved its key: the card's clock is fed
+   * (TELL_TIME, and SET_HEADER when the phone holds a newer header:
+   * `feedHeader`), and a card whose day's window has rolled since its owner
+   * last refreshed it is refreshed (REFRESH, the owner's proof over the kept
+   * header), when this phone has already shown the card it owns it. Best
+   * effort: nothing here fails the read, and nothing here waits on the
+   * network. Resolves the card's clock after it.
+   */
+  const tendCardClock = async ({
+    transceive,
+    info,
+    pubkey,
+    record,
+  }: AuthenticatedTap): Promise<number | undefined> => {
+    const clock = await feedHeader(transceive, info.now)
+    let now = clock.now
+    const header = keptHeader()
+    if (info.hasOwner && record.rolls > 0 && header) {
+      try {
+        const key = await savedOwnerKeyFor(pubkey)
+        if (key) {
+          now = await refreshCard(transceive, ownerSigner(key.privateKey), header.bytes)
+        }
+      } catch (err) {
+        console.warn(
+          "Cashu card refresh skipped:",
+          err instanceof CardError
+            ? `${err.name} ${err.sw.toString(16)}`
+            : describeError(err),
+        )
+      }
+    }
+    return now === info.now ? undefined : now
+  }
+
+  /**
+   * Whether this phone holds a key the read card's owner may be: saved here,
+   * derived from the seed, or the dev bridge's (`ownerKeyFor`). Off the NFC
+   * session: the seed's derivation takes a moment. A newer read, or a forget,
+   * wins. A Keychain that cannot be read leaves the card as read: no owner
+   * actions until the next read.
+   */
+  const resolveOwnerKey = async (card: CashuCardInfo, generation: number) => {
+    if (!card.hasOwner) return
+    let source: OwnerKeySource | undefined
+    try {
+      source = (await ownerKeyFor(card.pubkey))?.source
+    } catch (err) {
+      console.warn("Cashu card owner key lookup failed:", describeError(err))
+      return
+    }
+    if (!source || generation !== cashuGeneration.current) return
+    const current = cashuCardRef.current
+    if (current?.pubkey !== card.pubkey) return
+    setCashuCard({ ...current, ownerKeySource: source })
   }
 
   /**
@@ -490,6 +614,9 @@ export const FlashcardProvider = ({ children }: Props) => {
           version: card.version,
           pinState: card.pinState,
           lastBalance: card.balance,
+          owned: card.hasOwner,
+          needsUpdate: false,
+          limits: limitsOf(card, card.record),
           at: Date.now(),
         }),
       )
@@ -533,7 +660,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   const runCardOperation = async <T,>(
     op: (transceive: Transceiver) => Promise<T>,
     expectedPubkey: string,
-    { assume, onReread }: CardOperationOptions = {},
+    { assume, onReread, learned }: CardOperationOptions = {},
   ): Promise<T> => {
     // Development builds only: the card is cardsim, over HTTP (ENG-634).
     const bridge = getCardBridge()
@@ -583,6 +710,10 @@ export const FlashcardProvider = ({ children }: Props) => {
       // holder would then retype as the old one). What the operation itself
       // proves stands in for the lost re-read.
       if (!(await reread()) && assume) recordCardOperation(expectedPubkey, assume)
+      if (learned) {
+        const current = cashuCardRef.current
+        if (current?.pubkey === expectedPubkey) setCashuCard({ ...current, ...learned })
+      }
       return result
     } finally {
       cancelTechnologyRequest()

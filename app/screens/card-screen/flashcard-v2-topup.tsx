@@ -30,9 +30,9 @@ import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { MoneyAmount, WalletOrDisplayCurrency, toWalletAmount } from "@app/types/amounts"
 import {
   CardError,
+  CardNeedsUpdateError,
   PIN_MAX_LENGTH,
   WrongCardError,
-  blockedPinGatesSpend,
   isValidCardPin,
   triesLeft,
 } from "@app/utils/cashu-card"
@@ -98,9 +98,11 @@ const sleep = (ms: number) =>
  * in that value's unit, so a card is never mixed; an empty card can take
  * either. A top-up paid for and not on the card yet commits the card to its
  * unit just the same (`unfinishedUnits`), or it would land beside another.
- * A blocked PIN is refused outright: on v0.2.0 it spends for anyone
- * (ENG-615), and on 0.3 it can never load again, so paid funds would be
- * stranded. A PIN state or a unit this app cannot read is refused too.
+ * A card with no owner takes no load at all (6A90), so it is set up first
+ * (`not-set-up`). A blocked PIN is refused unless this phone may be the
+ * card's owner (`ownedHere`): the owner's grant loads without the PIN, and
+ * anyone else's load would need it. A PIN state or a unit this app cannot
+ * read is refused too.
  * While `usdEnabled` (the cashuCardUsdEnabled flag) is off, a card whose
  * unit is USD takes no new top-up: flash-pos charges every card proof as
  * sats until ENG-619. An unfinished USD top-up is still finished: a resume
@@ -112,6 +114,7 @@ export type TopUpEligibility =
   | {
       ok: false
       reason:
+        | "not-set-up"
         | "blocked"
         | "pin-unknown"
         | "mixed"
@@ -128,7 +131,9 @@ export const topUpEligibility = (
     usdEnabled,
   }: { unfinishedUnits?: readonly CardUnit[]; usdEnabled: boolean },
 ): TopUpEligibility => {
-  if (card.pinState === "blocked") return { ok: false, reason: "blocked" }
+  if (!card.hasOwner) return { ok: false, reason: "not-set-up" }
+  const ownedHere = card.ownerKeySource !== undefined
+  if (card.pinState === "blocked" && !ownedHere) return { ok: false, reason: "blocked" }
   if (card.pinState === "unknown") return { ok: false, reason: "pin-unknown" }
   let cardUnit: CardUnit | undefined
   if (card.balance > 0) {
@@ -153,6 +158,7 @@ export const topUpEligibility = (
 
 const refusal = (reason: Exclude<TopUpEligibility, { ok: true }>["reason"], LL: LLType) =>
   ({
+    "not-set-up": LL.FlashcardV2.topUpCantNotSetUp(),
     "blocked": LL.FlashcardV2.topUpCantBlocked(),
     "pin-unknown": LL.FlashcardV2.topUpCantPinUnknown(),
     "mixed": LL.FlashcardV2.topUpCantMixed(),
@@ -192,9 +198,37 @@ const loadFailure = (err: TopUpError, LL: LLType): string => {
       return LL.FlashcardV2.topUpMintUnreachable()
     case "not-found":
       return LL.FlashcardV2.topUpGone()
+    case "not-owner":
+      return LL.FlashcardV2.topUpNotOwner()
+    case "needs-update":
+      return LL.FlashcardV2.needsUpdateBody()
     default:
       return LL.FlashcardV2.topUpFailed()
   }
+}
+
+/**
+ * What a PIN tap that failed means (a check before paying, or a load): a
+ * different card, a card that needs an update, a wrong PIN with the tries
+ * left, a PIN now blocked (2.0: the owner's phone unblocks it), or no card.
+ */
+const pinFailure = (err: unknown, LL: LLType): { message: string; final: boolean } => {
+  if (err instanceof WrongCardError) {
+    return { message: LL.FlashcardV2.wrongCard(), final: false }
+  }
+  if (err instanceof CardNeedsUpdateError) {
+    return { message: LL.FlashcardV2.needsUpdateBody(), final: true }
+  }
+  if (err instanceof CardError) {
+    const tries = triesLeft(err.sw)
+    if (tries === 0 || err.sw === SW_PIN_BLOCKED) {
+      return { message: LL.FlashcardV2.cardNowBlocked(), final: true }
+    }
+    if (tries !== undefined) {
+      return { message: LL.FlashcardV2.wrongPin({ tries }), final: false }
+    }
+  }
+  return { message: LL.FlashcardV2.cardNotFound(), final: false }
 }
 
 const NO_COMMITMENTS: { slots: number; units: CardUnit[] } = { slots: 0, units: [] }
@@ -220,10 +254,11 @@ type Step =
  * writes them on. Every step is saved before it runs (`cashu-card-topup`), so
  * leaving at any point loses nothing: the card's screen offers to finish.
  *
- * On a card with a PIN, the PIN is checked with a tap BEFORE anything is paid.
- * A wrong PIN found at the load tap instead would cost tries on value already
- * paid for, and a PIN blocked there strands it (on 0.3 a blocked card never
- * loads again). The PIN lives in this screen's state only.
+ * On a card this phone owns, the load tap opens with the owner's grant
+ * (ALLOW_LOAD) and asks for no PIN (card protocol 2.0). On a card with a PIN
+ * that another phone owns, the PIN is checked with a tap BEFORE anything is
+ * paid: a wrong PIN found at the load tap instead would cost tries on value
+ * already paid for. The PIN lives in this screen's state only.
  */
 export const FlashcardV2TopUpScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -405,35 +440,13 @@ export const FlashcardV2TopUpScreen = () => {
     amountProblemKind &&
     amountProblemText(LL, amountProblemKind, { unit, needed, free: freeSlots })
 
-  const pinFailure = (
-    err: unknown,
-    version: string,
-  ): { message: string; final: boolean } => {
-    const blockFreezes = blockedPinGatesSpend(version)
-    const lastTry = blockFreezes
-      ? LL.FlashcardV2.cardNowBlocked()
-      : LL.FlashcardV2.cardNowOpen()
-    if (err instanceof WrongCardError)
-      return { message: LL.FlashcardV2.wrongCard(), final: false }
-    if (err instanceof CardError) {
-      const tries = triesLeft(err.sw)
-      if (tries === 0 || err.sw === SW_PIN_BLOCKED)
-        return { message: lastTry, final: true }
-      if (tries !== undefined) {
-        return {
-          message: blockFreezes
-            ? LL.FlashcardV2.wrongPin({ tries })
-            : LL.FlashcardV2.wrongPinOpen({ tries }),
-          final: false,
-        }
-      }
-    }
-    return { message: LL.FlashcardV2.cardNotFound(), final: false }
-  }
+  // This phone may be the card's owner: its load tap needs no PIN.
+  const ownedHere = cashuCard?.ownerKeySource !== undefined
+  const asksForPin = cashuCard?.pinState === "set" && !ownedHere
 
   const readyToLoad = (record: TopUpRecord) => {
     setError(undefined)
-    if (cashuCard?.pinState === "set" && !pin) {
+    if (asksForPin && !pin) {
       setStep({ name: "pin", purpose: "load", record })
     } else {
       setStep({ name: "load", record })
@@ -476,6 +489,7 @@ export const FlashcardV2TopUpScreen = () => {
         amount: cardAmount,
         walletId: cashWallet.id,
         card: {
+          hasOwner: cashuCard.hasOwner,
           empty: cashuCard.empty,
           reclaimable: reclaim.reclaimable,
           // The unit of the card's own value; an empty card has none.
@@ -498,6 +512,8 @@ export const FlashcardV2TopUpScreen = () => {
         setError(LL.FlashcardV2.topUpNoRoom({ needed, free: freeSlots }))
       } else if (err instanceof TopUpError && err.reason === "unit") {
         setError(LL.FlashcardV2.topUpCantUnfinishedUnit())
+      } else if (err instanceof TopUpError && err.reason === "owner-unset") {
+        setError(LL.FlashcardV2.topUpCantNotSetUp())
       } else {
         setError(LL.FlashcardV2.topUpPrepareFailed())
       }
@@ -509,7 +525,7 @@ export const FlashcardV2TopUpScreen = () => {
 
   const continueFromAmount = () => {
     if (!cashuCard || cardAmount <= 0 || amountProblem) return
-    if (cashuCard.pinState === "set") {
+    if (asksForPin) {
       setError(undefined)
       setStep({ name: "pin", purpose: "check" })
       return
@@ -589,11 +605,24 @@ export const FlashcardV2TopUpScreen = () => {
       setStep({ name: "done", record: done, reclaim: freed })
     } catch (err) {
       if (err instanceof NfcError.UserCancel) return
+      if (
+        err instanceof TopUpError &&
+        err.reason === "not-owner" &&
+        cashuCard.pinState === "set"
+      ) {
+        // The card took no grant from this phone: it wants its PIN, asked for
+        // here and sent in the next tap. Nothing was written.
+        setPin(undefined)
+        setPinEntry("")
+        setStep({ name: "pin", purpose: "load", record })
+        setError(loadFailure(err, LL))
+        return
+      }
       if (err instanceof TopUpError) {
         setError(loadFailure(err, LL))
         return
       }
-      const failure = pinFailure(err, cashuCard.version)
+      const failure = pinFailure(err, LL)
       if (failure.final) {
         setStep({ name: "refused", message: failure.message })
         return
@@ -622,12 +651,12 @@ export const FlashcardV2TopUpScreen = () => {
     setBusy(true)
     setError(undefined)
     try {
-      await checkPin(cashuCard.pubkey, entered)
+      await checkPin(cashuCard, entered)
       setPin(entered)
     } catch (err) {
       setBusy(false)
       if (err instanceof NfcError.UserCancel) return
-      const failure = pinFailure(err, cashuCard.version)
+      const failure = pinFailure(err, LL)
       if (failure.final) setStep({ name: "refused", message: failure.message })
       else setError(failure.message)
       return

@@ -174,10 +174,14 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
     moneyAmountToDisplayCurrencyString({ moneyAmount: cashuCardAmount })
   // Before the price arrives, and for a unit the mint has not named, the row
   // shows the card's own figure, with no currency code after it.
-  const cashuCardOwn = (card: KnownCard): string =>
-    cashuCardAmount
+  // A card of an older protocol (0.x) shows no amount this app could act on:
+  // it needs an update (ENG-675).
+  const cashuCardOwn = (card: KnownCard): string => {
+    if (card.needsUpdate) return LL.FlashcardV2.needsUpdateShort()
+    return cashuCardAmount
       ? formatMoneyAmount({ moneyAmount: cashuCardAmount })
       : LL.FlashcardV2.unitUnknown({ amount: grouped.format(card.lastBalance) })
+  }
 
   const onPressBitcoin = () => navigateHandler("BTCTransactionHistory")
 
@@ -219,8 +223,13 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
         <Balance
           icon="flashcard"
           title={LL.HomeScreen.flashcard()}
-          amount={cashuCardInDisplay || cashuCardOwn(attachedCashuCard)}
-          currency={cashuCardInDisplay ? displayCurrency : ""}
+          amount={
+            (!attachedCashuCard.needsUpdate && cashuCardInDisplay) ||
+            cashuCardOwn(attachedCashuCard)
+          }
+          currency={
+            cashuCardInDisplay && !attachedCashuCard.needsUpdate ? displayCurrency : ""
+          }
           onPress={openCashuCard}
           onPressRightBtn={tapFlashcard}
           testID="home-cashu-card"

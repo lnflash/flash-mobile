@@ -1,6 +1,8 @@
 /**
- * ENG-616: the Flashcard v2 (Cashu card) screen renders what the last tap read
- * and tells the truth about the card's balance and PIN state.
+ * ENG-616, ENG-675: the Flashcard v2 (Cashu card) screen renders what the last
+ * tap read and tells the truth about the card's balance, PIN state and owner
+ * (card protocol 2.0): a card with no owner is set up first, and only a card
+ * this phone owns gets the owner's actions (PIN, limits).
  */
 import * as React from "react"
 import { Dimensions, Image, StyleSheet } from "react-native"
@@ -14,10 +16,12 @@ import appTheme from "../../app/rne-theme/theme"
 import type { CashuCardState } from "../../app/contexts/Flashcard"
 import {
   cardLast4,
+  cardNotices,
   FlashcardV2Screen,
   formatUnitAmount,
   shortPubkey,
 } from "../../app/screens/card-screen/flashcard-v2"
+import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 
 loadLocale("en")
 const LL = i18nObject("en")
@@ -34,9 +38,6 @@ let mockIsAuthed = true
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let mockUnfinishedTopUps: any[] = []
 const mockDismissTopUp = jest.fn()
-// Undefined: the real per-version answer (no released applet keeps a blocked
-// card from spending, ENG-615). A spec sets it to render a version that does.
-let mockBlockedPinGatesSpend: boolean | undefined
 
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -70,39 +71,25 @@ jest.mock("@app/hooks", () => ({
     resetFlashcard: mockResetFlashcard,
   }),
   useTapFlashcard: () => mockTapFlashcard,
+  // Records of this protocol's pieces unless a spec says otherwise (ENG-675).
   useUnfinishedTopUps: () => ({
-    records: mockUnfinishedTopUps,
+    records: mockUnfinishedTopUps.map((record) => ({ cardFormat: 4, ...record })),
     dismiss: mockDismissTopUp,
   }),
 }))
-jest.mock("@app/utils/cashu-card", () => {
-  const actual = jest.requireActual("@app/utils/cashu-card")
-  return {
-    ...actual,
-    blockedPinGatesSpend: (version: string) =>
-      mockBlockedPinGatesSpend ?? actual.blockedPinGatesSpend(version),
-  }
-})
-
 const PUBKEY = "02" + "ab".repeat(32)
 const SAT_KEYSET = "0059534ce0bfa19a"
 
-const card = (overrides: Partial<CashuCardState> = {}): CashuCardState => ({
-  version: "0.2",
-  maxSlots: 32,
-  unspent: 3,
-  spent: 5,
-  empty: 24,
-  secp256k1Native: true,
-  schnorr: true,
-  clearPin: false,
-  pinState: "set",
-  pubkey: PUBKEY,
-  balance: 1500,
-  keysets: [{ keysetId: SAT_KEYSET, amount: 1500 }],
-  unitTotals: { byUnit: [{ unit: "sat", amount: 1500 }], unknown: 0 },
-  ...overrides,
-})
+/** A 2.0 card holding 1,500 sats, its PIN set, owned by this phone. */
+const card = (overrides: Partial<CashuCardState> = {}): CashuCardState =>
+  cashuCardState({
+    pubkey: PUBKEY,
+    keysets: [{ keysetId: SAT_KEYSET, amount: 1500 }],
+    ...overrides,
+  })
+/** The same card, owned by another phone: this one holds no key for it. */
+const othersCard = (overrides: Partial<CashuCardState> = {}) =>
+  card({ ownerKeySource: undefined, ...overrides })
 
 const renderScreen = () =>
   render(
@@ -122,7 +109,6 @@ describe("FlashcardV2Screen", () => {
     jest.clearAllMocks()
     mockIsAuthed = true
     mockIsFocused = true
-    mockBlockedPinGatesSpend = undefined
     mockCashuCard = card()
     mockUnfinishedTopUps = []
   })
@@ -133,12 +119,12 @@ describe("FlashcardV2Screen", () => {
     expect(screen.getByTestId("flashcard-v2-balance-sat").props.children).toBe(
       "1,500 sats",
     )
-    expect(screen.getByText("3 loaded · 5 spent · 24 free of 32")).toBeTruthy()
+    expect(screen.getByText("3 loaded · 5 spent · 120 free of 128")).toBeTruthy()
     // Spent slots are freed by the top-up's load tap once settled (ENG-631).
     expect(screen.getByTestId("flashcard-v2-slots-spent-note").props.children).toBe(
       LL.FlashcardV2.slotsSpentNote(),
     )
-    expect(screen.getByText("v0.2")).toBeTruthy()
+    expect(screen.getByText("v2.0")).toBeTruthy()
     expect(screen.getByTestId("flashcard-v2-card-id").props.children).toBe(
       shortPubkey(PUBKEY),
     )
@@ -152,7 +138,7 @@ describe("FlashcardV2Screen", () => {
 
     renderScreen()
 
-    expect(screen.getByText("3 loaded · 0 spent · 29 free of 32")).toBeTruthy()
+    expect(screen.getByText("3 loaded · 0 spent · 29 free of 128")).toBeTruthy()
     expect(screen.queryByTestId("flashcard-v2-slots-spent-note")).toBeNull()
   })
 
@@ -226,7 +212,7 @@ describe("FlashcardV2Screen", () => {
   })
 
   it("puts the card's actions right under the balance, above the PIN notice and the card details", () => {
-    mockCashuCard = card({ version: "0.2", pinState: "set" })
+    mockCashuCard = card({ pinState: "unset" })
 
     renderScreen()
 
@@ -238,13 +224,14 @@ describe("FlashcardV2Screen", () => {
       return index
     }
     const balance = at(JSON.stringify(LL.FlashcardV2.onCardBalance()))
-    const pinNotice = at('"flashcard-v2-pin-bypassable"')
+    const pinNotice = at('"flashcard-v2-no-pin"')
     const details = at('"flashcard-v2-card-id"')
-    // Every action, not just the first: Remove card is the only one a blocked
-    // or unknown-PIN card gets, so it has to sit up here too.
+    // Every action, not just the first: Remove card is the only one some
+    // cards get, so it has to sit up here too.
     ;[
       LL.FlashcardV2.topUp(),
-      LL.FlashcardV2.changePin(),
+      LL.FlashcardV2.setPin(),
+      LL.FlashcardV2.limits(),
       LL.CardScreen.removeCard(),
     ].forEach((label) => {
       const action = at(JSON.stringify(label))
@@ -254,30 +241,11 @@ describe("FlashcardV2Screen", () => {
     expect(pinNotice).toBeLessThan(details)
   })
 
-  it("warns that a set PIN on a v0.2 card won't stop someone holding it", () => {
-    // CashuApplet.java@v0.2.0:517-521: the third wrong VERIFY_PIN blocks the
-    // PIN, and a blocked PIN gates nothing (:587-591, ENG-615). Next to the
-    // no-PIN notice ("anyone holding this card can spend"), silence here would
-    // tell the owner a set PIN protects the balance.
-    mockCashuCard = card({ version: "0.2", pinState: "set" })
-
-    renderScreen()
-
-    expect(screen.getByTestId("flashcard-v2-pin-bypassable")).toBeTruthy()
-    expect(screen.getByText(LL.FlashcardV2.pinSetBypassableTitle())).toBeTruthy()
-    expect(screen.getByText(LL.FlashcardV2.pinSetBypassableBody())).toBeTruthy()
-    expect(
-      screen.getByText(/three wrong PIN entries in a row switch the PIN check off/),
-    ).toBeTruthy()
-    expect(screen.getByText(/won't stop someone who has the card/)).toBeTruthy()
-    expect(screen.queryByTestId("flashcard-v2-no-pin")).toBeNull()
-    expect(screen.queryByTestId("flashcard-v2-blocked")).toBeNull()
-    expect(screen.queryByTestId("flashcard-v2-pin-unknown")).toBeNull()
-  })
-
-  it("says nothing about a set PIN only on a version confirmed to keep refusing once blocked", () => {
-    mockBlockedPinGatesSpend = true
-    mockCashuCard = card({ version: "9.9", pinState: "set" })
+  it("says nothing about a set PIN on a 2.0 card: three wrong entries block it, and only its owner unblocks it", () => {
+    // The 0.x warning that three wrong entries switch the PIN off is gone
+    // with 0.x (ENG-615): on 2.0 a blocked PIN stays blocked until the
+    // owner's CHANGE_PIN (spec/APDU.md, VERIFY_PIN, D22).
+    mockCashuCard = card({ pinState: "set" })
 
     renderScreen()
 
@@ -285,52 +253,61 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByTestId("flashcard-v2-no-pin")).toBeNull()
     expect(screen.queryByTestId("flashcard-v2-blocked")).toBeNull()
     expect(screen.queryByTestId("flashcard-v2-pin-unknown")).toBeNull()
+    expect(screen.queryByText(/switch the PIN check off/)).toBeNull()
   })
 
-  it("warns that a v0.2 card with no PIN spends for whoever holds it, and promises nothing a PIN cannot deliver", () => {
-    // On v0.2.0 three wrong guesses turn a set PIN off (ENG-615), so the
-    // notice must not sell setting one as protection for a balance.
-    mockCashuCard = card({ version: "0.2", pinState: "unset" })
+  it("warns about a card that is not set up yet, and offers Set up in place of Top up", () => {
+    mockCashuCard = card({
+      hasOwner: false,
+      ownerKeySource: undefined,
+      pinState: "unset",
+    })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-not-set-up")).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.notSetUpTitle())).toBeTruthy()
+    expect(screen.getByText(/belongs to the first phone that sets it up/)).toBeTruthy()
+    fireEvent.press(screen.getByTestId("flashcard-v2-action-setup"))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Setup")
+    // An ownerless card takes no load (6A90), and nothing is the owner's yet.
+    expect(screen.queryByText(LL.FlashcardV2.topUp())).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.limits())).toBeNull()
+  })
+
+  it("warns that a card with no PIN spends for whoever holds it, up to its limits", () => {
+    mockCashuCard = card({ pinState: "unset" })
 
     renderScreen()
 
     expect(screen.getByTestId("flashcard-v2-no-pin")).toBeTruthy()
     expect(screen.getByText(LL.FlashcardV2.noPinBody())).toBeTruthy()
     expect(screen.getByText(/Anyone holding this card can spend/)).toBeTruthy()
-    expect(screen.queryByText(/Set a PIN/i)).toBeNull()
-    expect(screen.queryByText(/before carrying a balance/i)).toBeNull()
   })
 
-  it("tells the truth about a blocked v0.2 card: it no longer asks for a PIN and anyone holding it can spend it", () => {
-    // CashuApplet.java@v0.2.0:587-591 gates only pinState 1: once blocked,
-    // SPEND_PROOF runs with no PIN. The card is open, not frozen, and nothing
-    // unblocks it (ENG-617).
-    mockCashuCard = card({ version: "0.2", pinState: "blocked" })
+  it("tells the owner of a blocked card that a new PIN unblocks it, and offers it", () => {
+    mockCashuCard = card({ pinState: "blocked" })
 
     renderScreen()
 
     expect(screen.getByTestId("flashcard-v2-blocked")).toBeTruthy()
-    expect(screen.getByText(LL.FlashcardV2.blockedOpenTitle())).toBeTruthy()
-    expect(screen.getByText(LL.FlashcardV2.blockedOpenBody())).toBeTruthy()
-    expect(screen.getByText(/anyone holding the card can spend its balance/)).toBeTruthy()
-    expect(screen.getByText(/can't be unblocked/)).toBeTruthy()
-    expect(screen.getByText(/Move the value off it/)).toBeTruthy()
-    // Not the frozen-and-safe reading the firmware does not back.
-    expect(screen.queryByText(LL.FlashcardV2.blockedLockedTitle())).toBeNull()
-    expect(screen.queryByText(/refuses to spend/)).toBeNull()
-    expect(screen.queryByText(/unblock now/i)).toBeNull()
+    expect(screen.getByText(LL.FlashcardV2.blockedTitle())).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.blockedOwnerBody())).toBeTruthy()
+    fireEvent.press(screen.getByText(LL.FlashcardV2.changePin()))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "change" })
+    // The owner's grant loads without the PIN: Top up stays.
+    expect(screen.getByText(LL.FlashcardV2.topUp())).toBeTruthy()
   })
 
-  it("keys the blocked copy on the applet version: only a version confirmed to keep refusing reads as frozen", () => {
-    mockBlockedPinGatesSpend = true
-    mockCashuCard = card({ version: "9.9", pinState: "blocked" })
+  it("tells the holder of a blocked card another phone owns that only that phone can unblock it, and offers no load", () => {
+    mockCashuCard = othersCard({ pinState: "blocked" })
 
     renderScreen()
 
-    expect(screen.getByTestId("flashcard-v2-blocked")).toBeTruthy()
-    expect(screen.getByText(LL.FlashcardV2.blockedLockedTitle())).toBeTruthy()
-    expect(screen.getByText(/refuses to spend and can't be unblocked/)).toBeTruthy()
-    expect(screen.queryByText(LL.FlashcardV2.blockedOpenTitle())).toBeNull()
+    expect(screen.getByText(LL.FlashcardV2.blockedOtherBody())).toBeTruthy()
+    expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.topUp())).toBeNull()
   })
 
   it("says it cannot read a PIN state byte it does not know, instead of calling the card PIN-less", () => {
@@ -346,7 +323,7 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByText(/Anyone holding this card can spend/)).toBeNull()
   })
 
-  it("offers Set PIN on a card with none and Change PIN on a card with one, opening the PIN screen in that mode", () => {
+  it("offers the owner Set PIN on a card with none and Change PIN on a card with one, opening the PIN screen in that mode", () => {
     mockCashuCard = card({ pinState: "unset" })
     const { unmount } = renderScreen()
     fireEvent.press(screen.getByText(LL.FlashcardV2.setPin()))
@@ -362,10 +339,14 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
   })
 
-  it("offers Top up on a card whose PIN state it can read, opening a new top-up", () => {
-    ;(["unset", "set"] as const).forEach((pinState) => {
+  it("offers Top up on a set-up card whose PIN state it can read, this phone's or another's, opening a new top-up", () => {
+    ;[
+      card({ pinState: "unset" }),
+      card({ pinState: "set" }),
+      othersCard({ pinState: "set" }),
+    ].forEach((shown) => {
       mockNavigate.mockClear()
-      mockCashuCard = card({ pinState })
+      mockCashuCard = shown
       const { unmount } = renderScreen()
       fireEvent.press(screen.getByText(LL.FlashcardV2.topUp()))
       expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2TopUp")
@@ -373,9 +354,12 @@ describe("FlashcardV2Screen", () => {
     })
   })
 
-  it("offers no Top up on a blocked card, one whose PIN state it cannot read, or signed out", () => {
-    ;(["blocked", "unknown"] as const).forEach((pinState) => {
-      mockCashuCard = card({ pinState })
+  it("offers no Top up on a card whose PIN state it cannot read, one not set up, or signed out", () => {
+    ;[
+      card({ pinState: "unknown" }),
+      card({ hasOwner: false, ownerKeySource: undefined }),
+    ].forEach((shown) => {
+      mockCashuCard = shown
       const { unmount } = renderScreen()
       expect(screen.queryByText(LL.FlashcardV2.topUp())).toBeNull()
       unmount()
@@ -568,9 +552,13 @@ describe("FlashcardV2Screen", () => {
     expect(screen.queryByTestId("flashcard-v2-unfinished-topup")).toBeNull()
   })
 
-  it("offers no PIN action on a blocked card or one whose PIN state it cannot read", () => {
-    ;(["blocked", "unknown"] as const).forEach((pinState) => {
-      mockCashuCard = card({ pinState })
+  it("offers no PIN action on a card whose PIN state it cannot read, nor on a card another phone owns", () => {
+    ;[
+      card({ pinState: "unknown" }),
+      othersCard({ pinState: "set" }),
+      othersCard({ pinState: "unset" }),
+    ].forEach((shown) => {
+      mockCashuCard = shown
       const { unmount } = renderScreen()
       expect(screen.queryByText(LL.FlashcardV2.setPin())).toBeNull()
       expect(screen.queryByText(LL.FlashcardV2.changePin())).toBeNull()
@@ -736,8 +724,6 @@ describe("FlashcardV2Screen", () => {
     type NoticeCase = {
       name: string
       state: Partial<CashuCardState>
-      /** Stands in for `blockedPinGatesSpend`; undefined keeps the real answer. */
-      gates?: boolean
       testID: string
       title: string
       body: string
@@ -751,26 +737,32 @@ describe("FlashcardV2Screen", () => {
         body: LL.FlashcardV2.noPinBody(),
       },
       {
-        name: "set-PIN on v0.2",
-        state: { pinState: "set" },
-        testID: "flashcard-v2-pin-bypassable",
-        title: LL.FlashcardV2.pinSetBypassableTitle(),
-        body: LL.FlashcardV2.pinSetBypassableBody(),
+        name: "not set up",
+        state: { hasOwner: false, ownerKeySource: undefined, pinState: "set" },
+        testID: "flashcard-v2-not-set-up",
+        title: LL.FlashcardV2.notSetUpTitle(),
+        body: LL.FlashcardV2.notSetUpBody(),
       },
       {
-        name: "blocked v0.2",
+        name: "blocked, this phone the owner",
         state: { pinState: "blocked" },
         testID: "flashcard-v2-blocked",
-        title: LL.FlashcardV2.blockedOpenTitle(),
-        body: LL.FlashcardV2.blockedOpenBody(),
+        title: LL.FlashcardV2.blockedTitle(),
+        body: LL.FlashcardV2.blockedOwnerBody(),
       },
       {
-        name: "blocked on a confirmed version",
-        state: { version: "9.9", pinState: "blocked" },
-        gates: true,
+        name: "blocked, another phone the owner",
+        state: { pinState: "blocked", ownerKeySource: undefined },
         testID: "flashcard-v2-blocked",
-        title: LL.FlashcardV2.blockedLockedTitle(),
-        body: LL.FlashcardV2.blockedLockedBody(),
+        title: LL.FlashcardV2.blockedTitle(),
+        body: LL.FlashcardV2.blockedOtherBody(),
+      },
+      {
+        name: "refresh needed",
+        state: { record: cardRecord({ rolls: 7, rollBudget: 7 }) },
+        testID: "flashcard-v2-refresh-needed",
+        title: LL.FlashcardV2.refreshNeededTitle(),
+        body: LL.FlashcardV2.refreshNeededBody(),
       },
       {
         name: "unknown PIN state",
@@ -781,9 +773,8 @@ describe("FlashcardV2Screen", () => {
       },
     ]
 
-    notices.forEach(({ name, state, gates, testID, title, body }) => {
+    notices.forEach(({ name, state, testID, title, body }) => {
       it(`reads the ${name} notice as one element, labelled with its title and body`, () => {
-        mockBlockedPinGatesSpend = gates
         mockCashuCard = card(state)
 
         renderScreen()
@@ -838,39 +829,49 @@ describe("FlashcardV2Screen", () => {
   })
 })
 
-// ENG-633: CLEAR_PIN exists on applet 0.5 and later, advertised by GET_INFO
-// capability bit 3; a 0.4 build answers it 6D00. The bit decides, never
-// the version.
-describe("FlashcardV2Screen Remove PIN (CLEAR_PIN, applet 0.5)", () => {
+// ENG-675: Remove PIN (0.x CLEAR_PIN) is gone with 0.x: a 2.0 card's PIN is
+// the owner's to change, never to remove. In its place, the owner's limits,
+// the setup of a card with no owner, and what the card says of its clock.
+describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockIsAuthed = true
     mockIsFocused = true
-    mockBlockedPinGatesSpend = undefined
     mockCashuCard = card()
     mockUnfinishedTopUps = []
   })
 
-  it("is offered on a card with a PIN that answers CLEAR_PIN, next to Change PIN, and opens the PIN screen in remove mode", () => {
-    mockCashuCard = card({ version: "0.5", pinState: "set", clearPin: true })
-    renderScreen()
-
-    expect(screen.getByText(LL.FlashcardV2.changePin())).toBeTruthy()
-    fireEvent.press(screen.getByText(LL.FlashcardV2.removePin()))
-    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Pin", { mode: "remove" })
-
-    // With the other actions: under the balance, above the PIN notice.
-    const tree = JSON.stringify(screen.toJSON())
-    const balance = tree.indexOf(JSON.stringify(LL.FlashcardV2.onCardBalance()))
-    const remove = tree.indexOf(JSON.stringify(LL.FlashcardV2.removePin()))
-    const pinNotice = tree.indexOf('"flashcard-v2-pin-bypassable"')
-    expect(balance).toBeGreaterThan(-1)
-    expect(balance).toBeLessThan(remove)
-    expect(remove).toBeLessThan(pinNotice)
+  it("offers no Remove PIN on any card: 2.0 has none", () => {
+    ;(["set", "unset", "blocked"] as const).forEach((pinState) => {
+      mockCashuCard = card({ pinState })
+      const { unmount } = renderScreen()
+      expect(screen.queryByTestId("flashcard-v2-action-remove-pin")).toBeNull()
+      unmount()
+    })
   })
 
-  it("makes four actions: the row wraps, so a 360dp phone keeps its gutters instead of clipping the outer buttons", () => {
-    mockCashuCard = card({ version: "0.5", pinState: "set", clearPin: true })
+  it("offers the owner Limits, and opens the limits screen", () => {
+    renderScreen()
+    fireEvent.press(screen.getByTestId("flashcard-v2-action-limits"))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Limits")
+  })
+
+  it("offers no Limits on a card another phone owns, one not set up, or signed out", () => {
+    ;[othersCard(), card({ hasOwner: false, ownerKeySource: undefined })].forEach(
+      (shown) => {
+        mockCashuCard = shown
+        const { unmount } = renderScreen()
+        expect(screen.queryByTestId("flashcard-v2-action-limits")).toBeNull()
+        unmount()
+      },
+    )
+    mockIsAuthed = false
+    mockCashuCard = card()
+    renderScreen()
+    expect(screen.queryByTestId("flashcard-v2-action-limits")).toBeNull()
+  })
+
+  it("makes four actions for the owner: the row wraps, so a 360dp phone keeps its gutters instead of clipping the outer buttons", () => {
     renderScreen()
 
     const row = screen.getByTestId("flashcard-v2-actions")
@@ -881,30 +882,75 @@ describe("FlashcardV2Screen Remove PIN (CLEAR_PIN, applet 0.5)", () => {
     expect(style.rowGap).toBeGreaterThan(0)
   })
 
-  it("is not offered on a card without the capability, whatever its version", () => {
-    ;["0.2", "0.4", "0.5", "9.9"].forEach((version) => {
-      mockCashuCard = card({ version, pinState: "set", clearPin: false })
-      const { unmount } = renderScreen()
-      expect(screen.getByText(LL.FlashcardV2.changePin())).toBeTruthy()
-      expect(screen.queryByText(LL.FlashcardV2.removePin())).toBeNull()
-      unmount()
-    })
-  })
-
-  it("is not offered without a PIN to remove: unset, blocked (no session can verify it) or unknown", () => {
-    ;(["unset", "blocked", "unknown"] as const).forEach((pinState) => {
-      mockCashuCard = card({ version: "0.5", pinState, clearPin: true })
-      const { unmount } = renderScreen()
-      expect(screen.queryByText(LL.FlashcardV2.removePin())).toBeNull()
-      unmount()
-    })
-  })
-
-  it("is not offered when signed out", () => {
-    mockIsAuthed = false
-    mockCashuCard = card({ version: "0.5", pinState: "set", clearPin: true })
+  it("says who owns the card: this phone, another phone, or nobody yet", () => {
+    const owner = () => screen.getByTestId("flashcard-v2-owner").props.children
+    const { unmount } = renderScreen()
+    expect(owner()).toBe(LL.FlashcardV2.ownerThisPhone())
+    unmount()
+    mockCashuCard = othersCard()
+    const second = renderScreen()
+    expect(owner()).toBe(LL.FlashcardV2.ownerOther())
+    second.unmount()
+    mockCashuCard = card({ hasOwner: false, ownerKeySource: undefined })
     renderScreen()
-    expect(screen.queryByText(LL.FlashcardV2.removePin())).toBeNull()
+    expect(owner()).toBe(LL.FlashcardV2.ownerNone())
+  })
+
+  it("asks for a refresh once the card's window has rolled as often as its owner allows (decision 16)", () => {
+    mockCashuCard = card({ record: cardRecord({ rolls: 7, rollBudget: 7 }) })
+    const { unmount } = renderScreen()
+    expect(screen.getByTestId("flashcard-v2-refresh-needed")).toBeTruthy()
+    expect(
+      screen.getByText("Open Flash while online and tap your card to refresh it."),
+    ).toBeTruthy()
+    unmount()
+    mockCashuCard = card({ record: cardRecord({ rolls: 6, rollBudget: 7 }) })
+    renderScreen()
+    expect(screen.queryByTestId("flashcard-v2-refresh-needed")).toBeNull()
+  })
+
+  it("cardNotices lists them in order: not set up, the PIN, the refresh", () => {
+    expect(
+      cardNotices(
+        {
+          hasOwner: false,
+          pinState: "unset",
+          record: cardRecord({ rolls: 9, rollBudget: 7 }),
+        },
+        false,
+        LL,
+      ).map((notice) => notice.testID),
+    ).toEqual(["flashcard-v2-not-set-up", "flashcard-v2-no-pin"])
+    expect(
+      cardNotices(
+        {
+          hasOwner: true,
+          pinState: "set",
+          record: cardRecord({ rolls: 9, rollBudget: 7 }),
+        },
+        true,
+        LL,
+      ).map((notice) => notice.testID),
+    ).toEqual(["flashcard-v2-refresh-needed"])
+  })
+
+  it("shows a top-up saved for the card's old software as kept for a human, with no Finish or Dismiss", () => {
+    mockUnfinishedTopUps = [
+      {
+        id: "old",
+        cardFormat: 0,
+        state: "minted",
+        amount: 21,
+        unit: "sat",
+        payment: { dispatched: true },
+      },
+    ]
+    renderScreen()
+    expect(
+      screen.getByText(LL.FlashcardV2.topUpUnfinishedNeedsUpdate({ amount: "21 sats" })),
+    ).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-finish-topup")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-dismiss-topup")).toBeNull()
   })
 })
 

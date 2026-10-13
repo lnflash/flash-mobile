@@ -12,6 +12,8 @@ import {
 import { store } from "@app/store/redux"
 import { resetFlashcardV2 } from "@app/store/redux/slices/flashcardV2Slice"
 
+import { createFakeCard } from "../helpers/fake-cashu"
+
 import {
   FlashcardSnapshot,
   PROVIDER_RENDER_TIMEOUT_MS,
@@ -24,6 +26,11 @@ jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
 jest.mock("@app/utils/cashu-mint", () => ({
   ...jest.requireActual("@app/utils/cashu-mint"),
   unitsForKeysets: jest.fn(async () => ({})),
+}))
+// The tip header is fetched off the tap, and not through the bridge.
+jest.mock("@app/utils/cashu-card-headers", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-headers"),
+  refreshTipHeader: jest.fn(async () => undefined),
 }))
 
 // ENG-634: with a development build's card bridge set, a tap and a card
@@ -38,34 +45,14 @@ jest.mock("@app/utils/cashu-mint", () => ({
 
 const BRIDGE = "http://localhost:9876"
 const INS_SELECT = 0xa4
-const PUBKEY = [0x02, ...Array.from({ length: 32 }, (_, i) => i + 1)]
-const ok = (data: number[]) => [...data, 0x90, 0x00]
-
-/** An empty card with no PIN until SET_PIN, as the applet answers each INS. */
-const makeCard = () => {
-  let pinSet = false
-  return (apdu: number[]): number[] => {
-    switch (apdu[1]) {
-      case INS_SELECT:
-        return ok([0, 6])
-      case 0x01:
-        return ok([0, 6, 32, 0, 0, 32, 0x0f, pinSet ? 1 : 0])
-      case 0x10:
-        return ok(PUBKEY)
-      case 0x11:
-        return ok([0, 0, 0, 0])
-      case 0x41:
-        pinSet = true
-        return ok([])
-      case 0x40:
-        return [0x63, 0xc2]
-      default:
-        return [0x6d, 0x00]
-    }
-  }
-}
-
 const fromHex = (hex: string) => (hex.match(/../g) ?? []).map((h) => parseInt(h, 16))
+
+/** An empty open 2.0 card with no PIN until SET_PIN, as the applet answers each INS. */
+const makeCard = () => {
+  const card = createFakeCard(128, { owner: null })
+  return (apdu: number[]): Promise<number[]> => card.transceive(apdu)
+}
+const PUBKEY = fromHex(createFakeCard(1).pubkey)
 const fetchMock = jest.fn()
 const realFetch = globalThis.fetch
 /** The APDUs cardsim was sent, in order. */
@@ -73,13 +60,14 @@ const sent = () =>
   fetchMock.mock.calls.map(([, init]) => fromHex(JSON.parse(init.body).hex))
 
 /** cardsim: answers each POST /apdu with the card's response, 200 whatever the SW. */
-const serveCard = (card: (apdu: number[]) => number[]) =>
+const serveCard = (card: (apdu: number[]) => number[] | Promise<number[]>) =>
   fetchMock.mockImplementation(async (url: string, init: { body: string }) => {
     expect(url).toBe(`${BRIDGE}/apdu`)
+    const answer = await card(fromHex(JSON.parse(init.body).hex))
     return {
       ok: true,
       status: 200,
-      json: async () => ({ hex: toHex(card(fromHex(JSON.parse(init.body).hex))) }),
+      json: async () => ({ hex: toHex(answer) }),
     }
   })
 
@@ -178,10 +166,11 @@ describe("FlashcardProvider with a card bridge (development builds)", () => {
       calls += 1
       // SELECT and GET_PUBKEY answer; the op's write is lost.
       if (calls > 2) throw new TypeError("Network request failed")
+      const answer = await card(fromHex(JSON.parse(init.body).hex))
       return {
         ok: true,
         status: 200,
-        json: async () => ({ hex: toHex(card(fromHex(JSON.parse(init.body).hex))) }),
+        json: async () => ({ hex: toHex(answer) }),
       }
     })
     let thrown: unknown

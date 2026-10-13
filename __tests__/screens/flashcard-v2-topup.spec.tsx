@@ -25,30 +25,36 @@ import {
   TopUpError,
   TopUpRecord,
 } from "../../app/utils/cashu-card-topup"
+import { cashuCardState } from "../helpers/cashu-card-state"
 
 loadLocale("en")
 const LL = i18nObject("en")
 
 const PUBKEY = "02" + "ab".repeat(32)
 
-const card = (over: Partial<CashuCardState> = {}): CashuCardState => ({
-  pubkey: PUBKEY,
-  version: "0.2",
-  maxSlots: 32,
-  unspent: 0,
-  spent: 0,
-  empty: 32,
-  secp256k1Native: true,
-  schnorr: true,
-  clearPin: false,
-  pinState: "unset",
-  balance: 0,
-  keysets: [],
-  ...over,
-})
+/**
+ * An empty 2.0 card, set up by another phone (so a PIN, where it has one, is
+ * asked for): what most of these flows were written against. A card this
+ * phone owns is `card({ ownerKeySource: "seed" })`.
+ */
+const card = (over: Partial<CashuCardState> = {}): CashuCardState =>
+  cashuCardState({
+    pubkey: PUBKEY,
+    maxSlots: 32,
+    unspent: 0,
+    spent: 0,
+    empty: 32,
+    pinState: "unset",
+    balance: 0,
+    keysets: [],
+    unitTotals: undefined,
+    ownerKeySource: undefined,
+    ...over,
+  })
 
 const record = (over: Partial<TopUpRecord> = {}): TopUpRecord => ({
-  version: 1,
+  version: 2,
+  cardFormat: 4,
   id: "topup-1",
   cardPubkey: PUBKEY,
   mintUrl: "https://mint.test",
@@ -243,6 +249,7 @@ const spentSlots = (count: number): CardProofSlot[] =>
     amount: 1,
     nonce: (i + 1).toString(16).padStart(64, "0"),
     C: "02" + "ab".repeat(32),
+    date: 0,
   }))
 
 beforeEach(() => {
@@ -611,7 +618,7 @@ describe("FlashcardV2TopUpScreen", () => {
       expect.anything(),
       expect.objectContaining({
         unit: "usd",
-        card: { empty: 32, reclaimable: 0, unit: undefined },
+        card: { hasOwner: true, empty: 32, reclaimable: 0, unit: undefined },
       }),
     )
   })
@@ -699,7 +706,10 @@ describe("FlashcardV2TopUpScreen", () => {
 
     typePin("1234")
     await act(async () => press(LL.FlashcardV2.topUpCheckPin()))
-    expect(mockCheckPin).toHaveBeenCalledWith(PUBKEY, "1234")
+    expect(mockCheckPin).toHaveBeenCalledWith(
+      expect.objectContaining({ pubkey: PUBKEY }),
+      "1234",
+    )
     expect(mockPrepare).toHaveBeenCalled()
 
     await act(async () => press(LL.FlashcardV2.topUpPay()))
@@ -717,7 +727,7 @@ describe("FlashcardV2TopUpScreen", () => {
     typePin("1111")
     await act(async () => press(LL.FlashcardV2.topUpCheckPin()))
 
-    expect(errorText()).toBe(LL.FlashcardV2.wrongPinOpen({ tries: 2 }))
+    expect(errorText()).toBe(LL.FlashcardV2.wrongPin({ tries: 2 }))
     expect(mockPrepare).not.toHaveBeenCalled()
     expect(mockPay).not.toHaveBeenCalled()
   })
@@ -732,7 +742,7 @@ describe("FlashcardV2TopUpScreen", () => {
     await act(async () => press(LL.FlashcardV2.topUpCheckPin()))
 
     expect(screen.getByTestId("topup-refused").props.children).toBe(
-      LL.FlashcardV2.cardNowOpen(),
+      LL.FlashcardV2.cardNowBlocked(),
     )
     expect(mockPrepare).not.toHaveBeenCalled()
   })
@@ -1061,6 +1071,86 @@ describe("FlashcardV2TopUpScreen", () => {
   })
 })
 
+describe("topUpEligibility, card protocol 2.0 (ENG-675)", () => {
+  const usdOn = { usdEnabled: true }
+
+  it("refuses a card with no owner: it takes no load until it is set up", () => {
+    expect(topUpEligibility(card({ hasOwner: false }), usdOn)).toEqual({
+      ok: false,
+      reason: "not-set-up",
+    })
+  })
+
+  it("lets this phone, the owner, top up a card whose PIN is blocked: its grant needs no PIN", () => {
+    expect(
+      topUpEligibility(card({ pinState: "blocked", ownerKeySource: "seed" }), usdOn),
+    ).toEqual({ ok: true, unit: "choose" })
+    expect(
+      topUpEligibility(card({ pinState: "blocked", ownerKeySource: undefined }), usdOn),
+    ).toEqual({ ok: false, reason: "blocked" })
+  })
+})
+
+describe("FlashcardV2TopUpScreen, card protocol 2.0 (ENG-675)", () => {
+  it("refuses a card that is not set up before any amount is asked for", async () => {
+    mockCard = card({ hasOwner: false })
+    await renderSettled()
+    expect(screen.getByTestId("topup-refused").props.children).toBe(
+      LL.FlashcardV2.topUpCantNotSetUp(),
+    )
+    expect(screen.queryByTestId("amount-input")).toBeNull()
+    expect(mockPrepare).not.toHaveBeenCalled()
+  })
+
+  it("on a card this phone owns, asks for no PIN: amount, confirm, pay, then the load tap opens with the owner's grant", async () => {
+    mockCard = card({ pinState: "set", ownerKeySource: "seed" })
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    // Straight to the quote: no PIN check before paying.
+    expect(mockCheckPin).not.toHaveBeenCalled()
+    expect(mockPrepare).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ card: expect.objectContaining({ hasOwner: true }) }),
+    )
+    await act(async () => press(LL.FlashcardV2.topUpPay()))
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    expect(mockLoad).toHaveBeenCalledWith(expect.anything(), mockCard, undefined)
+    await waitFor(() => expect(screen.getByTestId("topup-done")).toBeTruthy())
+  })
+
+  it("a load the card refuses this phone's grant for asks for the PIN, then loads with it", async () => {
+    mockCard = card({ pinState: "set", ownerKeySource: "seed" })
+    mockParams = { topUpId: "topup-1" }
+    mockStoreGet.mockResolvedValue(record({ state: "minted" }))
+    mockLoad
+      .mockRejectedValueOnce(new TopUpError("not-owner", "the card wants its PIN"))
+      .mockResolvedValueOnce({ record: record({ state: "loaded" }), reclaim: NO_RECLAIM })
+    await renderSettled()
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+
+    // Nothing was written; the PIN is asked for and sent in the next tap.
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.topUpNotOwner()))
+    typePin("1234")
+    await act(async () => fireEvent.press(screen.getByTestId("topup-pin-submit")))
+    expect(mockLoad).toHaveBeenLastCalledWith(expect.anything(), mockCard, "1234")
+    await waitFor(() => expect(screen.getByTestId("topup-done")).toBeTruthy())
+  })
+
+  it("a top-up made for the card's old software says it needs an update, and loads nothing", async () => {
+    mockParams = { topUpId: "topup-1" }
+    mockStoreGet.mockResolvedValue(record({ state: "minted", cardFormat: 0 }))
+    mockLoad.mockRejectedValueOnce(new TopUpError("needs-update", "kept for a human"))
+    await renderSettled()
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.needsUpdateBody()))
+  })
+})
+
 describe("FlashcardV2TopUpScreen: the development pay stub (ENG-634)", () => {
   type Dev = { __DEV__: boolean }
   const setDev = (value: boolean) => {
@@ -1132,7 +1222,9 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
     // The engine counts them too, as `reclaimable`, never as empty slots.
     expect(mockPrepare).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ card: { empty: 0, reclaimable: 32, unit: undefined } }),
+      expect.objectContaining({
+        card: { hasOwner: true, empty: 0, reclaimable: 32, unit: undefined },
+      }),
     )
   })
 

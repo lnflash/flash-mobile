@@ -20,8 +20,8 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { blockedPinGatesSpend, CashuCardInfo } from "@app/utils/cashu-card"
-import { TopUpRecord, quoteIsDead } from "@app/utils/cashu-card-topup"
+import { CashuCardInfo } from "@app/utils/cashu-card"
+import { TopUpRecord, isCurrentFormat, quoteIsDead } from "@app/utils/cashu-card-topup"
 
 import Sync from "@app/assets/icons/sync.svg"
 
@@ -29,8 +29,11 @@ import Sync from "@app/assets/icons/sync.svg"
  * Flashcard v2 — the Cashu NFC card (ENG-616).
  *
  * Everything shown here came off the card in the last tap and touches nothing
- * on it: balance, slot counts, PIN state, the card's public key. Top-up,
- * change-PIN and sweep arrive in their own PRs and hang off this screen.
+ * on it: balance, slot counts, PIN state, owner, the card's public key. The
+ * actions hang off it (card protocol 2.0, ENG-675): a card with no owner is
+ * set up first (this phone becomes its owner); a card this phone owns is
+ * topped up with the owner's grant, and its PIN and limits are this phone's
+ * to set; a card another phone owns is topped up with its PIN.
  *
  * The balance is the card's own count of its unspent proofs, per unit. The
  * card stores no unit, so each figure carries the unit the mint names for its
@@ -85,6 +88,14 @@ export const FlashcardV2Screen = () => {
   if (!cashuCard) return null
 
   const last4 = cardLast4(cashuCard.pubkey)
+  // This phone holds a key the card's owner may be (the card has the last word).
+  const ownedHere = cashuCard.hasOwner && cashuCard.ownerKeySource !== undefined
+  // A blocked PIN takes no load but the owner's: the grant needs no PIN.
+  const canTopUp =
+    cashuCard.hasOwner &&
+    (cashuCard.pinState === "unset" ||
+      cashuCard.pinState === "set" ||
+      (cashuCard.pinState === "blocked" && ownedHere))
 
   return (
     <Screen preset="scroll" backgroundColor={colors.background}>
@@ -132,10 +143,17 @@ export const FlashcardV2Screen = () => {
 
       {isAuthed && (
         <View style={styles.btns} testID="flashcard-v2-actions">
-          {/* Only a PIN state the app can read gets a PIN action: a blocked
-              PIN has no way back (ENG-617), and an unknown one is a card this
-              app does not understand (see the notice below). */}
-          {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
+          {/* A card with no owner takes no load (6A90): it is set up first. */}
+          {!cashuCard.hasOwner && (
+            <IconBtn
+              type="clear"
+              icon="lockOpen"
+              label={LL.FlashcardV2.setUp()}
+              onPress={() => navigation.navigate("FlashcardV2Setup")}
+              testID="flashcard-v2-action-setup"
+            />
+          )}
+          {canTopUp && (
             <IconBtn
               type="clear"
               icon="down"
@@ -144,7 +162,10 @@ export const FlashcardV2Screen = () => {
               testID="flashcard-v2-action-topup"
             />
           )}
-          {(cashuCard.pinState === "unset" || cashuCard.pinState === "set") && (
+          {/* The PIN is the owner's to set or change, blocked or not: no old
+              PIN needed. An unknown PIN state is a card this app does not
+              understand (see the notice below). */}
+          {ownedHere && cashuCard.pinState !== "unknown" && (
             <IconBtn
               type="clear"
               icon="setting"
@@ -165,17 +186,13 @@ export const FlashcardV2Screen = () => {
               }
             />
           )}
-          {/* Only a card that answers CLEAR_PIN (applet 0.5, GET_INFO
-              capability bit 3) gets Remove PIN: an older build answers it
-              with 6D00. Keyed on the capability, not the version, so a 0.4
-              card never sees it and a later card needs no list. */}
-          {cashuCard.pinState === "set" && cashuCard.clearPin && (
+          {ownedHere && (
             <IconBtn
               type="clear"
-              icon="lockOpen"
-              label={LL.FlashcardV2.removePin()}
-              onPress={() => navigation.navigate("FlashcardV2Pin", { mode: "remove" })}
-              testID="flashcard-v2-action-remove-pin"
+              icon="upDown"
+              label={LL.FlashcardV2.limits()}
+              onPress={() => navigation.navigate("FlashcardV2Limits")}
+              testID="flashcard-v2-action-limits"
             />
           )}
           <IconBtn
@@ -187,7 +204,7 @@ export const FlashcardV2Screen = () => {
         </View>
       )}
 
-      <PinStateNotice pinState={cashuCard.pinState} version={cashuCard.version} />
+      <CardNotices card={cashuCard} ownedHere={ownedHere} />
 
       {unfinishedTopUps.map((record) => {
         // A sent payment whose invoice expired long enough ago that nothing
@@ -197,6 +214,9 @@ export const FlashcardV2Screen = () => {
         // top-up is never offered for dropping, even one the mint no longer
         // issues (Finish says so).
         const expired = record.state === "quoted" && quoteIsDead(record, Date.now())
+        // A 0.x card's top-up: kept on this phone for a human, with nothing
+        // to finish or dismiss here.
+        const oldFormat = !isCurrentFormat(record)
         return (
           <View
             key={record.id}
@@ -204,9 +224,13 @@ export const FlashcardV2Screen = () => {
             testID="flashcard-v2-unfinished-topup"
           >
             <Text type="p2" style={styles.unfinishedText}>
-              {unfinishedText(record, expired, LL)}
+              {oldFormat
+                ? LL.FlashcardV2.topUpUnfinishedNeedsUpdate({
+                    amount: formatUnitAmount(record.amount, record.unit, LL),
+                  })
+                : unfinishedText(record, expired, LL)}
             </Text>
-            {expired ? (
+            {oldFormat ? null : expired ? (
               <TouchableOpacity
                 accessibilityRole="button"
                 testID="flashcard-v2-dismiss-topup"
@@ -258,6 +282,11 @@ export const FlashcardV2Screen = () => {
           </Text>
         )}
         <DetailRow
+          label={LL.FlashcardV2.ownerRow()}
+          value={ownerText(cashuCard.hasOwner, ownedHere, LL)}
+          testID="flashcard-v2-owner"
+        />
+        <DetailRow
           label={LL.FlashcardV2.appletVersion()}
           value={`v${cashuCard.version}`}
         />
@@ -281,89 +310,108 @@ export const FlashcardV2Screen = () => {
 type Notice = { testID: string; title: string; body: string; severe: boolean }
 
 /**
- * What the card's PIN state means for whoever holds it, by applet version.
- * Both PIN states that look protective are keyed on whether the version is
- * confirmed to keep refusing spends once the PIN is blocked
- * (`blockedPinGatesSpend`). On v0.2.0 it is not (ENG-615): the third wrong
- * VERIFY_PIN blocks the PIN and a blocked PIN stops gating SPEND_PROOF, so a
- * set PIN won't stop whoever holds the card, and a blocked card spends for
- * anyone and cannot be unblocked (ENG-617). Nothing is said about a set PIN
- * only on a confirmed version. A state byte this app cannot decode is said to
- * be unknown, not guessed at.
+ * What the card's state means for whoever holds it (card protocol 2.0): a card
+ * not set up yet, its PIN (none, blocked, or one this app cannot read), and a
+ * clock that has run out of days to count on its own. A set PIN needs no
+ * notice: on 2.0 three wrong entries block it, and only the owner unblocks it.
  */
-const PinStateNotice: React.FC<Pick<CashuCardInfo, "pinState" | "version">> = ({
-  pinState,
-  version,
+const CardNotices: React.FC<{ card: CashuCardState; ownedHere: boolean }> = ({
+  card,
+  ownedHere,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
 
-  const notice = pinNotice(pinState, version, LL)
-  if (!notice) return null
+  const notices = cardNotices(card, ownedHere, LL)
+  if (notices.length === 0) return null
 
-  // One element for a screen reader, labelled with the words on screen. A
-  // plain testID, not `testProps`, which would label it with the id instead.
+  // One element per notice for a screen reader, labelled with the words on
+  // screen. A plain testID, not `testProps`, which would label it with the id.
   return (
-    <View
-      style={[styles.notice, notice.severe ? styles.noticeSevere : styles.noticeWarning]}
-      testID={notice.testID}
-      accessible
-      accessibilityLabel={`${notice.title}. ${notice.body}`}
-    >
-      <Text type="bl" bold>
-        {notice.title}
-      </Text>
-      <Text type="caption">{notice.body}</Text>
-    </View>
+    <>
+      {notices.map((notice) => (
+        <View
+          key={notice.testID}
+          style={[
+            styles.notice,
+            notice.severe ? styles.noticeSevere : styles.noticeWarning,
+          ]}
+          testID={notice.testID}
+          accessible
+          accessibilityLabel={`${notice.title}. ${notice.body}`}
+        >
+          <Text type="bl" bold>
+            {notice.title}
+          </Text>
+          <Text type="caption">{notice.body}</Text>
+        </View>
+      ))}
+    </>
   )
 }
 
-const pinNotice = (
-  pinState: CashuCardInfo["pinState"],
-  version: string,
+export const cardNotices = (
+  card: Pick<CashuCardState, "hasOwner" | "pinState" | "record">,
+  ownedHere: boolean,
   LL: LLType,
-): Notice | undefined => {
-  switch (pinState) {
-    case "set":
-      // CashuApplet.java@v0.2.0:517-521 blocks the PIN on the third wrong
-      // VERIFY_PIN, after which requirePinIfSet (:587-591) gates nothing.
-      return blockedPinGatesSpend(version)
-        ? undefined
-        : {
-            testID: "flashcard-v2-pin-bypassable",
-            title: LL.FlashcardV2.pinSetBypassableTitle(),
-            body: LL.FlashcardV2.pinSetBypassableBody(),
-            severe: false,
-          }
+): Notice[] => {
+  const notices: Notice[] = []
+  if (!card.hasOwner) {
+    notices.push({
+      testID: "flashcard-v2-not-set-up",
+      title: LL.FlashcardV2.notSetUpTitle(),
+      body: LL.FlashcardV2.notSetUpBody(),
+      severe: false,
+    })
+  }
+  switch (card.pinState) {
     case "unset":
-      return {
+      notices.push({
         testID: "flashcard-v2-no-pin",
         title: LL.FlashcardV2.noPinTitle(),
         body: LL.FlashcardV2.noPinBody(),
         severe: false,
-      }
+      })
+      break
     case "blocked":
-      return blockedPinGatesSpend(version)
-        ? {
-            testID: "flashcard-v2-blocked",
-            title: LL.FlashcardV2.blockedLockedTitle(),
-            body: LL.FlashcardV2.blockedLockedBody(),
-            severe: true,
-          }
-        : {
-            testID: "flashcard-v2-blocked",
-            title: LL.FlashcardV2.blockedOpenTitle(),
-            body: LL.FlashcardV2.blockedOpenBody(),
-            severe: true,
-          }
+      notices.push({
+        testID: "flashcard-v2-blocked",
+        title: LL.FlashcardV2.blockedTitle(),
+        body: ownedHere
+          ? LL.FlashcardV2.blockedOwnerBody()
+          : LL.FlashcardV2.blockedOtherBody(),
+        severe: true,
+      })
+      break
     case "unknown":
-      return {
+      notices.push({
         testID: "flashcard-v2-pin-unknown",
         title: LL.FlashcardV2.pinUnknownTitle(),
         body: LL.FlashcardV2.pinUnknownBody(),
         severe: false,
-      }
+      })
+      break
+    case "set":
+      break
   }
+  // The day's window has rolled as often as its owner allows between
+  // refreshes: the card's limits stay where they are until its owner's phone,
+  // online, refreshes it at a tap (decision 16).
+  if (card.hasOwner && card.record && card.record.rolls >= card.record.rollBudget) {
+    notices.push({
+      testID: "flashcard-v2-refresh-needed",
+      title: LL.FlashcardV2.refreshNeededTitle(),
+      body: LL.FlashcardV2.refreshNeededBody(),
+      severe: false,
+    })
+  }
+  return notices
+}
+
+/** Who owns the card, as the details say it. */
+const ownerText = (hasOwner: boolean, ownedHere: boolean, LL: LLType): string => {
+  if (!hasOwner) return LL.FlashcardV2.ownerNone()
+  return ownedHere ? LL.FlashcardV2.ownerThisPhone() : LL.FlashcardV2.ownerOther()
 }
 
 const DetailRow: React.FC<{ label: string; value: string; testID?: string }> = ({
@@ -548,7 +596,7 @@ const useStyles = makeStyles(({ colors }) => ({
   },
   btns: {
     flexDirection: "row",
-    // Four actions (Top up, Change PIN, Remove PIN, Remove card) are 384pt
+    // Four actions (Top up, Change PIN, Limits, Remove card) are 384pt
     // at IconBtn's 96pt each: wider than a 360dp phone, so a fourth wraps.
     flexWrap: "wrap",
     rowGap: 8,

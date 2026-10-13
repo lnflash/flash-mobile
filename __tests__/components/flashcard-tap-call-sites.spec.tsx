@@ -182,8 +182,11 @@ const cashuPubkey = "02" + "51".repeat(32)
 const attachCashuCard = () => {
   mockAttachedCard = {
     pubkey: cashuPubkey,
-    version: "0.4",
+    version: "2.0",
     pinState: "unset",
+    owned: true,
+    needsUpdate: false,
+    limits: { day: 0, allowance: 0 },
     lastBalance: 1289,
     lastSeenAt: 1_000,
     unit: "sat",

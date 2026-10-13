@@ -15,6 +15,7 @@ import { store } from "@app/store/redux"
 import { resetFlashcardV2 } from "@app/store/redux/slices/flashcardV2Slice"
 import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { FlashcardV2Screen } from "../../app/screens/card-screen/flashcard-v2"
+import { createFakeCard } from "../helpers/fake-cashu"
 import {
   FlashcardSnapshot,
   PROVIDER_RENDER_TIMEOUT_MS,
@@ -44,6 +45,11 @@ jest.mock("@app/utils/cashu-mint", () => ({
   ...jest.requireActual("@app/utils/cashu-mint"),
   unitsForKeysets: jest.fn(),
 }))
+// The tip header is fetched off the tap; no spec reaches the network for it.
+jest.mock("@app/utils/cashu-card-headers", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-headers"),
+  refreshTipHeader: jest.fn(async () => undefined),
+}))
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   useI18nContext: () => ({ LL: require("../../app/i18n/i18n-util").i18nObject("en") }),
@@ -64,30 +70,27 @@ jest.mock("@app/graphql/generated", () => ({
   useHideBalanceQuery: () => ({ data: { hideBalance: false } }),
 }))
 
-const ok = (data: number[]) => [...data, 0x90, 0x00]
-const PUBKEY = [0x02, ...Array.from({ length: 32 }, (_, i) => i + 1)]
-const PUBKEY_HEX = PUBKEY.map((b) => b.toString(16).padStart(2, "0")).join("")
 const KEYSET = [0x00, 0x59, 0x53, 0x4c, 0xe0, 0xbf, 0xa1, 0x9a]
 
-/** A v0.2 card, PIN set, holding one unspent 500 proof in slot 0. */
-const cashuCard = async (bytes: number[]) => {
-  switch (bytes[1]) {
-    case 0xa4:
-      return ok([0, 2])
-    case 0x01:
-      return ok([0, 2, 32, 1, 0, 31, 0x07, 1])
-    case 0x10:
-      return ok(PUBKEY)
-    case 0x11:
-      return ok([0, 0, 0x01, 0xf4])
-    case 0x14:
-      return ok([1, ...new Array(31).fill(0)])
-    case 0x13:
-      return ok([0x01, ...KEYSET, 0, 0, 0x01, 0xf4, ...new Array(65).fill(0x02)])
-    default:
-      throw new Error("unsupported")
-  }
-}
+/** A 2.0 card, PIN set, owned, holding one unspent 500 piece in slot 0. */
+const fakeCard = createFakeCard(128, { pin: "1234" })
+fakeCard.slots[0] = [
+  0x01,
+  ...KEYSET,
+  0,
+  0,
+  0x01,
+  0xf4,
+  ...new Array(32).fill(0xab),
+  0x02,
+  ...new Array(32).fill(0xcd),
+  0,
+  0,
+  0,
+  0,
+]
+const PUBKEY_HEX = fakeCard.pubkey
+const cashuCard = (bytes: number[]) => fakeCard.transceive(bytes)
 
 const CARD_PAYLOAD = "lnurlw://card.test.flashapp.me/boltcard?p=PARAM_P&c=PARAM_C"
 const BALANCE_HTML = `<a href="lightning:lnurl1CARD">pay</a><dt>1,234 SATS</dt>`

@@ -11,8 +11,11 @@ import type { KnownCard } from "../../app/store/redux/slices/flashcardV2Slice"
 
 const card = (over: Partial<KnownCard> = {}): KnownCard => ({
   pubkey: "02" + "51".repeat(32),
-  version: "0.4",
+  version: "2.0",
   pinState: "unset",
+  owned: true,
+  needsUpdate: false,
+  limits: { day: 0, allowance: 0 },
   lastBalance: 1289,
   lastSeenAt: 1_000,
   unit: "sat",
@@ -171,6 +174,16 @@ describe("WalletOverview: the Cashu card row", () => {
     const row = within(screen.getByTestId("home-cashu-card"))
     expect(row.getByText(/\$0\.00/)).toBeTruthy()
     expect(row.queryByText(LL.FlashcardV2.unitUnknown({ amount: "0" }))).toBeNull()
+  })
+
+  it("says a card recorded before protocol 2.0 needs an update, with no amount (ENG-675)", async () => {
+    mockAttachedCard = card({ version: "0.6", needsUpdate: true })
+    await renderOverview()
+
+    const row = within(screen.getByTestId("home-cashu-card"))
+    expect(row.getByText(LL.FlashcardV2.needsUpdateShort())).toBeTruthy()
+    expect(row.queryByText(/\$1\.08/)).toBeNull()
+    expect(row.queryByText(/USD/)).toBeNull()
   })
 
   it("opens the card read this session at once, and otherwise asks for a tap", async () => {

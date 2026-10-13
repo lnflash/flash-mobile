@@ -19,6 +19,7 @@ import {
   keysetUnitsLearned,
   resetFlashcardV2,
 } from "@app/store/redux/slices/flashcardV2Slice"
+import { createFakeCard } from "../helpers/fake-cashu"
 import {
   FlashcardSnapshot,
   PROVIDER_RENDER_TIMEOUT_MS,
@@ -33,6 +34,11 @@ jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
 jest.mock("@app/utils/cashu-mint", () => ({
   ...jest.requireActual("@app/utils/cashu-mint"),
   unitsForKeysets: jest.fn(),
+}))
+// The tip header is fetched off the tap; no spec reaches the network for it.
+jest.mock("@app/utils/cashu-card-headers", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-headers"),
+  refreshTipHeader: jest.fn(async () => undefined),
 }))
 
 // `runCardOperation` is the one door every card-changing flow goes through
@@ -54,31 +60,19 @@ jest.mock("@app/utils/cashu-mint", () => ({
 //     new split's keysets before, otherwise dropped (never left stale), with
 //     the record's unit
 
-const ok = (data: number[]) => [...data, 0x90, 0x00]
 const INS_SELECT = 0xa4
-const PUBKEY = [0x02, ...Array.from({ length: 32 }, (_, i) => i + 1)]
-const OTHER_PUBKEY = [0x03, ...Array.from({ length: 32 }, (_, i) => 99 - i)]
+const OTHER_CARD_KEY = "09".repeat(32)
+const fromHex = (hex: string) => (hex.match(/../g) ?? []).map((h) => parseInt(h, 16))
+/** The fake card's key; OTHER_CARD_KEY makes another card, which the identity check refuses. */
+const PUBKEY = fromHex(createFakeCard(1).pubkey)
 
-/** A card whose PIN state flips to "set" once SET_PIN has been sent. */
-const makeCard = (pubkey: number[]) => {
-  let pinSet = false
-  return async (bytes: number[]) => {
-    switch (bytes[1]) {
-      case INS_SELECT:
-        return ok([0, 2])
-      case 0x01:
-        return ok([0, 2, 32, 1, 7, 24, 0x07, pinSet ? 1 : 0])
-      case 0x10:
-        return ok(pubkey)
-      case 0x11:
-        return ok([0, 0, 0x01, 0xf4])
-      case 0x41:
-        pinSet = true
-        return ok([])
-      default:
-        throw new Error(`unsupported ${bytes[1].toString(16)}`)
-    }
-  }
+/**
+ * An open 2.0 card (no owner, no PIN): SET_PIN sets its PIN, and GET_INFO
+ * says so from then on.
+ */
+const makeCard = (cardKey?: string) => {
+  const card = createFakeCard(128, { owner: null, cardKey })
+  return (bytes: number[]) => card.transceive(bytes)
 }
 
 const KEYSET = [0x00, 0x59, 0x53, 0x4c, 0xe0, 0xbf, 0xa1, 0x9a]
@@ -86,144 +80,77 @@ const KEYSET_HEX = "0059534ce0bfa19a"
 /** A keyset the mint names `usd`, beside KEYSET (`sat`) on a card holding both. */
 const USD_KEYSET = [0x00, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01]
 const USD_KEYSET_HEX = "00aabbccddeeff01"
-/** One unspent 500 proof in slot 0, the rest spent or empty. */
-const SLOT_STATUSES = [1, ...new Array(7).fill(2), ...new Array(24).fill(0)]
-const PROOF_SLOT = [
-  0x01,
-  ...KEYSET,
-  0,
-  0,
-  0x01,
-  0xf4,
-  ...new Array(32).fill(0xab),
-  0x02,
-  ...new Array(32).fill(0xcd),
-]
-const INS_LOAD = 0x30
 const INS_CLEAR_SPENT = 0x31
 
+const u32 = (n: number) => [24, 16, 8, 0].map((shift) => Math.floor(n / 2 ** shift) % 256)
+/** A 2.0 slot: status, keyset, amount, nonce (first byte `nonceByte`), C, date. */
+// eslint-disable-next-line max-params -- a slot's own fields, in their order
+const slotOf = (status: number, keyset: number[], amount: number, nonceByte = 0xab) => [
+  status,
+  ...keyset,
+  ...u32(amount),
+  nonceByte,
+  ...new Array(31).fill(0xab),
+  0x02,
+  ...new Array(32).fill(0xcd),
+  0,
+  0,
+  0,
+  0,
+]
+
 /**
- * A card that also answers the keyset split (GET_SLOT_STATUS, GET_PROOF), so a
- * read carries per-unit figures. LOAD_PROOF stands in for any op that moves
- * value: it takes the balance from 500 to 1500, loading 1000 under
- * `loadKeyset` (KEYSET, the one the 500 is in, unless a spec says otherwise).
+ * A card that also answers the keyset split (GET_PIECES, GET_PROOF), so a
+ * read carries per-unit figures: one unspent 500 in slot 0 and spent slots
+ * 1-7, owned, with no PIN. LOAD_APDU stands in for any op that moves value:
+ * it takes the balance from 500 to 1500, loading 1000 under `loadKeyset`
+ * (`LOAD_APDU`'s keyset, KEYSET unless a spec builds another).
  */
-const makeSplitCard = ({ splitFailsAfterLoad = false, loadKeyset = KEYSET } = {}) => {
-  let balance = 500
+const makeSplitCard = ({ splitFailsAfterLoad = false } = {}) => {
+  const card = createFakeCard(128)
+  card.slots[0] = slotOf(1, KEYSET, 500)
+  for (let slot = 1; slot <= 7; slot += 1) card.slots[slot] = slotOf(2, KEYSET, 500, slot)
   let loaded = false
-  let spent = 7
-  const statuses = [...SLOT_STATUSES]
-  const proofs: Record<number, number[]> = { 0: PROOF_SLOT }
-  // Slots 1-7 are spent: status 02, the nonce's first byte the slot index.
-  const spentSlot = (slot: number) => [
-    0x02,
-    ...PROOF_SLOT.slice(1, 13),
-    slot,
-    ...PROOF_SLOT.slice(14),
-  ]
   return async (bytes: number[]) => {
-    switch (bytes[1]) {
-      case INS_SELECT:
-        return ok([0, 2])
-      case 0x01:
-        return ok([
-          0,
-          2,
-          32,
-          loaded ? 2 : 1,
-          spent,
-          31 - spent - (loaded ? 1 : 0),
-          0x07,
-          1,
-        ])
-      case 0x10:
-        return ok(PUBKEY)
-      case 0x11:
-        return ok([0, 0, Math.floor(balance / 256) % 256, balance % 256])
-      case 0x14:
-        if (loaded && splitFailsAfterLoad) throw new Error("Tag was lost")
-        return ok(statuses)
-      case 0x13:
-        return ok(
-          proofs[bytes[2]] ??
-            (statuses[bytes[2]] === 2 ? spentSlot(bytes[2]) : PROOF_SLOT),
-        )
-      case INS_CLEAR_SPENT: {
-        // As the applet does: every spent slot freed, and the count answered.
-        const freed = statuses.filter((status) => status === 2).length
-        statuses.forEach((status, i) => {
-          if (status === 2) statuses[i] = 0
-        })
-        spent = 0
-        return ok([freed])
-      }
-      case INS_LOAD: {
-        // A 1000 proof under `loadKeyset` lands in the first empty slot.
-        const slot = statuses.indexOf(0)
-        statuses[slot] = 1
-        proofs[slot] = [
-          0x01,
-          ...loadKeyset,
-          0,
-          0,
-          0x03,
-          0xe8,
-          ...new Array(32).fill(0xef),
-          0x03,
-          ...new Array(32).fill(0x12),
-        ]
-        balance = 1500
-        loaded = true
-        return ok([slot])
-      }
-      case 0x41:
-        return ok([])
-      default:
-        throw new Error(`unsupported ${bytes[1].toString(16)}`)
-    }
+    if (bytes[1] === 0x30) loaded = true
+    if (loaded && splitFailsAfterLoad && bytes[1] === 0x17)
+      throw new Error("Tag was lost")
+    return card.transceive(bytes)
   }
 }
 
+/** LOAD_PROOF of one 1000 piece under `keyset`: 81 bytes, the date 0. */
+const loadApdu = (keyset = KEYSET) => {
+  const piece = [
+    ...keyset,
+    ...u32(1000),
+    ...new Array(32).fill(0xef),
+    0x03,
+    ...new Array(32).fill(0x12),
+    0,
+    0,
+    0,
+    0,
+  ]
+  return [0xb0, 0x30, 0x00, 0x00, piece.length, ...piece, 0x01]
+}
+const LOAD_APDU = loadApdu()
+/** An op that moves no value and writes nothing a read can see: the phone's time, a note. */
+const NO_VALUE_APDU = [0xb0, 0x37, 0x00, 0x00, 0x04, 0x6a, 0xcc, 0xec, 0xf4]
 const SET_PIN_APDU = [0xb0, 0x41, 0x00, 0x00, 0x04, 0x31, 0x32, 0x33, 0x34]
-const LOAD_APDU = [0xb0, INS_LOAD, 0x00, 0x00, 0x01, 0x00]
 const CLEAR_SPENT_APDU = [0xb0, INS_CLEAR_SPENT, 0x00, 0x00, 0x01]
 const INS_VERIFY_PIN = 0x40
-const CARD_PIN = [0x31, 0x32, 0x33, 0x34]
+const CLEAR = (pubkey: number[]) => ({ sealed: false, cardPubkey: toHex(pubkey) })
 
 /**
- * A v0.2.0 card whose PIN is "1234". A wrong VERIFY_PIN costs a try and
- * answers 63CX; the one that spends the last try moves the PIN to blocked
+ * A 2.0 card whose PIN is "1234", taken in the clear. A wrong VERIFY_PIN costs
+ * a try and answers 63CX; the one that spends the last try blocks the PIN
  * (GET_INFO byte 7 = 2) and answers 6983, and a blocked PIN answers 6983 at
- * once (CashuApplet.java@v0.2.0:506-527).
+ * once (spec/APDU.md, VERIFY_PIN).
  */
 const makePinCard = () => {
-  let tries = 3
-  let pinState = 1
-  return async (bytes: number[]) => {
-    switch (bytes[1]) {
-      case INS_SELECT:
-        return ok([0, 2])
-      case 0x01:
-        return ok([0, 2, 32, 1, 7, 24, 0x07, pinState])
-      case 0x10:
-        return ok(PUBKEY)
-      case 0x11:
-        return ok([0, 0, 0x01, 0xf4])
-      case INS_VERIFY_PIN: {
-        if (tries === 0) return [0x69, 0x83]
-        if (bytes.slice(5).join() === CARD_PIN.join()) {
-          tries = 3
-          return ok([])
-        }
-        tries -= 1
-        if (tries > 0) return [0x63, 0xc0 + tries]
-        pinState = 2
-        return [0x69, 0x83]
-      }
-      default:
-        throw new Error(`unsupported ${bytes[1].toString(16)}`)
-    }
-  }
+  const card = createFakeCard(128, { pin: "1234" })
+  return (bytes: number[]) => card.transceive(bytes)
 }
 
 /** A transport failure: the native bridge rejects when the card leaves the field. */
@@ -288,7 +215,7 @@ describe("FlashcardProvider runCardOperation", () => {
     latest = undefined
     warn = jest.spyOn(console, "warn").mockImplementation(() => {})
     requestTechnology.mockReset().mockResolvedValue(NfcTech.IsoDep)
-    transceive.mockReset().mockImplementation(makeCard(PUBKEY))
+    transceive.mockReset().mockImplementation(makeCard())
     getTag.mockReset()
     lookupUnits.mockReset().mockResolvedValue({ [KEYSET_HEX]: "sat" })
     store.dispatch(resetFlashcardV2())
@@ -355,7 +282,7 @@ describe("FlashcardProvider runCardOperation", () => {
   it("refuses to run the op against a different card, re-reads nothing, and still releases", async () => {
     await mount()
     await readCard()
-    transceive.mockImplementation(makeCard(OTHER_PUBKEY))
+    transceive.mockImplementation(makeCard(OTHER_CARD_KEY))
     const op = jest.fn()
     const onReread = jest.fn()
 
@@ -379,7 +306,7 @@ describe("FlashcardProvider runCardOperation", () => {
     let refusal: unknown
     const op = async (t: Transceiver) => {
       try {
-        await verifyCardPin(t, "9999")
+        await verifyCardPin(t, "9999", CLEAR(PUBKEY))
       } catch (err) {
         refusal = err
         throw err
@@ -408,9 +335,13 @@ describe("FlashcardProvider runCardOperation", () => {
 
     const answers: number[] = []
     for (let attempt = 1; attempt <= 3; attempt += 1) {
-      const thrown = await runAndCatch((t) => verifyCardPin(t, "9999"), toHex(PUBKEY), {
-        onReread: (info) => reread.push(info.pinState),
-      })
+      const thrown = await runAndCatch(
+        (t) => verifyCardPin(t, "9999", CLEAR(PUBKEY)),
+        toHex(PUBKEY),
+        {
+          onReread: (info) => reread.push(info.pinState),
+        },
+      )
       answers.push((thrown as CardError).sw)
     }
 
@@ -454,7 +385,7 @@ describe("FlashcardProvider runCardOperation", () => {
     await readCard()
     expect(latest?.cashuCard?.pinState).toBe("unset")
     // SET_PIN lands (the card now holds the PIN); the card is gone by GET_INFO.
-    const card = makeCard(PUBKEY)
+    const card = makeCard()
     transceive.mockImplementation(async (bytes: number[]) => {
       if (bytes[1] === 0x01) throw tagLost("lnurlw://secret.example/withdraw")
       return card(bytes)
@@ -491,7 +422,7 @@ describe("FlashcardProvider runCardOperation", () => {
   it("a lost re-read with nothing assumed leaves the card on screen as it was", async () => {
     await mount()
     await readCard()
-    const card = makeCard(PUBKEY)
+    const card = makeCard()
     transceive.mockImplementation(async (bytes: number[]) => {
       if (bytes[1] === 0x11) throw tagLost()
       return card(bytes)
@@ -504,6 +435,29 @@ describe("FlashcardProvider runCardOperation", () => {
     expect(thrown).toBeUndefined()
     expect(latest?.cashuCard?.pinState).toBe("unset")
     expect(cancelTechnologyRequest).toHaveBeenCalledTimes(1)
+  })
+
+  it("applies what the op taught this phone (the owner key's source, after a setup) once it succeeded, and only then", async () => {
+    await mount()
+    await readCard()
+    expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
+
+    const refused = await runAndCatch(
+      async () => {
+        throw new CardError(0x6a91, "SET_OWNER")
+      },
+      toHex(PUBKEY),
+      { learned: { ownerKeySource: "seed" } },
+    )
+    expect(refused).toBeInstanceOf(CardError)
+    expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
+
+    await act(async () => {
+      await latest?.runCardOperation(async () => "done", toHex(PUBKEY), {
+        learned: { ownerKeySource: "device" },
+      })
+    })
+    await waitFor(() => expect(latest?.cashuCard?.ownerKeySource).toBe("device"))
   })
 
   it("a cancelled tap rejects before the op runs and releases once", async () => {
@@ -543,7 +497,7 @@ describe("FlashcardProvider runCardOperation", () => {
 
     await act(async () => {
       await latest?.runCardOperation(async (t) => {
-        await t(SET_PIN_APDU)
+        await t(NO_VALUE_APDU)
       }, toHex(PUBKEY))
     })
 
@@ -571,9 +525,11 @@ describe("FlashcardProvider runCardOperation", () => {
     })
 
     // The spent count moved, so the slots were read again: none left.
-    expect(latest?.cashuCard).toMatchObject({ balance: 500, spent: 0, empty: 31 })
+    expect(latest?.cashuCard).toMatchObject({ balance: 500, spent: 0, empty: 127 })
     expect(latest?.cashuCard?.spentSlots).toEqual([])
-    expect(sentIns().filter((ins) => ins === 0x13)).toHaveLength(1)
+    // One page of pieces, and no spent slot left to read by GET_PROOF.
+    expect(sentIns().filter((ins) => ins === 0x17)).toHaveLength(1)
+    expect(sentIns()).not.toContain(0x13)
     // The value did not move: the split and its units stand.
     expect(latest?.cashuCard?.keysets).toBe(before?.keysets)
     expect(latest?.cashuCard?.unitTotals).toEqual({
@@ -590,10 +546,11 @@ describe("FlashcardProvider runCardOperation", () => {
 
     await act(async () => {
       await latest?.runCardOperation(async (t) => {
-        await t(SET_PIN_APDU)
+        await t(NO_VALUE_APDU)
       }, toHex(PUBKEY))
     })
 
+    expect(sentIns()).not.toContain(0x17)
     expect(sentIns()).not.toContain(0x14)
     expect(latest?.cashuCard?.spentSlots).toBe(before?.spentSlots)
   })
@@ -676,7 +633,7 @@ describe("FlashcardProvider runCardOperation", () => {
 
   it("an op that moves value into a second unit is labelled at once, and names no single unit on the card's record", async () => {
     store.dispatch(keysetUnitsLearned({ [KEYSET_HEX]: "sat", [USD_KEYSET_HEX]: "usd" }))
-    transceive.mockImplementation(makeSplitCard({ loadKeyset: USD_KEYSET }))
+    transceive.mockImplementation(makeSplitCard())
     await mount()
     await readCard()
     await waitFor(() =>
@@ -691,7 +648,7 @@ describe("FlashcardProvider runCardOperation", () => {
 
     await act(async () => {
       await latest?.runCardOperation(async (t) => {
-        await t(LOAD_APDU)
+        await t(loadApdu(USD_KEYSET))
       }, toHex(PUBKEY))
     })
 
@@ -745,7 +702,7 @@ describe("FlashcardProvider runCardOperation", () => {
 
     await act(async () => {
       await latest?.runCardOperation(async (t) => {
-        await t(SET_PIN_APDU)
+        await t(NO_VALUE_APDU)
       }, toHex(PUBKEY))
     })
 

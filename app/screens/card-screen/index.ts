@@ -1,5 +1,7 @@
 export * from "./card"
 export * from "./flashcard-topup"
 export * from "./flashcard-v2"
+export * from "./flashcard-v2-limits"
 export * from "./flashcard-v2-pin"
+export * from "./flashcard-v2-setup"
 export * from "./flashcard-v2-topup"

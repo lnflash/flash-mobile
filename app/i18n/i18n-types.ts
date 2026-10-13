@@ -364,33 +364,9 @@ type RootTranslation = {
 		 */
 		noPinTitle: string
 		/**
-		 * A​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​ ​o​r​ ​l​o​a​d​ ​i​t​.
+		 * A​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​,​ ​u​p​ ​t​o​ ​a​n​y​ ​l​i​m​i​t​s​ ​i​t​s​ ​o​w​n​e​r​ ​s​e​t​s​.
 		 */
 		noPinBody: string
-		/**
-		 * T​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​t​u​r​n​ ​t​h​i​s​ ​P​I​N​ ​o​f​f
-		 */
-		pinSetBypassableTitle: string
-		/**
-		 * O​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​,​ ​t​h​r​e​e​ ​w​r​o​n​g​ ​P​I​N​ ​e​n​t​r​i​e​s​ ​i​n​ ​a​ ​r​o​w​ ​s​w​i​t​c​h​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​,​ ​a​n​d​ ​t​h​e​n​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​.​ ​T​h​e​ ​P​I​N​ ​w​o​n​'​t​ ​s​t​o​p​ ​s​o​m​e​o​n​e​ ​w​h​o​ ​h​a​s​ ​t​h​e​ ​c​a​r​d​.
-		 */
-		pinSetBypassableBody: string
-		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​n​o​ ​l​o​n​g​e​r​ ​a​s​k​s​ ​f​o​r​ ​a​ ​P​I​N
-		 */
-		blockedOpenTitle: string
-		/**
-		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​,​ ​a​n​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​t​h​a​t​ ​s​w​i​t​c​h​e​s​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​:​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​i​t​s​ ​b​a​l​a​n​c​e​.​ ​I​t​ ​c​a​n​'​t​ ​b​e​ ​u​n​b​l​o​c​k​e​d​.​ ​M​o​v​e​ ​t​h​e​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​.
-		 */
-		blockedOpenBody: string
-		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​b​l​o​c​k​e​d
-		 */
-		blockedLockedTitle: string
-		/**
-		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​.​ ​T​h​e​ ​c​a​r​d​ ​r​e​f​u​s​e​s​ ​t​o​ ​s​p​e​n​d​ ​a​n​d​ ​c​a​n​'​t​ ​b​e​ ​u​n​b​l​o​c​k​e​d​.
-		 */
-		blockedLockedBody: string
 		/**
 		 * P​I​N​ ​s​t​a​t​e​ ​u​n​k​n​o​w​n
 		 */
@@ -410,11 +386,6 @@ type RootTranslation = {
 		 */
 		changePin: string
 		/**
-		 * R​e​m​o​v​e​
-	​P​I​N
-		 */
-		removePin: string
-		/**
 		 * S​e​t​ ​c​a​r​d​ ​P​I​N
 		 */
 		setPinTitle: string
@@ -422,18 +393,6 @@ type RootTranslation = {
 		 * C​h​a​n​g​e​ ​c​a​r​d​ ​P​I​N
 		 */
 		changePinTitle: string
-		/**
-		 * R​e​m​o​v​e​ ​c​a​r​d​ ​P​I​N
-		 */
-		removePinTitle: string
-		/**
-		 * R​e​m​o​v​e​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​?
-		 */
-		removePinStep: string
-		/**
-		 * C​u​r​r​e​n​t​ ​P​I​N
-		 */
-		currentPin: string
 		/**
 		 * N​e​w​ ​P​I​N
 		 */
@@ -451,31 +410,15 @@ type RootTranslation = {
 		 */
 		pinMismatch: string
 		/**
-		 * C​h​o​o​s​e​ ​a​ ​P​I​N​ ​d​i​f​f​e​r​e​n​t​ ​f​r​o​m​ ​t​h​e​ ​c​u​r​r​e​n​t​ ​o​n​e
-		 */
-		pinSameAsCurrent: string
-		/**
-		 * O​n​c​e​ ​s​e​t​,​ ​a​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​b​u​t​ ​n​e​v​e​r​ ​r​e​m​o​v​e​d​.​ ​T​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​b​l​o​c​k​ ​t​h​e​ ​c​a​r​d​ ​f​o​r​ ​g​o​o​d​,​ ​s​o​ ​p​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​.
+		 * P​i​c​k​ ​a​ ​P​I​N​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​.​ ​T​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​b​l​o​c​k​ ​i​t​,​ ​a​n​d​ ​o​n​l​y​ ​t​h​e​ ​p​h​o​n​e​ ​t​h​a​t​ ​o​w​n​s​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​u​n​b​l​o​c​k​ ​i​t​.
 		 */
 		setPinWarning: string
-		/**
-		 * O​n​c​e​ ​s​e​t​,​ ​a​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​b​u​t​ ​n​e​v​e​r​ ​r​e​m​o​v​e​d​.​ ​P​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​:​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​,​ ​t​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​i​n​ ​a​ ​r​o​w​ ​s​w​i​t​c​h​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​.
-		 */
-		setPinWarningOpen: string
-		/**
-		 * A​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​o​r​ ​r​e​m​o​v​e​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​,​ ​w​i​t​h​ ​t​h​e​ ​c​u​r​r​e​n​t​ ​P​I​N​.​ ​T​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​b​l​o​c​k​ ​t​h​e​ ​c​a​r​d​ ​f​o​r​ ​g​o​o​d​,​ ​s​o​ ​p​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​.
-		 */
-		setPinWarningRemovable: string
-		/**
-		 * A​ ​P​I​N​ ​c​a​n​ ​b​e​ ​c​h​a​n​g​e​d​ ​o​r​ ​r​e​m​o​v​e​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​,​ ​w​i​t​h​ ​t​h​e​ ​c​u​r​r​e​n​t​ ​P​I​N​.​ ​P​i​c​k​ ​o​n​e​ ​y​o​u​ ​w​i​l​l​ ​r​e​m​e​m​b​e​r​:​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​,​ ​t​h​r​e​e​ ​w​r​o​n​g​ ​e​n​t​r​i​e​s​ ​i​n​ ​a​ ​r​o​w​ ​s​w​i​t​c​h​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​.
-		 */
-		setPinWarningRemovableOpen: string
 		/**
 		 * H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​t​h​e​ ​b​a​c​k​ ​o​f​ ​y​o​u​r​ ​p​h​o​n​e​ ​t​o​ ​a​p​p​l​y
 		 */
 		tapToApply: string
 		/**
-		 * P​I​N​ ​s​e​t​.​ ​T​h​e​ ​c​a​r​d​ ​n​o​w​ ​a​s​k​s​ ​f​o​r​ ​i​t​ ​b​e​f​o​r​e​ ​i​t​ ​s​p​e​n​d​s​ ​o​r​ ​l​o​a​d​s​.
+		 * P​I​N​ ​s​e​t​.​ ​T​h​e​ ​c​a​r​d​ ​n​o​w​ ​a​s​k​s​ ​f​o​r​ ​i​t​ ​b​e​f​o​r​e​ ​i​t​ ​p​a​y​s​,​ ​u​n​l​e​s​s​ ​a​ ​p​a​y​m​e​n​t​ ​f​i​t​s​ ​i​t​s​ ​n​o​-​P​I​N​ ​a​l​l​o​w​a​n​c​e​.
 		 */
 		pinSet: string
 		/**
@@ -483,47 +426,14 @@ type RootTranslation = {
 		 */
 		pinChanged: string
 		/**
-		 * T​h​e​ ​c​a​r​d​ ​w​i​l​l​ ​s​t​o​p​ ​a​s​k​i​n​g​ ​f​o​r​ ​a​ ​P​I​N​ ​b​e​f​o​r​e​ ​i​t​ ​s​p​e​n​d​s​ ​o​r​ ​l​o​a​d​s​.​ ​Y​o​u​ ​c​a​n​ ​s​e​t​ ​a​ ​n​e​w​ ​o​n​e​ ​l​a​t​e​r​.
-		 */
-		removePinBody: string
-		/**
-		 * R​e​m​o​v​e​ ​P​I​N
-		 */
-		removePinConfirm: string
-		/**
-		 * P​I​N​ ​r​e​m​o​v​e​d​.​ ​A​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​n​o​w​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​ ​o​r​ ​l​o​a​d​ ​i​t​.
-		 */
-		removePinDone: string
-		/**
-		 * P​I​N​ ​r​e​m​o​v​e​d​.​ ​T​h​e​ ​c​a​r​d​ ​r​e​m​o​v​e​d​ ​i​t​ ​d​u​r​i​n​g​ ​t​h​e​ ​t​a​p​ ​t​h​a​t​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​.
-		 */
-		removePinDoneEarlier: string
-		/**
-		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​r​e​m​o​v​i​n​g​ ​t​h​e​ ​P​I​N​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​:​ ​i​f​ ​t​h​e​ ​P​I​N​ ​i​s​ ​a​l​r​e​a​d​y​ ​g​o​n​e​,​ ​t​h​e​ ​c​a​r​d​ ​s​a​y​s​ ​s​o​.
-		 */
-		removePinUncertain: string
-		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​n​o​ ​P​I​N​ ​t​o​ ​r​e​m​o​v​e​.
-		 */
-		pinAlreadyUnset: string
-		/**
 		 * W​r​o​n​g​ ​P​I​N​.​ ​T​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​c​a​r​d​ ​b​l​o​c​k​s​:​ ​{​t​r​i​e​s​}​.
 		 * @param {number} tries
 		 */
 		wrongPin: RequiredParams<'tries'>
 		/**
-		 * W​r​o​n​g​ ​P​I​N​.​ ​T​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​s​w​i​t​c​h​e​s​ ​o​f​f​:​ ​{​t​r​i​e​s​}​.
-		 * @param {number} tries
-		 */
-		wrongPinOpen: RequiredParams<'tries'>
-		/**
-		 * T​h​e​ ​P​I​N​ ​h​a​s​ ​b​e​e​n​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​.​ ​T​h​e​ ​c​a​r​d​ ​i​s​ ​b​l​o​c​k​e​d​ ​a​n​d​ ​m​u​s​t​ ​b​e​ ​r​e​p​l​a​c​e​d​.
+		 * T​h​e​ ​P​I​N​ ​h​a​s​ ​b​e​e​n​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​ ​a​n​d​ ​i​s​ ​n​o​w​ ​b​l​o​c​k​e​d​.​ ​T​h​e​ ​p​h​o​n​e​ ​t​h​a​t​ ​o​w​n​s​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​u​n​b​l​o​c​k​ ​i​t​ ​b​y​ ​s​e​t​t​i​n​g​ ​a​ ​n​e​w​ ​P​I​N​.
 		 */
 		cardNowBlocked: string
-		/**
-		 * T​h​e​ ​P​I​N​ ​h​a​s​ ​b​e​e​n​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​,​ ​a​n​d​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​t​h​a​t​ ​s​w​i​t​c​h​e​s​ ​t​h​e​ ​P​I​N​ ​c​h​e​c​k​ ​o​f​f​:​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​i​t​s​ ​b​a​l​a​n​c​e​.​ ​M​o​v​e​ ​t​h​e​ ​v​a​l​u​e​ ​o​f​f​ ​i​t​.
-		 */
-		cardNowOpen: string
 		/**
 		 * T​h​a​t​ ​i​s​ ​a​ ​d​i​f​f​e​r​e​n​t​ ​c​a​r​d​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​t​h​i​s​ ​s​c​r​e​e​n​ ​i​s​ ​s​h​o​w​i​n​g​.
 		 */
@@ -533,37 +443,25 @@ type RootTranslation = {
 		 */
 		notCashuCard: string
 		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​ ​a​g​a​i​n​s​t​ ​c​h​a​n​g​e​s​,​ ​s​o​ ​i​t​s​ ​P​I​N​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​ ​o​r​ ​c​h​a​n​g​e​d​.
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​ ​a​g​a​i​n​s​t​ ​c​h​a​n​g​e​s​.
 		 */
 		cardLocked: string
-		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​ ​a​g​a​i​n​s​t​ ​c​h​a​n​g​e​s​,​ ​s​o​ ​i​t​s​ ​P​I​N​ ​c​a​n​'​t​ ​b​e​ ​r​e​m​o​v​e​d​.
-		 */
-		cardLockedRemove: string
 		/**
 		 * T​h​e​ ​c​a​r​d​ ​r​e​f​u​s​e​d​ ​t​h​e​ ​c​h​a​n​g​e​.​ ​T​r​y​ ​a​g​a​i​n​.
 		 */
 		cardRefused: string
 		/**
-		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​s​a​v​i​n​g​ ​t​h​e​ ​n​e​w​ ​P​I​N​.​ ​I​t​ ​m​a​y​ ​a​l​r​e​a​d​y​ ​u​s​e​ ​t​h​e​ ​n​e​w​ ​P​I​N​:​ ​t​r​y​ ​t​h​e​ ​n​e​w​ ​o​n​e​ ​f​i​r​s​t​.
+		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​s​a​v​i​n​g​ ​t​h​e​ ​n​e​w​ ​P​I​N​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​.
 		 */
 		pinChangeUncertain: string
 		/**
-		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​s​a​v​i​n​g​ ​t​h​e​ ​P​I​N​.​ ​I​t​ ​m​a​y​ ​a​l​r​e​a​d​y​ ​u​s​e​ ​t​h​i​s​ ​P​I​N​:​ ​c​o​n​f​i​r​m​ ​i​t​ ​a​n​d​ ​t​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​.
+		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​s​a​v​i​n​g​ ​t​h​e​ ​P​I​N​.​ ​C​o​n​f​i​r​m​ ​i​t​ ​a​n​d​ ​t​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​.
 		 */
 		pinSetUncertain: string
-		/**
-		 * P​I​N​ ​s​e​t​.​ ​T​h​e​ ​c​a​r​d​ ​s​a​v​e​d​ ​i​t​ ​d​u​r​i​n​g​ ​t​h​e​ ​t​a​p​ ​t​h​a​t​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​.
-		 */
-		pinSetEarlier: string
 		/**
 		 * N​o​ ​C​a​s​h​u​ ​c​a​r​d​ ​f​o​u​n​d​.​ ​H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​s​t​e​a​d​y​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		cardNotFound: string
-		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​a​ ​P​I​N​.​ ​C​h​a​n​g​e​ ​i​t​ ​i​n​s​t​e​a​d​.
-		 */
-		pinAlreadySet: string
 		/**
 		 * D​i​g​i​t​s​ ​e​n​t​e​r​e​d​:​ ​{​c​o​u​n​t​}
 		 * @param {number} count
@@ -678,7 +576,7 @@ type RootTranslation = {
 		 */
 		topUpPinTitle: string
 		/**
-		 * T​h​e​ ​c​a​r​d​ ​a​s​k​s​ ​f​o​r​ ​i​t​s​ ​P​I​N​ ​b​e​f​o​r​e​ ​i​t​ ​t​a​k​e​s​ ​n​e​w​ ​f​u​n​d​s​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​n​o​w​ ​t​o​ ​c​h​e​c​k​ ​t​h​e​ ​P​I​N​,​ ​b​e​f​o​r​e​ ​a​n​y​t​h​i​n​g​ ​i​s​ ​p​a​i​d​.
+		 * T​h​i​s​ ​p​h​o​n​e​ ​i​s​n​'​t​ ​t​h​e​ ​c​a​r​d​'​s​ ​o​w​n​e​r​,​ ​s​o​ ​t​h​e​ ​c​a​r​d​ ​a​s​k​s​ ​f​o​r​ ​i​t​s​ ​P​I​N​ ​b​e​f​o​r​e​ ​i​t​ ​t​a​k​e​s​ ​n​e​w​ ​f​u​n​d​s​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​n​o​w​ ​t​o​ ​c​h​e​c​k​ ​t​h​e​ ​P​I​N​,​ ​b​e​f​o​r​e​ ​a​n​y​t​h​i​n​g​ ​i​s​ ​p​a​i​d​.
 		 */
 		topUpPinBody: string
 		/**
@@ -796,7 +694,7 @@ type RootTranslation = {
 		 */
 		topUpCantUnknownUnit: string
 		/**
-		 * T​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​i​s​ ​b​l​o​c​k​e​d​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​t​a​k​e​ ​n​e​w​ ​f​u​n​d​s​.
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​i​s​ ​b​l​o​c​k​e​d​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​t​a​k​e​ ​n​e​w​ ​f​u​n​d​s​.​ ​T​h​e​ ​p​h​o​n​e​ ​t​h​a​t​ ​o​w​n​s​ ​i​t​ ​c​a​n​ ​u​n​b​l​o​c​k​ ​i​t​.
 		 */
 		topUpCantBlocked: string
 		/**
@@ -850,6 +748,216 @@ type RootTranslation = {
 		 * D​o​n​e
 		 */
 		topUpDone: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​n​e​e​d​s​ ​a​n​ ​u​p​d​a​t​e
+		 */
+		needsUpdate: string
+		/**
+		 * F​l​a​s​h​ ​c​a​n​'​t​ ​u​s​e​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​a​n​y​ ​m​o​r​e​.​ ​N​o​t​h​i​n​g​ ​i​s​ ​w​r​i​t​t​e​n​ ​t​o​ ​i​t​ ​a​n​d​ ​n​o​t​h​i​n​g​ ​i​s​ ​s​p​e​n​t​ ​f​r​o​m​ ​i​t​.​ ​C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​t​o​ ​h​a​v​e​ ​i​t​ ​u​p​d​a​t​e​d​.
+		 */
+		needsUpdateBody: string
+		/**
+		 * N​e​e​d​s​ ​a​n​ ​u​p​d​a​t​e
+		 */
+		needsUpdateShort: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​n​'​t​ ​s​e​t​ ​u​p
+		 */
+		notSetUpTitle: string
+		/**
+		 * S​e​t​ ​i​t​ ​u​p​ ​b​e​f​o​r​e​ ​y​o​u​ ​l​o​a​d​ ​i​t​.​ ​A​n​ ​e​m​p​t​y​ ​c​a​r​d​ ​t​h​a​t​ ​h​a​s​n​'​t​ ​b​e​e​n​ ​s​e​t​ ​u​p​ ​b​e​l​o​n​g​s​ ​t​o​ ​t​h​e​ ​f​i​r​s​t​ ​p​h​o​n​e​ ​t​h​a​t​ ​s​e​t​s​ ​i​t​ ​u​p​.
+		 */
+		notSetUpBody: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​i​s​ ​b​l​o​c​k​e​d
+		 */
+		blockedTitle: string
+		/**
+		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​.​ ​S​e​t​ ​a​ ​n​e​w​ ​P​I​N​ ​t​o​ ​u​n​b​l​o​c​k​ ​i​t​.
+		 */
+		blockedOwnerBody: string
+		/**
+		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​.​ ​O​n​l​y​ ​t​h​e​ ​p​h​o​n​e​ ​t​h​a​t​ ​o​w​n​s​ ​t​h​i​s​ ​c​a​r​d​ ​c​a​n​ ​u​n​b​l​o​c​k​ ​i​t​.
+		 */
+		blockedOtherBody: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​n​e​e​d​s​ ​a​ ​r​e​f​r​e​s​h
+		 */
+		refreshNeededTitle: string
+		/**
+		 * O​p​e​n​ ​F​l​a​s​h​ ​w​h​i​l​e​ ​o​n​l​i​n​e​ ​a​n​d​ ​t​a​p​ ​y​o​u​r​ ​c​a​r​d​ ​t​o​ ​r​e​f​r​e​s​h​ ​i​t​.
+		 */
+		refreshNeededBody: string
+		/**
+		 * O​w​n​e​r
+		 */
+		ownerRow: string
+		/**
+		 * T​h​i​s​ ​p​h​o​n​e
+		 */
+		ownerThisPhone: string
+		/**
+		 * A​n​o​t​h​e​r​ ​p​h​o​n​e
+		 */
+		ownerOther: string
+		/**
+		 * N​o​n​e​ ​y​e​t
+		 */
+		ownerNone: string
+		/**
+		 * T​h​i​s​ ​p​h​o​n​e​ ​i​s​n​'​t​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​o​w​n​e​r​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​c​h​a​n​g​e​ ​t​h​a​t​.
+		 */
+		notOwner: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​n​o​ ​o​w​n​e​r​ ​y​e​t​.​ ​S​e​t​ ​i​t​ ​u​p​ ​f​i​r​s​t​.
+		 */
+		noOwner: string
+		/**
+		 * A​s​ ​t​h​e​ ​c​a​r​d​'​s​ ​o​w​n​e​r​ ​y​o​u​ ​c​a​n​ ​s​e​t​ ​a​ ​n​e​w​ ​P​I​N​ ​w​i​t​h​o​u​t​ ​t​h​e​ ​o​l​d​ ​o​n​e​.​ ​T​h​i​s​ ​a​l​s​o​ ​u​n​b​l​o​c​k​s​ ​a​ ​b​l​o​c​k​e​d​ ​P​I​N​.
+		 */
+		changePinBody: string
+		/**
+		 * S​e​t​
+	​u​p
+		 */
+		setUp: string
+		/**
+		 * S​e​t​ ​u​p​ ​c​a​r​d
+		 */
+		setUpTitle: string
+		/**
+		 * S​e​t​t​i​n​g​ ​u​p​ ​m​a​k​e​s​ ​t​h​i​s​ ​p​h​o​n​e​ ​t​h​e​ ​c​a​r​d​'​s​ ​o​w​n​e​r​.​ ​O​n​l​y​ ​t​h​e​ ​o​w​n​e​r​ ​c​a​n​ ​l​o​a​d​ ​t​h​e​ ​c​a​r​d​ ​w​i​t​h​o​u​t​ ​i​t​s​ ​P​I​N​,​ ​c​h​a​n​g​e​ ​i​t​s​ ​P​I​N​ ​o​r​ ​s​e​t​ ​i​t​s​ ​l​i​m​i​t​s​.
+		 */
+		setUpIntro: string
+		/**
+		 * A​n​ ​e​m​p​t​y​ ​c​a​r​d​ ​t​h​a​t​ ​h​a​s​n​'​t​ ​b​e​e​n​ ​s​e​t​ ​u​p​ ​b​e​l​o​n​g​s​ ​t​o​ ​t​h​e​ ​f​i​r​s​t​ ​p​h​o​n​e​ ​t​h​a​t​ ​s​e​t​s​ ​i​t​ ​u​p​.
+		 */
+		setUpFirstPhone: string
+		/**
+		 * T​h​e​ ​o​w​n​e​r​ ​k​e​y​ ​c​o​m​e​s​ ​f​r​o​m​ ​y​o​u​r​ ​w​a​l​l​e​t​'​s​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​s​o​ ​r​e​s​t​o​r​i​n​g​ ​t​h​e​ ​p​h​r​a​s​e​ ​o​n​ ​a​ ​n​e​w​ ​p​h​o​n​e​ ​r​e​s​t​o​r​e​s​ ​o​w​n​e​r​s​h​i​p​.
+		 */
+		setUpKeySeed: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​o​w​n​e​r​ ​k​e​y​ ​l​i​v​e​s​ ​o​n​l​y​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.​ ​I​f​ ​y​o​u​ ​l​o​s​e​ ​t​h​e​ ​p​h​o​n​e​,​ ​n​o​b​o​d​y​ ​c​a​n​ ​c​h​a​n​g​e​ ​t​h​e​ ​c​a​r​d​'​s​ ​P​I​N​ ​o​r​ ​l​i​m​i​t​s​ ​a​g​a​i​n​.
+		 */
+		setUpKeyDevice: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​a​ ​P​I​N​ ​f​r​o​m​ ​b​e​f​o​r​e​.​ ​C​h​o​o​s​e​ ​a​ ​n​e​w​ ​o​n​e​ ​t​o​ ​s​e​t​ ​i​t​ ​u​p​.
+		 */
+		setUpPinRequired: string
+		/**
+		 * S​e​t​ ​a​ ​P​I​N
+		 */
+		setUpChoosePin: string
+		/**
+		 * C​o​n​t​i​n​u​e​ ​w​i​t​h​o​u​t​ ​a​ ​P​I​N
+		 */
+		setUpNoPin: string
+		/**
+		 * W​i​t​h​o​u​t​ ​a​ ​P​I​N​,​ ​a​n​y​o​n​e​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​f​r​o​m​ ​i​t​,​ ​u​p​ ​t​o​ ​a​n​y​ ​l​i​m​i​t​s​ ​y​o​u​ ​s​e​t​.​ ​H​o​l​d​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​t​h​e​ ​b​a​c​k​ ​o​f​ ​y​o​u​r​ ​p​h​o​n​e​ ​t​o​ ​s​e​t​ ​i​t​ ​u​p​.
+		 */
+		setUpNoPinNote: string
+		/**
+		 * S​e​t​ ​u​p​ ​c​a​r​d
+		 */
+		setUpTap: string
+		/**
+		 * C​a​r​d​ ​s​e​t​ ​u​p​.​ ​T​h​i​s​ ​p​h​o​n​e​ ​i​s​ ​i​t​s​ ​o​w​n​e​r​.
+		 */
+		setUpDone: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​a​l​r​e​a​d​y​ ​s​e​t​ ​u​p​,​ ​a​n​d​ ​t​h​i​s​ ​p​h​o​n​e​ ​i​s​ ​i​t​s​ ​o​w​n​e​r​.
+		 */
+		setUpAlreadyMine: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​a​n​ ​o​w​n​e​r​.
+		 */
+		setUpAlreadyOwned: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​f​u​n​d​s​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​ ​u​p​.
+		 */
+		setUpInUse: string
+		/**
+		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​b​e​i​n​g​ ​s​e​t​ ​u​p​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​.
+		 */
+		setUpUncertain: string
+		/**
+		 * C​o​u​l​d​n​'​t​ ​s​e​t​ ​u​p​ ​t​h​e​ ​c​a​r​d​.​ ​T​r​y​ ​a​g​a​i​n​.
+		 */
+		setUpFailed: string
+		/**
+		 * L​i​m​i​t​s
+		 */
+		limits: string
+		/**
+		 * C​a​r​d​ ​l​i​m​i​t​s
+		 */
+		limitsTitle: string
+		/**
+		 * L​i​m​i​t​s​ ​a​r​e​ ​o​f​f​ ​u​n​t​i​l​ ​y​o​u​ ​s​e​t​ ​t​h​e​m​.​ ​T​h​e​y​ ​h​o​l​d​ ​e​v​e​n​ ​f​o​r​ ​s​o​m​e​o​n​e​ ​w​h​o​ ​k​n​o​w​s​ ​t​h​e​ ​c​a​r​d​'​s​ ​P​I​N​.
+		 */
+		limitsIntro: string
+		/**
+		 * D​a​i​l​y​ ​l​i​m​i​t​ ​(​s​a​t​s​)
+		 */
+		limitsDaily: string
+		/**
+		 * T​h​e​ ​m​o​s​t​ ​t​h​e​ ​c​a​r​d​ ​c​a​n​ ​s​p​e​n​d​ ​i​n​ ​a​ ​d​a​y​.​ ​0​ ​i​s​ ​n​o​ ​l​i​m​i​t​.
+		 */
+		limitsDailyNote: string
+		/**
+		 * S​i​n​g​l​e​ ​p​a​y​m​e​n​t​ ​l​i​m​i​t​ ​(​s​a​t​s​)
+		 */
+		limitsPayment: string
+		/**
+		 * A​ ​l​a​r​g​e​r​ ​p​a​y​m​e​n​t​ ​m​a​k​e​s​ ​t​h​e​ ​t​i​l​l​ ​w​a​i​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​o​r​k​s​.​ ​0​ ​i​s​ ​n​o​ ​l​i​m​i​t​.
+		 */
+		limitsPaymentNote: string
+		/**
+		 * S​p​e​n​d​ ​w​i​t​h​o​u​t​ ​P​I​N​ ​(​s​a​t​s​ ​a​ ​d​a​y​)
+		 */
+		limitsAllowance: string
+		/**
+		 * W​h​a​t​ ​t​h​e​ ​c​a​r​d​ ​p​a​y​s​ ​i​n​ ​a​ ​d​a​y​ ​w​i​t​h​o​u​t​ ​a​s​k​i​n​g​ ​f​o​r​ ​i​t​s​ ​P​I​N​.​ ​0​ ​a​l​w​a​y​s​ ​a​s​k​s​.
+		 */
+		limitsAllowanceNote: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​n​o​ ​P​I​N​,​ ​s​o​ ​t​h​e​r​e​ ​i​s​ ​n​o​t​h​i​n​g​ ​t​o​ ​s​p​e​n​d​ ​w​i​t​h​o​u​t​.
+		 */
+		limitsAllowanceNoPin: string
+		/**
+		 * D​a​y​s​ ​b​e​t​w​e​e​n​ ​r​e​f​r​e​s​h​e​s
+		 */
+		limitsRollBudget: string
+		/**
+		 * H​o​w​ ​m​a​n​y​ ​d​a​y​s​ ​t​h​e​ ​c​a​r​d​ ​c​o​u​n​t​s​ ​o​n​ ​i​t​s​ ​o​w​n​ ​b​e​f​o​r​e​ ​i​t​ ​n​e​e​d​s​ ​a​ ​r​e​f​r​e​s​h​ ​f​r​o​m​ ​t​h​i​s​ ​p​h​o​n​e​:​ ​1​ ​t​o​ ​3​0​.
+		 */
+		limitsRollBudgetNote: string
+		/**
+		 * S​a​v​e​ ​l​i​m​i​t​s
+		 */
+		limitsSave: string
+		/**
+		 * L​i​m​i​t​s​ ​s​a​v​e​d​.
+		 */
+		limitsSaved: string
+		/**
+		 * E​n​t​e​r​ ​w​h​o​l​e​ ​n​u​m​b​e​r​s​.​ ​D​a​y​s​ ​b​e​t​w​e​e​n​ ​r​e​f​r​e​s​h​e​s​ ​i​s​ ​1​ ​t​o​ ​3​0​.
+		 */
+		limitsInvalid: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​n​'​t​ ​s​e​t​ ​u​p​ ​y​e​t​.​ ​S​e​t​ ​i​t​ ​u​p​,​ ​t​h​e​n​ ​t​o​p​ ​u​p​.
+		 */
+		topUpCantNotSetUp: string
+		/**
+		 * T​h​i​s​ ​p​h​o​n​e​ ​i​s​n​'​t​ ​t​h​e​ ​c​a​r​d​'​s​ ​o​w​n​e​r​,​ ​s​o​ ​t​h​e​ ​c​a​r​d​ ​a​s​k​s​ ​f​o​r​ ​i​t​s​ ​P​I​N​.
+		 */
+		topUpNotOwner: string
+		/**
+		 * A​ ​t​o​p​-​u​p​ ​o​f​ ​{​a​m​o​u​n​t​}​ ​w​a​s​ ​m​a​d​e​ ​f​o​r​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​o​l​d​ ​s​o​f​t​w​a​r​e​.​ ​I​t​'​s​ ​k​e​p​t​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​:​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​t​o​ ​r​e​c​o​v​e​r​ ​i​t​.
+		 * @param {unknown} amount
+		 */
+		topUpUnfinishedNeedsUpdate: RequiredParams<'amount'>
 	}
 	Cashout: {
 		/**
@@ -7733,33 +7841,9 @@ export type TranslationFunctions = {
 		 */
 		noPinTitle: () => LocalizedString
 		/**
-		 * Anyone holding this card can spend from it or load it.
+		 * Anyone holding this card can spend from it, up to any limits its owner sets.
 		 */
 		noPinBody: () => LocalizedString
-		/**
-		 * Three wrong entries turn this PIN off
-		 */
-		pinSetBypassableTitle: () => LocalizedString
-		/**
-		 * On this card's software, three wrong PIN entries in a row switch the PIN check off, and then anyone holding the card can spend from it. The PIN won't stop someone who has the card.
-		 */
-		pinSetBypassableBody: () => LocalizedString
-		/**
-		 * This card no longer asks for a PIN
-		 */
-		blockedOpenTitle: () => LocalizedString
-		/**
-		 * The PIN was entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. It can't be unblocked. Move the value off it.
-		 */
-		blockedOpenBody: () => LocalizedString
-		/**
-		 * This card is blocked
-		 */
-		blockedLockedTitle: () => LocalizedString
-		/**
-		 * The PIN was entered wrong too many times. The card refuses to spend and can't be unblocked.
-		 */
-		blockedLockedBody: () => LocalizedString
 		/**
 		 * PIN state unknown
 		 */
@@ -7779,11 +7863,6 @@ export type TranslationFunctions = {
 		 */
 		changePin: () => LocalizedString
 		/**
-		 * Remove
-	PIN
-		 */
-		removePin: () => LocalizedString
-		/**
 		 * Set card PIN
 		 */
 		setPinTitle: () => LocalizedString
@@ -7791,18 +7870,6 @@ export type TranslationFunctions = {
 		 * Change card PIN
 		 */
 		changePinTitle: () => LocalizedString
-		/**
-		 * Remove card PIN
-		 */
-		removePinTitle: () => LocalizedString
-		/**
-		 * Remove this card's PIN?
-		 */
-		removePinStep: () => LocalizedString
-		/**
-		 * Current PIN
-		 */
-		currentPin: () => LocalizedString
 		/**
 		 * New PIN
 		 */
@@ -7820,31 +7887,15 @@ export type TranslationFunctions = {
 		 */
 		pinMismatch: () => LocalizedString
 		/**
-		 * Choose a PIN different from the current one
-		 */
-		pinSameAsCurrent: () => LocalizedString
-		/**
-		 * Once set, a PIN can be changed but never removed. Three wrong entries block the card for good, so pick one you will remember.
+		 * Pick a PIN you will remember. Three wrong entries block it, and only the phone that owns the card can unblock it.
 		 */
 		setPinWarning: () => LocalizedString
-		/**
-		 * Once set, a PIN can be changed but never removed. Pick one you will remember: on this card's software, three wrong entries in a row switch the PIN check off.
-		 */
-		setPinWarningOpen: () => LocalizedString
-		/**
-		 * A PIN can be changed or removed on this card, with the current PIN. Three wrong entries block the card for good, so pick one you will remember.
-		 */
-		setPinWarningRemovable: () => LocalizedString
-		/**
-		 * A PIN can be changed or removed on this card, with the current PIN. Pick one you will remember: on this card's software, three wrong entries in a row switch the PIN check off.
-		 */
-		setPinWarningRemovableOpen: () => LocalizedString
 		/**
 		 * Hold the card to the back of your phone to apply
 		 */
 		tapToApply: () => LocalizedString
 		/**
-		 * PIN set. The card now asks for it before it spends or loads.
+		 * PIN set. The card now asks for it before it pays, unless a payment fits its no-PIN allowance.
 		 */
 		pinSet: () => LocalizedString
 		/**
@@ -7852,45 +7903,13 @@ export type TranslationFunctions = {
 		 */
 		pinChanged: () => LocalizedString
 		/**
-		 * The card will stop asking for a PIN before it spends or loads. You can set a new one later.
-		 */
-		removePinBody: () => LocalizedString
-		/**
-		 * Remove PIN
-		 */
-		removePinConfirm: () => LocalizedString
-		/**
-		 * PIN removed. Anyone holding this card can now spend from it or load it.
-		 */
-		removePinDone: () => LocalizedString
-		/**
-		 * PIN removed. The card removed it during the tap that was cut short.
-		 */
-		removePinDoneEarlier: () => LocalizedString
-		/**
-		 * The tap was cut short while the card was removing the PIN. Tap the card again to finish: if the PIN is already gone, the card says so.
-		 */
-		removePinUncertain: () => LocalizedString
-		/**
-		 * This card has no PIN to remove.
-		 */
-		pinAlreadyUnset: () => LocalizedString
-		/**
 		 * Wrong PIN. Tries left before the card blocks: {tries}.
 		 */
 		wrongPin: (arg: { tries: number }) => LocalizedString
 		/**
-		 * Wrong PIN. Tries left before the PIN check switches off: {tries}.
-		 */
-		wrongPinOpen: (arg: { tries: number }) => LocalizedString
-		/**
-		 * The PIN has been entered wrong too many times. The card is blocked and must be replaced.
+		 * The PIN has been entered wrong too many times and is now blocked. The phone that owns the card can unblock it by setting a new PIN.
 		 */
 		cardNowBlocked: () => LocalizedString
-		/**
-		 * The PIN has been entered wrong too many times, and on this card's software that switches the PIN check off: anyone holding the card can spend its balance. Move the value off it.
-		 */
-		cardNowOpen: () => LocalizedString
 		/**
 		 * That is a different card. Tap the card this screen is showing.
 		 */
@@ -7900,37 +7919,25 @@ export type TranslationFunctions = {
 		 */
 		notCashuCard: () => LocalizedString
 		/**
-		 * This card is locked against changes, so its PIN can't be set or changed.
+		 * This card is locked against changes.
 		 */
 		cardLocked: () => LocalizedString
-		/**
-		 * This card is locked against changes, so its PIN can't be removed.
-		 */
-		cardLockedRemove: () => LocalizedString
 		/**
 		 * The card refused the change. Try again.
 		 */
 		cardRefused: () => LocalizedString
 		/**
-		 * The tap was cut short while the card was saving the new PIN. It may already use the new PIN: try the new one first.
+		 * The tap was cut short while the card was saving the new PIN. Tap the card again to finish.
 		 */
 		pinChangeUncertain: () => LocalizedString
 		/**
-		 * The tap was cut short while the card was saving the PIN. It may already use this PIN: confirm it and tap the card again to finish.
+		 * The tap was cut short while the card was saving the PIN. Confirm it and tap the card again to finish.
 		 */
 		pinSetUncertain: () => LocalizedString
-		/**
-		 * PIN set. The card saved it during the tap that was cut short.
-		 */
-		pinSetEarlier: () => LocalizedString
 		/**
 		 * No Cashu card found. Hold the card steady and try again.
 		 */
 		cardNotFound: () => LocalizedString
-		/**
-		 * This card already has a PIN. Change it instead.
-		 */
-		pinAlreadySet: () => LocalizedString
 		/**
 		 * Digits entered: {count}
 		 */
@@ -8029,7 +8036,7 @@ export type TranslationFunctions = {
 		 */
 		topUpPinTitle: () => LocalizedString
 		/**
-		 * The card asks for its PIN before it takes new funds. Tap the card now to check the PIN, before anything is paid.
+		 * This phone isn't the card's owner, so the card asks for its PIN before it takes new funds. Tap the card now to check the PIN, before anything is paid.
 		 */
 		topUpPinBody: () => LocalizedString
 		/**
@@ -8145,7 +8152,7 @@ export type TranslationFunctions = {
 		 */
 		topUpCantUnknownUnit: () => LocalizedString
 		/**
-		 * This card's PIN is blocked, so it can't take new funds.
+		 * This card's PIN is blocked, so it can't take new funds. The phone that owns it can unblock it.
 		 */
 		topUpCantBlocked: () => LocalizedString
 		/**
@@ -8196,6 +8203,215 @@ export type TranslationFunctions = {
 		 * Done
 		 */
 		topUpDone: () => LocalizedString
+		/**
+		 * This card needs an update
+		 */
+		needsUpdate: () => LocalizedString
+		/**
+		 * Flash can't use this card's software any more. Nothing is written to it and nothing is spent from it. Contact support to have it updated.
+		 */
+		needsUpdateBody: () => LocalizedString
+		/**
+		 * Needs an update
+		 */
+		needsUpdateShort: () => LocalizedString
+		/**
+		 * This card isn't set up
+		 */
+		notSetUpTitle: () => LocalizedString
+		/**
+		 * Set it up before you load it. An empty card that hasn't been set up belongs to the first phone that sets it up.
+		 */
+		notSetUpBody: () => LocalizedString
+		/**
+		 * This card's PIN is blocked
+		 */
+		blockedTitle: () => LocalizedString
+		/**
+		 * The PIN was entered wrong too many times. Set a new PIN to unblock it.
+		 */
+		blockedOwnerBody: () => LocalizedString
+		/**
+		 * The PIN was entered wrong too many times. Only the phone that owns this card can unblock it.
+		 */
+		blockedOtherBody: () => LocalizedString
+		/**
+		 * This card needs a refresh
+		 */
+		refreshNeededTitle: () => LocalizedString
+		/**
+		 * Open Flash while online and tap your card to refresh it.
+		 */
+		refreshNeededBody: () => LocalizedString
+		/**
+		 * Owner
+		 */
+		ownerRow: () => LocalizedString
+		/**
+		 * This phone
+		 */
+		ownerThisPhone: () => LocalizedString
+		/**
+		 * Another phone
+		 */
+		ownerOther: () => LocalizedString
+		/**
+		 * None yet
+		 */
+		ownerNone: () => LocalizedString
+		/**
+		 * This phone isn't this card's owner, so it can't change that.
+		 */
+		notOwner: () => LocalizedString
+		/**
+		 * This card has no owner yet. Set it up first.
+		 */
+		noOwner: () => LocalizedString
+		/**
+		 * As the card's owner you can set a new PIN without the old one. This also unblocks a blocked PIN.
+		 */
+		changePinBody: () => LocalizedString
+		/**
+		 * Set
+	up
+		 */
+		setUp: () => LocalizedString
+		/**
+		 * Set up card
+		 */
+		setUpTitle: () => LocalizedString
+		/**
+		 * Setting up makes this phone the card's owner. Only the owner can load the card without its PIN, change its PIN or set its limits.
+		 */
+		setUpIntro: () => LocalizedString
+		/**
+		 * An empty card that hasn't been set up belongs to the first phone that sets it up.
+		 */
+		setUpFirstPhone: () => LocalizedString
+		/**
+		 * The owner key comes from your wallet's recovery phrase, so restoring the phrase on a new phone restores ownership.
+		 */
+		setUpKeySeed: () => LocalizedString
+		/**
+		 * This card's owner key lives only on this phone. If you lose the phone, nobody can change the card's PIN or limits again.
+		 */
+		setUpKeyDevice: () => LocalizedString
+		/**
+		 * This card already has a PIN from before. Choose a new one to set it up.
+		 */
+		setUpPinRequired: () => LocalizedString
+		/**
+		 * Set a PIN
+		 */
+		setUpChoosePin: () => LocalizedString
+		/**
+		 * Continue without a PIN
+		 */
+		setUpNoPin: () => LocalizedString
+		/**
+		 * Without a PIN, anyone holding the card can spend from it, up to any limits you set. Hold the card to the back of your phone to set it up.
+		 */
+		setUpNoPinNote: () => LocalizedString
+		/**
+		 * Set up card
+		 */
+		setUpTap: () => LocalizedString
+		/**
+		 * Card set up. This phone is its owner.
+		 */
+		setUpDone: () => LocalizedString
+		/**
+		 * This card is already set up, and this phone is its owner.
+		 */
+		setUpAlreadyMine: () => LocalizedString
+		/**
+		 * This card already has an owner.
+		 */
+		setUpAlreadyOwned: () => LocalizedString
+		/**
+		 * This card holds funds, so it can't be set up.
+		 */
+		setUpInUse: () => LocalizedString
+		/**
+		 * The tap was cut short while the card was being set up. Tap the card again to finish.
+		 */
+		setUpUncertain: () => LocalizedString
+		/**
+		 * Couldn't set up the card. Try again.
+		 */
+		setUpFailed: () => LocalizedString
+		/**
+		 * Limits
+		 */
+		limits: () => LocalizedString
+		/**
+		 * Card limits
+		 */
+		limitsTitle: () => LocalizedString
+		/**
+		 * Limits are off until you set them. They hold even for someone who knows the card's PIN.
+		 */
+		limitsIntro: () => LocalizedString
+		/**
+		 * Daily limit (sats)
+		 */
+		limitsDaily: () => LocalizedString
+		/**
+		 * The most the card can spend in a day. 0 is no limit.
+		 */
+		limitsDailyNote: () => LocalizedString
+		/**
+		 * Single payment limit (sats)
+		 */
+		limitsPayment: () => LocalizedString
+		/**
+		 * A larger payment makes the till wait while the card works. 0 is no limit.
+		 */
+		limitsPaymentNote: () => LocalizedString
+		/**
+		 * Spend without PIN (sats a day)
+		 */
+		limitsAllowance: () => LocalizedString
+		/**
+		 * What the card pays in a day without asking for its PIN. 0 always asks.
+		 */
+		limitsAllowanceNote: () => LocalizedString
+		/**
+		 * This card has no PIN, so there is nothing to spend without.
+		 */
+		limitsAllowanceNoPin: () => LocalizedString
+		/**
+		 * Days between refreshes
+		 */
+		limitsRollBudget: () => LocalizedString
+		/**
+		 * How many days the card counts on its own before it needs a refresh from this phone: 1 to 30.
+		 */
+		limitsRollBudgetNote: () => LocalizedString
+		/**
+		 * Save limits
+		 */
+		limitsSave: () => LocalizedString
+		/**
+		 * Limits saved.
+		 */
+		limitsSaved: () => LocalizedString
+		/**
+		 * Enter whole numbers. Days between refreshes is 1 to 30.
+		 */
+		limitsInvalid: () => LocalizedString
+		/**
+		 * This card isn't set up yet. Set it up, then top up.
+		 */
+		topUpCantNotSetUp: () => LocalizedString
+		/**
+		 * This phone isn't the card's owner, so the card asks for its PIN.
+		 */
+		topUpNotOwner: () => LocalizedString
+		/**
+		 * A top-up of {amount} was made for this card's old software. It's kept on this phone: contact support to recover it.
+		 */
+		topUpUnfinishedNeedsUpdate: (arg: { amount: unknown }) => LocalizedString
 	}
 	Cashout: {
 		/**

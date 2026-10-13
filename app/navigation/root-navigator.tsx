@@ -14,7 +14,9 @@ import { ContactsDetailScreen, ContactsScreen } from "../screens/contacts-screen
 import {
   CardScreen,
   FlashcardTopup,
+  FlashcardV2LimitsScreen,
   FlashcardV2PinScreen,
+  FlashcardV2SetupScreen,
   FlashcardV2TopUpScreen,
   FlashcardV2Screen,
 } from "../screens/card-screen"
@@ -632,10 +634,25 @@ export const RootStack = () => {
           title: {
             set: LL.FlashcardV2.setPinTitle(),
             change: LL.FlashcardV2.changePinTitle(),
-            remove: LL.FlashcardV2.removePinTitle(),
           }[route.params.mode],
           headerStyle: { backgroundColor: colors.background },
         })}
+      />
+      <RootNavigator.Screen
+        name="FlashcardV2Setup"
+        component={FlashcardV2SetupScreen}
+        options={{
+          title: LL.FlashcardV2.setUpTitle(),
+          headerStyle: { backgroundColor: colors.background },
+        }}
+      />
+      <RootNavigator.Screen
+        name="FlashcardV2Limits"
+        component={FlashcardV2LimitsScreen}
+        options={{
+          title: LL.FlashcardV2.limitsTitle(),
+          headerStyle: { backgroundColor: colors.background },
+        }}
       />
       <RootNavigator.Screen
         name="FlashcardV2TopUp"
