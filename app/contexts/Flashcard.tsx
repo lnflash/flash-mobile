@@ -456,6 +456,11 @@ export const FlashcardProvider = ({ children }: Props) => {
         ? NfcTech.IsoDep
         : await NfcManager.requestTechnology([NfcTech.IsoDep, NfcTech.Ndef])
       if (tech === NfcTech.IsoDep) {
+        // A 2.0 read makes the card sign (AUTH) and, on the owner's phone,
+        // check the owner's proof and take a block header: on-card work that
+        // outlives Android's 618 ms default, which then reports
+        // TagLostException on a card that never moved (see the helper).
+        if (!bridge) await extendCardTimeout()
         let info: CashuCardInfo | null
         // Whose card it is, as the card said in this tap (`tendCard`).
         const ownership: TapOwnership = {}
