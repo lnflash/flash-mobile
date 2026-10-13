@@ -1495,8 +1495,7 @@ export const readCashuCard = async (
   // header, and a clock that moved changed what GET_INFO reports against it.
   // Under the owner's grant GET_INFO also says the limit on one payment, as
   // Foxy asks it again once it knows the phone is the owner.
-  const info =
-    changes?.clockMoved || changes?.granted ? await getInfo(transceive) : read
+  const info = changes?.clockMoved || changes?.granted ? await getInfo(transceive) : read
   const record =
     changes?.clockMoved || changes?.refreshed
       ? await getCardRecord(transceive)

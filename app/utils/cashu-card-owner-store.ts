@@ -317,7 +317,6 @@ export const refreshAsOwner = async (
   transceive: Transceiver,
   cardPubkey: string,
   header: number[],
-  save: typeof saveOwnerKey = saveOwnerKey,
 ): Promise<{ key: OwnerKey; now: number } | undefined> => {
   const key = await ownerKeyFor(cardPubkey)
   if (!key) return undefined
@@ -328,7 +327,7 @@ export const refreshAsOwner = async (
     if (refusedAsNotOwner(err)) return undefined
     throw err
   }
-  return { key: await keepTakenKey(cardPubkey, key, save), now }
+  return { key: await keepTakenKey(cardPubkey, key, saveOwnerKey), now }
 }
 
 export type SetUpArgs = {
