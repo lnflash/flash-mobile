@@ -1,48 +1,38 @@
-# Three wrong current PINs block the card: the screen says so and offers no
-# top-up. UNBLOCK_PIN with the fixture PUK (no in-app screen for it yet, so
-# straight to cardsim), a fresh tap, and the PIN is set again.
+# A card whose PIN was blocked by three wrong tries: the owner's screen says
+# a new PIN unblocks it, and the owner's CHANGE_PIN does (no old PIN, the
+# tries refilled; spec/APDU.md CHANGE_PIN). The owner can still top it up.
 appId: com.lnflash
-name: Flashcard PIN blocked
+name: Flashcard PIN blocked, and unblocked by its owner
 tags: [flashcard]
 ---
 - runFlow: subflows/login.yaml
 - runFlow:
-    file: subflows/card.yaml
+    file: subflows/owner-card.yaml
     env:
-      FIXTURE: loaded
-- tapOn:
-    id: flashcard-v2-action-change-pin
-- repeat:
-    times: 3
-    commands:
-      - runFlow:
-          file: subflows/change-pin.yaml
-          env:
-            CURRENT: "9999"
-            NEW: "5678"
-      - extendedWaitUntil:
-          visible:
-            id: pin-error
-          timeout: 20000
-- tapOn:
-    id: pin-close
+      FIXTURE: blocked
 - extendedWaitUntil:
     visible:
       id: flashcard-v2-blocked
     timeout: 20000
-- assertNotVisible:
+- assertVisible:
     id: flashcard-v2-action-topup
 - runScript: scripts/card-state.js
 - assertTrue: ${output.card.pinState === 2}
-- runScript: scripts/unblock-pin.js
 - tapOn:
-    id: flashcard-v2-refresh
+    id: flashcard-v2-action-change-pin
+- runFlow:
+    file: subflows/new-pin.yaml
+    env:
+      NEW: "1234"
 - extendedWaitUntil:
     visible:
       id: flashcard-v2-action-change-pin
     timeout: 20000
 - assertNotVisible:
     id: flashcard-v2-blocked
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.pinState === 1}
+- assertTrue: ${output.card.tries === 3}
 - runScript:
     file: scripts/verify-pin.js
     env:

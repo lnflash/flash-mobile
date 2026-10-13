@@ -1,16 +1,21 @@
-# A top-up of a card with two spent slots the mint holds SPENT: the load tap
-# frees them (CLEAR_SPENT, ENG-631) and loads the new proofs. The dev pay stub
-# stands in for the Cash wallet's payment (a FakeWallet mint marks its own
-# quote paid), and with it on the Cash balance does not limit the amount, so
-# the flow needs no funded account. A release build always checks the balance
-# (topUpAmountProblem, and its spec).
+# The owner tops up a card with two spent slots the mint holds SPENT: no PIN
+# (the owner's grant, ALLOW_LOAD), the load tap frees the spent slots
+# (CLEAR_SPENT, ENG-631) and loads the new format-4 SIG_ALL pieces, each with
+# the mint's DLEQ proof (LOAD_PROOF P1 = 1). The dev pay stub stands in for
+# the Cash wallet's payment (a FakeWallet mint marks its own quote paid), and
+# with it on the Cash balance does not limit the amount, so the flow needs no
+# funded account. A release build always checks the balance
+# (topUpAmountProblem, and its spec). That such a piece is one the mint takes
+# with the card's one SIG_ALL signature (a swap, NUT-07 SPENT after it) is
+# shown below the UI in the same job, against the same cardsim and mint
+# (__tests__/integration/card-topup-cardsim.spec.ts).
 appId: com.lnflash
 name: Flashcard top-up with reclaim
 tags: [flashcard]
 ---
 - runFlow: subflows/login.yaml
 - runFlow:
-    file: subflows/card.yaml
+    file: subflows/owner-card.yaml
     env:
       FIXTURE: spent
 # The unit is the mint's to name; the top-up refuses a card without one.
@@ -38,19 +43,13 @@ tags: [flashcard]
     id: topup-amount-problem-too-much
 - tapOn:
     id: topup-next
-- extendedWaitUntil:
-    visible:
-      id: topup-pin-entry
-    timeout: 20000
-- runFlow:
-    file: subflows/pin-entry.yaml
-    env:
-      PIN: "1234"
-      NEXT_ID: topup-pin-submit
+# This phone owns the card: no PIN is asked for.
 - extendedWaitUntil:
     visible:
       id: topup-pay
     timeout: 30000
+- assertNotVisible:
+    id: topup-pin-entry
 - tapOn:
     id: topup-pay
 - extendedWaitUntil:
@@ -68,3 +67,5 @@ tags: [flashcard]
 - runScript: scripts/card-state.js
 - assertTrue: ${output.card.counts.spent === 0}
 - assertTrue: ${output.card.balance > 16}
+# Every unspent piece on the card kept the mint's DLEQ proof beside it.
+- runScript: scripts/dleq-kept.js

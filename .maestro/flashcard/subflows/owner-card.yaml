@@ -1,0 +1,10 @@
+# `card.yaml` with this phone the card's owner: the public TEST owner key
+# (cashu-javacard cardctl and cardsim hold it; scripts/e2e/card-fixtures-lib.ts
+# FIXTURE_OWNER_KEY), handed to the app through the dev bridge link.
+appId: com.lnflash
+---
+- runFlow:
+    file: card.yaml
+    env:
+      FIXTURE: ${FIXTURE}
+      OWNER_KEY: d75d4bf6cfab6c4b207b7cc9bcbcb55e5b3403aba69a41a78b8d87887d1cd45a

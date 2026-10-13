@@ -1,0 +1,15 @@
+# The PIN screen on a card this phone owns: NEW, then NEW again. No current
+# PIN: the owner's CHANGE_PIN needs none. The card is tapped (over the
+# bridge) on the last NEXT.
+appId: com.lnflash
+---
+- runFlow:
+    file: pin-entry.yaml
+    env:
+      PIN: ${NEW}
+      NEXT_ID: pin-next
+- runFlow:
+    file: pin-entry.yaml
+    env:
+      PIN: ${NEW}
+      NEXT_ID: pin-next

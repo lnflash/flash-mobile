@@ -1,0 +1,48 @@
+# The owner sets the card's limits: off on a new card (the budget 7), then a
+# daily limit, a payment limit, a no-PIN allowance and a rollover budget, in
+# one tap of the owner's thirteen-byte SET_LIMIT.
+appId: com.lnflash
+name: Flashcard limits
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/owner-card.yaml
+    env:
+      FIXTURE: loaded
+- tapOn:
+    id: flashcard-v2-action-limits
+- extendedWaitUntil:
+    visible:
+      id: limits-intro
+    timeout: 20000
+- assertVisible:
+    id: limits-roll-budget
+    text: "7"
+- tapOn:
+    id: limits-day
+- eraseText: 12
+- inputText: "5000"
+- tapOn:
+    id: limits-payment
+- eraseText: 12
+- inputText: "1000"
+- tapOn:
+    id: limits-allowance
+- eraseText: 12
+- inputText: "250"
+- tapOn:
+    id: limits-roll-budget
+- eraseText: 12
+- inputText: "12"
+- hideKeyboard
+- tapOn:
+    id: limits-save
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-limits
+    timeout: 20000
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.dailyLimit === 5000}
+- assertTrue: ${output.card.allowance === 250}
+- assertTrue: ${output.card.rollBudget === 12}

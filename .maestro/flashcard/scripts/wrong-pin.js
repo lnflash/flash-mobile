@@ -11,11 +11,11 @@ const send = (hex) => {
   if (!response.ok) throw new Error("cardsim /apdu failed: " + response.status)
   return json(response.body).sw
 }
-const select = send("00A4040007D276000085010200")
+const select = send("00A404000AF043415348554341524400")
 if (select !== "9000") throw new Error("SELECT answered " + select)
 // VERIFY_PIN = B0 40 00 00 04 | "9999"
 const verify = send("B040000004" + "39393939")
 if (verify !== EXPECT_SW) {
   throw new Error("VERIFY_PIN 9999 answered " + verify + ", expected " + EXPECT_SW)
 }
-send("00A4040007D276000085010200")
+send("00A404000AF043415348554341524400")

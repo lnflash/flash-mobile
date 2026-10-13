@@ -1,19 +1,19 @@
-# The holder changes the PIN: VERIFY_PIN then CHANGE_PIN in one tap.
+# The owner changes the PIN: no current PIN, the owner's CHANGE_PIN (sealed)
+# in one tap.
 appId: com.lnflash
 name: Flashcard change PIN
 tags: [flashcard]
 ---
 - runFlow: subflows/login.yaml
 - runFlow:
-    file: subflows/card.yaml
+    file: subflows/owner-card.yaml
     env:
       FIXTURE: loaded
 - tapOn:
     id: flashcard-v2-action-change-pin
 - runFlow:
-    file: subflows/change-pin.yaml
+    file: subflows/new-pin.yaml
     env:
-      CURRENT: "1234"
       NEW: "5678"
 - extendedWaitUntil:
     visible:

@@ -1,13 +1,16 @@
 /**
- * Card fixtures for the Flashcard e2e flows (ENG-634): a simulated card
- * (cardsim, lnflash/cashu-javacard tools/cardsim) provisioned through the
- * applet's own APDUs, with proofs minted at a real mint (a local Nutshell on
- * FakeWallet in CI).
+ * Card fixtures for the Flashcard e2e flows (ENG-634; card protocol 2.0,
+ * ENG-675): a simulated card (cardsim, lnflash/cashu-javacard tools/cardsim,
+ * at the ref the workflow pins) provisioned through the applet's own APDUs,
+ * with format-4 SIG_ALL pieces minted at a real mint (a local Nutshell on
+ * FakeWallet in CI), each with the mint's DLEQ proof.
  *
- * Nothing here writes a slot behind the applet's back: proofs go on with
- * LOAD_PROOF, the PIN with SET_PIN, the PUK with SET_PUK, and a spent slot is
- * spent with SPEND_PROOF over the proof's real NUT-11 message and then
- * redeemed at the mint (a NUT-03 swap carrying the card's signature), so the
+ * Nothing here writes a slot behind the applet's back: the owner is set with
+ * SET_OWNER (the public TEST owner key, which the dev bridge link hands the
+ * app too), the PIN with SET_PIN (sealed, as the card takes it), pieces go on
+ * with the owner's ALLOW_LOAD and LOAD_PROOF, and a spent slot is spent by a
+ * real payment (SPEND_ALL_BEGIN, the outputs, SPEND_ALL_SIGN) whose one
+ * SIG_ALL signature is then redeemed at the mint (a NUT-03 swap), so the
  * mint's NUT-07 answer for it is SPENT, as a settled payment's would be. The
  * top-up's reclaim (ENG-631) frees only such slots.
  *
@@ -20,32 +23,37 @@ import {
   Proof,
   SerializedBlindedMessage,
   SerializedBlindedSignature,
+  blindMessage,
   hashToCurve,
 } from "@cashu/cashu-ts"
 import { secp256k1 } from "@noble/curves/secp256k1"
-// @noble/hashes comes in through @noble/curves, as app/utils/crypto.ts takes it.
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { sha256 } from "@noble/hashes/sha256"
 
 import {
   CardError,
   CardInfo,
   Transceiver,
-  buildApdu,
   getBalance,
   getInfo,
-  getProof,
   getPubkey,
   loadProof,
-  parseResponse,
   selectApplet,
+  sendCommand,
   setCardPin,
-  spendProof,
+  setOpenCardRecord,
   toHex,
   verifyCardPin,
 } from "../../app/utils/cashu-card"
 import {
+  CardLimits,
+  TEST_OWNER_PRIVATE_KEY,
+  allowLoad,
+  ownerSigner,
+  setLimits,
+  setOwner,
+} from "../../app/utils/cashu-card-owner"
+import {
   CardSlotProof,
+  buildCardP2PKSecret,
   cardSlotFromProof,
   makeCanonicalCardOutput,
   randomBytes,
@@ -56,11 +64,12 @@ import { signMintQuote } from "../../app/utils/cashu-card-topup/nut20"
 
 export const FIXTURE_NAMES = [
   "fresh",
+  "owned",
   "loaded",
   "spent",
   "full",
   "blocked",
-  "loaded-0.4",
+  "limited",
 ] as const
 export type FixtureName = (typeof FIXTURE_NAMES)[number]
 
@@ -76,38 +85,50 @@ export const PRODUCTION_MINT_HOST = "forge.flashapp.me"
 
 /** The PIN every PIN fixture holds; the flows type it. */
 export const FIXTURE_PIN = "1234"
-/** The PUK every PIN fixture holds: the pin-blocked flow unblocks with it. */
-export const FIXTURE_PUK = "12345678"
 /** A PIN no fixture holds: three of these block a card. */
 export const WRONG_PIN = "9999"
+/**
+ * The owner every fixture but `fresh` has: the public TEST owner key
+ * (cashu-javacard cardctl, cardsim and its client hold the same). The flows
+ * hand it to the app through the dev bridge link (`ownerKey=`), so the app is
+ * this card's owner, and only in a development build.
+ */
+export const FIXTURE_OWNER_KEY = TEST_OWNER_PRIVATE_KEY
+
+/**
+ * The tip the fixture server's header stub answers (`GET /headers/...`, an
+ * Esplora shape): a real mainnet header, the newest of cashu-javacard's
+ * spec/vectors/headers.json, so the card takes it (SET_HEADER, the setup's
+ * anchor) where a header mined for a test would be refused (6A93). The flows
+ * hand the app this stub through the dev bridge link (`headers=`), so no flow
+ * waits on mempool.space.
+ */
+export const FIXTURE_TIP_HEADER = {
+  height: 971100,
+  time: 1791814824,
+  hash: "0000000000000000000174b1a4526c2718f9891c2c77945ed930a2f18959fe92",
+  header:
+    "00c0982393d11d01ce3623e775eb87f8f29d9e607bc98779db0602000000000000000000939a3be21aa361da579fa2578895413d925c780a5667f7b9fcf7a4c279648496a8eccc6af01e021776150c1e",
+}
 
 /** `loaded` and `spent`: 21 sat as 16 + 4 + 1, three slots. */
 export const LOADED_AMOUNTS = [16, 4, 1]
-/** `spent`: the slots spent on the card and redeemed at the mint (the 4 and the 1). */
+/** `spent`: the slots spent on the card by one payment and redeemed at the mint (the 4 and the 1). */
 export const SPENT_SLOTS = [1, 2]
-/** `full`: every one of the card's 32 slots holds 1 sat. */
-export const FULL_SLOTS = 32
-
-/** INS the app never sends, so `cashu-card.ts` has no constant for them (applet 0.6). */
-export const INS_SET_PUK = 0x44
-export const INS_UNBLOCK_PIN = 0x45
-
-/**
- * An older applet build cardsim can answer as (CardSim.java, Version masks):
- * 0.4 has no CLEAR_PIN and no PUK, 0.5 no PUK.
- */
-export type MaskedVersion = "0.4" | "0.5"
+/** `full`: every one of the card's 128 slots holds 1 sat. */
+export const FULL_SLOTS = 128
+/** `limited`: the owner's limits, the rollover budget at its default. */
+export const FIXTURE_LIMITS: CardLimits = {
+  day: 5000,
+  payment: 1000,
+  allowance: 250,
+  rollBudget: 7,
+}
 
 /** The card: a fresh one on `reset`, and its APDU channel. */
 export type FixtureCard = {
-  /** A brand-new card, applet as installed: no PIN, no PUK, no proofs. */
+  /** A brand-new card, applet as installed: no owner, no PIN, no record, no pieces. */
   reset: () => Promise<void>
-  /**
-   * From here on, the card answers every APDU as `version` would: SELECT and
-   * GET_INFO rewritten, the instructions it lacked answered 6D00. Until the
-   * next `reset`.
-   */
-  mask: (version: MaskedVersion) => Promise<void>
   transceive: Transceiver
 }
 
@@ -116,6 +137,8 @@ export type FixtureMint = Pick<
   TopUpMint,
   "activeKeyset" | "createQuote" | "quoteState" | "mint" | "proofStates"
 > & {
+  /** The mint's own URL: the card's record names it. */
+  url: string
   /** NUT-03: the mint's signatures on `outputs`, for `inputs` it then holds SPENT. */
   swap: (
     inputs: Proof[],
@@ -137,12 +160,15 @@ export type FixtureDeps = {
 export type FixtureSummary = {
   name: FixtureName
   pubkey: string
-  /** SELECT's version, through any mask: "0.4" for `loaded-0.4`. */
+  /** SELECT's version: "2.0". */
   version: string
-  /** GET_INFO capability bit 3: the card answers CLEAR_PIN (Remove PIN). */
-  clearPin: boolean
   balance: number
   pinState: CardInfo["pinState"]
+  hasOwner: boolean
+  recordSet: boolean
+  sealed: boolean
+  dailyLimit: number
+  allowance: number
   unspent: number
   spent: number
   empty: number
@@ -155,30 +181,12 @@ const defaultSleep = (ms: number) =>
 
 const QUOTE_POLL_MS = 250
 
-/** SET_PUK: `len ‖ puk` (spec/APDU.md, applet 0.6). */
-export const setPukApdu = (puk: string): number[] => {
-  const bytes = Array.from(puk, (c) => c.charCodeAt(0))
-  return buildApdu(INS_SET_PUK, { data: [bytes.length, ...bytes] })
-}
-
-/** UNBLOCK_PIN: `len ‖ puk ‖ len ‖ new PIN` (spec/APDU.md, applet 0.6). */
-export const unblockPinApdu = (puk: string, newPin: string): number[] => {
-  const pukBytes = Array.from(puk, (c) => c.charCodeAt(0))
-  const pinBytes = Array.from(newPin, (c) => c.charCodeAt(0))
-  return buildApdu(INS_UNBLOCK_PIN, {
-    data: [pukBytes.length, ...pukBytes, pinBytes.length, ...pinBytes],
-  })
-}
-
-const setPuk = async (transceive: Transceiver, puk: string) => {
-  parseResponse(await transceive(setPukApdu(puk)), "SET_PUK")
-}
-
 /**
  * Proofs for `amounts`, minted to the card through a NUT-20 locked sat
- * quote, as the top-up mints them: canonical card outputs, the mint's
- * signatures unblinded and checked (`toProof`), and each one checked to
- * rebuild on this card (`cardSlotFromProof`) before it goes anywhere.
+ * quote, as the top-up mints them: canonical format-4 card outputs, the
+ * mint's signatures unblinded and checked with their DLEQ (`toProof`), and
+ * each one checked to rebuild on this card and to carry its DLEQ
+ * (`cardSlotFromProof`) before it goes anywhere.
  */
 export const mintToCard = async (
   deps: FixtureDeps,
@@ -224,58 +232,108 @@ export const mintToCard = async (
   }
 }
 
+/** The owner's grant, then one LOAD_PROOF per piece with its DLEQ (P1 = 1). */
 const loadSlots = async (transceive: Transceiver, slots: CardSlotProof[]) => {
-  for (const slot of slots) await loadProof(transceive, slot)
+  await allowLoad(transceive, ownerSigner(FIXTURE_OWNER_KEY))
+  for (const slot of slots) {
+    const result = await loadProof(transceive, slot)
+    if (result.alreadyOnCard)
+      throw new Error("fixture: a fresh piece was already on the card")
+  }
 }
 
 /** Y = hash_to_curve(secret): how the mint knows a proof (NUT-07). */
 const proofYOf = (secret: string): string =>
   toHex(hashToCurve(new TextEncoder().encode(secret)).toBytes(true))
 
+/** The spend commands: the app never pays from a card, so only the fixtures name them. */
+export const INS_SPEND_ALL_BEGIN = 0x22
+export const INS_SPEND_ALL_OUTPUTS = 0x23
+export const INS_SPEND_ALL_SIGN = 0x24
+
+const u32 = (n: number) => [24, 16, 8, 0].map((shift) => Math.floor(n / 2 ** shift) % 256)
+
+/** SPEND_ALL_SIGN, sent again while the card answers "not yet" (`00 01`). */
+const spendAllSign = async (transceive: Transceiver): Promise<number[]> => {
+  for (let waits = 0; waits < 1100; waits += 1) {
+    const body = await sendCommand(transceive, INS_SPEND_ALL_SIGN, {
+      le: 0x40,
+      context: "SPEND_ALL_SIGN",
+    })
+    if (body.length === 64) return body
+  }
+  throw new Error("fixture: the card made the payment wait too long")
+}
+
 /**
- * Spends `slot` on the card over its real NUT-11 message (SHA-256 of the
- * secret) and redeems the proof at the mint with the card's signature, then
- * checks the mint holds it SPENT. The change goes to fresh outputs locked to
- * the card and is dropped: the fixture needs the spent slot, not its value.
+ * Spends `slots` on the card in one payment, as a till does (spec/APDU.md,
+ * Payment Flow): SPEND_ALL_BEGIN over the slots, the outputs (fresh secrets,
+ * as a till's own), SPEND_ALL_SIGN under the PIN verified in this tap. Then
+ * redeems the pieces at the mint with the card's one SIG_ALL signature as the
+ * first input's witness, and checks the mint holds them SPENT. The outputs'
+ * value is dropped: the fixture needs the spent slots, not the change.
  */
-const spendAndRedeem = async (
+export const spendAndRedeem = async (
   deps: FixtureDeps,
   transceive: Transceiver,
-  {
-    slot,
-    proof,
-    keyset,
-    cardPubkey,
-  }: { slot: number; proof: Proof; keyset: MintKeys; cardPubkey: string },
+  { slots, proofs }: { slots: number[]; proofs: Proof[] },
 ) => {
-  const onCard = await getProof(transceive, slot)
-  const amount = Amount.from(proof.amount).toNumber()
-  if (onCard.C !== proof.C || onCard.amount !== amount) {
-    throw new Error(`fixture slot ${slot} does not hold the proof it was given`)
-  }
-  const message = Array.from(sha256(new TextEncoder().encode(proof.secret)))
-  const signature = toHex(await spendProof(transceive, slot, message))
+  const total = proofs.reduce(
+    (sum, proof) => sum + Amount.from(proof.amount).toNumber(),
+    0,
+  )
+  const keyset = await deps.mint.activeKeyset("sat")
   // NUT-02: the input fee, in ppk of each input, rounded up.
-  const fee = Math.ceil((keyset.input_fee_ppk ?? 0) / 1000)
-  if (amount <= fee) throw new Error(`fixture slot ${slot} cannot pay its own fee`)
-  const outputs = splitPow2(amount - fee).map((piece) =>
-    makeCanonicalCardOutput(piece, keyset.id, cardPubkey),
-  )
+  const fee = Math.ceil(((keyset.input_fee_ppk ?? 0) * proofs.length) / 1000)
+  if (total <= fee) throw new Error("fixture: the spent slots cannot pay their own fee")
+  const outputs = splitPow2(total - fee).map((amount) => {
+    const secret = new TextEncoder().encode(toHex(randomBytes(32)))
+    const { B_ } = blindMessage(secret)
+    return { amount, id: keyset.id, B_: toHex(B_.toBytes(true)) }
+  })
+  await sendCommand(transceive, INS_SPEND_ALL_BEGIN, {
+    data: slots,
+    le: 0x04,
+    context: "SPEND_ALL_BEGIN",
+  })
+  for (let at = 0; at < outputs.length; at += 6) {
+    await sendCommand(transceive, INS_SPEND_ALL_OUTPUTS, {
+      data: outputs
+        .slice(at, at + 6)
+        .flatMap((o) => [
+          ...u32(o.amount),
+          ...(o.B_.match(/../g) ?? []).map((h) => parseInt(h, 16)),
+        ]),
+      context: "SPEND_ALL_OUTPUTS",
+    })
+  }
+  const signature = toHex(await spendAllSign(transceive))
   await deps.mint.swap(
-    [{ ...proof, witness: JSON.stringify({ signatures: [signature] }) }],
-    outputs.map((output) => output.blindedMessage),
+    proofs.map((proof, i) =>
+      i === 0
+        ? { ...proof, witness: JSON.stringify({ signatures: [signature] }) }
+        : proof,
+    ),
+    outputs.map((o) => ({ ...o, amount: Amount.from(o.amount) })),
   )
-  const [state] = await deps.mint.proofStates([proofYOf(proof.secret)])
-  if (state !== "SPENT") {
-    throw new Error(`fixture slot ${slot} is ${state} at the mint after its swap`)
+  const states = await deps.mint.proofStates(
+    proofs.map((proof) => proofYOf(proof.secret)),
+  )
+  if (states.some((state) => state !== "SPENT")) {
+    throw new Error(
+      `fixture: the spent pieces are ${states.join(", ")} at the mint after the swap`,
+    )
   }
 }
 
 /** Three wrong VERIFY_PINs: 63C2, 63C1, then 6983 and the PIN is blocked. */
-const blockPin = async (transceive: Transceiver) => {
+const blockPin = async (
+  transceive: Transceiver,
+  form: { sealed: boolean; cardPubkey: string },
+) => {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await verifyCardPin(transceive, WRONG_PIN)
+      await verifyCardPin(transceive, WRONG_PIN, form)
       throw new Error("fixture: the card took a wrong PIN")
     } catch (err) {
       if (!(err instanceof CardError)) throw err
@@ -284,15 +342,36 @@ const blockPin = async (transceive: Transceiver) => {
 }
 
 /**
+ * Personalisation as the app's setup does it, one tap, owner last: the PIN
+ * (when given), the record (the fixture mint), then SET_OWNER with the TEST
+ * owner key. No anchor header: CI has no network to fetch one from.
+ */
+const setUp = async (
+  transceive: Transceiver,
+  {
+    pin,
+    mint,
+    form,
+  }: { pin?: string; mint: string; form: { sealed: boolean; cardPubkey: string } },
+) => {
+  if (pin) {
+    await setCardPin(transceive, pin, form)
+    await verifyCardPin(transceive, pin, form)
+  }
+  await setOpenCardRecord(transceive, { mint })
+  await setOwner(transceive, FIXTURE_OWNER_KEY)
+}
+
+/**
  * Provisions `name` on a brand-new card and reads back what it holds:
  *
- * - `fresh`: no PIN, no PUK, no proofs.
- * - `loaded`: 21 sat in three slots, PUK `FIXTURE_PUK`, PIN `FIXTURE_PIN`.
- * - `spent`: `loaded`, with slots 1 and 2 spent and redeemed at the mint.
- * - `full`: 32 slots of 1 sat, no PIN.
+ * - `fresh`: no owner, no PIN, no record, no pieces.
+ * - `owned`: set up (record, TEST owner), no PIN, no pieces.
+ * - `loaded`: set up with PIN `FIXTURE_PIN`, 21 sat in three slots, each with its DLEQ.
+ * - `spent`: `loaded`, with slots 1 and 2 spent by one payment and SPENT at the mint.
+ * - `full`: set up, no PIN, 128 slots of 1 sat.
  * - `blocked`: `loaded`, with the PIN blocked by three wrong tries.
- * - `loaded-0.4`: an applet 0.4 card (no CLEAR_PIN, no PUK) holding the
- *   `loaded` proofs and PIN, and no PUK: no 0.4 build could hold one.
+ * - `limited`: `loaded`, with the owner's limits `FIXTURE_LIMITS`.
  *
  * Every fixture starts from `reset` and ends with a SELECT, so the app's
  * first command finds an unverified session, as a fresh tap does.
@@ -301,54 +380,43 @@ export const loadFixture = async (
   name: FixtureName,
   deps: FixtureDeps,
 ): Promise<FixtureSummary> => {
-  const { card, log = () => undefined } = deps
+  const { card, mint, log = () => undefined } = deps
   const { transceive } = card
   await card.reset()
-  // Masked before the first APDU, on a brand-new card: a mask over a card
-  // that already holds a PUK would be a card no 0.4 build could be
-  // (CardSim.java, Version masks). Everything after goes through the mask, as
-  // the app's own APDUs will.
-  if (name === "loaded-0.4") await card.mask("0.4")
   await selectApplet(transceive)
   const pubkey = toHex(await getPubkey(transceive))
+  const { sealed } = await getInfo(transceive)
+  const form = { sealed, cardPubkey: pubkey }
   log(`card ${pubkey}: ${name}`)
 
+  if (name === "owned") await setUp(transceive, { mint: mint.url, form })
+
   if (name === "full") {
+    await setUp(transceive, { mint: mint.url, form })
     const { slots } = await mintToCard(deps, pubkey, new Array(FULL_SLOTS).fill(1))
     await loadSlots(transceive, slots)
   }
 
-  if (name === "loaded-0.4") {
-    const { slots } = await mintToCard(deps, pubkey, LOADED_AMOUNTS)
-    // Proofs while the card has no PIN, then the PIN. No SET_PUK: a 0.4 card
-    // answers it 6D00.
+  if (name === "loaded" || name === "spent" || name === "blocked" || name === "limited") {
+    await setUp(transceive, { pin: FIXTURE_PIN, mint: mint.url, form })
+    const { proofs, slots } = await mintToCard(deps, pubkey, LOADED_AMOUNTS)
     await loadSlots(transceive, slots)
-    await setCardPin(transceive, FIXTURE_PIN)
-  }
-
-  if (name === "loaded" || name === "spent" || name === "blocked") {
-    const { proofs, slots, keyset } = await mintToCard(deps, pubkey, LOADED_AMOUNTS)
-    // The personalisation order (spec/APDU.md, SET_PUK): proofs and PUK
-    // while the card has no PIN, then the PIN.
-    await loadSlots(transceive, slots)
-    await setPuk(transceive, FIXTURE_PUK)
-    await setCardPin(transceive, FIXTURE_PIN)
     if (name === "spent") {
-      // A new session: the PIN gates SPEND_PROOF, as at a till.
+      // A new session: the PIN gates the payment, as at a till.
       await selectApplet(transceive)
-      await verifyCardPin(transceive, FIXTURE_PIN)
-      for (const slot of SPENT_SLOTS) {
-        await spendAndRedeem(deps, transceive, {
-          slot,
-          proof: proofs[slot],
-          keyset,
-          cardPubkey: pubkey,
-        })
-      }
+      await verifyCardPin(transceive, FIXTURE_PIN, form)
+      await spendAndRedeem(deps, transceive, {
+        slots: SPENT_SLOTS,
+        proofs: SPENT_SLOTS.map((slot) => proofs[slot]),
+      })
     }
     if (name === "blocked") {
       await selectApplet(transceive)
-      await blockPin(transceive)
+      await blockPin(transceive, form)
+    }
+    if (name === "limited") {
+      await selectApplet(transceive)
+      await setLimits(transceive, ownerSigner(FIXTURE_OWNER_KEY), FIXTURE_LIMITS)
     }
   }
 
@@ -360,9 +428,13 @@ export const loadFixture = async (
     name,
     pubkey,
     version: info.version,
-    clearPin: info.clearPin,
     balance,
     pinState: info.pinState,
+    hasOwner: info.hasOwner,
+    recordSet: info.recordSet,
+    sealed: info.sealed,
+    dailyLimit: info.dailyLimit,
+    allowance: info.allowance,
     unspent: info.unspent,
     spent: info.spent,
     empty: info.empty,
@@ -370,3 +442,7 @@ export const loadFixture = async (
   log(JSON.stringify(summary))
   return summary
 }
+
+/** The format-4 secret of a piece on the fixture card (for a spec that rebuilds one). */
+export const fixtureSecret = (nonce: string, cardPubkey: string) =>
+  buildCardP2PKSecret(nonce, cardPubkey)

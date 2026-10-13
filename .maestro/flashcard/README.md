@@ -1,11 +1,12 @@
-# Flashcard e2e flows (ENG-634)
+# Flashcard e2e flows (ENG-634, card protocol 2.0: ENG-675)
 
 Maestro flows that drive the Flashcard v2 screens on an iOS simulator against
-a simulated card. The card is the real cashu-javacard applet running in
-jCardSim behind a loopback HTTP bridge (`tools/cardsim` in
-[lnflash/cashu-javacard](https://github.com/lnflash/cashu-javacard)); the mint
-is a local Nutshell on FakeWallet. No NFC hardware, no phone and no production
-system is involved.
+a simulated card. The card is the real cashu-javacard applet, protocol 2.0,
+running in jCardSim behind a loopback HTTP bridge (`tools/cardsim` in
+[lnflash/cashu-javacard](https://github.com/lnflash/cashu-javacard), at the
+ref the workflow pins in `CASHU_JAVACARD_REF`; its `tools/cardsim/README.md`
+is the bridge's contract); the mint is a local Nutshell 0.20.3 on FakeWallet.
+No NFC hardware, no phone and no production system is involved.
 
 ## How the app reaches the card
 
@@ -16,6 +17,11 @@ Development builds only (`__DEV__`); a release build contains none of it.
   stub: the Cash wallet's payment of the mint's invoice is skipped and reads
   as paid. The production mint is refused as a dev mint, and the stub needs a
   dev mint. `flash://dev/card-bridge?off=1` goes back to NFC.
+- `&ownerKey=<64 hex>` makes the app prove ownership with that P-256 key: the
+  public TEST owner key every fixture but `fresh` is owned by
+  (`subflows/owner-card.yaml`). Without it the app is a phone that is not the
+  card's owner. `&headers=<url>` points the card's clock at the fixture
+  server's header stub instead of mempool.space and blockstream.info.
 - `flash://dev/card-tap` taps the card, as the card controls do.
 - The developer screen has the same controls (Card bridge section).
 - Nothing is persisted: every flow sets the bridge again after its launch.
@@ -24,25 +30,36 @@ Development builds only (`__DEV__`); a release build contains none of it.
 
 `node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve` answers
 `POST /load/<name>` and provisions a brand-new card through the applet's own
-commands, with proofs minted at the dev mint:
+commands (owner last: the PIN, the record, SET_OWNER with the TEST owner key;
+then the owner's ALLOW_LOAD and one LOAD_PROOF per piece, with the mint's
+DLEQ), with format-4 SIG_ALL pieces minted at the dev mint. It also serves the
+tip header stub at `/headers` (a real mainnet header, `FIXTURE_TIP_HEADER`).
 
-| Fixture      | Card                                                                          |
-| ------------ | ----------------------------------------------------------------------------- |
-| `fresh`      | empty, no PIN                                                                 |
-| `loaded`     | 21 sat in 3 slots (16, 4, 1), PUK `12345678`, PIN `1234`                      |
-| `spent`      | `loaded`, with slots 1 and 2 spent on the card and SPENT at the mint          |
-| `full`       | 32 slots of 1 sat, no PIN                                                     |
-| `blocked`    | `loaded`, PIN blocked by three wrong tries                                    |
-| `loaded-0.4` | `loaded` on an applet 0.4 card (cardsim's version mask): no PUK, no CLEAR_PIN |
+| Fixture   | Card                                                                                  |
+| --------- | ------------------------------------------------------------------------------------- |
+| `fresh`   | empty, no owner, no record, no PIN                                                    |
+| `owned`   | set up, owned by the TEST key, no PIN, empty                                          |
+| `loaded`  | `owned` with PIN `1234` and 21 sat in 3 slots (16, 4, 1)                              |
+| `spent`   | `loaded`, with slots 1 and 2 spent on the card by one payment and SPENT at the mint   |
+| `full`    | `owned`, all 128 slots of 1 sat                                                       |
+| `blocked` | `loaded`, PIN blocked by three wrong tries                                            |
+| `limited` | `loaded`, with the owner's limits (5,000 a day, 1,000 a payment, 250 without the PIN) |
+
+There is no `legacy` fixture: cardsim serves only the 2.0 applet, so "This
+card needs an update" (a 0.x or Foxy 1.x card) is pinned by the unit specs
+(`__tests__/utils/cashu-card.spec.ts`, `__tests__/contexts/flashcard-cashu-card.spec.tsx`).
 
 ## Flows
 
-`balance-read`, `set-pin`, `change-pin`, `remove-pin`, `pin-wrong-then-right`,
-`pin-blocked` (three wrong PINs, then `UNBLOCK_PIN` straight to the bridge:
-there is no in-app unblock yet), `topup` (reclaims the two spent slots and
-loads), `topup-full` (no room), `remove-pin-absent-0.4` (a 0.4 card offers
-no Remove PIN). Every flow signs in from a clean install
-(`subflows/login.yaml`), with the Keychain cleared: top-up records live there.
+`balance-read`, `setup-owner` (a fresh card set up in one tap, owner last),
+`set-pin` (the owner adds a PIN under its grant), `change-pin` (the owner's
+CHANGE_PIN, no old PIN), `pin-wrong-then-right` (a phone that is not the
+owner checks the PIN before a top-up), `pin-blocked` (the owner's CHANGE_PIN
+unblocks a blocked PIN), `limits` (the owner's SET_LIMIT, rollover budget
+included), `topup` (the owner's grant, no PIN; reclaims the two spent slots
+and loads pieces with their DLEQ), `topup-full` (no room). Every flow signs
+in from a clean install (`subflows/login.yaml`), with the Keychain cleared:
+top-up records and owner keys live there.
 
 Assertions use testIDs, not text, so the device locale does not matter. Taps
 use testIDs too; no flow taps a screen coordinate.
@@ -54,8 +71,14 @@ use testIDs too; no flow taps a screen coordinate.
 mvn -B -f tools/cardsim/pom.xml package -DskipTests
 java -jar tools/cardsim/target/cardsim.jar --port 9876
 
-# Nutshell on FakeWallet, v1 keyset ids (a card slot holds an 8-byte id)
-pip install cashu==0.21.0 "marshmallow<4" "limits<4"
+# Nutshell 0.20.3 on FakeWallet, v1 keyset ids (a card slot holds an 8-byte
+# id): forge's shape. 0.20.3 pins a breez-sdk-spark range PyPI no longer has,
+# and FakeWallet never uses it, so it is installed without its dependencies
+# and they are installed beside it with breez-sdk-spark 0.17.0 (python 3.10+).
+python -m venv .nutshell && . .nutshell/bin/activate
+pip install --no-deps "cashu==0.20.3"
+python -c 'import importlib.metadata as m, re; print("\n".join(re.sub(r" \((.*)\)", r"\1", r) for r in m.requires("cashu") if not r.startswith("breez")))' > nutshell-deps.txt
+pip install -r nutshell-deps.txt "breez-sdk-spark==0.17.0" "marshmallow<4" "limits<4"
 VERSION=0.19.2 MINT_PRIVATE_KEY=e2e-local-only \
   MINT_BACKEND_BOLT11_SAT=FakeWallet MINT_LISTEN_PORT=3338 \
   MINT_INPUT_FEE_PPK=0 MINT_RATE_LIMIT=FALSE FAKEWALLET_DELAY_INCOMING_PAYMENT=0 mint

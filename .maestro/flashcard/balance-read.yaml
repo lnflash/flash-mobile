@@ -1,11 +1,13 @@
-# A tap reads the loaded card: 21 sat, the mint names the unit, PIN set.
+# A tap reads the loaded card (2.0: SELECT, GET_INFO, GET_PUBKEY, AUTH,
+# GET_CARD, the clock, GET_BALANCE, the pieces): 21 sat, the mint names the
+# unit, the PIN set, this phone the owner.
 appId: com.lnflash
 name: Flashcard balance read
 tags: [flashcard]
 ---
 - runFlow: subflows/login.yaml
 - runFlow:
-    file: subflows/card.yaml
+    file: subflows/owner-card.yaml
     env:
       FIXTURE: loaded
 - extendedWaitUntil:
@@ -16,9 +18,16 @@ tags: [flashcard]
 - assertVisible:
     id: flashcard-v2-action-change-pin
 - assertVisible:
+    id: flashcard-v2-action-limits
+- assertVisible:
+    id: flashcard-v2-owner
+- assertNotVisible:
     id: flashcard-v2-action-remove-pin
 - assertNotVisible:
     id: flashcard-v2-no-pin
+# The read fed the card's clock the stub's tip header.
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.now === 1791814824}
 # A second tap reads the same card again.
 - tapOn:
     id: flashcard-v2-refresh
