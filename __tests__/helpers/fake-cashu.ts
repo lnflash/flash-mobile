@@ -355,6 +355,8 @@ export type FakeCard = {
   record: () => { set: boolean; mint: string }
   /** The owner's limits as the card holds them. */
   limits: () => { day: number; payment: number; allowance: number; rollBudget: number }
+  /** How often the window has rolled since the owner's last REFRESH. */
+  rolls: () => number
   /** The card's public key, 33 bytes hex. */
   pubkey: string
 }
@@ -382,6 +384,15 @@ export type FakeCardOptions = {
   legacy?: "0.x" | "1.x"
   /** Answer AUTH with this tampered signature, as a card that is not the key it reported. */
   badAuth?: boolean
+  /** How often the day's window has rolled since the owner's last REFRESH (GET_CARD byte 76). 0 by default. */
+  rolls?: number
+  /** The owner's limits the card ships with; all off, budget 7, by default. */
+  limits?: Partial<{
+    day: number
+    payment: number
+    allowance: number
+    rollBudget: number
+  }>
 }
 
 const hexToBytes = (hex: string): number[] =>
@@ -426,6 +437,8 @@ export const createFakeCard = (
     version = [2, 0],
     legacy,
     badAuth = false,
+    rolls: initialRolls = 0,
+    limits: initialLimits = {},
   }: FakeCardOptions = {},
 ): FakeCard => {
   const slots: number[][] = Array.from({ length: maxSlots }, () =>
@@ -446,8 +459,8 @@ export const createFakeCard = (
   let recordSet = recordOption ?? owner !== undefined
   let mintUrl = recordSet ? "https://mint.test" : ""
   let now = 0
-  let rolls = 0
-  let limits = { day: 0, payment: 0, allowance: 0, rollBudget: 7 }
+  let rolls = initialRolls
+  let limits = { day: 0, payment: 0, allowance: 0, rollBudget: 7, ...initialLimits }
   let payment: { slots: number[]; outputs: number[][] } | undefined
 
   const pinOf = (bytes: number[]) => String.fromCharCode(...bytes)
@@ -924,6 +937,7 @@ export const createFakeCard = (
     now: () => now,
     record: () => ({ set: recordSet, mint: mintUrl }),
     limits: () => limits,
+    rolls: () => rolls,
     pubkey,
   }
 }

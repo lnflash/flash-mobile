@@ -37,9 +37,12 @@ import {
   CardNotOpenError,
   OwnerKeyStoreError,
   SEED_SERVER,
+  confirmOwnerKey,
+  loadSeed,
   newOwnerKey,
   ownerKeyFor,
   ownerKeyStore,
+  resetSeedCache,
   saveOwnerKey,
   savedOwnerKeyFor,
   setUpCard,
@@ -113,6 +116,7 @@ beforeEach(async () => {
   await Keychain.resetInternetCredentials({ server: OWNER_SERVER })
   await Keychain.resetInternetCredentials({ server: SEED_SERVER })
   setCardBridge(undefined)
+  resetSeedCache()
   jest.clearAllMocks()
 })
 
@@ -391,6 +395,110 @@ describe("ownerKeyFor", () => {
       source: "device",
       saved: true,
     })
+  })
+})
+
+describe("loadSeed", () => {
+  it("runs the seed's PBKDF2 once per mnemonic per session, and again for a different mnemonic", async () => {
+    const pbkdf2 = jest.spyOn(bip39, "mnemonicToSeedSync")
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const first = await loadSeed()
+    const again = await loadSeed()
+    expect(again).toBe(first)
+    expect(pbkdf2).toHaveBeenCalledTimes(1)
+    const other =
+      "legal winner thank year wave sausage worth useful legal winner thank yellow"
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, other)
+    await expect(loadSeed()).resolves.toEqual(
+      Uint8Array.from(bip39.mnemonicToSeedSync(other)),
+    )
+    expect(pbkdf2).toHaveBeenCalledTimes(3)
+    pbkdf2.mockRestore()
+  })
+
+  it("has none when the phone has no seed, or one that is not a phrase", async () => {
+    await expect(loadSeed()).resolves.toBeUndefined()
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, "not a phrase")
+    await expect(loadSeed()).resolves.toBeUndefined()
+  })
+})
+
+describe("confirmOwnerKey: holding a key is not owning the card (Foxy's cardGrant)", () => {
+  const seed = Uint8Array.from(bip39.mnemonicToSeedSync(MNEMONIC))
+
+  it("a seed's key the card refuses (6A91: another phone's card) is not this phone's, and is not saved", async () => {
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const card = createFakeCard(128, { owner: FAKE_OWNER_KEY })
+    await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toBeUndefined()
+    expect(card.ins()).toEqual([0x44, 0x45])
+    expect(card.granted()).toBe(false)
+    await expect(ownerKeyStore.get(card.pubkey)).resolves.toBeUndefined()
+  })
+
+  it("a seed's key the card takes (a phone restored from the seed) is this phone's, and is saved for the next tap", async () => {
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const pubkey = createFakeCard(1).pubkey
+    const key = deriveOwnerKey(seed, pubkey)
+    const card = createFakeCard(128, { owner: key })
+    await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toEqual({
+      privateKey: key,
+      source: "seed",
+      saved: true,
+    })
+    expect(card.granted()).toBe(true)
+    await expect(ownerKeyStore.get(card.pubkey)).resolves.toMatchObject({
+      privateKey: key,
+      source: "seed",
+    })
+    // The next read asks nothing: the saved key is one the card took.
+    const next = createFakeCard(128, { owner: key })
+    await expect(confirmOwnerKey(next.transceive, next.pubkey)).resolves.toMatchObject({
+      saved: true,
+    })
+    expect(next.ins()).toEqual([])
+  })
+
+  it("a key the card took is this phone's even when the Keychain will not keep it now", async () => {
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const pubkey = createFakeCard(1).pubkey
+    const card = createFakeCard(128, { owner: deriveOwnerKey(seed, pubkey) })
+    const save = jest.fn(async () => {
+      throw new OwnerKeyStoreError("the owner key was not saved")
+    })
+    await expect(
+      confirmOwnerKey(card.transceive, card.pubkey, save),
+    ).resolves.toMatchObject({ source: "seed", saved: false })
+  })
+
+  it("asks the card nothing for a phone with no key, a saved key or the dev bridge's", async () => {
+    const card = createFakeCard(128, { owner: FAKE_OWNER_KEY })
+    await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toBeUndefined()
+    await ownerKeyStore.put(card.pubkey, {
+      privateKey: FAKE_OWNER_KEY,
+      source: "device",
+      createdAt: 1,
+    })
+    await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toMatchObject({
+      source: "device",
+      saved: true,
+    })
+    setCardBridge({ url: "http://localhost:9876", ownerKey: TEST_OWNER_PRIVATE_KEY })
+    await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toMatchObject({
+      source: "dev",
+    })
+    expect(card.ins()).toEqual([])
+  })
+
+  it("rejects on anything but the card's yes or no: the caller knows nothing either way", async () => {
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const lost = jest.fn(async () => {
+      throw new Error("Tag was lost")
+    })
+    await expect(confirmOwnerKey(lost, CARD)).rejects.toThrow("Tag was lost")
+    const locked = jest.fn(async (apdu: number[]) =>
+      apdu[1] === 0x44 ? [...new Array(16).fill(1), 0x90, 0x00] : [0x69, 0x86],
+    )
+    await expect(confirmOwnerKey(locked, CARD)).rejects.toBeInstanceOf(CardError)
   })
 })
 

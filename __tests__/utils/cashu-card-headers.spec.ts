@@ -105,7 +105,7 @@ describe("refreshTipHeader", () => {
     const good = esploraFetch(NEWEST)
     const fetcher = jest.fn(async (url: string) => {
       asked.push(url)
-      if (url.startsWith("https://mempool.space")) throw new Error("offline")
+      if (new URL(url).host === "mempool.space") throw new Error("offline")
       return good(url)
     })
     await expect(refreshTipHeader({ fetcher: fetcher as never })).resolves.toMatchObject({

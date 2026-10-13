@@ -19,15 +19,24 @@ import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
 
 import {
+  CardError,
   CardInfo,
   PinForm,
+  SW_NO_OWNER,
+  SW_OWNER_PROOF,
   Transceiver,
   setCardPin,
   setOpenCardRecord,
   verifyCardPin,
 } from "./cashu-card"
 import { getCardBridge } from "./cashu-card-bridge"
-import { deriveOwnerKey, randomOwnerKey, setOwner } from "./cashu-card-owner"
+import {
+  allowLoad,
+  deriveOwnerKey,
+  ownerSigner,
+  randomOwnerKey,
+  setOwner,
+} from "./cashu-card-owner"
 
 const SERVER = "flashcard-v2-owner"
 const USERNAME = "owners"
@@ -144,15 +153,32 @@ export const ownerKeyStore = {
     }),
 }
 
+// The seed the last mnemonic made: its PBKDF2 runs once per mnemonic per app
+// session, so the per-card HMAC (`deriveOwnerKey`) is all a read tap pays.
+let seedCache: { mnemonic: string; seed: Uint8Array } | undefined
+
 /**
  * The app's BIP-39 seed (64 bytes), or undefined when the phone has none.
- * Read only: a seed is never made here. Run it before a tap, never inside
- * one: the seed's PBKDF2 takes a moment.
+ * Read only: a seed is never made here. The seed's PBKDF2 takes a moment, so
+ * it runs once per mnemonic and is kept for the session: warm it before a tap
+ * (`readFlashcard` does), and a tap that needs it then pays only the
+ * Keychain read. A different mnemonic (a restore, another account) is
+ * derived afresh.
  */
 export const loadSeed = async (): Promise<Uint8Array | undefined> => {
   const credentials = await Keychain.getInternetCredentials(SEED_SERVER)
-  if (!credentials || !bip39.validateMnemonic(credentials.password)) return undefined
-  return Uint8Array.from(bip39.mnemonicToSeedSync(credentials.password))
+  if (!credentials) return undefined
+  const mnemonic = credentials.password
+  if (seedCache?.mnemonic === mnemonic) return seedCache.seed
+  if (!bip39.validateMnemonic(mnemonic)) return undefined
+  const seed = Uint8Array.from(bip39.mnemonicToSeedSync(mnemonic))
+  seedCache = { mnemonic, seed }
+  return seed
+}
+
+/** Forgets the session's seed: for a spec that changes the phone's seed. */
+export const resetSeedCache = () => {
+  seedCache = undefined
 }
 
 /** The development bridge's owner key (`cashu-card-bridge.ts`); undefined in a release build. */
@@ -180,8 +206,8 @@ export const ownerKeyFor = async (cardPubkey: string): Promise<OwnerKey | undefi
 
 /**
  * The key this phone has already shown the card it owns (saved here), or the
- * dev bridge's: what an unprompted owner's command in a read tap (REFRESH)
- * signs with. Never derives from the seed, which takes a moment.
+ * dev bridge's. Never derives from the seed: a key the card has not taken is
+ * not this phone's yet (`confirmOwnerKey`).
  */
 export const savedOwnerKeyFor = async (
   cardPubkey: string,
@@ -225,6 +251,51 @@ export const saveOwnerKey = async (
     source: key.source,
     createdAt: now(),
   })
+}
+
+/**
+ * Whether this phone is the card's owner, asked of the card itself in a tap
+ * that has selected it, as Foxy's `cardGrant` asks (08a-flashcard.js, the
+ * grant to load, read as `card.mine`). Holding a key is not owning the card:
+ * every phone with a seed derives a key for every card.
+ *
+ * A key saved here is one the card took already (setup, or an owner's
+ * command since), and the dev bridge's is the simulated card's owner: both
+ * are this phone's with nothing sent. A key the seed derives and the store
+ * does not hold is offered as ALLOW_LOAD's proof (GET_NONCE, ALLOW_LOAD):
+ * `9000` and it is this phone's, saved here so the next read (and REFRESH)
+ * finds it; `6A91` (another phone's card) or `6A90` (no owner) and it is not.
+ * Resolves the key the card took, or undefined. Anything else, a Keychain
+ * that cannot be read or the card leaving, rejects: the caller knows nothing
+ * either way. An accepted ALLOW_LOAD leaves the grant on for the rest of the
+ * tap, and changes nothing else.
+ */
+export const confirmOwnerKey = async (
+  transceive: Transceiver,
+  cardPubkey: string,
+  save: typeof saveOwnerKey = saveOwnerKey,
+): Promise<OwnerKey | undefined> => {
+  const key = await ownerKeyFor(cardPubkey)
+  if (!key) return undefined
+  if (key.saved || key.source === "dev") return key
+  try {
+    await allowLoad(transceive, ownerSigner(key.privateKey))
+  } catch (err) {
+    if (
+      err instanceof CardError &&
+      (err.sw === SW_OWNER_PROOF || err.sw === SW_NO_OWNER)
+    ) {
+      return undefined
+    }
+    throw err
+  }
+  // The card took it: it is this phone's whether or not the Keychain keeps
+  // it now. A save that fails is tried again at the next owner's command.
+  const saved = await save(cardPubkey, key).then(
+    () => true,
+    () => false,
+  )
+  return { ...key, saved }
 }
 
 export type SetUpArgs = {

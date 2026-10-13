@@ -21,8 +21,14 @@ import {
   SW_NO_OWNER,
   SW_OWNER_PROOF,
   WrongCardError,
+  getInfo,
 } from "@app/utils/cashu-card"
-import { CardLimits, ownerSigner, setLimits } from "@app/utils/cashu-card-owner"
+import {
+  CardLimits,
+  allowLoad,
+  ownerSigner,
+  setLimits,
+} from "@app/utils/cashu-card-owner"
 import { ownerKeyFor, saveOwnerKey } from "@app/utils/cashu-card-owner-store"
 import { toastShow } from "@app/utils/toast"
 
@@ -71,8 +77,15 @@ export const limitsFromFields = (fields: {
  * and the rollover budget, how many days the card's window may roll on its
  * own clock before this phone refreshes it (1 to 30, 7 by default). One tap:
  * the owner's thirteen-byte SET_LIMIT, so the budget the owner chose is the
- * one the card holds. The card says the payment limit only under the owner's
- * grant, so what is shown for it is what this phone last set.
+ * one the card holds.
+ *
+ * SET_LIMIT always writes all three limits, and the card says its payment
+ * limit only under the owner's grant (cashu-javacard spec/APDU.md, GET_INFO
+ * bytes 30-33, and ALLOW_LOAD). So the payment limit is shown as this phone
+ * last set it, and when this phone never did (a phone restored from the seed,
+ * or a record cleared since) the field starts blank: left blank, the save tap
+ * asks for the grant, reads the card's own payment limit (GET_INFO) and
+ * writes it back unchanged with the other limits.
  */
 export const FlashcardV2LimitsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -86,7 +99,11 @@ export const FlashcardV2LimitsScreen = () => {
   )
 
   const [day, setDay] = useState(String(cashuCard?.dailyLimit ?? 0))
-  const [payment, setPayment] = useState(String(known?.limits?.payment ?? 0))
+  // Undefined when this phone never set it: the card's own is read at the save.
+  const knownPayment = known?.limits?.payment
+  const [payment, setPayment] = useState(
+    knownPayment === undefined ? "" : String(knownPayment),
+  )
   const [allowance, setAllowance] = useState(String(cashuCard?.allowance ?? 0))
   const [rollBudget, setRollBudget] = useState(
     String(cashuCard?.record?.rollBudget ?? ROLL_BUDGET_DEFAULT),
@@ -108,9 +125,12 @@ export const FlashcardV2LimitsScreen = () => {
   const noPin = cashuCard.pinState === "unset"
 
   const save = async () => {
+    // Left blank, the payment limit is what the card holds: it is read in the
+    // save tap, so SET_LIMIT does not wipe a limit this phone cannot see.
+    const keepCardPayment = knownPayment === undefined && payment.trim() === ""
     const limits = limitsFromFields({
       day,
-      payment,
+      payment: keepCardPayment ? "0" : payment,
       allowance: noPin ? "0" : allowance,
       rollBudget,
     })
@@ -126,10 +146,19 @@ export const FlashcardV2LimitsScreen = () => {
         setError(LL.FlashcardV2.notOwner())
         return
       }
-      await runCardOperation(
+      const sign = ownerSigner(owner.privateKey)
+      const written = await runCardOperation(
         async (transceive) => {
-          await setLimits(transceive, ownerSigner(owner.privateKey), limits)
+          let toWrite = limits
+          if (keepCardPayment) {
+            // The owner's grant, then the card's payment limit under it.
+            await allowLoad(transceive, sign)
+            const { paymentLimit } = await getInfo(transceive)
+            toWrite = { ...limits, payment: paymentLimit }
+          }
+          await setLimits(transceive, sign, toWrite)
           await saveOwnerKey(cashuCard.pubkey, owner).catch(() => undefined)
+          return toWrite
         },
         cashuCard.pubkey,
         { assume: { dailyLimit: limits.day, allowance: limits.allowance } },
@@ -138,10 +167,10 @@ export const FlashcardV2LimitsScreen = () => {
         cardLimitsSet({
           pubkey: cashuCard.pubkey,
           limits: {
-            day: limits.day,
-            payment: limits.payment,
-            allowance: limits.allowance,
-            rollBudget: limits.rollBudget,
+            day: written.day,
+            payment: written.payment,
+            allowance: written.allowance,
+            rollBudget: written.rollBudget,
           },
         }),
       )
@@ -183,6 +212,9 @@ export const FlashcardV2LimitsScreen = () => {
           value={payment}
           onChange={change(setPayment)}
           editable={!busy}
+          placeholder={
+            knownPayment === undefined ? LL.FlashcardV2.limitsPaymentKept() : undefined
+          }
           testID="limits-payment"
         />
         <LimitField
@@ -235,8 +267,10 @@ const LimitField: React.FC<{
   value: string
   onChange: (text: string) => void
   editable: boolean
+  /** Shown while the field is blank. */
+  placeholder?: string
   testID: string
-}> = ({ label, note, value, onChange, editable, testID }) => {
+}> = ({ label, note, value, onChange, editable, placeholder, testID }) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   return (
@@ -249,7 +283,10 @@ const LimitField: React.FC<{
         value={value}
         onChangeText={onChange}
         keyboardType="number-pad"
+        placeholder={placeholder}
+        placeholderTextColor={colors.grey3}
         accessibilityLabel={label}
+        accessibilityHint={placeholder}
         editable={editable}
         testID={testID}
       />

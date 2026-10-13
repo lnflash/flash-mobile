@@ -761,6 +761,10 @@ type RootTranslation = {
 		 */
 		needsUpdateShort: string
 		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​c​o​u​l​d​n​'​t​ ​p​r​o​v​e​ ​i​t​'​s​ ​g​e​n​u​i​n​e​.​ ​N​o​t​h​i​n​g​ ​f​r​o​m​ ​i​t​ ​w​a​s​ ​s​h​o​w​n​ ​o​r​ ​s​a​v​e​d​.
+		 */
+		authFailed: string
+		/**
 		 * T​h​i​s​ ​c​a​r​d​ ​i​s​n​'​t​ ​s​e​t​ ​u​p
 		 */
 		notSetUpTitle: string
@@ -913,6 +917,10 @@ type RootTranslation = {
 		 * A​ ​l​a​r​g​e​r​ ​p​a​y​m​e​n​t​ ​m​a​k​e​s​ ​t​h​e​ ​t​i​l​l​ ​w​a​i​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​o​r​k​s​.​ ​0​ ​i​s​ ​n​o​ ​l​i​m​i​t​.
 		 */
 		limitsPaymentNote: string
+		/**
+		 * L​e​a​v​e​ ​b​l​a​n​k​ ​t​o​ ​k​e​e​p​ ​t​h​e​ ​c​a​r​d​'​s​ ​l​i​m​i​t
+		 */
+		limitsPaymentKept: string
 		/**
 		 * S​p​e​n​d​ ​w​i​t​h​o​u​t​ ​P​I​N​ ​(​s​a​t​s​ ​a​ ​d​a​y​)
 		 */
@@ -8216,6 +8224,10 @@ export type TranslationFunctions = {
 		 */
 		needsUpdateShort: () => LocalizedString
 		/**
+		 * This card couldn't prove it's genuine. Nothing from it was shown or saved.
+		 */
+		authFailed: () => LocalizedString
+		/**
 		 * This card isn't set up
 		 */
 		notSetUpTitle: () => LocalizedString
@@ -8368,6 +8380,10 @@ export type TranslationFunctions = {
 		 * A larger payment makes the till wait while the card works. 0 is no limit.
 		 */
 		limitsPaymentNote: () => LocalizedString
+		/**
+		 * Leave blank to keep the card's limit
+		 */
+		limitsPaymentKept: () => LocalizedString
 		/**
 		 * Spend without PIN (sats a day)
 		 */

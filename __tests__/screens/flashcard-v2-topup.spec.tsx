@@ -1120,6 +1120,23 @@ describe("FlashcardV2TopUpScreen, card protocol 2.0 (ENG-675)", () => {
     await waitFor(() => expect(screen.getByTestId("topup-done")).toBeTruthy())
   })
 
+  it("a card another phone owns, read by a phone with a seed, asks for the PIN before any quote: the read leaves no ownerKeySource when the card refuses the seed's key (flashcard-v2-owner-read.spec)", async () => {
+    mockCard = card({ pinState: "set", hasOwner: true, ownerKeySource: undefined })
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    // The PIN step, not the quote: a wrong PIN is found before anything is paid.
+    expect(mockPrepare).not.toHaveBeenCalled()
+    expect(mockPay).not.toHaveBeenCalled()
+    typePin("1234")
+    await act(async () => press(LL.FlashcardV2.topUpCheckPin()))
+    expect(mockCheckPin).toHaveBeenCalledWith(
+      expect.objectContaining({ pubkey: PUBKEY }),
+      "1234",
+    )
+    expect(mockPrepare).toHaveBeenCalled()
+  })
+
   it("a load the card refuses this phone's grant for asks for the PIN, then loads with it", async () => {
     mockCard = card({ pinState: "set", ownerKeySource: "seed" })
     mockParams = { topUpId: "topup-1" }

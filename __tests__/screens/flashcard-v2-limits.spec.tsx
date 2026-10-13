@@ -110,15 +110,89 @@ describe("FlashcardV2LimitsScreen", () => {
     mockSaveOwnerKey.mockResolvedValue(undefined)
   })
 
-  it("shows every limit off on a new card, and the rollover budget at 7", () => {
+  it("shows every limit off on a new card, and the rollover budget at 7; a payment limit this phone never set is blank, not 0", () => {
     renderScreen()
     expect(screen.getByTestId("limits-intro").props.children).toBe(
       LL.FlashcardV2.limitsIntro(),
     )
     expect(field("limits-day").props.value).toBe("0")
-    expect(field("limits-payment").props.value).toBe("0")
+    // The card says it only under the owner's grant: blank keeps the card's.
+    expect(field("limits-payment").props.value).toBe("")
+    expect(field("limits-payment").props.placeholder).toBe(
+      LL.FlashcardV2.limitsPaymentKept(),
+    )
     expect(field("limits-allowance").props.value).toBe("0")
     expect(field("limits-roll-budget").props.value).toBe("7")
+  })
+
+  it("a phone that never set the payment limit keeps the card's own when it saves another limit: the grant, GET_INFO under it, then SET_LIMIT with it", async () => {
+    // Set by the owner earlier, from another phone or before a record was cleared.
+    card = createFakeCard(128, { pin: "1234", limits: { payment: 2500 } })
+    mockRunResult = (op) => op(card.transceive)
+    mockCard = cashuCardState({ pubkey: card.pubkey })
+    store.dispatch(
+      cardSeen({
+        pubkey: card.pubkey,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 0,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
+    renderScreen()
+    set("limits-day", "5000")
+
+    await save()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(card.ins()).toEqual([0x44, 0x45, 0x01, 0x44, 0x34])
+    expect(card.limits()).toEqual({
+      day: 5000,
+      payment: 2500,
+      allowance: 0,
+      rollBudget: 7,
+    })
+    // What the phone now knows is what the card holds.
+    expect(store.getState().flashcardV2.cards[card.pubkey].limits).toMatchObject({
+      day: 5000,
+      payment: 2500,
+    })
+  })
+
+  it("a payment limit typed on a phone that never set one is the one written, with no read first", async () => {
+    card = createFakeCard(128, { pin: "1234", limits: { payment: 2500 } })
+    mockRunResult = (op) => op(card.transceive)
+    mockCard = cashuCardState({ pubkey: card.pubkey })
+    renderScreen()
+    set("limits-payment", "0")
+
+    await save()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(card.ins()).toEqual([0x44, 0x34])
+    expect(card.limits().payment).toBe(0)
+  })
+
+  it("a card that refuses the grant when the payment limit is read says this phone is not its owner, and writes nothing", async () => {
+    card = createFakeCard(128, { pin: "1234", limits: { payment: 2500 } })
+    mockRunResult = (op) => op(card.transceive)
+    mockCard = cashuCardState({ pubkey: card.pubkey })
+    mockOwnerKeyFor.mockResolvedValue({ ...OWNER, privateKey: "11".repeat(32) })
+    renderScreen()
+    set("limits-day", "1")
+
+    await save()
+
+    await waitFor(() =>
+      expect(screen.getByTestId("limits-error").props.children).toBe(
+        LL.FlashcardV2.notOwner(),
+      ),
+    )
+    expect(card.ins()).toEqual([0x44, 0x45])
+    expect(card.limits()).toMatchObject({ day: 0, payment: 2500 })
   })
 
   it("shows what the card holds, and the payment limit this phone last set (the card says it only under the grant)", () => {

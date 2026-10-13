@@ -3,6 +3,7 @@ import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager"
 import axios from "axios"
 
 import { buildSelectApdu } from "@app/utils/cashu-card"
+import { i18nObject } from "@app/i18n/i18n-util"
 import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { store } from "@app/store/redux"
 import {
@@ -674,7 +675,7 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
     expect(toastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "error",
-        message: expect.stringContaining("This card needs an update"),
+        message: i18nObject("en").FlashcardV2.needsUpdateBody(),
       }),
     )
     // No NDEF fall-through, no BoltCard page, nothing stored.
@@ -708,13 +709,13 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
     expect(toastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "error",
-        message: expect.stringContaining("couldn't prove it's a genuine Flash card"),
+        message: i18nObject("en").FlashcardV2.authFailed(),
       }),
     )
     expect(getTag).not.toHaveBeenCalled()
   })
 
-  it("feeds the card's clock in the read tap: TELL_TIME, and the kept header when it is newer", async () => {
+  it("feeds the card's clock in the read tap: TELL_TIME, the kept header when it is newer, and GET_INFO and GET_CARD again once it moved", async () => {
     const headers = jest.requireMock("@app/utils/cashu-card-headers")
     const real = jest.requireActual("@app/utils/cashu-card-headers")
     // A header the phone keeps (fetched off the tap): the newest vector.
@@ -727,7 +728,7 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
     const result = await tapOnce()
 
     const sent = transceive.mock.calls.map((call) => call[0][1])
-    expect(sent.slice(0, 8)).toEqual([
+    expect(sent.slice(0, 10)).toEqual([
       INS_SELECT,
       0x01,
       0x10,
@@ -735,6 +736,8 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
       0x16,
       0x37,
       0x36,
+      0x01,
+      0x16,
       0x11,
     ])
     expect(result.cashuCard?.now).toBe(HEADER_VECTORS[2].time)

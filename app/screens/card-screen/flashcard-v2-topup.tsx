@@ -99,9 +99,11 @@ const sleep = (ms: number) =>
  * either. A top-up paid for and not on the card yet commits the card to its
  * unit just the same (`unfinishedUnits`), or it would land beside another.
  * A card with no owner takes no load at all (6A90), so it is set up first
- * (`not-set-up`). A blocked PIN is refused unless this phone may be the
- * card's owner (`ownedHere`): the owner's grant loads without the PIN, and
- * anyone else's load would need it. A PIN state or a unit this app cannot
+ * (`not-set-up`). A blocked PIN is refused unless this phone is the card's
+ * owner, as the card said at the read (`ownedHere`: `ownerKeySource`, set only
+ * once the card took this phone's key): the owner's grant loads without the
+ * PIN, and anyone else's load would need it, so a blocked card owned by
+ * another phone is refused before any quote. A PIN state or a unit this app cannot
  * read is refused too.
  * While `usdEnabled` (the cashuCardUsdEnabled flag) is off, a card whose
  * unit is USD takes no new top-up: flash-pos charges every card proof as
@@ -440,7 +442,8 @@ export const FlashcardV2TopUpScreen = () => {
     amountProblemKind &&
     amountProblemText(LL, amountProblemKind, { unit, needed, free: freeSlots })
 
-  // This phone may be the card's owner: its load tap needs no PIN.
+  // This phone is the card's owner (the card took its key at the read): its
+  // load tap needs no PIN. Anyone else is asked for the PIN before paying.
   const ownedHere = cashuCard?.ownerKeySource !== undefined
   const asksForPin = cashuCard?.pinState === "set" && !ownedHere
 

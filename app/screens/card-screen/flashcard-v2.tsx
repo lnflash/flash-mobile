@@ -88,7 +88,7 @@ export const FlashcardV2Screen = () => {
   if (!cashuCard) return null
 
   const last4 = cardLast4(cashuCard.pubkey)
-  // This phone holds a key the card's owner may be (the card has the last word).
+  // The card took this phone's key as its owner's (`ownerKeySource`).
   const ownedHere = cashuCard.hasOwner && cashuCard.ownerKeySource !== undefined
   // A blocked PIN takes no load but the owner's: the grant needs no PIN.
   const canTopUp =

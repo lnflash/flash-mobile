@@ -126,12 +126,16 @@ export class CardProtocolError extends Error {
 
 /**
  * The tapped card holds a Cashu applet of another protocol: the 0.x applet
- * under its withdrawn AID, Foxy's 1.x, or a card under the 2.0 AID reporting
- * an older major version. "This card needs an update": nothing is written to
- * it and nothing is spent from it, and nothing further is sent in this tap.
+ * under its withdrawn AID (`0.x`), Foxy's 1.x (`1.x`), a card under the 2.0
+ * AID reporting another major version (`older`, `newer`), or one that answered
+ * a 2.0 SELECT with anything but `9000` or `6A82` (`refused`: jCardSim's
+ * `6999` or `6E00`, a locked instance's `6283`). "This card needs an update"
+ * (cashu-javacard tools/cardsim/README.md, Old cards: any SELECT answer that
+ * is not `02xx 9000`): nothing is written to it and nothing is spent from it,
+ * and nothing further is sent in this tap.
  */
 export class CardNeedsUpdateError extends Error {
-  constructor(readonly found: "0.x" | "1.x" | "older") {
+  constructor(readonly found: "0.x" | "1.x" | "older" | "newer" | "refused") {
     super(`this card needs an update (${found})`)
     this.name = "CardNeedsUpdateError"
   }
@@ -342,12 +346,13 @@ const readU32 = (bytes: number[], at: number): number =>
   ((bytes[at] << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3]) >>> 0
 
 /**
- * Neither 2.0 SELECT form selected the applet, and no withdrawn Cashu AID did
- * either. Carries both 2.0 status words (-1: the response was too short to
- * hold one): 6A82 to both is what a tag without the applet says, an NTAG 424
- * BoltCard among them; anything else is a card that knows the AID and still
- * refused (6999: the applet's select() failed; 6283/6A81: a locked
- * instance). `sw` is the applet-AID answer.
+ * Neither 2.0 SELECT form selected the applet, both answered `6A82` (the
+ * card's runtime: no such application), and no withdrawn Cashu AID selected
+ * either: a tag with no Cashu applet on it, an NTAG 424 BoltCard among them.
+ * The caller may read it as another kind of card. A 2.0 SELECT answered with
+ * any other status word is a card that knows the AID and still refused, and
+ * is `CardNeedsUpdateError` instead (`selectApplet`). `sw` is the
+ * applet-AID answer.
  */
 export class AppletNotSelectedError extends CardError {
   constructor(readonly packageSw: number, readonly appletSw: number) {
@@ -364,12 +369,17 @@ export class AppletNotSelectedError extends CardError {
   }
 }
 
-/** A 2.0 SELECT's answer: the applet version, `02 00`. Anything older needs an update. */
+/**
+ * A 2.0 SELECT's answer: the applet version, `02 xx`. Any other major needs
+ * an update: an older card speaks another wire, and a newer one is not the
+ * wire this app speaks (cashu-javacard tools/cardsim/README.md, Old cards).
+ */
 const checkVersion = (body: number[]): number[] => {
   if (body.length < 2) {
     throw new CardProtocolError(`SELECT: expected a 2-byte version, got ${body.length}`)
   }
   if (body[0] < PROTOCOL_MAJOR) throw new CardNeedsUpdateError("older")
+  if (body[0] !== PROTOCOL_MAJOR) throw new CardNeedsUpdateError("newer")
   return body
 }
 
@@ -378,12 +388,18 @@ const checkVersion = (body: number[]): number[] => {
  * instance AID after any refusal of the first, as cardctl's `select()` does.
  * Resolves the version body (`02 00`).
  *
- * When neither selects, the withdrawn AIDs are tried, the 0.x one and then
- * Foxy's 1.x: a card that answers either with 9000 is a Cashu card that
- * needs an update (`CardNeedsUpdateError`), and so is a card under the 2.0
- * AID whose version is older than 2. Nothing further is sent to such a card.
- * Anything else rejects with `AppletNotSelectedError`, and the caller may
- * read the tag as another kind of card.
+ * The cardsim contract (cashu-javacard tools/cardsim/README.md, Old cards;
+ * spec/NUT-XX.md, AID assignment; spec/APDU.md, the AID) treats any SELECT
+ * answer that is not `02xx 9000` as "This card needs an update". So when
+ * neither 2.0 form selects:
+ * - either one answered anything but `6A82` (`6999`, `6E00`, `6283`, `6A81`,
+ *   a response too short to carry a status word): `CardNeedsUpdateError`,
+ *   with nothing further sent;
+ * - both answered `6A82`: the withdrawn AIDs are tried, the 0.x one and then
+ *   Foxy's 1.x. A card that answers either with 9000 needs an update too.
+ *   Anything else rejects with `AppletNotSelectedError`, and the caller may
+ *   read the tag as another kind of card (a BoltCard says `6A82`).
+ * A card under the 2.0 AID whose major version is not 2 needs an update.
  *
  * A transport failure (the card left the field) is not a refusal: it
  * propagates at once, with no further SELECT on a dead handle.
@@ -395,6 +411,9 @@ export async function selectApplet(transceive: Transceiver): Promise<number[]> {
   const appletResponse = await transceive(buildSelectApdu(CASHU_APPLET_AID))
   const appletSw = statusWordOf(appletResponse)
   if (appletSw === SW_OK) return checkVersion(appletResponse.slice(0, -2))
+  if (packageSw !== SW_FILE_NOT_FOUND || appletSw !== SW_FILE_NOT_FOUND) {
+    throw new CardNeedsUpdateError("refused")
+  }
   if (statusWordOf(await transceive(buildSelectApdu(LEGACY_CASHU_AID))) === SW_OK) {
     throw new CardNeedsUpdateError("0.x")
   }
@@ -1402,30 +1421,44 @@ export interface CashuCardInfo extends CardInfo {
 /**
  * The read round-trip over an open IsoDep channel:
  * SELECT → GET_INFO (P1 = 1) → GET_PUBKEY → AUTH → GET_CARD → [`afterAuth`:
- * the clock] → GET_BALANCE, then the slots (GET_PIECES pages, GET_PROOF per
- * spent slot) when the card holds anything. Nothing but `afterAuth` writes.
+ * the clock and the owner] → [GET_CARD, and GET_INFO, again when
+ * `afterAuth` changed the card] → GET_BALANCE, then the slots (GET_PIECES
+ * pages, GET_PROOF per spent slot) when the card holds anything. Nothing but
+ * `afterAuth` writes.
  *
  * AUTH runs before anything the card says about its value: a card that
  * cannot prove it holds the key it reported throws `CardAuthError`, and no
  * balance comes back. A card that needs an update throws
  * `CardNeedsUpdateError` from `selectApplet`, with nothing sent after it.
  *
- * Resolves null when the tag refuses every Cashu SELECT so the caller can fall
- * back to other card types: quietly when both 2.0 forms say 6A82 (no such
- * applet — an NTAG 424 BoltCard says this), with a warning for any other
- * status word. Throws on a transport failure, and when GET_INFO, GET_PUBKEY,
- * GET_BALANCE or GET_CARD fails. The slot read after them is best effort
- * (`readKeysetSplit`): its failure leaves `keysets` and `spentSlots`
+ * Resolves null when the tag has no Cashu applet (6A82 to every Cashu
+ * SELECT: an NTAG 424 BoltCard says this) so the caller can fall back to
+ * other card types. Throws on a transport failure, and when GET_INFO,
+ * GET_PUBKEY, GET_BALANCE or GET_CARD fails. The slot read after them is best
+ * effort (`readKeysetSplit`): its failure leaves `keysets` and `spentSlots`
  * undefined.
  */
 export type ReadOptions = {
   /**
    * Runs in the tap once the card has proved its key (AUTH) and said its
    * record (GET_CARD), before GET_BALANCE: the card's clock is fed here
-   * (`feedHeader`), and an owner's phone refreshes it. Best effort: it must
-   * not throw. Resolves the card's clock after it, when that moved.
+   * (`feedHeader`), the owner's grant asked for, and an owner's phone
+   * refreshes it. Best effort: it must not throw. Resolves what it changed,
+   * so the read asks the card again rather than return what it said before.
    */
-  afterAuth?: (tap: AuthenticatedTap) => Promise<number | undefined>
+  afterAuth?: (tap: AuthenticatedTap) => Promise<ReadChanges | undefined>
+}
+
+/** What `ReadOptions.afterAuth` changed on the card. */
+export type ReadChanges = {
+  /**
+   * The card's clock moved (SET_HEADER, or REFRESH, took a newer header):
+   * GET_INFO (`now` and what it reports against it) and GET_CARD (the last
+   * header taken) are read again, as Foxy's `cardClock` re-reads GET_INFO.
+   */
+  clockMoved?: boolean
+  /** REFRESH succeeded: the roll count is 0 now. GET_CARD is read again. */
+  refreshed?: boolean
 }
 
 /** What a read tap knows once the card has proved its key: `ReadOptions.afterAuth`. */
@@ -1443,26 +1476,27 @@ export const readCashuCard = async (
   try {
     await selectApplet(transceive)
   } catch (error) {
-    if (!(error instanceof AppletNotSelectedError)) {
-      throw error
-    }
-    if (!error.noSuchApplet) {
-      const refused = `package AID ${swLabel(error.packageSw)}, applet AID ${swLabel(
-        error.appletSw,
-      )}`
-      console.warn(`Cashu applet SELECT refused: ${refused}`)
-    }
-    return null
+    // Only a tag whose runtime said 6A82 to every Cashu AID gets here.
+    if (error instanceof AppletNotSelectedError) return null
+    throw error
   }
   const read = await getInfo(transceive)
   const pubkeyBytes = await getPubkey(transceive)
   const pubkey = toHex(pubkeyBytes)
   await authenticateCard(transceive, pubkeyBytes)
-  const record = await getCardRecord(transceive)
-  const now = afterAuth
-    ? await afterAuth({ transceive, info: read, pubkey, record })
+  const recordRead = await getCardRecord(transceive)
+  const changes = afterAuth
+    ? await afterAuth({ transceive, info: read, pubkey, record: recordRead })
     : undefined
-  const info = now === undefined ? read : { ...read, now }
+  // What the card said before a write in this tap is stale after it
+  // (cashu-javacard spec/APDU.md, SET_HEADER, REFRESH and GET_CARD): a
+  // REFRESH set the roll count to 0, a header taken changed the record's last
+  // header, and a clock that moved changed what GET_INFO reports against it.
+  const info = changes?.clockMoved ? await getInfo(transceive) : read
+  const record =
+    changes?.clockMoved || changes?.refreshed
+      ? await getCardRecord(transceive)
+      : recordRead
   const balance = await getBalance(transceive)
   const slots = await readKeysetSplit(transceive, info)
   return {

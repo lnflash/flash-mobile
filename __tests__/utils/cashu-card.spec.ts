@@ -13,6 +13,7 @@ import { schnorr, secp256k1 } from "@noble/curves/secp256k1"
 
 import {
   AppletNotSelectedError,
+  AuthenticatedTap,
   CASHU_AID,
   CASHU_APPLET_AID,
   CardAuthError,
@@ -59,8 +60,9 @@ import {
   triesLeft,
   verifyCardPin,
 } from "../../app/utils/cashu-card"
-import { ownerSigner } from "../../app/utils/cashu-card-owner"
+import { ownerSigner, refreshCard } from "../../app/utils/cashu-card-owner"
 import { FAKE_OWNER_KEY, createFakeCard } from "../helpers/fake-cashu"
+import { HEADER_VECTORS, headerBytes } from "../helpers/block-headers"
 
 // SELECT is Case-4: the trailing 0x00 Le is load-bearing on iOS, where a
 // Case-3 SELECT makes CoreNFC send no Le and the applet version comes back
@@ -466,20 +468,66 @@ describe("SELECT", () => {
     expect(card.sent).toEqual([SELECT_PACKAGE])
   })
 
-  it("rejects with both 2.0 status words when no Cashu AID selects", async () => {
+  // cashu-javacard tools/cardsim/README.md, Old cards: any SELECT answer that
+  // is not 02xx 9000 is "This card needs an update" (jCardSim says 6E00 or
+  // 6999 where a real card's runtime says 6A82).
+  const neitherSelects: [string, number[], number[]][] = [
+    ["6999 to both forms", SW_APPLET_SELECT_FAILED, SW_APPLET_SELECT_FAILED],
+    ["6E00 to both forms", [0x6e, 0x00], [0x6e, 0x00]],
+    [
+      "6999 to the package AID and 6A82 to the instance AID",
+      SW_APPLET_SELECT_FAILED,
+      SW_FILE_NOT_FOUND,
+    ],
+    [
+      "6A82 to the package AID and 6283 (locked) to the instance AID",
+      SW_FILE_NOT_FOUND,
+      SW_LOCKED,
+    ],
+    [
+      "6A82 to the package AID and 6A81 to the instance AID",
+      SW_FILE_NOT_FOUND,
+      [0x6a, 0x81],
+    ],
+    ["a response too short to carry a status word", [0x90], [0x90]],
+  ]
+  neitherSelects.forEach(([label, packageSw, appletSw]) => {
+    it(`a card that answers the 2.0 SELECT with ${label} needs an update, and nothing further is sent`, async () => {
+      const card = scriptedCard([
+        [SELECT_PACKAGE, packageSw],
+        [SELECT_APPLET, appletSw],
+      ])
+      const error = await selectApplet(card.transceive).catch((e) => e)
+      expect(error).toBeInstanceOf(CardNeedsUpdateError)
+      expect(error.found).toBe("refused")
+      // Not read as another kind of card: no withdrawn AID, no NDEF.
+      expect(error).not.toBeInstanceOf(AppletNotSelectedError)
+      expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
+    })
+  })
+
+  it("a card under the 2.0 AID reporting a newer major version needs an update too: this app speaks 2.x only", async () => {
+    const card = scriptedCard([[SELECT_PACKAGE, ok([3, 0])]])
+    await expect(selectApplet(card.transceive)).rejects.toMatchObject({
+      name: "CardNeedsUpdateError",
+      found: "newer",
+    })
+    expect(card.sent).toEqual([SELECT_PACKAGE])
+  })
+
+  it("rejects with both 2.0 status words when no Cashu AID selects and both 2.0 forms said 6A82", async () => {
     const card = scriptedCard([
-      [SELECT_PACKAGE, SW_APPLET_SELECT_FAILED],
+      [SELECT_PACKAGE, SW_FILE_NOT_FOUND],
       [SELECT_APPLET, SW_FILE_NOT_FOUND],
-      [SELECT_LEGACY, SW_FILE_NOT_FOUND],
+      [SELECT_LEGACY, SW_APPLET_SELECT_FAILED],
       [SELECT_FOXY, SW_FILE_NOT_FOUND],
     ])
     const error = await selectApplet(card.transceive).catch((e) => e)
     expect(error).toBeInstanceOf(AppletNotSelectedError)
     // Still a CardError, carrying the last 2.0 word the card said.
     expect(error).toBeInstanceOf(CardError)
-    expect(error).toMatchObject({ sw: 0x6a82, packageSw: 0x6999, appletSw: 0x6a82 })
-    expect(error.message).toBe("SELECT failed: package AID 6999, applet AID 6A82")
-    expect(error.noSuchApplet).toBe(false)
+    expect(error).toMatchObject({ sw: 0x6a82, packageSw: 0x6a82, appletSw: 0x6a82 })
+    expect(error.message).toBe("SELECT failed: package AID 6A82, applet AID 6A82")
   })
 
   it("marks 6A82 to both 2.0 forms as no such applet: not a Cashu card", async () => {
@@ -1481,17 +1529,58 @@ describe("readCashuCard", () => {
     expect(card.ins()).toEqual([0xa4, INS.GET_INFO, INS.GET_PUBKEY, INS.AUTH])
   })
 
-  it("runs the clock's tap work after AUTH and the record, before the balance, and takes the clock it moved to", async () => {
+  it("runs the clock's tap work after AUTH and the record, before the balance, and re-reads nothing when it changed nothing", async () => {
     const card = loadedCard()
-    const afterAuth = jest.fn(async () => 1791814824)
-    const info = await readCashuCard(card.transceive, { afterAuth })
+    const afterAuth = jest.fn(async () => ({ clockMoved: false, refreshed: false }))
+    await readCashuCard(card.transceive, { afterAuth })
     expect(afterAuth).toHaveBeenCalledWith({
       transceive: card.transceive,
       info: expect.objectContaining({ hasOwner: true }),
       pubkey: card.pubkey,
       record: expect.objectContaining({ mint: "https://mint.test" }),
     })
-    expect(info?.now).toBe(1791814824)
+    expect(card.ins().slice(0, 6)).toEqual([
+      0xa4,
+      INS.GET_INFO,
+      INS.GET_PUBKEY,
+      INS.AUTH,
+      INS.GET_CARD,
+      INS.GET_BALANCE,
+    ])
+  })
+
+  it("asks GET_INFO and GET_CARD again once the tap work moved the card's clock, and returns what they say", async () => {
+    const card = loadedCard()
+    const [, , newest] = HEADER_VECTORS
+    const afterAuth = jest.fn(async ({ transceive }: AuthenticatedTap) => {
+      await setHeader(transceive, headerBytes(newest))
+      return { clockMoved: true }
+    })
+    const info = await readCashuCard(card.transceive, { afterAuth })
+    expect(info?.now).toBe(newest.time)
+    expect(card.ins().slice(4, 9)).toEqual([
+      INS.GET_CARD,
+      INS.SET_HEADER,
+      INS.GET_INFO,
+      INS.GET_CARD,
+      INS.GET_BALANCE,
+    ])
+  })
+
+  it("asks GET_CARD again once the tap work refreshed the card, so the roll count it returns is the card's 0, not the 7 it read before", async () => {
+    const card = createFakeCard(MAX_SLOTS, { rolls: 7 })
+    const [, , newest] = HEADER_VECTORS
+    const afterAuth = jest.fn(async ({ transceive }: AuthenticatedTap) => {
+      await refreshCard(transceive, ownerSigner(FAKE_OWNER_KEY), headerBytes(newest))
+      return { refreshed: true }
+    })
+    const info = await readCashuCard(card.transceive, { afterAuth })
+    expect(afterAuth).toHaveBeenCalledWith(
+      expect.objectContaining({ record: expect.objectContaining({ rolls: 7 }) }),
+    )
+    expect(card.rolls()).toBe(0)
+    expect(info?.record.rolls).toBe(0)
+    expect(card.ins().filter((ins) => ins === INS.GET_CARD)).toHaveLength(2)
   })
 
   it("a card that needs an update throws, and nothing but the SELECT commands is sent", async () => {
@@ -1524,17 +1613,15 @@ describe("readCashuCard", () => {
     expect(warn).not.toHaveBeenCalled()
   })
 
-  it("a card that refuses the 2.0 AID with anything but 6A82 resolves null and says so", async () => {
+  it("a card that refuses the 2.0 AID with anything but 6A82 needs an update: not null, so it is never read as a BoltCard", async () => {
     const card = scriptedCard([
       [SELECT_PACKAGE, SW_APPLET_SELECT_FAILED],
       [SELECT_APPLET, SW_FILE_NOT_FOUND],
-      [SELECT_LEGACY, SW_FILE_NOT_FOUND],
-      [SELECT_FOXY, SW_FILE_NOT_FOUND],
     ])
-    await expect(readCashuCard(card.transceive)).resolves.toBeNull()
-    expect(warn).toHaveBeenCalledWith(
-      "Cashu applet SELECT refused: package AID 6999, applet AID 6A82",
+    await expect(readCashuCard(card.transceive)).rejects.toBeInstanceOf(
+      CardNeedsUpdateError,
     )
+    expect(card.sent).toEqual([SELECT_PACKAGE, SELECT_APPLET])
   })
 
   it("a transport failure on SELECT propagates instead of reading as not-a-Cashu-card", async () => {

@@ -226,6 +226,7 @@ const en: BaseTranslation = {
     needsUpdateBody:
       "Flash can't use this card's software any more. Nothing is written to it and nothing is spent from it. Contact support to have it updated.",
     needsUpdateShort: "Needs an update",
+    authFailed: "This card couldn't prove it's genuine. Nothing from it was shown or saved.",
     notSetUpTitle: "This card isn't set up",
     notSetUpBody:
       "Set it up before you load it. An empty card that hasn't been set up belongs to the first phone that sets it up.",
@@ -276,6 +277,7 @@ const en: BaseTranslation = {
     limitsPayment: "Single payment limit (sats)",
     limitsPaymentNote:
       "A larger payment makes the till wait while the card works. 0 is no limit.",
+    limitsPaymentKept: "Leave blank to keep the card's limit",
     limitsAllowance: "Spend without PIN (sats a day)",
     limitsAllowanceNote: "What the card pays in a day without asking for its PIN. 0 always asks.",
     limitsAllowanceNoPin: "This card has no PIN, so there is nothing to spend without.",
