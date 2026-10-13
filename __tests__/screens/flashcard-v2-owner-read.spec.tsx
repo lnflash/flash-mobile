@@ -197,7 +197,8 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
     // Nothing was offered: the key could not be read.
     expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
     expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
-    expect(latest?.cashuCard?.ownerUnsettled).toBe(true)
+    expect(latest?.cashuCard?.ownerUnsettled).toBe("failed")
+    // Another tap can settle a failed question, so it is asked for.
     expect(owner()).toBe(LL.FlashcardV2.ownerUnconfirmed())
     expect(owner()).not.toBe(LL.FlashcardV2.ownerOther())
     // The load tap offers the grant first, and asks for the PIN only on a refusal.
@@ -228,8 +229,75 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
 
     expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
     expect(card.ins()).not.toContain(INS.REFRESH)
-    expect(latest?.cashuCard?.ownerUnsettled).toBe(true)
+    expect(latest?.cashuCard?.ownerUnsettled).toBe("locked")
+    // Locked for good (spec/APDU.md, LOCK_CARD), the card is asked nothing
+    // until a REFRESH is due: another tap settles nothing, so none is asked for.
+    expect(owner()).toBe(LL.FlashcardV2.ownerUnconfirmedLocked())
+    expect(owner()).not.toBe(LL.FlashcardV2.ownerUnconfirmed())
+    expect(owner()).not.toBe(LL.FlashcardV2.ownerOther())
+
+    // Tapped again, it says the same.
+    await tapCard({ owner: DEVICE_KEY, locked: true, rolls: 0 })
+    expect(card.ins()).not.toContain(INS.REFRESH)
+    expect(owner()).toBe(LL.FlashcardV2.ownerUnconfirmedLocked())
+  })
+
+  it("a locked card out of rolls, read by its owner's phone with no tip header (offline): the owner is unconfirmed, and the refresh notice is the owner's (decision 16), not the other phone's", async () => {
+    await ownerKeyStore.put(PUBKEY_HEX, {
+      privateKey: DEVICE_KEY,
+      source: "device",
+      createdAt: 1,
+    })
+    await mountScreen()
+
+    await tapCard({
+      owner: DEVICE_KEY,
+      locked: true,
+      rolls: 7,
+      limits: { rollBudget: 7 },
+    })
+
+    // No header, so no REFRESH: the card was not asked whose it is.
+    expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
+    expect(card.ins()).not.toContain(INS.REFRESH)
+    expect(latest?.cashuCard?.ownerUnsettled).toBe("locked")
+    expect(owner()).toBe(LL.FlashcardV2.ownerUnconfirmedLocked())
+    expect(screen.getByTestId("flashcard-v2-refresh-needed")).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.refreshNeededBody())).toBeTruthy()
+    expect(screen.queryByText(LL.FlashcardV2.refreshNeededOtherBody())).toBeNull()
+  })
+
+  it("a blocked card read by its owner's phone while the Keychain cannot be read: the blocked notice never says another phone owns it", async () => {
+    await ownerKeyStore.put(PUBKEY_HEX, {
+      privateKey: DEVICE_KEY,
+      source: "device",
+      createdAt: 1,
+    })
+    jest
+      .spyOn(ownerKeyStore, "get")
+      .mockRejectedValue(new OwnerKeyStoreError("the saved owner keys cannot be read"))
+    await mountScreen()
+    const blocked = createFakeCard(128, { pin: "1234", owner: DEVICE_KEY })
+    await selectApplet(blocked.transceive)
+    for (let i = 0; i < 3; i += 1) {
+      await verifyCardPin(blocked.transceive, "0000", {
+        sealed: false,
+        cardPubkey: PUBKEY_HEX,
+      }).catch(() => undefined)
+    }
+    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+    getTag.mockResolvedValue({ id: "08AABBCC" })
+    transceive.mockImplementation((bytes: number[]) => blocked.transceive(bytes))
+    await act(async () => {
+      await latest?.readFlashcard()
+    })
+    await waitFor(() => expect(latest?.cashuCard?.pinState).toBe("blocked"))
+
+    expect(latest?.cashuCard?.ownerUnsettled).toBe("failed")
     expect(owner()).toBe(LL.FlashcardV2.ownerUnconfirmed())
+    expect(screen.getByTestId("flashcard-v2-blocked")).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.blockedUnconfirmedBody())).toBeTruthy()
+    expect(screen.queryByText(LL.FlashcardV2.blockedOtherBody())).toBeNull()
   })
 
   it("a blocked card another phone owns is refused before any quote, and says only that phone can unblock it", async () => {

@@ -119,12 +119,23 @@ type TapOwnership = {
   granted?: boolean
   /**
    * The card has an owner and this tap could not settle whether it is this
-   * phone: a locked card that needed no REFRESH was not asked, or the
-   * Keychain, or the card, failed the question in a way that is neither
+   * phone, and why (`OwnerUnsettled`): `locked` for a locked card that was
+   * not asked (no REFRESH due, or no header to send one with), `failed` when
+   * the Keychain, or the card, failed the question in a way that is neither
    * `9000` nor `6A91`/`6A90`.
    */
-  unsettled?: boolean
+  unsettled?: OwnerUnsettled
 }
+
+/**
+ * Why a read tap left the card's owner unsettled. `locked`: the card is
+ * locked for good (cashu-javacard spec/APDU.md, LOCK_CARD), answers
+ * ALLOW_LOAD `6986`, and is asked by REFRESH only once one is due and this
+ * phone holds a header, so tapping it again settles nothing until then.
+ * `failed`: the question itself failed (a Keychain that cannot be read, a
+ * card that left), which another tap can settle.
+ */
+export type OwnerUnsettled = "locked" | "failed"
 
 type TransactionItem = {
   date: string
@@ -176,10 +187,11 @@ export type CashuCardState = CashuCardInfo & {
    * this phone (`tendCard`): a locked card with no REFRESH due is never
    * asked, and a Keychain that cannot be read, or a card that answers the
    * question with anything but `9000`, `6A91` or `6A90`, leaves it open. The
-   * screen then says the owner is not confirmed rather than "Another phone".
+   * screen then says the owner is not confirmed rather than "Another phone",
+   * and, by the reason (`OwnerUnsettled`), whether another tap can settle it.
    * `cardOwnership` reads it.
    */
-  ownerUnsettled?: boolean
+  ownerUnsettled?: OwnerUnsettled
   /**
    * The card's limit on one payment, sats (0 is none), as the card said it
    * to this phone: under the owner's grant in the read tap (GET_INFO bytes
@@ -490,7 +502,9 @@ export const FlashcardProvider = ({ children }: Props) => {
             ...info,
             ...(known ? { unitTotals: known } : {}),
             ...(ownership.key ? { ownerKeySource: ownership.key.source } : {}),
-            ...(ownership.unsettled && !ownership.key ? { ownerUnsettled: true } : {}),
+            ...(ownership.unsettled && !ownership.key
+              ? { ownerUnsettled: ownership.unsettled }
+              : {}),
             ...(ownerPaymentLimit === undefined ? {} : { ownerPaymentLimit }),
           })
           // A signed-in phone remembers the card: the applet keeps no history
@@ -583,10 +597,11 @@ export const FlashcardProvider = ({ children }: Props) => {
    * with this phone's key (`refreshAsOwner`), and its `9000` is the answer.
    * A `6A91` there costs no PIN try and changes nothing. A locked card that
    * needs no refresh is not asked: this tap leaves its owner unsettled
-   * (`ownership.unsettled`), as does a question that failed for any other
-   * reason than the card's `6A91`/`6A90` (a Keychain that cannot be read, a
-   * card that left): the screen never calls the holder's own card "Another
-   * phone" on a failure.
+   * (`ownership.unsettled` is `locked`), as does a question that failed for
+   * any other reason than the card's `6A91`/`6A90` (`failed`: a Keychain
+   * that cannot be read, a card that left): the screen never calls the
+   * holder's own card "Another phone" on a failure, and asks for another tap
+   * only when one can settle it.
    *
    * Best effort: nothing here fails the read, and nothing here waits on the
    * network. Resolves what it changed, so the read asks the card again.
@@ -609,12 +624,14 @@ export const FlashcardProvider = ({ children }: Props) => {
             refreshed = true
           }
         } catch (err) {
-          ownership.unsettled = true
+          ownership.unsettled = "failed"
           console.warn("Cashu card refresh skipped:", describeCardFailure(err))
         }
       } else {
-        // Not asked: a locked card takes no ALLOW_LOAD, and no REFRESH is due.
-        ownership.unsettled = true
+        // Not asked: a locked card takes no ALLOW_LOAD, and no REFRESH is due
+        // (or none can be sent without a header). Tapping again changes
+        // nothing until one is.
+        ownership.unsettled = "locked"
       }
     } else if (info.hasOwner) {
       try {
@@ -622,7 +639,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         // Every key but the dev bridge's was offered as ALLOW_LOAD's proof.
         ownership.granted = ownership.key !== undefined && ownership.key.source !== "dev"
       } catch (err) {
-        ownership.unsettled = true
+        ownership.unsettled = "failed"
         console.warn("Cashu card owner check skipped:", describeCardFailure(err))
       }
       if (ownership.key && record.rolls > 0 && header) {

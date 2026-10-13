@@ -64,6 +64,12 @@ jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   require("../helpers/safe-area-context-mock").build(),
 )
+// Reanimated's keyboard measures nothing under jest, and its animated style
+// needs the worklet transform: the Android pad's padding is none here.
+jest.mock("@app/hooks/use-keyboard-padding", () => ({
+  ...jest.requireActual("@app/hooks/use-keyboard-padding"),
+  useKeyboardPaddingStyle: () => ({ paddingBottom: 0 }),
+}))
 
 /** A random owner key this phone saved when it set the card up. */
 const DEVICE_KEY = "5a".repeat(32)

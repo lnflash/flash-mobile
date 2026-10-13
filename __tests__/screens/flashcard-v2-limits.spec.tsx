@@ -6,9 +6,16 @@
  */
 import * as React from "react"
 import { Provider } from "react-redux"
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native"
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
-import { Keyboard, ScrollView } from "react-native"
+import { Keyboard, ScrollView, StyleSheet } from "react-native"
 
 import type { CardOperationOptions, CashuCardState } from "../../app/contexts/Flashcard"
 import appTheme from "../../app/rne-theme/theme"
@@ -35,6 +42,9 @@ const mockGoBack = jest.fn()
 const mockToast = jest.fn()
 const mockOwnerKeyFor = jest.fn()
 const mockSaveOwnerKey = jest.fn()
+const mockKeyboardPadding = jest.fn((_appliedBottomInset: number) => ({
+  paddingBottom: 0,
+}))
 let mockCard: CashuCardState | undefined
 let capturedOptions: CardOperationOptions | undefined
 let mockRunResult: (op: (t: Transceiver) => Promise<unknown>) => Promise<unknown>
@@ -58,6 +68,13 @@ jest.mock("@app/utils/cashu-card-owner-store", () => ({
   ...jest.requireActual("@app/utils/cashu-card-owner-store"),
   ownerKeyFor: (...args: unknown[]) => mockOwnerKeyFor(...args),
   saveOwnerKey: (...args: unknown[]) => mockSaveOwnerKey(...args),
+}))
+// The Android pad's height as padding (`useKeyboardPaddingStyle`); reanimated
+// measures no keyboard under jest, so a spec says how tall it is.
+jest.mock("@app/hooks/use-keyboard-padding", () => ({
+  ...jest.requireActual("@app/hooks/use-keyboard-padding"),
+  useKeyboardPaddingStyle: (appliedBottomInset: number) =>
+    mockKeyboardPadding(appliedBottomInset),
 }))
 jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
@@ -502,6 +519,22 @@ describe("FlashcardV2LimitsScreen and the number pad", () => {
     fireEvent(field("limits-roll-budget"), "focus")
 
     expect(scrollTo).toHaveBeenCalledWith({ y: 640 - 16, animated: true })
+  })
+
+  // On Android at targetSdk 36 (edge-to-edge) `adjustResize` is ignored and
+  // `Screen`'s KeyboardAvoidingView has no behavior, and
+  // `automaticallyAdjustKeyboardInsets` is iOS-only: without padding, the
+  // scroll view runs under the pad with no room to scroll the budget and Save
+  // above it.
+  it("pads the fields and Save by the Android pad's height, less the inset Screen applies, so they can scroll above it", () => {
+    mockKeyboardPadding.mockReturnValue({ paddingBottom: 300 })
+    renderScreen()
+
+    expect(mockKeyboardPadding).toHaveBeenCalledWith(0)
+    const padded = screen.getByTestId("limits-keyboard-padding")
+    expect(StyleSheet.flatten(padded.props.style)).toMatchObject({ paddingBottom: 300 })
+    expect(within(padded).getByTestId("limits-roll-budget")).toBeTruthy()
+    expect(within(padded).getByTestId("limits-save")).toBeTruthy()
   })
 
   it("scrolls once the pad is up when the focus came first", () => {

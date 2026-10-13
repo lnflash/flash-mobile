@@ -10,11 +10,13 @@ import {
 import { NfcError } from "react-native-nfc-manager"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { StackNavigationProp } from "@react-navigation/stack"
 
 import { PrimaryBtn } from "@app/components/buttons"
 import { Screen } from "@app/components/screen"
 import { useFlashcard } from "@app/hooks"
+import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
@@ -138,7 +140,15 @@ export const FlashcardV2LimitsScreen = () => {
 
   // The number pad covers the lower fields (the budget, first of all): the
   // field being typed in is scrolled to the top of what the pad leaves, once
-  // the pad is up and again on each focus while it is.
+  // the pad is up and again on each focus while it is. On iOS the scroll view
+  // takes the pad's height as an inset (`automaticallyAdjustKeyboardInsets`).
+  // On Android (edge-to-edge at targetSdk 36) nothing does: `adjustResize` is
+  // ignored and `Screen`'s KeyboardAvoidingView has no behavior there
+  // (screen.tsx), so the content is padded by the pad's height
+  // (`useKeyboardPaddingStyle`, nothing on iOS) to leave room to scroll the
+  // budget and Save above it.
+  const insets = useSafeAreaInsets()
+  const keyboardPadding = useKeyboardPaddingStyle(insets.bottom)
   const scroller = useRef<ScrollView>(null)
   const fieldTops = useRef<Record<string, number>>({})
   const focusedField = useRef<string>()
@@ -257,75 +267,79 @@ export const FlashcardV2LimitsScreen = () => {
   return (
     <Screen preset="fixed" backgroundColor={colors.background}>
       <ScrollView ref={scroller} automaticallyAdjustKeyboardInsets testID="limits-scroll">
-        <View style={styles.container}>
-          <Text type="p2" testID="limits-intro">
-            {LL.FlashcardV2.limitsIntro()}
-          </Text>
-          <LimitField
-            label={LL.FlashcardV2.limitsDaily()}
-            note={LL.FlashcardV2.limitsDailyNote()}
-            value={day}
-            onChange={change(setDay)}
-            editable={!busy}
-            testID="limits-day"
-            {...fieldEvents("limits-day")}
-          />
-          <LimitField
-            label={LL.FlashcardV2.limitsPayment()}
-            note={LL.FlashcardV2.limitsPaymentNote()}
-            remark={
-              lastKnownPayment ? LL.FlashcardV2.limitsPaymentLastKnown() : undefined
-            }
-            value={payment}
-            onChange={change(setPayment)}
-            editable={!busy}
-            placeholder={
-              shownPayment === undefined ? LL.FlashcardV2.limitsPaymentKept() : undefined
-            }
-            testID="limits-payment"
-            {...fieldEvents("limits-payment")}
-          />
-          <LimitField
-            label={LL.FlashcardV2.limitsAllowance()}
-            note={
-              noPin
-                ? LL.FlashcardV2.limitsAllowanceNoPin()
-                : LL.FlashcardV2.limitsAllowanceNote()
-            }
-            value={noPin ? "0" : allowance}
-            onChange={change(setAllowance)}
-            editable={!busy && !noPin}
-            testID="limits-allowance"
-            {...fieldEvents("limits-allowance")}
-          />
-          <LimitField
-            label={LL.FlashcardV2.limitsRollBudget()}
-            note={LL.FlashcardV2.limitsRollBudgetNote()}
-            value={rollBudget}
-            onChange={change(setRollBudget)}
-            editable={!busy}
-            testID="limits-roll-budget"
-            {...fieldEvents("limits-roll-budget")}
-          />
-          <View
-            style={styles.status}
-            testID="limits-status"
-            accessibilityLiveRegion="polite"
-          >
-            {error && (
-              <Text type="p2" style={styles.error} testID="limits-error">
-                {error}
-              </Text>
-            )}
+        <Animated.View style={keyboardPadding} testID="limits-keyboard-padding">
+          <View style={styles.container}>
+            <Text type="p2" testID="limits-intro">
+              {LL.FlashcardV2.limitsIntro()}
+            </Text>
+            <LimitField
+              label={LL.FlashcardV2.limitsDaily()}
+              note={LL.FlashcardV2.limitsDailyNote()}
+              value={day}
+              onChange={change(setDay)}
+              editable={!busy}
+              testID="limits-day"
+              {...fieldEvents("limits-day")}
+            />
+            <LimitField
+              label={LL.FlashcardV2.limitsPayment()}
+              note={LL.FlashcardV2.limitsPaymentNote()}
+              remark={
+                lastKnownPayment ? LL.FlashcardV2.limitsPaymentLastKnown() : undefined
+              }
+              value={payment}
+              onChange={change(setPayment)}
+              editable={!busy}
+              placeholder={
+                shownPayment === undefined
+                  ? LL.FlashcardV2.limitsPaymentKept()
+                  : undefined
+              }
+              testID="limits-payment"
+              {...fieldEvents("limits-payment")}
+            />
+            <LimitField
+              label={LL.FlashcardV2.limitsAllowance()}
+              note={
+                noPin
+                  ? LL.FlashcardV2.limitsAllowanceNoPin()
+                  : LL.FlashcardV2.limitsAllowanceNote()
+              }
+              value={noPin ? "0" : allowance}
+              onChange={change(setAllowance)}
+              editable={!busy && !noPin}
+              testID="limits-allowance"
+              {...fieldEvents("limits-allowance")}
+            />
+            <LimitField
+              label={LL.FlashcardV2.limitsRollBudget()}
+              note={LL.FlashcardV2.limitsRollBudgetNote()}
+              value={rollBudget}
+              onChange={change(setRollBudget)}
+              editable={!busy}
+              testID="limits-roll-budget"
+              {...fieldEvents("limits-roll-budget")}
+            />
+            <View
+              style={styles.status}
+              testID="limits-status"
+              accessibilityLiveRegion="polite"
+            >
+              {error && (
+                <Text type="p2" style={styles.error} testID="limits-error">
+                  {error}
+                </Text>
+              )}
+            </View>
+            <PrimaryBtn
+              label={LL.FlashcardV2.limitsSave()}
+              loading={busy}
+              disabled={busy}
+              onPress={save}
+              testID="limits-save"
+            />
           </View>
-          <PrimaryBtn
-            label={LL.FlashcardV2.limitsSave()}
-            loading={busy}
-            disabled={busy}
-            onPress={save}
-            testID="limits-save"
-          />
-        </View>
+        </Animated.View>
       </ScrollView>
     </Screen>
   )

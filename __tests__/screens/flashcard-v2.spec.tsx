@@ -13,7 +13,7 @@ import type { ReactTestRendererJSON } from "react-test-renderer"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import appTheme from "../../app/rne-theme/theme"
-import type { CashuCardState } from "../../app/contexts/Flashcard"
+import type { CardOwnership, CashuCardState } from "../../app/contexts/Flashcard"
 import {
   cardLast4,
   cardNotices,
@@ -917,7 +917,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           pinState: "unset",
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
-        false,
+        "none",
         LL,
       ).map((notice) => notice.testID),
     ).toEqual(["flashcard-v2-not-set-up", "flashcard-v2-no-pin"])
@@ -928,11 +928,48 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           pinState: "set",
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
-        true,
+        "mine",
         LL,
       ).map((notice) => notice.testID),
     ).toEqual(["flashcard-v2-refresh-needed"])
   })
+
+  // Only a card known to be another phone's is told to find the owner's
+  // phone: an owner the read could not settle may be this phone.
+  const noticeCopy: Array<
+    [
+      CardOwnership,
+      "refreshNeededBody" | "refreshNeededOtherBody",
+      "blockedOwnerBody" | "blockedUnconfirmedBody" | "blockedOtherBody",
+    ]
+  > = [
+    ["mine", "refreshNeededBody", "blockedOwnerBody"],
+    ["unknown", "refreshNeededBody", "blockedUnconfirmedBody"],
+    ["other", "refreshNeededOtherBody", "blockedOtherBody"],
+  ]
+  noticeCopy.forEach(([ownership, refreshKey, blockedKey]) =>
+    it(`cardNotices for a card whose owner is ${ownership}: the refresh and blocked-PIN copy`, () => {
+      const bodies = Object.fromEntries(
+        cardNotices(
+          {
+            hasOwner: true,
+            pinState: "blocked",
+            record: cardRecord({ rolls: 7, rollBudget: 7 }),
+          },
+          ownership,
+          LL,
+        ).map((notice) => [notice.testID, notice.body]),
+      )
+      expect(bodies["flashcard-v2-refresh-needed"]).toBe(LL.FlashcardV2[refreshKey]())
+      expect(bodies["flashcard-v2-blocked"]).toBe(LL.FlashcardV2[blockedKey]())
+      if (ownership !== "other") {
+        expect(bodies["flashcard-v2-refresh-needed"]).not.toBe(
+          LL.FlashcardV2.refreshNeededOtherBody(),
+        )
+        expect(bodies["flashcard-v2-blocked"]).not.toBe(LL.FlashcardV2.blockedOtherBody())
+      }
+    }),
+  )
 
   it("shows a top-up saved for the card's old software as kept for a human, with no Finish or Dismiss", () => {
     mockUnfinishedTopUps = [

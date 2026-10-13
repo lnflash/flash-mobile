@@ -785,6 +785,10 @@ type RootTranslation = {
 		 */
 		blockedOtherBody: string
 		/**
+		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​.​ ​T​h​e​ ​c​a​r​d​'​s​ ​o​w​n​e​r​ ​c​a​n​ ​s​e​t​ ​a​ ​n​e​w​ ​P​I​N​ ​t​o​ ​u​n​b​l​o​c​k​ ​i​t​.
+		 */
+		blockedUnconfirmedBody: string
+		/**
 		 * T​h​i​s​ ​c​a​r​d​ ​n​e​e​d​s​ ​a​ ​r​e​f​r​e​s​h
 		 */
 		refreshNeededTitle: string
@@ -812,6 +816,10 @@ type RootTranslation = {
 		 * N​o​t​ ​c​o​n​f​i​r​m​e​d​:​ ​t​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n
 		 */
 		ownerUnconfirmed: string
+		/**
+		 * N​o​t​ ​c​o​n​f​i​r​m​e​d​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d
+		 */
+		ownerUnconfirmedLocked: string
 		/**
 		 * N​o​n​e​ ​y​e​t
 		 */
@@ -8260,6 +8268,10 @@ export type TranslationFunctions = {
 		 */
 		blockedOtherBody: () => LocalizedString
 		/**
+		 * The PIN was entered wrong too many times. The card's owner can set a new PIN to unblock it.
+		 */
+		blockedUnconfirmedBody: () => LocalizedString
+		/**
 		 * This card needs a refresh
 		 */
 		refreshNeededTitle: () => LocalizedString
@@ -8287,6 +8299,10 @@ export type TranslationFunctions = {
 		 * Not confirmed: tap the card again
 		 */
 		ownerUnconfirmed: () => LocalizedString
+		/**
+		 * Not confirmed while the card is locked
+		 */
+		ownerUnconfirmedLocked: () => LocalizedString
 		/**
 		 * None yet
 		 */

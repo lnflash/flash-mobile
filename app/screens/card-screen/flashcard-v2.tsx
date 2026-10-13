@@ -14,7 +14,12 @@ import { Screen } from "@app/components/screen"
 import { IconBtn } from "@app/components/buttons"
 import { FlashcardV2Art, flashcardV2ArtWidth } from "@app/components/flashcard-v2-art"
 import HideableArea from "@app/components/hideable-area/hideable-area"
-import { CardOwnership, CashuCardState, cardOwnership } from "@app/contexts/Flashcard"
+import {
+  CardOwnership,
+  CashuCardState,
+  OwnerUnsettled,
+  cardOwnership,
+} from "@app/contexts/Flashcard"
 import { useHideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
@@ -206,7 +211,7 @@ export const FlashcardV2Screen = () => {
         </View>
       )}
 
-      <CardNotices card={cashuCard} ownedHere={ownedHere} />
+      <CardNotices card={cashuCard} ownership={ownership} />
 
       {unfinishedTopUps.map((record) => {
         // A sent payment whose invoice expired long enough ago that nothing
@@ -285,7 +290,7 @@ export const FlashcardV2Screen = () => {
         )}
         <DetailRow
           label={LL.FlashcardV2.ownerRow()}
-          value={ownerText(ownership, LL)}
+          value={ownerText(ownership, cashuCard.ownerUnsettled, LL)}
           testID="flashcard-v2-owner"
         />
         <DetailRow
@@ -317,14 +322,14 @@ type Notice = { testID: string; title: string; body: string; severe: boolean }
  * clock that has run out of days to count on its own. A set PIN needs no
  * notice: on 2.0 three wrong entries block it, and only the owner unblocks it.
  */
-const CardNotices: React.FC<{ card: CashuCardState; ownedHere: boolean }> = ({
+const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> = ({
   card,
-  ownedHere,
+  ownership,
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
 
-  const notices = cardNotices(card, ownedHere, LL)
+  const notices = cardNotices(card, ownership, LL)
   if (notices.length === 0) return null
 
   // One element per notice for a screen reader, labelled with the words on
@@ -352,9 +357,17 @@ const CardNotices: React.FC<{ card: CashuCardState; ownedHere: boolean }> = ({
   )
 }
 
+/**
+ * The notices for `card`, as `ownership` says whose it is. Only a card this
+ * phone knows to be another's (`other`: it refused this phone's proof, or this
+ * phone holds no key for it) is told to find the owner's phone. A card whose
+ * owner the read could not settle (`unknown`) may well be this phone's, so it
+ * gets the owner's copy for a refresh (decision 16), and a neutral one for a
+ * blocked PIN, since this phone offers no new PIN until it is settled.
+ */
 export const cardNotices = (
   card: Pick<CashuCardState, "hasOwner" | "pinState" | "record">,
-  ownedHere: boolean,
+  ownership: CardOwnership,
   LL: LLType,
 ): Notice[] => {
   const notices: Notice[] = []
@@ -379,9 +392,7 @@ export const cardNotices = (
       notices.push({
         testID: "flashcard-v2-blocked",
         title: LL.FlashcardV2.blockedTitle(),
-        body: ownedHere
-          ? LL.FlashcardV2.blockedOwnerBody()
-          : LL.FlashcardV2.blockedOtherBody(),
+        body: blockedBody(ownership, LL),
         severe: true,
       })
       break
@@ -399,27 +410,46 @@ export const cardNotices = (
   // The day's window has rolled as often as its owner allows between
   // refreshes: the card's limits stay where they are until its owner's phone,
   // online, refreshes it at a tap (decision 16). Only the owner's phone sends
-  // REFRESH (`tendCard`), so only it is told to tap; any other phone is told
-  // whose phone can (the spec is silent on what other phones show).
+  // REFRESH (`tendCard`), so only a phone that may be the owner's is told to
+  // tap; a phone the card refused is told whose phone can (the spec is silent
+  // on what other phones show).
   if (card.hasOwner && card.record && card.record.rolls >= card.record.rollBudget) {
     notices.push({
       testID: "flashcard-v2-refresh-needed",
       title: LL.FlashcardV2.refreshNeededTitle(),
-      body: ownedHere
-        ? LL.FlashcardV2.refreshNeededBody()
-        : LL.FlashcardV2.refreshNeededOtherBody(),
+      body:
+        ownership === "other"
+          ? LL.FlashcardV2.refreshNeededOtherBody()
+          : LL.FlashcardV2.refreshNeededBody(),
       severe: false,
     })
   }
   return notices
 }
 
+const blockedBody = (ownership: CardOwnership, LL: LLType): string => {
+  switch (ownership) {
+    case "other":
+      return LL.FlashcardV2.blockedOtherBody()
+    case "unknown":
+      return LL.FlashcardV2.blockedUnconfirmedBody()
+    default:
+      return LL.FlashcardV2.blockedOwnerBody()
+  }
+}
+
 /**
  * Who owns the card, as the details say it. "Another phone" only once the
  * card refused this phone's proof (`6A91`, `6A90`) or this phone holds no key
- * for it: a tap that could not settle it says so instead.
+ * for it: a tap that could not settle it says so instead, and asks for another
+ * tap only when one can settle it (`failed`), not on a locked card that was
+ * not asked (`locked`).
  */
-const ownerText = (ownership: CardOwnership, LL: LLType): string => {
+export const ownerText = (
+  ownership: CardOwnership,
+  unsettled: OwnerUnsettled | undefined,
+  LL: LLType,
+): string => {
   switch (ownership) {
     case "none":
       return LL.FlashcardV2.ownerNone()
@@ -428,7 +458,9 @@ const ownerText = (ownership: CardOwnership, LL: LLType): string => {
     case "other":
       return LL.FlashcardV2.ownerOther()
     case "unknown":
-      return LL.FlashcardV2.ownerUnconfirmed()
+      return unsettled === "locked"
+        ? LL.FlashcardV2.ownerUnconfirmedLocked()
+        : LL.FlashcardV2.ownerUnconfirmed()
   }
 }
 
