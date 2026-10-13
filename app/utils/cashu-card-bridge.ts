@@ -37,6 +37,18 @@ export type CardBridgeConfig = {
    * so nothing is owed to anyone. Refused without one.
    */
   stubPay?: boolean
+  /**
+   * A P-256 private key (64 hex chars) the card flows prove ownership with in
+   * place of this phone's own (ENG-675): the public TEST owner key the e2e
+   * fixtures set as the simulated card's owner. Never saved anywhere: it
+   * lives as long as the bridge does.
+   */
+  ownerKey?: string
+  /**
+   * Where the card's block headers are fetched from, in place of
+   * mempool.space and blockstream.info (`cashu-card-headers.ts`): an e2e stub.
+   */
+  headersUrl?: string
 }
 
 /** What a dev deep link asks for (`parseCardBridgeLink`). */
@@ -77,8 +89,14 @@ export const setCardBridge = (config: CardBridgeConfig | undefined): void => {
     bridge = undefined
     return
   }
-  const { url, mintUrl, stubPay } = config
+  const { url, mintUrl, stubPay, ownerKey, headersUrl } = config
   if (!isHttpUrl(url)) throw new Error("card bridge: the bridge URL must be http(s)")
+  if (ownerKey !== undefined && !/^[0-9a-f]{64}$/i.test(ownerKey)) {
+    throw new Error("card bridge: the owner key must be 32 bytes of hex")
+  }
+  if (headersUrl !== undefined && !isHttpUrl(headersUrl)) {
+    throw new Error("card bridge: the headers URL must be http(s)")
+  }
   if (mintUrl !== undefined) {
     if (!isHttpUrl(mintUrl)) throw new Error("card bridge: the mint URL must be http(s)")
     if (isProductionMint(mintUrl)) {
@@ -92,6 +110,8 @@ export const setCardBridge = (config: CardBridgeConfig | undefined): void => {
     url: url.replace(/\/+$/, ""),
     mintUrl: mintUrl?.replace(/\/+$/, ""),
     stubPay: Boolean(stubPay),
+    ownerKey: ownerKey?.toLowerCase(),
+    headersUrl: headersUrl?.replace(/\/+$/, ""),
   }
 }
 
@@ -191,7 +211,8 @@ export const isDevLink = (url: string | null | undefined): boolean =>
 
 /**
  * Reads a dev card link:
- * - `flash://dev/card-bridge?url=<bridge>&mint=<mint>&stubPay=1` sets the bridge,
+ * - `flash://dev/card-bridge?url=<bridge>&mint=<mint>&stubPay=1&ownerKey=<hex>&headers=<url>`
+ *   sets the bridge (every parameter but `url` optional),
  * - `flash://dev/card-bridge?off=1` clears it,
  * - `flash://dev/card-tap` asks for a tap, as the card controls do.
  *
@@ -215,8 +236,16 @@ export const parseCardBridgeLink = (url: string): CardBridgeLink | undefined => 
   const bridgeUrl = params.get("url")
   if (!bridgeUrl) return undefined
   const mintUrl = params.get("mint") || undefined
+  const ownerKey = params.get("ownerKey") || undefined
+  const headersUrl = params.get("headers") || undefined
   return {
     kind: "bridge",
-    config: { url: bridgeUrl, mintUrl, stubPay: params.get("stubPay") === "1" },
+    config: {
+      url: bridgeUrl,
+      mintUrl,
+      stubPay: params.get("stubPay") === "1",
+      ...(ownerKey ? { ownerKey } : {}),
+      ...(headersUrl ? { headersUrl } : {}),
+    },
   }
 }

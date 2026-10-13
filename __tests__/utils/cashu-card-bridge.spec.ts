@@ -189,6 +189,65 @@ describe("in a release build (__DEV__ false)", () => {
   })
 })
 
+describe("the dev owner key and header stub (ENG-675)", () => {
+  const TEST_KEY = "ab".repeat(32)
+
+  it("carries the TEST owner key and the header stub, lower-cased and without a trailing slash", () => {
+    setCardBridge({
+      url: BRIDGE,
+      ownerKey: TEST_KEY.toUpperCase(),
+      headersUrl: "http://localhost:9878/api/",
+    })
+    expect(getCardBridge()).toMatchObject({
+      ownerKey: TEST_KEY,
+      headersUrl: "http://localhost:9878/api",
+    })
+  })
+
+  it("refuses an owner key that is not 32 bytes of hex, and a header stub that is not http(s)", () => {
+    expect(() => setCardBridge({ url: BRIDGE, ownerKey: "abcd" })).toThrow(/owner key/)
+    expect(() => setCardBridge({ url: BRIDGE, ownerKey: "zz".repeat(32) })).toThrow(
+      /owner key/,
+    )
+    expect(() => setCardBridge({ url: BRIDGE, headersUrl: "localhost:9878" })).toThrow(
+      /headers URL/,
+    )
+    expect(getCardBridge()).toBeUndefined()
+  })
+
+  it("reads both from the dev link", () => {
+    expect(
+      parseCardBridgeLink(
+        `flash://dev/card-bridge?url=${BRIDGE}&ownerKey=${TEST_KEY}&headers=http://localhost:9878/api`,
+      ),
+    ).toEqual({
+      kind: "bridge",
+      config: {
+        url: BRIDGE,
+        mintUrl: undefined,
+        stubPay: false,
+        ownerKey: TEST_KEY,
+        headersUrl: "http://localhost:9878/api",
+      },
+    })
+  })
+
+  it("never reaches a release build: no owner key, no header stub, whatever the link says", () => {
+    setCardBridge({
+      url: BRIDGE,
+      ownerKey: TEST_KEY,
+      headersUrl: "http://localhost:9878",
+    })
+    setDev(false)
+    expect(getCardBridge()?.ownerKey).toBeUndefined()
+    expect(getCardBridge()?.headersUrl).toBeUndefined()
+    expect(
+      parseCardBridgeLink(`flash://dev/card-bridge?url=${BRIDGE}&ownerKey=${TEST_KEY}`),
+    ).toBeUndefined()
+    setDev(true)
+  })
+})
+
 describe("parseCardBridgeLink", () => {
   it("reads a bridge link with a dev mint and the pay stub", () => {
     expect(
