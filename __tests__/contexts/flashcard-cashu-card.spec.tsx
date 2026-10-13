@@ -1,4 +1,5 @@
 import { act, waitFor } from "@testing-library/react-native"
+import { Platform } from "react-native"
 import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager"
 import axios from "axios"
 
@@ -36,6 +37,7 @@ jest.mock("@app/utils/cashu-card-headers", () => ({
   refreshTipHeader: jest.fn(async () => undefined),
 }))
 import { toastShow } from "@app/utils/toast"
+import { CARD_TRANSCEIVE_TIMEOUT_MS } from "@app/utils/cashu-card-nfc"
 
 // Exercises handleTag's orchestration — the only code that decides whether a
 // Cashu card is ever read — against the mocked NFC manager and a fake 2.0
@@ -275,6 +277,25 @@ describe("FlashcardProvider Cashu card orchestration", () => {
   // opener on first, so the 10-byte package AID reaches the opener (9000, no
   // version, then 6D00). The tap sends the full applet AID first and reads
   // the card as 2.0, never as needing an update.
+  it("raises Android's transceive timeout before the read's first APDU: the read makes the card sign (AUTH)", async () => {
+    // On a Pixel a card signature takes about 1.5 s, past Android's 618 ms
+    // IsoDep default, which reports TagLostException on a card that never
+    // moved (seen on the J3R180, 2026-10-13).
+    tapCashuCard()
+    const setTransceiveTimeout = NfcManager.setTimeout as unknown as jest.Mock
+    setTransceiveTimeout.mockClear()
+    const os = jest.replaceProperty(Platform, "OS", "android")
+    try {
+      await tapOnce()
+    } finally {
+      os.restore()
+    }
+    expect(setTransceiveTimeout).toHaveBeenCalledWith(CARD_TRANSCEIVE_TIMEOUT_MS)
+    const [raisedAt] = setTransceiveTimeout.mock.invocationCallOrder
+    expect(raisedAt).toBeGreaterThan(requestTechnology.mock.invocationCallOrder[0])
+    expect(raisedAt).toBeLessThan(transceive.mock.invocationCallOrder[0])
+  })
+
   it("reads a 2.0 card installed opener first as 2.0, through the full applet AID", async () => {
     tapCashuCard({ opener: true })
 
