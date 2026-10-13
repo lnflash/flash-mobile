@@ -514,6 +514,19 @@ describe("SELECT", () => {
     })
   })
 
+  // ENG-681's error string: a 9000 to the full applet AID whose body is too
+  // short is a protocol error, with no fallback to the package AID or to the
+  // withdrawn AIDs.
+  it("a 9000 to the full applet AID with no version body is a protocol error, and nothing further is sent", async () => {
+    const card = scriptedCard([[SELECT_APPLET, ok([])]])
+    const error = await selectApplet(card.transceive).catch((e) => e)
+    expect(error).toBeInstanceOf(CardProtocolError)
+    expect(error.message).toMatch(/2-byte version/)
+    expect(error).not.toBeInstanceOf(AppletNotSelectedError)
+    expect(error).not.toBeInstanceOf(CardNeedsUpdateError)
+    expect(card.sent).toEqual([SELECT_APPLET])
+  })
+
   it("a card under the full applet AID reporting a newer major version needs an update too: this app speaks 2.x only", async () => {
     const card = scriptedCard([[SELECT_APPLET, ok([3, 0])]])
     await expect(selectApplet(card.transceive)).rejects.toMatchObject({
@@ -553,6 +566,20 @@ describe("SELECT", () => {
         SELECT_FOXY,
       ])
     })
+  })
+
+  it("names the applet AID first and a bare 9000 to the package AID as not the applet in the message", async () => {
+    const card = scriptedCard([
+      [SELECT_APPLET, SW_FILE_NOT_FOUND],
+      [SELECT_PACKAGE, ok([])],
+      [SELECT_LEGACY, SW_FILE_NOT_FOUND],
+      [SELECT_FOXY, SW_FILE_NOT_FOUND],
+    ])
+    const error = await selectApplet(card.transceive).catch((e) => e)
+    expect(error).toBeInstanceOf(AppletNotSelectedError)
+    expect(error.message).toBe(
+      "SELECT failed: applet AID 6A82, package AID 9000 (no 02xx version)",
+    )
   })
 
   it("a bare 9000 to the package AID still lets a withdrawn AID say the card needs an update", async () => {
@@ -608,7 +635,7 @@ describe("SELECT", () => {
     // Still a CardError, carrying the last 2.0 word the card said.
     expect(error).toBeInstanceOf(CardError)
     expect(error).toMatchObject({ sw: 0x6a82, packageSw: 0x6a82, appletSw: 0x6a82 })
-    expect(error.message).toBe("SELECT failed: package AID 6A82, applet AID 6A82")
+    expect(error.message).toBe("SELECT failed: applet AID 6A82, package AID 6A82")
   })
 
   it("reads 6A82 to both 2.0 forms, and to every withdrawn AID, as not a Cashu card", async () => {

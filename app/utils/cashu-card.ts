@@ -371,9 +371,9 @@ export class AppletNotSelectedError extends CardError {
   constructor(readonly packageSw: number, readonly appletSw: number) {
     super(appletSw, "SELECT")
     this.name = "AppletNotSelectedError"
-    this.message = `SELECT failed: package AID ${swLabel(
-      packageSw,
-    )}, applet AID ${swLabel(appletSw)}`
+    this.message = `SELECT failed: applet AID ${swLabel(appletSw)}, package AID ${
+      packageSw === SW_OK ? "9000 (no 02xx version)" : swLabel(packageSw)
+    }`
   }
 }
 
@@ -1460,9 +1460,10 @@ export interface CashuCardInfo extends CardInfo {
  * balance comes back. A card that needs an update throws
  * `CardNeedsUpdateError` from `selectApplet`, with nothing sent after it.
  *
- * Resolves null when the tag has no Cashu applet (6A82 to every Cashu
- * SELECT: an NTAG 424 BoltCard says this) so the caller can fall back to
- * other card types. Throws on a transport failure, and when GET_INFO,
+ * Resolves null when the tag has no Cashu applet so the caller can fall back
+ * to other card types: the applet AID said 6A82 and the package AID said
+ * 6A82 or a bare 9000 (an opener), and no withdrawn AID selected (an NTAG 424
+ * BoltCard says 6A82 to every Cashu SELECT). Throws on a transport failure, and when GET_INFO,
  * GET_PUBKEY, GET_BALANCE or GET_CARD fails. The slot read after them is best
  * effort (`readKeysetSplit`): its failure leaves `keysets` and `spentSlots`
  * undefined.
@@ -1511,7 +1512,8 @@ export const readCashuCard = async (
   try {
     await selectApplet(transceive)
   } catch (error) {
-    // Only a tag whose runtime said 6A82 to every Cashu AID gets here.
+    // The applet AID said 6A82 and the package AID said 6A82 or a bare 9000
+    // (an opener), and no withdrawn AID selected.
     if (error instanceof AppletNotSelectedError) return null
     throw error
   }
