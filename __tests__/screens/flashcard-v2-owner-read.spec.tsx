@@ -328,5 +328,77 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
       expect(latest?.cashuCard?.record.rolls).toBe(7)
       expect(screen.getByTestId("flashcard-v2-refresh-needed")).toBeTruthy()
     })
+
+    // A locked card answers ALLOW_LOAD 6986 (spec/APDU.md, ALLOW_LOAD) and
+    // keeps REFRESH open to its owner (REFRESH: "a locked card too"), so the
+    // read asks it by REFRESH, as Foxy never sends the grant to a locked card.
+    it("a locked card this phone owns, whose window has rolled, is refreshed in the read tap and is this phone's, with no grant asked for", async () => {
+      const headers = jest.requireActual("@app/utils/cashu-card-headers")
+      await headers.refreshTipHeader({ fetcher: esploraFetch(HEADER_VECTORS[2]) })
+      await ownerKeyStore.put(PUBKEY_HEX, {
+        privateKey: DEVICE_KEY,
+        source: "device",
+        createdAt: 1,
+      })
+      await mountScreen()
+
+      await tapCard({ owner: DEVICE_KEY, locked: true, rolls: 3 })
+
+      expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
+      expect(card.ins()).toContain(INS.REFRESH)
+      expect(card.rolls()).toBe(0)
+      expect(latest?.cashuCard?.locked).toBe(true)
+      expect(latest?.cashuCard?.record.rolls).toBe(0)
+      expect(latest?.cashuCard?.ownerKeySource).toBe("device")
+      expect(owner()).toBe(LL.FlashcardV2.ownerThisPhone())
+      expect(card.triesLeft()).toBe(3)
+    })
+
+    it("a locked card another phone owns refuses the REFRESH (6A91): not this phone's, nothing changed, no PIN try spent", async () => {
+      const headers = jest.requireActual("@app/utils/cashu-card-headers")
+      await headers.refreshTipHeader({ fetcher: esploraFetch(HEADER_VECTORS[2]) })
+      await giveThisPhoneASeed()
+      await mountScreen()
+
+      await tapCard({
+        owner: FAKE_OWNER_KEY,
+        locked: true,
+        rolls: 7,
+        limits: { rollBudget: 7 },
+      })
+
+      expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
+      // Asked once, by REFRESH, and refused: the card's rolls stand.
+      expect(card.ins().filter((ins) => ins === INS.REFRESH)).toHaveLength(1)
+      expect(card.rolls()).toBe(7)
+      expect(card.triesLeft()).toBe(3)
+      expect(card.verified()).toBe(false)
+      expect(latest?.cashuCard?.record.rolls).toBe(7)
+      expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
+      expect(owner()).toBe(LL.FlashcardV2.ownerOther())
+      // Nothing saved for a card that refused the key.
+      await expect(ownerKeyStore.get(PUBKEY_HEX)).resolves.toBeUndefined()
+    })
+
+    it("an unlocked card this phone owns is still asked by ALLOW_LOAD, then refreshed", async () => {
+      const headers = jest.requireActual("@app/utils/cashu-card-headers")
+      await headers.refreshTipHeader({ fetcher: esploraFetch(HEADER_VECTORS[2]) })
+      await ownerKeyStore.put(PUBKEY_HEX, {
+        privateKey: DEVICE_KEY,
+        source: "device",
+        createdAt: 1,
+      })
+      await mountScreen()
+
+      await tapCard({ owner: DEVICE_KEY, rolls: 3 })
+
+      const ins = card.ins()
+      expect(ins.filter((i) => i === INS.ALLOW_LOAD)).toHaveLength(1)
+      expect(ins.indexOf(INS.ALLOW_LOAD)).toBeLessThan(ins.indexOf(INS.REFRESH))
+      expect(card.granted()).toBe(true)
+      expect(card.rolls()).toBe(0)
+      expect(latest?.cashuCard?.ownerKeySource).toBe("device")
+      expect(owner()).toBe(LL.FlashcardV2.ownerThisPhone())
+    })
   })
 })

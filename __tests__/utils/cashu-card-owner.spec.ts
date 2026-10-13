@@ -42,6 +42,7 @@ import {
   newOwnerKey,
   ownerKeyFor,
   ownerKeyStore,
+  refreshAsOwner,
   resetSeedCache,
   saveOwnerKey,
   setUpCard,
@@ -524,6 +525,76 @@ describe("confirmOwnerKey: holding a key is not owning the card (Foxy's cardGran
       apdu[1] === 0x44 ? [...new Array(16).fill(1), 0x90, 0x00] : [0x69, 0x86],
     )
     await expect(confirmOwnerKey(locked, CARD)).rejects.toBeInstanceOf(CardError)
+  })
+})
+
+describe("refreshAsOwner: a locked card asked by REFRESH, the one owner's command it still takes", () => {
+  const seed = Uint8Array.from(bip39.mnemonicToSeedSync(MNEMONIC))
+  const [vector] = HEADER_VECTORS
+
+  it("a locked card refuses the grant (6986) and takes its owner's REFRESH", async () => {
+    const card = createFakeCard(128, { owner: FAKE_OWNER_KEY, locked: true, rolls: 4 })
+    await expect(
+      allowLoad(card.transceive, ownerSigner(FAKE_OWNER_KEY)),
+    ).rejects.toMatchObject({
+      sw: 0x6986,
+    })
+    await expect(
+      refreshCard(card.transceive, ownerSigner(FAKE_OWNER_KEY), headerBytes(vector)),
+    ).resolves.toBe(vector.time)
+    expect(card.rolls()).toBe(0)
+  })
+
+  it("a seed's key the locked card takes is this phone's, saved, and the card's clock comes back", async () => {
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const pubkey = createFakeCard(1).pubkey
+    const key = deriveOwnerKey(seed, pubkey)
+    const card = createFakeCard(128, { owner: key, locked: true, rolls: 2 })
+    await expect(
+      refreshAsOwner(card.transceive, card.pubkey, headerBytes(vector)),
+    ).resolves.toEqual({
+      key: { privateKey: key, source: "seed", saved: true },
+      now: vector.time,
+    })
+    expect(card.ins()).toEqual([0x44, 0x53])
+    expect(card.rolls()).toBe(0)
+    await expect(ownerKeyStore.get(card.pubkey)).resolves.toMatchObject({
+      privateKey: key,
+      source: "seed",
+    })
+  })
+
+  it("another phone's locked card refuses it (6A91): not this phone's, no PIN try spent, nothing changed or saved", async () => {
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const card = createFakeCard(128, {
+      owner: FAKE_OWNER_KEY,
+      locked: true,
+      pin: "1234",
+      rolls: 5,
+    })
+    await expect(
+      refreshAsOwner(card.transceive, card.pubkey, headerBytes(vector)),
+    ).resolves.toBeUndefined()
+    expect(card.ins()).toEqual([0x44, 0x53])
+    expect(card.rolls()).toBe(5)
+    expect(card.now()).toBe(0)
+    expect(card.triesLeft()).toBe(3)
+    await expect(ownerKeyStore.get(card.pubkey)).resolves.toBeUndefined()
+  })
+
+  it("sends nothing for a phone with no key, and rejects on anything but the card's yes or no", async () => {
+    const card = createFakeCard(128, { owner: FAKE_OWNER_KEY, locked: true, rolls: 1 })
+    await expect(
+      refreshAsOwner(card.transceive, card.pubkey, headerBytes(vector)),
+    ).resolves.toBeUndefined()
+    expect(card.ins()).toEqual([])
+    await Keychain.setInternetCredentials(SEED_SERVER, SEED_SERVER, MNEMONIC)
+    const lost = jest.fn(async () => {
+      throw new Error("Tag was lost")
+    })
+    await expect(refreshAsOwner(lost, CARD, headerBytes(vector))).rejects.toThrow(
+      "Tag was lost",
+    )
   })
 })
 

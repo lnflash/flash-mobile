@@ -386,6 +386,12 @@ export type FakeCardOptions = {
   badAuth?: boolean
   /** How often the day's window has rolled since the owner's last REFRESH (GET_CARD byte 76). 0 by default. */
   rolls?: number
+  /**
+   * LOCK_CARD has run (GET_INFO byte 10): ALLOW_LOAD, SET_LIMIT and
+   * CHANGE_PIN answer 6986 before the owner's proof is looked at, and REFRESH,
+   * open to a locked card (spec/APDU.md, REFRESH), works as ever. Off by default.
+   */
+  locked?: boolean
   /** The owner's limits the card ships with; all off, budget 7, by default. */
   limits?: Partial<{
     day: number
@@ -439,6 +445,7 @@ export const createFakeCard = (
     badAuth = false,
     rolls: initialRolls = 0,
     limits: initialLimits = {},
+    locked = false,
   }: FakeCardOptions = {},
 ): FakeCard => {
   const slots: number[][] = Array.from({ length: maxSlots }, () =>
@@ -599,7 +606,7 @@ export const createFakeCard = (
           pinState,
           4,
           tries,
-          0,
+          locked ? 1 : 0,
           recordSet ? 1 : 0,
           ...u32(limits.day),
           owner ? 1 : 0,
@@ -735,6 +742,7 @@ export const createFakeCard = (
         return SW_OK
       }
       case 0x34: {
+        if (locked) return sw(0x6986)
         const proved = ownerProof("CashuCard/set-limit", data)
         if ("refused" in proved) return proved.refused
         if (![4, 8, 12, 13].includes(proved.length)) return sw(0x6700)
@@ -796,6 +804,7 @@ export const createFakeCard = (
         return SW_OK
       }
       case 0x42: {
+        if (locked) return sw(0x6986)
         if (!owner) return sw(0x6a90)
         let commandData = data
         if (p1 === 1) {
@@ -854,6 +863,7 @@ export const createFakeCard = (
         return [...nonce, ...SW_OK]
       }
       case 0x45: {
+        if (locked) return sw(0x6986)
         const proved = ownerProof("CashuCard/load", data)
         if ("refused" in proved) return proved.refused
         grant = true

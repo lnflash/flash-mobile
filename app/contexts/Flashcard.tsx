@@ -57,6 +57,7 @@ import {
   OwnerKeySource,
   confirmOwnerKey,
   loadSeed,
+  refreshAsOwner,
 } from "../utils/cashu-card-owner-store"
 import {
   CardUnitTotals,
@@ -77,6 +78,10 @@ const describeError = (err: unknown): string => {
   const status = (err as { response?: { status?: unknown } } | null)?.response?.status
   return typeof status === "number" ? `${name} status=${status}` : name
 }
+
+/** A card's refusal by its status word; anything else as `describeError` says it. */
+const describeCardFailure = (err: unknown): string =>
+  err instanceof CardError ? `${err.name} ${err.sw.toString(16)}` : describeError(err)
 
 /**
  * A card's unspent value per unit, as the mint names the unit of each keyset
@@ -140,7 +145,8 @@ export type CashuCardState = CashuCardInfo & {
   unitTotals?: CardUnitTotals
   /**
    * Where this phone's key for the card's owner comes from, once the card
-   * has taken it in the read tap (ENG-675; ALLOW_LOAD, `confirmOwnerKey`):
+   * has taken it in the read tap (ENG-675; ALLOW_LOAD, `confirmOwnerKey`, or
+   * on a locked card, which refuses ALLOW_LOAD, REFRESH, `refreshAsOwner`):
    * `seed` or `device` for one saved here or derived from the seed, offered
    * either way, since a saved key is not always one the card took; `dev` for
    * the development bridge's. Undefined for a card with no owner, one owned by
@@ -491,12 +497,21 @@ export const FlashcardProvider = ({ children }: Props) => {
   /**
    * In a read tap, once the card has proved its key: the card's clock is fed
    * (TELL_TIME, and SET_HEADER when the phone holds a newer header:
-   * `feedHeader`); an owned card is asked whether this phone is its owner
-   * (`confirmOwnerKey`: the saved key, or the seed's, offered as ALLOW_LOAD's
-   * proof), and the answer is left in `ownership`; and a card whose day's
-   * window has rolled since its owner last refreshed it is refreshed by its
-   * owner's phone (REFRESH, the owner's proof over the kept header). Best
-   * effort: nothing here fails the read, and nothing here waits on the
+   * `feedHeader`); an owned card is asked whether this phone is its owner, and
+   * the answer is left in `ownership`; and a card whose day's window has
+   * rolled since its owner last refreshed it is refreshed by its owner's
+   * phone (REFRESH, the owner's proof over the kept header).
+   *
+   * An unlocked card is asked by ALLOW_LOAD (`confirmOwnerKey`: the saved
+   * key, or the seed's, offered as its proof), then refreshed with the key it
+   * took. A locked card answers ALLOW_LOAD `6986` (spec/APDU.md, ALLOW_LOAD)
+   * and Foxy never sends it the grant, but REFRESH stays open to its owner
+   * (spec/APDU.md, REFRESH): a locked card that needs a refresh is sent one
+   * with this phone's key (`refreshAsOwner`), and its `9000` is the answer.
+   * A `6A91` there costs no PIN try and changes nothing. A locked card that
+   * needs no refresh is not asked: this tap leaves its owner unsettled.
+   *
+   * Best effort: nothing here fails the read, and nothing here waits on the
    * network. Resolves what it changed, so the read asks the card again.
    */
   const tendCard = async (
@@ -506,18 +521,26 @@ export const FlashcardProvider = ({ children }: Props) => {
     const clock = await feedHeader(transceive, info.now)
     let now = clock.now
     let refreshed = false
-    if (info.hasOwner) {
+    const header = keptHeader()
+    if (info.hasOwner && info.locked) {
+      if (record.rolls > 0 && header) {
+        try {
+          const answer = await refreshAsOwner(transceive, pubkey, header.bytes)
+          if (answer) {
+            ownership.key = answer.key
+            now = answer.now
+            refreshed = true
+          }
+        } catch (err) {
+          console.warn("Cashu card refresh skipped:", describeCardFailure(err))
+        }
+      }
+    } else if (info.hasOwner) {
       try {
         ownership.key = await confirmOwnerKey(transceive, pubkey)
       } catch (err) {
-        console.warn(
-          "Cashu card owner check skipped:",
-          err instanceof CardError
-            ? `${err.name} ${err.sw.toString(16)}`
-            : describeError(err),
-        )
+        console.warn("Cashu card owner check skipped:", describeCardFailure(err))
       }
-      const header = keptHeader()
       if (ownership.key && record.rolls > 0 && header) {
         try {
           now = await refreshCard(
@@ -527,12 +550,7 @@ export const FlashcardProvider = ({ children }: Props) => {
           )
           refreshed = true
         } catch (err) {
-          console.warn(
-            "Cashu card refresh skipped:",
-            err instanceof CardError
-              ? `${err.name} ${err.sw.toString(16)}`
-              : describeError(err),
-          )
+          console.warn("Cashu card refresh skipped:", describeCardFailure(err))
         }
       }
     }

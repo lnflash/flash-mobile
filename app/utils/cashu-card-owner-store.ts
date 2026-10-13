@@ -35,6 +35,7 @@ import {
   deriveOwnerKey,
   ownerSigner,
   randomOwnerKey,
+  refreshCard,
   setOwner,
 } from "./cashu-card-owner"
 
@@ -267,23 +268,67 @@ export const confirmOwnerKey = async (
   try {
     await allowLoad(transceive, ownerSigner(key.privateKey))
   } catch (err) {
-    if (
-      err instanceof CardError &&
-      (err.sw === SW_OWNER_PROOF || err.sw === SW_NO_OWNER)
-    ) {
-      return undefined
-    }
+    if (refusedAsNotOwner(err)) return undefined
     throw err
   }
-  // The card took it: it is this phone's whether or not the Keychain keeps
-  // it now. A save that fails is tried again at the next owner's command;
-  // a key saved already is left as it is (`saveOwnerKey`).
-  if (key.saved) return key
+  return keepTakenKey(cardPubkey, key, save)
+}
+
+/** The card's answer that this phone is not its owner: `6A91` (another's) or `6A90` (none). */
+const refusedAsNotOwner = (err: unknown) =>
+  err instanceof CardError && (err.sw === SW_OWNER_PROOF || err.sw === SW_NO_OWNER)
+
+/**
+ * A key the card just took: it is this phone's whether or not the Keychain
+ * keeps it now. A save that fails is tried again at the next owner's command;
+ * a key saved already, or the dev bridge's, is left as it is (`saveOwnerKey`).
+ */
+const keepTakenKey = async (
+  cardPubkey: string,
+  key: OwnerKey,
+  save: typeof saveOwnerKey,
+): Promise<OwnerKey> => {
+  if (key.saved || key.source === "dev") return key
   const saved = await save(cardPubkey, key).then(
     () => true,
     () => false,
   )
   return { ...key, saved }
+}
+
+/**
+ * A LOCKED card's REFRESH, sent with this phone's key for it, and the card's
+ * answer read as whose card it is. A locked card refuses ALLOW_LOAD (`6986`,
+ * spec/APDU.md, ALLOW_LOAD), so `confirmOwnerKey` cannot ask it, and Foxy
+ * never sends the grant to a locked card (08a-flashcard.js, `cardGrant` is
+ * skipped for `card.info.locked`). REFRESH is the one owner's command a
+ * locked card still takes (spec/APDU.md, REFRESH: "a locked card too"), and
+ * the caller sends it only when the card's window has rolled, so it is a
+ * refresh the card needs and the answer comes with it.
+ *
+ * `9000` and the card is this phone's: resolves the key (saved here if it was
+ * not, as `confirmOwnerKey` saves one) and the card's `now`. `6A91` (another
+ * phone's card) or `6A90` (no owner) resolves undefined: a wrong proof costs
+ * no PIN try and changes nothing (spec/APDU.md, the owner's proof). With no
+ * key here nothing is sent. Anything else rejects: the caller knows nothing
+ * either way.
+ */
+export const refreshAsOwner = async (
+  transceive: Transceiver,
+  cardPubkey: string,
+  header: number[],
+  save: typeof saveOwnerKey = saveOwnerKey,
+): Promise<{ key: OwnerKey; now: number } | undefined> => {
+  const key = await ownerKeyFor(cardPubkey)
+  if (!key) return undefined
+  let now: number
+  try {
+    now = await refreshCard(transceive, ownerSigner(key.privateKey), header)
+  } catch (err) {
+    if (refusedAsNotOwner(err)) return undefined
+    throw err
+  }
+  return { key: await keepTakenKey(cardPubkey, key, save), now }
 }
 
 export type SetUpArgs = {
