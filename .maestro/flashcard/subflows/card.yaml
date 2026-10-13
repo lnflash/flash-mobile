@@ -1,8 +1,12 @@
-# Points the app at cardsim and the local mint, provisions FIXTURE on the card
-# and taps it: the card screen opens on what the tap read. The bridge is not
-# persisted by the app, so every flow sets it again after its launch. A link
-# that lands while the app is still starting is dropped, hence the retry: a
-# tap without the bridge only toasts that this device has no NFC.
+# Points the app at cardsim, the local mint and the fixture server's header
+# stub, provisions FIXTURE on the card and taps it: the card screen opens on
+# what the tap read. OWNER_KEY, when given, is the owner key the app proves
+# ownership with (the public TEST key every fixture but `fresh` is owned by,
+# and the key a `fresh` card is set up with); leave it empty for a phone that
+# is not the card's owner. The bridge is not persisted by the app, so every
+# flow sets it again after its launch. A link that lands while the app is
+# still starting is dropped, hence the retry: a tap without the bridge only
+# toasts that this device has no NFC.
 appId: com.lnflash
 ---
 - runScript:
@@ -15,7 +19,7 @@ appId: com.lnflash
       - runFlow:
           file: open-link.yaml
           env:
-            LINK: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1
+            LINK: flash://dev/card-bridge?url=${BRIDGE_URL}&mint=${MINT_URL}&stubPay=1&headers=${FIXTURES_URL}/headers&ownerKey=${OWNER_KEY}
       - runFlow:
           file: open-link.yaml
           env:

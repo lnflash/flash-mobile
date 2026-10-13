@@ -1,0 +1,55 @@
+# A fresh card (no owner, no record) is set up in one tap, owner last: the PIN
+# (sealed), the record (the dev mint), SET_OWNER with the stub's tip header as
+# the clock's anchor. This phone is then its owner (decision 15).
+appId: com.lnflash
+name: Flashcard set up and own a fresh card
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/owner-card.yaml
+    env:
+      FIXTURE: fresh
+- assertVisible:
+    id: flashcard-v2-not-set-up
+- assertNotVisible:
+    id: flashcard-v2-action-topup
+- tapOn:
+    id: flashcard-v2-action-setup
+- extendedWaitUntil:
+    visible:
+      id: setup-intro
+    timeout: 20000
+- tapOn:
+    id: setup-choose-pin
+- runFlow:
+    file: subflows/pin-entry.yaml
+    env:
+      PIN: "1234"
+      NEXT_ID: pin-next
+- runFlow:
+    file: subflows/pin-entry.yaml
+    env:
+      PIN: "1234"
+      NEXT_ID: pin-next
+- tapOn:
+    id: setup-tap
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-limits
+    timeout: 20000
+- assertNotVisible:
+    id: flashcard-v2-not-set-up
+- assertVisible:
+    id: flashcard-v2-action-topup
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.hasOwner === true}
+- assertTrue: ${output.card.recordSet === true}
+- assertTrue: ${output.card.mint === MINT_URL}
+- assertTrue: ${output.card.pinState === 1}
+# The anchor took: the card's clock is the stub's tip, not 0.
+- assertTrue: ${output.card.now === 1791814824}
+- runScript:
+    file: scripts/verify-pin.js
+    env:
+      PIN: "1234"

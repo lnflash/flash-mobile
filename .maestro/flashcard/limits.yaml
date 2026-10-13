@@ -1,0 +1,77 @@
+# The owner sets the card's limits: off on a new card (the budget 7), then a
+# daily limit, a payment limit, a no-PIN allowance and a rollover budget, in
+# one tap of the owner's thirteen-byte SET_LIMIT.
+appId: com.lnflash
+name: Flashcard limits
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/owner-card.yaml
+    env:
+      FIXTURE: loaded
+- tapOn:
+    id: flashcard-v2-action-limits
+- extendedWaitUntil:
+    visible:
+      id: limits-intro
+    timeout: 20000
+- assertVisible:
+    id: limits-roll-budget
+    text: "7"
+# iOS's number pad has no dismiss key, so `hideKeyboard` cannot close it, and
+# while it is up it covers the fields below the one being typed in: a tap
+# meant for them lands on its keys. So each field is scrolled into view and
+# typed in (the screen scrolls the focused field above the pad), and the pad
+# is closed by a tap on that field's own label, which sits just above it (the
+# ScrollView's keyboardShouldPersistTaps is "never": a tap outside a field
+# closes it).
+- scrollUntilVisible:
+    element:
+      id: limits-day
+- tapOn:
+    id: limits-day
+- eraseText: 12
+- inputText: "5000"
+- tapOn:
+    id: limits-day-label
+- scrollUntilVisible:
+    element:
+      id: limits-payment
+- tapOn:
+    id: limits-payment
+- eraseText: 12
+- inputText: "1000"
+- tapOn:
+    id: limits-payment-label
+- scrollUntilVisible:
+    element:
+      id: limits-allowance
+- tapOn:
+    id: limits-allowance
+- eraseText: 12
+- inputText: "250"
+- tapOn:
+    id: limits-allowance-label
+- scrollUntilVisible:
+    element:
+      id: limits-roll-budget
+- tapOn:
+    id: limits-roll-budget
+- eraseText: 12
+- inputText: "12"
+- tapOn:
+    id: limits-roll-budget-label
+- scrollUntilVisible:
+    element:
+      id: limits-save
+- tapOn:
+    id: limits-save
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-action-limits
+    timeout: 20000
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.dailyLimit === 5000}
+- assertTrue: ${output.card.allowance === 250}
+- assertTrue: ${output.card.rollBudget === 12}

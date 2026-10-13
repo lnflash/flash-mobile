@@ -9,12 +9,14 @@ import {
   TopUpRecord,
   TopUpStoreError,
   createTopUpStore,
+  fromFormat1,
 } from "../../app/utils/cashu-card-topup"
 
 const SERVER = "flashcard-v2-topups"
 
 const record = (id: string, over: Partial<TopUpRecord> = {}): TopUpRecord => ({
-  version: 1,
+  version: 2,
+  cardFormat: 4,
   id,
   cardPubkey: "02" + "ab".repeat(32),
   mintUrl: "https://mint.test",
@@ -96,6 +98,58 @@ describe("createTopUpStore", () => {
       JSON.stringify({ format: 9, records: [] }),
     )
     await expect(store.list()).rejects.toThrow(/unknown format/)
+  })
+
+  it("reads a format-1 store (saved before card protocol 2.0) and keeps every record, as a 0.x card's, never as nothing", async () => {
+    // What the store held before ENG-675: format 1, version-1 records with no cardFormat.
+    const {
+      version: _version,
+      cardFormat: _format,
+      ...v1
+    } = record("paid-0x", {
+      state: "minted",
+      proofs: [
+        {
+          keysetId: "00aabbccddeeff00",
+          amount: 8,
+          nonce: "ab".repeat(32),
+          C: "02" + "cd".repeat(32),
+        } as never,
+      ],
+    })
+    await Keychain.setInternetCredentials(
+      SERVER,
+      "topups",
+      JSON.stringify({ format: 1, records: [{ ...v1, version: 1 }] }),
+    )
+    const store = createTopUpStore()
+    const [read] = await store.list()
+    expect(read).toMatchObject({
+      id: "paid-0x",
+      version: 2,
+      cardFormat: 0,
+      state: "minted",
+    })
+    expect(read.proofs).toEqual(v1.proofs)
+    // A write saves it in format 2, unchanged otherwise, beside the new record.
+    await store.put(record("new"))
+    const stored = JSON.parse(
+      ((await Keychain.getInternetCredentials(SERVER)) as { password: string }).password,
+    )
+    expect(stored.format).toBe(2)
+    expect(stored.records.map((r: TopUpRecord) => [r.id, r.cardFormat])).toEqual([
+      ["paid-0x", 0],
+      ["new", 4],
+    ])
+  })
+
+  it("fromFormat1 marks a record saved before 2.0 as a 0.x card's (cardFormat 0)", () => {
+    const { version: _version, cardFormat: _format, ...v1 } = record("a")
+    expect(fromFormat1({ ...v1, version: 1 })).toEqual({
+      ...v1,
+      version: 2,
+      cardFormat: 0,
+    })
   })
 
   it("runs concurrent writes one after another, so neither overwrites the other", async () => {

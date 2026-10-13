@@ -1,8 +1,8 @@
 /**
- * Card fixture loader for the Flashcard e2e flows (ENG-634).
+ * Card fixture loader for the Flashcard e2e flows (ENG-634; card protocol 2.0, ENG-675).
  *
  *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL]
- *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|loaded|spent|full|blocked|loaded-0.4> [--bridge URL] [--mint URL]
+ *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|owned|loaded|spent|full|blocked|limited> [--bridge URL] [--mint URL]
  *
  * `serve` answers `POST /load/<name>` with the fixture's summary (the Maestro
  * flows and the developer screen call it); `load` provisions one and exits.
@@ -19,6 +19,7 @@ import { toHex } from "../../app/utils/cashu-card"
 import { createTopUpMint } from "../../app/utils/cashu-card-topup/mint"
 import {
   FIXTURE_NAMES,
+  FIXTURE_TIP_HEADER,
   FixtureCard,
   FixtureDeps,
   FixtureMint,
@@ -53,12 +54,6 @@ export const bridgeCard = (bridge: string): FixtureCard => ({
   reset: async () => {
     await bridgeRequest(bridge, "/reset")
   },
-  // POST /fixture with only `appletVersion`: the version mask, nothing else
-  // (CardSim.java, /fixture and Version masks). It gates /apdu only, so the
-  // fixture's own APDUs after it see the older build too.
-  mask: async (version) => {
-    await bridgeRequest(bridge, "/fixture", { appletVersion: version })
-  },
   transceive: async (apdu) => {
     const { hex } = await bridgeRequest(bridge, "/apdu", { hex: toHex(apdu) })
     if (typeof hex !== "string" || !/^([0-9a-fA-F]{2}){2,}$/.test(hex)) {
@@ -72,6 +67,7 @@ export const fixtureMint = (url: string): FixtureMint => {
   const topUpMint = createTopUpMint(url)
   const mint = new Mint(url)
   return {
+    url,
     activeKeyset: topUpMint.activeKeyset,
     createQuote: topUpMint.createQuote,
     quoteState: topUpMint.quoteState,
@@ -82,9 +78,12 @@ export const fixtureMint = (url: string): FixtureMint => {
 }
 
 /**
- * The `serve` endpoints: `GET /health`, and `POST /load/<fixture>`, which
- * answers the fixture's summary, or 500 `{error: "fixture failed", fixture}`
- * with the detail in the log only. One fixture at a time: the card is one card.
+ * The `serve` endpoints: `GET /health`; `POST /load/<fixture>`, which answers
+ * the fixture's summary, or 500 `{error: "fixture failed", fixture}` with the
+ * detail in the log only (one fixture at a time: the card is one card); and
+ * the header stub the app's dev bridge points at (`headers=`), in Esplora's
+ * shape: `GET /headers/blocks/tip/hash` and `GET /headers/block/<hash>/header`
+ * answer `FIXTURE_TIP_HEADER` as text.
  */
 export const fixtureHandler = (
   deps: FixtureDeps,
@@ -96,9 +95,24 @@ export const fixtureHandler = (
       res.writeHead(status, { "content-type": "application/json" })
       res.end(JSON.stringify(body))
     }
+    const text = (status: number, body: string) => {
+      res.writeHead(status, { "content-type": "text/plain" })
+      res.end(body)
+    }
     const match = /^\/load\/([a-z0-9.-]+)$/.exec(req.url ?? "")
     if (req.method === "GET" && req.url === "/health") {
       reply(200, { ok: true, ...health })
+      return
+    }
+    if (req.method === "GET" && req.url === "/headers/blocks/tip/hash") {
+      text(200, FIXTURE_TIP_HEADER.hash)
+      return
+    }
+    if (
+      req.method === "GET" &&
+      req.url === `/headers/block/${FIXTURE_TIP_HEADER.hash}/header`
+    ) {
+      text(200, FIXTURE_TIP_HEADER.header)
       return
     }
     if (req.method !== "POST" || !match) {

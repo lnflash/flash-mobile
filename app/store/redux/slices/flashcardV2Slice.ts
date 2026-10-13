@@ -17,12 +17,43 @@ import type { CardPinState } from "@app/utils/cashu-card"
  * one account's cards never greet the next account on the phone.
  */
 
+/**
+ * A card's limits as this phone last saw them (ENG-675): what GET_INFO and
+ * GET_CARD say to anyone, and the one-payment limit, which a card says only
+ * under the owner's grant, as this phone last set it. All 0 (off) until the
+ * owner sets them; the rollover budget is 7 until the owner sets another.
+ */
+export type KnownCardLimits = {
+  /** The daily limit, sats; 0 is none. */
+  day: number
+  /** The no-PIN allowance, sats a day; 0 is none. */
+  allowance: number
+  /**
+   * The limit on one payment, as the card last said it to this phone under
+   * the owner's grant, or as this phone last set it; absent when neither.
+   */
+  payment?: number
+  /** How often the day's window may roll between the owner's refreshes. */
+  rollBudget?: number
+  /** How often it has rolled since the last refresh, at the last read. */
+  rolls?: number
+}
+
 /** A card this phone has read, keyed by its P2PK pubkey (33 bytes, hex). */
 export type KnownCard = {
   pubkey: string
-  /** Applet version from the last read, e.g. "0.2". */
+  /** Applet version from the last read, e.g. "2.0". */
   version: string
   pinState: CardPinState
+  /** The card had an owner (GET_INFO byte 16) at the last read. */
+  owned: boolean
+  /**
+   * The card speaks an older protocol than this app (0.x): it needs an
+   * update, and nothing is written to it. Set for a card recorded before
+   * protocol 2.0 (migration 3); a 2.0 read clears it.
+   */
+  needsUpdate: boolean
+  limits: KnownCardLimits
   /** GET_BALANCE at the last read: every unspent proof, whatever its keyset. */
   lastBalance: number
   /** ms since epoch */
@@ -74,6 +105,17 @@ export const flashcardV2Slice = createSlice({
       const previous = state.cards[card.pubkey]
       state.cards[card.pubkey] = {
         ...card,
+        limits: {
+          ...card.limits,
+          // The one-payment limit is said only under the owner's grant. A read
+          // that had it brings the card's own; one that did not keeps the last
+          // this phone knew, until the card changes hands (no owner at this read).
+          ...(card.limits.payment === undefined &&
+          card.owned &&
+          previous?.limits?.payment !== undefined
+            ? { payment: previous.limits.payment }
+            : {}),
+        },
         // A read never learns the unit. Keep the last one the mint confirmed
         // only while the balance it was named for still stands: a moved
         // balance can be a reload in the other unit on another phone. The
@@ -103,6 +145,19 @@ export const flashcardV2Slice = createSlice({
     keysetUnitsLearned: (state, action: PayloadAction<Record<string, string>>) => {
       state.keysetUnits = { ...state.keysetUnits, ...action.payload }
     },
+    /** The owner's SET_LIMIT went through: what this phone set, the payment limit included. */
+    cardLimitsSet: (
+      state,
+      action: PayloadAction<{
+        pubkey: string
+        limits: Required<
+          Pick<KnownCardLimits, "day" | "allowance" | "payment" | "rollBudget">
+        >
+      }>,
+    ) => {
+      const card = state.cards[action.payload.pubkey]
+      if (card) card.limits = { ...card.limits, ...action.payload.limits }
+    },
     /** "Remove card": this phone forgets the card. */
     cardForgotten: (state, action: PayloadAction<{ pubkey: string }>) => {
       delete state.cards[action.payload.pubkey]
@@ -114,6 +169,7 @@ export const flashcardV2Slice = createSlice({
 })
 
 export const {
+  cardLimitsSet,
   cardSeen,
   cardUnitResolved,
   cardForgotten,

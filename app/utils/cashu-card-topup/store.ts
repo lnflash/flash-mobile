@@ -21,7 +21,15 @@ import type { TopUpRecord } from "./types"
  */
 const SERVER = "flashcard-v2-topups"
 const USERNAME = "topups"
-const FORMAT = 1
+/**
+ * 2: records of card protocol 2.0 (ENG-675), each with its `cardFormat`.
+ * A format-1 store, saved before 2.0, is still read, never thrown away: its
+ * records are money only they can deliver. They read as `cardFormat` 0 (a 0.x
+ * card's pieces, `needs-update`), and the next write saves them in format 2
+ * unchanged otherwise.
+ */
+const FORMAT = 2
+const FORMAT_1 = 1
 
 /** Loaded top-ups kept for the card screen's recent activity; older ones go. */
 const KEEP_LOADED = 20
@@ -35,21 +43,42 @@ export class TopUpStoreError extends Error {
 
 type Stored = { format: typeof FORMAT; records: TopUpRecord[] }
 
+/** A format-1 record as it was saved: no `cardFormat`, `version` 1. */
+type RecordV1 = Omit<TopUpRecord, "version" | "cardFormat"> & { version: 1 }
+
+/**
+ * A record saved before card protocol 2.0, read as a 2.0 record whose pieces
+ * no 2.0 card can hold (`cardFormat` 0): kept, never loaded.
+ */
+export const fromFormat1 = (record: RecordV1): TopUpRecord => ({
+  ...record,
+  version: 2,
+  cardFormat: 0,
+})
+
 const readAll = async (): Promise<TopUpRecord[]> => {
   const credentials = await Keychain.getInternetCredentials(SERVER)
   if (!credentials) return []
-  let stored: Partial<Stored>
+  let stored: { format?: unknown; records?: unknown }
   try {
     stored = JSON.parse(credentials.password)
   } catch {
     throw new TopUpStoreError("the saved top-ups cannot be read")
   }
-  if (stored.format !== FORMAT || !Array.isArray(stored.records)) {
+  if (!Array.isArray(stored?.records)) {
+    throw new TopUpStoreError(
+      `the saved top-ups are in an unknown format (${stored?.format})`,
+    )
+  }
+  if (stored.format === FORMAT_1) {
+    return (stored.records as RecordV1[]).map(fromFormat1)
+  }
+  if (stored.format !== FORMAT) {
     throw new TopUpStoreError(
       `the saved top-ups are in an unknown format (${stored.format})`,
     )
   }
-  return stored.records
+  return stored.records as TopUpRecord[]
 }
 
 const writeAll = async (records: TopUpRecord[]): Promise<void> => {

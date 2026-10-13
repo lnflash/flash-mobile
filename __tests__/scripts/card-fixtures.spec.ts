@@ -1,92 +1,55 @@
 /**
- * ENG-634: the card fixtures the e2e flows start from, built through the
- * applet's own commands against the fake mint and an applet 0.6 fake card
- * (`__tests__/helpers/fake-cashu.ts`). The same code provisions cardsim
- * against a local Nutshell in CI (`scripts/e2e/card-fixtures.ts`). These pin:
- *   - each fixture's slot counts, balance and PIN state
- *   - the personalisation order the applet's PIN gate allows (proofs and PUK
- *     before the PIN), so no fixture step is refused on the device
- *   - `spent`: the card's own signature redeems each spent slot at the mint,
- *     so the mint's NUT-07 answer for it is SPENT and the top-up's reclaim
- *     may free it
+ * ENG-634, ENG-675: the card fixtures the e2e flows start from, card protocol
+ * 2.0, built through the applet's own commands against the fake mint and the
+ * fake 2.0 card (`__tests__/helpers/fake-cashu.ts`). The same code provisions
+ * cardsim against a local Nutshell in CI (`scripts/e2e/card-fixtures.ts`).
+ * These pin:
+ *   - each fixture's owner, slot counts, balance, PIN state and limits
+ *   - the personalisation order the applet allows (PIN, record, owner last),
+ *     and that pieces go on with the owner's grant and the mint's DLEQ
+ *   - `spent`: one payment's SIG_ALL signature redeems the spent slots at the
+ *     mint, so its NUT-07 answer for them is SPENT and the top-up's reclaim
+ *     may free them
+ *   - the 0.x PUK and version mask are gone
  *   - the production mint is never a fixture mint
  */
 import { CASHU_MINT_URL } from "@app/config/appinfo"
 import { buildCardP2PKSecret, randomBytes } from "@app/utils/cashu-card-outputs"
-import { getProof, selectApplet, toHex, verifyCardPin } from "@app/utils/cashu-card"
+import { getProof, selectApplet, toHex } from "@app/utils/cashu-card"
+import { TEST_OWNER_PRIVATE_KEY, ownerPublicKey } from "@app/utils/cashu-card-owner"
 import { proofY } from "@app/utils/cashu-card-topup"
 
+import * as fixtures from "../../scripts/e2e/card-fixtures-lib"
 import {
+  FIXTURE_LIMITS,
   FIXTURE_NAMES,
+  FIXTURE_TIP_HEADER,
+  FIXTURE_OWNER_KEY,
   FIXTURE_PIN,
-  FIXTURE_PUK,
+  FULL_SLOTS,
   FixtureDeps,
   FixtureName,
-  MaskedVersion,
   PRODUCTION_MINT_HOST,
   SPENT_SLOTS,
   WRONG_PIN,
   isFixtureName,
   loadFixture,
-  setPukApdu,
-  unblockPinApdu,
 } from "../../scripts/e2e/card-fixtures-lib"
 import { bridgeCard, fixtureHandler } from "../../scripts/e2e/card-fixtures"
 import { FakeCard, FakeMint, createFakeCard, createFakeMint } from "../helpers/fake-cashu"
 
-/**
- * cardsim's version mask (VersionMask.java), over the fake card: the
- * instructions the build lacked answer 6D00 (CLA B0 only), and a 9000 SELECT
- * or GET_INFO carries the build's version and capability bits.
- */
-const MASKS: Record<MaskedVersion, { minor: number; caps: number; refused: number[] }> = {
-  "0.4": { minor: 4, caps: 0x07, refused: [0x43, 0x44, 0x45] },
-  "0.5": { minor: 5, caps: 0x0f, refused: [0x44, 0x45] },
-}
-const masked = async (
-  version: MaskedVersion | undefined,
-  card: FakeCard,
-  apdu: number[],
-): Promise<number[]> => {
-  const mask = version && MASKS[version]
-  if (mask && apdu[0] === 0xb0 && mask.refused.includes(apdu[1])) return [0x6d, 0x00]
-  const answer = await card.transceive(apdu)
-  if (!mask || toHex(answer.slice(-2)) !== "9000") return answer
-  if (apdu[0] === 0x00 && apdu[1] === 0xa4) return [0, mask.minor, 0x90, 0x00]
-  if (apdu[0] === 0xb0 && apdu[1] === 0x01) {
-    const info = answer.slice(0, 8)
-    info[0] = 0
-    info[1] = mask.minor
-    // eslint-disable-next-line no-bitwise
-    info[6] &= mask.caps
-    return [...info, 0x90, 0x00]
-  }
-  return answer
-}
-
 /** A card that `reset` replaces with a brand-new one, same key, as cardsim does. */
 const simulator = () => {
-  const privateKey = randomBytes(32)
-  const sim = {
-    card: createFakeCard(32, { applet: { privateKey } }) as FakeCard,
-    version: undefined as MaskedVersion | undefined,
-    /** Every APDU the fixture sent, and whether a mask was on when it did. */
-    sent: [] as { apdu: number[]; version: MaskedVersion | undefined }[],
-  }
+  const cardKey = toHex(randomBytes(32))
+  const fresh = () => createFakeCard(128, { owner: null, sealed: true, cardKey })
+  const sim = { card: fresh() as FakeCard }
   return {
     sim,
     card: {
       reset: async () => {
-        sim.card = createFakeCard(32, { applet: { privateKey } })
-        sim.version = undefined
+        sim.card = fresh()
       },
-      mask: async (version: MaskedVersion) => {
-        sim.version = version
-      },
-      transceive: (apdu: number[]) => {
-        sim.sent.push({ apdu, version: sim.version })
-        return masked(sim.version, sim.card, apdu)
-      },
+      transceive: (apdu: number[]) => sim.card.transceive(apdu),
     },
   }
 }
@@ -106,64 +69,101 @@ const setup = () => {
 }
 
 const statuses = (card: FakeCard) => card.slots.map((slot) => slot[0])
+const TEST_OWNER_PUB = toHex(ownerPublicKey(TEST_OWNER_PRIVATE_KEY))
 
 describe("card fixtures", () => {
-  it("names six fixtures", () => {
+  it("names the 2.0 fixtures: no PUK, no version mask", () => {
     expect(FIXTURE_NAMES).toEqual([
       "fresh",
+      "owned",
       "loaded",
       "spent",
       "full",
       "blocked",
-      "loaded-0.4",
+      "limited",
     ])
-    expect(isFixtureName("loaded")).toBe(true)
-    expect(isFixtureName("loaded-0.4")).toBe(true)
+    expect(isFixtureName("owned")).toBe(true)
+    expect(isFixtureName("loaded-0.4")).toBe(false)
     expect(isFixtureName("other")).toBe(false)
+    // The 0.x PUK and the 0.4 mask are gone with 0.x.
+    expect(fixtures).not.toHaveProperty("FIXTURE_PUK")
+    expect(fixtures).not.toHaveProperty("setPukApdu")
+    expect(fixtures).not.toHaveProperty("unblockPinApdu")
+    expect(fixtures).not.toHaveProperty("INS_SET_PUK")
+    expect(fixtures).not.toHaveProperty("INS_UNBLOCK_PIN")
   })
 
-  it("fresh: an empty card with no PIN", async () => {
-    const { deps, mint } = setup()
+  it("the owner every fixture but fresh has is the public TEST key the dev bridge hands the app", () => {
+    expect(FIXTURE_OWNER_KEY).toBe(TEST_OWNER_PRIVATE_KEY)
+  })
+
+  it("fresh: an empty card with no owner, no record and no PIN", async () => {
+    const { deps, mint, sim } = setup()
     const summary = await loadFixture("fresh", deps)
     expect(summary).toMatchObject({
       name: "fresh",
+      version: "2.0",
       balance: 0,
       pinState: "unset",
+      hasOwner: false,
+      recordSet: false,
       unspent: 0,
       spent: 0,
-      empty: 32,
+      empty: 128,
     })
+    expect(sim.card.owner()).toBeUndefined()
     expect(mint.createQuote).not.toHaveBeenCalled()
   })
 
-  it("loaded: 21 sat in three slots, with a PUK and the fixture PIN", async () => {
+  it("owned: set up, owner the TEST key, the record the fixture mint, no PIN, nothing on it", async () => {
+    const { deps, sim, mint } = setup()
+    const summary = await loadFixture("owned", deps)
+    expect(summary).toMatchObject({
+      hasOwner: true,
+      recordSet: true,
+      pinState: "unset",
+      balance: 0,
+    })
+    expect(sim.card.owner()).toBe(TEST_OWNER_PUB)
+    expect(sim.card.record()).toEqual({ set: true, mint: mint.url })
+    // Owner last: SET_CARD before SET_OWNER.
+    const ins = sim.card.ins()
+    expect(ins.indexOf(0x32)).toBeLessThan(ins.indexOf(0x43))
+  })
+
+  it("loaded: 21 sat in three slots, each with the mint's DLEQ, the fixture PIN, owned", async () => {
     const { deps, sim } = setup()
     const summary = await loadFixture("loaded", deps)
     expect(summary).toMatchObject({
       balance: 21,
       pinState: "set",
+      hasOwner: true,
+      sealed: true,
       unspent: 3,
       spent: 0,
-      empty: 29,
+      empty: 125,
     })
     expect(sim.card.pin()).toBe(FIXTURE_PIN)
-    // The proofs were minted to this card's key: each slot rebuilds its secret.
+    expect([...sim.card.dleqs.keys()]).toEqual([0, 1, 2])
+    // The pieces were minted to this card's key in format 4: each rebuilds.
     const { transceive } = sim.card
     await selectApplet(transceive)
     const slot = await getProof(transceive, 0)
-    expect(buildCardP2PKSecret(slot.nonce, summary.pubkey)).toContain(summary.pubkey)
-    // The PUK is set: a second SET_PUK is refused (6A89), even verified.
-    await verifyCardPin(transceive, FIXTURE_PIN)
-    expect(await transceive(setPukApdu("87654321"))).toEqual([0x6a, 0x89])
+    expect(buildCardP2PKSecret(slot.nonce, summary.pubkey)).toContain('"SIG_ALL"')
+    // Personalisation: the PIN (sealed), the record, the owner; then the grant and the loads.
+    expect(
+      sim.card.ins().filter((ins) => [0x41, 0x40, 0x32, 0x43, 0x45, 0x30].includes(ins)),
+    ).toEqual([0x41, 0x40, 0x32, 0x43, 0x45, 0x30, 0x30, 0x30])
   })
 
-  it("loaded: ends with an unverified session, as a fresh tap finds the card", async () => {
+  it("loaded: ends with an unverified session and no grant, as a fresh tap finds the card", async () => {
     const { deps, sim } = setup()
     await loadFixture("loaded", deps)
     expect(sim.card.verified()).toBe(false)
+    expect(sim.card.granted()).toBe(false)
   })
 
-  it("spent: slots 1 and 2 spent on the card and SPENT at the mint, slot 0 untouched", async () => {
+  it("spent: slots 1 and 2 spent on the card by one payment and SPENT at the mint, slot 0 untouched", async () => {
     const { deps, sim, mint } = setup()
     const summary = await loadFixture("spent", deps)
     expect(summary).toMatchObject({
@@ -171,10 +171,12 @@ describe("card fixtures", () => {
       pinState: "set",
       unspent: 1,
       spent: 2,
-      empty: 29,
+      empty: 125,
     })
     expect(statuses(sim.card).slice(0, 3)).toEqual([1, 2, 2])
-    expect(mint.swap).toHaveBeenCalledTimes(SPENT_SLOTS.length)
+    // One payment, one SIG_ALL signature, one swap.
+    expect(mint.swap).toHaveBeenCalledTimes(1)
+    expect(sim.card.ins().filter((ins) => ins === 0x24)).toHaveLength(1)
     // What the top-up's reclaim asks (reclaimVerdicts): each spent slot's Y.
     const { transceive } = sim.card
     await selectApplet(transceive)
@@ -187,17 +189,17 @@ describe("card fixtures", () => {
     expect(verdicts).toEqual(["UNSPENT", "SPENT", "SPENT"])
   })
 
-  it("full: 32 slots of 1 sat, no PIN", async () => {
+  it("full: all 128 slots of 1 sat, no PIN", async () => {
     const { deps, sim } = setup()
     const summary = await loadFixture("full", deps)
     expect(summary).toMatchObject({
-      balance: 32,
+      balance: FULL_SLOTS,
       pinState: "unset",
-      unspent: 32,
+      unspent: 128,
       spent: 0,
       empty: 0,
     })
-    expect(statuses(sim.card)).toEqual(new Array(32).fill(1))
+    expect(statuses(sim.card)).toEqual(new Array(128).fill(1))
   })
 
   it("blocked: loaded, then three wrong PINs block it", async () => {
@@ -207,40 +209,11 @@ describe("card fixtures", () => {
     expect(sim.card.triesLeft()).toBe(0)
   })
 
-  it("loaded-0.4: an applet 0.4 card with the loaded proofs and PIN, no PUK and no Remove PIN", async () => {
+  it("limited: loaded, with the owner's limits, the budget at 7", async () => {
     const { deps, sim } = setup()
-    const summary = await loadFixture("loaded-0.4", deps)
-    expect(summary).toMatchObject({
-      name: "loaded-0.4",
-      version: "0.4",
-      clearPin: false,
-      balance: 21,
-      pinState: "set",
-      unspent: 3,
-      spent: 0,
-      empty: 29,
-    })
-    expect(sim.card.pin()).toBe(FIXTURE_PIN)
-    // Masked before its first APDU: every one of them saw the 0.4 build.
-    expect(sim.sent.length).toBeGreaterThan(0)
-    expect(sim.sent.every(({ version }) => version === "0.4")).toBe(true)
-    // No SET_PUK was sent (a 0.4 card answers it 6D00), and none reached the card.
-    expect(sim.sent.map(({ apdu }) => apdu[1])).not.toContain(0x44)
-    expect(sim.card.ins()).not.toContain(0x44)
-    // The card the app taps refuses CLEAR_PIN as a 0.4 build does.
-    const { transceive } = deps.card
-    await selectApplet(transceive)
-    await verifyCardPin(transceive, FIXTURE_PIN)
-    expect(
-      await transceive([0xb0, 0x43, 0x00, 0x00, 0x05, 0x04, 0x31, 0x32, 0x33, 0x34]),
-    ).toEqual([0x6d, 0x00])
-  })
-
-  it("a fixture after loaded-0.4 is the real build again: reset drops the mask", async () => {
-    const { deps } = setup()
-    await loadFixture("loaded-0.4", deps)
-    const summary = await loadFixture("loaded", deps)
-    expect(summary).toMatchObject({ version: "0.6", clearPin: true })
+    const summary = await loadFixture("limited", deps)
+    expect(summary).toMatchObject({ dailyLimit: 5000, allowance: 250, balance: 21 })
+    expect(sim.card.limits()).toEqual(FIXTURE_LIMITS)
   })
 
   it("starts every fixture from a brand-new card", async () => {
@@ -248,7 +221,8 @@ describe("card fixtures", () => {
     await loadFixture("spent", deps)
     const summary = await loadFixture("fresh", deps)
     expect(summary).toMatchObject({ balance: 0, unspent: 0, spent: 0, pinState: "unset" })
-    expect(statuses(sim.card)).toEqual(new Array(32).fill(0))
+    expect(statuses(sim.card)).toEqual(new Array(128).fill(0))
+    expect(sim.card.owner()).toBeUndefined()
   })
 
   it("stops at a quote the mint never marks paid", async () => {
@@ -259,46 +233,41 @@ describe("card fixtures", () => {
     ).rejects.toThrow(/not paid/)
   })
 
-  it("stops when the mint does not hold a redeemed slot SPENT", async () => {
+  it("stops when the mint does not hold the spent pieces SPENT", async () => {
     const { deps, mint } = setup()
     ;(mint.proofStates as jest.Mock).mockImplementation(async (Ys: string[]) =>
       Ys.map(() => "UNSPENT"),
     )
-    await expect(loadFixture("spent", deps)).rejects.toThrow(/UNSPENT at the mint/)
+    await expect(loadFixture("spent", deps)).rejects.toThrow(/UNSPENT/)
   })
 
   FIXTURE_NAMES.forEach((name: FixtureName) => {
-    it(`${name}: the card's PIN gate never refuses a fixture step`, async () => {
+    it(`${name}: the card never refuses a fixture step`, async () => {
       const { deps, sim } = setup()
       await loadFixture(name, deps)
-      const refusals = sim.card.transceive.mock.results
-        .map((result) => result.value)
-        .filter(Boolean)
-      const answers = await Promise.all(refusals)
-      // 6982 (PIN required) and 6A89 (PUK set) never come back to a fixture.
-      expect(answers.map((a: number[]) => toHex(a.slice(-2)))).not.toContain("6982")
-      expect(answers.map((a: number[]) => toHex(a.slice(-2)))).not.toContain("6a89")
-      // Nor 6D00: no fixture sends an instruction its build lacks.
-      expect(answers.map((a: number[]) => toHex(a.slice(-2)))).not.toContain("6d00")
+      const answers = await Promise.all(
+        sim.card.transceive.mock.results.map((result) => result.value).filter(Boolean),
+      )
+      const words = answers.map((a: number[]) => toHex(a.slice(-2)))
+      // Only the blocking VERIFY_PINs are refused, and only in `blocked`.
+      const refused = words.filter((sw) => sw !== "9000")
+      expect(refused).toEqual(name === "blocked" ? ["63c2", "63c1", "6983"] : [])
     })
   })
 })
 
-describe("fixture APDUs the app never sends", () => {
-  it("SET_PUK is len ‖ PUK", () => {
-    expect(setPukApdu(FIXTURE_PUK)).toEqual([
-      0xb0, 0x44, 0x00, 0x00, 0x09, 0x08, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
-    ])
-  })
-
-  it("UNBLOCK_PIN is len ‖ PUK ‖ len ‖ new PIN, as the pin-blocked flow sends it", () => {
-    expect(toHex(unblockPinApdu(FIXTURE_PUK, FIXTURE_PIN))).toBe(
-      "b04500000e0831323334353637380431323334",
-    )
-  })
-
+describe("fixture constants", () => {
   it("the wrong PIN is not the fixture PIN", () => {
     expect(WRONG_PIN).not.toBe(FIXTURE_PIN)
+  })
+
+  it("the limited fixture's limits are on, with the default budget", () => {
+    expect(FIXTURE_LIMITS).toEqual({
+      day: 5000,
+      payment: 1000,
+      allowance: 250,
+      rollBudget: 7,
+    })
   })
 })
 
@@ -329,9 +298,9 @@ describe("the fixture loader's cardsim client", () => {
     const card = bridgeCard("http://127.0.0.1:9876")
     reply(200, { generation: 1 })
     await card.reset()
-    reply(200, { hex: "00069000", sw: "9000" })
+    reply(200, { hex: "02009000", sw: "9000" })
     await expect(card.transceive([0x00, 0xa4, 0x04, 0x00])).resolves.toEqual([
-      0x00, 0x06, 0x90, 0x00,
+      0x02, 0x00, 0x90, 0x00,
     ])
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
       ["http://127.0.0.1:9876/reset", "POST"],
@@ -340,16 +309,8 @@ describe("the fixture loader's cardsim client", () => {
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ hex: "00a40400" })
   })
 
-  it("masks the card's version with POST /fixture carrying only appletVersion", async () => {
-    const card = bridgeCard("http://127.0.0.1:9876")
-    reply(200, { appletVersion: "0.4" })
-    await card.mask("0.4")
-    expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
-      ["http://127.0.0.1:9876/fixture", "POST"],
-    ])
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ appletVersion: "0.4" })
-    reply(400, { error: "appletVersion 0.9 is not one of [0.4, 0.5, 0.6]" })
-    await expect(card.mask("0.5")).rejects.toThrow(/400/)
+  it("has no version mask: 2.0 cardsim refuses appletVersion by name", () => {
+    expect(bridgeCard("http://127.0.0.1:9876")).not.toHaveProperty("mask")
   })
 
   it("throws on a non-2xx or an answer with no status word, and never retries", async () => {
@@ -371,11 +332,14 @@ describe("the fixture server", () => {
   ): Promise<Reply> =>
     new Promise((resolve) => {
       let status = 0
+      let type = ""
       const res = {
-        writeHead: (code: number) => {
+        writeHead: (code: number, headers: Record<string, string>) => {
           status = code
+          type = headers["content-type"]
         },
-        end: (text: string) => resolve({ status, body: JSON.parse(text) }),
+        end: (text: string) =>
+          resolve({ status, body: type === "text/plain" ? text : JSON.parse(text) }),
       }
       handler(
         { method, url } as Parameters<typeof handler>[0],
@@ -387,23 +351,52 @@ describe("the fixture server", () => {
   beforeEach(() => errorSpy.mockImplementation(() => undefined))
   afterAll(() => errorSpy.mockRestore())
 
-  it("loads a fixture by name, loaded-0.4 included", async () => {
+  it("loads a fixture by name", async () => {
     const { deps } = setup()
     const handler = fixtureHandler(deps, health)
-    const { status, body } = await request(handler, "POST", "/load/loaded-0.4")
+    const { status, body } = await request(handler, "POST", "/load/limited")
     expect(status).toBe(200)
-    expect(body).toMatchObject({ name: "loaded-0.4", version: "0.4", clearPin: false })
+    expect(body).toMatchObject({ name: "limited", version: "2.0", dailyLimit: 5000 })
   })
 
-  it("answers 404 to a fixture it does not know, without echoing the name", async () => {
+  it("serves the tip header stub the app's dev bridge points at, in Esplora's shape: a real header the card takes", async () => {
     const { deps } = setup()
-    const { status, body } = await request(
-      fixtureHandler(deps, health),
-      "POST",
-      "/load/nothing",
+    const handler = fixtureHandler(deps, health)
+    const hash = await request(handler, "GET", "/headers/blocks/tip/hash")
+    expect(hash).toEqual({ status: 200, body: FIXTURE_TIP_HEADER.hash })
+    const header = await request(
+      handler,
+      "GET",
+      `/headers/block/${FIXTURE_TIP_HEADER.hash}/header`,
     )
-    expect(status).toBe(404)
-    expect(JSON.stringify(body)).not.toContain("nothing")
+    expect(header).toEqual({ status: 200, body: FIXTURE_TIP_HEADER.header })
+    // The app's own check takes it: its work, its hash, its time.
+    const { checkHeader } = jest.requireActual("@app/utils/cashu-card-headers")
+    expect(
+      checkHeader(
+        (FIXTURE_TIP_HEADER.header.match(/../g) ?? []).map((h) => parseInt(h, 16)),
+        FIXTURE_TIP_HEADER.hash,
+      ),
+    ).toMatchObject({ time: FIXTURE_TIP_HEADER.time })
+    const other = await request(
+      handler,
+      "GET",
+      `/headers/block/${"00".repeat(32)}/header`,
+    )
+    expect(other.status).toBe(404)
+  })
+
+  it("answers 404 to a fixture it does not know, the old loaded-0.4 among them, without echoing the name", async () => {
+    const { deps } = setup()
+    for (const name of ["nothing", "loaded-0.4"]) {
+      const { status, body } = await request(
+        fixtureHandler(deps, health),
+        "POST",
+        `/load/${name}`,
+      )
+      expect(status).toBe(404)
+      expect(JSON.stringify(body)).not.toContain(name)
+    }
   })
 
   it("a failed fixture answers a fixed error and logs the detail with a constant format", async () => {

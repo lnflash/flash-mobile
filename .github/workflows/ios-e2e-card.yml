@@ -14,6 +14,9 @@ on:
       - "app/utils/cashu-card*"
       - "app/utils/cashu-card-topup/**"
       - "app/utils/cashu-mint.ts"
+      # The card's known state (owned, limits) and the AIDs iOS may select.
+      - "app/store/redux/slices/flashcardV2Slice.ts"
+      - "ios/LNFlash/Info.plist"
       - "app/hooks/use-card-top-up.ts"
       - "app/hooks/use-tap-flashcard.ts"
       - "app/screens/card-screen/**"
@@ -42,12 +45,17 @@ permissions:
   contents: read
 
 env:
-  # lnflash/cashu-javacard main with tools/cardsim (ENG-634, #33).
-  CASHU_JAVACARD_REF: 7a961021e0b563c75b6968320bf1b098c0ef07f0
-  # Nutshell. 0.20.3 (what forge runs) no longer installs: the breez-sdk-spark
-  # range it pins is gone from PyPI. marshmallow and limits are capped because
-  # 0.21.0 leaves them open and their current majors break its startup.
-  NUTSHELL_VERSION: "0.21.0"
+  # lnflash/cashu-javacard, card protocol 2.0 (ENG-673): main at the merge of
+  # #34, released as v2.0.0-rc.1 (the 2.0 spec, cardsim and its fixtures).
+  CASHU_JAVACARD_REF: 9574bc7df7709fd17145ff85465783cfbe4c37be
+  # Nutshell 0.20.3, the public release nearest forge's 0.20.3.1 (architect's
+  # decision 6). It pins a breez-sdk-spark range PyPI no longer has, which
+  # FakeWallet never uses: it is installed without its dependencies, and they
+  # are installed beside it with the nearest breez-sdk-spark PyPI still has.
+  # marshmallow and limits are capped because their current majors break its
+  # startup.
+  NUTSHELL_VERSION: "0.20.3"
+  NUTSHELL_BREEZ_SPARK: "0.17.0"
   MAESTRO_VERSION: "2.10.0"
   BRIDGE_URL: http://localhost:9876
   MINT_URL: http://localhost:3338
@@ -106,7 +114,10 @@ jobs:
       # start, as forge's keysets are: a card slot cannot hold a v2 id.
       - name: Start the mint (Nutshell, FakeWallet)
         run: |
-          python -m pip install "cashu==${NUTSHELL_VERSION}" "marshmallow<4" "limits<4"
+          python -m pip install --no-deps "cashu==${NUTSHELL_VERSION}"
+          python -c 'import importlib.metadata as m, re; print("\n".join(re.sub(r" \((.*)\)", r"\1", r) for r in m.requires("cashu") if not r.startswith("breez")))' > "$RUNNER_TEMP/nutshell-deps.txt"
+          python -m pip install -r "$RUNNER_TEMP/nutshell-deps.txt" \
+            "breez-sdk-spark==${NUTSHELL_BREEZ_SPARK}" "marshmallow<4" "limits<4"
           mkdir -p .e2e/mint
           cd .e2e/mint
           VERSION=0.19.2 MINT_PRIVATE_KEY=ci-e2e-only \
@@ -121,7 +132,7 @@ jobs:
           nohup node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve --port 9877 \
             --bridge "$BRIDGE_URL" --mint "$MINT_URL" > .e2e/fixtures.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS "$FIXTURES_URL/health" > /dev/null && break; sleep 1; done
-          for fixture in fresh loaded spent full blocked loaded-0.4; do
+          for fixture in fresh owned loaded spent full blocked limited; do
             curl -fsS -X POST "$FIXTURES_URL/load/$fixture"; echo
           done
 

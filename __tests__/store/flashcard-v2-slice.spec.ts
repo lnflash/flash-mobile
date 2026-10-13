@@ -1,9 +1,11 @@
 /**
- * ENG-616 — flashcardV2 slice: the device-local record of the Cashu cards this
- * phone has read.
+ * ENG-616, ENG-675 — flashcardV2 slice: the device-local record of the Cashu
+ * cards this phone has read, with each card's owner flag, whether it needs an
+ * update, and its limits (card protocol 2.0).
  */
 import reducer, {
   cardForgotten,
+  cardLimitsSet,
   cardSeen,
   cardUnitResolved,
   initialFlashcardV2State,
@@ -12,6 +14,7 @@ import reducer, {
 } from "@app/store/redux/slices/flashcardV2Slice"
 import {
   migrateFlashcardV2,
+  migrateFlashcardV2Cards,
   migrations,
   PERSIST_VERSION,
 } from "@app/store/redux/migrations"
@@ -21,9 +24,12 @@ const PUBKEY = "02" + "ab".repeat(32)
 const seen = (overrides = {}) =>
   cardSeen({
     pubkey: PUBKEY,
-    version: "0.2",
+    version: "2.0",
     pinState: "set",
     lastBalance: 1500,
+    owned: true,
+    needsUpdate: false,
+    limits: { day: 0, allowance: 0, rollBudget: 7, rolls: 0 },
     at: 1_000,
     ...overrides,
   })
@@ -42,9 +48,12 @@ describe("flashcardV2 slice — known cards", () => {
 
     expect(state.cards[PUBKEY]).toEqual({
       pubkey: PUBKEY,
-      version: "0.2",
+      version: "2.0",
       pinState: "set",
       lastBalance: 1500,
+      owned: true,
+      needsUpdate: false,
+      limits: { day: 0, allowance: 0, rollBudget: 7, rolls: 0 },
       lastSeenAt: 1_000,
       unit: undefined,
     })
@@ -145,9 +154,143 @@ describe("flashcardV2 slice — unit from the mint", () => {
   })
 })
 
+describe("flashcardV2 slice — limits (ENG-675)", () => {
+  it("keeps the payment limit this phone set across reads, which never see it", () => {
+    let state = reducer(undefined, seen())
+    state = reducer(
+      state,
+      cardLimitsSet({
+        pubkey: PUBKEY,
+        limits: { day: 5000, payment: 1000, allowance: 250, rollBudget: 12 },
+      }),
+    )
+    expect(state.cards[PUBKEY].limits).toEqual({
+      day: 5000,
+      payment: 1000,
+      allowance: 250,
+      rollBudget: 12,
+      rolls: 0,
+    })
+    state = reducer(
+      state,
+      seen({ limits: { day: 5000, allowance: 250, rollBudget: 12, rolls: 1 } }),
+    )
+    expect(state.cards[PUBKEY].limits).toEqual({
+      day: 5000,
+      allowance: 250,
+      payment: 1000,
+      rollBudget: 12,
+      rolls: 1,
+    })
+  })
+
+  it("takes the card's own payment limit from a read under the owner's grant, over the one this phone set", () => {
+    // Another phone with the same key changed it to 0; the card said so here.
+    let state = reducer(undefined, seen())
+    state = reducer(
+      state,
+      cardLimitsSet({
+        pubkey: PUBKEY,
+        limits: { day: 5000, payment: 1000, allowance: 250, rollBudget: 7 },
+      }),
+    )
+    state = reducer(state, seen({ limits: { day: 5000, payment: 0, allowance: 250 } }))
+    expect(state.cards[PUBKEY].limits.payment).toBe(0)
+  })
+
+  it("drops it once the card reads with no owner: it changed hands", () => {
+    let state = reducer(undefined, seen())
+    state = reducer(
+      state,
+      cardLimitsSet({
+        pubkey: PUBKEY,
+        limits: { day: 0, payment: 1000, allowance: 0, rollBudget: 7 },
+      }),
+    )
+    state = reducer(state, seen({ owned: false, limits: { day: 0, allowance: 0 } }))
+    expect(state.cards[PUBKEY].limits.payment).toBeUndefined()
+  })
+
+  it("never invents a card for limits set on one not on record", () => {
+    const state = reducer(
+      undefined,
+      cardLimitsSet({
+        pubkey: PUBKEY,
+        limits: { day: 1, payment: 1, allowance: 1, rollBudget: 7 },
+      }),
+    )
+    expect(state.cards).toEqual({})
+  })
+})
+
+describe("redux-persist migration to version 3 (ENG-675)", () => {
+  it("is registered at the current persist version, after version 2's", () => {
+    expect(PERSIST_VERSION).toBe(3)
+    expect(migrations[3]).toBe(migrateFlashcardV2Cards)
+    expect(migrations[2]).toBe(migrateFlashcardV2)
+  })
+
+  it("gives every card recorded before 2.0 an owner flag, limits off, and marks a 0.x card as needing an update", () => {
+    const zeroX = {
+      pubkey: PUBKEY,
+      version: "0.6",
+      pinState: "set",
+      lastBalance: 21,
+      lastSeenAt: 5,
+      unit: "sat",
+    }
+    const migrated = migrateFlashcardV2Cards({
+      flashcardV2: { cards: { [PUBKEY]: zeroX }, attachedPubkey: PUBKEY },
+      other: { kept: true },
+    })
+    expect(migrated.flashcardV2.cards[PUBKEY]).toEqual({
+      ...zeroX,
+      owned: false,
+      needsUpdate: true,
+      limits: { day: 0, allowance: 0 },
+    })
+    expect(migrated.flashcardV2.attachedPubkey).toBe(PUBKEY)
+    expect(migrated.other).toEqual({ kept: true })
+  })
+
+  it("does not mark a 2.0 card; a card whose version it cannot read reads as needing an update", () => {
+    const migrated = migrateFlashcardV2Cards({
+      flashcardV2: {
+        cards: {
+          a: { pubkey: "a", version: "2.0" },
+          b: { pubkey: "b", version: undefined },
+        },
+      },
+    })
+    expect(migrated.flashcardV2.cards.a.needsUpdate).toBe(false)
+    expect(migrated.flashcardV2.cards.b.needsUpdate).toBe(true)
+  })
+
+  it("leaves a store with no cards as it is, and keeps fields already there", () => {
+    expect(migrateFlashcardV2Cards({ accountUpgrade: {} })).toEqual({
+      accountUpgrade: {},
+    })
+    const done = {
+      flashcardV2: {
+        cards: {
+          a: {
+            pubkey: "a",
+            version: "2.0",
+            owned: true,
+            needsUpdate: false,
+            limits: { day: 9, allowance: 0 },
+          },
+        },
+      },
+    }
+    expect(migrateFlashcardV2Cards(done).flashcardV2.cards.a).toEqual(
+      done.flashcardV2.cards.a,
+    )
+  })
+})
+
 describe("redux-persist migration to version 2", () => {
-  it("is registered at the current persist version", () => {
-    expect(PERSIST_VERSION).toBe(2)
+  it("is registered at version 2", () => {
     expect(migrations[2]).toBe(migrateFlashcardV2)
   })
 

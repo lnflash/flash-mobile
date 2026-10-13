@@ -25,8 +25,14 @@ import { initialFlashcardV2State } from "./slices/flashcardV2Slice"
  * without the new field no matter what the reducer's initial state says. An
  * optional field that starts absent, as `attachedPubkey` does, needs neither:
  * a rehydrated `{ cards }` leaves it absent, which is its initial state.
+ *
+ * Version 3 (ENG-675, card protocol 2.0) gives every known card `owned`,
+ * `needsUpdate` and `limits`. A card recorded before 2.0 is a 0.x card, which
+ * this app can no longer use: it reads as needing an update until a 2.0 read
+ * says otherwise. Its owner is unknown (a 0.x card had none), and its limits
+ * off.
  */
-export const PERSIST_VERSION = 2
+export const PERSIST_VERSION = 3
 
 const LEGACY_STATUS: Record<string, UpgradeVerificationStatus> = {
   Pending: "UNDER_REVIEW",
@@ -65,9 +71,31 @@ export const migrateAccountUpgradeV1 = (state: any): any => {
 export const migrateFlashcardV2 = (state: any): any =>
   state?.flashcardV2 ? state : { ...state, flashcardV2: initialFlashcardV2State }
 
+/** "0.6" or "2.0": the major version, NaN when there is none to read. */
+const majorOf = (version: unknown): number =>
+  typeof version === "string" ? Number.parseInt(version.split(".")[0], 10) : Number.NaN
+
+export const migrateFlashcardV2Cards = (state: any): any => {
+  const cards = state?.flashcardV2?.cards
+  if (!cards || typeof cards !== "object") return state
+  const migrated = Object.fromEntries(
+    Object.entries(cards).map(([pubkey, card]: [string, any]) => [
+      pubkey,
+      {
+        ...card,
+        owned: card?.owned ?? false,
+        needsUpdate: card?.needsUpdate ?? !(majorOf(card?.version) >= 2),
+        limits: card?.limits ?? { day: 0, allowance: 0 },
+      },
+    ]),
+  )
+  return { ...state, flashcardV2: { ...state.flashcardV2, cards: migrated } }
+}
+
 export const migrations = {
   1: migrateAccountUpgradeV1,
-  [PERSIST_VERSION]: migrateFlashcardV2,
+  2: migrateFlashcardV2,
+  [PERSIST_VERSION]: migrateFlashcardV2Cards,
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

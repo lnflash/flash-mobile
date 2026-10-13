@@ -1,27 +1,28 @@
 /**
  * The outputs a mint signs for a Cashu card, and the proofs they become
- * (ENG-616).
+ * (ENG-616; format 4, card protocol 2.0, ENG-675).
  *
- * A card stores a proof as keyset id + amount + 32-byte nonce + C. The full
- * NUT-10 secret never goes on the card: whoever spends the proof rebuilds it
- * from the nonce and the card's public key (`buildCardP2PKSecret`). So the
- * secret a mint signs must be exactly that string, byte for byte. A proof
- * whose secret differs by a single character is refused by the mint, and only
- * after the card has burned the slot to sign for it.
+ * A card stores a piece as keyset id + amount + 32-byte nonce + C + date. The
+ * full NUT-10 secret never goes on the card: the card rebuilds it from the
+ * nonce, its own public key and the date (`buildCardP2PKSecret`, spec/NUT-XX.md
+ * "The card piece"), and signs one SIG_ALL signature over every piece's
+ * secret. So the secret a mint signs must be exactly that string, byte for
+ * byte. A piece whose secret differs by a single character is one the card
+ * signs for and the mint refuses.
  *
- * Ported from flash-pos `src/services/cashuMint.ts`. flash-pos, cashu-client
- * (`buildP2PKSecret`) and this module must serialize identically; the spec
- * pins all three against a proof minted on silicon.
+ * Byte-exact to getfoxy/iOS `08a-flashcard.js` `cardSecret` (MIT) with format
+ * 4 and date 0, and to cashu-javacard's spec/vectors/secret.json; the spec
+ * holds this module to both.
  */
 import { Amount, OutputData, Proof, blindMessage } from "@cashu/cashu-ts"
 
 import { CardProtocolError, toHex } from "./cashu-card"
 
 /**
- * The NUT-10 P2PK secret for a card proof, from the two values a card reports.
- * `sigflag` is written out even though SIG_INPUTS is the default: the card
- * toolchain has always serialized it, and cashu-ts's own `createP2PKData`,
- * which omits it, mints proofs a card can never spend.
+ * The format-4 NUT-10 P2PK secret of a card piece, from the values a card
+ * reports: no spaces, this key order, lowercase hex, and `["sigflag","SIG_ALL"]`
+ * as the last tag. The app's pieces carry no date (no locktime, no refund key:
+ * the recoverable path stays off), so the flag is the only tag.
  */
 export function buildCardP2PKSecret(nonce: string, cardPubkey: string): string {
   return JSON.stringify([
@@ -29,7 +30,7 @@ export function buildCardP2PKSecret(nonce: string, cardPubkey: string): string {
     {
       nonce: nonce.toLowerCase(),
       data: cardPubkey.toLowerCase(),
-      tags: [["sigflag", "SIG_INPUTS"]],
+      tags: [["sigflag", "SIG_ALL"]],
     },
   ])
 }
@@ -71,7 +72,7 @@ export function makeCanonicalCardOutput(
 
 /**
  * `amount` as powers of two, largest first: the fewest proofs, and so the
- * fewest of the card's 32 slots, that make it up exactly.
+ * fewest of the card's 128 slots, that make it up exactly.
  */
 export function splitPow2(amount: number): number[] {
   if (!Number.isSafeInteger(amount) || amount < 1) {
@@ -92,20 +93,29 @@ export function splitPow2(amount: number): number[] {
   return pieces
 }
 
-/** What LOAD_PROOF writes into a slot. */
+/** The mint's NUT-12 proof as the card keeps it beside a piece: e and s from the mint, r the blinding factor. */
+export type CardDleq = { e: string; s: string; r: string }
+
+/** What LOAD_PROOF writes into a slot, with the mint's DLEQ proof beside it. */
 export type CardSlotProof = {
   keysetId: string
   amount: number
   nonce: string
   C: string
+  /** The piece's locktime: always 0, the app's pieces carry no date. */
+  date: number
+  dleq: CardDleq
 }
+
+const HEX32 = /^[0-9a-f]{64}$/
 
 /**
  * The slot contents for a proof the mint signed for this card, or a
- * `CardProtocolError` if the card could never spend it: a secret that is not
- * the canonical P2PK form, or one locked to a different key. Checked before
- * anything is written, because a card cannot tell a spendable proof from a
- * dead one and would give it a slot and a balance.
+ * `CardProtocolError` if the card could never spend it, or nobody could check
+ * it: a secret that is not the canonical format-4 form, one locked to a
+ * different key, or a proof without its DLEQ (e, s and r). Checked before
+ * anything is written, because a card cannot tell a spendable piece from a
+ * dead one, and a till checks a piece offline by the DLEQ the card keeps.
  */
 export function cardSlotFromProof(proof: Proof, cardPubkey: string): CardSlotProof {
   let nonce: unknown
@@ -123,10 +133,19 @@ export function cardSlotFromProof(proof: Proof, cardPubkey: string): CardSlotPro
       "a minted proof's secret would not rebuild on this card (wrong key or form)",
     )
   }
+  const dleq = proof.dleq as Partial<CardDleq> | undefined
+  const e = dleq?.e?.toLowerCase()
+  const s = dleq?.s?.toLowerCase()
+  const r = dleq?.r?.toLowerCase()
+  if (!e || !s || !r || !HEX32.test(e) || !HEX32.test(s) || !HEX32.test(r)) {
+    throw new CardProtocolError("a minted proof carries no DLEQ proof (e, s and r)")
+  }
   return {
     keysetId: proof.id,
     amount: Amount.from(proof.amount).toNumber(),
     nonce,
     C: proof.C,
+    date: 0,
+    dleq: { e, s, r },
   }
 }

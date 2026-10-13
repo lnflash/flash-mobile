@@ -1,11 +1,11 @@
-# A card with every slot full: the top-up says there is no room and goes no further.
+# A card with all 128 slots full: the top-up says there is no room and goes no further.
 appId: com.lnflash
 name: Flashcard top-up refused on a full card
 tags: [flashcard]
 ---
 - runFlow: subflows/login.yaml
 - runFlow:
-    file: subflows/card.yaml
+    file: subflows/owner-card.yaml
     env:
       FIXTURE: full
 - extendedWaitUntil:
@@ -32,4 +32,4 @@ tags: [flashcard]
     id: topup-next
     enabled: false
 - runScript: scripts/card-state.js
-- assertTrue: ${output.card.counts.unspent === 32}
+- assertTrue: ${output.card.counts.unspent === 128}

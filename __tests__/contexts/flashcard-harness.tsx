@@ -9,6 +9,22 @@ import { IsAuthedContextProvider } from "@app/graphql/is-authed-context"
 import { PersistentStateContext } from "@app/store/persistent-state"
 import { store } from "@app/store/redux"
 import theme from "@app/rne-theme/theme"
+import * as i18nReact from "@app/i18n/i18n-react"
+import { loadLocale } from "@app/i18n/i18n-util.sync"
+
+// The provider's own copy (the needs-update and AUTH toasts) comes from the
+// app's dictionary, which TypesafeI18n renders nothing without.
+loadLocale("en")
+// A spec that mocks `@app/i18n/i18n-react` hands every `useI18nContext` its
+// own LL, and has no component to mount (its mock has no default export, so
+// the interop hands back the module object).
+type I18nComponent = React.ComponentType<React.PropsWithChildren<{ locale: "en" }>>
+const TypesafeI18n = (i18nReact as { default?: unknown }).default
+const I18n = ({ children }: React.PropsWithChildren) => {
+  if (typeof TypesafeI18n !== "function") return <>{children}</>
+  const Component = TypesafeI18n as I18nComponent
+  return <Component locale="en">{children}</Component>
+}
 
 /**
  * Shared harness for the FlashcardProvider specs. Mounts the provider under
@@ -59,24 +75,26 @@ export const renderProvider = (
 ) =>
   render(
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <IsAuthedContextProvider value={isAuthed}>
-          <PersistentStateContext.Provider
-            value={{
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              persistentState: {} as any,
-              updateState,
-              resetState: jest.fn(),
-            }}
-          >
-            <Container>
-              <FlashcardProvider>
-                <Probe onSnapshot={onSnapshot} />
-                {children ?? <></>}
-              </FlashcardProvider>
-            </Container>
-          </PersistentStateContext.Provider>
-        </IsAuthedContextProvider>
-      </ThemeProvider>
+      <I18n>
+        <ThemeProvider theme={theme}>
+          <IsAuthedContextProvider value={isAuthed}>
+            <PersistentStateContext.Provider
+              value={{
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                persistentState: {} as any,
+                updateState,
+                resetState: jest.fn(),
+              }}
+            >
+              <Container>
+                <FlashcardProvider>
+                  <Probe onSnapshot={onSnapshot} />
+                  {children ?? <></>}
+                </FlashcardProvider>
+              </Container>
+            </PersistentStateContext.Provider>
+          </IsAuthedContextProvider>
+        </ThemeProvider>
+      </I18n>
     </Provider>,
   )

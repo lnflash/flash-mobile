@@ -14,6 +14,7 @@ import { Loading } from "./ActivityIndicatorContext"
 
 // hooks
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
@@ -27,14 +28,20 @@ import {
 import { toastShow } from "../utils/toast"
 import {
   AppletNotSelectedError,
+  AuthenticatedTap,
+  CardAuthError,
   CardError,
   CardInfo,
   CardKeysetTotal,
+  CardNeedsUpdateError,
+  CardRecord,
   CardSlotRead,
   CashuCardInfo,
+  ReadChanges,
   Transceiver,
   WrongCardError,
   getBalance as getCardBalance,
+  getCardRecord,
   getInfo,
   getPubkey,
   readCashuCard,
@@ -44,6 +51,15 @@ import {
 } from "../utils/cashu-card"
 import { extendCardTimeout } from "../utils/cashu-card-nfc"
 import { bridgeTransceiver, getCardBridge } from "../utils/cashu-card-bridge"
+import { feedHeader, keptHeader, refreshTipHeader } from "../utils/cashu-card-headers"
+import { ownerSigner, refreshCard } from "../utils/cashu-card-owner"
+import {
+  OwnerKey,
+  OwnerKeySource,
+  confirmOwnerKey,
+  loadSeed,
+  refreshAsOwner,
+} from "../utils/cashu-card-owner-store"
 import {
   CardUnitTotals,
   KeysetUnits,
@@ -63,6 +79,10 @@ const describeError = (err: unknown): string => {
   const status = (err as { response?: { status?: unknown } } | null)?.response?.status
   return typeof status === "number" ? `${name} status=${status}` : name
 }
+
+/** A card's refusal by its status word; anything else as `describeError` says it. */
+const describeCardFailure = (err: unknown): string =>
+  err instanceof CardError ? `${err.name} ${err.sw.toString(16)}` : describeError(err)
 
 /**
  * A card's unspent value per unit, as the mint names the unit of each keyset
@@ -88,6 +108,35 @@ const cardUnitTotals = async (
 
 const width = Dimensions.get("screen").width
 
+/** What a read tap learned about the card's owner. */
+type TapOwnership = {
+  /** The key the card took, if this phone's. */
+  key?: OwnerKey
+  /**
+   * The card granted this phone ALLOW_LOAD in the tap, so the GET_INFO read
+   * after it says the card's limit on one payment (`paymentLimit`).
+   */
+  granted?: boolean
+  /**
+   * The card has an owner and this tap could not settle whether it is this
+   * phone, and why (`OwnerUnsettled`): `locked` for a locked card that was
+   * not asked (no REFRESH due, or no header to send one with), `failed` when
+   * the Keychain, or the card, failed the question in a way that is neither
+   * `9000` nor `6A91`/`6A90`.
+   */
+  unsettled?: OwnerUnsettled
+}
+
+/**
+ * Why a read tap left the card's owner unsettled. `locked`: the card is
+ * locked for good (cashu-javacard spec/APDU.md, LOCK_CARD), answers
+ * ALLOW_LOAD `6986`, and is asked by REFRESH only once one is due and this
+ * phone holds a header, so tapping it again settles nothing until then.
+ * `failed`: the question itself failed (a Keychain that cannot be read, a
+ * card that left), which another tap can settle.
+ */
+export type OwnerUnsettled = "locked" | "failed"
+
 type TransactionItem = {
   date: string
   sats: string
@@ -100,6 +149,11 @@ type TransactionItem = {
 export type FlashcardReadResult = {
   /** A Cashu card (ENG-616): what the card screen will show. */
   cashuCard?: CashuCardInfo
+  /**
+   * A Cashu card of an older protocol (0.x, Foxy 1.x): "This card needs an
+   * update" was shown, nothing was read from it, and nothing was written.
+   */
+  needsUpdate?: boolean
   /** A BoltCard whose balance page loaded: the BoltCard screen has a card to show. */
   boltCard?: boolean
 }
@@ -116,18 +170,102 @@ export type CashuCardState = CashuCardInfo & {
    * read: the screen then labels the card's figure "unit unknown".
    */
   unitTotals?: CardUnitTotals
+  /**
+   * Where this phone's key for the card's owner comes from, once the card
+   * has taken it in the read tap (ENG-675; ALLOW_LOAD, `confirmOwnerKey`, or
+   * on a locked card, which refuses ALLOW_LOAD, REFRESH, `refreshAsOwner`):
+   * `seed` or `device` for one saved here or derived from the seed, offered
+   * either way, since a saved key is not always one the card took; `dev` for
+   * the development bridge's. Undefined for a card with no owner, one owned by
+   * another phone (the card answered `6A91`), or one whose owner this tap
+   * could not settle. Holding a key is not owning the card: every phone with
+   * a seed derives one for every card.
+   */
+  ownerKeySource?: OwnerKeySource
+  /**
+   * The card has an owner, and the read tap could not settle whether it is
+   * this phone (`tendCard`): a locked card with no REFRESH due is never
+   * asked, and a Keychain that cannot be read, or a card that answers the
+   * question with anything but `9000`, `6A91` or `6A90`, leaves it open. The
+   * screen then says the owner is not confirmed rather than "Another phone",
+   * and, by the reason (`OwnerUnsettled`), whether another tap can settle it.
+   * `cardOwnership` reads it.
+   */
+  ownerUnsettled?: OwnerUnsettled
+  /**
+   * The card's limit on one payment, sats (0 is none), as the card said it
+   * to this phone: under the owner's grant in the read tap (GET_INFO bytes
+   * 30-33 after ALLOW_LOAD), or as this phone's SET_LIMIT wrote it since.
+   * Undefined when this phone has had no such answer for the card on screen
+   * (another phone's card, a locked one, the dev bridge's): the card says 0
+   * to anyone else whatever it holds, so `paymentLimit` alone says nothing.
+   * Kept apart from `paymentLimit` so a re-read without the grant (after a
+   * PIN change, say) never turns it into that 0.
+   */
+  ownerPaymentLimit?: number
 }
 
+/**
+ * Whose card it is, as far as this phone knows: `none` for a card with no
+ * owner; `mine` once the card took this phone's key (`ownerKeySource`);
+ * `other` once the card refused this phone's proof (`6A91`, `6A90`) or this
+ * phone holds no key for it at all; `unknown` when the read tap could not
+ * settle it (`ownerUnsettled`). Only `other` is said as "Another phone".
+ */
+export type CardOwnership = "none" | "mine" | "other" | "unknown"
+
+export const cardOwnership = (
+  card: Pick<CashuCardState, "hasOwner" | "ownerKeySource" | "ownerUnsettled">,
+): CardOwnership => {
+  if (!card.hasOwner) return "none"
+  if (card.ownerKeySource !== undefined) return "mine"
+  return card.ownerUnsettled ? "unknown" : "other"
+}
+
+/**
+ * Bytes 29, 30-33 and 38-41 of GET_INFO describe this tap only, or what the
+ * card owes nobody: what the store keeps of a card's limits is what the owner
+ * set, as far as a read can see it. The limit on one payment (bytes 30-33)
+ * is the card's only under the owner's grant, so it is passed in apart, as
+ * `ownerPaymentLimit`, and left out when the card did not say it to this phone.
+ */
+const limitsOf = (info: CardInfo, record?: CardRecord, payment?: number) => ({
+  day: info.dailyLimit,
+  allowance: info.allowance,
+  ...(record ? { rollBudget: record.rollBudget, rolls: record.rolls } : {}),
+  ...(payment === undefined ? {} : { payment }),
+})
+
+/** What an operation teaches this phone about the card that no re-read can say. */
+type LearnedFromOperation = Pick<CashuCardState, "ownerKeySource" | "ownerPaymentLimit">
+
+/**
+ * What an operation proves about the card, in GET_INFO's terms and, for what
+ * only GET_CARD says (the rollover budget, the mint), the record's.
+ */
+export type AssumedCard = Partial<CardInfo> & { record?: Partial<CardRecord> }
+
 /** How a caller of `runCardOperation` learns about, or vouches for, the card afterwards. */
-export type CardOperationOptions = {
+export type CardOperationOptions<T = unknown> = {
   /**
    * What the operation proves about the card once it has succeeded: SET_PIN
    * or CHANGE_PIN answering 9000 proves a PIN is set. Applied to the card on
    * screen (and, signed in, to its record) only when the re-read after a
    * successful operation is lost, so the screen never keeps showing the
-   * state the operation just changed.
+   * state the operation just changed. `record` is merged into the card's
+   * record, and also stands in for a lost GET_CARD when the rest of the
+   * re-read came back (SET_LIMIT's rollover budget, say).
    */
-  assume?: Partial<CardInfo>
+  assume?: AssumedCard
+  /**
+   * What the operation taught this phone about the card that no re-read can
+   * say (ENG-675): whose key its owner is (`ownerKeySource`, after a setup),
+   * or the limit on one payment its owner's SET_LIMIT wrote
+   * (`ownerPaymentLimit`), which the card says only under the grant. Given
+   * as is, or worked out from the operation's result. Applied to the card on
+   * screen once the operation has succeeded, re-read or not.
+   */
+  learned?: LearnedFromOperation | ((result: T) => LearnedFromOperation)
   /**
    * Called with what GET_INFO said when the card was re-read: after the
    * operation succeeded, or after the card refused it. Not called when there
@@ -159,8 +297,8 @@ export interface FlashcardInterface {
   /**
    * One more tap, for something that changes the card: PIN, load, spend.
    * Opens a session, selects the applet, checks it is `expectedPubkey`'s card,
-   * runs `op`, re-reads the card (GET_INFO + GET_BALANCE) so `cashuCard` shows
-   * the result, and releases.
+   * runs `op`, re-reads the card (GET_INFO + GET_BALANCE + GET_CARD) so
+   * `cashuCard` shows the result, record and all, and releases.
    *
    * The re-read never costs the operation its outcome: once `op` has
    * succeeded its result is returned even if the card leaves before the
@@ -174,7 +312,7 @@ export interface FlashcardInterface {
   runCardOperation: <T>(
     op: (transceive: Transceiver) => Promise<T>,
     expectedPubkey: string,
-    options?: CardOperationOptions,
+    options?: CardOperationOptions<T>,
   ) => Promise<T>
 }
 
@@ -202,6 +340,7 @@ type Props = {
 
 export const FlashcardProvider = ({ children }: Props) => {
   const isAuthed = useIsAuthed()
+  const { LL } = useI18nContext()
   const styles = useStyles()
   const { mode } = useTheme().theme
 
@@ -260,6 +399,12 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   const readFlashcard = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
+    // The card's clock is fed from the newest header the phone holds; ask for
+    // the tip now, off the tap, which never waits for it.
+    refreshTipHeader().catch(() => undefined)
+    // The seed's PBKDF2 runs once a session, here, before the tap: the read
+    // tap derives an owned card's key from it (`confirmOwnerKey`).
+    loadSeed().catch(() => undefined)
     // A development build's simulated card (cardsim) needs no NFC: a
     // simulator has none.
     if (getCardBridge()) return handleTag(isPayment)
@@ -312,21 +457,37 @@ export const FlashcardProvider = ({ children }: Props) => {
         : await NfcManager.requestTechnology([NfcTech.IsoDep, NfcTech.Ndef])
       if (tech === NfcTech.IsoDep) {
         let info: CashuCardInfo | null
+        // Whose card it is, as the card said in this tap (`tendCard`).
+        const ownership: TapOwnership = {}
         try {
           info = await readCashuCard(
             bridge
               ? bridgeTransceiver(bridge.url)
               : (bytes) => NfcManager.isoDepHandler.transceive(bytes),
+            { afterAuth: (tap) => tendCard(tap, ownership) },
           )
         } catch (err) {
+          // A card of an older protocol: nothing more was sent to it, and it
+          // is not a BoltCard either. The notice, then the tap is over.
+          if (err instanceof CardNeedsUpdateError) {
+            toastShow({
+              position: "top",
+              message: LL.FlashcardV2.needsUpdateBody(),
+              type: "error",
+            })
+            return { needsUpdate: true }
+          }
           // The card answered SELECT (or the channel itself dropped), so this
           // tap is over: it must not be re-read as a BoltCard. Every NDEF-side
           // failure toasts, so this one does too. Rethrowing keeps the outer
           // catch as the only logging site and the finally as the only release.
+          // A card that could not prove its key (AUTH) shows and stores nothing.
           toastShow({
             position: "top",
             message:
-              "Couldn't read the card. Hold your phone steady against it and try again.",
+              err instanceof CardAuthError
+                ? LL.FlashcardV2.authFailed()
+                : "Couldn't read the card. Hold your phone steady against it and try again.",
             type: "error",
           })
           throw err
@@ -335,7 +496,17 @@ export const FlashcardProvider = ({ children }: Props) => {
           // The card screen renders this; the caller navigates on the result.
           cashuGeneration.current += 1
           const known = knownUnitTotals(info.keysets)
-          setCashuCard(known ? { ...info, unitTotals: known } : info)
+          // Under the grant the read's GET_INFO said the card's payment limit.
+          const ownerPaymentLimit = ownership.granted ? info.paymentLimit : undefined
+          setCashuCard({
+            ...info,
+            ...(known ? { unitTotals: known } : {}),
+            ...(ownership.key ? { ownerKeySource: ownership.key.source } : {}),
+            ...(ownership.unsettled && !ownership.key
+              ? { ownerUnsettled: ownership.unsettled }
+              : {}),
+            ...(ownerPaymentLimit === undefined ? {} : { ownerPaymentLimit }),
+          })
           // A signed-in phone remembers the card: the applet keeps no history
           // of its own, so this device-local record is the only one (ENG-616).
           // A read while signed out stays in memory, as a BoltCard's does.
@@ -346,6 +517,9 @@ export const FlashcardProvider = ({ children }: Props) => {
                 version: info.version,
                 pinState: info.pinState,
                 lastBalance: info.balance,
+                owned: info.hasOwner,
+                needsUpdate: false,
+                limits: limitsOf(info, info.record, ownerPaymentLimit),
                 at: Date.now(),
               }),
             )
@@ -358,7 +532,7 @@ export const FlashcardProvider = ({ children }: Props) => {
               dispatch(cardUnitResolved({ pubkey: info.pubkey, unit: soleUnit(known) }))
             }
           }
-          // The mint names the units; ask it off the NFC session, which the
+          // The mint names the units: ask it off the NFC session, which the
           // finally below releases without waiting.
           resolveCashuUnits(info, cashuGeneration.current)
           return { cashuCard: info }
@@ -405,6 +579,87 @@ export const FlashcardProvider = ({ children }: Props) => {
       cancelTechnologyRequest()
     }
     return boltCard ? { boltCard } : {}
+  }
+
+  /**
+   * In a read tap, once the card has proved its key: the card's clock is fed
+   * (TELL_TIME, and SET_HEADER when the phone holds a newer header:
+   * `feedHeader`); an owned card is asked whether this phone is its owner, and
+   * the answer is left in `ownership`; and a card whose day's window has
+   * rolled since its owner last refreshed it is refreshed by its owner's
+   * phone (REFRESH, the owner's proof over the kept header).
+   *
+   * An unlocked card is asked by ALLOW_LOAD (`confirmOwnerKey`: the saved
+   * key, or the seed's, offered as its proof), then refreshed with the key it
+   * took. A locked card answers ALLOW_LOAD `6986` (spec/APDU.md, ALLOW_LOAD)
+   * and Foxy never sends it the grant, but REFRESH stays open to its owner
+   * (spec/APDU.md, REFRESH): a locked card that needs a refresh is sent one
+   * with this phone's key (`refreshAsOwner`), and its `9000` is the answer.
+   * A `6A91` there costs no PIN try and changes nothing. A locked card that
+   * needs no refresh is not asked: this tap leaves its owner unsettled
+   * (`ownership.unsettled` is `locked`), as does a question that failed for
+   * any other reason than the card's `6A91`/`6A90` (`failed`: a Keychain
+   * that cannot be read, a card that left): the screen never calls the
+   * holder's own card "Another phone" on a failure, and asks for another tap
+   * only when one can settle it.
+   *
+   * Best effort: nothing here fails the read, and nothing here waits on the
+   * network. Resolves what it changed, so the read asks the card again.
+   */
+  const tendCard = async (
+    { transceive, info, pubkey, record }: AuthenticatedTap,
+    ownership: TapOwnership,
+  ): Promise<ReadChanges> => {
+    const clock = await feedHeader(transceive, info.now)
+    let now = clock.now
+    let refreshed = false
+    const header = keptHeader()
+    if (info.hasOwner && info.locked) {
+      if (record.rolls > 0 && header) {
+        try {
+          const answer = await refreshAsOwner(transceive, pubkey, header.bytes)
+          if (answer) {
+            ownership.key = answer.key
+            now = answer.now
+            refreshed = true
+          }
+        } catch (err) {
+          ownership.unsettled = "failed"
+          console.warn("Cashu card refresh skipped:", describeCardFailure(err))
+        }
+      } else {
+        // Not asked: a locked card takes no ALLOW_LOAD, and no REFRESH is due
+        // (or none can be sent without a header). Tapping again changes
+        // nothing until one is.
+        ownership.unsettled = "locked"
+      }
+    } else if (info.hasOwner) {
+      try {
+        ownership.key = await confirmOwnerKey(transceive, pubkey)
+        // Every key but the dev bridge's was offered as ALLOW_LOAD's proof.
+        ownership.granted = ownership.key !== undefined && ownership.key.source !== "dev"
+      } catch (err) {
+        ownership.unsettled = "failed"
+        console.warn("Cashu card owner check skipped:", describeCardFailure(err))
+      }
+      if (ownership.key && record.rolls > 0 && header) {
+        try {
+          now = await refreshCard(
+            transceive,
+            ownerSigner(ownership.key.privateKey),
+            header.bytes,
+          )
+          refreshed = true
+        } catch (err) {
+          console.warn("Cashu card refresh skipped:", describeCardFailure(err))
+        }
+      }
+    }
+    return {
+      clockMoved: now !== info.now,
+      refreshed,
+      granted: ownership.granted === true,
+    }
   }
 
   /**
@@ -457,11 +712,16 @@ export const FlashcardProvider = ({ children }: Props) => {
    */
   const recordCardOperation = (
     pubkey: string,
-    update: Partial<CardInfo> & { balance?: number },
+    { record: recordUpdate, ...update }: AssumedCard & { balance?: number },
     slots?: CardSlotRead,
   ) => {
     const previous = cashuCardRef.current
     if (previous?.pubkey !== pubkey) return
+    // The record as the operation left it: GET_CARD's whole answer, or what
+    // the operation proves of it, over what the card said before.
+    const record = recordUpdate
+      ? { ...previous.record, ...recordUpdate }
+      : previous.record
     const moved = update.balance !== undefined && update.balance !== previous.balance
     const spentChanged = update.spent !== undefined && update.spent !== previous.spent
     const keysets = slots?.keysets
@@ -470,6 +730,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     const card: CashuCardState = {
       ...previous,
       ...update,
+      record,
       // A split read in the same session as the move replaces the old one.
       keysets: moved ? keysets : previous.keysets,
       spentSlots: moved || spentChanged ? slots?.spentSlots : previous.spentSlots,
@@ -490,6 +751,9 @@ export const FlashcardProvider = ({ children }: Props) => {
           version: card.version,
           pinState: card.pinState,
           lastBalance: card.balance,
+          owned: card.hasOwner,
+          needsUpdate: false,
+          limits: limitsOf(card, card.record, card.ownerPaymentLimit),
           at: Date.now(),
         }),
       )
@@ -500,18 +764,31 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   /**
-   * Re-reads the card after an operation (GET_INFO + GET_BALANCE) and records
-   * what it says. Best effort: resolves what GET_INFO said, or undefined when
-   * the card left first. The operation's own outcome stands either way, so a
-   * lost re-read is logged (error name only) and never thrown.
+   * Re-reads the card after an operation (GET_INFO + GET_BALANCE + GET_CARD)
+   * and records what it says. GET_CARD is read because an operation can
+   * change the record (SET_LIMIT's rollover budget, SET_CARD's mint, a
+   * REFRESH's roll count) and the card on screen must not keep the old one:
+   * the limits screen opens its budget field at it, and a SET_LIMIT always
+   * writes the budget. Best effort: resolves what GET_INFO said, or undefined
+   * when the card left first. A GET_CARD lost after the rest came back keeps
+   * the rest, with `assumeRecord` (what the operation proves of the record)
+   * over the record the card said before. The operation's own outcome stands
+   * either way, so a lost re-read is logged (error name only) and never thrown.
    */
   const rereadCard = async (
     transceive: Transceiver,
     pubkey: string,
+    assumeRecord?: Partial<CardRecord>,
   ): Promise<CardInfo | undefined> => {
     try {
       const info = await getInfo(transceive)
       const balance = await getCardBalance(transceive)
+      const record: Partial<CardRecord> | undefined = await getCardRecord(
+        transceive,
+      ).catch((err) => {
+        console.warn("Cashu card record re-read failed:", describeError(err))
+        return assumeRecord
+      })
       // An operation that moved value (a top-up) changed the card's keyset
       // split too, and one that freed spent slots (the top-up's reclaim,
       // ENG-631) changed its spent count: read the slots while the card is
@@ -522,7 +799,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       const changed =
         same && (balance !== previous.balance || info.spent !== previous.spent)
       const slots = changed ? await readKeysetSplit(transceive, info) : undefined
-      recordCardOperation(pubkey, { ...info, balance }, slots)
+      recordCardOperation(pubkey, { ...info, balance, record }, slots)
       return info
     } catch (err) {
       console.warn("Cashu card re-read after an operation failed:", describeError(err))
@@ -533,7 +810,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   const runCardOperation = async <T,>(
     op: (transceive: Transceiver) => Promise<T>,
     expectedPubkey: string,
-    { assume, onReread }: CardOperationOptions = {},
+    { assume, onReread, learned }: CardOperationOptions<T> = {},
   ): Promise<T> => {
     // Development builds only: the card is cardsim, over HTTP (ENG-634).
     const bridge = getCardBridge()
@@ -558,8 +835,10 @@ export const FlashcardProvider = ({ children }: Props) => {
       const pubkey = toHex(await getPubkey(transceive))
       if (pubkey !== expectedPubkey) throw new WrongCardError(pubkey)
 
-      const reread = async () => {
-        const info = await rereadCard(transceive, expectedPubkey)
+      // After a refusal nothing the operation would prove holds, so a lost
+      // GET_CARD keeps the record the card said before.
+      const reread = async (assumeRecord?: Partial<CardRecord>) => {
+        const info = await rereadCard(transceive, expectedPubkey, assumeRecord)
         if (info) onReread?.(info)
         return info
       }
@@ -582,7 +861,14 @@ export const FlashcardProvider = ({ children }: Props) => {
       // re-read must not turn a write that landed into a failure (a PIN the
       // holder would then retype as the old one). What the operation itself
       // proves stands in for the lost re-read.
-      if (!(await reread()) && assume) recordCardOperation(expectedPubkey, assume)
+      if (!(await reread(assume?.record)) && assume) {
+        recordCardOperation(expectedPubkey, assume)
+      }
+      if (learned) {
+        const current = cashuCardRef.current
+        const facts = typeof learned === "function" ? learned(result) : learned
+        if (current?.pubkey === expectedPubkey) setCashuCard({ ...current, ...facts })
+      }
       return result
     } finally {
       cancelTechnologyRequest()

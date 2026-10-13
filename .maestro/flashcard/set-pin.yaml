@@ -1,13 +1,14 @@
-# A fresh card gets its first PIN: SET_PIN over the bridge.
+# A card this phone owns, with no PIN, gets one: ALLOW_LOAD (the owner's
+# grant), then SET_PIN, sealed, in one tap ("ADD PIN").
 appId: com.lnflash
 name: Flashcard set PIN
 tags: [flashcard]
 ---
 - runFlow: subflows/login.yaml
 - runFlow:
-    file: subflows/card.yaml
+    file: subflows/owner-card.yaml
     env:
-      FIXTURE: fresh
+      FIXTURE: owned
 - assertVisible:
     id: flashcard-v2-no-pin
 - tapOn:
@@ -15,15 +16,9 @@ tags: [flashcard]
 - assertVisible:
     id: pin-entry
 - runFlow:
-    file: subflows/pin-entry.yaml
+    file: subflows/new-pin.yaml
     env:
-      PIN: "1234"
-      NEXT_ID: pin-next
-- runFlow:
-    file: subflows/pin-entry.yaml
-    env:
-      PIN: "1234"
-      NEXT_ID: pin-next
+      NEW: "1234"
 - extendedWaitUntil:
     visible:
       id: flashcard-v2-action-change-pin
