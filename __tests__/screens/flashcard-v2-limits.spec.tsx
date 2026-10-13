@@ -8,6 +8,7 @@ import * as React from "react"
 import { Provider } from "react-redux"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
+import { Keyboard, ScrollView } from "react-native"
 
 import type { CardOperationOptions, CashuCardState } from "../../app/contexts/Flashcard"
 import appTheme from "../../app/rne-theme/theme"
@@ -471,6 +472,55 @@ describe("FlashcardV2LimitsScreen", () => {
         LL.FlashcardV2.noOwner(),
       ),
     )
+  })
+})
+
+describe("FlashcardV2LimitsScreen and the number pad", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    store.dispatch(resetFlashcardV2())
+    mockCard = cashuCardState({ pubkey: createFakeCard(128, { pin: "1234" }).pubkey })
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  /** Lays the budget field out at `top` in the scroll view. */
+  const layOutBudget = (top: number) =>
+    fireEvent(screen.getByTestId("limits-roll-budget-field"), "layout", {
+      nativeEvent: { layout: { x: 0, y: top, width: 320, height: 90 } },
+    })
+
+  it("scrolls the field being typed in above the pad: the budget, at the bottom, is never typed in unseen", () => {
+    jest.spyOn(Keyboard, "isVisible").mockReturnValue(true)
+    renderScreen()
+    const scroll = screen.UNSAFE_getByType(ScrollView).instance as ScrollView
+    const scrollTo = jest.spyOn(scroll, "scrollTo").mockImplementation(() => undefined)
+    layOutBudget(640)
+
+    fireEvent(field("limits-roll-budget"), "focus")
+
+    expect(scrollTo).toHaveBeenCalledWith({ y: 640 - 16, animated: true })
+  })
+
+  it("scrolls once the pad is up when the focus came first", () => {
+    jest.spyOn(Keyboard, "isVisible").mockReturnValue(false)
+    const listeners: Array<() => void> = []
+    jest.spyOn(Keyboard, "addListener").mockImplementation((event, listener) => {
+      if (event === "keyboardDidShow") listeners.push(listener as () => void)
+      return { remove: jest.fn() } as unknown as ReturnType<typeof Keyboard.addListener>
+    })
+    renderScreen()
+    const scroll = screen.UNSAFE_getByType(ScrollView).instance as ScrollView
+    const scrollTo = jest.spyOn(scroll, "scrollTo").mockImplementation(() => undefined)
+    layOutBudget(640)
+
+    fireEvent(field("limits-roll-budget"), "focus")
+    expect(scrollTo).not.toHaveBeenCalled()
+    act(() => listeners.forEach((listener) => listener()))
+
+    expect(scrollTo).toHaveBeenCalledWith({ y: 624, animated: true })
   })
 })
 

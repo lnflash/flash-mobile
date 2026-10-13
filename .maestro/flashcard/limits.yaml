@@ -21,10 +21,11 @@ tags: [flashcard]
     text: "7"
 # iOS's number pad has no dismiss key, so `hideKeyboard` cannot close it, and
 # while it is up it covers the fields below the one being typed in: a tap
-# meant for them lands on its keys. So each field is scrolled into view, typed
-# in, and the pad closed by a tap on that field's own label, which sits above
-# the field and so is never under the pad (the ScrollView's
-# keyboardShouldPersistTaps is "never": a tap outside a field closes it).
+# meant for them lands on its keys. So each field is scrolled into view and
+# typed in (the screen scrolls the focused field above the pad), and the pad
+# is closed by a tap on that field's own label, which sits just above it (the
+# ScrollView's keyboardShouldPersistTaps is "never": a tap outside a field
+# closes it).
 - scrollUntilVisible:
     element:
       id: limits-day
