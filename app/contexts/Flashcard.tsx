@@ -140,10 +140,10 @@ export type CashuCardState = CashuCardInfo & {
   unitTotals?: CardUnitTotals
   /**
    * Where this phone's key for the card's owner comes from, once the card
-   * has taken it (ENG-675): `seed` or `device` for one saved here, which the
-   * card took at setup or since, or one the seed derives that the card took
-   * in the read tap (ALLOW_LOAD, `confirmOwnerKey`); `dev` for the
-   * development bridge's. Undefined for a card with no owner, one owned by
+   * has taken it in the read tap (ENG-675; ALLOW_LOAD, `confirmOwnerKey`):
+   * `seed` or `device` for one saved here or derived from the seed, offered
+   * either way, since a saved key is not always one the card took; `dev` for
+   * the development bridge's. Undefined for a card with no owner, one owned by
    * another phone (the card answered `6A91`), or one whose owner this tap
    * could not settle. Holding a key is not owning the card: every phone with
    * a seed derives one for every card.
@@ -492,7 +492,7 @@ export const FlashcardProvider = ({ children }: Props) => {
    * In a read tap, once the card has proved its key: the card's clock is fed
    * (TELL_TIME, and SET_HEADER when the phone holds a newer header:
    * `feedHeader`); an owned card is asked whether this phone is its owner
-   * (`confirmOwnerKey`: a saved key, or the seed's offered as ALLOW_LOAD's
+   * (`confirmOwnerKey`: the saved key, or the seed's, offered as ALLOW_LOAD's
    * proof), and the answer is left in `ownership`; and a card whose day's
    * window has rolled since its owner last refreshed it is refreshed by its
    * owner's phone (REFRESH, the owner's proof over the kept header). Best

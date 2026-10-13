@@ -205,22 +205,6 @@ export const ownerKeyFor = async (cardPubkey: string): Promise<OwnerKey | undefi
 }
 
 /**
- * The key this phone has already shown the card it owns (saved here), or the
- * dev bridge's. Never derives from the seed: a key the card has not taken is
- * not this phone's yet (`confirmOwnerKey`).
- */
-export const savedOwnerKeyFor = async (
-  cardPubkey: string,
-): Promise<OwnerKey | undefined> => {
-  const dev = devOwnerKey()
-  if (dev) return dev
-  const saved = await ownerKeyStore.get(cardPubkey)
-  return saved
-    ? { privateKey: saved.privateKey, source: saved.source, saved: true }
-    : undefined
-}
-
-/**
  * A key to set a new card up with: the dev bridge's in a development build,
  * else the one the seed derives, else a random one that lives only on this
  * phone. Nothing is saved yet: `setUpCard` saves it before SET_OWNER.
@@ -259,16 +243,18 @@ export const saveOwnerKey = async (
  * grant to load, read as `card.mine`). Holding a key is not owning the card:
  * every phone with a seed derives a key for every card.
  *
- * A key saved here is one the card took already (setup, or an owner's
- * command since), and the dev bridge's is the simulated card's owner: both
- * are this phone's with nothing sent. A key the seed derives and the store
- * does not hold is offered as ALLOW_LOAD's proof (GET_NONCE, ALLOW_LOAD):
- * `9000` and it is this phone's, saved here so the next read (and REFRESH)
- * finds it; `6A91` (another phone's card) or `6A90` (no owner) and it is not.
- * Resolves the key the card took, or undefined. Anything else, a Keychain
- * that cannot be read or the card leaving, rejects: the caller knows nothing
- * either way. An accepted ALLOW_LOAD leaves the grant on for the rest of the
- * tap, and changes nothing else.
+ * Every key but the dev bridge's (the simulated card's owner, never saved)
+ * is offered as ALLOW_LOAD's proof (GET_NONCE, ALLOW_LOAD), a saved one too.
+ * A saved key is not always one the card took: `setUpCard` saves it before
+ * SET_OWNER, so a setup cut short leaves a key saved here for a card still
+ * open, which another phone may then set up (spec/APDU.md, Personalisation:
+ * the first phone to set it up claims it). `9000` and the key is this phone's,
+ * saved here (if it was not already) so REFRESH finds it; `6A91` (another
+ * phone's card) or `6A90` (no owner) and it is not. Resolves the key the card
+ * took, or undefined. Anything else, a Keychain that cannot be read or the
+ * card leaving, rejects: the caller knows nothing either way. An accepted
+ * ALLOW_LOAD leaves the grant on for the rest of the tap, and changes nothing
+ * else.
  */
 export const confirmOwnerKey = async (
   transceive: Transceiver,
@@ -277,7 +263,7 @@ export const confirmOwnerKey = async (
 ): Promise<OwnerKey | undefined> => {
   const key = await ownerKeyFor(cardPubkey)
   if (!key) return undefined
-  if (key.saved || key.source === "dev") return key
+  if (key.source === "dev") return key
   try {
     await allowLoad(transceive, ownerSigner(key.privateKey))
   } catch (err) {
@@ -290,7 +276,9 @@ export const confirmOwnerKey = async (
     throw err
   }
   // The card took it: it is this phone's whether or not the Keychain keeps
-  // it now. A save that fails is tried again at the next owner's command.
+  // it now. A save that fails is tried again at the next owner's command;
+  // a key saved already is left as it is (`saveOwnerKey`).
+  if (key.saved) return key
   const saved = await save(cardPubkey, key).then(
     () => true,
     () => false,

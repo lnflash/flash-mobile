@@ -362,11 +362,6 @@ export class AppletNotSelectedError extends CardError {
       packageSw,
     )}, applet AID ${swLabel(appletSw)}`
   }
-
-  /** Both forms answered 6A82: no Cashu applet on this tag at all. */
-  get noSuchApplet(): boolean {
-    return this.packageSw === SW_FILE_NOT_FOUND && this.appletSw === SW_FILE_NOT_FOUND
-  }
 }
 
 /**

@@ -162,6 +162,81 @@ describe("FlashcardV2LimitsScreen", () => {
     })
   })
 
+  it("a payment limit this phone set, which another phone with the same key has changed since, is the card's when only the daily limit is edited", async () => {
+    // This phone stored 5000; the card now holds 0 (another phone removed it).
+    card = createFakeCard(128, { pin: "1234", limits: { payment: 0 } })
+    mockRunResult = (op) => op(card.transceive)
+    mockCard = cashuCardState({ pubkey: card.pubkey })
+    store.dispatch(
+      cardSeen({
+        pubkey: card.pubkey,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 0,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
+    store.dispatch(
+      cardLimitsSet({
+        pubkey: card.pubkey,
+        limits: { day: 0, payment: 5000, allowance: 0, rollBudget: 7 },
+      }),
+    )
+    renderScreen()
+    expect(field("limits-payment").props.value).toBe("5000")
+    set("limits-day", "3000")
+
+    await save()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    // The grant, GET_INFO under it, then SET_LIMIT with the card's payment limit.
+    expect(card.ins()).toEqual([0x44, 0x45, 0x01, 0x44, 0x34])
+    const setLimit = card.transceive.mock.calls
+      .map(([apdu]) => apdu)
+      .find((a) => a[1] === 0x34)
+    expect(setLimit?.slice(-13)).toEqual([0, 0, 0x0b, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 7])
+    expect(card.limits()).toEqual({ day: 3000, payment: 0, allowance: 0, rollBudget: 7 })
+    expect(store.getState().flashcardV2.cards[card.pubkey].limits).toMatchObject({
+      day: 3000,
+      payment: 0,
+    })
+  })
+
+  it("a payment limit this phone set and the owner edits here is the one written, with no read first", async () => {
+    card = createFakeCard(128, { pin: "1234", limits: { payment: 0 } })
+    mockRunResult = (op) => op(card.transceive)
+    mockCard = cashuCardState({ pubkey: card.pubkey })
+    store.dispatch(
+      cardSeen({
+        pubkey: card.pubkey,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 0,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
+    store.dispatch(
+      cardLimitsSet({
+        pubkey: card.pubkey,
+        limits: { day: 0, payment: 5000, allowance: 0, rollBudget: 7 },
+      }),
+    )
+    renderScreen()
+    set("limits-payment", "4000")
+
+    await save()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(card.ins()).toEqual([0x44, 0x34])
+    expect(card.limits().payment).toBe(4000)
+  })
+
   it("a payment limit typed on a phone that never set one is the one written, with no read first", async () => {
     card = createFakeCard(128, { pin: "1234", limits: { payment: 2500 } })
     mockRunResult = (op) => op(card.transceive)

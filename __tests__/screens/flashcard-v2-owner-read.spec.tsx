@@ -222,7 +222,7 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
     })
   })
 
-  it("a key saved here is one the card took already: nothing is asked of the card", async () => {
+  it("a key saved here is offered to the card too, which takes it: the Owner row says this phone", async () => {
     await ownerKeyStore.put(PUBKEY_HEX, {
       privateKey: DEVICE_KEY,
       source: "device",
@@ -232,9 +232,50 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
 
     await tapCard({ owner: DEVICE_KEY })
 
-    expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
+    // A saved key is not always one the card took: the card is asked (Foxy's cardGrant).
+    expect(card.ins().filter((ins) => ins === INS.ALLOW_LOAD)).toHaveLength(1)
+    expect(card.granted()).toBe(true)
     expect(latest?.cashuCard?.ownerKeySource).toBe("device")
     expect(owner()).toBe(LL.FlashcardV2.ownerThisPhone())
+  })
+
+  it("a saved key the card refuses (a setup cut short, then set up by another phone) is not this phone's: the Owner row says another phone, and a blocked card is refused before any quote", async () => {
+    // This phone saved its key before SET_OWNER, which never landed; another
+    // phone then set the card up (spec/APDU.md, Personalisation).
+    await ownerKeyStore.put(PUBKEY_HEX, {
+      privateKey: DEVICE_KEY,
+      source: "device",
+      createdAt: 1,
+    })
+    await mountScreen()
+    const blocked = createFakeCard(128, { pin: "1234", owner: FAKE_OWNER_KEY })
+    await selectApplet(blocked.transceive)
+    for (let i = 0; i < 3; i += 1) {
+      await verifyCardPin(blocked.transceive, "0000", {
+        sealed: false,
+        cardPubkey: PUBKEY_HEX,
+      }).catch(() => undefined)
+    }
+    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+    getTag.mockResolvedValue({ id: "08AABBCC" })
+    transceive.mockImplementation((bytes: number[]) => blocked.transceive(bytes))
+    await act(async () => {
+      await latest?.readFlashcard()
+    })
+    await waitFor(() => expect(latest?.cashuCard?.pinState).toBe("blocked"))
+
+    // Asked, and refused (6A91).
+    expect(blocked.ins().filter((ins) => ins === INS.ALLOW_LOAD)).toHaveLength(1)
+    expect(blocked.granted()).toBe(false)
+    expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
+    expect(owner()).toBe(LL.FlashcardV2.ownerOther())
+    expect(topUpEligibility(readCard(), { usdEnabled: false })).toEqual({
+      ok: false,
+      reason: "blocked",
+    })
+    expect(screen.queryByText(LL.FlashcardV2.topUp())).toBeNull()
+    expect(screen.getByText(LL.FlashcardV2.blockedOtherBody())).toBeTruthy()
+    expect(screen.queryByText(LL.FlashcardV2.blockedOwnerBody())).toBeNull()
   })
 
   it("a phone with no seed and no saved key asks nothing and owns nothing", async () => {

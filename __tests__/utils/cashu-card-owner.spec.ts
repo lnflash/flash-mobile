@@ -44,7 +44,6 @@ import {
   ownerKeyStore,
   resetSeedCache,
   saveOwnerKey,
-  savedOwnerKeyFor,
   setUpCard,
 } from "../../app/utils/cashu-card-owner-store"
 import { FAKE_OWNER_KEY, createFakeCard } from "../helpers/fake-cashu"
@@ -360,7 +359,6 @@ describe("ownerKeyFor", () => {
       source: "dev",
       saved: false,
     })
-    await expect(savedOwnerKeyFor(CARD)).resolves.toMatchObject({ source: "dev" })
   })
 
   it("never uses the dev bridge's key in a release build (__DEV__ false)", async () => {
@@ -369,7 +367,6 @@ describe("ownerKeyFor", () => {
     dev.__DEV__ = false
     try {
       await expect(ownerKeyFor(CARD)).resolves.toBeUndefined()
-      await expect(savedOwnerKeyFor(CARD)).resolves.toBeUndefined()
       await expect(newOwnerKey(CARD)).resolves.toMatchObject({ source: "device" })
     } finally {
       dev.__DEV__ = true
@@ -383,8 +380,6 @@ describe("ownerKeyFor", () => {
       source: "seed",
       saved: false,
     })
-    // savedOwnerKeyFor never derives: only what was saved or the dev key.
-    await expect(savedOwnerKeyFor(CARD)).resolves.toBeUndefined()
     await ownerKeyStore.put(CARD, {
       privateKey: FAKE_OWNER_KEY,
       source: "device",
@@ -450,12 +445,15 @@ describe("confirmOwnerKey: holding a key is not owning the card (Foxy's cardGran
       privateKey: key,
       source: "seed",
     })
-    // The next read asks nothing: the saved key is one the card took.
+    // The next read asks the card again, with the saved key, and saves nothing.
+    const save = jest.fn(saveOwnerKey)
     const next = createFakeCard(128, { owner: key })
-    await expect(confirmOwnerKey(next.transceive, next.pubkey)).resolves.toMatchObject({
-      saved: true,
-    })
-    expect(next.ins()).toEqual([])
+    await expect(
+      confirmOwnerKey(next.transceive, next.pubkey, save),
+    ).resolves.toMatchObject({ saved: true })
+    expect(next.ins()).toEqual([0x44, 0x45])
+    expect(next.granted()).toBe(true)
+    expect(save).not.toHaveBeenCalled()
   })
 
   it("a key the card took is this phone's even when the Keychain will not keep it now", async () => {
@@ -470,23 +468,50 @@ describe("confirmOwnerKey: holding a key is not owning the card (Foxy's cardGran
     ).resolves.toMatchObject({ source: "seed", saved: false })
   })
 
-  it("asks the card nothing for a phone with no key, a saved key or the dev bridge's", async () => {
+  it("asks the card nothing for a phone with no key, or the dev bridge's", async () => {
     const card = createFakeCard(128, { owner: FAKE_OWNER_KEY })
     await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toBeUndefined()
-    await ownerKeyStore.put(card.pubkey, {
-      privateKey: FAKE_OWNER_KEY,
-      source: "device",
-      createdAt: 1,
-    })
-    await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toMatchObject({
-      source: "device",
-      saved: true,
-    })
     setCardBridge({ url: "http://localhost:9876", ownerKey: TEST_OWNER_PRIVATE_KEY })
     await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toMatchObject({
       source: "dev",
     })
     expect(card.ins()).toEqual([])
+  })
+
+  it("asks the card about a saved key too: one it took is this phone's, with nothing saved again", async () => {
+    const card = createFakeCard(128, { owner: FAKE_OWNER_KEY })
+    await ownerKeyStore.put(card.pubkey, {
+      privateKey: FAKE_OWNER_KEY,
+      source: "device",
+      createdAt: 1,
+    })
+    const save = jest.fn(saveOwnerKey)
+    await expect(confirmOwnerKey(card.transceive, card.pubkey, save)).resolves.toEqual({
+      privateKey: FAKE_OWNER_KEY,
+      source: "device",
+      saved: true,
+    })
+    expect(card.ins()).toEqual([0x44, 0x45])
+    expect(card.granted()).toBe(true)
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it("a saved key the card refuses (6A91: a setup cut short, then set up by another phone) is not this phone's", async () => {
+    // Saved before SET_OWNER, which never landed; another phone owns the card.
+    const other = "33".repeat(32)
+    const card = createFakeCard(128, { owner: FAKE_OWNER_KEY })
+    await ownerKeyStore.put(card.pubkey, {
+      privateKey: other,
+      source: "device",
+      createdAt: 1,
+    })
+    await expect(confirmOwnerKey(card.transceive, card.pubkey)).resolves.toBeUndefined()
+    expect(card.ins()).toEqual([0x44, 0x45])
+    expect(card.granted()).toBe(false)
+    // The saved key stays: the store never replaces one (it may be the owner's).
+    await expect(ownerKeyStore.get(card.pubkey)).resolves.toMatchObject({
+      privateKey: other,
+    })
   })
 
   it("rejects on anything but the card's yes or no: the caller knows nothing either way", async () => {

@@ -530,17 +530,17 @@ describe("SELECT", () => {
     expect(error.message).toBe("SELECT failed: package AID 6A82, applet AID 6A82")
   })
 
-  it("marks 6A82 to both 2.0 forms as no such applet: not a Cashu card", async () => {
+  it("reads 6A82 to both 2.0 forms, and to every withdrawn AID, as not a Cashu card", async () => {
     const card = scriptedCard([
       [SELECT_PACKAGE, SW_FILE_NOT_FOUND],
       [SELECT_APPLET, SW_FILE_NOT_FOUND],
       [SELECT_LEGACY, SW_FILE_NOT_FOUND],
       [SELECT_FOXY, SW_FILE_NOT_FOUND],
     ])
-    await expect(selectApplet(card.transceive)).rejects.toMatchObject({
-      sw: 0x6a82,
-      noSuchApplet: true,
-    })
+    const error = await selectApplet(card.transceive).catch((e) => e)
+    expect(error).toBeInstanceOf(AppletNotSelectedError)
+    expect(error).not.toBeInstanceOf(CardNeedsUpdateError)
+    expect(error).toMatchObject({ sw: 0x6a82, packageSw: 0x6a82, appletSw: 0x6a82 })
   })
 
   it("rethrows a transport failure instead of retrying on a dead handle", async () => {

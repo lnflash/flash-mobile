@@ -82,10 +82,14 @@ export const limitsFromFields = (fields: {
  * SET_LIMIT always writes all three limits, and the card says its payment
  * limit only under the owner's grant (cashu-javacard spec/APDU.md, GET_INFO
  * bytes 30-33, and ALLOW_LOAD). So the payment limit is shown as this phone
- * last set it, and when this phone never did (a phone restored from the seed,
- * or a record cleared since) the field starts blank: left blank, the save tap
- * asks for the grant, reads the card's own payment limit (GET_INFO) and
- * writes it back unchanged with the other limits.
+ * last set it, or blank when this phone never did (a phone restored from the
+ * seed, or a record cleared since). What this phone last set is not always
+ * what the card holds: another phone with the same owner key (the same seed,
+ * decision 14) may have changed it since. So a payment field the owner left
+ * as the screen opened it is never written as it stands: the save tap asks
+ * for the grant, reads the card's own payment limit (GET_INFO) and writes
+ * that back unchanged with the other limits. Only a payment limit the owner
+ * typed here is written as typed.
  */
 export const FlashcardV2LimitsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -101,9 +105,9 @@ export const FlashcardV2LimitsScreen = () => {
   const [day, setDay] = useState(String(cashuCard?.dailyLimit ?? 0))
   // Undefined when this phone never set it: the card's own is read at the save.
   const knownPayment = known?.limits?.payment
-  const [payment, setPayment] = useState(
-    knownPayment === undefined ? "" : String(knownPayment),
-  )
+  // The payment field as the screen opened it: left so, the card's is kept.
+  const [openedPayment] = useState(knownPayment === undefined ? "" : String(knownPayment))
+  const [payment, setPayment] = useState(openedPayment)
   const [allowance, setAllowance] = useState(String(cashuCard?.allowance ?? 0))
   const [rollBudget, setRollBudget] = useState(
     String(cashuCard?.record?.rollBudget ?? ROLL_BUDGET_DEFAULT),
@@ -125,9 +129,10 @@ export const FlashcardV2LimitsScreen = () => {
   const noPin = cashuCard.pinState === "unset"
 
   const save = async () => {
-    // Left blank, the payment limit is what the card holds: it is read in the
-    // save tap, so SET_LIMIT does not wipe a limit this phone cannot see.
-    const keepCardPayment = knownPayment === undefined && payment.trim() === ""
+    // Left as the screen opened it, the payment limit is what the card holds:
+    // it is read in the save tap, so SET_LIMIT neither wipes a limit this
+    // phone cannot see nor restores one another phone has changed since.
+    const keepCardPayment = payment.trim() === openedPayment
     const limits = limitsFromFields({
       day,
       payment: keepCardPayment ? "0" : payment,
