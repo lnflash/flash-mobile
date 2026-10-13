@@ -2,7 +2,7 @@ import { act, waitFor } from "@testing-library/react-native"
 import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager"
 import axios from "axios"
 
-import { buildSelectApdu } from "@app/utils/cashu-card"
+import { CASHU_AID, CASHU_APPLET_AID, buildSelectApdu } from "@app/utils/cashu-card"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { store } from "@app/store/redux"
@@ -269,6 +269,29 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     // The BoltCard flow does not run for a Cashu card.
     expect(axios.get).not.toHaveBeenCalled()
     expect(latest?.balanceInSats).toBeUndefined()
+  })
+
+  // ENG-681: a J3R180 with cashu-javacard installed as documented has the
+  // opener on first, so the 10-byte package AID reaches the opener (9000, no
+  // version, then 6D00). The tap sends the full applet AID first and reads
+  // the card as 2.0, never as needing an update.
+  it("reads a 2.0 card installed opener first as 2.0, through the full applet AID", async () => {
+    tapCashuCard({ opener: true })
+
+    const result = await tapOnce()
+
+    expect(transceive.mock.calls[0][0]).toEqual(buildSelectApdu(CASHU_APPLET_AID))
+    expect(transceive.mock.calls.map((call) => call[0])).not.toContainEqual(
+      buildSelectApdu(CASHU_AID),
+    )
+    expect(result.needsUpdate).toBeUndefined()
+    expect(result.cashuCard).toMatchObject({
+      version: "2.0",
+      balance: 500,
+      pubkey: PUBKEY_HEX,
+    })
+    expect(getTag).not.toHaveBeenCalled()
+    expect(toastShow).not.toHaveBeenCalled()
   })
 
   it("names the balance's unit from the mint's keysets, in context and on the card's record", async () => {

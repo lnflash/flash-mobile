@@ -382,6 +382,14 @@ export type FakeCardOptions = {
    * ("0.x": D2 76 00 00 85 01 02; "1.x": Foxy's), and nothing else.
    */
   legacy?: "0.x" | "1.x"
+  /**
+   * Installed opener first, as cashu-javacard documents it (ENG-681): the
+   * opener `F0 CASHUCARD 4D` goes on before the applet, so a SELECT by the
+   * 10-byte package AID reaches the opener. It answers 9000 with no version
+   * body, and every command after it 6D00 until the next SELECT. The full
+   * applet AID still reaches the applet. Off by default.
+   */
+  opener?: boolean
   /** Answer AUTH with this tampered signature, as a card that is not the key it reported. */
   badAuth?: boolean
   /** How often the day's window has rolled since the owner's last REFRESH (GET_CARD byte 76). 0 by default. */
@@ -442,6 +450,7 @@ export const createFakeCard = (
     cardKey = FAKE_CARD_KEY,
     version = [2, 0],
     legacy,
+    opener = false,
     badAuth = false,
     rolls: initialRolls = 0,
     limits: initialLimits = {},
@@ -460,6 +469,8 @@ export const createFakeCard = (
   let tries = PIN_TRIES
   let verified = false
   let grant = false
+  /** The opener holds the selection (`opener`): the applet sees nothing. */
+  let openerSelected = false
   let nonce: number[] | undefined
   let owner: number[] | undefined =
     ownerOption === null ? undefined : Array.from(p256.getPublicKey(ownerOption, false))
@@ -584,12 +595,18 @@ export const createFakeCard = (
       grant = false
       nonce = undefined
       payment = undefined
+      openerSelected = false
       if (legacy) return sameBytes(data, LEGACY_AIDS[legacy]) ? SW_OK : sw(0x6a82)
+      if (opener && sameBytes(data, CASHU_AID)) {
+        openerSelected = true
+        return SW_OK
+      }
       if (sameBytes(data, CASHU_AID) || sameBytes(data, CASHU_APPLET_AID)) {
         return [...version, ...SW_OK]
       }
       return sw(0x6a82)
     }
+    if (openerSelected) return sw(0x6d00)
     if (legacy) return sw(0x6e00)
     if (cla !== 0xb0) return sw(0x6e00)
     switch (ins) {

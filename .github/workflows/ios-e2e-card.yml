@@ -45,9 +45,9 @@ permissions:
   contents: read
 
 env:
-  # lnflash/cashu-javacard, card protocol 2.0 (ENG-673): main at the merge of
-  # #34, released as v2.0.0-rc.1 (the 2.0 spec, cardsim and its fixtures).
-  CASHU_JAVACARD_REF: 9574bc7df7709fd17145ff85465783cfbe4c37be
+  # lnflash/cashu-javacard main at #35 (ENG-681): the 2.0 applet, and a cardsim
+  # that puts a package-AID SELECT on the opener, as the J3R180 does.
+  CASHU_JAVACARD_REF: bced1c41726ef23e733cb228fd46f6fba568467d
   # Nutshell 0.20.3, the public release nearest forge's 0.20.3.1 (architect's
   # decision 6). It pins a breez-sdk-spark range PyPI no longer has, which
   # FakeWallet never uses: it is installed without its dependencies, and they
