@@ -237,6 +237,8 @@ const en: BaseTranslation = {
       "The PIN was entered wrong too many times. Only the phone that owns this card can unblock it.",
     blockedUnconfirmedBody:
       "The PIN was entered wrong too many times. The card's owner can set a new PIN to unblock it.",
+    blockedLockedBody:
+      "The PIN was entered wrong too many times, and the card is locked, so no one can set a new PIN. It can no longer pay or take new funds.",
     refreshNeededTitle: "This card needs a refresh",
     refreshNeededBody: "Open Flash while online and tap your card to refresh it.",
     refreshNeededOtherBody:

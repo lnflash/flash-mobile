@@ -366,7 +366,7 @@ const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> 
  * blocked PIN, since this phone offers no new PIN until it is settled.
  */
 export const cardNotices = (
-  card: Pick<CashuCardState, "hasOwner" | "pinState" | "record">,
+  card: Pick<CashuCardState, "hasOwner" | "pinState" | "record" | "locked">,
   ownership: CardOwnership,
   LL: LLType,
 ): Notice[] => {
@@ -392,7 +392,11 @@ export const cardNotices = (
       notices.push({
         testID: "flashcard-v2-blocked",
         title: LL.FlashcardV2.blockedTitle(),
-        body: blockedBody(ownership, LL),
+        // A locked card refuses every PIN change (cashu-javacard
+        // spec/APDU.md, CHANGE_PIN 6986 and LOCK_CARD): no one can unblock it.
+        body: card.locked
+          ? LL.FlashcardV2.blockedLockedBody()
+          : blockedBody(ownership, LL),
         severe: true,
       })
       break

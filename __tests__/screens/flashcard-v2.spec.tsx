@@ -915,6 +915,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
         {
           hasOwner: false,
           pinState: "unset",
+          locked: false,
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
         "none",
@@ -926,6 +927,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
         {
           hasOwner: true,
           pinState: "set",
+          locked: false,
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
         "mine",
@@ -954,6 +956,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           {
             hasOwner: true,
             pinState: "blocked",
+            locked: false,
             record: cardRecord({ rolls: 7, rollBudget: 7 }),
           },
           ownership,
@@ -967,6 +970,22 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           LL.FlashcardV2.refreshNeededOtherBody(),
         )
         expect(bodies["flashcard-v2-blocked"]).not.toBe(LL.FlashcardV2.blockedOtherBody())
+      }
+    }),
+  )
+  ;(["mine", "unknown", "other"] as CardOwnership[]).forEach((ownership) =>
+    it(`cardNotices for a LOCKED card with a blocked PIN (owner ${ownership}): no one is told to set a new PIN`, () => {
+      const blocked = cardNotices(
+        { hasOwner: true, pinState: "blocked", locked: true, record: cardRecord() },
+        ownership,
+        LL,
+      ).find((notice) => notice.testID === "flashcard-v2-blocked")
+      expect(blocked?.body).toBe(LL.FlashcardV2.blockedLockedBody())
+      for (const promise of [
+        LL.FlashcardV2.blockedOwnerBody(),
+        LL.FlashcardV2.blockedUnconfirmedBody(),
+      ]) {
+        expect(blocked?.body).not.toBe(promise)
       }
     }),
   )

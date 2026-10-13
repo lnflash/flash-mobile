@@ -789,6 +789,10 @@ type RootTranslation = {
 		 */
 		blockedUnconfirmedBody: string
 		/**
+		 * T​h​e​ ​P​I​N​ ​w​a​s​ ​e​n​t​e​r​e​d​ ​w​r​o​n​g​ ​t​o​o​ ​m​a​n​y​ ​t​i​m​e​s​,​ ​a​n​d​ ​t​h​e​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​,​ ​s​o​ ​n​o​ ​o​n​e​ ​c​a​n​ ​s​e​t​ ​a​ ​n​e​w​ ​P​I​N​.​ ​I​t​ ​c​a​n​ ​n​o​ ​l​o​n​g​e​r​ ​p​a​y​ ​o​r​ ​t​a​k​e​ ​n​e​w​ ​f​u​n​d​s​.
+		 */
+		blockedLockedBody: string
+		/**
 		 * T​h​i​s​ ​c​a​r​d​ ​n​e​e​d​s​ ​a​ ​r​e​f​r​e​s​h
 		 */
 		refreshNeededTitle: string
@@ -8271,6 +8275,10 @@ export type TranslationFunctions = {
 		 * The PIN was entered wrong too many times. The card's owner can set a new PIN to unblock it.
 		 */
 		blockedUnconfirmedBody: () => LocalizedString
+		/**
+		 * The PIN was entered wrong too many times, and the card is locked, so no one can set a new PIN. It can no longer pay or take new funds.
+		 */
+		blockedLockedBody: () => LocalizedString
 		/**
 		 * This card needs a refresh
 		 */
