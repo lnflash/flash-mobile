@@ -19,27 +19,51 @@ tags: [flashcard]
 - assertVisible:
     id: limits-roll-budget
     text: "7"
+# iOS's number pad has no dismiss key, so `hideKeyboard` cannot close it, and
+# while it is up it covers the fields below the one being typed in: a tap
+# meant for them lands on its keys. So each field is scrolled into view, typed
+# in, and the pad closed by a tap on that field's own label, which sits above
+# the field and so is never under the pad (the ScrollView's
+# keyboardShouldPersistTaps is "never": a tap outside a field closes it).
+- scrollUntilVisible:
+    element:
+      id: limits-day
 - tapOn:
     id: limits-day
 - eraseText: 12
 - inputText: "5000"
 - tapOn:
+    id: limits-day-label
+- scrollUntilVisible:
+    element:
+      id: limits-payment
+- tapOn:
     id: limits-payment
 - eraseText: 12
 - inputText: "1000"
+- tapOn:
+    id: limits-payment-label
+- scrollUntilVisible:
+    element:
+      id: limits-allowance
 - tapOn:
     id: limits-allowance
 - eraseText: 12
 - inputText: "250"
 - tapOn:
+    id: limits-allowance-label
+- scrollUntilVisible:
+    element:
+      id: limits-roll-budget
+- tapOn:
     id: limits-roll-budget
 - eraseText: 12
 - inputText: "12"
-# iOS's number pad has no dismiss key, so `hideKeyboard` cannot close it: a tap
-# outside the field does (the ScrollView's keyboardShouldPersistTaps is "never").
-# The budget's own label, right above the field, is on screen whatever scrolled.
 - tapOn:
     id: limits-roll-budget-label
+- scrollUntilVisible:
+    element:
+      id: limits-save
 - tapOn:
     id: limits-save
 - extendedWaitUntil:
