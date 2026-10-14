@@ -198,8 +198,12 @@ export type SendPaymentOutcome = {
   status: PaymentSendResult | null | undefined
   errorsMessage?: string
   /**
-   * True when the in-flight guard suppressed this call: a second tap landed
-   * while the first send was still on the wire. See `UseSendPaymentResult`.
+   * True when this call was suppressed by the in-flight guard: a second
+   * call (on the screen, a second tap) that landed while the first send was
+   * still on the wire. Nothing was sent and `status` is undefined. The
+   * caller must return immediately: no spinner toggle, no analytics, no
+   * error toast or failure card. Otherwise a double-tap on a SUCCESSFUL
+   * payment shows a failure and logs a phantom undefined-status result.
    */
   ignored?: boolean
 }
@@ -218,7 +222,8 @@ export type SendPaymentOutcome = {
  *
  * The code is useSendPayment's dispatch moved here unchanged (ENG-686) apart
  * from three substitutions: the Breez calls go through `deps.btcRail`, the
- * nine triggers come from `deps.mutations`, and `graphqlUri` and
+ * nine triggers come from `deps.mutations` (spread ahead of the attempt's
+ * own fields, so they cannot replace them), and `graphqlUri` and
  * `lnAddressHostname` come from `deps`. Moving it unchanged also keeps
  * behavior a later ticket will fix, such as the LNURL/intraledger Breez
  * branch reporting Success without reading the rail's answer (ENG-694).
@@ -343,14 +348,20 @@ export const sendPayment = async (
 
     let response
     try {
+      // The triggers are spread first so the attempt's own fields win.
+      // `GraphqlMutationFns` is a structural Pick, so `deps.mutations` may be
+      // a whole `SendPaymentMutationParams`, with some other key, a stale
+      // `attemptIsRetry: false` (which reopens the gate's keyless fallback on
+      // a retry), its own keyless recorder and its own endpoint. Spread last,
+      // those would replace this attempt's, and a retry could pay twice.
       response = await attempt.run({
+        ...deps.mutations,
         idempotencyKey: attempt.key,
         attemptIsRetry,
         onKeylessDispatch: () => {
           attempt.wentKeyless = true
         },
         apiEndpoint: graphqlUri,
-        ...deps.mutations,
       })
     } catch (err) {
       // Outcome unknown — the case this design exists for. Keep the

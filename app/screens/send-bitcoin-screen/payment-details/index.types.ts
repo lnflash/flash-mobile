@@ -91,7 +91,8 @@ export type SendPaymentMutationParams = {
   idempotencyKey: string
   /**
    * Whether this dispatch is a RETRY of an attempt that has already been
-   * dispatched once (set from `attempt.dispatched` in use-send-payment.ts).
+   * dispatched once (set from `attempt.dispatched` in
+   * app/payments/send-payment.ts).
    *
    * The idempotency-support gate needs the distinction: its keyless fallback
    * on a coercion refusal is only sound on an attempt's FIRST dispatch, where
@@ -103,10 +104,10 @@ export type SendPaymentMutationParams = {
   /**
    * Invoked synchronously, immediately before any dispatch that goes out
    * WITHOUT `idempotencyKey` (the idempotency-support gate's keyless
-   * fallback / latched-gate path). use-send-payment.ts records it on the
-   * attempt: an attempt that has gone out keyless must never be auto-retried,
-   * because the server has no key to replay and a re-dispatch could execute a
-   * second payment.
+   * fallback / latched-gate path). sendPayment (app/payments/send-payment.ts)
+   * records it on the attempt: an attempt that has gone out keyless must
+   * never be auto-retried, because the server has no key to replay and a
+   * re-dispatch could execute a second payment.
    */
   onKeylessDispatch?: () => void
   /**

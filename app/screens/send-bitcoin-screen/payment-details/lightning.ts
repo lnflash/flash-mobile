@@ -60,8 +60,8 @@ export const createNoAmountLightningPaymentDetails = <T extends WalletCurrency>(
   }
   // Populated by whichever branch below can actually send. Each branch
   // closure-captures its wire input alongside its mutation, so the attempt
-  // frozen in use-send-payment.ts carries both; when neither branch can send
-  // there is no mutation and nothing to freeze.
+  // that sendPayment (app/payments/send-payment.ts) freezes carries both;
+  // when neither branch can send there is no mutation and nothing to freeze.
 
   if (
     settlementAmount?.amount &&

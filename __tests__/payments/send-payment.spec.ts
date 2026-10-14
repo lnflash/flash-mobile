@@ -48,6 +48,7 @@ import {
 import {
   PaymentDetail,
   SendPaymentMutation,
+  SendPaymentMutationParams,
   createAmountLightningPaymentDetails,
   createAmountOnchainPaymentDetails,
   createIntraledgerPaymentDetails,
@@ -97,6 +98,12 @@ const KEY_REUSE_ERROR = {
   message:
     "This idempotency key was already used for a different payment. Use a new key for a new payment.",
 }
+
+// graphql-js refusing the key during input coercion, on a server whose
+// LnInvoicePaymentInput predates the field. The gate answers it with a
+// keyless fallback.
+const KEY_REFUSED_IN_COERCION =
+  'Variable "$input" got invalid value { idempotencyKey: "uuid-1" }; Field "idempotencyKey" is not defined by type "LnInvoicePaymentInput".'
 
 const fakeClient = () => {
   const mutate = jest.fn()
@@ -785,11 +792,7 @@ describe("sendPayment: the ENG-533 attempt lifecycle", () => {
     // First dispatch: this server refuses the key during coercion, so the gate
     // falls back to a keyless send, and that send's response is lost.
     mutate
-      .mockRejectedValueOnce(
-        new Error(
-          'Variable "$input" got invalid value { idempotencyKey: "uuid-1" }; Field "idempotencyKey" is not defined by type "LnInvoicePaymentInput".',
-        ),
-      )
+      .mockRejectedValueOnce(new Error(KEY_REFUSED_IN_COERCION))
       .mockRejectedValueOnce(new Error("Network request failed"))
     const detail = usdInvoice()
 
@@ -819,5 +822,96 @@ describe("sendPayment: the ENG-533 attempt lifecycle", () => {
     expect(mutate).toHaveBeenCalledTimes(2)
     expect(state.inFlightRef.current).toBe(true)
     expect(state.setHasAttemptedSend.mock.calls).toEqual([[true], [false], [true]])
+  })
+
+  // `GraphqlMutationFns` is a structural Pick, so a whole
+  // `SendPaymentMutationParams` held in a variable type-checks as `mutations`
+  // (createSendPaymentMocks() returns one). Its four attempt fields belong to
+  // no attempt of sendPayment's, and they must never reach the closure in
+  // place of the attempt's own. A stale `attemptIsRetry: false` reopens the
+  // gate's keyless fallback on a retry, and a stale recorder hides a keyless
+  // dispatch from the retry refusal. Either way a retry can pay twice
+  // (ENG-533).
+  const STALE_ENDPOINT = "https://stale.example.com/graphql"
+  const withStaleAttemptFields = (
+    deps: SendPaymentDeps,
+    onKeylessDispatch: () => void,
+  ): SendPaymentDeps => {
+    const mutations: SendPaymentMutationParams = {
+      ...deps.mutations,
+      idempotencyKey: "stale",
+      attemptIsRetry: false,
+      onKeylessDispatch,
+      apiEndpoint: STALE_ENDPOINT,
+    }
+    return { ...deps, mutations }
+  }
+
+  it("the attempt's own key, retry flag and endpoint reach the closure even when `mutations` carries stale ones", async () => {
+    const { mutate, deps, state } = setup()
+    const staleRecorder = jest.fn()
+    const dropped = new Error("Network request failed")
+    mutate
+      .mockRejectedValueOnce(dropped)
+      .mockResolvedValueOnce(answer("lnInvoicePaymentSend", "SUCCESS"))
+    const detail = usdInvoice()
+    const run = jest.fn(sendable(detail))
+    const staleDeps = withStaleAttemptFields(deps, staleRecorder)
+
+    await expect(
+      sendPayment({ sendPaymentMutation: run, paymentDetail: detail }, staleDeps, state),
+    ).rejects.toBe(dropped)
+    const outcome = await sendPayment(
+      { sendPaymentMutation: run, paymentDetail: detail },
+      staleDeps,
+      state,
+    )
+
+    expect(outcome.status).toBe(PaymentSendResult.Success)
+    const params = run.mock.calls.map(([sent]) => sent)
+    expect(params.map((sent) => sent.idempotencyKey)).toEqual(["uuid-1", "uuid-1"])
+    expect(params.map((sent) => sent.attemptIsRetry)).toEqual([false, true])
+    expect(params.map((sent) => sent.apiEndpoint)).toEqual([GRAPHQL_URI, GRAPHQL_URI])
+    params.forEach((sent) => expect(sent.onKeylessDispatch).not.toBe(staleRecorder))
+    // The attempt's key is the one on the wire, both times.
+    expect(
+      mutate.mock.calls.map(([options]) => options.variables.input.idempotencyKey),
+    ).toEqual(["uuid-1", "uuid-1"])
+  })
+
+  it("a keyless dispatch marks the attempt even when `mutations` carries its own onKeylessDispatch", async () => {
+    const { mutate, deps, state } = setup()
+    const staleRecorder = jest.fn()
+    // As in "refuses to retry an attempt that went out keyless": the gate
+    // falls back to a keyless send, and that send's response is lost.
+    mutate
+      .mockRejectedValueOnce(new Error(KEY_REFUSED_IN_COERCION))
+      .mockRejectedValueOnce(new Error("Network request failed"))
+    const detail = usdInvoice()
+    const staleDeps = withStaleAttemptFields(deps, staleRecorder)
+
+    await expect(
+      sendPayment(
+        { sendPaymentMutation: sendable(detail), paymentDetail: detail },
+        staleDeps,
+        state,
+      ),
+    ).rejects.toThrow("Network request failed")
+    expect(mutate.mock.calls[1][0].variables.input.idempotencyKey).toBeUndefined()
+    expect(staleRecorder).not.toHaveBeenCalled()
+    expect(state.attemptRef.current).toMatchObject({ wentKeyless: true })
+
+    // So the retry is refused, and nothing goes out a third time.
+    const outcome = await sendPayment(
+      { sendPaymentMutation: sendable(detail), paymentDetail: detail },
+      staleDeps,
+      state,
+    )
+
+    expect(outcome).toEqual({
+      status: PaymentSendResult.Failure,
+      errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+    })
+    expect(mutate).toHaveBeenCalledTimes(2)
   })
 })

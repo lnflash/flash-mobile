@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import { useApolloClient } from "@apollo/client"
 
 // gql
-import { PaymentSendResult, WalletCurrency } from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 
 // hooks
 import { useAppConfig } from "@app/hooks"
@@ -12,6 +12,7 @@ import { breezBtcRail } from "@app/payments/btc-rail"
 import {
   Attempt,
   GraphqlMutationFns,
+  SendPaymentOutcome,
   createGraphqlMutationFns,
   sendPayment as dispatchSendPayment,
 } from "@app/payments/send-payment"
@@ -31,21 +32,11 @@ type UseSendPaymentResult = {
    * so two taps in one frame see the truth.
    */
   isInFlight: () => boolean
-  sendPayment:
-    | (() => Promise<{
-        status: PaymentSendResult | null | undefined
-        errorsMessage?: string
-        /**
-         * True when this call was suppressed by the in-flight guard: a second
-         * tap that landed while the first send was still on the wire. The
-         * caller must return immediately — no spinner toggle, no analytics,
-         * no error toast — or a double-tap on a SUCCESSFUL payment shows a
-         * failure toast and logs a phantom undefined-status result.
-         */
-        ignored?: boolean
-      }>)
-    | undefined
-    | null
+  /**
+   * An outcome that comes back `ignored` must be dropped on the spot; the
+   * contract is on `SendPaymentOutcome` (app/payments/send-payment.ts).
+   */
+  sendPayment: (() => Promise<SendPaymentOutcome>) | undefined | null
 }
 
 /**

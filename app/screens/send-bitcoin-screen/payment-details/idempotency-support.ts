@@ -160,7 +160,7 @@ export const isUnsupportedIdempotencyKeyError = (
  * of this payment did NOT settle — an idempotency-key reuse answer, a key
  * refused on a retry, or a retry of an attempt that once went out keyless.
  * Shared so the copy cannot drift between the modules that surface it
- * (use-send-payment.ts is the other one).
+ * (app/payments/send-payment.ts is the other one).
  */
 export const CHECK_TRANSACTION_HISTORY_MESSAGE =
   "This payment may have already been sent. Check your transaction history before trying again."
@@ -193,8 +193,8 @@ export type IdempotentAttempt = {
    * WITHOUT the key. The caller owns the attempt's lifecycle and must know:
    * once an attempt has gone out keyless, a later retry of it cannot lean on
    * the server replaying the key — the server never saw one — so re-dispatching
-   * could execute a second payment. use-send-payment.ts records the flag and
-   * refuses to auto-retry such an attempt.
+   * could execute a second payment. sendPayment (app/payments/send-payment.ts)
+   * records the flag and refuses to auto-retry such an attempt.
    */
   onKeylessDispatch?: () => void
 }
