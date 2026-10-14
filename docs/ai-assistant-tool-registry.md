@@ -1,6 +1,6 @@
 # Flash AI Assistant — Tool Registry & Action-Card Spec
 
-Status: design v0.2.1 · Companion to the architecture discussion (on-device-first intent parsing with server fallback). This document specifies the layer that makes the assistant safe to build: the **tool registry** that wraps Flash's existing payment rails, and the **action cards** that render money movement for human confirmation.
+Status: design v0.2.2 · Companion to the architecture discussion (on-device-first intent parsing with server fallback). This document specifies the layer that makes the assistant safe to build: the **tool registry** that wraps Flash's existing payment rails, and the **action cards** that render money movement for human confirmation.
 
 Every operation name below is real. GraphQL operations are taken from `app/graphql/public-schema.graphql` (mobile copy regenerated 2026-09-25, commit `ce85783bd`); Breez SDK wrappers from `app/utils/breez-sdk/`. Citations use `path:line`. See §11 for what changed from v0.1 and in v0.2.1.
 
@@ -10,7 +10,7 @@ Every operation name below is real. GraphQL operations are taken from `app/graph
 
 1. **Parser, not personality.** The LLM (on-device small model or server fallback) only emits a structured `ToolCall` from a closed intent set. It never composes free-form numeric claims.
 2. **Numbers never come from the model.** Balances, fees, amounts, and rates are rendered exclusively from tool payload fields by native components. Model text is decorative and templated.
-3. **Propose / dispose.** Action-tier tools **prepare** an operation and return a card; execution requires explicit tap + biometric/passcode on that card. The model can never fire a mutation.
+3. **Propose / dispose.** Action-tier tools **prepare** an operation and return a card; execution requires an explicit Confirm tap on that card, the same review-and-confirm the send flow's confirmation screen gives today. The model can never fire a mutation. An auth policy hook (§5) can additionally require biometric/passcode; v1 keeps it off for text-initiated actions and on for voice.
 4. **No new powers.** Tools call only what the UI already calls, with the session's own auth. Executor code paths are shared with the screens (`useSendPayment` family, `useSwap`, the receive-screen request builders), not re-implemented.
 5. **Two rails, one registry.** Flash has a custodial rail (USD/USDT wallets, GraphQL) and a self-custodial rail (the BTC wallet, Breez Spark SDK running on the device). Every tool that touches BTC goes through a `BtcRail` interface; nothing in the registry imports the SDK directly.
 6. **Prepared actions expire.** Every prepared action carries `expiresAt`. Fee probes, exchange rates, and USD invoices all go stale while a card sits in a thread; the executor refuses anything past its expiry and asks the user to re-prepare.
@@ -126,7 +126,7 @@ registry.defineRead({
 
 ## 5. Action tier (prepare → card → auth → execute)
 
-Every action tool shares one shape: `prepare` builds the exact same `PaymentDetail<WalletCurrency>` structure the send flow uses (`payment-details/index.types.ts:238`), returns a typed card; the card's Confirm button routes through `executePreparedAction()` (single choke point) which checks `expiresAt`, then calls `BiometricWrapper.authenticate(...)` (`app/utils/biometricAuthentication.ts:18`, the same gate used by `authentication-screen.tsx:52`), then executes:
+Every action tool shares one shape: `prepare` builds the exact same `PaymentDetail<WalletCurrency>` structure the send flow uses (`payment-details/index.types.ts:238`), returns a typed card; the card's Confirm button routes through `executePreparedAction()` (single choke point) which checks `expiresAt`, consults the auth policy (see "Auth policy" below), and executes:
 
 ```ts
 registry.defineAction({
@@ -147,7 +147,7 @@ registry.defineAction({
 })
 ```
 
-**The auth gate is new behavior.** Today's send flow has no per-send biometric; the gate exists only for app unlock. The assistant adds it because chat is a new way to move money. `BiometricWrapper.isSensorAvailable()` (`biometricAuthentication.ts:6`) decides between biometrics and the device passcode fallback (`fallbackEnabled: true`, `biometricAuthentication.ts:30`); the in-app PIN (`app/screens/authentication-screen/pin-screen.tsx`) is the last resort. If none of the three is available, action tools **fail closed**: `prepare` still returns the card for review, but Confirm is disabled with a templated explanation that points to enabling the PIN or biometrics in settings. A device with no enrolled biometric and no in-app PIN fails closed even when it has an OS passcode, because JavaScript cannot detect a passcode without showing a prompt. Read tools are unaffected.
+**Auth policy (decided 2026-10-13, ENG-684 decision 1).** Today's send flow has no per-send biometric; its protection is the confirmation screen's review-and-confirm, and the assistant's card gives the same review of the same `PaymentDetail`, so a mandatory biometric for every assistant action is not a security requirement for v1 and would make the assistant stricter than the screens it wraps. The executor therefore has an **auth policy hook**, `authPolicy(preparedAction, origin) → "none" | "biometric"`, evaluated at Confirm time: v1 returns `"none"` for text-initiated actions and `"biometric"` for voice-initiated ones (Phase 4), where a bystander could speak a send into an unlocked phone. The hook is one function, so a later amount threshold or a user setting ("Require Face ID for assistant payments") is a one-line policy change, not a redesign. When the policy says `"biometric"`, the gate is `BiometricWrapper.isSensorAvailable()` (`biometricAuthentication.ts:6`) → `BiometricWrapper.authenticate` (`biometricAuthentication.ts:18`, device passcode fallback `fallbackEnabled: true` line 30, the same gate as `authentication-screen.tsx:52`) → in-app PIN (`app/screens/authentication-screen/pin-screen.tsx`) as last resort, and it **fails closed** when none is available: the card still renders for review, Confirm is disabled with a templated explanation that points to enabling the PIN or biometrics in settings (a passcode-only device fails closed too, since JavaScript cannot detect an OS passcode without a prompt). Read tools never go through the policy.
 
 **Expiry.** `expiresAt` is the minimum of the inputs that can go stale:
 
@@ -219,19 +219,25 @@ type ActionCard =
 Rules:
 
 - `*Text` fields are pre-formatted by tool code via the app's display-currency utils — the renderer never formats, the model never strings. Components render from payloads; a card with a missing/mismatched payload refuses to render.
-- Confirm buttons exist only on concrete cards and always call `executePreparedAction(preparedActionId)` — the registry looks the action up; model text cannot synthesize one. Confirm is disabled when `expiresAt` has passed (card swaps to `expired`) or when no auth method is available (§5).
+- Confirm buttons exist only on concrete cards and always call `executePreparedAction(preparedActionId)` — the registry looks the action up; model text cannot synthesize one. Confirm is disabled when `expiresAt` has passed (card swaps to `expired`) or when the auth policy requires biometrics and no auth method is available (§5).
 - Cards get Storybook stories (`*.stories.tsx` under `app/assistant/`) per the repo's on-device Storybook setup (`.storybook/`, 65 stories today).
 
 ## 7. Conversation surface & voice
 
-- New tab-level thread "Ask Flash" (distinct from the Nostr/Chatwoot support chat per `docs/chatwoot-nip29-bridge.md`): user bubble, assistant text bubble (templated replies only, all strings through `useI18nContext().LL` per `app/i18n/i18n-react` — see the `LL.SendBitcoin...()` pattern at `send-bitcoin-confirmation-screen.tsx:81`), action cards, typing indicator.
-- Voice input: push-to-talk button → platform on-device STT (iOS `SFSpeechRecognizer` with `requiresOnDeviceRecognition`, Android `SpeechRecognizer` on-device) → same text pipeline. Voice-initiated actions still require tap-confirm + biometric.
+- "Ask Flash" is a screen opened from an entry point on the home screen, not a new tab (decided 2026-10-13, ENG-684 decision 2). It is distinct from the Nostr/Chatwoot support chat (`docs/chatwoot-nip29-bridge.md`). Thread: user bubble, assistant text bubble (templated replies only, all strings through `useI18nContext().LL` per `app/i18n/i18n-react` — see the `LL.SendBitcoin...()` pattern at `send-bitcoin-confirmation-screen.tsx:81`), action cards, typing indicator.
+- Voice input: push-to-talk button → platform on-device STT (iOS `SFSpeechRecognizer` with `requiresOnDeviceRecognition`, Android `SpeechRecognizer` on-device) → same text pipeline. Voice-initiated actions require tap-confirm + biometric (the auth policy returns `"biometric"` for voice origin, §5).
 - Voice output is **opt-in** (`assistantVoiceReplies`, default off, plus a per-user toggle). Reading a balance aloud in a shop is a privacy leak, not a feature. When on, native TTS speaks non-card turns only; cards are never read aloud.
-- Engine dispatch order: offline grammar tier (top intents, all devices) → on-device model where the hardware allows → server fallback with minimized context, error toasts via the existing `toastShow` pattern (`app/contexts/Flashcard.tsx:415` etc.).
+- Engine dispatch order: offline grammar tier (the shipped intents of §7.2, all devices) → on-device model where the hardware allows → server fallback with minimized context, error toasts via the existing `toastShow` pattern (`app/contexts/Flashcard.tsx:415` etc.).
 
 ### 7.1 On-device model coverage, honestly
 
 The app targets iOS 15.1 (`ios/*.xcodeproj/project.pbxproj`, `IPHONEOS_DEPLOYMENT_TARGET`) and Android `minSdkVersion 26` (`android/build.gradle`), on React Native 0.77.1. Apple's Foundation Models framework needs iOS 26 on Apple Intelligence-capable iPhones; Gemini Nano needs an AICore-eligible Android device. On Flash's installed base that is a small minority. The grammar tier is therefore the product for most users, not a fallback, and it must be good enough to ship alone. Before Phase 3 is funded, add a one-time analytics event reporting `onDeviceModelAvailable: boolean` so the investment is sized on real numbers.
+
+### 7.2 Shipped intents and extensibility
+
+Decided 2026-10-13 (ENG-684 decision 3). The grammar tier ships with five intents: `getBalances`, `getTransactions`, `getPrice`, `prepareSend` (contact payee) and `prepareReceive`. Every other intent in §3 stays registered and testable through `runTool()` but has no grammar rule until a later phase adds one.
+
+Adding an intent must be additive: one registry file (`defineRead` / `defineAction` with its JSON Schema and executor), one grammar file (patterns + corpus snapshot), one card type if it needs a new one, and their tests. The router, the executor, the auth policy and the card renderer are generic over the registry and are not edited to add an intent; a PR that touches them to add one is a design smell the review rejects.
 
 ## 8. Safety rails (encoded, not hoped for)
 
@@ -239,23 +245,23 @@ The app targets iOS 15.1 (`ios/*.xcodeproj/project.pbxproj`, `IPHONEOS_DEPLOYMEN
 - Tool results are data: memos/contact names reach the model (on-device) quoted and untrusted; they can never cross into `execute` — executors only rebuild from `PaymentDetail` reconstructed at prepare time.
 - Payee resolution never auto-selects a low-confidence match (§4); every payee-bearing card shows the full username.
 - Prepared actions expire (§5) and are capped at 3 per thread (§3). Nothing executes against numbers older than its inputs allow.
-- The auth gate fails closed when no biometric, passcode, or PIN is available (§5).
+- The auth policy is a single function; when it requires biometrics and none of biometric, passcode or PIN is available, Confirm fails closed (§5).
 - Rate limits: existing account `limits` and backend caps apply unchanged since tools call the same ops. `prepare` on action tools is additionally debounced client-side (one in-flight prepare per intent) so a chatty session cannot hammer fee probes.
 - Telemetry: intent name, tier (read/action), outcome (prepared/confirmed/denied/expired/failed), latency, `onDeviceModelAvailable` — to Firebase Analytics; **never** memo/payee/amount payload text.
 
 ## 9. Testing
 
 - Registry: pure functions → Jest unit tests with both rails mocked (`graphql-rail`, `btc-rail`), including per-leg group-send failures, idempotency-reuse retries, expiry refusal + refresh, the fail-closed auth path, and fractional-cent balance conversion against known rounding cases.
-- Cards: Storybook stories + Maestro e2e in `.maestro/` (the live harness: 16 flows today under `.maestro/flashcard/`, CI in `.github/workflows/ios-e2e-card.yml`; the `e2e/` directory is the retired Detox tree, last touched 2026-07-02, do not add to it) for the two golden paths: "check balance" and "send $5 to a contact → confirm card → biometric mock".
+- Cards: Storybook stories + Maestro e2e in `.maestro/` (the live harness: 16 flows today under `.maestro/flashcard/`, CI in `.github/workflows/ios-e2e-card.yml`; the `e2e/` directory is the retired Detox tree, last touched 2026-07-02, do not add to it) for the two golden paths: "check balance" and "send $5 to a contact → confirm card → result card".
 - Grammar tier: snapshot tests on phrasing corpora (English + Jamaican patois variants) to keep accuracy honest over time. The same corpus tunes the contact-confidence threshold.
 
 ## 10. Phasing
 
 0. **Regenerate the schema.** The mobile copy of `public-schema.graphql` (2026-09-25) is behind the API's `main` (ENG-653 `walletSplitsSet` / `walletSplitDelete`, ENG-660). Regenerate before Phase 1 so citations and generated hooks match.
 1. **Executor extraction + rails + registry + cards** (no AI): `sendPayment()` lands first as its own PR; then `runTool()` works from a test harness and confirmation cards render.
-2. **Offline grammar tier** for top intents → assistant ships flag-off, dogfoodable. This tier must stand alone (§7.1).
+2. **Offline grammar tier** for the five shipped intents (§7.2) plus the home-screen entry and thread → assistant ships flag-off, dogfoodable. This tier must stand alone (§7.1).
 3. **On-device models** per platform behind `assistantEnabled`, sized by the coverage event.
-4. **Voice** (native STT, opt-in TTS) behind `assistantVoice` / `assistantVoiceReplies`.
+4. **Voice** (native STT, opt-in TTS) behind `assistantVoice` / `assistantVoiceReplies`; voice-origin actions turn the auth policy to `"biometric"`.
 5. **Server fallback** behind `assistantServerFallback`, gated on privacy review.
 
 ## 11. Changes from v0.1 (2026-10-13)
@@ -290,3 +296,10 @@ Corrections the ENG-686/687/688 planners found against the code:
 - **Cashout offers are single-use** on the client; `bankLabel` comes from the cashout screen's bank-accounts query.
 - **Line fixes:** mutation hooks `use-send-payment.ts:76-99`, Breez branch `195-254`.
 - Pre-existing bug found and filed separately: the Breez LNURL/intraledger branch reports Success unconditionally (ENG-694).
+
+### v0.2.2 (2026-10-13, owner decisions on ENG-684)
+
+- **Decision 1, auth:** no mandatory biometric for text-initiated actions in v1. The executor has an `authPolicy` hook: `"none"` for text, `"biometric"` for voice (Phase 4). Rationale in §5.
+- **Decision 2, surface:** home-screen entry point, no new tab (§7).
+- **Decision 3, intents:** the grammar tier ships `getBalances`, `getTransactions`, `getPrice`, `prepareSend` (contact), `prepareReceive`; adding an intent is additive (§7.2).
+- **ENG-686 ship gate:** one real send per rail on the test phones before merge, ≤100 sats each, per-run go.
