@@ -11,6 +11,7 @@ import reducer, {
   initialFlashcardV2State,
   keysetUnitsLearned,
   resetFlashcardV2,
+  tidyOfferDismissed,
 } from "@app/store/redux/slices/flashcardV2Slice"
 import {
   migrateFlashcardV2,
@@ -303,5 +304,30 @@ describe("redux-persist migration to version 2", () => {
   it("keeps a slice that is already there", () => {
     const existing = { cards: { [PUBKEY]: { pubkey: PUBKEY } } }
     expect(migrateFlashcardV2({ flashcardV2: existing }).flashcardV2).toBe(existing)
+  })
+})
+
+describe("flashcardV2 slice — tidy offer (ENG-702)", () => {
+  const OTHER = "03" + "cd".repeat(32)
+
+  it("remembers Not now per card, as the fingerprint of the pieces it was said to", () => {
+    let state = reducer(
+      initialFlashcardV2State,
+      tidyOfferDismissed({ pubkey: PUBKEY, fingerprint: "f1" }),
+    )
+    state = reducer(state, tidyOfferDismissed({ pubkey: OTHER, fingerprint: "g1" }))
+    expect(state.tidyDismissed).toEqual({ [PUBKEY]: "f1", [OTHER]: "g1" })
+    // Said again to other pieces: the newer fingerprint stands.
+    state = reducer(state, tidyOfferDismissed({ pubkey: PUBKEY, fingerprint: "f2" }))
+    expect(state.tidyDismissed?.[PUBKEY]).toBe("f2")
+  })
+
+  it("forgets it with the card, and on reset", () => {
+    let state = reducer(initialFlashcardV2State, seen())
+    state = reducer(state, tidyOfferDismissed({ pubkey: PUBKEY, fingerprint: "f1" }))
+    state = reducer(state, cardForgotten({ pubkey: PUBKEY }))
+    expect(state.tidyDismissed).toEqual({})
+    state = reducer(state, tidyOfferDismissed({ pubkey: PUBKEY, fingerprint: "f1" }))
+    expect(reducer(state, resetFlashcardV2()).tidyDismissed).toBeUndefined()
   })
 })

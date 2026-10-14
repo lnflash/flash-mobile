@@ -86,6 +86,12 @@ export interface FlashcardV2Slice {
    * again. Absent until the mint first answers.
    */
   keysetUnits?: Record<string, string>
+  /**
+   * "Not now" on a card's tidy offer (ENG-702): the fingerprint of the
+   * pieces it was said to (`piecesFingerprint`), by card pubkey. The offer
+   * stays hidden until the card's pieces change. Absent until said.
+   */
+  tidyDismissed?: Record<string, string>
 }
 
 export const initialFlashcardV2State: FlashcardV2Slice = {
@@ -158,9 +164,20 @@ export const flashcardV2Slice = createSlice({
       const card = state.cards[action.payload.pubkey]
       if (card) card.limits = { ...card.limits, ...action.payload.limits }
     },
+    /** "Not now" on a tidy offer, for the pieces it was made for. */
+    tidyOfferDismissed: (
+      state,
+      action: PayloadAction<{ pubkey: string; fingerprint: string }>,
+    ) => {
+      state.tidyDismissed = {
+        ...state.tidyDismissed,
+        [action.payload.pubkey]: action.payload.fingerprint,
+      }
+    },
     /** "Remove card": this phone forgets the card. */
     cardForgotten: (state, action: PayloadAction<{ pubkey: string }>) => {
       delete state.cards[action.payload.pubkey]
+      if (state.tidyDismissed) delete state.tidyDismissed[action.payload.pubkey]
       if (state.attachedPubkey === action.payload.pubkey) delete state.attachedPubkey
     },
     /** Logout: forget every card. */
@@ -175,6 +192,7 @@ export const {
   cardForgotten,
   keysetUnitsLearned,
   resetFlashcardV2,
+  tidyOfferDismissed,
 } = flashcardV2Slice.actions
 
 export default flashcardV2Slice.reducer

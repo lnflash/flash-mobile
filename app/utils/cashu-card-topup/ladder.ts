@@ -131,12 +131,17 @@ export type TidyRoom = {
 /** A piece the card can spend in one payment with the others: undated, and a proof at all. */
 const spendable = (piece: TidyPiece): boolean => piece.date === 0 && isProofShaped(piece)
 
-/** The keyset holding the most undated value; the first on the card on a tie. */
-const largestKeyset = (pieces: readonly TidyPiece[]): string | undefined => {
+/**
+ * The keyset a tidy of these pieces is in: the one holding the most undated
+ * value, the first on the card on a tie. Undefined with no undated piece.
+ */
+export const tidyKeyset = (pieces: readonly TidyPiece[]): string | undefined => {
   const totals = new Map<string, number>()
-  pieces.forEach((piece) =>
-    totals.set(piece.keysetId, (totals.get(piece.keysetId) ?? 0) + piece.amount),
-  )
+  pieces
+    .filter(spendable)
+    .forEach((piece) =>
+      totals.set(piece.keysetId, (totals.get(piece.keysetId) ?? 0) + piece.amount),
+    )
   let best: string | undefined
   totals.forEach((total, keysetId) => {
     if (best === undefined || total > (totals.get(best) ?? 0)) best = keysetId
@@ -287,7 +292,7 @@ const better = (
  */
 export function planTidy(pieces: readonly TidyPiece[], room: TidyRoom): TidyPlan {
   const usable = pieces.filter(spendable)
-  const keysetId = room.keysetId ?? largestKeyset(usable)
+  const keysetId = room.keysetId ?? tidyKeyset(usable)
   const mine = usable.filter((piece) => piece.keysetId === keysetId)
   const amounts = mine.map((piece) => piece.amount)
   const deficit = shapeDeficit(amounts)

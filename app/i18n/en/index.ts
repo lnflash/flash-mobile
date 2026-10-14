@@ -148,6 +148,18 @@ const en: BaseTranslation = {
     topUpPaidFrom: "Paid from your Cash wallet",
     topUpCashBalance: "Available: {balance}",
     topUpSlots: "Uses {needed:number} of the card's {free:number} free slots",
+    tidyOffer: "Tidy card",
+    tidyBody:
+      "This card is short of small pieces, so a till offline can't take every amount exactly. One tap swaps a large piece for {outputs:number} smaller ones.",
+    tidyFee: "The mint's fee for the swap: {fee}.",
+    tidySlotsShort:
+      "This card is short of small pieces, and too few slots are free to tidy it.",
+    tidyInProgress: "A tidy of this card isn't finished. Tap the card to finish it.",
+    tidyNeedsCard:
+      "A tidy of this card couldn't finish: the card signed another payment first. Contact support.",
+    tidyDone: "Card tidied.",
+    tidyNotNow: "Not now",
+    tidyFailed: "The tidy didn't finish. Hold your phone against the card and try again.",
     topUpSlotsReclaim:
       "Uses {needed:number} of {free:number} free slots, {reclaim:number} of them freed from settled spends on load",
     topUpReclaimed: "{count:number} spent slots freed.",

@@ -526,6 +526,44 @@ type RootTranslation = {
 		 */
 		topUpSlots: RequiredParams<'free' | 'needed'>
 		/**
+		 * T​i​d​y​ ​c​a​r​d
+		 */
+		tidyOffer: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​s​h​o​r​t​ ​o​f​ ​s​m​a​l​l​ ​p​i​e​c​e​s​,​ ​s​o​ ​a​ ​t​i​l​l​ ​o​f​f​l​i​n​e​ ​c​a​n​'​t​ ​t​a​k​e​ ​e​v​e​r​y​ ​a​m​o​u​n​t​ ​e​x​a​c​t​l​y​.​ ​O​n​e​ ​t​a​p​ ​s​w​a​p​s​ ​a​ ​l​a​r​g​e​ ​p​i​e​c​e​ ​f​o​r​ ​{​o​u​t​p​u​t​s​}​ ​s​m​a​l​l​e​r​ ​o​n​e​s​.
+		 * @param {number} outputs
+		 */
+		tidyBody: RequiredParams<'outputs'>
+		/**
+		 * T​h​e​ ​m​i​n​t​'​s​ ​f​e​e​ ​f​o​r​ ​t​h​e​ ​s​w​a​p​:​ ​{​f​e​e​}​.
+		 * @param {unknown} fee
+		 */
+		tidyFee: RequiredParams<'fee'>
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​s​h​o​r​t​ ​o​f​ ​s​m​a​l​l​ ​p​i​e​c​e​s​,​ ​a​n​d​ ​t​o​o​ ​f​e​w​ ​s​l​o​t​s​ ​a​r​e​ ​f​r​e​e​ ​t​o​ ​t​i​d​y​ ​i​t​.
+		 */
+		tidySlotsShort: string
+		/**
+		 * A​ ​t​i​d​y​ ​o​f​ ​t​h​i​s​ ​c​a​r​d​ ​i​s​n​'​t​ ​f​i​n​i​s​h​e​d​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​f​i​n​i​s​h​ ​i​t​.
+		 */
+		tidyInProgress: string
+		/**
+		 * A​ ​t​i​d​y​ ​o​f​ ​t​h​i​s​ ​c​a​r​d​ ​c​o​u​l​d​n​'​t​ ​f​i​n​i​s​h​:​ ​t​h​e​ ​c​a​r​d​ ​s​i​g​n​e​d​ ​a​n​o​t​h​e​r​ ​p​a​y​m​e​n​t​ ​f​i​r​s​t​.​ ​C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​.
+		 */
+		tidyNeedsCard: string
+		/**
+		 * C​a​r​d​ ​t​i​d​i​e​d​.
+		 */
+		tidyDone: string
+		/**
+		 * N​o​t​ ​n​o​w
+		 */
+		tidyNotNow: string
+		/**
+		 * T​h​e​ ​t​i​d​y​ ​d​i​d​n​'​t​ ​f​i​n​i​s​h​.​ ​H​o​l​d​ ​y​o​u​r​ ​p​h​o​n​e​ ​a​g​a​i​n​s​t​ ​t​h​e​ ​c​a​r​d​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		tidyFailed: string
+		/**
 		 * U​s​e​s​ ​{​n​e​e​d​e​d​}​ ​o​f​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​s​l​o​t​s​,​ ​{​r​e​c​l​a​i​m​}​ ​o​f​ ​t​h​e​m​ ​f​r​e​e​d​ ​f​r​o​m​ ​s​e​t​t​l​e​d​ ​s​p​e​n​d​s​ ​o​n​ ​l​o​a​d
 		 * @param {number} free
 		 * @param {number} needed
@@ -8027,6 +8065,42 @@ export type TranslationFunctions = {
 		 * Uses {needed} of the card's {free} free slots
 		 */
 		topUpSlots: (arg: { free: number, needed: number }) => LocalizedString
+		/**
+		 * Tidy card
+		 */
+		tidyOffer: () => LocalizedString
+		/**
+		 * This card is short of small pieces, so a till offline can't take every amount exactly. One tap swaps a large piece for {outputs} smaller ones.
+		 */
+		tidyBody: (arg: { outputs: number }) => LocalizedString
+		/**
+		 * The mint's fee for the swap: {fee}.
+		 */
+		tidyFee: (arg: { fee: unknown }) => LocalizedString
+		/**
+		 * This card is short of small pieces, and too few slots are free to tidy it.
+		 */
+		tidySlotsShort: () => LocalizedString
+		/**
+		 * A tidy of this card isn't finished. Tap the card to finish it.
+		 */
+		tidyInProgress: () => LocalizedString
+		/**
+		 * A tidy of this card couldn't finish: the card signed another payment first. Contact support.
+		 */
+		tidyNeedsCard: () => LocalizedString
+		/**
+		 * Card tidied.
+		 */
+		tidyDone: () => LocalizedString
+		/**
+		 * Not now
+		 */
+		tidyNotNow: () => LocalizedString
+		/**
+		 * The tidy didn't finish. Hold your phone against the card and try again.
+		 */
+		tidyFailed: () => LocalizedString
 		/**
 		 * Uses {needed} of {free} free slots, {reclaim} of them freed from settled spends on load
 		 */

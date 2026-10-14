@@ -41,6 +41,7 @@ const mockReclaimVerdicts = jest.fn()
 const mockReclaimSpentSlots = jest.fn()
 const mockUnfinished = jest.fn()
 const mockAdvance = jest.fn()
+const mockAdvanceTidies = jest.fn()
 const mockCancel = jest.fn()
 const mockAllowLoad = jest.fn()
 const mockOwnerKeyFor = jest.fn()
@@ -85,6 +86,7 @@ jest.mock("@app/utils/cashu-card-topup", () => ({
   reclaimSpentSlots: (...args: unknown[]) => mockReclaimSpentSlots(...args),
   unfinishedTopUps: (...args: unknown[]) => mockUnfinished(...args),
   advanceTopUps: (...args: unknown[]) => mockAdvance(...args),
+  advanceTidies: (...args: unknown[]) => mockAdvanceTidies(...args),
   cancelTopUp: (...args: unknown[]) => mockCancel(...args),
 }))
 
@@ -874,6 +876,33 @@ describe("useTopUpMinter", () => {
       nudgeTopUpMinter()
       await Promise.resolve()
       expect(mockAdvance).toHaveBeenCalledTimes(3)
+    } finally {
+      listen.mockRestore()
+    }
+  })
+
+  it("swaps a card tidy the card signed beside the top-ups, without the card (ENG-702), and a tidy that fails stops nothing", async () => {
+    mockAdvance.mockResolvedValue({ waiting: 0 })
+    mockAdvanceTidies.mockRejectedValueOnce(new Error("Network request failed"))
+    const listen = jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation(
+        () =>
+          ({ remove: jest.fn() } as unknown as ReturnType<
+            typeof AppState.addEventListener
+          >),
+      )
+    try {
+      const { unmount } = renderHook(() => useTopUpMinter())
+      await waitFor(() => expect(mockAdvanceTidies).toHaveBeenCalledTimes(1))
+      expect(mockAdvanceTidies.mock.calls[0][0]).toMatchObject({
+        mint: expect.anything(),
+        store: expect.anything(),
+      })
+      nudgeTopUpMinter()
+      await waitFor(() => expect(mockAdvanceTidies).toHaveBeenCalledTimes(2))
+      expect(mockAdvance).toHaveBeenCalledTimes(2)
+      unmount()
     } finally {
       listen.mockRestore()
     }
