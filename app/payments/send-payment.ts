@@ -150,6 +150,28 @@ export type Attempt = {
  * the attempt has to outlive any one call (a retry after a throw must find
  * the same closure and key), so it belongs to whoever outlives the calls.
  * For the screen that is `useSendPayment`.
+ *
+ * Invariant (ENG-533): one `AttemptState` per logical payment attempt. The
+ * caller creates its refs once and hands the same `inFlightRef` and
+ * `attemptRef` to every call for that payment, each retry included (the
+ * wrapper object may be rebuilt per call, as `useSendPayment` does).
+ * `sendPayment` mints the idempotency key itself, when a GraphQL send starts
+ * a new `Attempt`, and keeps it in `attemptRef` until a status comes back;
+ * nothing else holds it between calls.
+ *
+ * - Never recreate the refs per call (per Confirm tap, say). A retry after a
+ *   dropped response would then find no `Attempt` and mint a new key. If the
+ *   first dispatch did execute, the backend cannot tell the retry from a new
+ *   payment and can execute it a second time: a double pay.
+ * - A new attempt (a re-prepared action, new amounts) gets a new state,
+ *   because a reused one can carry the old attempt over. After a GraphQL
+ *   send throws, the next GraphQL call re-runs the retained `Attempt`'s
+ *   frozen closure instead of the `sendPaymentMutation` it is given. After
+ *   a success the in-flight guard stays set, so the next call comes back
+ *   `ignored` and sends nothing.
+ *
+ * So the assistant's executor (ENG-687/688) must keep one state per prepared
+ * action, for as long as that action can be retried.
  */
 export type AttemptState = {
   inFlightRef: { current: boolean }
@@ -185,6 +207,14 @@ export type SendPaymentOutcome = {
 /**
  * Send one payment: through the BTC rail for the BTC wallet, through
  * GraphQL for every other wallet.
+ *
+ * `state` must be the caller's one `AttemptState` for this logical payment
+ * attempt, created once and reused across every retry of that attempt; a
+ * new attempt (a re-prepared action, new amounts) gets a new state (ENG-533,
+ * see `AttemptState`). The idempotency key is minted in here, when a GraphQL
+ * send starts a new `Attempt`, so a caller that recreates the state per call
+ * sends each retry under a new key, and a retry after a dropped response can
+ * pay twice.
  *
  * The code is useSendPayment's dispatch moved here unchanged (ENG-686) apart
  * from three substitutions: the Breez calls go through `deps.btcRail`, the

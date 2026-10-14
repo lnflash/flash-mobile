@@ -64,9 +64,11 @@ describe("breezBtcRail", () => {
 
 describe("app/payments", () => {
   it("never imports the Breez SDK itself", () => {
-    // Spec §2.1 (docs/ai-assistant-tool-registry.md): app/utils/breez-sdk/spark.ts
-    // stays the only runtime importer of the SDK, and the rail reaches it
-    // through that module.
+    // breezBtcRail reaches Breez through the @app/utils/breez-sdk wrappers
+    // (spec §2.1, docs/ai-assistant-tool-registry.md), so no .ts file in
+    // app/payments imports an @breeztech package. This scan covers
+    // app/payments only; modules elsewhere still import SDK enums and types
+    // until ENG-693 moves them behind the rail.
     const dir = path.join(__dirname, "../../app/payments")
     const sources = fs.readdirSync(dir).filter((file) => file.endsWith(".ts"))
     expect(sources).toContain("btc-rail.ts")

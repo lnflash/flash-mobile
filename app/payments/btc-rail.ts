@@ -5,9 +5,12 @@ import { payLightningBreez, payLnurlBreez, payOnchainBreez } from "@app/utils/br
 // `sendPayment` (./send-payment.ts) reaches Breez only through this type, so
 // the caller decides which rail it gets: the confirmation screen's hook passes
 // `breezBtcRail`, and a test passes a mock. Every signature is the existing
-// `@app/utils/breez-sdk` wrapper's own, taken with `typeof`, so this file has
-// no SDK import of its own and `app/utils/breez-sdk/spark.ts` stays the only
-// module that imports `@breeztech/breez-sdk-spark-react-native` at runtime.
+// `@app/utils/breez-sdk` wrapper's own, taken with `typeof`, so this file does
+// not import `@breeztech/breez-sdk-spark-react-native` itself.
+//
+// `app/utils/breez-sdk/spark.ts` is the only module that calls the SDK.
+// Other modules import SDK enums and types, and ENG-693 moves those behind
+// this rail.
 type SameAs<F extends (...args: never[]) => unknown> = (
   ...args: Parameters<F>
 ) => ReturnType<F>
