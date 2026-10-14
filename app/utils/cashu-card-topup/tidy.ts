@@ -240,6 +240,28 @@ const giveUp = async (
   throw new TidyError("needs-card", why)
 }
 
+/**
+ * The mint's refusals that the signed swap itself decides, so the identical
+ * swap would be refused again: invalid proofs or witness (10001), unbalanced
+ * (11005), over the amount limit (11006), duplicate inputs or outputs
+ * (11007, 11008), unit errors (11009, 11010) and keyset errors (12000-12002).
+ * Everything else leaves the tidy `signed` for another try: code 0 is
+ * Nutshell's catch-all for any server exception (a database lock, a lost
+ * connection), 11002 and 11004 are pending inputs or outputs, and Nutshell
+ * 0.20.3 gives 11003 and 11004 two meanings each. A tidy retried in vain
+ * stays owed; one given up in error loses its pieces.
+ */
+export const FINAL_MINT_REFUSALS: ReadonlySet<number> = new Set([
+  10001, 11005, 11006, 11007, 11008, 11009, 11010, 12000, 12001, 12002,
+])
+
+export const isFinalMintRefusal = (
+  err: unknown,
+): err is Parameters<typeof isMintOperationError>[0] & {
+  code: number
+  message: string
+} => isMintOperationError(err) && FINAL_MINT_REFUSALS.has(Number(err.code))
+
 /** The swap as the card signed it: the witness on the first input, the outputs in order. */
 const swapPayload = (
   record: TidyRecord,
@@ -299,9 +321,11 @@ const restored = async (
  * signature, for a human:
  * - an input SPENT at the mint and none of the change signed: the pieces
  *   went to another payment (a till), and this swap can never be made;
- * - the mint's own refusal (a `MintOperationError`) with every input still
- *   UNSPENT: the payload is fixed by the signature (keyset, amounts,
- *   outputs), so the identical swap would be refused again. The phone does
+ * - the mint's own refusal with every input still UNSPENT, for a code the
+ *   signed payload decides (`FINAL_MINT_REFUSALS`): the payload is fixed by
+ *   the signature (keyset, amounts, outputs), so the identical swap would be
+ *   refused again. Any other code (a server exception, pending pieces) is
+ *   retried. The phone does
  *   not check the signature itself: the mint is the one verifier.
  * Anything else (the network, a mint that did not answer) leaves the record
  * `signed`, for another try.
@@ -312,9 +336,12 @@ const swapTidy = async (
   resumed: boolean,
 ): Promise<TidyRecord> => {
   const { inputs, outputs } = swapPayload(record)
+  // The inputs' states first, then the restore. A swap that commits between
+  // two asks would otherwise read as "nothing restored" and then "SPENT", and
+  // a tidy the mint signed would be given up. Nutshell marks the inputs SPENT
+  // and signs the outputs in one transaction, so SPENT followed by an empty
+  // restore is conclusive.
   const recover = async (): Promise<SerializedBlindedSignature[] | "send"> => {
-    const found = await restored(deps, outputs)
-    if (found) return found
     const states = await deps.mint.proofStates(
       record.inputs.map((input) => proofY(input.nonce, record.cardPubkey)),
     )
@@ -322,6 +349,8 @@ const swapTidy = async (
       throw new TidyError("waiting", "the mint is still settling the tidy's pieces")
     }
     if (states.every((state) => state === "UNSPENT")) return "send"
+    const found = await restored(deps, outputs)
+    if (found) return found
     return giveUp(
       deps,
       record,
@@ -335,7 +364,7 @@ const swapTidy = async (
     } catch (err) {
       const after = await recover()
       if (after === "send") {
-        if (isMintOperationError(err)) {
+        if (isFinalMintRefusal(err)) {
           await giveUp(deps, record, `the mint refused this tidy's swap: ${err.message}`)
         }
         throw err

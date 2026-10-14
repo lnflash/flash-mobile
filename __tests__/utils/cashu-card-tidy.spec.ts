@@ -47,6 +47,7 @@ import {
   belowTarget,
   cardCommitments,
   createTopUpStore,
+  isFinalMintRefusal,
   prepareTopUp,
   proofY,
   runTidy,
@@ -333,7 +334,7 @@ describe("runTidy", () => {
     expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
   })
 
-  it("swaps a signed tidy without the card, restore first, and loads it on the next tap", async () => {
+  it("swaps a signed tidy without the card, its inputs' states asked first, and loads it on the next tap", async () => {
     await putOnCard(AFTER_A_TILL)
     // The tap ends after SIGN and GET_CHANGE: the grant never reaches the card.
     const answer = card.transceive.getMockImplementation()!
@@ -350,7 +351,9 @@ describe("runTidy", () => {
     const [swapped] = await deps.store.tidies.list()
     expect(swapped.state).toBe("swapped")
     expect(swapped.proofs).toHaveLength(5)
-    expect(mint.restore).toHaveBeenCalledTimes(1)
+    // Every input still UNSPENT: the swap was never made, so nothing to restore.
+    expect(mint.proofStates).toHaveBeenCalled()
+    expect(mint.restore).not.toHaveBeenCalled()
     expect(mint.swap).toHaveBeenCalledTimes(1)
 
     await expect(runTidy(deps, args())).resolves.toMatchObject({ status: "tidied" })
@@ -539,6 +542,59 @@ describe("runTidy", () => {
     await advanceTidies(deps)
     expect(mint.swap).toHaveBeenCalledTimes(1)
     await expect(deps.store.tidies.archive(kept.id)).resolves.toBe(true)
+  })
+
+  const itLeavesSignedOn = (code: number, detail: string) =>
+    it(`leaves a tidy \`signed\` on the mint's passing refusal ${code}, and finishes it on the next tap`, async () => {
+      await putOnCard(AFTER_A_TILL)
+      // Nutshell answers any server exception with a 400 and code 0, and
+      // pending pieces with 11002/11004: the transaction rolled back, every
+      // input is still UNSPENT, and the identical swap passes moments later.
+      ;(mint.swap as jest.Mock).mockRejectedValueOnce(
+        new MintOperationError(code, detail),
+      )
+
+      await expect(runTidy(deps, args())).rejects.toThrow(detail)
+
+      const [saved] = await deps.store.tidies.list()
+      expect(saved.state).toBe("signed")
+      await expect(runTidy(deps, args())).resolves.toMatchObject({ status: "tidied" })
+      expect(mint.swap).toHaveBeenCalledTimes(2)
+      expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
+    })
+
+  itLeavesSignedOn(0, "database is locked")
+  itLeavesSignedOn(11002, "Proofs are pending.")
+  itLeavesSignedOn(11004, "Outputs are pending.")
+
+  it("finishes a tidy whose lost swap commits at the mint while it is being asked about", async () => {
+    await putOnCard(AFTER_A_TILL)
+    // The swap's answer is lost while the mint is still inside its
+    // transaction; the transaction commits (inputs SPENT, outputs signed, in
+    // one step) just as the phone asks about the inputs. Asked in the other
+    // order (restore, then states), "nothing restored" and "SPENT" describe
+    // two different moments, and a tidy the mint signed is given up.
+    const swap = (mint.swap as jest.Mock).getMockImplementation()!
+    const states = (mint.proofStates as jest.Mock).getMockImplementation()!
+    let inFlight: Parameters<typeof swap> | undefined
+    ;(mint.swap as jest.Mock).mockImplementationOnce(async (...call) => {
+      inFlight = call as Parameters<typeof swap>
+      throw new Error("Network request failed")
+    })
+    ;(mint.proofStates as jest.Mock).mockImplementation(async (Ys: string[]) => {
+      if (inFlight) {
+        const commit = inFlight
+        inFlight = undefined
+        await swap(...commit)
+      }
+      return states(Ys)
+    })
+
+    await expect(runTidy(deps, args())).resolves.toMatchObject({ status: "tidied" })
+    expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
+    expect((await deps.store.tidies.list()).every((t) => t.state !== "needs-card")).toBe(
+      true,
+    )
   })
 
   it("leaves a tidy `signed` when the swap is cut by the network, and finishes it on the next tap", async () => {
@@ -874,5 +930,23 @@ describe("cardCommitments", () => {
       ),
     ).rejects.toEqual(expect.any(TopUpError))
     expect(mint.createQuote).not.toHaveBeenCalled()
+  })
+})
+
+describe("isFinalMintRefusal", () => {
+  it("gives up only on refusals the signed swap decides", () => {
+    for (const code of [
+      10001, 11005, 11006, 11007, 11008, 11009, 11010, 12000, 12001, 12002,
+    ]) {
+      expect(isFinalMintRefusal(new MintOperationError(code, "refused"))).toBe(true)
+    }
+  })
+
+  it("retries a server exception, pending pieces, the codes Nutshell gives two meanings, and anything that is not the mint's refusal", () => {
+    for (const code of [0, 11001, 11002, 11003, 11004, 20000]) {
+      expect(isFinalMintRefusal(new MintOperationError(code, "maybe"))).toBe(false)
+    }
+    expect(isFinalMintRefusal(new Error("Network request failed"))).toBe(false)
+    expect(isFinalMintRefusal(undefined)).toBe(false)
   })
 })
