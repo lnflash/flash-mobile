@@ -507,6 +507,8 @@ export const FlashcardV2TopUpScreen = () => {
           hasOwner: cashuCard.hasOwner,
           empty: cashuCard.empty,
           reclaimable: reclaim.reclaimable,
+          // The pieces it holds as last read: the top-up fills their gaps.
+          pieces: cashuCard.pieces,
           // The unit of the card's own value; an empty card has none.
           unit:
             eligibility?.ok && eligibility.unit !== "choose" && !eligibility.committed

@@ -29,6 +29,7 @@ import {
 } from "../../app/utils/cashu-card"
 import { signMintQuote } from "../../app/utils/cashu-card-topup/nut20"
 import { buildCardP2PKSecret } from "../../app/utils/cashu-card-outputs"
+import { coversEveryAmount, targetPieces } from "../../app/utils/cashu-card-shape"
 import {
   CardInventory,
   EXPIRY_GRACE_MS,
@@ -60,6 +61,8 @@ const CARD = "02" + "ab".repeat(32)
 const OTHER_CARD = "03" + "cd".repeat(32)
 const WALLET = "btc-wallet-id"
 const EMPTY_CARD = { empty: 32, hasOwner: true }
+/** 1000 as a top-up mints it onto an empty card (ENG-700), largest first: 19 outputs. */
+const SHAPE_1000 = [256, 256, 128, 128, 64, 64, 32, 16, 16, 8, 8, 8, 4, 4, 2, 2, 2, 1, 1]
 
 let clock: number
 let mint: FakeMint
@@ -186,8 +189,12 @@ describe("prepareTopUp", () => {
       quotedAt: clock,
       lifeMs: mint.ttlSeconds.sat * 1000,
     })
-    // 1000 = 512+256+128+64+32+8: one output per power of two, each a card secret.
-    expect(record.outputs.map((o) => o.amount)).toEqual([512, 256, 128, 64, 32, 8])
+    // 1000 as the covering shape (ENG-700): the ladder 1..256, the spares 1, 2,
+    // 4, 8 and 256+128+64+16+8+2 for the rest, largest first. Every amount
+    // from 1 to 1000 pays exactly from it; 512+256+128+64+32+8 paid only
+    // multiples of 8. Each output is a card secret.
+    expect(record.outputs.map((o) => o.amount)).toEqual(SHAPE_1000)
+    expect(coversEveryAmount(record.outputs.map((o) => o.amount))).toBe(true)
     record.outputs.forEach((output) => {
       const { nonce } = JSON.parse(output.secret)[1]
       expect(output.secret).toBe(buildCardP2PKSecret(nonce, CARD))
@@ -256,6 +263,80 @@ describe("prepareTopUp", () => {
       await expect(prepare(1000)).rejects.toMatchObject({ reason: "quote" })
       expect(await deps.store.list()).toEqual([])
     })
+  })
+})
+
+describe("prepareTopUp shapes the card as a covering ladder (ENG-700)", () => {
+  const amounts = (record: TopUpRecord) => record.outputs.map((o) => o.amount)
+  const sorted = (pieces: number[]) => [...pieces].sort((x, y) => x - y)
+
+  it("mints 60 sats as the 12-piece covering shape, not 32+16+8+4", async () => {
+    const record = await prepare(60)
+
+    expect(sorted(amounts(record))).toEqual([1, 1, 2, 2, 2, 4, 4, 4, 8, 8, 8, 16])
+    // Every amount from 1 to 60 pays exactly offline; 32+16+8+4 paid only multiples of 4.
+    expect(coversEveryAmount(amounts(record))).toBe(true)
+    expect(amounts(record).reduce((a, b) => a + b, 0)).toBe(60)
+    expect(mint.createQuote).toHaveBeenCalledWith(expect.objectContaining({ amount: 60 }))
+  })
+
+  it("fills the gaps of the card's pieces as last read", async () => {
+    // A card shaped the old way, 32+16+8+4: 3 more makes the whole card cover 1..63.
+    const filled = await prepare(3, { card: { pieces: [32, 16, 8, 4] } })
+    expect(sorted(amounts(filled))).toEqual([1, 2])
+    expect(coversEveryAmount([32, 16, 8, 4, ...amounts(filled)])).toBe(true)
+
+    // A card holding a 16: 100 more completes the whole card's target shape for
+    // 116 in twelve pieces, where 100 shaped alone would take thirteen.
+    const completed = await prepare(100, { card: { pieces: [16] } })
+    expect(sorted([16, ...amounts(completed)])).toEqual(targetPieces(116))
+    expect(amounts(completed)).toHaveLength(12)
+
+    // The slot read was lost: the amount is shaped on its own.
+    const alone = await prepare(100, { card: { pieces: undefined } })
+    expect(sorted(amounts(alone))).toEqual(targetPieces(100))
+  })
+
+  it("counts the card's unfinished top-ups' outputs as pieces the card will hold", async () => {
+    // A top-up of 16 into one free slot: a single 16, paid and minted, not loaded.
+    settlesOnPay()
+    const held = await prepare(16, { card: { empty: 1 } })
+    expect(amounts(held)).toEqual([16])
+    await payTopUp(deps, held.id)
+    await mintTopUp(deps, held.id)
+
+    // The card as read holds nothing yet; the 16 it is owed is filled around.
+    const record = await prepare(100, { card: { empty: 32, pieces: [] } })
+    expect(sorted([16, ...amounts(record)])).toEqual(targetPieces(116))
+  })
+
+  it("degrades to fit the room, never below the fewest pieces", async () => {
+    // Four free slots: 60 fits as 32+16+8+4, as it did before shaping.
+    const tight = await prepare(60, { card: { empty: 4 } })
+    expect(amounts(tight)).toEqual([32, 16, 8, 4])
+    // Three do not: the refusal is at the fewest pieces.
+    await expect(prepare(60, { card: { empty: 3 } })).rejects.toMatchObject({
+      reason: "slots",
+      message: "the top-up needs 4 slots and the card has 3 free",
+    })
+    // Nine free: the fewest pieces that still cover 1..60.
+    const nine = await prepare(60, { card: { empty: 9 } })
+    expect(sorted(amounts(nine))).toEqual([1, 1, 2, 4, 4, 8, 8, 16, 16])
+    expect(coversEveryAmount(amounts(nine))).toBe(true)
+  })
+
+  it("a shaped 60-sat top-up holds its 12 slots against the next one", async () => {
+    await minted(60)
+
+    expect(cardCommitments(await deps.store.list(), CARD)).toEqual({
+      slots: 12,
+      units: ["sat"],
+    })
+    // Thirteen empty, twelve held: one free, and 3 sats needs two.
+    await expect(prepare(3, { card: { empty: 13 } })).rejects.toMatchObject({
+      reason: "slots",
+    })
+    await expect(prepare(1, { card: { empty: 13 } })).resolves.toBeTruthy()
   })
 })
 
@@ -616,7 +697,7 @@ describe("mintTopUp", () => {
 
     expect(record.state).toBe("minted")
     expect(record.lockKey).toBeUndefined()
-    expect(record.proofs?.map((p) => p.amount)).toEqual([512, 256, 128, 64, 32, 8])
+    expect(record.proofs?.map((p) => p.amount)).toEqual(SHAPE_1000)
     record.proofs?.forEach((proof, i) => {
       expect(proof.keysetId).toBe(mint.keysetId)
       expect(buildCardP2PKSecret(proof.nonce, CARD)).toBe(record.outputs[i].secret)
@@ -656,7 +737,7 @@ describe("mintTopUp", () => {
     expect(status).toBe("minted")
     expect(mint.restore).toHaveBeenCalledTimes(1)
     expect(mint.mint).toHaveBeenCalledTimes(1)
-    expect(after.proofs).toHaveLength(6)
+    expect(after.proofs).toHaveLength(SHAPE_1000.length)
   })
 
   it("a mint failure that did not issue the quote is not papered over", async () => {
@@ -740,7 +821,7 @@ describe("mintTopUp", () => {
     expect(status).toBe("minted")
     expect(mint.mint).not.toHaveBeenCalled()
     expect(mint.restore).toHaveBeenCalledTimes(1)
-    expect(after.proofs?.map((p) => p.amount)).toEqual([512, 256, 128, 64, 32, 8])
+    expect(after.proofs?.map((p) => p.amount)).toEqual(SHAPE_1000)
   })
 
   it("refuses a signature whose DLEQ proof does not verify, and keeps nothing", async () => {
@@ -1060,8 +1141,8 @@ describe("loadTopUp", () => {
     expect(seenAtFirstLoad).toEqual([true])
     expect(after.state).toBe("loaded")
     expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
-    // A first load reads no inventory: GET_SLOT_STATUS, then six LOAD_PROOFs.
-    expect(card.ins()).toEqual([0x14, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30])
+    // A first load reads no inventory: GET_SLOT_STATUS, then nineteen LOAD_PROOFs.
+    expect(card.ins()).toEqual([0x14, ...new Array(19).fill(0x30)])
     // And asks the mint nothing: none of its proofs can be spent yet.
     expect(mint.proofStates).not.toHaveBeenCalled()
   })
@@ -1086,11 +1167,12 @@ describe("loadTopUp", () => {
     const after = await loadOnCard(record.id)
 
     expect(after.state).toBe("loaded")
-    expect(card.ins().filter((ins) => ins === 0x30)).toHaveLength(3)
+    // The sixteen of the nineteen that had not landed.
+    expect(card.ins().filter((ins) => ins === 0x30)).toHaveLength(16)
     const onCard = card.slots
       .filter((slot) => slot[0] !== 0)
       .map((slot) => toHex(slot.slice(13, 45)))
-    expect(onCard).toHaveLength(6)
+    expect(onCard).toHaveLength(19)
     expect(new Set(onCard)).toEqual(new Set(record.proofs?.map((p) => p.nonce)))
   })
 
@@ -1147,7 +1229,7 @@ describe("loadTopUp", () => {
 
   it("never clears a spent slot itself: with too few empty ones it refuses before writing, and an unsettled burn stays readable", async () => {
     const record = await minted(1000)
-    // 28 spent slots and 4 empty: six proofs do not fit. Slot 0 is a burn
+    // 28 spent slots and 4 empty: nineteen proofs do not fit. Slot 0 is a burn
     // whose signature never left the card, UNSPENT at the mint: only its
     // slot can recover it.
     card.slots.forEach((slot, i) => {
@@ -1421,7 +1503,7 @@ describe("reclaimSpentSlots", () => {
   })
 
   it("the load tap: the reclaim frees a full card's settled slots, then the load fills the slots just freed", async () => {
-    // Six proofs to load onto a card with no empty slot: 32 spent, all settled.
+    // Nineteen proofs to load onto a card with no empty slot: 32 spent, all settled.
     const record = await minted(1000)
     fillSpent(0, 32)
     const verdicts = await reclaimVerdicts(deps, CARD, await spentSlotsOnCard())
@@ -1442,7 +1524,7 @@ describe("reclaimSpentSlots", () => {
       ...new Array(32).fill(0x13),
       0x31,
       0x14,
-      ...new Array(6).fill(0x30),
+      ...new Array(19).fill(0x30),
     ])
   })
 
@@ -1485,11 +1567,11 @@ describe("reclaimSpentSlots", () => {
     expect(after.state).toBe("loaded")
     expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
     // One GET_SLOT_STATUS for the whole tap, then straight to the loads.
-    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13, ...new Array(6).fill(0x30)])
+    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13, ...new Array(19).fill(0x30)])
   })
 
   it("a resumed load after a reclaim that cleared nothing reads only the unspent slots: the spent ones it takes from the reclaim's read", async () => {
-    // Six proofs; the first tap lands three, then one of those is spent at a
+    // Nineteen proofs; the first tap lands three, then one of those is spent at a
     // till and the mint has not settled it: the reclaim frees nothing.
     const record = await minted(1000)
     await cutLoadAfter(record.id, 3)
@@ -1504,14 +1586,14 @@ describe("reclaimSpentSlots", () => {
     expect(after.state).toBe("loaded")
     // The reclaim: GET_SLOT_STATUS and the one spent slot. The load: the two
     // unspent slots alone (no second GET_SLOT_STATUS, no second read of slot
-    // 0), then the three proofs still to land.
-    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13, 0x30, 0x30, 0x30])
+    // 0), then the sixteen proofs still to land.
+    expect(card.ins()).toEqual([0x14, 0x13, 0x13, 0x13, ...new Array(16).fill(0x30)])
     // The spent slot's proof came from the reclaim's read: it is the record's
     // own, which the mint still has as UNSPENT, and was not written again.
     const onCard = card.slots
       .filter((slot) => slot[0] !== 0)
       .map((slot) => toHex(slot.slice(13, 45)))
-    expect(onCard).toHaveLength(6)
+    expect(onCard).toHaveLength(19)
     expect(new Set(onCard)).toEqual(new Set(record.proofs?.map((p) => p.nonce)))
   })
 
@@ -1530,7 +1612,16 @@ describe("reclaimSpentSlots", () => {
     expect(reclaim.inventory).toBeUndefined()
     expect(after.state).toBe("loaded")
     expect(card.ins()).toEqual([
-      0x14, 0x13, 0x13, 0x13, 0x31, 0x14, 0x13, 0x13, 0x13, 0x30, 0x30, 0x30,
+      0x14,
+      0x13,
+      0x13,
+      0x13,
+      0x31,
+      0x14,
+      0x13,
+      0x13,
+      0x13,
+      ...new Array(16).fill(0x30),
     ])
     expect(card.unspentNonces()).toEqual(record.proofs?.map((p) => p.nonce))
   })
@@ -1689,7 +1780,7 @@ describe("cancelTopUp", () => {
 
     const after = await deps.store.get(record.id)
     expect(after?.state).toBe("minted")
-    expect(after?.proofs).toHaveLength(6)
+    expect(after?.proofs).toHaveLength(SHAPE_1000.length)
   })
 
   it("drops a dispatched payment only once its invoice expired unpaid at the mint, past the grace", async () => {

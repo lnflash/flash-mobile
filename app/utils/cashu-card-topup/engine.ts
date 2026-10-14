@@ -32,6 +32,7 @@ import {
   randomBytes,
   splitPow2,
 } from "../cashu-card-outputs"
+import { topUpPieces } from "../cashu-card-shape"
 import { sameMint } from "./mint-url"
 import { signMintQuote } from "./nut20"
 import type { ProofState, TopUpMint } from "./mint"
@@ -350,7 +351,11 @@ export const quoteIsDead = (record: TopUpRecord, now: number): boolean =>
 const everSent = (record: TopUpRecord): boolean =>
   record.payment.everDispatched || record.payment.dispatched
 
-/** The slots a top-up of `amount` takes: one per power of two in it. */
+/**
+ * The fewest slots a top-up of `amount` takes: one per power of two in it. A
+ * top-up takes more, up to the room, to shape the card (`topUpPieces`); the
+ * slots a saved one holds are counted from its real outputs.
+ */
 export const slotsNeeded = (amount: number): number => splitPow2(amount).length
 
 /**
@@ -360,6 +365,19 @@ export const slotsNeeded = (amount: number): number => splitPow2(amount).length
  */
 const holdsCard = (record: TopUpRecord): boolean =>
   record.state !== "loaded" && (record.state !== "quoted" || record.payment.dispatched)
+
+/** A card's unfinished top-ups: those that hold a claim on it (`holdsCard`). */
+const holdingCard = (records: TopUpRecord[], cardPubkey: string): TopUpRecord[] => {
+  const pubkey = cardPubkey.toLowerCase()
+  return records.filter((r) => r.cardPubkey === pubkey && holdsCard(r))
+}
+
+/**
+ * The pieces a card's unfinished top-ups will put on it: their outputs'
+ * amounts. A new top-up shapes the card as it will be once they are loaded.
+ */
+const committedPieces = (records: TopUpRecord[], cardPubkey: string): number[] =>
+  holdingCard(records, cardPubkey).flatMap((r) => r.outputs.map((o) => o.amount))
 
 /**
  * What a card's unfinished top-ups already hold of it: the empty slots their
@@ -371,8 +389,7 @@ export const cardCommitments = (
   records: TopUpRecord[],
   cardPubkey: string,
 ): { slots: number; units: CardUnit[] } => {
-  const pubkey = cardPubkey.toLowerCase()
-  const holding = records.filter((r) => r.cardPubkey === pubkey && holdsCard(r))
+  const holding = holdingCard(records, cardPubkey)
   return {
     slots: holding.reduce((sum, r) => sum + r.outputs.length, 0),
     units: [...new Set(holding.map((r) => r.unit))],
@@ -394,7 +411,17 @@ export type PrepareArgs = {
    * them makes them room. A card with no owner takes no load (LOAD_PROOF
    * answers 6A90), so it takes no top-up either.
    */
-  card: Pick<CardInfo, "empty" | "hasOwner"> & { unit?: CardUnit; reclaimable?: number }
+  card: Pick<CardInfo, "empty" | "hasOwner"> & {
+    unit?: CardUnit
+    reclaimable?: number
+    /**
+     * The card's unspent pieces' amounts as last read (`CashuCardInfo.pieces`),
+     * or undefined when the slot read was lost. The top-up's denominations
+     * fill the gaps of these and of the card's unfinished top-ups
+     * (`topUpPieces`); without them the amount is shaped on its own.
+     */
+    pieces?: readonly number[]
+  }
 }
 
 /**
@@ -475,7 +502,8 @@ export async function prepareTopUp(
     throw new TopUpError("amount", `a top-up is 1 to ${MAX_TOPUP_AMOUNT}, got ${amount}`)
   }
   const cardPubkey = args.cardPubkey.toLowerCase()
-  const committed = cardCommitments(await deps.store.list(), cardPubkey)
+  const records = await deps.store.list()
+  const committed = cardCommitments(records, cardPubkey)
   const units = [...committed.units, ...(args.card.unit ? [args.card.unit] : [])]
   if (units.some((held) => held !== unit)) {
     throw new TopUpError(
@@ -483,17 +511,22 @@ export async function prepareTopUp(
       `the card holds, or is being topped up in, ${units.join(", ")}: not ${unit}`,
     )
   }
-  const pieces = splitPow2(amount)
   const room = args.card.empty + (args.card.reclaimable ?? 0) - committed.slots
-  if (pieces.length > room) {
+  // The fewest slots: anything that fit before the card was shaped still fits.
+  const needed = slotsNeeded(amount)
+  if (needed > room) {
     throw new TopUpError(
       "slots",
-      `the top-up needs ${pieces.length} slots and the card has ${Math.max(
-        room,
-        0,
-      )} free`,
+      `the top-up needs ${needed} slots and the card has ${Math.max(room, 0)} free`,
     )
   }
+  // The card as it will be: its pieces as last read and its unfinished top-ups'.
+  const existing = args.card.pieces && [
+    ...args.card.pieces,
+    ...committedPieces(records, cardPubkey),
+  ]
+  // Largest first, the order a record's outputs have always had.
+  const pieces = topUpPieces(amount, existing, room).reverse()
   const keyset = await deps.mint.activeKeyset(unit)
   const outputs = pieces.map((piece) =>
     makeCanonicalCardOutput(piece, keyset.id, cardPubkey),
