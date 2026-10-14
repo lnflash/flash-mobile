@@ -13,28 +13,25 @@ import { renderHook, act } from "@testing-library/react-native"
  *   Success           → attempt cleared; a later send never reuses the key
  */
 
-jest.mock("@app/graphql/generated", () => {
-  const hook = () => [jest.fn(), { loading: false }]
-  return {
-    HomeAuthedDocument: {},
-    PaymentSendResult: {
-      Success: "SUCCESS",
-      Failure: "FAILURE",
-      Pending: "PENDING",
-      AlreadyPaid: "ALREADY_PAID",
-    },
-    WalletCurrency: { Btc: "BTC", Usd: "USD" },
-    useIntraLedgerPaymentSendMutation: hook,
-    useIntraLedgerUsdPaymentSendMutation: hook,
-    useLnInvoicePaymentSendMutation: hook,
-    useLnNoAmountInvoicePaymentSendMutation: hook,
-    useLnNoAmountUsdInvoicePaymentSendMutation: hook,
-    useOnChainPaymentSendMutation: hook,
-    useOnChainPaymentSendAllMutation: hook,
-    useOnChainUsdPaymentSendMutation: hook,
-    useOnChainUsdPaymentSendAsBtcDenominatedMutation: hook,
-  }
-})
+jest.mock("@app/graphql/generated", () => ({
+  HomeAuthedDocument: {},
+  PaymentSendResult: {
+    Success: "SUCCESS",
+    Failure: "FAILURE",
+    Pending: "PENDING",
+    AlreadyPaid: "ALREADY_PAID",
+  },
+  WalletCurrency: { Btc: "BTC", Usd: "USD" },
+}))
+
+// The nine triggers are client.mutate calls since ENG-686, so the Apollo
+// client is what gets faked. One client for the whole file, the way an
+// ApolloProvider hands out one.
+const mockClient = { mutate: jest.fn() }
+jest.mock("@apollo/client", () => ({
+  ...jest.requireActual("@apollo/client"),
+  useApolloClient: () => mockClient,
+}))
 
 const GRAPHQL_URI = "https://api.test.flashapp.me/graphql"
 jest.mock("@app/hooks", () => ({
@@ -60,6 +57,8 @@ jest.mock("uuid", () => ({
 }))
 
 import { useSendPayment } from "@app/screens/send-bitcoin-screen/use-send-payment"
+import { SendPaymentMutationParams } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
+import { payLightningBreez } from "@app/utils/breez-sdk"
 
 // A USD payment detail: only the fields the hook reads on the GraphQL path.
 const usdPaymentDetail = {
@@ -299,5 +298,166 @@ describe("useSendPayment — freeze-the-attempt", () => {
 
     expect(result.current.hasAttemptedSend).toBe(false)
     expect(result.current.sendPayment).toBeTruthy()
+  })
+})
+
+/**
+ * ENG-686: `loading` drives the Confirm button's spinner. It used to be the OR
+ * of the nine useMutation hooks' own flags, and is now counted around each
+ * client.mutate call. It has to keep that meaning: true only while a GraphQL
+ * mutation is pending.
+ */
+describe("useSendPayment — loading", () => {
+  // A send closure shaped like the payment-details builders': it reaches the
+  // network only through a trigger the hook hands it.
+  const sendThroughTrigger = () =>
+    jest.fn(async (params: SendPaymentMutationParams) => {
+      const { data } = await params.lnInvoicePaymentSend({
+        variables: { input: { walletId: "usd-wallet", paymentRequest: "lnbc1invoice" } },
+      })
+      return {
+        status: data?.lnInvoicePaymentSend.status,
+        errors: data?.lnInvoicePaymentSend.errors,
+      }
+    })
+
+  // Each client.mutate call stays pending until the test settles it.
+  const pendingMutations = () => {
+    const calls: { resolve: (v: unknown) => void; reject: (e: unknown) => void }[] = []
+    mockClient.mutate.mockImplementation(
+      () =>
+        new Promise((resolve, reject) => {
+          calls.push({ resolve, reject })
+        }),
+    )
+    return calls
+  }
+
+  const answer = (status: string, errors: { message: string }[] = []) => ({
+    data: { lnInvoicePaymentSend: { status, errors } },
+  })
+
+  it("stays false for the whole of a Breez send", async () => {
+    let finishPay: (v: unknown) => void = () => {}
+    ;(payLightningBreez as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishPay = resolve
+        }),
+    )
+    const btcPaymentDetail = {
+      sendingWalletDescriptor: { currency: "BTC", id: "btc-wallet" },
+      paymentType: "lightning",
+      destination: "lnbc1invoice",
+      settlementAmount: { amount: 100, currency: "BTC", currencyCode: "BTC" },
+    } as never
+    const mutation = jest.fn()
+    const { result } = renderHook(() => useSendPayment(mutation, btcPaymentDetail))
+
+    let send: Promise<unknown> | undefined
+    await act(async () => {
+      send = result.current.sendPayment?.()
+    })
+    // The payment is on the wire through Breez; no GraphQL mutation is.
+    expect(payLightningBreez).toHaveBeenCalledTimes(1)
+    expect(result.current.loading).toBe(false)
+
+    await act(async () => {
+      finishPay({ success: true })
+      await send
+    })
+    expect(result.current.loading).toBe(false)
+    expect(mockClient.mutate).not.toHaveBeenCalled()
+    expect(mutation).not.toHaveBeenCalled()
+  })
+
+  const settledAnswers: [string, ReturnType<typeof answer>][] = [
+    ["SUCCESS", answer("SUCCESS")],
+    ["FAILURE", answer("FAILURE", [{ message: "Insufficient balance" }])],
+    [
+      "an IdempotencyKeyReuseError FAILURE",
+      answer("FAILURE", [
+        {
+          message:
+            "This idempotency key was already used for a different payment. Use a new key for a new payment.",
+        },
+      ]),
+    ],
+  ]
+  settledAnswers.forEach(([label, response]) => {
+    it(`is true while the mutation is pending, and false after ${label}`, async () => {
+      const calls = pendingMutations()
+      const { result } = render(sendThroughTrigger())
+      expect(result.current.loading).toBe(false)
+
+      let send: Promise<unknown> | undefined
+      await act(async () => {
+        send = result.current.sendPayment?.()
+      })
+      expect(mockClient.mutate).toHaveBeenCalledTimes(1)
+      expect(result.current.loading).toBe(true)
+
+      await act(async () => {
+        calls[0].resolve(response)
+        await send
+      })
+      expect(result.current.loading).toBe(false)
+    })
+  })
+
+  it("is true while the mutation is pending, and false after it throws", async () => {
+    const calls = pendingMutations()
+    const { result } = render(sendThroughTrigger())
+
+    let send: Promise<unknown> | undefined
+    await act(async () => {
+      send = result.current.sendPayment?.()
+    })
+    expect(result.current.loading).toBe(true)
+
+    await act(async () => {
+      calls[0].reject(new Error("socket dropped"))
+      await expect(send).rejects.toThrow("socket dropped")
+    })
+    expect(result.current.loading).toBe(false)
+  })
+
+  it("is true again for a second dispatch in the same attempt", async () => {
+    // The idempotency gate's keyless fallback sends twice in one attempt: the
+    // keyed send is refused, then the same input goes out without the key.
+    // The old per-hook flag was true for each of those calls, so loading is
+    // counted per call, not per attempt.
+    const calls = pendingMutations()
+    const resendOnRefusal = jest.fn(async (params: SendPaymentMutationParams) => {
+      const variables = {
+        input: { walletId: "usd-wallet", paymentRequest: "lnbc1invoice" },
+      }
+      try {
+        await params.lnInvoicePaymentSend({ variables })
+      } catch {
+        // refused: go again without the key
+      }
+      const { data } = await params.lnInvoicePaymentSend({ variables })
+      return { status: data?.lnInvoicePaymentSend.status }
+    })
+    const { result } = render(resendOnRefusal)
+
+    let send: Promise<unknown> | undefined
+    await act(async () => {
+      send = result.current.sendPayment?.()
+    })
+    expect(result.current.loading).toBe(true)
+
+    await act(async () => {
+      calls[0].reject(new Error('Field "idempotencyKey" is not defined'))
+    })
+    expect(mockClient.mutate).toHaveBeenCalledTimes(2)
+    expect(result.current.loading).toBe(true)
+
+    await act(async () => {
+      calls[1].resolve(answer("SUCCESS"))
+      await send
+    })
+    expect(result.current.loading).toBe(false)
   })
 })
