@@ -15,6 +15,8 @@ jest.mock("@cashu/cashu-ts", () => ({
 
 const checkMintQuoteBolt11 = jest.fn()
 const check = jest.fn()
+const getKeySets = jest.fn()
+const swap = jest.fn()
 
 const Y1 = "02" + "11".repeat(32)
 const Y2 = "03" + "22".repeat(32)
@@ -24,6 +26,8 @@ beforeEach(() => {
   ;(Mint as unknown as jest.Mock).mockImplementation(() => ({
     checkMintQuoteBolt11,
     check,
+    getKeySets,
+    swap,
   }))
 })
 
@@ -71,5 +75,43 @@ describe("createTopUpMint proofStates", () => {
       ],
     })
     await expect(mint.proofStates([Y1, Y2])).rejects.toBeInstanceOf(TopUpMintError)
+  })
+})
+
+describe("createTopUpMint feePpk (ENG-702)", () => {
+  const keysets = [
+    // The mint API's own field name.
+    // eslint-disable-next-line camelcase
+    { id: "00aa", unit: "sat", active: true, input_fee_ppk: 100 },
+    { id: "00bb", unit: "sat", active: true },
+    // eslint-disable-next-line camelcase
+    { id: "00cc", unit: "sat", active: false, input_fee_ppk: 0 },
+  ]
+
+  it("answers the keyset's input_fee_ppk, 0 where the mint states none", async () => {
+    getKeySets.mockResolvedValue({ keysets })
+    const mint = createTopUpMint("https://mint.test")
+    await expect(mint.feePpk("00aa")).resolves.toBe(100)
+    await expect(mint.feePpk("00bb")).resolves.toBe(0)
+  })
+
+  it("refuses a keyset the mint does not list as active: a swap's outputs must be in one", async () => {
+    getKeySets.mockResolvedValue({ keysets })
+    const mint = createTopUpMint("https://mint.test")
+    await expect(mint.feePpk("00cc")).rejects.toBeInstanceOf(TopUpMintError)
+    await expect(mint.feePpk("00dd")).rejects.toBeInstanceOf(TopUpMintError)
+  })
+})
+
+describe("createTopUpMint swap (ENG-702)", () => {
+  it("sends the inputs and outputs as given and answers the signatures in order", async () => {
+    const signatures = [{ id: "00aa", amount: 8, C_: "02" + "11".repeat(32) }]
+    swap.mockResolvedValueOnce({ signatures })
+    const inputs = [{ id: "00aa", amount: 8, secret: "s", C: "02", witness: "{}" }]
+    const outputs = [{ id: "00aa", amount: 8, B_: "03" + "22".repeat(32) }]
+    await expect(
+      createTopUpMint("https://mint.test").swap(inputs as never, outputs as never),
+    ).resolves.toBe(signatures)
+    expect(swap).toHaveBeenCalledWith({ inputs, outputs })
   })
 })
