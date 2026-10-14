@@ -64,9 +64,11 @@ import {
   reclaimPlan,
   reclaimSpentSlots,
   reclaimVerdicts,
+  TidyDeps,
   runTidy,
   tidyKeyset,
 } from "@app/utils/cashu-card-topup"
+import { CardSpendError } from "@app/utils/cashu-card-spend"
 
 import {
   FIXTURE_OWNER_KEY,
@@ -516,5 +518,49 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
     expect(await paid.json()).toMatchObject({ balance: 9 })
     await selectApplet(transceive)
     expect((await getInfo(transceive)).spentToday).toBe(spentBefore + 3)
+  })
+
+  it("a PIN card with no no-PIN allowance refuses a tidy without its PIN, burning nothing, and takes one after VERIFY_PIN (ENG-702, decision 1)", async () => {
+    // 21 as 16 + 4 + 1, PIN set, no allowance: short of its 1s and 2s.
+    await loadFixture("loaded")
+    const transceive = bridgeTransceiver(bridge)
+    const card = await readCashuCard(transceive)
+    if (!card?.unspentSlots) throw new Error("the loaded fixture did not read")
+    const mint = createTopUpMint(mintUrl)
+    const feePpk = await mint.feePpk(tidyKeyset(card.unspentSlots) as string)
+    let ids = 0
+    const deps: TidyDeps = {
+      mint,
+      store: createTopUpStore(),
+      now: Date.now,
+      newId: () => `tidy-pin-${(ids += 1)}`,
+    }
+    const args = {
+      transceive,
+      card: { pubkey: card.pubkey, maxSlots: card.maxSlots },
+      feePpk,
+      openForLoading: (t: Transceiver) => allowLoad(t, ownerSigner(FIXTURE_OWNER_KEY)),
+      verdicts: new Map(),
+    }
+
+    await selectApplet(transceive)
+    const refused = runTidy(deps, args)
+    await expect(refused).rejects.toBeInstanceOf(CardSpendError)
+    await expect(refused).rejects.toMatchObject({ reason: "pin-needed", sw: 0x6a94 })
+    let state = await (await fetch(`${bridge}/state`)).json()
+    expect(state.counts.spent).toBe(0)
+    expect(state.balance).toBe(21)
+
+    await selectApplet(transceive)
+    const result = await runTidy(deps, {
+      ...args,
+      verifyPin: (t: Transceiver) =>
+        verifyCardPin(t, FIXTURE_PIN, { sealed: card.sealed, cardPubkey: card.pubkey }),
+    })
+    expect(result.status).toBe("tidied")
+    state = await (await fetch(`${bridge}/state`)).json()
+    expect(state.balance).toBe(21)
+    expect(state.counts.spent).toBe(0)
+    expect(unspentAmounts(state)).toEqual(targetPieces(21))
   })
 })
