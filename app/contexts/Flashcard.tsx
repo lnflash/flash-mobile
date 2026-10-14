@@ -713,7 +713,7 @@ export const FlashcardProvider = ({ children }: Props) => {
    * The spent slots describe the card's spent count the same way: a count
    * that changed (a top-up's load tap freed the settled ones, ENG-631) or a
    * balance that moved replaces them with the slots read in the same
-   * session, or drops them when that read was lost.
+   * session, or drops them when that read was lost; `pieces` as the split.
    */
   const recordCardOperation = (
     pubkey: string,
@@ -739,6 +739,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       // A split read in the same session as the move replaces the old one.
       keysets: moved ? keysets : previous.keysets,
       spentSlots: moved || spentChanged ? slots?.spentSlots : previous.spentSlots,
+      pieces: moved ? slots?.pieces : previous.pieces,
       unitTotals: moved ? known : previous.unitTotals,
     }
     setCashuCard(card)

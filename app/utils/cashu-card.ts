@@ -1212,6 +1212,12 @@ const totalsByKeyset = (proofs: readonly CardProofSlot[]): CardKeysetTotal[] => 
 export type CardSlotRead = {
   keysets: CardKeysetTotal[]
   /**
+   * The unspent pieces' amounts, in slot order, whatever their keyset: the
+   * shape of the card's value, which a top-up's new denominations fill the
+   * gaps of (ENG-700, `topUpPieces`).
+   */
+  pieces: number[]
+  /**
    * The spent slots, in slot order, data and all. A spent slot is owed until
    * the mint has settled it (NUT-07 SPENT), and only then may CLEAR_SPENT
    * free it: these are what the top-up asks the mint about before its load
@@ -1245,7 +1251,11 @@ export async function readCardSlots(transceive: Transceiver): Promise<CardSlotRe
     // another way is counted as neither.
     if (proof.status === "spent") spentSlots.push(proof)
   }
-  return { keysets: totalsByKeyset(unspent), spentSlots }
+  return {
+    keysets: totalsByKeyset(unspent),
+    pieces: unspent.map((proof) => proof.amount),
+    spentSlots,
+  }
 }
 
 /**
@@ -1279,7 +1289,9 @@ export const readKeysetSplit = async (
   transceive: Transceiver,
   info: Pick<CardInfo, "unspent" | "spent">,
 ): Promise<CardSlotRead | undefined> => {
-  if (info.unspent === 0 && info.spent === 0) return { keysets: [], spentSlots: [] }
+  if (info.unspent === 0 && info.spent === 0) {
+    return { keysets: [], pieces: [], spentSlots: [] }
+  }
   try {
     return await readCardSlots(transceive)
   } catch (error) {
@@ -1445,6 +1457,11 @@ export interface CashuCardInfo extends CardInfo {
    * them before its load tap, and frees the settled ones.
    */
   spentSlots?: CardProofSlot[]
+  /**
+   * The unspent pieces' amounts, read with the split (`CardSlotRead.pieces`),
+   * and undefined whenever `keysets` is: the next top-up fills their gaps.
+   */
+  pieces?: number[]
 }
 
 /**
@@ -1545,5 +1562,6 @@ export const readCashuCard = async (
     record,
     keysets: slots?.keysets,
     spentSlots: slots?.spentSlots,
+    pieces: slots?.pieces,
   }
 }
