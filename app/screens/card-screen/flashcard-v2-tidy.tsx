@@ -269,13 +269,16 @@ const useStyles = makeStyles(({ colors }) => ({
     marginTop: 20,
     gap: 8,
   },
+  // Stretched, as the other card screens' buttons are: PrimaryBtn has no
+  // width of its own, so a centred row shrinks it to its label (a pill
+  // narrower than "Tidy card").
   actions: {
     marginTop: 8,
-    gap: 12,
-    alignItems: "center",
+    gap: 4,
   },
   secondary: {
     textAlign: "center",
+    paddingVertical: 12,
   },
   pinEntry: {
     textAlign: "center",
