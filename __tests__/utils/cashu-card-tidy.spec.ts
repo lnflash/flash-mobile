@@ -13,7 +13,10 @@
  *   - a till that charged in between leaves the tidy `needs-card`, kept with
  *     the signature the card gave;
  *   - a signature the phone's own check rejects is still saved and swapped:
- *     the mint decides, and only its refusal leaves the tidy `needs-card`;
+ *     the mint decides, and its refusal leaves the tidy `needs-card`;
+ *   - so does any outcome no retry can change: a piece the mint spent for
+ *     another payment, or a card with no openings for the change; a network
+ *     failure leaves it `signed` for the next tap;
  *   - a refusal before SIGN burns nothing and keeps no record;
  *   - a card short of slots is sent nothing after GET_CHANGE;
  *   - the slots a tidy will take count against a top-up (`cardCommitments`).
@@ -388,6 +391,81 @@ describe("runTidy", () => {
     expect(cardCommitments([], card.pubkey, [kept]).slots).toBe(0)
   })
 
+  describe("a SIGN that never reached the card, then a till that spent the tidy's piece at the mint", () => {
+    /**
+     * Lifted before SIGN ran: nothing burned, the record planned with its
+     * change. Then a till: SPEND_ALL_BEGIN on the tidy's 16 (which gives the
+     * tidy's drafts up), SIGN, and its swap at the mint.
+     */
+    const tillTakesThe16 = async (): Promise<TidyRecord> => {
+      await putOnCard(AFTER_A_TILL)
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        if (apdu[1] === INS.SPEND_ALL_SIGN) throw new Error("Tag was lost")
+        return answer(apdu)
+      })
+      await expect(runTidy(deps, args())).rejects.toThrow("Tag was lost")
+      card.transceive.mockImplementation(answer)
+      const [planned] = await deps.store.tidies.list()
+      expect(planned.state).toBe("planned")
+      const [input] = planned.inputs
+      await card.transceive([0xb0, 0x22, 0, 0, 1, input.slot, 4])
+      await card.transceive([0xb0, 0x24, 0, 0, 0x40])
+      mint.proofStatesByY.set(proofY(input.nonce, card.pubkey), "SPENT")
+      card.transceive.mockClear()
+      return planned
+    }
+
+    const expectKeptForAHuman = async (planned: TidyRecord) => {
+      const records = await deps.store.tidies.list()
+      expect(records).toEqual([
+        expect.objectContaining({
+          id: planned.id,
+          state: "needs-card",
+          signature: expect.stringMatching(/^[0-9a-f]{128}$/),
+        }),
+      ])
+      // No longer owed: its change holds no slots, the swap was never sent.
+      expect(cardCommitments([], card.pubkey, records).slots).toBe(0)
+      expect(mint.swap).not.toHaveBeenCalled()
+      // Neither the card-free pass nor the next tap takes it up again.
+      await advanceTidies(deps)
+      expect(mint.swap).not.toHaveBeenCalled()
+      expect((await deps.store.tidies.list())[0].state).toBe("needs-card")
+      expect(await unfinishedTidies(deps, card.pubkey)).toEqual([
+        expect.objectContaining({ id: planned.id, state: "needs-card" }),
+      ])
+      await expect(deps.store.tidies.archive(planned.id)).resolves.toBe(true)
+    }
+
+    it("the next tap: AGAIN gives the till's signature, the card holds no openings, `needs-card`", async () => {
+      const planned = await tillTakesThe16()
+
+      await expect(runTidy(deps, args())).rejects.toMatchObject({
+        name: "TidyError",
+        reason: "needs-card",
+      })
+
+      expect(card.ins()).toContain(INS.SPEND_ALL_AGAIN)
+      expect(card.ins()).not.toContain(INS.ALLOW_LOAD)
+      await expectKeptForAHuman(planned)
+    })
+
+    it("the card-free pass, after a tap cut once AGAIN's signature was saved: `needs-card`", async () => {
+      const planned = await tillTakesThe16()
+      loseAnswerTo(INS.GET_CHANGE)
+      await expect(runTidy(deps, args())).rejects.toThrow("Tag was lost")
+      expect((await deps.store.tidies.list())[0].state).toBe("signed")
+
+      await advanceTidies(deps)
+
+      // Restore and the states, then given up: never a swap.
+      expect(mint.restore).toHaveBeenCalledTimes(1)
+      expect(mint.proofStates).toHaveBeenCalledTimes(1)
+      await expectKeptForAHuman(planned)
+    })
+  })
+
   it("keeps and swaps a signature the phone's own check rejects: the mint takes it and the tidy finishes", async () => {
     await putOnCard(AFTER_A_TILL)
     // A false negative on the phone (a serialization drift from the applet's
@@ -438,18 +516,66 @@ describe("runTidy", () => {
     }
   })
 
-  it("leaves a tidy `signed` for another try when the mint refuses a signature the phone's check passes", async () => {
+  it("leaves a tidy `needs-card` when the mint refuses its swap: the identical swap would be refused again", async () => {
     await putOnCard(AFTER_A_TILL)
+    // A keyset rotated to inactive: the keyset is inside the signed message,
+    // so no retry of this swap can pass, whatever the phone's check says.
     ;(mint.swap as jest.Mock).mockRejectedValueOnce(
       new MintOperationError(12002, "keyset inactive"),
     )
 
-    await expect(runTidy(deps, args())).rejects.toBeInstanceOf(MintOperationError)
+    await expect(runTidy(deps, args())).rejects.toMatchObject({
+      name: "TidyError",
+      reason: "needs-card",
+    })
+
+    const [kept] = await deps.store.tidies.list()
+    expect(kept.state).toBe("needs-card")
+    expect(kept.signature).toMatch(/^[0-9a-f]{128}$/)
+    expect(cardCommitments([], card.pubkey, [kept]).slots).toBe(0)
+    // Not polled again: the card-free pass leaves it, and it can be dismissed.
+    await advanceTidies(deps)
+    expect(mint.swap).toHaveBeenCalledTimes(1)
+    await expect(deps.store.tidies.archive(kept.id)).resolves.toBe(true)
+  })
+
+  it("leaves a tidy `signed` when the swap is cut by the network, and finishes it on the next tap", async () => {
+    await putOnCard(AFTER_A_TILL)
+    // Never reached the mint: no MintOperationError, every input UNSPENT.
+    ;(mint.swap as jest.Mock).mockRejectedValueOnce(new Error("Network request failed"))
+
+    await expect(runTidy(deps, args())).rejects.toThrow("Network request failed")
 
     const [saved] = await deps.store.tidies.list()
     expect(saved.state).toBe("signed")
     expect(saved.signature).toMatch(/^[0-9a-f]{128}$/)
     await expect(runTidy(deps, args())).resolves.toMatchObject({ status: "tidied" })
+    expect(mint.swap).toHaveBeenCalledTimes(2)
+    expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
+  })
+
+  it("leaves a tidy `needs-card` when the mint spent its piece for something else while its swap was cut", async () => {
+    await putOnCard(AFTER_A_TILL)
+    // The swap's answer is lost, and by then the mint has the 16 SPENT for
+    // another payment, with none of the tidy's change signed.
+    ;(mint.swap as jest.Mock).mockImplementationOnce(async (inputs) => {
+      const [kept] = await deps.store.tidies.list()
+      expect(inputs).toHaveLength(1)
+      mint.proofStatesByY.set(proofY(kept.inputs[0].nonce, card.pubkey), "SPENT")
+      throw new Error("Network request failed")
+    })
+
+    await expect(runTidy(deps, args())).rejects.toMatchObject({
+      name: "TidyError",
+      reason: "needs-card",
+    })
+
+    const [kept] = await deps.store.tidies.list()
+    expect(kept.state).toBe("needs-card")
+    expect(cardCommitments([], card.pubkey, [kept]).slots).toBe(0)
+    await advanceTidies(deps)
+    expect(mint.swap).toHaveBeenCalledTimes(1)
+    await expect(deps.store.tidies.archive(kept.id)).resolves.toBe(true)
   })
 
   it("keeps the signature when the card signed something else and the mint refuses it: `needs-card`", async () => {

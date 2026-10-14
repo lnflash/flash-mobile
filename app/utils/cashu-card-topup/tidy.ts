@@ -29,12 +29,10 @@ import {
   CHANGE_MOST,
   ChangeOpening,
   getChange,
-  sigAllMessage,
   spendAllAgain,
   spendAllBegin,
   spendAllChange,
   spendAllSign,
-  verifyCardSignature,
 } from "../cashu-card-spend"
 import {
   ReclaimVerdicts,
@@ -69,13 +67,16 @@ import type { TidyOpening, TidyRecord } from "./types"
  * and a top-up never count the same empty slots twice: `cardCommitments`):
  * - `planned` before BEGIN, and again with the change's blinded messages
  *   before SIGN, the one command that burns;
- * - `signed` with the signature as soon as SIGN answers, whether or not the
- *   phone's own SIG_ALL check passes it: the mint is the one verifier that
- *   counts, and a phone that misread a good signature must not throw it away;
+ * - `signed` with the signature as soon as SIGN answers: the mint is the one
+ *   verifier that counts, and a phone that misread a good signature must not
+ *   throw it away;
  * - `swapped` with the mint's signatures as soon as it answers;
  * - `loaded` (dropped) once every piece is back on the card.
  * A tidy cut anywhere resumes on the next tap (`runTidy` finds it first), and
- * a signed one is swapped without the card (`advanceTidies`).
+ * a signed one is swapped without the card (`advanceTidies`). An outcome no
+ * retry can change (the mint refused the swap, or spent the pieces for
+ * something else) leaves the tidy `needs-card`, its signature kept, so it
+ * never stays owed for good.
  */
 
 export type TidyDeps = {
@@ -94,8 +95,9 @@ export type TidyFailure =
   /** A signature from the mint failed its DLEQ check, or does not rebuild on the card. */
   | "dleq"
   /**
-   * The card burned the inputs and the mint refused its signature (it signed
-   * another payment since, or something else): kept, with the signature, for a human.
+   * The tidy can never finish: the mint refused its swap, or spent its pieces
+   * for something else, or the card holds no openings for its change (it
+   * signed another payment since). Kept, with the signature, for a human.
    */
   | "needs-card"
   /** The record is not in a state this step takes, or the card is not the record's. */
@@ -145,19 +147,6 @@ const sum = (amounts: readonly number[]): number => amounts.reduce((a, b) => a +
 /** The secret the card rebuilds for one of its pieces (format 4, no date). */
 const secretOf = (nonce: string, cardPubkey: string): string =>
   buildCardP2PKSecret(nonce, cardPubkey)
-
-/** The SIG_ALL message the card signs for this tidy: its inputs, then its change. */
-const messageOf = (record: TidyRecord): Uint8Array =>
-  sigAllMessage(
-    record.inputs.map((input) => ({
-      secret: secretOf(input.nonce, record.cardPubkey),
-      C: input.C,
-    })),
-    record.outputs.map((output) => ({ amount: output.amount, B_: output.B_ ?? "" })),
-  )
-
-const signsThis = (record: TidyRecord, signature: string): boolean =>
-  verifyCardSignature(signature, messageOf(record), record.cardPubkey)
 
 /** Every unspent piece and every spent slot, by GET_PIECES pages alone. */
 const readPieces = async (
@@ -217,6 +206,19 @@ const openingsFor = (
 const abandon = (deps: Pick<TidyDeps, "store">, record: TidyRecord) =>
   update(deps, record, { state: "abandoned" })
 
+/**
+ * The record kept for a human, with its signature, as one no retry can
+ * finish: no longer owed, its slots no longer committed, and dismissable.
+ */
+const giveUp = async (
+  deps: Pick<TidyDeps, "store">,
+  record: TidyRecord,
+  why: string,
+): Promise<never> => {
+  await update(deps, record, { state: "needs-card" })
+  throw new TidyError("needs-card", why)
+}
+
 /** The swap as the card signed it: the witness on the first input, the outputs in order. */
 const swapPayload = (
   record: TidyRecord,
@@ -272,10 +274,16 @@ const restored = async (
  * again only while every input is still UNSPENT there; a PENDING input waits.
  * A first swap whose answer is lost is asked about the same way at once.
  *
- * A swap the mint refused outright (its error answer, every input still
- * UNSPENT) whose signature the phone's own check does not pass either is not
- * this tidy's: the record is kept `needs-card`, with the signature, for a
- * human. One the phone's check passes is left as it was, for another try.
+ * Two outcomes are final, and leave the record `needs-card`, with the
+ * signature, for a human:
+ * - an input SPENT at the mint and none of the change signed: the pieces
+ *   went to another payment (a till), and this swap can never be made;
+ * - the mint's own refusal (a `MintOperationError`) with every input still
+ *   UNSPENT: the payload is fixed by the signature (keyset, amounts,
+ *   outputs), so the identical swap would be refused again. What the
+ *   phone's own SIG_ALL check makes of the signature does not matter here.
+ * Anything else (the network, a mint that did not answer) leaves the record
+ * `signed`, for another try.
  */
 const swapTidy = async (
   deps: Pick<TidyDeps, "mint" | "store">,
@@ -293,9 +301,10 @@ const swapTidy = async (
       throw new TidyError("waiting", "the mint is still settling the tidy's pieces")
     }
     if (states.every((state) => state === "UNSPENT")) return "send"
-    throw new TidyError(
-      "restore",
-      "the mint spent the tidy's pieces and signs none of its change",
+    return giveUp(
+      deps,
+      record,
+      "the mint spent the tidy's pieces for something else and signs none of its change",
     )
   }
   let signatures = resumed ? await recover() : "send"
@@ -305,12 +314,8 @@ const swapTidy = async (
     } catch (err) {
       const after = await recover()
       if (after === "send") {
-        if (isMintOperationError(err) && !signsThis(record, record.signature as string)) {
-          await update(deps, record, { state: "needs-card" })
-          throw new TidyError(
-            "needs-card",
-            `the mint refused the card's signature for this tidy: ${err.message}`,
-          )
+        if (isMintOperationError(err)) {
+          await giveUp(deps, record, `the mint refused this tidy's swap: ${err.message}`)
         }
         throw err
       }
@@ -390,9 +395,15 @@ const finishSigned = async (
   const withOpenings = await (async () => {
     if (start.openings || start.proofs) return start
     const openings = openingsFor(start, await getChange(transceive))
+    // The card keeps every opening it signed for until its piece is back on
+    // it, and no piece goes on before the openings are saved: none held means
+    // the card never signed this tidy's change (its last signature, given
+    // again, is another payment's). The change can never be unblinded, so the
+    // swap is never sent.
     if (!openings) {
-      throw new TidyError(
-        "state",
+      return giveUp(
+        deps,
+        start,
         "the card does not hold the openings of the tidy's change",
       )
     }
@@ -434,9 +445,10 @@ const finishSigned = async (
  * A tidy saved as planned, on its card again: did the card sign it? Its
  * inputs still unspent on the card (and at the mint) say no, and it is
  * dropped. Otherwise SPEND_ALL_AGAIN gives the card's last signature, saved
- * at once and carried to the swap: it is this tidy's only if the mint takes
- * it, and another payment's (a till charged in between) leaves the tidy
- * `needs-card`, the signature kept (`swapTidy`).
+ * at once and carried on: it is this tidy's only if the card holds the
+ * change's openings and the mint takes it. Another payment's (a till charged
+ * in between) leaves the tidy `needs-card`, the signature kept
+ * (`finishSigned`, `swapTidy`).
  */
 const recoverPlanned = async (
   deps: TidyDeps,
@@ -574,9 +586,9 @@ export async function runTidy(deps: TidyDeps, args: RunTidyArgs): Promise<TidyRe
     // A lost answer: the next tap asks the card (`recoverPlanned`).
     throw err
   }
-  // The card burned (it signs only in the commit): the signature is saved
-  // whatever the phone's own check makes of it, and the swap decides. A
-  // signature the mint refuses leaves the tidy `needs-card`, still saved.
+  // The card burned (it signs only in the commit): the signature is saved,
+  // and the swap decides. A swap the mint refuses leaves the tidy
+  // `needs-card`, still saved.
   record = await update(deps, record, { signature, state: "signed" })
   return finishSigned(deps, args, { start: record, resumed: false })
 }
