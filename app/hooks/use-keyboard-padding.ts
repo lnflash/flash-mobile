@@ -17,7 +17,10 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-re
 export const keyboardPaddingFor = (
   keyboardHeight: number,
   appliedBottomInset: number,
-): number => Math.max(keyboardHeight - appliedBottomInset, 0)
+): number => {
+  "worklet"
+  return Math.max(keyboardHeight - appliedBottomInset, 0)
+}
 
 /**
  * Animated bottom padding that keeps input-at-bottom content (chat composer,
