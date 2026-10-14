@@ -14,6 +14,7 @@ import {
 } from "../../app/utils/cashu-card-topup"
 
 const SERVER = "flashcard-v2-topups"
+const ARCHIVE = "flashcard-v2-tidy-archive"
 
 const record = (id: string, over: Partial<TopUpRecord> = {}): TopUpRecord => ({
   version: 2,
@@ -50,6 +51,7 @@ const getCredentials = Keychain.getInternetCredentials as jest.Mock
 
 beforeEach(async () => {
   await Keychain.resetInternetCredentials({ server: SERVER })
+  await Keychain.resetInternetCredentials({ server: ARCHIVE })
   jest.clearAllMocks()
 })
 
@@ -351,6 +353,63 @@ describe("createTopUpStore", () => {
       await expect(store.tidies.put(tidy("new"))).rejects.toThrow(/unknown format/)
       await expect(store.put(record("new"))).rejects.toThrow(/unknown format/)
       expect(setCredentials).not.toHaveBeenCalled()
+    })
+
+    it("archives a dismissed `needs-card` tidy, signature and all, and goes back to format 2", async () => {
+      const store = createTopUpStore(() => 9)
+      await store.put(record("top-up"))
+      await store.tidies.put(
+        tidy("stuck", { state: "needs-card", signature: "22".repeat(64) }),
+      )
+      expect((await stored()).format).toBe(3)
+
+      await expect(store.tidies.archive("stuck")).resolves.toBe(true)
+
+      expect(await store.tidies.list()).toEqual([])
+      expect(await stored()).toEqual({ format: 2, records: [record("top-up")] })
+      expect(await store.tidies.archived()).toEqual([
+        tidy("stuck", { state: "needs-card", signature: "22".repeat(64), updatedAt: 9 }),
+      ])
+      // Gone from the list already: nothing more to move.
+      await expect(store.tidies.archive("stuck")).resolves.toBe(false)
+    })
+
+    it("refuses to archive a tidy still owed: only its record can finish it", async () => {
+      const store = createTopUpStore()
+      await store.tidies.put(
+        tidy("owed", { state: "signed", signature: "11".repeat(64) }),
+      )
+      await expect(store.tidies.archive("owed")).rejects.toBeInstanceOf(TopUpStoreError)
+      expect((await store.tidies.list()).map((r) => r.id)).toEqual(["owed"])
+      expect(await store.tidies.archived()).toEqual([])
+    })
+
+    it("copies to the archive before it leaves the list: a cut in between leaves it in both, and a second dismiss finishes", async () => {
+      const store = createTopUpStore()
+      await store.tidies.put(tidy("stuck", { state: "needs-card" }))
+      const setCredentials = Keychain.setInternetCredentials as jest.Mock
+      // The archive write lands; the list write after it fails.
+      setCredentials.mockImplementationOnce(
+        setCredentials.getMockImplementation() as (...args: unknown[]) => unknown,
+      )
+      setCredentials.mockRejectedValueOnce(new Error("Keychain write failed"))
+
+      await expect(store.tidies.archive("stuck")).rejects.toThrow("Keychain write failed")
+      expect((await store.tidies.list()).map((r) => r.id)).toEqual(["stuck"])
+      expect((await store.tidies.archived()).map((r) => r.id)).toEqual(["stuck"])
+
+      await expect(store.tidies.archive("stuck")).resolves.toBe(true)
+      expect(await store.tidies.list()).toEqual([])
+      expect((await store.tidies.archived()).map((r) => r.id)).toEqual(["stuck"])
+    })
+
+    it("never reads an unreadable archive as empty", async () => {
+      const store = createTopUpStore()
+      await Keychain.setInternetCredentials(ARCHIVE, "tidies", "not json")
+      await expect(store.tidies.archived()).rejects.toBeInstanceOf(TopUpStoreError)
+      await store.tidies.put(tidy("stuck", { state: "needs-card" }))
+      await expect(store.tidies.archive("stuck")).rejects.toBeInstanceOf(TopUpStoreError)
+      expect((await store.tidies.list()).map((r) => r.id)).toEqual(["stuck"])
     })
   })
 })

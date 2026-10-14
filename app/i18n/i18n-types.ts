@@ -564,6 +564,10 @@ type RootTranslation = {
 		 */
 		tidyFailed: string
 		/**
+		 * N​o​t​h​i​n​g​ ​t​o​ ​t​i​d​y​ ​o​n​ ​t​h​i​s​ ​c​a​r​d​ ​r​i​g​h​t​ ​n​o​w​.
+		 */
+		tidyNothing: string
+		/**
 		 * U​s​e​s​ ​{​n​e​e​d​e​d​}​ ​o​f​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​s​l​o​t​s​,​ ​{​r​e​c​l​a​i​m​}​ ​o​f​ ​t​h​e​m​ ​f​r​e​e​d​ ​f​r​o​m​ ​s​e​t​t​l​e​d​ ​s​p​e​n​d​s​ ​o​n​ ​l​o​a​d
 		 * @param {number} free
 		 * @param {number} needed
@@ -8101,6 +8105,10 @@ export type TranslationFunctions = {
 		 * The tidy didn't finish. Hold your phone against the card and try again.
 		 */
 		tidyFailed: () => LocalizedString
+		/**
+		 * Nothing to tidy on this card right now.
+		 */
+		tidyNothing: () => LocalizedString
 		/**
 		 * Uses {needed} of {free} free slots, {reclaim} of them freed from settled spends on load
 		 */

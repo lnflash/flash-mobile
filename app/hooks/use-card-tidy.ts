@@ -18,6 +18,7 @@ import {
   runTidy,
   showsTidyOffer,
   tidyKeyset,
+  tidyOwed,
   unfinishedTidies,
 } from "@app/utils/cashu-card-topup"
 import { topUpMint, topUpStore } from "@app/utils/cashu-card-topup/connected"
@@ -71,8 +72,10 @@ export const useCardTidy = (card: TidyCard | undefined) => {
     }, [list]),
   )
 
+  // Only a tidy still owed holds the offer back, as the read's own
+  // `tidyOfferForRead` decides: one kept for a human (`needs-card`) does not.
   const offer: TidyOffer | undefined =
-    records.length === 0 && showsTidyOffer(card?.tidyOffer, dismissed)
+    !records.some(tidyOwed) && showsTidyOffer(card?.tidyOffer, dismissed)
       ? card?.tidyOffer
       : undefined
 
@@ -87,6 +90,21 @@ export const useCardTidy = (card: TidyCard | undefined) => {
       )
     }
   }, [card, dispatch])
+
+  /**
+   * "Dismiss" on a tidy kept for a human (`needs-card`): moved to the tidy
+   * archive, signature and all, for support; off the card screen.
+   */
+  const dismiss = useCallback(
+    async (record: TidyRecord) => {
+      try {
+        await topUpStore.tidies.archive(record.id)
+      } finally {
+        await list()
+      }
+    },
+    [list],
+  )
 
   /**
    * One tap: a new tidy, or the card's tidy still owed finished. `pin` is the
@@ -104,6 +122,12 @@ export const useCardTidy = (card: TidyCard | undefined) => {
         ? await reclaimVerdicts(deps, card.pubkey, card.spentSlots).catch(() => undefined)
         : new Map()
       const owner = await ownerKeyFor(card.pubkey).catch(() => undefined)
+      // With neither the owner's key nor the PIN, a card with a PIN takes no
+      // load: refused here, before the tap, not after SIGN has burned the
+      // pieces whose change this phone could then not put back.
+      if (!owner && !pin && card.pinState !== "unset") {
+        throw new TopUpError("not-owner", "the card wants its PIN to load")
+      }
       try {
         return await runCardOperation(
           (transceive) =>
@@ -122,6 +146,7 @@ export const useCardTidy = (card: TidyCard | undefined) => {
                 if (owner) {
                   await allowLoad(t, ownerSigner(owner.privateKey))
                 } else if (!pin && card.pinState !== "unset") {
+                  // A backstop: refused before the tap above.
                   throw new TopUpError("not-owner", "the card wants its PIN to load")
                 }
               },
@@ -137,5 +162,5 @@ export const useCardTidy = (card: TidyCard | undefined) => {
     [card, runCardOperation, list],
   )
 
-  return { offer, records, notNow, tidy }
+  return { offer, records, notNow, tidy, dismiss }
 }

@@ -161,9 +161,11 @@ export type TopUpRecord = {
  * - `loaded`: every piece is on the card. Dropped from the store.
  * - `abandoned`: nothing was burned (every input still unspent on the card
  *   and at the mint). Dropped from the store.
- * - `needs-card`: the card burned the inputs and its signature is lost: it
- *   has signed another payment since, and gives only its last one again.
- *   Kept for a human, never dropped.
+ * - `needs-card`: the card burned the inputs and the mint refused the
+ *   signature saved for them (the card signed another payment since, and
+ *   gives only its last one again). Kept for a human with that signature,
+ *   until the owner dismisses it, which moves it to the tidy archive
+ *   (`TopUpStore.tidies.archive`), never drops it.
  */
 export type TidyState =
   | "planned"

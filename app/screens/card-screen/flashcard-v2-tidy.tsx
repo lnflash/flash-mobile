@@ -14,7 +14,7 @@ import {
   triesLeft,
 } from "@app/utils/cashu-card"
 import { CardSpendError } from "@app/utils/cashu-card-spend"
-import type { TidyRecord } from "@app/utils/cashu-card-topup"
+import type { TidyRecord, TidyResult } from "@app/utils/cashu-card-topup"
 
 type LLType = ReturnType<typeof useI18nContext>["LL"]
 
@@ -39,7 +39,7 @@ export const FlashcardV2Tidy: React.FC<{
 }> = ({ card, formatAmount }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { offer, records, notNow, tidy } = useCardTidy(card)
+  const { offer, records, notNow, tidy, dismiss } = useCardTidy(card)
   const [step, setStep] = useState<Step>({ name: "idle" })
   const [pinEntry, setPinEntry] = useState("")
 
@@ -47,15 +47,7 @@ export const FlashcardV2Tidy: React.FC<{
     setStep({ name: "working" })
     try {
       const result = await tidy(pin)
-      setStep({
-        name: "notice",
-        text:
-          result.status === "tidied"
-            ? LL.FlashcardV2.tidyDone()
-            : result.status === "unfinished"
-            ? LL.FlashcardV2.tidyInProgress()
-            : LL.FlashcardV2.tidyFailed(),
-      })
+      setStep({ name: "notice", text: resultText(result, LL) })
     } catch (err) {
       if (err instanceof CardSpendError && err.reason === "pin-needed") {
         setPinEntry("")
@@ -127,6 +119,7 @@ export const FlashcardV2Tidy: React.FC<{
           record={record}
           busy={step.name === "working"}
           onFinish={() => run()}
+          onDismiss={() => dismiss(record).catch(() => undefined)}
         />
       ))}
       {offer?.kind === "offer" && (
@@ -177,7 +170,8 @@ const UnfinishedTidy: React.FC<{
   record: TidyRecord
   busy: boolean
   onFinish: () => void
-}> = ({ record, busy, onFinish }) => {
+  onDismiss: () => void
+}> = ({ record, busy, onFinish, onDismiss }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   // Kept for a human: the card signed another payment before this one's
@@ -188,7 +182,19 @@ const UnfinishedTidy: React.FC<{
       <Text type="p2" style={styles.unfinishedText}>
         {stuck ? LL.FlashcardV2.tidyNeedsCard() : LL.FlashcardV2.tidyInProgress()}
       </Text>
-      {!stuck && (
+      {stuck ? (
+        // Off the screen, kept in the tidy archive for support.
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={onDismiss}
+          testID="flashcard-v2-dismiss-tidy"
+        >
+          <Text type="p2" bold>
+            {LL.FlashcardV2.topUpDismiss()}
+          </Text>
+        </TouchableOpacity>
+      ) : (
         <TouchableOpacity
           accessibilityRole="button"
           disabled={busy}
@@ -202,6 +208,26 @@ const UnfinishedTidy: React.FC<{
       )}
     </View>
   )
+}
+
+/**
+ * What a tidy tap that ran means. Only a thrown error is a failure: a tidy
+ * the tap's own plan skipped, or a saved one the card never signed (dropped,
+ * nothing burned), has nothing to try again.
+ */
+const resultText = (result: TidyResult, LL: LLType): string => {
+  switch (result.status) {
+    case "tidied":
+      return LL.FlashcardV2.tidyDone()
+    case "unfinished":
+      return LL.FlashcardV2.tidyInProgress()
+    case "skipped":
+      return result.reason === "slots"
+        ? LL.FlashcardV2.tidySlotsShort()
+        : LL.FlashcardV2.tidyNothing()
+    case "abandoned":
+      return LL.FlashcardV2.tidyNothing()
+  }
 }
 
 /** What a tidy tap that failed means: a wrong PIN with the tries left, or try again. */

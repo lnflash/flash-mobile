@@ -10,14 +10,17 @@
  *   - a lost SIGN answer is recovered by SPEND_ALL_AGAIN on the next tap, a
  *     lost swap answer by NUT-09 restore with no second swap, a load cut part
  *     way resumes without loading a piece twice;
- *   - a till that charged in between leaves the tidy `needs-card`, kept;
+ *   - a till that charged in between leaves the tidy `needs-card`, kept with
+ *     the signature the card gave;
+ *   - a signature the phone's own check rejects is still saved and swapped:
+ *     the mint decides, and only its refusal leaves the tidy `needs-card`;
  *   - a refusal before SIGN burns nothing and keeps no record;
  *   - a card short of slots is sent nothing after GET_CHANGE;
  *   - the slots a tidy will take count against a top-up (`cardCommitments`).
  */
 import * as Keychain from "react-native-keychain"
 
-import { getPubKeyFromPrivKey } from "@cashu/cashu-ts"
+import { MintOperationError, getPubKeyFromPrivKey } from "@cashu/cashu-ts"
 
 import { INS, Transceiver, toHex, verifyCardPin } from "../../app/utils/cashu-card"
 import { allowLoad, ownerSigner } from "../../app/utils/cashu-card-owner"
@@ -27,6 +30,7 @@ import {
   makeCanonicalCardOutput,
   randomBytes,
 } from "../../app/utils/cashu-card-outputs"
+import * as cardSpend from "../../app/utils/cashu-card-spend"
 import { CardSpendError } from "../../app/utils/cashu-card-spend"
 import {
   RunTidyArgs,
@@ -149,6 +153,7 @@ const AFTER_A_TILL = [1, 2, 2, 4, 4, 4, 8, 8, 8, 16]
 
 beforeEach(async () => {
   await Keychain.resetInternetCredentials({ server: "flashcard-v2-topups" })
+  await Keychain.resetInternetCredentials({ server: "flashcard-v2-tidy-archive" })
   jest.clearAllMocks()
   clock = 1_000
   mint = createFakeMint({ now: () => clock })
@@ -377,8 +382,137 @@ describe("runTidy", () => {
     })
     const [kept] = await unfinishedTidies(deps, card.pubkey)
     expect(kept.state).toBe("needs-card")
+    // The till's signature, as the card gave it again, kept for the human.
+    expect(kept.signature).toMatch(/^[0-9a-f]{128}$/)
     // Kept for a human, never dropped, and its change no longer holds slots.
     expect(cardCommitments([], card.pubkey, [kept]).slots).toBe(0)
+  })
+
+  it("keeps and swaps a signature the phone's own check rejects: the mint takes it and the tidy finishes", async () => {
+    await putOnCard(AFTER_A_TILL)
+    // A false negative on the phone (a serialization drift from the applet's
+    // SIG_ALL message): the card's signature is good, the phone says no.
+    const check = jest.spyOn(cardSpend, "verifyCardSignature").mockReturnValue(false)
+    const answer = card.transceive.getMockImplementation()!
+    // The store as each GET_CHANGE after SIGN found it: the first is SIGN's record.
+    const afterSign: TidyRecord[][] = []
+    card.transceive.mockImplementation(async (apdu) => {
+      if (apdu[1] === INS.GET_CHANGE && card.ins().includes(INS.SPEND_ALL_SIGN)) {
+        afterSign.push(await deps.store.tidies.list())
+      }
+      return answer(apdu)
+    })
+
+    try {
+      const result = await runTidy(deps, args())
+
+      if (result.status !== "tidied") throw new Error(`not tidied: ${result.status}`)
+      expect(result.record.signature).toMatch(/^[0-9a-f]{128}$/)
+      expect(afterSign[0][0]).toMatchObject({
+        state: "signed",
+        signature: result.record.signature,
+      })
+      // No second signature asked for: SPEND_ALL_AGAIN gives the same one.
+      expect(card.ins()).not.toContain(INS.SPEND_ALL_AGAIN)
+      expect(mint.swap).toHaveBeenCalledTimes(1)
+      expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
+      expect(belowTarget(unspentAmounts())).toBe(false)
+    } finally {
+      check.mockRestore()
+    }
+  })
+
+  it("carries SPEND_ALL_AGAIN's answer to the mint after a lost SIGN answer, whatever the phone's check says", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const restore = loseAnswerTo(INS.SPEND_ALL_SIGN)
+    await expect(runTidy(deps, args())).rejects.toThrow("Tag was lost")
+    restore()
+    const check = jest.spyOn(cardSpend, "verifyCardSignature").mockReturnValue(false)
+    try {
+      await expect(runTidy(deps, args())).resolves.toMatchObject({ status: "tidied" })
+      expect(card.ins()).toContain(INS.SPEND_ALL_AGAIN)
+      expect(mint.swap).toHaveBeenCalledTimes(1)
+      expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
+    } finally {
+      check.mockRestore()
+    }
+  })
+
+  it("leaves a tidy `signed` for another try when the mint refuses a signature the phone's check passes", async () => {
+    await putOnCard(AFTER_A_TILL)
+    ;(mint.swap as jest.Mock).mockRejectedValueOnce(
+      new MintOperationError(12002, "keyset inactive"),
+    )
+
+    await expect(runTidy(deps, args())).rejects.toBeInstanceOf(MintOperationError)
+
+    const [saved] = await deps.store.tidies.list()
+    expect(saved.state).toBe("signed")
+    expect(saved.signature).toMatch(/^[0-9a-f]{128}$/)
+    await expect(runTidy(deps, args())).resolves.toMatchObject({ status: "tidied" })
+  })
+
+  it("keeps the signature when the card signed something else and the mint refuses it: `needs-card`", async () => {
+    await putOnCard(AFTER_A_TILL)
+    // The card burns the 16 and answers SIGN with a signature over another message.
+    const other = new Array(64).fill(0).map((_, i) => (i * 7 + 3) & 0xff)
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      const response = await answer(apdu)
+      // SIGN and AGAIN alike: the card's last signature is the other one.
+      return apdu[1] === INS.SPEND_ALL_SIGN || apdu[1] === INS.SPEND_ALL_AGAIN
+        ? [...other, 0x90, 0x00]
+        : response
+    })
+
+    await expect(runTidy(deps, args())).rejects.toMatchObject({
+      name: "TidyError",
+      reason: "needs-card",
+    })
+
+    const [kept] = await unfinishedTidies(deps, card.pubkey)
+    expect(kept).toMatchObject({ state: "needs-card", signature: toHex(other) })
+    // The mint was asked, refused, and spent nothing.
+    expect(mint.swap).toHaveBeenCalledTimes(1)
+    const states = await mint.proofStates(
+      kept.inputs.map((input) => proofY(input.nonce, card.pubkey)),
+    )
+    expect(states).toEqual(["UNSPENT"])
+    expect(card.ins()).not.toContain(INS.SPEND_ALL_AGAIN)
+
+    // Not retried as owed: the card-free pass and the next tap leave it be.
+    await advanceTidies(deps)
+    expect(mint.swap).toHaveBeenCalledTimes(1)
+    expect((await deps.store.tidies.list())[0].state).toBe("needs-card")
+  })
+
+  it("moves a dismissed `needs-card` tidy to the archive, signature and all, and the list back to format 2", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const other = new Array(64).fill(0x11)
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      const response = await answer(apdu)
+      // SIGN and AGAIN alike: the card's last signature is the other one.
+      return apdu[1] === INS.SPEND_ALL_SIGN || apdu[1] === INS.SPEND_ALL_AGAIN
+        ? [...other, 0x90, 0x00]
+        : response
+    })
+    await expect(runTidy(deps, args())).rejects.toMatchObject({ reason: "needs-card" })
+    const [kept] = await deps.store.tidies.list()
+
+    await expect(deps.store.tidies.archive(kept.id)).resolves.toBe(true)
+
+    expect(await deps.store.tidies.list()).toEqual([])
+    expect(await unfinishedTidies(deps, card.pubkey)).toEqual([])
+    expect(await deps.store.tidies.archived()).toEqual([
+      expect.objectContaining({
+        id: kept.id,
+        state: "needs-card",
+        signature: toHex(other),
+      }),
+    ])
+    const saved = await Keychain.getInternetCredentials("flashcard-v2-topups")
+    expect(saved && JSON.parse(saved.password).format).toBe(2)
   })
 
   it("burns nothing and keeps nothing when the card wants its PIN (allowance 0), and goes through with it", async () => {

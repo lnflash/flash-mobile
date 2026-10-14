@@ -38,6 +38,16 @@ const FORMAT = 2
 const FORMAT_1 = 1
 const FORMAT_TIDY = 3
 
+/**
+ * Tidies kept for a human (`needs-card`) that the owner dismissed: out of the
+ * shared list, so the card screen stops showing them and the list can go back
+ * to format 2, but never thrown away, the card's signature with them. A list
+ * of its own, read as strictly as the top-ups.
+ */
+const ARCHIVE_SERVER = "flashcard-v2-tidy-archive"
+const ARCHIVE_USERNAME = "tidies"
+const ARCHIVE_FORMAT = 1
+
 /** Loaded top-ups kept for the card screen's recent activity; older ones go. */
 const KEEP_LOADED = 20
 
@@ -119,6 +129,31 @@ const writeAll = async (records: StoredRecord[]): Promise<void> => {
   await Keychain.setInternetCredentials(SERVER, USERNAME, JSON.stringify(stored))
 }
 
+const readArchive = async (): Promise<TidyRecord[]> => {
+  const credentials = await Keychain.getInternetCredentials(ARCHIVE_SERVER)
+  if (!credentials) return []
+  let stored: { format?: unknown; records?: unknown }
+  try {
+    stored = JSON.parse(credentials.password)
+  } catch {
+    throw new TopUpStoreError("the archived tidies cannot be read")
+  }
+  if (stored?.format !== ARCHIVE_FORMAT || !Array.isArray(stored.records)) {
+    throw new TopUpStoreError(
+      `the archived tidies are in an unknown format (${stored?.format})`,
+    )
+  }
+  return stored.records as TidyRecord[]
+}
+
+const writeArchive = async (records: TidyRecord[]): Promise<void> => {
+  await Keychain.setInternetCredentials(
+    ARCHIVE_SERVER,
+    ARCHIVE_USERNAME,
+    JSON.stringify({ format: ARCHIVE_FORMAT, records }),
+  )
+}
+
 // Every read-modify-write runs after the previous one: two flows saving at
 // once must not each write their own copy of the list over the other's.
 let queue: Promise<unknown> = Promise.resolve()
@@ -157,6 +192,16 @@ export type TopUpStore = {
       id: string,
       change: (record: TidyRecord) => TidyRecord,
     ) => Promise<TidyRecord>
+    /**
+     * The owner's "Dismiss" on a tidy kept for a human (`needs-card`): moved
+     * to the tidy archive, copied there before it leaves the list, so a cut
+     * in between leaves it in both, never in neither. Refuses any other
+     * state: a tidy still owed is money only its record can finish. Resolves
+     * whether it was moved (false when it is not in the list).
+     */
+    archive: (id: string) => Promise<boolean>
+    /** The dismissed tidies, kept for support. */
+    archived: () => Promise<TidyRecord[]>
   }
 }
 
@@ -206,6 +251,26 @@ export const createTopUpStore = (now: () => number = Date.now): TopUpStore => {
         await writeAll(records.filter((r) => r !== record))
         return true
       }),
-    tidies: recordsOf(isTidy, now, "tidy"),
+    tidies: {
+      ...recordsOf(isTidy, now, "tidy"),
+      archive: (id) =>
+        serialized(async () => {
+          const records = await readAll()
+          const record = records.filter(isTidy).find((r) => r.id === id)
+          if (!record) return false
+          if (record.state !== "needs-card") {
+            throw new TopUpStoreError(
+              `tidy ${id} is ${record.state}: only one kept for a human is dismissed`,
+            )
+          }
+          const archived = await readArchive()
+          if (!archived.some((r) => r.id === id)) {
+            await writeArchive([...archived, { ...record, updatedAt: now() }])
+          }
+          await writeAll(records.filter((r) => r !== record))
+          return true
+        }),
+      archived: () => serialized(readArchive),
+    },
   }
 }

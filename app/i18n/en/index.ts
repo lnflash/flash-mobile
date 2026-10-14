@@ -160,6 +160,7 @@ const en: BaseTranslation = {
     tidyDone: "Card tidied.",
     tidyNotNow: "Not now",
     tidyFailed: "The tidy didn't finish. Hold your phone against the card and try again.",
+    tidyNothing: "Nothing to tidy on this card right now.",
     topUpSlotsReclaim:
       "Uses {needed:number} of {free:number} free slots, {reclaim:number} of them freed from settled spends on load",
     topUpReclaimed: "{count:number} spent slots freed.",

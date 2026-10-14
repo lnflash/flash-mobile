@@ -7,8 +7,13 @@
  *     before SPEND_ALL_BEGIN) only when the screen asked for it, and the
  *     change loaded under the owner's grant;
  *   - the re-read after it reads the pieces again (a tidy moves no balance);
- *   - "Not now" is remembered for the pieces it was said to.
+ *   - a card that would take no load (no owner key, no PIN) is refused
+ *     before the tap, never after SIGN has burned its pieces;
+ *   - "Not now" is remembered for the pieces it was said to;
+ *   - only a tidy still owed holds the offer back; one kept for a human
+ *     (`needs-card`) does not, and "Dismiss" moves it to the archive.
  */
+import * as Keychain from "react-native-keychain"
 import * as React from "react"
 import { Provider } from "react-redux"
 import { act, renderHook, waitFor } from "@testing-library/react-native"
@@ -17,7 +22,7 @@ import type { CashuCardState } from "../../app/contexts/Flashcard"
 import { useCardTidy } from "../../app/hooks/use-card-tidy"
 import { store } from "../../app/store/redux"
 import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
-import type { TidyOffer } from "../../app/utils/cashu-card-topup"
+import type { TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
 import { cashuCardState } from "../helpers/cashu-card-state"
 
 const mockRunCardOperation = jest.fn()
@@ -101,8 +106,38 @@ const wrapper = ({ children }: React.PropsWithChildren) => (
 const OWNER = { privateKey: "42".repeat(32), source: "device", saved: true }
 const VERDICTS = new Map([[SPENT.nonce, "SPENT"]])
 
-beforeEach(() => {
+const TOPUPS = "flashcard-v2-topups"
+const ARCHIVE = "flashcard-v2-tidy-archive"
+
+/** A tidy saved for the card on screen, in `state`. */
+const saved = (id: string, state: TidyRecord["state"], pubkey: string): TidyRecord => ({
+  kind: "tidy",
+  version: 1,
+  id,
+  cardPubkey: pubkey,
+  mintUrl: "https://mint.test",
+  keysetId: KEYSET,
+  fee: 0,
+  inputs: [],
+  outputs: [{ amount: 1 }],
+  signature: "33".repeat(64),
+  loadStarted: false,
+  state,
+  createdAt: 1,
+  updatedAt: 1,
+})
+
+const saveTidies = (records: TidyRecord[]) =>
+  Keychain.setInternetCredentials(
+    TOPUPS,
+    "topups",
+    JSON.stringify({ format: 3, records }),
+  )
+
+beforeEach(async () => {
   jest.clearAllMocks()
+  await Keychain.resetInternetCredentials({ server: TOPUPS })
+  await Keychain.resetInternetCredentials({ server: ARCHIVE })
   store.dispatch(resetFlashcardV2())
   mockFeePpk.mockResolvedValue(0)
   mockOwnerKeyFor.mockResolvedValue(OWNER)
@@ -161,18 +196,52 @@ describe("useCardTidy", () => {
     })
   })
 
-  it("refuses to load with neither the owner's key nor the PIN on a card that has one", async () => {
+  it("refuses before the tap with neither the owner's key nor the PIN on a card that has one: nothing is burned", async () => {
     mockOwnerKeyFor.mockResolvedValue(undefined)
     const cashuCard = card({ pinState: "set" })
     const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
     await act(async () => {
+      await expect(result.current.tidy()).rejects.toMatchObject({
+        reason: "not-owner",
+      })
+    })
+    // No tap at all: SPEND_ALL_SIGN never reaches the card.
+    expect(mockRunCardOperation).not.toHaveBeenCalled()
+    expect(mockRunTidy).not.toHaveBeenCalled()
+    expect(mockAllowLoad).not.toHaveBeenCalled()
+  })
+
+  it("refuses the same way when the owner key cannot be read from the Keychain", async () => {
+    mockOwnerKeyFor.mockRejectedValue(new Error("Keychain read failed"))
+    const cashuCard = card({ pinState: "set" })
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await act(async () => {
+      await expect(result.current.tidy()).rejects.toMatchObject({
+        reason: "not-owner",
+      })
+    })
+    expect(mockRunTidy).not.toHaveBeenCalled()
+  })
+
+  it("taps with the PIN and no owner key, and with neither on a card with no PIN", async () => {
+    mockOwnerKeyFor.mockResolvedValue(undefined)
+    const withPin = card({ pinState: "set" })
+    const { result, rerender } = renderHook(({ c }) => useCardTidy(c), {
+      wrapper,
+      initialProps: { c: withPin },
+    })
+    await act(async () => {
+      await result.current.tidy("1234")
+    })
+    expect(mockRunTidy).toHaveBeenCalledTimes(1)
+
+    rerender({ c: card({ pinState: "unset" }) })
+    await act(async () => {
       await result.current.tidy()
     })
-    const [, args] = mockRunTidy.mock.calls[0]
-    await expect(args.openForLoading("transceive")).rejects.toMatchObject({
-      reason: "not-owner",
-    })
-    expect(mockAllowLoad).not.toHaveBeenCalled()
+    expect(mockRunTidy).toHaveBeenCalledTimes(2)
+    const [, args] = mockRunTidy.mock.calls[1]
+    await expect(args.openForLoading("transceive")).resolves.toBeUndefined()
   })
 
   it("shows the read's offer until Not now, which holds for those pieces only", async () => {
@@ -186,5 +255,41 @@ describe("useCardTidy", () => {
     cashuCard = card({ tidyOffer: { ...OFFER, fingerprint: "pieces-2" } })
     rerender({})
     expect(result.current.offer).toMatchObject({ fingerprint: "pieces-2" })
+  })
+
+  it("holds the offer back for a tidy still owed, not for one kept for a human", async () => {
+    const cashuCard = card()
+    await saveTidies([saved("stuck", "needs-card", cashuCard.pubkey)])
+    const { result, unmount } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await waitFor(() => expect(result.current.records).toHaveLength(1))
+    expect(result.current.offer).toEqual(OFFER)
+    unmount()
+
+    await saveTidies([
+      saved("stuck", "needs-card", cashuCard.pubkey),
+      saved("owed", "signed", cashuCard.pubkey),
+    ])
+    const owed = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await waitFor(() => expect(owed.result.current.records).toHaveLength(2))
+    expect(owed.result.current.offer).toBeUndefined()
+  })
+
+  it("dismisses a tidy kept for a human: off the list, into the archive with its signature", async () => {
+    const cashuCard = card()
+    await saveTidies([saved("stuck", "needs-card", cashuCard.pubkey)])
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await waitFor(() => expect(result.current.records).toHaveLength(1))
+
+    await act(async () => {
+      await result.current.dismiss(result.current.records[0])
+    })
+
+    expect(result.current.records).toEqual([])
+    const archived = await Keychain.getInternetCredentials(ARCHIVE)
+    expect(archived && JSON.parse(archived.password).records).toEqual([
+      expect.objectContaining({ id: "stuck", signature: "33".repeat(64) }),
+    ])
+    const list = await Keychain.getInternetCredentials(TOPUPS)
+    expect(list && JSON.parse(list.password)).toEqual({ format: 2, records: [] })
   })
 })
