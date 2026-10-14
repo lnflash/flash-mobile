@@ -33,17 +33,21 @@ Development builds only (`__DEV__`); a release build contains none of it.
 commands (owner last: the PIN, the record, SET_OWNER with the TEST owner key;
 then the owner's ALLOW_LOAD and one LOAD_PROOF per piece, with the mint's
 DLEQ), with format-4 SIG_ALL pieces minted at the dev mint. It also serves the
-tip header stub at `/headers` (a real mainnet header, `FIXTURE_TIP_HEADER`).
+tip header stub at `/headers` (a real mainnet header, `FIXTURE_TIP_HEADER`),
+and `POST /spend/<amount>`: a till's offline payment of exactly that much
+from the card, no change, redeemed at the mint (500 when no pieces add up to
+it).
 
-| Fixture   | Card                                                                                  |
-| --------- | ------------------------------------------------------------------------------------- |
-| `fresh`   | empty, no owner, no record, no PIN                                                    |
-| `owned`   | set up, owned by the TEST key, no PIN, empty                                          |
-| `loaded`  | `owned` with PIN `1234` and 21 sat in 3 slots (16, 4, 1)                              |
-| `spent`   | `loaded`, with slots 1 and 2 spent on the card by one payment and SPENT at the mint   |
-| `full`    | `owned`, all 128 slots of 1 sat                                                       |
-| `blocked` | `loaded`, PIN blocked by three wrong tries                                            |
-| `limited` | `loaded`, with the owner's limits (5,000 a day, 1,000 a payment, 250 without the PIN) |
+| Fixture         | Card                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------- |
+| `fresh`         | empty, no owner, no record, no PIN                                                      |
+| `owned`         | set up, owned by the TEST key, no PIN, empty                                            |
+| `loaded`        | `owned` with PIN `1234` and 21 sat in 3 slots (16, 4, 1)                                |
+| `spent`         | `loaded`, with slots 1 and 2 spent on the card by one payment and SPENT at the mint     |
+| `full`          | `owned`, all 128 slots of 1 sat                                                         |
+| `blocked`       | `loaded`, PIN blocked by three wrong tries                                              |
+| `limited`       | `loaded`, with the owner's limits (5,000 a day, 1,000 a payment, 250 without the PIN)   |
+| `missing-small` | `owned`, no PIN, 12 sat as 8 + 4: no 1 or 2, so a till offline can take only 4, 8 or 12 |
 
 There is no `legacy` fixture: cardsim serves only the 2.0 applet, so "This
 card needs an update" (a 0.x or Foxy 1.x card) is pinned by the unit specs
@@ -57,7 +61,9 @@ CHANGE_PIN, no old PIN), `pin-wrong-then-right` (a phone that is not the
 owner checks the PIN before a top-up), `pin-blocked` (the owner's CHANGE_PIN
 unblocks a blocked PIN), `limits` (the owner's SET_LIMIT, rollover budget
 included), `topup` (the owner's grant, no PIN; reclaims the two spent slots
-and loads pieces with their DLEQ), `topup-full` (no room). Every flow signs
+and loads pieces with their DLEQ), `topup-full` (no room), `tidy` (ENG-702:
+the owner tidies `missing-small` to the ladder in one tap, then a till takes
+exactly 3). Every flow signs
 in from a clean install (`subflows/login.yaml`), with the Keychain cleared:
 top-up records and owner keys live there.
 

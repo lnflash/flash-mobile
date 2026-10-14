@@ -1,0 +1,59 @@
+# The owner tidies a card short of small pieces (ENG-702). The card holds 12
+# sat as 8 + 4, so a till offline can take only 4, 8 or 12 exactly. The read
+# offers "Tidy card"; one more tap swaps the 8 at the mint for change the card
+# makes for itself (SPEND_ALL_CHANGE, its one SIG_ALL signature, the swap, the
+# change loaded back under the owner's grant), shaped to the ladder: 1 + 1 +
+# 2 + 2 + 2 + 4. Then a till takes exactly 3, with no change, and the card
+# reads 9. That the mint takes the card's witness, and that only the fee
+# counts against the card's day, is shown below the UI in the same job
+# (__tests__/integration/card-topup-cardsim.spec.ts).
+appId: com.lnflash
+name: Flashcard tidy
+tags: [flashcard]
+---
+- runFlow: subflows/login.yaml
+- runFlow:
+    file: subflows/owner-card.yaml
+    env:
+      FIXTURE: missing-small
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-balance-sat
+      text: ".*12.*"
+    timeout: 20000
+# Before the tidy, no pieces add up to 3.
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.counts.unspent === 2}
+# The read was this phone's, online: the offer, with no PIN to ask (no PIN set).
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-tidy
+    timeout: 20000
+- tapOn:
+    id: flashcard-v2-tidy
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-tidy-notice
+    timeout: 60000
+- assertNotVisible:
+    id: flashcard-v2-tidy-pin
+- assertNotVisible:
+    id: flashcard-v2-unfinished-tidy
+# The card holds 12 as the ladder now, its spent slot freed.
+- runScript: scripts/card-state.js
+- assertTrue: ${output.card.balance === 12}
+- assertTrue: ${output.card.counts.unspent === 6}
+- assertTrue: ${output.card.counts.spent === 0}
+# A till takes exactly 3 offline, no change.
+- runScript:
+    file: scripts/spend-exactly.js
+    env:
+      AMOUNT: "3"
+- assertTrue: ${output.spent.balance === 9}
+- tapOn:
+    id: flashcard-v2-refresh
+- extendedWaitUntil:
+    visible:
+      id: flashcard-v2-balance-sat
+      text: ".*9 sats.*"
+    timeout: 20000

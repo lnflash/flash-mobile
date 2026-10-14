@@ -28,12 +28,15 @@ import {
   FIXTURE_PIN,
   FULL_SLOTS,
   FixtureDeps,
+  MISSING_SMALL_AMOUNTS,
   FixtureName,
   PRODUCTION_MINT_HOST,
   SPENT_SLOTS,
   WRONG_PIN,
+  exactPieces,
   isFixtureName,
   loadFixture,
+  spendExactly,
 } from "../../scripts/e2e/card-fixtures-lib"
 import { bridgeCard, fixtureHandler } from "../../scripts/e2e/card-fixtures"
 import { FakeCard, FakeMint, createFakeCard, createFakeMint } from "../helpers/fake-cashu"
@@ -81,6 +84,7 @@ describe("card fixtures", () => {
       "full",
       "blocked",
       "limited",
+      "missing-small",
     ])
     expect(isFixtureName("owned")).toBe(true)
     expect(isFixtureName("loaded-0.4")).toBe(false)
@@ -189,6 +193,37 @@ describe("card fixtures", () => {
     expect(verdicts).toEqual(["UNSPENT", "SPENT", "SPENT"])
   })
 
+  it("missing-small: 12 sat as 8 + 4, owned, no PIN: a till offline can take only 4, 8 or 12 exactly (ENG-702)", async () => {
+    const { deps, sim } = setup()
+    const summary = await loadFixture("missing-small", deps)
+    expect(summary).toMatchObject({
+      balance: 12,
+      pinState: "unset",
+      hasOwner: true,
+      recordSet: true,
+      unspent: 2,
+      spent: 0,
+    })
+    expect(MISSING_SMALL_AMOUNTS).toEqual([8, 4])
+    expect(sim.card.dleqs.size).toBe(2)
+    await expect(spendExactly(deps, 3)).rejects.toThrow(
+      /no pieces on the card pay exactly 3/,
+    )
+    // Nothing was spent by the refusal.
+    expect(statuses(sim.card).slice(0, 2)).toEqual([1, 1])
+  })
+
+  it("spendExactly pays exactly the amount from the card with no change, redeemed at the mint", async () => {
+    const { deps, sim, mint } = setup()
+    await loadFixture("loaded", deps)
+    // 21 as 16 + 4 + 1: 5 is the 4 and the 1, under the fixture PIN.
+    await expect(spendExactly(deps, 5)).resolves.toEqual({ balance: 16, spent: [4, 1] })
+    expect(statuses(sim.card).slice(0, 3)).toEqual([1, 2, 2])
+    expect(mint.swap).toHaveBeenCalledTimes(1)
+    // No change: the card made none, and no SPEND_ALL_CHANGE went to it.
+    expect(sim.card.ins()).not.toContain(0x26)
+  })
+
   it("full: all 128 slots of 1 sat, no PIN", async () => {
     const { deps, sim } = setup()
     const summary = await loadFixture("full", deps)
@@ -253,6 +288,22 @@ describe("card fixtures", () => {
       const refused = words.filter((sw) => sw !== "9000")
       expect(refused).toEqual(name === "blocked" ? ["63c2", "63c1", "6983"] : [])
     })
+  })
+})
+
+describe("exactPieces", () => {
+  const pieces = (amounts: number[]) => amounts.map((amount, slot) => ({ slot, amount }))
+
+  it("finds the fewest pieces that add up to the amount", () => {
+    expect(exactPieces(pieces([1, 1, 2, 2, 2, 4]), 3)?.map((p) => p.amount)).toEqual([
+      1, 2,
+    ])
+    expect(exactPieces(pieces([8, 4]), 12)?.map((p) => p.amount)).toEqual([8, 4])
+  })
+
+  it("finds none where no pieces add up to it", () => {
+    expect(exactPieces(pieces([8, 4]), 3)).toBeUndefined()
+    expect(exactPieces(pieces([]), 1)).toBeUndefined()
   })
 })
 
@@ -384,6 +435,16 @@ describe("the fixture server", () => {
       `/headers/block/${"00".repeat(32)}/header`,
     )
     expect(other.status).toBe(404)
+  })
+
+  it("pays exactly an amount from the card, and refuses one no pieces add up to with a fixed error", async () => {
+    const { deps } = setup()
+    const handler = fixtureHandler(deps, health)
+    await request(handler, "POST", "/load/missing-small")
+    const refused = await request(handler, "POST", "/spend/3")
+    expect(refused).toEqual({ status: 500, body: { error: "spend failed", amount: 3 } })
+    const paid = await request(handler, "POST", "/spend/4")
+    expect(paid).toEqual({ status: 200, body: { balance: 8, spent: [4] } })
   })
 
   it("answers 404 to a fixture it does not know, the old loaded-0.4 among them, without echoing the name", async () => {
