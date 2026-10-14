@@ -5,7 +5,9 @@
 # the Cash wallet's payment (a FakeWallet mint marks its own quote paid), and
 # with it on the Cash balance does not limit the amount, so the flow needs no
 # funded account. A release build always checks the balance
-# (topUpAmountProblem, and its spec). That such a piece is one the mint takes
+# (topUpAmountProblem, and its spec). The new pieces fill the gaps around the
+# 16 the card holds, so the whole card pays every amount up to its balance
+# exactly (ENG-700). That such a piece is one the mint takes
 # with the card's one SIG_ALL signature (a swap, NUT-07 SPENT after it) is
 # shown below the UI in the same job, against the same cardsim and mint
 # (__tests__/integration/card-topup-cardsim.spec.ts).
@@ -29,8 +31,14 @@ tags: [flashcard]
     visible:
       id: "Key 1"
     timeout: 20000
+# 100, not 1: a 1 beside the card's 16 leaves amounts 2 to 15 unpayable,
+# which no shape can close. 100 fills the gaps around the 16 (ENG-700).
 - tapOn:
     id: "Key 1"
+- tapOn:
+    id: "Key 0"
+- tapOn:
+    id: "Key 0"
 - tapOn:
     id: amount-input-set
 # The card has room once the spent slots are reclaimed, and the stub lifts
@@ -69,3 +77,7 @@ tags: [flashcard]
 - assertTrue: ${output.card.balance > 16}
 # Every unspent piece on the card kept the mint's DLEQ proof beside it.
 - runScript: scripts/dleq-kept.js
+# The whole card, the 16 it held and the pieces the top-up added, pays every
+# amount from 1 to its balance exactly: a covering ladder (ENG-700).
+- runScript: scripts/covering-shape.js
+- assertTrue: ${output.shape.total === output.card.balance}

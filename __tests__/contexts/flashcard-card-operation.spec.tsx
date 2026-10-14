@@ -692,6 +692,56 @@ describe("FlashcardProvider runCardOperation", () => {
     expect(record.unit).toBeUndefined()
   })
 
+  it("an op that moves value replaces the card's pieces with those read in the same session (ENG-700)", async () => {
+    transceive.mockImplementation(makeSplitCard())
+    await mount()
+    await readCard()
+    // The tap's read: the unspent 500 alone, the spent slots left out.
+    expect(latest?.cashuCard?.pieces).toEqual([500])
+
+    await act(async () => {
+      await latest?.runCardOperation(async (t) => {
+        await t(LOAD_APDU)
+      }, toHex(PUBKEY))
+    })
+
+    expect(latest?.cashuCard?.balance).toBe(1500)
+    expect(latest?.cashuCard?.pieces).toEqual([500, 1000])
+  })
+
+  it("an op that moves value, when the split cannot be re-read, drops the card's pieces: the next top-up shapes its amount alone", async () => {
+    transceive.mockImplementation(makeSplitCard({ splitFailsAfterLoad: true }))
+    await mount()
+    await readCard()
+    expect(latest?.cashuCard?.pieces).toEqual([500])
+
+    await act(async () => {
+      await latest?.runCardOperation(async (t) => {
+        await t(LOAD_APDU)
+      }, toHex(PUBKEY))
+    })
+
+    expect(latest?.cashuCard?.balance).toBe(1500)
+    expect(latest?.cashuCard?.pieces).toBeUndefined()
+  })
+
+  it("an op that moves no value keeps the card's pieces as the tap read them, even when it frees spent slots", async () => {
+    transceive.mockImplementation(makeSplitCard())
+    await mount()
+    await readCard()
+    const before = latest?.cashuCard?.pieces
+    expect(before).toEqual([500])
+
+    await act(async () => {
+      await latest?.runCardOperation(async (t) => {
+        await t(CLEAR_SPENT_APDU)
+      }, toHex(PUBKEY))
+    })
+
+    expect(latest?.cashuCard?.spent).toBe(0)
+    expect(latest?.cashuCard?.pieces).toBe(before)
+  })
+
   it("an op that moves no value keeps the unit on the card's record", async () => {
     transceive.mockImplementation(makeSplitCard())
     await mount()

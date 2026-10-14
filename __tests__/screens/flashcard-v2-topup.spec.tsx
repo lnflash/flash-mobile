@@ -623,6 +623,27 @@ describe("FlashcardV2TopUpScreen", () => {
     )
   })
 
+  it("hands the engine the card's pieces as last read, so the top-up fills their gaps (ENG-700)", async () => {
+    mockCard = card({
+      unspent: 4,
+      empty: 28,
+      balance: 60,
+      keysets: [{ keysetId: "00ab", amount: 60 }],
+      unitTotals: { byUnit: [{ unit: "sat", amount: 60 }], unknown: 0 },
+      pieces: [32, 16, 8, 4],
+    })
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    expect(mockPrepare).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        unit: "sat",
+        card: expect.objectContaining({ empty: 28, pieces: [32, 16, 8, 4], unit: "sat" }),
+      }),
+    )
+  })
+
   it("a top-up the mint could not prepare says nothing was paid, and stays on the amount", async () => {
     await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))

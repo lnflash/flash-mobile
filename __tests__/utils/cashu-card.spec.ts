@@ -1375,6 +1375,8 @@ describe("readCardSlots", () => {
         { keysetId: KEYSET_HEX, amount: 24 },
         { keysetId: hex(OTHER_KEYSET), amount: 250 },
       ],
+      // The unspent pieces' amounts, in slot order, whatever their keyset.
+      pieces: [16, 8, 250],
       spentSlots: [
         {
           slot: 1,
@@ -1411,6 +1413,7 @@ describe("readCardSlots", () => {
     ])
     await expect(readCardSlots(card.transceive)).resolves.toEqual({
       keysets: [],
+      pieces: [],
       spentSlots: [],
     })
   })
@@ -1421,6 +1424,21 @@ describe("readCardSlots", () => {
     card.slots[1] = proofSlot(2, 4)
     await readCardSlots(card.transceive)
     expect(card.ins()).toEqual([INS.GET_PIECES, INS.GET_PROOF])
+  })
+
+  it("returns the unspent pieces' amounts in slot order, across pages, spent slots left out (ENG-700)", async () => {
+    const card = createFakeCard()
+    card.slots[0] = proofSlot(1, 8)
+    card.slots[2] = proofSlot(1, 1, { nonceByte: 2 })
+    card.slots[3] = proofSlot(2, 64, { nonceByte: 3 })
+    card.slots[4] = proofSlot(1, 32, { nonceByte: 4 })
+    card.slots[9] = proofSlot(1, 2, { keyset: OTHER_KEYSET, nonceByte: 9 })
+    card.slots[127] = proofSlot(1, 4, { nonceByte: 127 })
+
+    const read = await readCardSlots(card.transceive)
+
+    expect(read.pieces).toEqual([8, 1, 32, 2, 4])
+    expect(read.spentSlots.map((slot) => slot.slot)).toEqual([3])
   })
 
   it("getUnspentByKeyset is its unspent split", async () => {
@@ -1517,6 +1535,7 @@ describe("readKeysetSplit", () => {
       readKeysetSplit(card.transceive, { unspent: 0, spent: 0 }),
     ).resolves.toEqual({
       keysets: [],
+      pieces: [],
       spentSlots: [],
     })
     expect(card.sent).toEqual([])
@@ -1637,6 +1656,7 @@ describe("readCashuCard", () => {
       pubkey: card.pubkey,
       balance: 500,
       keysets: [{ keysetId: KEYSET_HEX, amount: 500 }],
+      pieces: [500],
       record: { mint: "https://mint.test", rollBudget: 7 },
     })
     expect(info?.spentSlots?.map((slot) => slot.slot)).toEqual([1])
@@ -1752,6 +1772,7 @@ describe("readCashuCard", () => {
     await expect(readCashuCard(card.transceive)).resolves.toMatchObject({
       balance: 0,
       keysets: [],
+      pieces: [],
       spentSlots: [],
     })
     expect(card.ins()).not.toContain(INS.GET_PIECES)
@@ -1820,6 +1841,7 @@ describe("readCashuCard", () => {
     expect(info).toMatchObject({ balance: 508, pubkey: card.pubkey })
     expect(info?.keysets).toBeUndefined()
     expect(info?.spentSlots).toBeUndefined()
+    expect(info?.pieces).toBeUndefined()
     expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: Error")
   })
 

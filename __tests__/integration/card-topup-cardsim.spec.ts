@@ -13,7 +13,14 @@
  * Then one of the new pieces is paid out with the card's one SIG_ALL
  * signature and the mint takes it: a format-4 piece the app loaded is one
  * the mint accepts.
+ *
+ * ENG-700: the 100 fills the gaps around the 16, so the whole card is the
+ * covering shape of 116; and a 1,000,000-sat top-up, the largest, is one
+ * NUT-04 mint and one NUT-09 restore of 31 outputs and 31 LOAD_PROOFs. The
+ * APDUs each load tap sends are logged, for the tap-cost figures.
  */
+import { Amount } from "@cashu/cashu-ts"
+
 import {
   bridgeTransceiver,
   setCardBridge,
@@ -21,6 +28,7 @@ import {
 } from "@app/utils/cashu-card-bridge"
 import {
   CardError,
+  Transceiver,
   getProof,
   readCashuCard,
   selectApplet,
@@ -40,6 +48,7 @@ import {
 } from "@app/utils/cashu-card-owner"
 import { setUpCard } from "@app/utils/cashu-card-owner-store"
 import { buildCardP2PKSecret } from "@app/utils/cashu-card-outputs"
+import { coversEveryAmount, targetPieces } from "@app/utils/cashu-card-shape"
 import {
   TopUpDeps,
   TopUpError,
@@ -73,6 +82,29 @@ const loadFixture = async (name: string) => {
   return response.json()
 }
 
+/** A transceiver that counts the APDUs it sends, by INS. */
+const counting = (transceive: Transceiver) => {
+  const byIns = new Map<number, number>()
+  const counted: Transceiver = (apdu) => {
+    byIns.set(apdu[1], (byIns.get(apdu[1]) ?? 0) + 1)
+    return transceive(apdu)
+  }
+  return {
+    transceive: counted,
+    count: (ins: number) => byIns.get(ins) ?? 0,
+    total: () => [...byIns.values()].reduce((a, b) => a + b, 0),
+  }
+}
+const INS_LOAD_PROOF = 0x30
+const INS_GET_PIECES = 0x17
+
+/** The unspent pieces' amounts in cardsim's GET /state, sorted ascending. */
+const unspentAmounts = (state: { slots: { status: string; amount?: number }[] }) =>
+  state.slots
+    .filter((slot) => slot.status === "unspent")
+    .map((slot) => slot.amount as number)
+    .sort((a, b) => a - b)
+
 const engineDeps = (mintUrl: string): TopUpDeps => {
   let ids = 0
   return {
@@ -105,6 +137,7 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
     expect(card.record.mint).toBe(mintUrl)
     expect(card.balance).toBe(16)
     expect(card.spentSlots).toHaveLength(2)
+    expect(card.pieces).toEqual([16])
 
     const deps = engineDeps(mintUrl)
     const verdicts = await reclaimVerdicts(deps, card.pubkey, card.spentSlots)
@@ -121,8 +154,13 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
         empty: card.empty,
         unit: "sat",
         reclaimable: plan.reclaimable,
+        pieces: card.pieces,
       },
     })
+    // The pieces the 16 lacks of the covering shape of 116: 100 in twelve.
+    expect([16, ...record.outputs.map((o) => o.amount)].sort((a, b) => a - b)).toEqual(
+      targetPieces(116),
+    )
     expect((await payTopUp(deps, record.id)).result).toMatchObject({ status: "paid" })
     let minted = await mintTopUp(deps, record.id)
     for (let i = 0; minted.status !== "minted" && i < 20; i += 1) {
@@ -134,24 +172,34 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
     expect(minted.status).toBe("minted")
 
     // The load tap: a new session, the owner's grant (no PIN), the reclaim, the load.
-    await selectApplet(transceive)
-    await allowLoad(transceive, ownerSigner(FIXTURE_OWNER_KEY))
-    const reclaim = await reclaimSpentSlots(transceive, {
+    const tap = counting(transceive)
+    await selectApplet(tap.transceive)
+    await allowLoad(tap.transceive, ownerSigner(FIXTURE_OWNER_KEY))
+    const reclaim = await reclaimSpentSlots(tap.transceive, {
       maxSlots: card.maxSlots,
       verdicts,
     })
     expect(reclaim.cleared).toBe(2)
     const loaded = await loadTopUp(deps, {
       id: record.id,
-      transceive,
+      transceive: tap.transceive,
       card,
       inventory: reclaim.inventory,
     })
     expect(loaded.state).toBe("loaded")
+    expect(tap.count(INS_LOAD_PROOF)).toBe(record.outputs.length)
+    console.log(
+      `ENG-700 tap cost, 100 sat beside a 16: ${tap.count(
+        INS_LOAD_PROOF,
+      )} LOAD_PROOF, ${tap.total()} APDUs in the load tap`,
+    )
 
     const state = await (await fetch(`${bridge}/state`)).json()
     expect(state.balance).toBe(116)
     expect(state.counts.spent).toBe(0)
+    // The whole card is the covering shape: every amount 1..116 pays exactly.
+    expect(unspentAmounts(state)).toEqual(targetPieces(116))
+    expect(coversEveryAmount(unspentAmounts(state))).toBe(true)
     // Every piece the top-up put on the card kept the mint's DLEQ proof beside it.
     const nonces = new Set((loaded.proofs ?? []).map((proof) => proof.nonce))
     const placed = state.slots.filter((slot: { nonce?: string }) =>
@@ -189,6 +237,85 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
     )
     const [after] = await deps.mint.proofStates([proofY(piece.nonce, card.pubkey)])
     expect(after).toBe("SPENT")
+  })
+
+  it("tops up 1,000,000 sat as 31 outputs: one NUT-04 mint, one NUT-09 restore and 31 LOAD_PROOFs (ENG-700)", async () => {
+    await loadFixture("owned")
+    setCardBridge({ url: bridge, mintUrl, stubPay: true })
+    const transceive = bridgeTransceiver(bridge)
+    const card = await readCashuCard(transceive)
+    if (!card) throw new Error("the owned fixture did not read")
+    expect(card.pieces).toEqual([])
+
+    const deps = engineDeps(mintUrl)
+    const mintCall = jest.spyOn(deps.mint, "mint")
+    const record = await prepareTopUp(deps, {
+      cardPubkey: card.pubkey,
+      unit: "sat",
+      amount: 1_000_000,
+      walletId: "stubbed",
+      card: { hasOwner: true, empty: card.empty, pieces: card.pieces },
+    })
+    expect(record.outputs.map((o) => o.amount).sort((a, b) => a - b)).toEqual(
+      targetPieces(1_000_000),
+    )
+    expect(record.outputs).toHaveLength(31)
+
+    expect((await payTopUp(deps, record.id)).result).toMatchObject({ status: "paid" })
+    let minted = await mintTopUp(deps, record.id)
+    for (let i = 0; minted.status !== "minted" && i < 20; i += 1) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 500)
+      })
+      minted = await mintTopUp(deps, record.id)
+    }
+    expect(minted.status).toBe("minted")
+    // One NUT-04 request carried all 31 outputs.
+    expect(mintCall).toHaveBeenCalledTimes(1)
+    expect(mintCall.mock.calls[0][0].outputs).toHaveLength(31)
+    expect(minted.record.proofs).toHaveLength(31)
+
+    // One NUT-09 restore request of the same 31 outputs: the mint signed them all.
+    const restored = await deps.mint.restore(
+      record.outputs.map((o) => ({
+        id: record.keysetId,
+        amount: Amount.from(o.amount),
+        B_: o.B_,
+      })),
+    )
+    expect(restored.outputs).toHaveLength(31)
+    expect(restored.signatures).toHaveLength(31)
+
+    const tap = counting(transceive)
+    await selectApplet(tap.transceive)
+    await allowLoad(tap.transceive, ownerSigner(FIXTURE_OWNER_KEY))
+    const loaded = await loadTopUp(deps, {
+      id: record.id,
+      transceive: tap.transceive,
+      card,
+    })
+    expect(loaded.state).toBe("loaded")
+    expect(tap.count(INS_LOAD_PROOF)).toBe(31)
+    console.log(
+      `ENG-700 tap cost, 1,000,000 sat on an empty card: ${tap.count(
+        INS_LOAD_PROOF,
+      )} LOAD_PROOF, ${tap.total()} APDUs in the load tap`,
+    )
+
+    const state = await (await fetch(`${bridge}/state`)).json()
+    expect(state.balance).toBe(1_000_000)
+    expect(unspentAmounts(state)).toEqual(targetPieces(1_000_000))
+    expect(coversEveryAmount(unspentAmounts(state))).toBe(true)
+
+    // Reading the shaped card back: GET_PIECES, three pieces to a page.
+    const reader = counting(transceive)
+    const reread = await readCashuCard(reader.transceive)
+    expect(reread?.pieces?.slice().sort((a, b) => a - b)).toEqual(targetPieces(1_000_000))
+    console.log(
+      `ENG-700 read cost, 31 pieces: ${reader.count(
+        INS_GET_PIECES,
+      )} GET_PIECES pages, ${reader.total()} APDUs in the read tap`,
+    )
   })
 
   it("refuses a top-up for a card with no owner before anything is quoted", async () => {
