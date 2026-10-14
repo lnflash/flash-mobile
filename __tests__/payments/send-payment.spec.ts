@@ -635,7 +635,8 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
   // answer, so any answer that resolves is reported as Success. The real
   // payLnurlBreez throws on the failures it can see, but a resolved answer is
   // still not proof of payment. ENG-686 moves this branch unchanged
-  // (ENG-684 decision 3). The fix is ENG-694, and it should flip these cases.
+  // (ENG-684 Phase 1a: no behavior change). The fix is ENG-694, and it should
+  // flip these cases.
   const failedAnswers: [string, unknown][] = [
     ["a { success: false } answer", { success: false, error: "no route" }],
     [

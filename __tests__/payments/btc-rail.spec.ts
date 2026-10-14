@@ -64,8 +64,9 @@ describe("breezBtcRail", () => {
 
 describe("app/payments", () => {
   it("never imports the Breez SDK itself", () => {
-    // ENG-684 decision: app/utils/breez-sdk/spark.ts stays the only runtime
-    // importer of the SDK, and the rail reaches it through that module.
+    // Spec §2.1 (docs/ai-assistant-tool-registry.md): app/utils/breez-sdk/spark.ts
+    // stays the only runtime importer of the SDK, and the rail reaches it
+    // through that module.
     const dir = path.join(__dirname, "../../app/payments")
     const sources = fs.readdirSync(dir).filter((file) => file.endsWith(".ts"))
     expect(sources).toContain("btc-rail.ts")

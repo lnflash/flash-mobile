@@ -12,13 +12,14 @@ type SameAs<F extends (...args: never[]) => unknown> = (
   ...args: Parameters<F>
 ) => ReturnType<F>
 
-// The rail holds only the three sends the send path makes. The assistant's
-// methods (balance, payment history, receive, fee probe) are added by the
-// tickets that first call them, in the shape the spec gives them
-// (docs/ai-assistant-tool-registry.md §2.1), which is not always a wrapper's
-// own. The balance is the case in point: with advance mode off, Breez is not
-// initialized and getInfo() throws a generic Error, but the rail has to
-// report that as a `disabled` state, never as a zero balance.
+// The rail holds only the three sends the send path makes. The spec's other
+// members (docs/ai-assistant-tool-registry.md §2.1) are added by the tickets
+// that first call them: getBalanceSats and listPayments by ENG-687, and
+// createInvoice, getOnchainAddress and probeFee by ENG-688. Each takes the
+// shape the spec gives it, which is not always a wrapper's own. The balance
+// is the case in point: with advance mode off, Breez is not initialized and
+// getInfo() throws a generic Error, but the rail has to report that as a
+// `disabled` state, never as a zero balance.
 export type BtcRail = {
   payInvoice: SameAs<typeof payLightningBreez>
   payLnurl: SameAs<typeof payLnurlBreez>
