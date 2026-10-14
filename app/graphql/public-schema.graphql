@@ -385,6 +385,9 @@ type BTCWallet implements Wallet {
   """An unconfirmed incoming onchain balance."""
   pendingIncomingBalance: SignedAmount!
 
+  """Payment splits are not supported on BTC wallets; always empty."""
+  splits: [WalletSplit!]!
+
   """A list of BTC transactions associated with this wallet."""
   transactions(
     """Returns the items in the list that come after the specified cursor."""
@@ -1877,6 +1880,18 @@ type Mutation {
   userUpdateLanguage(input: UserUpdateLanguageInput!): UserUpdateLanguagePayload!
   userUpdateNpub(input: UserUpdateNpubInput!): UserUpdateNpubPayload!
   userUpdateUsername(input: UserUpdateUsernameInput!): UserUpdateUsernamePayload! @deprecated(reason: "Username will be moved to @Handle in Accounts. Also SetUsername naming should be used instead of UpdateUsername to reflect the idempotency of Handles")
+
+  """
+  Deletes one payment split from a wallet. Splits already triggered still pay out.
+  """
+  walletSplitDelete(input: WalletSplitDeleteInput!): SuccessPayload!
+
+  """
+  Replaces the payment splits on a USD or USDT wallet. Each
+  external Lightning receive on the wallet then pays the given percentages on
+  to the destination wallets. Percentages must add up to at most 100.
+  """
+  walletSplitsSet(input: WalletSplitsSetInput!): WalletSplitsSetPayload!
 }
 
 type MyReferralInvite {
@@ -2525,6 +2540,11 @@ type UsdWallet implements Wallet {
 
   """An unconfirmed incoming onchain balance."""
   pendingIncomingBalance: SignedAmount!
+
+  """
+  Payment split rules on this wallet. Visible only to the wallet's owner.
+  """
+  splits: [WalletSplit!]!
   transactions(
     """Returns the items in the list that come after the specified cursor."""
     after: String
@@ -2573,6 +2593,11 @@ type UsdtWallet implements Wallet {
 
   """An unconfirmed incoming onchain balance."""
   pendingIncomingBalance: SignedAmount!
+
+  """
+  Payment split rules on this wallet. Visible only to the wallet's owner.
+  """
+  splits: [WalletSplit!]!
   transactions(
     """Returns the items in the list that come after the specified cursor."""
     after: String
@@ -2837,6 +2862,9 @@ interface Wallet {
   lnurlp: Lnurl
   pendingIncomingBalance: SignedAmount!
 
+  """Payment split rules on this wallet. Always empty for BTC wallets."""
+  splits: [WalletSplit!]!
+
   """
   Transactions are ordered anti-chronologically,
   ie: the newest transaction will be first
@@ -2886,6 +2914,47 @@ enum WalletCurrency {
 
 """Unique identifier of a wallet"""
 scalar WalletId
+
+"""
+A payment split rule: this percentage of every external Lightning receive on the wallet is paid on to the destination wallet.
+"""
+type WalletSplit {
+  createdAt: Timestamp!
+  destinationWalletId: WalletId!
+  enabled: Boolean!
+  id: ID!
+
+  """Whole percent of each receive, from 1 to 100."""
+  percent: Int!
+}
+
+input WalletSplitDeleteInput {
+  splitId: ID!
+  walletId: WalletId!
+}
+
+input WalletSplitInput {
+  """A Flash username or a walletId in the same currency."""
+  destination: String!
+
+  """Whole percent of each receive, from 1 to 100."""
+  percent: Int!
+}
+
+input WalletSplitsSetInput {
+  """
+  The complete split set. Replaces every existing split; an empty list clears them all.
+  """
+  splits: [WalletSplitInput!]!
+
+  """The wallet whose incoming payments are split."""
+  walletId: WalletId!
+}
+
+type WalletSplitsSetPayload {
+  errors: [Error!]!
+  splits: [WalletSplit!]
+}
 
 """Nostr Identity public key"""
 scalar npub

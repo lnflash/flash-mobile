@@ -437,6 +437,8 @@ export type BtcWallet = Wallet & {
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   /** An unconfirmed incoming onchain balance. */
   readonly pendingIncomingBalance: Scalars['SignedAmount']['output'];
+  /** Payment splits are not supported on BTC wallets; always empty. */
+  readonly splits: ReadonlyArray<WalletSplit>;
   /** A list of BTC transactions associated with this wallet. */
   readonly transactions?: Maybe<TransactionConnection>;
   readonly transactionsByAddress?: Maybe<TransactionConnection>;
@@ -1681,6 +1683,14 @@ export type Mutation = {
   readonly userUpdateNpub: UserUpdateNpubPayload;
   /** @deprecated Username will be moved to @Handle in Accounts. Also SetUsername naming should be used instead of UpdateUsername to reflect the idempotency of Handles */
   readonly userUpdateUsername: UserUpdateUsernamePayload;
+  /** Deletes one payment split from a wallet. Splits already triggered still pay out. */
+  readonly walletSplitDelete: SuccessPayload;
+  /**
+   * Replaces the payment splits on a USD or USDT wallet. Each
+   * external Lightning receive on the wallet then pays the given percentages on
+   * to the destination wallets. Percentages must add up to at most 100.
+   */
+  readonly walletSplitsSet: WalletSplitsSetPayload;
 };
 
 
@@ -2056,6 +2066,16 @@ export type MutationUserUpdateNpubArgs = {
 
 export type MutationUserUpdateUsernameArgs = {
   input: UserUpdateUsernameInput;
+};
+
+
+export type MutationWalletSplitDeleteArgs = {
+  input: WalletSplitDeleteInput;
+};
+
+
+export type MutationWalletSplitsSetArgs = {
+  input: WalletSplitsSetInput;
 };
 
 export type MyReferralInvite = {
@@ -2764,6 +2784,8 @@ export type UsdWallet = Wallet & {
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   /** An unconfirmed incoming onchain balance. */
   readonly pendingIncomingBalance: Scalars['SignedAmount']['output'];
+  /** Payment split rules on this wallet. Visible only to the wallet's owner. */
+  readonly splits: ReadonlyArray<WalletSplit>;
   readonly transactions?: Maybe<TransactionConnection>;
   readonly transactionsByAddress?: Maybe<TransactionConnection>;
   readonly walletCurrency: WalletCurrency;
@@ -2799,6 +2821,8 @@ export type UsdtWallet = Wallet & {
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   /** An unconfirmed incoming onchain balance. */
   readonly pendingIncomingBalance: Scalars['SignedAmount']['output'];
+  /** Payment split rules on this wallet. Visible only to the wallet's owner. */
+  readonly splits: ReadonlyArray<WalletSplit>;
   readonly transactions?: Maybe<TransactionConnection>;
   readonly transactionsByAddress?: Maybe<TransactionConnection>;
   readonly walletCurrency: WalletCurrency;
@@ -3060,6 +3084,8 @@ export type Wallet = {
   readonly isExternal: Scalars['Boolean']['output'];
   readonly lnurlp?: Maybe<Scalars['Lnurl']['output']>;
   readonly pendingIncomingBalance: Scalars['SignedAmount']['output'];
+  /** Payment split rules on this wallet. Always empty for BTC wallets. */
+  readonly splits: ReadonlyArray<WalletSplit>;
   /**
    * Transactions are ordered anti-chronologically,
    * ie: the newest transaction will be first
@@ -3099,6 +3125,42 @@ export const WalletCurrency = {
 } as const;
 
 export type WalletCurrency = typeof WalletCurrency[keyof typeof WalletCurrency];
+/** A payment split rule: this percentage of every external Lightning receive on the wallet is paid on to the destination wallet. */
+export type WalletSplit = {
+  readonly __typename: 'WalletSplit';
+  readonly createdAt: Scalars['Timestamp']['output'];
+  readonly destinationWalletId: Scalars['WalletId']['output'];
+  readonly enabled: Scalars['Boolean']['output'];
+  readonly id: Scalars['ID']['output'];
+  /** Whole percent of each receive, from 1 to 100. */
+  readonly percent: Scalars['Int']['output'];
+};
+
+export type WalletSplitDeleteInput = {
+  readonly splitId: Scalars['ID']['input'];
+  readonly walletId: Scalars['WalletId']['input'];
+};
+
+export type WalletSplitInput = {
+  /** A Flash username or a walletId in the same currency. */
+  readonly destination: Scalars['String']['input'];
+  /** Whole percent of each receive, from 1 to 100. */
+  readonly percent: Scalars['Int']['input'];
+};
+
+export type WalletSplitsSetInput = {
+  /** The complete split set. Replaces every existing split; an empty list clears them all. */
+  readonly splits: ReadonlyArray<WalletSplitInput>;
+  /** The wallet whose incoming payments are split. */
+  readonly walletId: Scalars['WalletId']['input'];
+};
+
+export type WalletSplitsSetPayload = {
+  readonly __typename: 'WalletSplitsSetPayload';
+  readonly errors: ReadonlyArray<Error>;
+  readonly splits?: Maybe<ReadonlyArray<WalletSplit>>;
+};
+
 export type NpubByUsername = {
   readonly __typename: 'npubByUsername';
   /** Nostr public key */
