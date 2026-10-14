@@ -13,27 +13,13 @@ jest.mock("@app/utils/breez-sdk", () => ({
   payLightningBreez: jest.fn(),
   payLnurlBreez: jest.fn(),
   payOnchainBreez: jest.fn(),
-  fetchBreezFee: jest.fn(),
-  receivePaymentBreez: jest.fn(),
-  receiveOnchainBreez: jest.fn(),
-  getInfo: jest.fn(),
-  listPaymentsBreezSDK: jest.fn(),
 }))
 
 import * as breezSdk from "@app/utils/breez-sdk"
 import { BtcRail, breezBtcRail } from "@app/payments/btc-rail"
 
 const wrappers = breezSdk as unknown as Record<string, jest.Mock>
-const WRAPPERS = [
-  "payLightningBreez",
-  "payLnurlBreez",
-  "payOnchainBreez",
-  "fetchBreezFee",
-  "receivePaymentBreez",
-  "receiveOnchainBreez",
-  "getInfo",
-  "listPaymentsBreezSDK",
-]
+const WRAPPERS = ["payLightningBreez", "payLnurlBreez", "payOnchainBreez"]
 
 // rail method → the wrapper it must delegate to, and the arguments a caller
 // would pass it.
@@ -41,21 +27,6 @@ const delegates: [keyof BtcRail, string, unknown[]][] = [
   ["payInvoice", "payLightningBreez", ["lnbc1invoice", 2100]],
   ["payLnurl", "payLnurlBreez", ["alice@flashapp.me", 2100, "coffee"]],
   ["payOnchain", "payOnchainBreez", ["bc1qdestination", 2100, "slow"]],
-  [
-    "probeFee",
-    "fetchBreezFee",
-    [
-      {
-        paymentType: "lightning",
-        paymentRequest: "lnbc1invoice",
-        amountSats: 2100,
-        selectedFeeType: "medium",
-      },
-    ],
-  ],
-  ["createInvoice", "receivePaymentBreez", [2100, "dinner"]],
-  ["getOnchainAddress", "receiveOnchainBreez", []],
-  ["listPayments", "listPaymentsBreezSDK", [20, 10]],
 ]
 
 beforeEach(() => {
@@ -88,21 +59,6 @@ describe("breezBtcRail", () => {
     wrappers.payLnurlBreez.mockRejectedValue(refusal)
 
     await expect(breezBtcRail.payLnurl("not-an-lnurl", 2100, "")).rejects.toBe(refusal)
-  })
-
-  it("getBalanceSats reads getInfo's bigint balanceSats as a number", async () => {
-    // The same call and conversion BreezContext uses for btcWallet.balance.
-    wrappers.getInfo.mockResolvedValue({
-      identityPubkey: "02abc",
-      balanceSats: BigInt(123456),
-      tokenBalances: new Map(),
-    })
-
-    const balance = await breezBtcRail.getBalanceSats()
-
-    expect(balance).toBe(123456)
-    expect(typeof balance).toBe("number")
-    expect(wrappers.getInfo).toHaveBeenCalledTimes(1)
   })
 })
 

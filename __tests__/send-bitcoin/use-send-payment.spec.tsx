@@ -34,12 +34,15 @@ jest.mock("@apollo/client", () => ({
 }))
 
 const GRAPHQL_URI = "https://api.test.flashapp.me/graphql"
+const LN_ADDRESS_HOSTNAME = "flashapp.me"
+// Mutable, so a test can switch the instance between renders the way
+// setGaloyInstance (the debug screen) does. Reset before each test.
+const mockGaloyInstance = {
+  lnAddressHostname: LN_ADDRESS_HOSTNAME,
+  graphqlUri: GRAPHQL_URI,
+}
 jest.mock("@app/hooks", () => ({
-  useAppConfig: () => ({
-    appConfig: {
-      galoyInstance: { lnAddressHostname: "flashapp.me", graphqlUri: GRAPHQL_URI },
-    },
-  }),
+  useAppConfig: () => ({ appConfig: { galoyInstance: mockGaloyInstance } }),
 }))
 
 jest.mock("@app/utils/breez-sdk", () => ({
@@ -58,7 +61,7 @@ jest.mock("uuid", () => ({
 
 import { useSendPayment } from "@app/screens/send-bitcoin-screen/use-send-payment"
 import { SendPaymentMutationParams } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
-import { payLightningBreez } from "@app/utils/breez-sdk"
+import { payLightningBreez, payLnurlBreez } from "@app/utils/breez-sdk"
 
 // A USD payment detail: only the fields the hook reads on the GraphQL path.
 const usdPaymentDetail = {
@@ -82,6 +85,7 @@ const render = (mutation: jest.Mock) => {
 beforeEach(() => {
   jest.clearAllMocks()
   uuidCounter = 0
+  mockGaloyInstance.lnAddressHostname = LN_ADDRESS_HOSTNAME
 })
 
 describe("useSendPayment — freeze-the-attempt", () => {
@@ -459,5 +463,63 @@ describe("useSendPayment — loading", () => {
       await send
     })
     expect(result.current.loading).toBe(false)
+  })
+})
+
+/**
+ * ENG-686: the hook hands `galoyInstance.lnAddressHostname` to sendPayment,
+ * which completes a BTC-wallet intraledger handle with it. That host decides
+ * whose wallet is paid, so the hand-off is pinned here, from the app config
+ * through the real breezBtcRail to payLnurlBreez.
+ */
+describe("useSendPayment — BTC intraledger address", () => {
+  // One detail object for every render. A new object per render would
+  // rebuild the send closure anyway and hide a missing memo dependency.
+  const btcIntraledgerDetail = {
+    sendingWalletDescriptor: { currency: "BTC", id: "btc-wallet" },
+    paymentType: "intraledger",
+    destination: "alice",
+    settlementAmount: { amount: 100, currency: "BTC", currencyCode: "BTC" },
+  } as never
+
+  beforeEach(() => {
+    ;(payLnurlBreez as jest.Mock).mockResolvedValue({
+      payment: {},
+      successAction: undefined,
+    })
+  })
+
+  it("pays handle@lnAddressHostname of the configured instance", async () => {
+    const mutation = jest.fn()
+    const { result } = renderHook(() => useSendPayment(mutation, btcIntraledgerDetail))
+
+    await act(async () => {
+      await result.current.sendPayment?.()
+    })
+
+    expect((payLnurlBreez as jest.Mock).mock.calls).toEqual([
+      ["alice@flashapp.me", 100, ""],
+    ])
+    expect(mutation).not.toHaveBeenCalled()
+    expect(mockClient.mutate).not.toHaveBeenCalled()
+  })
+
+  it("pays at the new host after lnAddressHostname changes between renders", async () => {
+    const mutation = jest.fn()
+    const { result, rerender } = renderHook(() =>
+      useSendPayment(mutation, btcIntraledgerDetail),
+    )
+
+    // Only the host changes: the same send closure, detail and fee type.
+    mockGaloyInstance.lnAddressHostname = "test.flashapp.me"
+    rerender(undefined as never)
+
+    await act(async () => {
+      await result.current.sendPayment?.()
+    })
+
+    expect((payLnurlBreez as jest.Mock).mock.calls).toEqual([
+      ["alice@test.flashapp.me", 100, ""],
+    ])
   })
 })

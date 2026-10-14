@@ -107,11 +107,6 @@ const mockRail = () => ({
   payInvoice: jest.fn().mockResolvedValue({ success: true }),
   payLnurl: jest.fn().mockResolvedValue({ payment: {}, successAction: undefined }),
   payOnchain: jest.fn().mockResolvedValue({ success: true }),
-  probeFee: jest.fn(),
-  createInvoice: jest.fn(),
-  getOnchainAddress: jest.fn(),
-  getBalanceSats: jest.fn(),
-  listPayments: jest.fn(),
 })
 
 const freshState = () => ({
@@ -145,6 +140,15 @@ const operationName = (doc: DocumentNode): string | undefined =>
 const answer = (field: string, status: string, errors: unknown[] = []) => ({
   data: { [field]: { status, errors } },
 })
+
+// The triggers build their options with Apollo's mergeOptions, whose compact()
+// returns null-prototype objects: the options themselves and their
+// `variables`. toStrictEqual compares constructors, so both are copied onto
+// plain objects before a comparison. The values inside are left as they are.
+const plainOptions = ({ variables, ...options }: Record<string, unknown>) =>
+  variables === undefined
+    ? options
+    : { ...options, variables: { ...(variables as Record<string, unknown>) } }
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -191,7 +195,7 @@ describe("createGraphqlMutationFns", () => {
       expect(mutate).toHaveBeenCalledTimes(1)
       const [options] = mutate.mock.calls[0]
       expect(operationName(options.mutation)).toBe(trigger)
-      expect(options).toStrictEqual({
+      expect(plainOptions(options)).toStrictEqual({
         mutation: options.mutation,
         refetchQueries: [HomeAuthedDocument],
         variables,
@@ -223,6 +227,40 @@ describe("createGraphqlMutationFns", () => {
     })
 
     expect(mutate.mock.calls[0][0].refetchQueries).toEqual([])
+  })
+
+  it("keeps the HomeAuthed refetch when a call passes refetchQueries: undefined, as mergeOptions did", async () => {
+    // mergeOptions skips undefined values, so the hook's trigger kept its
+    // default here. A plain spread would send `refetchQueries: undefined`
+    // and leave the home balance stale after the send.
+    const { mutate, client } = fakeClient()
+    mutate.mockResolvedValue(answer("onChainPaymentSendAll", "SUCCESS"))
+    const variables = { input: { walletId: "w", address: ADDRESS } }
+
+    await createGraphqlMutationFns(client).onChainPaymentSendAll({
+      variables,
+      refetchQueries: undefined,
+    })
+
+    expect(plainOptions(mutate.mock.calls[0][0])).toStrictEqual({
+      mutation: OnChainPaymentSendAllDocument,
+      refetchQueries: [HomeAuthedDocument],
+      variables,
+    })
+  })
+
+  it("sends the document with the HomeAuthed refetch when called with no options", async () => {
+    // The hook's trigger defaulted a missing argument to {}; mergeOptions
+    // itself would throw reading `variables` off undefined.
+    const { mutate, client } = fakeClient()
+    mutate.mockResolvedValue(answer("onChainPaymentSendAll", "SUCCESS"))
+
+    await createGraphqlMutationFns(client).onChainPaymentSendAll()
+
+    expect(plainOptions(mutate.mock.calls[0][0])).toStrictEqual({
+      mutation: OnChainPaymentSendAllDocument,
+      refetchQueries: [HomeAuthedDocument],
+    })
   })
 })
 
@@ -396,7 +434,7 @@ describe("sendPayment: every USD and USDT variant reaches Apollo exactly once", 
       // to catch, and this names it directly.
       expect(operationName(options.mutation)).toBe(variant.field)
       expect(options.mutation).toBe(variant.document)
-      expect(options).toStrictEqual({
+      expect(plainOptions(options)).toStrictEqual({
         mutation: variant.document,
         refetchQueries: [HomeAuthedDocument],
         variables: { input: variant.input(wallet.id) },

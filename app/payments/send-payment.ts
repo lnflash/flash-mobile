@@ -3,8 +3,10 @@ import type {
   DocumentNode,
   FetchResult,
   MutationFunctionOptions,
+  MutationOptions,
   OperationVariables,
 } from "@apollo/client"
+import { mergeOptions } from "@apollo/client/utilities"
 import { v4 as uuidv4 } from "uuid"
 
 // gql
@@ -78,22 +80,29 @@ export type GraphqlMutationFns = Pick<
  * plus the hook's own `loading`/`error` state. The screen's hooks were created
  * with `{ refetchQueries: [HomeAuthedDocument] }` and no `onError` or
  * `onCompleted`, so each trigger's promise resolved and rejected exactly as
- * `client.mutate`'s does. The refetch is attached here explicitly, and the
- * call options are spread last so they win, as they did in `mergeOptions`.
- * The builders pass only `variables`. Tracking `loading` is the caller's job;
- * `useSendPayment` does it.
+ * `client.mutate`'s does. Each trigger here makes that same call, with the
+ * refetch attached explicitly and the options merged by Apollo's own
+ * `mergeOptions`. A call option replaces a default only when it is defined,
+ * so a call that passes `refetchQueries: undefined` still refetches
+ * HomeAuthed, as it did in the hook. The hook also acted on a call's
+ * `client`, `onCompleted` and `onError` itself, and `client.mutate` ignores
+ * them; no builder passes them, since the builders pass only `variables`.
+ * Tracking `loading` is the caller's job; `useSendPayment` does it.
  */
 export const createGraphqlMutationFns = (
   client: ApolloClient<unknown>,
 ): GraphqlMutationFns => {
   const mutateWith =
     <TData, TVariables extends OperationVariables>(mutation: DocumentNode) =>
-    (options?: MutationFunctionOptions<TData, TVariables>): Promise<FetchResult<TData>> =>
-      client.mutate<TData, TVariables>({
-        mutation,
-        refetchQueries: [HomeAuthedDocument],
-        ...options,
-      })
+    (
+      options: MutationFunctionOptions<TData, TVariables> = {},
+    ): Promise<FetchResult<TData>> =>
+      client.mutate<TData, TVariables>(
+        mergeOptions<
+          MutationOptions<TData, TVariables>,
+          MutationOptions<TData, TVariables>
+        >({ mutation, refetchQueries: [HomeAuthedDocument] }, options),
+      )
 
   return {
     intraLedgerPaymentSend: mutateWith(IntraLedgerPaymentSendDocument),

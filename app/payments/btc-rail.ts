@@ -1,13 +1,4 @@
-import {
-  fetchBreezFee,
-  getInfo,
-  listPaymentsBreezSDK,
-  payLightningBreez,
-  payLnurlBreez,
-  payOnchainBreez,
-  receiveOnchainBreez,
-  receivePaymentBreez,
-} from "@app/utils/breez-sdk"
+import { payLightningBreez, payLnurlBreez, payOnchainBreez } from "@app/utils/breez-sdk"
 
 // The self-custodial BTC wallet as one seam (ENG-686, Phase 1a of ENG-684).
 //
@@ -21,30 +12,22 @@ type SameAs<F extends (...args: never[]) => unknown> = (
   ...args: Parameters<F>
 ) => ReturnType<F>
 
+// The rail holds only the three sends the send path makes. The assistant's
+// methods (balance, payment history, receive, fee probe) are added by the
+// tickets that first call them, in the shape the spec gives them
+// (docs/ai-assistant-tool-registry.md §2.1), which is not always a wrapper's
+// own. The balance is the case in point: with advance mode off, Breez is not
+// initialized and getInfo() throws a generic Error, but the rail has to
+// report that as a `disabled` state, never as a zero balance.
 export type BtcRail = {
   payInvoice: SameAs<typeof payLightningBreez>
   payLnurl: SameAs<typeof payLnurlBreez>
   payOnchain: SameAs<typeof payOnchainBreez>
-  probeFee: SameAs<typeof fetchBreezFee>
-  createInvoice: SameAs<typeof receivePaymentBreez>
-  getOnchainAddress: SameAs<typeof receiveOnchainBreez>
-  getBalanceSats: () => Promise<number>
-  listPayments: SameAs<typeof listPaymentsBreezSDK>
 }
 
-// One-line delegates, resolved at call time. The send path uses only the three
-// `pay*` methods today; the other five are here so the assistant (ENG-687)
-// does not need a second interface change.
+// One-line delegates, resolved at call time.
 export const breezBtcRail: BtcRail = {
   payInvoice: (...args) => payLightningBreez(...args),
   payLnurl: (...args) => payLnurlBreez(...args),
   payOnchain: (...args) => payOnchainBreez(...args),
-  probeFee: (...args) => fetchBreezFee(...args),
-  createInvoice: (...args) => receivePaymentBreez(...args),
-  getOnchainAddress: (...args) => receiveOnchainBreez(...args),
-  // The same call and conversion BreezContext's updateBalance uses for
-  // `btcWallet.balance`. It cannot read that context: it has to work outside
-  // React.
-  getBalanceSats: async () => Number((await getInfo()).balanceSats),
-  listPayments: (...args) => listPaymentsBreezSDK(...args),
 }
