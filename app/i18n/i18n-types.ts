@@ -548,7 +548,7 @@ type RootTranslation = {
 		 */
 		tidyInProgress: string
 		/**
-		 * A​ ​t​i​d​y​ ​o​f​ ​t​h​i​s​ ​c​a​r​d​ ​c​o​u​l​d​n​'​t​ ​f​i​n​i​s​h​:​ ​t​h​e​ ​c​a​r​d​ ​s​i​g​n​e​d​ ​a​n​o​t​h​e​r​ ​p​a​y​m​e​n​t​ ​f​i​r​s​t​.​ ​C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​.
+		 * A​ ​t​i​d​y​ ​o​f​ ​t​h​i​s​ ​c​a​r​d​ ​c​o​u​l​d​n​'​t​ ​f​i​n​i​s​h​.​ ​C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​.
 		 */
 		tidyNeedsCard: string
 		/**
@@ -8090,7 +8090,7 @@ export type TranslationFunctions = {
 		 */
 		tidyInProgress: () => LocalizedString
 		/**
-		 * A tidy of this card couldn't finish: the card signed another payment first. Contact support.
+		 * A tidy of this card couldn't finish. Contact support.
 		 */
 		tidyNeedsCard: () => LocalizedString
 		/**

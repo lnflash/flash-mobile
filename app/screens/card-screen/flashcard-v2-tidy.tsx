@@ -14,7 +14,7 @@ import {
   triesLeft,
 } from "@app/utils/cashu-card"
 import { CardSpendError } from "@app/utils/cashu-card-spend"
-import type { TidyRecord, TidyResult } from "@app/utils/cashu-card-topup"
+import { TidyError, TidyRecord, TidyResult } from "@app/utils/cashu-card-topup"
 
 type LLType = ReturnType<typeof useI18nContext>["LL"]
 
@@ -43,10 +43,16 @@ export const FlashcardV2Tidy: React.FC<{
   const [step, setStep] = useState<Step>({ name: "idle" })
   const [pinEntry, setPinEntry] = useState("")
 
-  const run = async (pin?: string) => {
+  // `finishOnly`: Finish on a listed tidy, which never starts a new one.
+  // Kept across a PIN the card asked for, so the retry is the same intent.
+  const [finishOnly, setFinishOnly] = useState(false)
+
+  const run = async (opts: { pin?: string; finishOnly?: boolean } = {}) => {
+    const finishing = opts.finishOnly ?? false
+    setFinishOnly(finishing)
     setStep({ name: "working" })
     try {
-      const result = await tidy(pin)
+      const result = await tidy({ pin: opts.pin, finishOnly: finishing })
       setStep({ name: "notice", text: resultText(result, LL) })
     } catch (err) {
       if (err instanceof CardSpendError && err.reason === "pin-needed") {
@@ -61,6 +67,7 @@ export const FlashcardV2Tidy: React.FC<{
   const start = () => {
     if (offer?.kind === "offer" && offer.needsPin) {
       setPinEntry("")
+      setFinishOnly(false)
       setStep({ name: "pin" })
     } else {
       run()
@@ -95,7 +102,12 @@ export const FlashcardV2Tidy: React.FC<{
         <PrimaryBtn
           label={LL.FlashcardV2.tidyOffer()}
           disabled={!isValidCardPin(pinEntry)}
-          onPress={() => run(pinEntry)}
+          onPress={() => {
+            // Out of this component's state once it is on its way to the card.
+            const pin = pinEntry
+            setPinEntry("")
+            run({ pin, finishOnly })
+          }}
           testID="flashcard-v2-tidy-pin-submit"
         />
         <TouchableOpacity
@@ -118,7 +130,7 @@ export const FlashcardV2Tidy: React.FC<{
           key={record.id}
           record={record}
           busy={step.name === "working"}
-          onFinish={() => run()}
+          onFinish={() => run({ finishOnly: true })}
           onDismiss={() => dismiss(record).catch(() => undefined)}
         />
       ))}
@@ -174,8 +186,9 @@ const UnfinishedTidy: React.FC<{
 }> = ({ record, busy, onFinish, onDismiss }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
-  // Kept for a human: the card signed another payment before this one's
-  // signature was asked for, and nothing here can finish it.
+  // Kept for a human: the mint will not swap what the card signed (another
+  // payment spent its pieces first, or the mint refused the swap for good),
+  // and nothing here can finish it.
   const stuck = record.state === "needs-card"
   return (
     <View style={styles.unfinished} testID="flashcard-v2-unfinished-tidy">
@@ -230,8 +243,14 @@ const resultText = (result: TidyResult, LL: LLType): string => {
   }
 }
 
-/** What a tidy tap that failed means: a wrong PIN with the tries left, or try again. */
+/**
+ * What a tidy tap that failed means: a tidy no retry can finish (kept for
+ * support), a wrong PIN with the tries left, or try again.
+ */
 const failureText = (err: unknown, LL: LLType): string => {
+  if (err instanceof TidyError && err.reason === "needs-card") {
+    return LL.FlashcardV2.tidyNeedsCard()
+  }
   if (err instanceof CardError) {
     const tries = triesLeft(err.sw)
     if (tries !== undefined && tries > 0) return LL.FlashcardV2.wrongPin({ tries })

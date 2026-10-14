@@ -13,7 +13,12 @@
  *     before the tap, never after SIGN has burned its pieces;
  *   - "Not now" is remembered for the pieces it was said to;
  *   - only a tidy still owed holds the offer back; one kept for a human
- *     (`needs-card`) does not, and "Dismiss" moves it to the archive.
+ *     (`needs-card`) does not, and "Dismiss" moves it to the archive;
+ *   - "Finish" (`finishOnly`) only finishes a tidy still owed: with none left
+ *     (a minter pass gave it up since the list was read) it taps nothing,
+ *     and never starts a tidy the owner was not offered;
+ *   - a tap that leaves a tidy signed, or throws, nudges the minter, which
+ *     swaps it without the card.
  */
 import * as Keychain from "react-native-keychain"
 import * as React from "react"
@@ -34,7 +39,11 @@ const mockAllowLoad = jest.fn()
 const mockOwnerKeyFor = jest.fn()
 const mockReclaimVerdicts = jest.fn()
 const mockFeePpk = jest.fn()
+const mockNudge = jest.fn()
 
+jest.mock("../../app/hooks/use-card-top-up", () => ({
+  nudgeTopUpMinter: () => mockNudge(),
+}))
 jest.mock("../../app/hooks/useFlashcard", () => ({
   useFlashcard: () => ({ runCardOperation: mockRunCardOperation }),
 }))
@@ -221,7 +230,7 @@ describe("useCardTidy", () => {
     const cashuCard = card()
     const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
     await act(async () => {
-      await result.current.tidy("1234")
+      await result.current.tidy({ pin: "1234" })
     })
     const [, args] = mockRunTidy.mock.calls[0]
     await args.verifyPin("transceive")
@@ -266,7 +275,7 @@ describe("useCardTidy", () => {
       initialProps: { c: withPin },
     })
     await act(async () => {
-      await result.current.tidy("1234")
+      await result.current.tidy({ pin: "1234" })
     })
     expect(mockRunTidy).toHaveBeenCalledTimes(1)
 
@@ -307,6 +316,73 @@ describe("useCardTidy", () => {
     const owed = renderHook(() => useCardTidy(cashuCard), { wrapper })
     await waitFor(() => expect(owed.result.current.records).toHaveLength(2))
     expect(owed.result.current.offer).toBeUndefined()
+  })
+
+  it("Finish with no tidy still owed taps nothing and starts no tidy: the listed one was given up since", async () => {
+    const cashuCard = card()
+    // The list showed it signed; a minter pass has since kept it for a human.
+    await saveTidies([saved("gone", "needs-card", cashuCard.pubkey)])
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+
+    await act(async () => {
+      await expect(result.current.tidy({ finishOnly: true })).resolves.toEqual({
+        status: "skipped",
+        reason: "at-target",
+      })
+    })
+
+    // No tap, so no SPEND_ALL_BEGIN; no fee asked for a tidy never offered.
+    expect(mockRunCardOperation).not.toHaveBeenCalled()
+    expect(mockRunTidy).not.toHaveBeenCalled()
+    expect(mockFeePpk).not.toHaveBeenCalled()
+    expect(result.current.records).toEqual([
+      expect.objectContaining({ id: "gone", state: "needs-card" }),
+    ])
+  })
+
+  it("Finish with a tidy still owed finishes it, with no keyset a new tidy could plan in", async () => {
+    const cashuCard = card()
+    await saveTidies([saved("owed", "signed", cashuCard.pubkey)])
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+
+    await act(async () => {
+      await result.current.tidy({ pin: "1234", finishOnly: true })
+    })
+
+    expect(mockRunTidy).toHaveBeenCalledTimes(1)
+    expect(mockRunTidy.mock.calls[0][1]).toMatchObject({ keysetId: undefined })
+    expect(mockFeePpk).not.toHaveBeenCalled()
+  })
+
+  it("nudges the minter when the tap throws: a tidy it signed is swapped without the card", async () => {
+    const cashuCard = card()
+    mockRunTidy.mockRejectedValue(new Error("Network request failed"))
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await act(async () => {
+      await expect(result.current.tidy()).rejects.toThrow("Network request failed")
+    })
+    expect(mockNudge).toHaveBeenCalledTimes(1)
+  })
+
+  it("nudges the minter when a tap that ran leaves a tidy signed, and not when none is left", async () => {
+    const cashuCard = card()
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await act(async () => {
+      await result.current.tidy()
+    })
+    // Nothing saved: nothing for the minter.
+    await act(async () => undefined)
+    expect(mockNudge).not.toHaveBeenCalled()
+
+    // The tap's swap did not come back: the tidy stays signed.
+    mockRunTidy.mockImplementation(async () => {
+      await saveTidies([saved("left", "signed", cashuCard.pubkey)])
+      return { status: "unfinished", record: {} }
+    })
+    await act(async () => {
+      await result.current.tidy()
+    })
+    await waitFor(() => expect(mockNudge).toHaveBeenCalledTimes(1))
   })
 
   it("dismisses a tidy kept for a human: off the list, into the archive with its signature", async () => {

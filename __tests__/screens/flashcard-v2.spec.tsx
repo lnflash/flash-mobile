@@ -25,7 +25,9 @@ import {
 import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
 import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
-import type { TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
+import { TidyError, TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
+import { CardError } from "../../app/utils/cashu-card"
+import { CardSpendError } from "../../app/utils/cashu-card-spend"
 import { ownerKeyStore } from "../../app/utils/cashu-card-owner-store"
 
 loadLocale("en")
@@ -45,6 +47,10 @@ let mockUnfinishedTopUps: any[] = []
 const mockDismissTopUp = jest.fn()
 const mockRunCardOperation = jest.fn()
 const mockFeePpk = jest.fn(async (_id: string) => 0)
+// The tidy engine and the PIN check, for the specs that let the tap run the
+// tidy's own operation: what it was handed is what they check.
+const mockRunTidy = jest.fn()
+const mockVerifyCardPin = jest.fn()
 
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -98,6 +104,14 @@ jest.mock("@app/hooks/useFlashcard", () => ({
 jest.mock("@app/utils/cashu-card-topup/connected", () => ({
   ...jest.requireActual("@app/utils/cashu-card-topup/connected"),
   topUpMint: () => ({ url: "https://mint.test", feePpk: mockFeePpk }),
+}))
+jest.mock("@app/utils/cashu-card-topup", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-topup"),
+  runTidy: (...args: unknown[]) => mockRunTidy(...args),
+}))
+jest.mock("@app/utils/cashu-card", () => ({
+  ...jest.requireActual("@app/utils/cashu-card"),
+  verifyCardPin: (...args: unknown[]) => mockVerifyCardPin(...args),
 }))
 const PUBKEY = "02" + "ab".repeat(32)
 const SAT_KEYSET = "0059534ce0bfa19a"
@@ -1327,6 +1341,109 @@ describe("FlashcardV2Screen card tidy (ENG-702)", () => {
       )
       expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
     })
+  })
+
+  /** The card refuses the tap for its PIN once, then the tap runs the tidy. */
+  const pinNeededOnce = () => {
+    mockRunTidy.mockResolvedValue({ status: "tidied", record: {} })
+    mockRunCardOperation
+      .mockRejectedValueOnce(new CardSpendError("pin-needed", 0x6a94, "SPEND_ALL_SIGN"))
+      .mockImplementationOnce(async (op: (t: unknown) => unknown) => op(jest.fn()))
+  }
+  const enterPin = (digits: string) =>
+    Array.from(digits).forEach((digit) =>
+      fireEvent.press(screen.getByTestId(`pin-${digit}`)),
+    )
+  /** The PIN the second tap's tidy verifies on the card, as the card was asked. */
+  const expectSecondTapVerifies = async (pin: string) => {
+    await waitFor(() => expect(mockRunTidy).toHaveBeenCalledTimes(1))
+    const [, args] = mockRunTidy.mock.calls[0]
+    await args.verifyPin("transceive")
+    expect(mockVerifyCardPin).toHaveBeenCalledWith("transceive", pin, expect.anything())
+    return args
+  }
+
+  it("asks for the PIN when the card refuses the tidy for it, and taps again with that PIN", async () => {
+    pinNeededOnce()
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy-pin")).toBeTruthy())
+    expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
+    enterPin("1234")
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-pin-submit"))
+
+    await waitFor(() => expect(mockRunCardOperation).toHaveBeenCalledTimes(2))
+    await expectSecondTapVerifies("1234")
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.tidyDone(),
+      ),
+    )
+  })
+
+  it("asks for the PIN when the card refuses Finish on a tidy still owed, and finishes it with that PIN", async () => {
+    await Keychain.setInternetCredentials(
+      TIDY_SERVER,
+      "topups",
+      JSON.stringify({ format: 3, records: [saved("a", "signed")] }),
+    )
+    pinNeededOnce()
+    mockCashuCard = card()
+    renderScreen()
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-finish-tidy")).toBeTruthy(),
+    )
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-finish-tidy"))
+
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy-pin")).toBeTruthy())
+    enterPin("1234")
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-pin-submit"))
+
+    await waitFor(() => expect(mockRunCardOperation).toHaveBeenCalledTimes(2))
+    const args = await expectSecondTapVerifies("1234")
+    // Still Finish after the PIN: no keyset a new tidy could plan in.
+    expect(args.keysetId).toBeUndefined()
+  })
+
+  it("says how many tries are left when the card refuses the PIN", async () => {
+    mockRunCardOperation.mockRejectedValue(new CardError(0x63c2, "VERIFY_PIN"))
+    mockCashuCard = card({ tidyOffer: offer({ needsPin: true }) })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+    enterPin("1234")
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-pin-submit"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.wrongPin({ tries: 2 }),
+      ),
+    )
+    expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
+  })
+
+  it("says a tidy no retry can finish is for support, never to try again", async () => {
+    mockRunCardOperation.mockRejectedValue(
+      new TidyError("needs-card", "the mint refused this tidy's swap"),
+    )
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.tidyNeedsCard(),
+      ),
+    )
+    expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
   })
 
   it("says to try again only when the tap failed", async () => {

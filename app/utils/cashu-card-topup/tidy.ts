@@ -702,16 +702,24 @@ const tidyInTap = async (
  * A tidy a tap is carrying is left to the tap: between its `signed` save and
  * the mint's answer, a restore finds nothing and the pieces are still
  * UNSPENT, so this pass would send the same swap again beside the tap's.
+ *
+ * Resolves how many of this mint's tidies are still `signed` after the pass:
+ * each one's inputs are burned and its swap not made, so the minter keeps
+ * asking (`createMinterLoop`) instead of waiting for the next launch, return
+ * to the foreground or tap, while a keyset rotation could turn the swap into
+ * a final refusal.
  */
 export async function advanceTidies(
   deps: Pick<TidyDeps, "mint" | "store">,
-): Promise<void> {
-  const signed = (await deps.store.tidies.list()).filter(
-    (r) => r.state === "signed" && sameMint(r.mintUrl, deps.mint.url),
-  )
-  for (const { id } of signed) {
+): Promise<{ waiting: number }> {
+  const signedAtMint = async () =>
+    (await deps.store.tidies.list()).filter(
+      (r) => r.state === "signed" && sameMint(r.mintUrl, deps.mint.url),
+    )
+  for (const { id } of await signedAtMint()) {
     await advanceTidy(deps, id)
   }
+  return { waiting: (await signedAtMint()).length }
 }
 
 /** One signed tidy's card-free step, unless a tap or another pass has it. */

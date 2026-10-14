@@ -439,16 +439,18 @@ export const nudgeTopUpMinter = () => nudgeMinter?.()
 export const useTopUpMinter = () => {
   useEffect(() => {
     const loop = createMinterLoop({
-      // A card tidy the card signed is swapped without the card too (ENG-702).
+      // A card tidy the card signed is swapped without the card too (ENG-702),
+      // and each one still signed keeps the loop asking, as a top-up does.
       run: async () => {
         const deps = cardFreeDeps()
         const result = await advanceTopUps(deps)
+        let tidiesWaiting = 0
         try {
-          await advanceTidies(deps)
+          tidiesWaiting = (await advanceTidies(deps)).waiting
         } catch {
           // Asked again on the next pass.
         }
-        return result
+        return { ...result, waiting: result.waiting + tidiesWaiting }
       },
       pollMs: TOP_UP_POLL_MS,
       isActive: () => AppState.currentState === "active",

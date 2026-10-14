@@ -156,7 +156,7 @@ const en: BaseTranslation = {
       "This card is short of small pieces, and too few slots are free to tidy it.",
     tidyInProgress: "A tidy of this card isn't finished. Tap the card to finish it.",
     tidyNeedsCard:
-      "A tidy of this card couldn't finish: the card signed another payment first. Contact support.",
+      "A tidy of this card couldn't finish. Contact support.",
     tidyDone: "Card tidied.",
     tidyNotNow: "Not now",
     tidyFailed: "The tidy didn't finish. Hold your phone against the card and try again.",

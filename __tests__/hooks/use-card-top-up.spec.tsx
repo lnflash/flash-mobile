@@ -13,6 +13,7 @@ import { act, renderHook, waitFor } from "@testing-library/react-native"
 import { PaymentSendResult } from "../../app/graphql/generated"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import {
+  TOP_UP_POLL_MS,
   nudgeTopUpMinter,
   topUpMint,
   useCardTopUp,
@@ -139,6 +140,7 @@ const cardWith = (spent: number, over: Partial<LoadCard> = {}): LoadCard => ({
 beforeEach(() => {
   jest.clearAllMocks()
   mockAdvance.mockResolvedValue({ waiting: 0 })
+  mockAdvanceTidies.mockResolvedValue({ waiting: 0 })
   mockUnfinished.mockResolvedValue([])
   mockReclaimVerdicts.mockResolvedValue(new Map())
   mockReclaimSpentSlots.mockResolvedValue(NO_RECLAIM)
@@ -905,6 +907,58 @@ describe("useTopUpMinter", () => {
       unmount()
     } finally {
       listen.mockRestore()
+    }
+  })
+
+  it("keeps the poll armed while a card tidy stays signed, with no top-up waiting: its swap is still owed (ENG-702)", async () => {
+    jest.useFakeTimers()
+    // In the foreground: the poll is armed only there.
+    const foreground = Object.getOwnPropertyDescriptor(AppState, "currentState")
+    Object.defineProperty(AppState, "currentState", {
+      configurable: true,
+      get: () => "active",
+    })
+    const listen = jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation(
+        () =>
+          ({ remove: jest.fn() } as unknown as ReturnType<
+            typeof AppState.addEventListener
+          >),
+      )
+    // No top-up waits; the tidy's swap is refused by the network once, so it
+    // is still signed after the first pass, and swapped by the second.
+    mockAdvance.mockResolvedValue({ waiting: 0 })
+    mockAdvanceTidies
+      .mockResolvedValueOnce({ waiting: 1 })
+      .mockResolvedValue({ waiting: 0 })
+    const settle = () =>
+      act(async () => {
+        for (let i = 0; i < 10; i += 1) await Promise.resolve()
+      })
+    try {
+      const { unmount } = renderHook(() => useTopUpMinter())
+      await settle()
+      expect(mockAdvanceTidies).toHaveBeenCalledTimes(1)
+
+      // The signed tidy armed the poll: the next pass comes without a nudge.
+      act(() => {
+        jest.advanceTimersByTime(TOP_UP_POLL_MS)
+      })
+      await settle()
+      expect(mockAdvanceTidies).toHaveBeenCalledTimes(2)
+
+      // Swapped: nothing waits, and the poll stops.
+      act(() => {
+        jest.advanceTimersByTime(TOP_UP_POLL_MS * 3)
+      })
+      await settle()
+      expect(mockAdvanceTidies).toHaveBeenCalledTimes(2)
+      unmount()
+    } finally {
+      listen.mockRestore()
+      if (foreground) Object.defineProperty(AppState, "currentState", foreground)
+      jest.useRealTimers()
     }
   })
 })

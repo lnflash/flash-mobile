@@ -538,8 +538,9 @@ describe("runTidy", () => {
     expect(kept.state).toBe("needs-card")
     expect(kept.signature).toMatch(/^[0-9a-f]{128}$/)
     expect(cardCommitments([], card.pubkey, [kept]).slots).toBe(0)
-    // Not polled again: the card-free pass leaves it, and it can be dismissed.
-    await advanceTidies(deps)
+    // Not polled again: the card-free pass leaves it, keeps no poll armed for
+    // it, and it can be dismissed.
+    await expect(advanceTidies(deps)).resolves.toEqual({ waiting: 0 })
     expect(mint.swap).toHaveBeenCalledTimes(1)
     await expect(deps.store.tidies.archive(kept.id)).resolves.toBe(true)
   })
@@ -610,6 +611,22 @@ describe("runTidy", () => {
     await expect(runTidy(deps, args())).resolves.toMatchObject({ status: "tidied" })
     expect(mint.swap).toHaveBeenCalledTimes(2)
     expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
+  })
+
+  it("counts a signed tidy the card-free pass could not swap as still waiting, so the minter asks again, and none once swapped", async () => {
+    await putOnCard(AFTER_A_TILL)
+    // Cut by the network in the tap and again in the first card-free pass.
+    ;(mint.swap as jest.Mock)
+      .mockRejectedValueOnce(new Error("Network request failed"))
+      .mockRejectedValueOnce(new Error("Network request failed"))
+    await expect(runTidy(deps, args())).rejects.toThrow("Network request failed")
+
+    await expect(advanceTidies(deps)).resolves.toEqual({ waiting: 1 })
+    expect((await deps.store.tidies.list())[0].state).toBe("signed")
+
+    await expect(advanceTidies(deps)).resolves.toEqual({ waiting: 0 })
+    expect((await deps.store.tidies.list())[0].state).not.toBe("signed")
+    expect(mint.swap).toHaveBeenCalledTimes(3)
   })
 
   it("leaves a tidy `needs-card` when the mint spent its piece for something else while its swap was cut", async () => {

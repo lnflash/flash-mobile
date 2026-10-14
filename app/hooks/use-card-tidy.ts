@@ -24,6 +24,7 @@ import {
 } from "@app/utils/cashu-card-topup"
 import { topUpMint, topUpStore } from "@app/utils/cashu-card-topup/connected"
 
+import { nudgeTopUpMinter } from "./use-card-top-up"
 import { useFlashcard } from "./useFlashcard"
 
 type TidyCard = Pick<
@@ -111,9 +112,19 @@ export const useCardTidy = (card: TidyCard | undefined) => {
    * One tap: a new tidy, or the card's tidy still owed finished. `pin` is the
    * PIN this screen asked for (Decision 1), verified in the tap before
    * SPEND_ALL_BEGIN; the change is loaded under the owner's grant.
+   *
+   * `finishOnly` is "Finish" on a listed tidy: it finishes the card's tidy
+   * still owed and never starts a new one. The listed tidy may have left the
+   * owed states since the screen read it (a minter pass gave it up as
+   * `needs-card`); a new tidy then would burn pieces the owner was never
+   * offered, its fee and its PIN choice unseen. With nothing owed it taps
+   * nothing and reports nothing done.
    */
   const tidy = useCallback(
-    async (pin?: string): Promise<TidyResult> => {
+    async ({
+      pin,
+      finishOnly = false,
+    }: { pin?: string; finishOnly?: boolean } = {}): Promise<TidyResult> => {
       if (!card) throw new TopUpError("state", "no card to tidy")
       const mint = topUpMint()
       const deps: TidyDeps = { mint, store: topUpStore, now: Date.now, newId: uuidv4 }
@@ -123,8 +134,15 @@ export const useCardTidy = (card: TidyCard | undefined) => {
       // Otherwise the keyset of the read the owner was offered, and its fee,
       // go into the tap together, so a new tidy plans in that keyset alone.
       const owed = await owedTidy(deps, card.pubkey)
+      if (finishOnly && !owed) {
+        await list()
+        return { status: "skipped", reason: "at-target" }
+      }
+      // No keyset, no new tidy: `runTidy` can then only finish one.
       const keysetId =
-        !owed && card.unspentSlots ? tidyKeyset(card.unspentSlots) : undefined
+        !owed && !finishOnly && card.unspentSlots
+          ? tidyKeyset(card.unspentSlots)
+          : undefined
       const feePpk = keysetId ? await mint.feePpk(keysetId) : 0
       const verdicts = card.spentSlots?.length
         ? await reclaimVerdicts(deps, card.pubkey, card.spentSlots).catch(() => undefined)
@@ -136,6 +154,7 @@ export const useCardTidy = (card: TidyCard | undefined) => {
       if (!owner && !pin && card.pinState !== "unset") {
         throw new TopUpError("not-owner", "the card wants its PIN to load")
       }
+      let threw = false
       try {
         return await runCardOperation(
           (transceive) =>
@@ -164,8 +183,21 @@ export const useCardTidy = (card: TidyCard | undefined) => {
           card.pubkey,
           { rereadSlots: true },
         )
+      } catch (err) {
+        threw = true
+        throw err
       } finally {
         list()
+        // A tidy the card signed whose swap this tap did not make is the
+        // minter's to swap without the card: asked now, and kept asking
+        // while it stays signed (`advanceTidies`).
+        if (threw) {
+          nudgeTopUpMinter()
+        } else {
+          owedTidy(deps, card.pubkey)
+            .then((left) => left?.state === "signed" && nudgeTopUpMinter())
+            .catch(() => undefined)
+        }
       }
     },
     [card, runCardOperation, list],
