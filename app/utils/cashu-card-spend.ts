@@ -5,26 +5,20 @@
  * signature over pieces the card names and change the card makes for itself.
  *
  * Ported from flash-pos `src/services/cashuCard.ts` (`spendAllBegin`,
- * `spendAllChange`, `spendAllSign`, `spendAllAgain`, `getChange`) and
- * `src/services/cashuMint.ts` (`sigAllMessage`, `verifyCardSignature`), which
- * already run against the real applet. This app sends no SPEND_ALL_OUTPUTS: a
+ * `spendAllChange`, `spendAllSign`, `spendAllAgain`, `getChange`), which
+ * already run against the real applet. The phone does not check the card's
+ * signature itself: the mint is the one verifier (`tidy.ts`). This app sends no SPEND_ALL_OUTPUTS: a
  * tidy's every output is the card's own change, so only the mint's fee leaves
  * the card (the applet counts the pieces less the change against its limits).
  *
  * Transport-agnostic, like `cashu-card.ts`: it builds and parses APDUs.
  */
-import { schnorr } from "@noble/curves/secp256k1"
-// @noble/hashes comes in through @noble/curves, as app/utils/crypto.ts takes it.
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { sha256 } from "@noble/hashes/sha256"
-
 import {
   CardError,
   CardProtocolError,
   INS,
   MAX_SLOTS,
   Transceiver,
-  hexBytes,
   parseResponse,
   readU32,
   toHex,
@@ -190,9 +184,9 @@ export async function spendAllSign(transceive: Transceiver): Promise<number[]> {
 
 /**
  * SPEND_ALL_AGAIN: the LAST signature SPEND_ALL_SIGN gave, again, for an
- * answer lost on the air. Good only for the payment it was made for: the
- * caller verifies it against that payment's message (`verifyCardSignature`)
- * before using it. Needs the PIN where one is set, unless that signature was
+ * answer lost on the air. Good only for the payment it was made for, which
+ * may be another than the caller's (a till charged the card since): the mint
+ * decides, and the card's change openings say whose it was. Needs the PIN where one is set, unless that signature was
  * given with none. `6A88` from a card that has never signed.
  */
 export async function spendAllAgain(transceive: Transceiver): Promise<number[]> {
@@ -258,40 +252,4 @@ export async function getChange(transceive: Transceiver): Promise<ChangeOpening[
     if (found.length < OPENINGS_PER_PAGE) break
   }
   return openings
-}
-
-/**
- * The NUT-11 SIG_ALL message's SHA-256: every input's secret and C (hex),
- * then every output's amount (decimal) and B_ (hex), concatenated as text in
- * the order the card signs them. What the card's one signature is over.
- */
-export function sigAllMessage(
-  inputs: readonly { secret: string; C: string }[],
-  outputs: readonly { amount: number; B_: string }[],
-): Uint8Array {
-  let text = ""
-  inputs.forEach((input) => {
-    text += input.secret + input.C.toLowerCase()
-  })
-  outputs.forEach((output) => {
-    text += String(output.amount) + output.B_.toLowerCase()
-  })
-  return sha256(new TextEncoder().encode(text))
-}
-
-/** Whether `signature` (hex) is the card key's BIP-340 signature over `message`. */
-export function verifyCardSignature(
-  signature: string,
-  message: Uint8Array,
-  cardPubkey: string,
-): boolean {
-  try {
-    return schnorr.verify(
-      Uint8Array.from(hexBytes(signature, 64, "signature")),
-      message,
-      Uint8Array.from(hexBytes(cardPubkey, 33, "card key").slice(1)),
-    )
-  } catch {
-    return false
-  }
 }

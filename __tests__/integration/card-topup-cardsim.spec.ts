@@ -487,6 +487,7 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
       {
         transceive: tap.transceive,
         card: { pubkey: card.pubkey, maxSlots: card.maxSlots },
+        keysetId,
         feePpk,
         openForLoading: (t) => allowLoad(t, ownerSigner(FIXTURE_OWNER_KEY)),
         verdicts: new Map(),
@@ -527,7 +528,8 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
     const card = await readCashuCard(transceive)
     if (!card?.unspentSlots) throw new Error("the loaded fixture did not read")
     const mint = createTopUpMint(mintUrl)
-    const feePpk = await mint.feePpk(tidyKeyset(card.unspentSlots) as string)
+    const keysetId = tidyKeyset(card.unspentSlots) as string
+    const feePpk = await mint.feePpk(keysetId)
     let ids = 0
     const deps: TidyDeps = {
       mint,
@@ -538,6 +540,7 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
     const args = {
       transceive,
       card: { pubkey: card.pubkey, maxSlots: card.maxSlots },
+      keysetId,
       feePpk,
       openForLoading: (t: Transceiver) => allowLoad(t, ownerSigner(FIXTURE_OWNER_KEY)),
       verdicts: new Map(),

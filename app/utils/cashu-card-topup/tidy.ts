@@ -124,7 +124,15 @@ export type RunTidyArgs = {
   /** An open card session on the record's card, the applet selected. */
   transceive: Transceiver
   card: { pubkey: string; maxSlots: number }
-  /** The keyset's NUT-02 `input_fee_ppk`, asked before the tap (`TopUpMint.feePpk`). */
+  /**
+   * The keyset the owner was offered a tidy in (`tidyKeyset` of the read),
+   * the one `feePpk` was asked for and checked active in, before the tap. A
+   * new tidy plans in it alone, whatever the tap's own read favours, so the
+   * record's keyset and its fee are the same keyset's. Undefined (the read
+   * had no piece a tidy can spend): no new tidy starts.
+   */
+  keysetId: string | undefined
+  /** `keysetId`'s NUT-02 `input_fee_ppk`, asked before the tap (`TopUpMint.feePpk`). */
   feePpk: number
   /**
    * Decision 1: VERIFY_PIN, sent before SPEND_ALL_BEGIN (any other command
@@ -143,6 +151,19 @@ export type RunTidyArgs = {
 }
 
 const sum = (amounts: readonly number[]): number => amounts.reduce((a, b) => a + b, 0)
+
+/**
+ * The tidies a tap is carrying, by id: the card-free pass leaves them alone,
+ * so a swap the tap is about to send, or has in flight, is never sent a
+ * second time beside it (`advanceTidies`).
+ */
+const inTap = new Set<string>()
+
+/**
+ * The card-free pass's work on a tidy, by id, while it runs: a tap that would
+ * take the same tidy waits for it first, for the same reason (`runTidy`).
+ */
+const advancing = new Map<string, Promise<void>>()
 
 /** The secret the card rebuilds for one of its pieces (format 4, no date). */
 const secretOf = (nonce: string, cardPubkey: string): string =>
@@ -280,8 +301,8 @@ const restored = async (
  *   went to another payment (a till), and this swap can never be made;
  * - the mint's own refusal (a `MintOperationError`) with every input still
  *   UNSPENT: the payload is fixed by the signature (keyset, amounts,
- *   outputs), so the identical swap would be refused again. What the
- *   phone's own SIG_ALL check makes of the signature does not matter here.
+ *   outputs), so the identical swap would be refused again. The phone does
+ *   not check the signature itself: the mint is the one verifier.
  * Anything else (the network, a mint that did not answer) leaves the record
  * `signed`, for another try.
  */
@@ -503,15 +524,60 @@ const recoverPlanned = async (
  * it got to, for `advanceTidies` and the next tap.
  */
 export async function runTidy(deps: TidyDeps, args: RunTidyArgs): Promise<TidyResult> {
+  const claimed: string[] = []
+  const claim = (id: string) => {
+    inTap.add(id)
+    claimed.push(id)
+  }
+  try {
+    return await tidyInTap(deps, args, claim)
+  } finally {
+    claimed.forEach((id) => inTap.delete(id))
+  }
+}
+
+/**
+ * The card's oldest tidy still owed at this mint: the one a tap finishes
+ * before any new one, and the one whose fee is in its record already.
+ */
+export const owedTidy = async (
+  deps: { store: Pick<TopUpStore, "tidies">; mint: Pick<TopUpMint, "url"> },
+  cardPubkey: string,
+): Promise<TidyRecord | undefined> =>
+  (await deps.store.tidies.list())
+    .filter(
+      (r) =>
+        r.cardPubkey === cardPubkey.toLowerCase() &&
+        tidyOwed(r) &&
+        sameMint(r.mintUrl, deps.mint.url),
+    )
+    .sort((a, b) => a.createdAt - b.createdAt)[0]
+
+const tidyInTap = async (
+  deps: TidyDeps,
+  args: RunTidyArgs,
+  claim: (id: string) => void,
+): Promise<TidyResult> => {
   const { transceive, card } = args
   const cardPubkey = card.pubkey.toLowerCase()
-  const saved = (await deps.store.tidies.list()).filter(
-    (r) =>
-      r.cardPubkey === cardPubkey && tidyOwed(r) && sameMint(r.mintUrl, deps.mint.url),
-  )
-  const [unfinished] = saved.sort((a, b) => a.createdAt - b.createdAt)
+  let unfinished = await owedTidy(deps, cardPubkey)
+  if (unfinished) {
+    // Claimed before anything is asked: the card-free pass now leaves it.
+    claim(unfinished.id)
+    const pass = advancing.get(unfinished.id)
+    if (pass) {
+      // The pass may have the swap in flight: its answer, not a second swap.
+      await pass
+      unfinished = await owedTidy(deps, cardPubkey)
+      if (unfinished) claim(unfinished.id)
+    }
+  }
   if (unfinished?.state === "planned") return recoverPlanned(deps, args, unfinished)
   if (unfinished) return finishSigned(deps, args, { start: unfinished, resumed: true })
+
+  // The read the owner was offered a tidy from had no piece to spend: no fee
+  // was asked, so nothing is planned.
+  if (args.keysetId === undefined) return { status: "skipped", reason: "at-target" }
 
   const read = await readPieces(transceive)
   const held = await getChange(transceive)
@@ -525,6 +591,10 @@ export async function runTidy(deps: TidyDeps, args: RunTidyArgs): Promise<TidyRe
     freeOpenings: CHANGE_MOST - held.length,
     freeSlots: empty - committed.slots,
     feePpk: args.feePpk,
+    // The keyset whose fee was asked, not the one this read favours: a till
+    // that took pieces since may have tipped the card towards another keyset
+    // (rotated out, or at another fee). No piece of it left: at its shape.
+    keysetId: args.keysetId,
   })
   if (plan.kind === "skip") return { status: "skipped", reason: plan.reason }
 
@@ -544,6 +614,7 @@ export async function runTidy(deps: TidyDeps, args: RunTidyArgs): Promise<TidyRe
     createdAt: at,
     updatedAt: at,
   })
+  claim(record.id)
 
   // Nothing is burned before SIGN: a refusal or a lost card up to it drops the record.
   try {
@@ -598,6 +669,10 @@ export async function runTidy(deps: TidyDeps, args: RunTidyArgs): Promise<TidyRe
  * swap (restore first, so a swap whose answer was lost is never repeated),
  * and the proofs when the openings are saved. Swapped tidies need the card,
  * and are left. A failure is left for the next pass.
+ *
+ * A tidy a tap is carrying is left to the tap: between its `signed` save and
+ * the mint's answer, a restore finds nothing and the pieces are still
+ * UNSPENT, so this pass would send the same swap again beside the tap's.
  */
 export async function advanceTidies(
   deps: Pick<TidyDeps, "mint" | "store">,
@@ -605,13 +680,30 @@ export async function advanceTidies(
   const signed = (await deps.store.tidies.list()).filter(
     (r) => r.state === "signed" && sameMint(r.mintUrl, deps.mint.url),
   )
-  for (const record of signed) {
-    try {
-      const swapped = await swapTidy(deps, record, true)
-      if (swapped.openings) await finishProofs(deps, swapped)
-    } catch {
-      // Asked again on the next pass.
-    }
+  for (const { id } of signed) {
+    await advanceTidy(deps, id)
+  }
+}
+
+/** One signed tidy's card-free step, unless a tap or another pass has it. */
+const advanceTidy = async (
+  deps: Pick<TidyDeps, "mint" | "store">,
+  id: string,
+): Promise<void> => {
+  // Read again: a tap may have taken it, or finished it, since the list.
+  const record = (await deps.store.tidies.list()).find((r) => r.id === id)
+  if (record?.state !== "signed" || inTap.has(id) || advancing.has(id)) return
+  const pass = (async () => {
+    const swapped = await swapTidy(deps, record, true)
+    if (swapped.openings) await finishProofs(deps, swapped)
+  })().catch(() => {
+    // Asked again on the next pass.
+  })
+  advancing.set(id, pass)
+  try {
+    await pass
+  } finally {
+    advancing.delete(id)
   }
 }
 

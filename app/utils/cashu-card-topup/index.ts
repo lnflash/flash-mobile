@@ -53,5 +53,5 @@ export { belowTarget, inputFee, planTidy, shapeDeficit, tidyKeyset } from "./lad
 export { piecesFingerprint, showsTidyOffer, tidyOfferFor } from "./offer"
 export type { TidyOffer } from "./offer"
 export type { TidyPiece, TidyPlan, TidyRoom, TidySkip } from "./ladder"
-export { TidyError, advanceTidies, runTidy, unfinishedTidies } from "./tidy"
+export { TidyError, advanceTidies, owedTidy, runTidy, unfinishedTidies } from "./tidy"
 export type { RunTidyArgs, TidyDeps, TidyFailure, TidyResult } from "./tidy"

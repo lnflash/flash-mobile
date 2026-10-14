@@ -2,7 +2,9 @@
  * ENG-702: the card screen's tidy, wired to the app. What it pins:
  *   - the mint's fee and the spent slots' verdicts are asked before the tap,
  *     and the owner key found before it, so the card session never waits on
- *     them;
+ *     them; the keyset the fee was asked for goes into the tap with it;
+ *   - a tidy still owed is finished without asking the mint's fee: its fee is
+ *     in its record, and its keyset may be rotated out;
  *   - the tap runs the tidy on the card on screen, with the PIN (verified
  *     before SPEND_ALL_BEGIN) only when the screen asked for it, and the
  *     change loaded under the owner's grant;
@@ -173,6 +175,7 @@ describe("useCardTidy", () => {
     const [, args] = mockRunTidy.mock.calls[0]
     expect(args).toMatchObject({
       card: { pubkey: cashuCard.pubkey, maxSlots: cashuCard.maxSlots },
+      keysetId: KEYSET,
       feePpk: 0,
       verdicts: VERDICTS,
       verifyPin: undefined,
@@ -180,6 +183,38 @@ describe("useCardTidy", () => {
     // The grant opens the load, with the owner's key.
     await args.openForLoading("transceive")
     expect(mockAllowLoad).toHaveBeenCalledWith("transceive", expect.any(Function))
+  })
+
+  it("finishes a tidy still owed with the mint's fee never asked: its keyset is rotated out", async () => {
+    const cashuCard = card()
+    await saveTidies([saved("owed", "swapped", cashuCard.pubkey)])
+    mockFeePpk.mockRejectedValue(new Error("keyset 0059534ce0bfa19a is not active"))
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await waitFor(() => expect(result.current.records).toHaveLength(1))
+
+    await act(async () => {
+      await expect(result.current.tidy()).resolves.toEqual({
+        status: "tidied",
+        record: {},
+      })
+    })
+
+    expect(mockFeePpk).not.toHaveBeenCalled()
+    expect(mockRunTidy).toHaveBeenCalledTimes(1)
+    const [, args] = mockRunTidy.mock.calls[0]
+    // No new tidy can start in this tap: no keyset's fee was asked.
+    expect(args).toMatchObject({ keysetId: undefined, feePpk: 0 })
+  })
+
+  it("still asks the fee for a new tidy when the card's only tidy is kept for a human", async () => {
+    const cashuCard = card()
+    await saveTidies([saved("stuck", "needs-card", cashuCard.pubkey)])
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await act(async () => {
+      await result.current.tidy()
+    })
+    expect(mockFeePpk).toHaveBeenCalledWith(KEYSET)
+    expect(mockRunTidy.mock.calls[0][1]).toMatchObject({ keysetId: KEYSET })
   })
 
   it("verifies the PIN the screen asked for in the tap, in the form the card takes", async () => {

@@ -4,10 +4,6 @@
  * SPEND_ALL_SIGN's "not yet" loop, GET_CHANGE's pages, and each refusal
  * named by its status word.
  */
-import { schnorr } from "@noble/curves/secp256k1"
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { sha256 } from "@noble/hashes/sha256"
-
 import { CardError, CardProtocolError, toHex } from "../../app/utils/cashu-card"
 import {
   CHANGE_MOST,
@@ -15,12 +11,10 @@ import {
   MAX_SIGN_WAITS,
   getChange,
   parseChangePage,
-  sigAllMessage,
   spendAllAgain,
   spendAllBegin,
   spendAllChange,
   spendAllSign,
-  verifyCardSignature,
 } from "../../app/utils/cashu-card-spend"
 
 const OK = [0x90, 0x00]
@@ -191,28 +185,5 @@ describe("getChange", () => {
     expect(() => parseChangePage([2, ...opening(1, 1)])).toThrow(CardProtocolError)
     expect(() => parseChangePage([4])).toThrow(CardProtocolError)
     expect(() => parseChangePage([])).toThrow(CardProtocolError)
-  })
-})
-
-describe("sigAllMessage and verifyCardSignature", () => {
-  const key = "07".repeat(32)
-  const pubkey = toHex(schnorr.getPublicKey(key))
-
-  it("hashes every input's secret and C, then every output's amount and B_, as the card does", () => {
-    const inputs = [{ secret: '["P2PK",{}]', C: "02AB" }]
-    const outputs = [{ amount: 16, B_: "03CD" }]
-    const text = '["P2PK",{}]02ab1603cd'
-    expect(toHex(sigAllMessage(inputs, outputs))).toBe(
-      toHex(sha256(new TextEncoder().encode(text))),
-    )
-  })
-
-  it("takes the card key's signature over the message and nothing else", () => {
-    const message = sigAllMessage([{ secret: "s", C: "02" }], [{ amount: 1, B_: "03" }])
-    const signature = toHex(schnorr.sign(message, key))
-    expect(verifyCardSignature(signature, message, `02${pubkey}`)).toBe(true)
-    const other = sigAllMessage([{ secret: "s", C: "02" }], [{ amount: 2, B_: "03" }])
-    expect(verifyCardSignature(signature, other, `02${pubkey}`)).toBe(false)
-    expect(verifyCardSignature("zz", message, `02${pubkey}`)).toBe(false)
   })
 })

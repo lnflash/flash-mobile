@@ -14,6 +14,7 @@ import {
   TidyRecord,
   TidyResult,
   TopUpError,
+  owedTidy,
   reclaimVerdicts,
   runTidy,
   showsTidyOffer,
@@ -116,7 +117,14 @@ export const useCardTidy = (card: TidyCard | undefined) => {
       if (!card) throw new TopUpError("state", "no card to tidy")
       const mint = topUpMint()
       const deps: TidyDeps = { mint, store: topUpStore, now: Date.now, newId: uuidv4 }
-      const keysetId = card.unspentSlots && tidyKeyset(card.unspentSlots)
+      // A tidy still owed is finished first, and its fee and keyset are in
+      // its record: the mint is not asked (its keyset may be rotated out by
+      // now, and the change it signed must still come back to the card).
+      // Otherwise the keyset of the read the owner was offered, and its fee,
+      // go into the tap together, so a new tidy plans in that keyset alone.
+      const owed = await owedTidy(deps, card.pubkey)
+      const keysetId =
+        !owed && card.unspentSlots ? tidyKeyset(card.unspentSlots) : undefined
       const feePpk = keysetId ? await mint.feePpk(keysetId) : 0
       const verdicts = card.spentSlots?.length
         ? await reclaimVerdicts(deps, card.pubkey, card.spentSlots).catch(() => undefined)
@@ -134,6 +142,7 @@ export const useCardTidy = (card: TidyCard | undefined) => {
             runTidy(deps, {
               transceive,
               card: { pubkey: card.pubkey, maxSlots: card.maxSlots },
+              keysetId,
               feePpk,
               verifyPin: pin
                 ? (t) =>
