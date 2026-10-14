@@ -72,7 +72,10 @@ export function makeCanonicalCardOutput(
 
 /**
  * `amount` as powers of two, largest first: the fewest proofs, and so the
- * fewest of the card's 128 slots, that make it up exactly.
+ * fewest of the card's 128 slots, that make it up exactly. It is the floor a
+ * top-up's slots are checked against, and the remainder split of a shape; a
+ * top-up's denominations themselves are shaped (`targetPieces`,
+ * `topUpPieces` in `cashu-card-shape.ts`, ENG-700).
  */
 export function splitPow2(amount: number): number[] {
   if (!Number.isSafeInteger(amount) || amount < 1) {
