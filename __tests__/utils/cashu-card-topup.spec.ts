@@ -325,6 +325,25 @@ describe("prepareTopUp shapes the card as a covering ladder (ENG-700)", () => {
     expect(coversEveryAmount(amounts(nine))).toBe(true)
   })
 
+  it("shapes only into the slots empty now: the extra pieces never lean on the load tap's reclaim", async () => {
+    // Five empty and ten reclaimable: the 12-piece shape would need seven of
+    // the reclaimed slots, and a burn at an offline till before the load tap
+    // stops the reclaim. It mints into the five empty slots alone.
+    const five = await prepare(60, { card: { empty: 5, reclaimable: 10 } })
+    expect(amounts(five).length).toBeLessThanOrEqual(5)
+    expect(amounts(five).reduce((a, b) => a + b, 0)).toBe(60)
+
+    // Two empty: the fewest pieces need the reclaim, as they did before
+    // shaping, and the top-up takes no more than them.
+    const two = await prepare(60, { card: { empty: 2, reclaimable: 10 } })
+    expect(amounts(two)).toEqual([32, 16, 8, 4])
+
+    // An unfinished top-up holds slots too: what is empty now is less its hold.
+    await minted(3) // 2+1: two slots held
+    const held = await prepare(60, { card: { empty: 6, reclaimable: 10 } })
+    expect(amounts(held)).toEqual([32, 16, 8, 4])
+  })
+
   it("a shaped 60-sat top-up holds its 12 slots against the next one", async () => {
     await minted(60)
 

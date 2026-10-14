@@ -353,8 +353,9 @@ const everSent = (record: TopUpRecord): boolean =>
 
 /**
  * The fewest slots a top-up of `amount` takes: one per power of two in it. A
- * top-up takes more, up to the room, to shape the card (`topUpPieces`); the
- * slots a saved one holds are counted from its real outputs.
+ * top-up takes more, up to the slots empty now, to shape the card
+ * (`topUpPieces`); the slots a saved one holds are counted from its real
+ * outputs.
  */
 export const slotsNeeded = (amount: number): number => splitPow2(amount).length
 
@@ -410,6 +411,12 @@ export type PrepareArgs = {
    * `spent` is required"), and only the mint's word (NUT-07 SPENT) on all of
    * them makes them room. A card with no owner takes no load (LOAD_PROOF
    * answers 6A90), so it takes no top-up either.
+   *
+   * Reclaimable slots count toward whether the top-up fits at its fewest
+   * pieces, never toward its shape: the shape's extra pieces go only into
+   * slots empty now, so a reclaim the load tap cannot make (a burn at an
+   * offline till leaves a spent slot unsettled) costs no more than it did
+   * before the card was shaped.
    */
   card: Pick<CardInfo, "empty" | "hasOwner"> & {
     unit?: CardUnit
@@ -525,8 +532,14 @@ export async function prepareTopUp(
     ...args.card.pieces,
     ...committedPieces(records, cardPubkey),
   ]
+  // Shaped only into the slots empty now. A reclaimable slot is free only if
+  // the load tap's all-or-nothing CLEAR_SPENT goes through, and a burn at an
+  // offline till between now and that tap stops it (`loadTopUp` then refuses
+  // on slots). So the reclaim is leaned on only where the fewest pieces need
+  // it, as before shaping: the extra pieces never are.
+  const shapeRoom = Math.max(needed, Math.min(room, args.card.empty - committed.slots))
   // Largest first, the order a record's outputs have always had.
-  const pieces = topUpPieces(amount, existing, room).reverse()
+  const pieces = topUpPieces(amount, existing, shapeRoom).reverse()
   const keyset = await deps.mint.activeKeyset(unit)
   const outputs = pieces.map((piece) =>
     makeCanonicalCardOutput(piece, keyset.id, cardPubkey),
