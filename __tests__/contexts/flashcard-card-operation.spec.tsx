@@ -1,4 +1,4 @@
-import { act, waitFor } from "@testing-library/react-native"
+import { act, screen, waitFor } from "@testing-library/react-native"
 import { Platform } from "react-native"
 import NfcManager, { NfcTech } from "react-native-nfc-manager"
 
@@ -757,5 +757,95 @@ describe("FlashcardProvider runCardOperation", () => {
     })
 
     expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBe("sat")
+  })
+
+  // ENG-706: an op can say where it has got to. On Android the in-app sheet
+  // shows it in place of "Please tap NFC tags"; on iOS the system NFC sheet
+  // does, through its alert message. Fire-and-forget: a refused alert never
+  // costs the op its result, and the text never outlives the op.
+  describe("progress the op reports", () => {
+    const setAlertMessage = (NfcManager as unknown as { setAlertMessageIOS: jest.Mock })
+      .setAlertMessageIOS
+    const status = () => screen.getByTestId("flashcard-scan-sheet-status")
+
+    /** Starts an op that reports `text` and then waits; resolve it with the returned call. */
+    const startReporting = (text?: string) => {
+      let finish: ((value: string) => void) | undefined
+      let result: Promise<string | undefined> | undefined
+      act(() => {
+        result = latest?.runCardOperation(
+          (t, report) =>
+            new Promise<string>((resolve) => {
+              t(SET_PIN_APDU).then(() => {
+                if (text !== undefined) report(text)
+                finish = resolve
+              })
+            }),
+          toHex(PUBKEY),
+        )
+      })
+      return {
+        finish: async (value = "done") => {
+          await waitFor(() => expect(finish).not.toBe(undefined))
+          let out: string | undefined
+          await act(async () => {
+            finish?.(value)
+            out = await result
+          })
+          return out
+        },
+      }
+    }
+
+    it("shows the op's text on Android's scan sheet, and the plain prompt on the next op", async () => {
+      const os = jest.replaceProperty(Platform, "OS", "android")
+      try {
+        await mount()
+        await readCard()
+        const op = startReporting("Making pieces (3 of 7)…")
+        await waitFor(() =>
+          expect(status().props.children).toBe("Making pieces (3 of 7)…"),
+        )
+        expect(setAlertMessage).not.toHaveBeenCalled()
+        await expect(op.finish()).resolves.toBe("done")
+
+        const next = startReporting()
+        await waitFor(() => expect(transceive).toHaveBeenCalled())
+        expect(status().props.children).toBe("Please tap NFC tags")
+        await next.finish()
+      } finally {
+        os.restore()
+      }
+    })
+
+    it("sets the iOS NFC sheet's alert message to the op's text", async () => {
+      const os = jest.replaceProperty(Platform, "OS", "ios")
+      try {
+        await mount()
+        await readCard()
+        const op = startReporting("Loading pieces (1 of 5)…")
+        await waitFor(() =>
+          expect(setAlertMessage).toHaveBeenCalledWith("Loading pieces (1 of 5)…"),
+        )
+        await op.finish()
+      } finally {
+        os.restore()
+      }
+    })
+
+    it("returns the op's result when iOS refuses the alert message", async () => {
+      const os = jest.replaceProperty(Platform, "OS", "ios")
+      try {
+        await mount()
+        await readCard()
+        setAlertMessage.mockRejectedValue(new Error("no session"))
+        const op = startReporting("Reading the card…")
+        await waitFor(() => expect(setAlertMessage).toHaveBeenCalled())
+        await expect(op.finish("tidied")).resolves.toBe("tidied")
+      } finally {
+        setAlertMessage.mockReset()
+        os.restore()
+      }
+    })
   })
 })

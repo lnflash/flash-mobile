@@ -26,10 +26,12 @@ import { Provider } from "react-redux"
 import { act, renderHook, waitFor } from "@testing-library/react-native"
 
 import type { CashuCardState } from "../../app/contexts/Flashcard"
-import { useCardTidy } from "../../app/hooks/use-card-tidy"
+import { tidyProgressText, useCardTidy } from "../../app/hooks/use-card-tidy"
+import { i18nObject } from "../../app/i18n/i18n-util"
+import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import { store } from "../../app/store/redux"
 import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
-import type { TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
+import type { RunTidyArgs, TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
 import { cashuCardState } from "../helpers/cashu-card-state"
 
 const mockRunCardOperation = jest.fn()
@@ -40,7 +42,12 @@ const mockOwnerKeyFor = jest.fn()
 const mockReclaimVerdicts = jest.fn()
 const mockFeePpk = jest.fn()
 const mockNudge = jest.fn()
+const mockReport = jest.fn()
 
+jest.mock("@app/i18n/i18n-react", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  useI18nContext: () => ({ LL: require("../../app/i18n/i18n-util").i18nObject("en") }),
+}))
 jest.mock("../../app/hooks/use-card-top-up", () => ({
   nudgeTopUpMinter: () => mockNudge(),
 }))
@@ -73,6 +80,9 @@ jest.mock("@app/utils/cashu-card-topup/connected", () => ({
   ...jest.requireActual("@app/utils/cashu-card-topup/connected"),
   topUpMint: () => ({ url: "https://mint.test", feePpk: mockFeePpk }),
 }))
+
+loadLocale("en")
+const LL = i18nObject("en")
 
 const C = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 const KEYSET = "0059534ce0bfa19a"
@@ -154,8 +164,9 @@ beforeEach(async () => {
   mockOwnerKeyFor.mockResolvedValue(OWNER)
   mockReclaimVerdicts.mockResolvedValue(VERDICTS)
   mockRunTidy.mockResolvedValue({ status: "tidied", record: {} })
-  // The tap: the op run with a transceiver of its own.
-  mockRunCardOperation.mockImplementation(async (op) => op(jest.fn()))
+  // The tap: the op run with a transceiver of its own, and the provider's
+  // progress reporter.
+  mockRunCardOperation.mockImplementation(async (op) => op(jest.fn(), mockReport))
 })
 
 describe("useCardTidy", () => {
@@ -402,5 +413,87 @@ describe("useCardTidy", () => {
     ])
     const list = await Keychain.getInternetCredentials(TOPUPS)
     expect(list && JSON.parse(list.password)).toEqual({ format: 2, records: [] })
+  })
+
+  describe("progress (ENG-706)", () => {
+    /** A tidy that reports making 3 of 7 and waits; `finish` settles it. */
+    const reportingTidy = () => {
+      const settle: { resolve?: () => void; reject?: (err: Error) => void } = {}
+      mockRunTidy.mockImplementation(
+        (_deps: unknown, args: RunTidyArgs) =>
+          new Promise((resolve, reject) => {
+            args.onProgress?.({ stage: "making", done: 3, total: 7 })
+            settle.resolve = () => resolve({ status: "tidied", record: {} })
+            settle.reject = reject
+          }),
+      )
+      return settle
+    }
+
+    it("shows where the tap's tidy has got to, on the screen and the NFC sheet", async () => {
+      const settle = reportingTidy()
+      const { result } = renderHook(() => useCardTidy(card()), { wrapper })
+      let tap: Promise<unknown> | undefined
+      act(() => {
+        tap = result.current.tidy()
+      })
+
+      await waitFor(() =>
+        expect(result.current.progress).toEqual({ stage: "making", done: 3, total: 7 }),
+      )
+      expect(mockReport).toHaveBeenCalledWith(
+        "Making pieces (3 of 7)… Keep holding the card",
+      )
+
+      await act(async () => {
+        settle.resolve?.()
+        await tap
+      })
+      expect(result.current.progress).toBeUndefined()
+    })
+
+    it("clears the progress when the tap throws", async () => {
+      const settle = reportingTidy()
+      const { result } = renderHook(() => useCardTidy(card()), { wrapper })
+      let tap: Promise<unknown> | undefined
+      act(() => {
+        tap = result.current.tidy().catch(() => undefined)
+      })
+      await waitFor(() => expect(result.current.progress).toBeDefined())
+
+      await act(async () => {
+        settle.reject?.(new Error("Tag was lost"))
+        await tap
+      })
+      expect(result.current.progress).toBeUndefined()
+    })
+
+    it("still tidies when its op is run without a reporter", async () => {
+      mockRunTidy.mockImplementation(async (_deps: unknown, args: RunTidyArgs) => {
+        args.onProgress?.({ stage: "reading" })
+        return { status: "tidied", record: {} }
+      })
+      mockRunCardOperation.mockImplementation(async (op) => op(jest.fn()))
+      const { result } = renderHook(() => useCardTidy(card()), { wrapper })
+      await act(async () => {
+        await expect(result.current.tidy()).resolves.toMatchObject({ status: "tidied" })
+      })
+      expect(mockRunTidy.mock.calls[0][1].onProgress).toEqual(expect.any(Function))
+      expect(mockReport).not.toHaveBeenCalled()
+    })
+
+    it("words every stage", () => {
+      expect(tidyProgressText({ stage: "reading" }, LL)).toBe("Reading the card…")
+      expect(tidyProgressText({ stage: "making", done: 0, total: 5 }, LL)).toBe(
+        "Making pieces (0 of 5)…",
+      )
+      expect(tidyProgressText({ stage: "mint" }, LL)).toBe("Waiting for the mint…")
+      expect(tidyProgressText({ stage: "loading", done: 2, total: 5 }, LL)).toBe(
+        "Loading pieces (2 of 5)…",
+      )
+      expect(tidyProgressText({ stage: "done" }, LL)).toBe(
+        "Pieces loaded. Checking the card…",
+      )
+    })
   })
 })

@@ -62,4 +62,4 @@ export {
   runTidy,
   unfinishedTidies,
 } from "./tidy"
-export type { RunTidyArgs, TidyDeps, TidyFailure, TidyResult } from "./tidy"
+export type { RunTidyArgs, TidyDeps, TidyFailure, TidyProgress, TidyResult } from "./tidy"

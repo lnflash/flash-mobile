@@ -31,3 +31,19 @@ export const extendCardTimeout = async (): Promise<void> => {
     console.warn("[cashu-card] could not extend the transceive timeout", String(error))
   }
 }
+
+/**
+ * Sets the text on iOS's system NFC sheet while a card session is open
+ * (ENG-706: where a tidy has got to). iOS only: Android has no system sheet,
+ * and the library's Android manager has no `setAlertMessageIOS`, so calling it
+ * there throws. Best-effort, as `extendCardTimeout`: a refusal only warns, and
+ * callers never await it, so a card command never waits on the sheet's text.
+ */
+export const setCardAlertMessage = async (text: string): Promise<void> => {
+  if (Platform.OS !== "ios") return
+  try {
+    await NfcManager.setAlertMessageIOS(text)
+  } catch (error) {
+    console.warn("[cashu-card] could not set the NFC sheet's message", String(error))
+  }
+}

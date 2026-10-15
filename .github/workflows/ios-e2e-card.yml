@@ -1,7 +1,8 @@
 # Flashcard e2e (ENG-634): Maestro flows on an iOS simulator against the real
 # cashu-javacard applet in jCardSim (cardsim) and a local Nutshell on
 # FakeWallet. Advisory: nightly, on demand, and on PRs that touch the card
-# path; not a required check. See .maestro/flashcard/README.md.
+# path, the send seam (app/payments) or the assistant (app/assistant); not a
+# required check. See .maestro/flashcard/README.md.
 name: iOS e2e (Flashcard)
 
 on:
@@ -34,6 +35,13 @@ on:
       - "app/navigation/**"
       - "app/screens/developer-screen/**"
       - "app/screens/get-started-screen/**"
+      # The send seam (ENG-686) and the assistant that will call it (ENG-684).
+      # No flow sends a payment yet, so for a change there the suite is a
+      # smoke test: the app builds, starts, signs in on Test, and the card
+      # flows pass. A send golden path needs a funded Test account first
+      # (ENG-710, ENG-689).
+      - "app/payments/**"
+      - "app/assistant/**"
       - ".maestro/**"
       - "scripts/e2e/**"
       - ".github/workflows/ios-e2e-card.yml"

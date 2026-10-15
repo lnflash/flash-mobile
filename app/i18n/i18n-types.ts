@@ -568,6 +568,34 @@ type RootTranslation = {
 		 */
 		tidyNothing: string
 		/**
+		 * R​e​a​d​i​n​g​ ​t​h​e​ ​c​a​r​d​…
+		 */
+		tidyProgressReading: string
+		/**
+		 * M​a​k​i​n​g​ ​p​i​e​c​e​s​ ​(​{​d​o​n​e​}​ ​o​f​ ​{​t​o​t​a​l​}​)​…
+		 * @param {number} done
+		 * @param {number} total
+		 */
+		tidyProgressMaking: RequiredParams<'done' | 'total'>
+		/**
+		 * W​a​i​t​i​n​g​ ​f​o​r​ ​t​h​e​ ​m​i​n​t​…
+		 */
+		tidyProgressMint: string
+		/**
+		 * L​o​a​d​i​n​g​ ​p​i​e​c​e​s​ ​(​{​d​o​n​e​}​ ​o​f​ ​{​t​o​t​a​l​}​)​…
+		 * @param {number} done
+		 * @param {number} total
+		 */
+		tidyProgressLoading: RequiredParams<'done' | 'total'>
+		/**
+		 * P​i​e​c​e​s​ ​l​o​a​d​e​d​.​ ​C​h​e​c​k​i​n​g​ ​t​h​e​ ​c​a​r​d​…
+		 */
+		tidyProgressDone: string
+		/**
+		 * K​e​e​p​ ​h​o​l​d​i​n​g​ ​t​h​e​ ​c​a​r​d
+		 */
+		tidyKeepHolding: string
+		/**
 		 * U​s​e​s​ ​{​n​e​e​d​e​d​}​ ​o​f​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​s​l​o​t​s​,​ ​{​r​e​c​l​a​i​m​}​ ​o​f​ ​t​h​e​m​ ​f​r​e​e​d​ ​f​r​o​m​ ​s​e​t​t​l​e​d​ ​s​p​e​n​d​s​ ​o​n​ ​l​o​a​d
 		 * @param {number} free
 		 * @param {number} needed
@@ -8122,6 +8150,30 @@ export type TranslationFunctions = {
 		 * Nothing to tidy on this card right now.
 		 */
 		tidyNothing: () => LocalizedString
+		/**
+		 * Reading the card…
+		 */
+		tidyProgressReading: () => LocalizedString
+		/**
+		 * Making pieces ({done} of {total})…
+		 */
+		tidyProgressMaking: (arg: { done: number, total: number }) => LocalizedString
+		/**
+		 * Waiting for the mint…
+		 */
+		tidyProgressMint: () => LocalizedString
+		/**
+		 * Loading pieces ({done} of {total})…
+		 */
+		tidyProgressLoading: (arg: { done: number, total: number }) => LocalizedString
+		/**
+		 * Pieces loaded. Checking the card…
+		 */
+		tidyProgressDone: () => LocalizedString
+		/**
+		 * Keep holding the card
+		 */
+		tidyKeepHolding: () => LocalizedString
 		/**
 		 * Uses {needed} of {free} free slots, {reclaim} of them freed from settled spends on load
 		 */

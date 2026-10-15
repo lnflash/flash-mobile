@@ -950,6 +950,167 @@ describe("cardCommitments", () => {
   })
 })
 
+describe("runTidy progress (ENG-706)", () => {
+  type Progress = Parameters<NonNullable<RunTidyArgs["onProgress"]>>[0]
+
+  /** The progress a tap reports, as short labels: `making 2/5`. */
+  const progressLog = () => {
+    const log: string[] = []
+    const onProgress = (p: Progress) =>
+      log.push("done" in p ? `${p.stage} ${p.done}/${p.total}` : p.stage)
+    return { log, onProgress }
+  }
+  const counted = (stage: string, total: number, from = 0) =>
+    Array.from({ length: total - from + 1 }, (_, i) => `${stage} ${from + i}/${total}`)
+
+  it("reports reading, each piece made, the mint, each piece loaded and done on a fresh tidy", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const { log, onProgress } = progressLog()
+
+    await expect(runTidy(deps, args({ onProgress }))).resolves.toMatchObject({
+      status: "tidied",
+    })
+
+    expect(log).toEqual([
+      "reading",
+      ...counted("making", 5),
+      "mint",
+      ...counted("loading", 5),
+      "done",
+    ])
+  })
+
+  /** The fresh tidy of AFTER_A_TILL, command by command, as the first runTidy spec pins it. */
+  const FRESH_TIDY = [
+    ...new Array(4).fill(INS.GET_PIECES),
+    INS.GET_CHANGE,
+    INS.SPEND_ALL_BEGIN,
+    ...new Array(5).fill(INS.SPEND_ALL_CHANGE),
+    INS.SPEND_ALL_SIGN,
+    INS.GET_CHANGE,
+    INS.GET_CHANGE,
+    INS.GET_NONCE,
+    INS.ALLOW_LOAD,
+    INS.GET_SLOT_STATUS,
+    ...new Array(5).fill(INS.LOAD_PROOF),
+    INS.GET_SLOT_STATUS,
+    INS.GET_PROOF,
+    INS.CLEAR_SPENT,
+  ]
+
+  it("sends the card the same commands with a progress callback as without one", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const { log, onProgress } = progressLog()
+
+    await runTidy(deps, args({ onProgress }))
+
+    expect(log.length).toBeGreaterThan(0)
+    expect(card.ins()).toEqual(FRESH_TIDY)
+  })
+
+  it("finishes the tidy when the progress callback throws: progress is cosmetic", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const onProgress = jest.fn(() => {
+      throw new Error("a UI bug")
+    })
+
+    const result = await runTidy(deps, args({ onProgress }))
+
+    expect(result.status).toBe("tidied")
+    expect(onProgress).toHaveBeenCalled()
+    expect(card.ins()).toEqual(FRESH_TIDY)
+  })
+
+  it("reports only the mint, the load and done when a swapped tidy is finished", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      if (apdu[1] === INS.GET_NONCE) throw new Error("Tag was lost")
+      return answer(apdu)
+    })
+    await expect(runTidy(deps, args())).rejects.toThrow("Tag was lost")
+    card.transceive.mockImplementation(answer)
+    await advanceTidies(deps)
+    const { log, onProgress } = progressLog()
+
+    await expect(runTidy(deps, args({ onProgress }))).resolves.toMatchObject({
+      status: "tidied",
+    })
+
+    expect(log).toEqual(["mint", ...counted("loading", 5), "done"])
+  })
+
+  it("counts only the pieces still to load when a cut load resumes", async () => {
+    await putOnCard([1, 8])
+    const answer = card.transceive.getMockImplementation()!
+    let loads = 0
+    card.transceive.mockImplementation(async (apdu) => {
+      if (apdu[1] === INS.LOAD_PROOF && loads === 2) throw new Error("Tag was lost")
+      if (apdu[1] === INS.LOAD_PROOF) loads += 1
+      return answer(apdu)
+    })
+    const first = progressLog()
+    await expect(runTidy(deps, args({ onProgress: first.onProgress }))).rejects.toThrow(
+      "Tag was lost",
+    )
+    card.transceive.mockImplementation(answer)
+    expect(first.log).toEqual([
+      "reading",
+      ...counted("making", 4),
+      "mint",
+      ...counted("loading", 4).slice(0, 3),
+    ])
+    const { log, onProgress } = progressLog()
+
+    await expect(runTidy(deps, args({ onProgress }))).resolves.toMatchObject({
+      status: "tidied",
+    })
+
+    expect(log).toEqual(["mint", ...counted("loading", 2), "done"])
+  })
+
+  it("reports reading, then the mint and the load, with no pieces made, when a planned tidy is recovered", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const restore = loseAnswerTo(INS.SPEND_ALL_SIGN)
+    await expect(runTidy(deps, args())).rejects.toThrow("Tag was lost")
+    restore()
+    const { log, onProgress } = progressLog()
+
+    await expect(runTidy(deps, args({ onProgress }))).resolves.toMatchObject({
+      status: "tidied",
+    })
+
+    expect(log).toEqual(["reading", "mint", ...counted("loading", 5), "done"])
+  })
+
+  it("reports only reading for a card at its shape", async () => {
+    await putOnCard([1, 1, 2, 4, 8])
+    const { log, onProgress } = progressLog()
+
+    await expect(runTidy(deps, args({ onProgress }))).resolves.toEqual({
+      status: "skipped",
+      reason: "at-target",
+    })
+
+    expect(log).toEqual(["reading"])
+  })
+
+  it("never reports done on a tidy left unfinished", async () => {
+    await putOnCard([1, 8])
+    const answer = card.transceive.getMockImplementation()!
+    let loads = 0
+    card.transceive.mockImplementation(async (apdu) => {
+      if (apdu[1] === INS.LOAD_PROOF && loads === 2) throw new Error("Tag was lost")
+      if (apdu[1] === INS.LOAD_PROOF) loads += 1
+      return answer(apdu)
+    })
+    const { log, onProgress } = progressLog()
+    await expect(runTidy(deps, args({ onProgress }))).rejects.toThrow("Tag was lost")
+    expect(log[log.length - 1]).toBe("loading 2/4")
+    expect(log).not.toContain("done")
+  })
+})
+
 describe("isFinalMintRefusal", () => {
   it("gives up only on refusals the signed swap decides", () => {
     for (const code of [
