@@ -1584,6 +1584,47 @@ describe("FlashcardV2Screen card tidy (ENG-702)", () => {
       expect(screen.queryByTestId("flashcard-v2-tidy-progress")).toBeNull()
     })
 
+    it("shows a spinner in Finish's place before a Finish tap reports a stage", async () => {
+      // Finish on a tidy still owed: the tidy asks the mint before the sheet
+      // opens, and no offer button is on screen to spin.
+      await Keychain.setInternetCredentials(
+        TIDY_SERVER,
+        "topups",
+        JSON.stringify({ format: 3, records: [saved("a", "signed")] }),
+      )
+      let finish: (() => void) | undefined
+      mockRunTidy.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finish = () => resolve({ status: "tidied", record: {} })
+          }),
+      )
+      mockRunCardOperation.mockImplementation(
+        async (op: (t: unknown, r: unknown) => unknown) => op(jest.fn(), jest.fn()),
+      )
+      mockCashuCard = card()
+      renderScreen()
+      await waitFor(() =>
+        expect(screen.getByTestId("flashcard-v2-finish-tidy")).toBeTruthy(),
+      )
+      expect(screen.queryByTestId("flashcard-v2-finishing-tidy")).toBeNull()
+
+      fireEvent.press(screen.getByTestId("flashcard-v2-finish-tidy"))
+
+      await waitFor(() => expect(finish).toBeDefined())
+      expect(screen.getByTestId("flashcard-v2-finishing-tidy")).toBeTruthy()
+      expect(screen.queryByTestId("flashcard-v2-finish-tidy")).toBeNull()
+      expect(screen.queryByTestId("flashcard-v2-tidy-progress")).toBeNull()
+
+      await act(async () => {
+        finish?.()
+      })
+      await waitFor(() =>
+        expect(screen.getByTestId("flashcard-v2-tidy-notice")).toBeTruthy(),
+      )
+      expect(screen.queryByTestId("flashcard-v2-finishing-tidy")).toBeNull()
+    })
+
     it("gives way to the result once the tap settles", async () => {
       const tap = tidyAtMaking()
       mockCashuCard = card({ tidyOffer: offer() })

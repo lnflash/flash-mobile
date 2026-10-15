@@ -1,6 +1,6 @@
 import React, { useState } from "react"
-import { TouchableOpacity, View } from "react-native"
-import { makeStyles, Text } from "@rneui/themed"
+import { ActivityIndicator, TouchableOpacity, View } from "react-native"
+import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { PrimaryBtn } from "@app/components/buttons"
 import { PinPad } from "@app/components/card/PinPad"
@@ -88,8 +88,9 @@ export const FlashcardV2Tidy: React.FC<{
   // Outside the offer: Finish on a tidy still owed taps with no offer shown.
   // Only once the tap has reported a stage: before that the tidy is still
   // asking the mint, or waiting for the card, or ends with no tap at all, and
-  // "Reading the card… Keep holding" would not be true. The button's spinner
-  // covers that time. It goes when the tap settles; the notice replaces it.
+  // "Reading the card… Keep holding" would not be true. A spinner covers that
+  // time on both paths: the offer button's own, and on Finish one in the
+  // link's place. It goes when the tap settles; the notice replaces it.
   const working =
     step.name === "working" && progress ? (
       <View
@@ -207,6 +208,7 @@ const UnfinishedTidy: React.FC<{
   onDismiss: () => void
 }> = ({ record, busy, onFinish, onDismiss }) => {
   const styles = useStyles()
+  const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   // Kept for a human: the mint will not swap what the card signed (another
   // payment spent its pieces first, or the mint refused the swap for good),
@@ -229,6 +231,11 @@ const UnfinishedTidy: React.FC<{
             {LL.FlashcardV2.topUpDismiss()}
           </Text>
         </TouchableOpacity>
+      ) : busy ? (
+        // The tap Finish started (a tidy still owed holds the offer back, so
+        // no other tap runs beside it). Before it reports a stage the tidy is
+        // asking the mint, with nothing else on screen to say it is under way.
+        <ActivityIndicator color={colors.primary} testID="flashcard-v2-finishing-tidy" />
       ) : (
         <TouchableOpacity
           accessibilityRole="button"
