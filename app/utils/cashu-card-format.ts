@@ -43,10 +43,12 @@ export const formatUnitAmount = (amount: number, unit: string, LL: LLType): stri
  * lost the keyset split so there was nothing to ask it, the card's own total
  * is shown labelled "unit unknown", never bare: GET_BALANCE adds every keyset
  * together and the card stores no unit. Value in a keyset the mint does not
- * list is shown the same way.
+ * list is shown the same way. A read that skipped the split (ENG-708) but
+ * carries the unit this phone recorded for the same balance (`recordUnit`)
+ * shows its total in that unit.
  */
 export const balanceLines = (
-  card: Pick<CashuCardState, "balance" | "keysets" | "unitTotals">,
+  card: Pick<CashuCardState, "balance" | "keysets" | "unitTotals" | "recordUnit">,
   LL: LLType,
 ): { testID: string; text: string }[] => {
   const unknown = (amount: number) => ({
@@ -60,6 +62,14 @@ export const balanceLines = (
     (card.balance === 0 && card.keysets?.length === 0
       ? { byUnit: [], unknown: 0 }
       : undefined)
+  if (!totals && card.recordUnit !== undefined) {
+    return [
+      {
+        testID: `flashcard-v2-balance-${card.recordUnit}`,
+        text: formatUnitAmount(card.balance, card.recordUnit, LL),
+      },
+    ]
+  }
   if (!totals) return [unknown(card.balance)]
   const lines = totals.byUnit.map(({ unit, amount }) => ({
     testID: `flashcard-v2-balance-${unit}`,

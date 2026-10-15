@@ -16,6 +16,7 @@ import { Loading } from "./ActivityIndicatorContext"
 // hooks
 import { HideBalanceDocument, HideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
 import { usePersistentStateContext } from "@app/store/persistent-state"
@@ -298,6 +299,16 @@ export type CashuCardState = CashuCardInfo & {
    */
   unitTotals?: CardUnitTotals
   /**
+   * The unit this phone recorded for the card (`KnownCard.unit`), set only
+   * when the read skipped the keyset split (ENG-708: offline, or signed out)
+   * and the record's `lastBalance` is the balance this read found, the rule
+   * the record itself keeps its unit by. Display only: the screen labels the
+   * figure with it rather than "unit unknown", and nothing decides on it
+   * (top-up eligibility reads `unitTotals` alone). Dropped when an operation
+   * moves the balance.
+   */
+  recordUnit?: string
+  /**
    * Where this phone's key for the card's owner comes from, once the card
    * has taken it in the read tap (ENG-675; ALLOW_LOAD, `confirmOwnerKey`, or
    * on a locked card, which refuses ALLOW_LOAD, REFRESH, `refreshAsOwner`):
@@ -517,6 +528,24 @@ export const previewWithKnownUnit = (
   }
 }
 
+/**
+ * The unit this phone recorded for a card whose read skipped the keyset
+ * split (ENG-708: offline, or signed out), as `CashuCardState.recordUnit`:
+ * only while the record's last balance is the one this read found, the rule
+ * `cardSeen` keeps the record's unit by. Undefined for a read that has the
+ * split, which the mint labels instead. Display only.
+ */
+export const recordedUnitFor = (
+  card: Pick<CashuCardInfo, "pubkey" | "balance" | "keysets">,
+  cards?: Record<string, KnownCard>,
+): string | undefined => {
+  if (card.keysets !== undefined) return undefined
+  const known = cards?.[card.pubkey]
+  return known?.unit !== undefined && known.lastBalance === card.balance
+    ? known.unit
+    : undefined
+}
+
 /** Hide-balance, from Apollo's cache: false where no client is mounted. */
 const balanceHidden = (client?: ApolloClient<unknown>): boolean => {
   try {
@@ -591,6 +620,12 @@ export const FlashcardProvider = ({ children }: Props) => {
   const knownCards = useAppSelector((state) => state.flashcardV2.cards)
   const knownCardsRef = useRef(knownCards)
   knownCardsRef.current = knownCards
+  // Online as of the latest render, not the one that started a tap: a read
+  // asks it once AUTH is done (ENG-708). A hint, debounced: a wrong "offline"
+  // costs that tap its tidy offer, a wrong "online" one slot read.
+  const { isOffline } = useConnectivity()
+  const isOfflineRef = useRef(isOffline)
+  isOfflineRef.current = isOffline
   const { client: apollo } = useContext(getApolloContext())
   const verifyingText = (preview: CashuCardPreview) =>
     scanSheetVerifying(preview, balanceHidden(apollo), LL)
@@ -691,6 +726,12 @@ export const FlashcardProvider = ({ children }: Props) => {
               : (bytes) => NfcManager.isoDepHandler.transceive(bytes),
             {
               afterAuth: (tap) => tendCard(tap, ownership),
+              // The slots (GET_PIECES, GET_PROOF) only for a read that can
+              // use them (ENG-708): a top-up (the owner's, or a PIN top-up
+              // from another phone) and the owner's tidy offer both need the
+              // phone signed in and online. A signed-out or offline read
+              // shows the balance without them.
+              needsPieces: () => isAuthed && !isOfflineRef.current,
               // Nothing proven yet: shown as "Verifying…", never stored.
               onUnverified: (read) => {
                 const preview = previewWithKnownUnit(read, knownCardsRef.current)
@@ -733,11 +774,14 @@ export const FlashcardProvider = ({ children }: Props) => {
           // The card screen renders this; the caller navigates on the result.
           cashuGeneration.current += 1
           const known = knownUnitTotals(info.keysets)
+          // Read before `cardSeen` below rewrites the record.
+          const recordUnit = recordedUnitFor(info, knownCardsRef.current)
           // Under the grant the read's GET_INFO said the card's payment limit.
           const ownerPaymentLimit = ownership.granted ? info.paymentLimit : undefined
           setCashuCard({
             ...info,
             ...(known ? { unitTotals: known } : {}),
+            ...(recordUnit === undefined ? {} : { recordUnit }),
             ...(ownership.key ? { ownerKeySource: ownership.key.source } : {}),
             ...(ownership.unsettled && !ownership.key
               ? { ownerUnsettled: ownership.unsettled }
@@ -927,6 +971,8 @@ export const FlashcardProvider = ({ children }: Props) => {
       pieces: reshaped ? slots?.pieces : previous.pieces,
       unspentSlots: reshaped ? slots?.unspent : previous.unspentSlots,
       unitTotals: moved ? known : previous.unitTotals,
+      // The recorded unit was for the balance the read found.
+      recordUnit: moved ? undefined : previous.recordUnit,
       tidyOffer: reshaped ? undefined : previous.tidyOffer,
     }
     setCashuCard(card)

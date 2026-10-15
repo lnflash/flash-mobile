@@ -115,12 +115,17 @@ const tapBoltCard = async () => {
   await waitFor(() => expect(latest?.lnurl).toBe("lnurl1CARD"))
 }
 
-const tapCashuCard = async () => {
+/**
+ * Taps the card and waits for the mint to name its unit. A signed-out read
+ * (`signedOut`) skips the keyset split (ENG-708), so it waits for the card.
+ */
+const tapCashuCard = async ({ signedOut = false } = {}) => {
   requestTechnology.mockResolvedValue(NfcTech.IsoDep)
   getTag.mockResolvedValue({ id: "08AABBCC" })
   transceive.mockImplementation(cashuCard)
   await tap()
-  await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+  if (signedOut) await waitFor(() => expect(latest?.cashuCard).toBeDefined())
+  else await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
 }
 
 const mountScreen = (isAuthed: boolean, updateState = jest.fn()) =>
@@ -180,9 +185,11 @@ describe("FlashcardV2Screen against the real provider and store", () => {
   it("a card read signed out is never written to this phone, and leaving the screen forgets it", async () => {
     mountScreen(false)
     await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
-    await tapCashuCard()
+    await tapCashuCard({ signedOut: true })
 
-    expect(screen.getByTestId("flashcard-v2-balance-sat")).toBeTruthy()
+    // Signed out, the read skips the keyset split (ENG-708) and this phone
+    // keeps no record to name the unit from: the figure says "unit unknown".
+    expect(screen.getByTestId("flashcard-v2-balance-unknown")).toBeTruthy()
     expect(knownCards()).toEqual({})
     expect(screen.queryByText(/Remove/)).toBeNull()
 

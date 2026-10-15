@@ -291,6 +291,13 @@ describe("topUpEligibility", () => {
     })
   })
 
+  it("never picks a top-up unit from the unit this phone recorded (ENG-708): display only", () => {
+    expect(topUpEligibility(card({ balance: 500, recordUnit: "sat" }), usdOn)).toEqual({
+      ok: false,
+      reason: "unit-unknown",
+    })
+  })
+
   it("with the USD flag off, a card set to USD takes no new top-up, by its value or by an unfinished top-up", () => {
     expect(topUpEligibility(holding("usd"), usdOff)).toEqual({
       ok: false,

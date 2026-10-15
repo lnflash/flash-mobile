@@ -460,7 +460,24 @@ describe("FlashcardProvider Cashu card orchestration", () => {
 
     await tapOnce({ isAuthed: false })
 
-    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    // ENG-708: a signed-out read skips the keyset split, so there is nothing
+    // to ask the mint about.
+    await waitFor(() => expect(latest?.cashuCard?.balance).toBe(500))
+    expect(latest?.cashuCard?.keysets).toBeUndefined()
+    expect(lookupUnits).not.toHaveBeenCalled()
+    // An operation that moves the balance reads the split again, and the mint
+    // names its units for the screen; signed out, they are still not kept.
+    currentCard.slots[8] = slotOf(1, KEYSET, 100, 8)
+    await act(async () => {
+      await latest?.runCardOperation(async () => undefined, PUBKEY_HEX)
+    })
+    await waitFor(() =>
+      expect(latest?.cashuCard?.unitTotals).toEqual({
+        byUnit: [{ unit: "sat", amount: 600 }],
+        unknown: 0,
+      }),
+    )
+    expect(lookupUnits).toHaveBeenCalledWith([KEYSET_HEX])
     expect(store.getState().flashcardV2.keysetUnits).toBeUndefined()
   })
 
@@ -554,7 +571,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
 
     // The screen still gets the card and the caller still navigates on it...
     expect(result.cashuCard?.pubkey).toBe(PUBKEY_HEX)
-    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    await waitFor(() => expect(latest?.cashuCard?.balance).toBe(500))
     // ...but nothing is written for the next account on the phone to find.
     expect(knownCards()).toEqual({})
   })

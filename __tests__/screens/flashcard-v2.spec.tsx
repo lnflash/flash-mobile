@@ -1217,6 +1217,44 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
   })
 })
 
+describe("FlashcardV2Screen, a read that skipped the keyset split (ENG-708)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockIsAuthed = true
+    mockIsFocused = true
+    mockCashuCard = card()
+    mockCashuCardPreview = undefined
+    mockUnfinishedTopUps = []
+  })
+
+  it("names the unit this phone recorded for the same balance", () => {
+    // An offline or signed-out read sends no GET_PIECES; the provider sets
+    // `recordUnit` only when the record's last balance is this read's.
+    mockCashuCard = card({ keysets: undefined, unitTotals: undefined, recordUnit: "sat" })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-balance-sat").props.children).toBe(
+      "1,500 sats",
+    )
+    expect(screen.queryByTestId("flashcard-v2-balance-unknown")).toBeNull()
+  })
+
+  it("prefers the mint's units over the recorded one once they are in", () => {
+    mockCashuCard = card({
+      unitTotals: { byUnit: [{ unit: "usd", amount: 1500 }], unknown: 0 },
+      recordUnit: "sat",
+    })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-balance-usd").props.children).toBe(
+      "15.00 USD",
+    )
+    expect(screen.queryByTestId("flashcard-v2-balance-sat")).toBeNull()
+  })
+})
+
 describe("formatUnitAmount", () => {
   it("reads sat amounts as sats", () => {
     expect(formatUnitAmount(1234567, "sat", LL)).toBe("1,234,567 sats")
