@@ -5,6 +5,7 @@ import * as Keychain from "react-native-keychain"
 import {
   AssetFilter,
   PaymentRequest,
+  PaymentStatus,
   defaultConfig,
   Network,
   ReceivePaymentMethod,
@@ -45,6 +46,7 @@ import {
 } from "./fee-errors"
 import { extractFeeFromPaymentMethod } from "./fee-extraction"
 import { BreezSdkNotInitializedError, BreezSdkNotRunningReason } from "./sdk-errors"
+import { LnurlPayOutcomeUnknownError } from "./lnurl-pay-errors"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -437,6 +439,36 @@ type PayResponse = {
   payment?: SendPaymentResponse
 }
 
+/**
+ * ENG-712: which statuses of a payment sdk.sendPayment resolved with mean a
+ * bolt11 send went out, keyed by the SDK's `PaymentStatus`. The Record is
+ * exhaustive over that enum, so an SDK bump that adds a status fails tsc here
+ * until someone decides what it means. send-payment.ts keeps its own table,
+ * BREEZ_PAYMENT_SENT, because it does not import the SDK.
+ */
+const LIGHTNING_PAYMENT_SENT: Record<PaymentStatus, boolean> = {
+  [PaymentStatus.Completed]: true,
+  // Still in flight when the wait ends. It may yet complete, so it is not a
+  // failure the caller may retry.
+  [PaymentStatus.Pending]: true,
+  [PaymentStatus.Failed]: false,
+}
+
+/**
+ * payLightningBreez's answer for a send that sdk.sendPayment resolved
+ * (ENG-712). With a completion timeout the SDK waits for the payment to
+ * leave Pending, so a payment that fails inside the wait resolves with status
+ * Failed: a resolved send is not a sent payment. A Failed payment is
+ * `success: false`. It carries no reason, so there is no `error`, and each
+ * caller shows its own copy: a chat zap its "Payment could not be sent.",
+ * useSwap and the confirmation screen their generic error. The payment rides
+ * along either way.
+ */
+export const lightningPayResponse = (response: SendPaymentResponse): PayResponse => ({
+  success: LIGHTNING_PAYMENT_SENT[response.payment.status] === true,
+  payment: response,
+})
+
 export const payLightningBreez = async (
   paymentRequest: string,
   amountSats?: number,
@@ -465,7 +497,7 @@ export const payLightningBreez = async (
       idempotencyKey: undefined,
     })
 
-    return { success: true, payment: response }
+    return lightningPayResponse(response)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error("payLightningBreez error:", message)
@@ -522,35 +554,72 @@ export const payLnurlBreez = async (
   amountSats: number,
   memo?: string,
 ): Promise<LnurlPayResponse> => {
-  try {
-    const sdk = getSDKInstance()
+  const sdk = getSDKInstance()
 
-    const input = await sdk.parse(lnurl)
-    const payRequest = lnurlPayRequestDetailsFromInput(input)
+  const input = await sdk.parse(lnurl)
+  const payRequest = lnurlPayRequestDetailsFromInput(input)
 
-    if (payRequest) {
-      const prepareResponse = await sdk.prepareLnurlPay({
-        amount: BigInt(amountSats),
-        payRequest,
-        comment: memo,
-        validateSuccessActionUrl: true,
-        tokenIdentifier: undefined,
-        conversionOptions: undefined,
-        feePolicy: undefined,
-      })
+  if (payRequest) {
+    const prepareResponse = await sdk.prepareLnurlPay({
+      amount: BigInt(amountSats),
+      payRequest,
+      comment: memo,
+      validateSuccessActionUrl: true,
+      tokenIdentifier: undefined,
+      conversionOptions: undefined,
+      feePolicy: undefined,
+    })
 
-      const response = await sdk.lnurlPay({
+    // ENG-711: nothing has been sent until lnurlPay runs. Every error above
+    // passes through as it is, as does the plain "Unsupported input type"
+    // below, and Confirm re-arms on it. A rejection from lnurlPay itself can
+    // come after the SSP already has the payment, and the call carries no
+    // idempotency key, so a retry would pay a fresh invoice a second time. It
+    // is rethrown as LnurlPayOutcomeUnknownError, which keeps Confirm
+    // disarmed. Keep this try around lnurlPay alone: widened over the steps
+    // above, it disarms on refusals that sent nothing. And never catch the
+    // error it throws to rethrow a plain Error: that brings the double pay
+    // back.
+    let response: LnurlPayResponse
+    try {
+      response = await sdk.lnurlPay({
         prepareResponse,
         idempotencyKey: undefined,
       })
-      console.log("Lnurl Pay Response: ", response)
-
-      return response
+    } catch (error) {
+      const outcomeUnknown = new LnurlPayOutcomeUnknownError(error)
+      // Past here the user sees only the history message, and payment_result
+      // records a plain FAILURE, so this line is the record that this send was
+      // disarmed and why. Beside the SDK's own lines, it tells a lost
+      // request_lightning_send answer from a harmless SSP timeout. A release
+      // build sends the SDK's lines to the Spark log CSV that Settings >
+      // Advanced > Export Logs shares, but console.error reaches only logcat or
+      // os_log, which no user can export, so the line goes to both. A dev build
+      // never writes the CSV (connectToSDK skips initLogBuffer), and there the
+      // console is the record.
+      //
+      // The RN binding (uniffi) builds an SdkError's message from its type and
+      // variant alone, so every SSP or transport failure reads
+      // "SdkError.SparkError". The SDK's reason is in `inner`, a frozen
+      // [string] for each variant that carries text, and is logged after the
+      // message. An object `inner` logs "".
+      //
+      // Nothing here may throw: a throw escapes as a plain Error that re-arms
+      // Confirm for a second payment. Never JSON.stringify `inner`, since some
+      // carry bigints. appendLog cannot throw: it is synchronous and only
+      // queues the line.
+      const label = "payLnurlBreez error after dispatch:"
+      const inner = (error as { inner?: unknown } | null | undefined)?.inner
+      const reason = Array.isArray(inner) ? inner.join(" ") : ""
+      console.error(label, outcomeUnknown.message, reason)
+      appendLog("ERROR", `${label} ${outcomeUnknown.message} ${reason}`.trimEnd())
+      throw outcomeUnknown
     }
-    throw new Error("Unsupported input type")
-  } catch (error) {
-    throw error
+    console.log("Lnurl Pay Response: ", response)
+
+    return response
   }
+  throw new Error("Unsupported input type")
 }
 
 export const lnurlWithdraw = async (

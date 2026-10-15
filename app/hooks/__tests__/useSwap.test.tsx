@@ -180,14 +180,36 @@ describe("useSwap — swap() result reporting", () => {
     })
   })
 
-  it("throws when Breez reports the send failed", async () => {
+  // ENG-712. payLightningBreez's own answer for a payment that resolved as
+  // Failed: success: false with the payment and no error, since the SDK gives
+  // no reason. The hook has no message of its own to show, so it falls back to
+  // the generic copy. Pinning that copy keeps a Failed conversion from throwing
+  // an empty message.
+  it("throws the generic error when Breez answers success: false for a Failed payment", async () => {
+    mockPayLightningBreez.mockResolvedValue({
+      success: false,
+      payment: { payment: { status: PaymentStatus.Failed } },
+    })
+
+    const { current } = renderUseSwap()
+    await expect(current.swap("lnbc1", "BTC", 8442)).rejects.toThrow(
+      i18nObject("en").errors.generic(),
+    )
+  })
+
+  // The status guard behind the wrapper. Before ENG-712 the wrapper answered
+  // success: true for a Failed payment. The hook also reads the payment's
+  // status, so that answer throws the same generic copy.
+  it("status guard: throws the generic error when Breez answers success: true for a Failed payment", async () => {
     mockPayLightningBreez.mockResolvedValue({
       success: true,
       payment: { payment: { status: PaymentStatus.Failed } },
     })
 
     const { current } = renderUseSwap()
-    await expect(current.swap("lnbc1", "BTC", 8442)).rejects.toThrow()
+    await expect(current.swap("lnbc1", "BTC", 8442)).rejects.toThrow(
+      i18nObject("en").errors.generic(),
+    )
   })
 })
 

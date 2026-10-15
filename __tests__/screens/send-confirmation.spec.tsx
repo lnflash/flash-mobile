@@ -473,6 +473,65 @@ describe("expired held invoice", () => {
       expect(openToConfirmEvents()).toEqual([])
     })
   })
+
+  // The Breez BTC wallet's bolt11 send. payLightningBreez is handed the held
+  // invoice, so the expiry gate applies to it.
+  const btcInvoicePaymentDetail = () =>
+    createAmountLightningPaymentDetails({
+      paymentRequest: INCIDENT_INVOICE,
+      paymentRequestAmount: amount,
+      convertMoneyAmount,
+      sendingWalletDescriptor: btcSendingWalletDescriptor,
+    })
+
+  // The ENG-712 symptom: payLightningBreez answered success: true for a
+  // payment that failed inside its 60-second wait, and the user landed on the
+  // success screen while payment_result logged SUCCESS and Confirm stayed
+  // disarmed. The wrapper now answers success: false, and the send path reads
+  // the status behind it too, so both answers must read as a failure.
+  const failedInvoiceAnswers: [string, unknown][] = [
+    [
+      "payLightningBreez's success: false",
+      { success: false, payment: { payment: { status: PaymentStatus.Failed } } },
+    ],
+    [
+      "the old wrapper's success: true",
+      { success: true, payment: { payment: { status: PaymentStatus.Failed } } },
+    ],
+  ]
+  failedInvoiceAnswers.forEach(([label, answer]) => {
+    it(`shows a BTC invoice send the SDK reports Failed as a failure and re-arms Confirm, with ${label} (ENG-712)`, async () => {
+      ;(payLightningBreez as jest.Mock).mockResolvedValueOnce(answer)
+
+      const { getByText, queryByText, navigate, confirm } = await renderConfirmation(
+        btcInvoicePaymentDetail(),
+      )
+      // Nothing on screen reads as a failure before the tap.
+      expect(queryByText("Something went wrong")).toBeNull()
+      // Tapped at mount, four seconds into the invoice's 60-second life: the
+      // held invoice is live, so the expiry gate lets it go out.
+      await confirm(MOUNTED_MS)
+
+      expect(blockedEvents()).toHaveLength(0)
+      expect((payLightningBreez as jest.Mock).mock.calls).toEqual([
+        [INCIDENT_INVOICE, amount.amount],
+      ])
+      await waitFor(() => expect(queryByText("Something went wrong")).toBeTruthy())
+      expect(navigate).not.toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything())
+      const paymentResults = (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+        ([event]) => event === "payment_result",
+      )
+      expect(paymentResults).toEqual([
+        [
+          "payment_result",
+          // eslint-disable-next-line camelcase -- Firebase event params are snake_case
+          expect.objectContaining({ payment_status: PaymentSendResult.Failure }),
+        ],
+      ])
+      // Re-armed: Confirm takes the next tap.
+      expect(getByText(en.SendBitcoinConfirmationScreen.title)).toBeEnabled()
+    })
+  })
 })
 
 // #561 — the zero-fee celebration asserted at the rendered screen, not the

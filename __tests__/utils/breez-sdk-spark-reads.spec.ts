@@ -43,6 +43,12 @@ jest.mock("@breeztech/breez-sdk-spark-react-native", () => ({
   initLogging: jest.fn(),
   MaxFee: { NetworkRecommended: class {} },
   Network: { Mainnet: 0 },
+  // generated: PaymentStatus — Completed = 0, Pending = 1, Failed = 2 (mirrors
+  // __mocks__/@breeztech/breez-sdk-spark-react-native.js). spark.ts's
+  // LIGHTNING_PAYMENT_SENT table (ENG-712) reads this as a value at module
+  // load, ahead of any case's own mocking, so this factory — which replaces
+  // that automock rather than extending it — must carry it too.
+  PaymentStatus: { Completed: 0, Pending: 1, Failed: 2 },
   Seed: { Mnemonic: class {} },
   SdkBuilder: class {
     withDefaultStorage = () => Promise.resolve()

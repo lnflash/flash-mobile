@@ -1484,15 +1484,18 @@ export interface CashuCardInfo extends CardInfo {
 
 /**
  * The read round-trip over an open IsoDep channel:
- * SELECT → GET_INFO (P1 = 1) → GET_PUBKEY → AUTH → GET_CARD → [`afterAuth`:
- * the clock and the owner] → [GET_CARD, and GET_INFO, again when
- * `afterAuth` changed the card; GET_INFO again under the owner's grant] → GET_BALANCE, then the slots (GET_PIECES
- * pages, GET_PROOF per spent slot) when the card holds anything. Nothing but
- * `afterAuth` writes.
+ * SELECT → GET_INFO (P1 = 1) → GET_PUBKEY → GET_BALANCE → [`onUnverified`]
+ * → AUTH → GET_CARD → [`afterAuth`: the clock and the owner] → [GET_CARD,
+ * and GET_INFO, again when `afterAuth` changed the card; GET_INFO again under
+ * the owner's grant], then the slots (GET_PIECES pages, GET_PROOF per spent
+ * slot) when the card holds anything. Nothing but `afterAuth` writes.
  *
- * AUTH runs before anything the card says about its value: a card that
- * cannot prove it holds the key it reported throws `CardAuthError`, and no
- * balance comes back. A card that needs an update throws
+ * GET_BALANCE is the one read that precedes AUTH (ENG-707): it needs nothing
+ * on the card, is read-only, and is not part of what AUTH signs, so the same
+ * number comes back before or after it. It is surfaced early only as
+ * unverified, through `onUnverified`. A card that cannot prove it holds the
+ * key it reported still throws `CardAuthError`, and the read returns nothing:
+ * no record, no slots, and no balance. A card that needs an update throws
  * `CardNeedsUpdateError` from `selectApplet`, with nothing sent after it.
  *
  * Resolves null when the tag has no Cashu applet so the caller can fall back
@@ -1506,12 +1509,19 @@ export interface CashuCardInfo extends CardInfo {
 export type ReadOptions = {
   /**
    * Runs in the tap once the card has proved its key (AUTH) and said its
-   * record (GET_CARD), before GET_BALANCE: the card's clock is fed here
+   * record (GET_CARD), before the slots are read: the card's clock is fed here
    * (`feedHeader`), the owner's grant asked for, and an owner's phone
    * refreshes it. Best effort: it must not throw. Resolves what it changed,
    * so the read asks the card again rather than return what it said before.
    */
   afterAuth?: (tap: AuthenticatedTap) => Promise<ReadChanges | undefined>
+  /**
+   * Runs in the tap once GET_BALANCE is in, before AUTH: nothing it receives
+   * is proven (the card has not yet shown it holds the key it reported), so a
+   * caller may show it as "verifying" and must not store or act on it. Best
+   * effort: a throw is logged and the read goes on.
+   */
+  onUnverified?: (preview: ReadPreview) => void
 }
 
 /** What `ReadOptions.afterAuth` changed on the card. */
@@ -1532,6 +1542,12 @@ export type ReadChanges = {
   granted?: boolean
 }
 
+/**
+ * What a read tap knows before AUTH: `ReadOptions.onUnverified`. Unproven:
+ * a clone can say any of it.
+ */
+export type ReadPreview = CardInfo & { pubkey: string; balance: number }
+
 /** What a read tap knows once the card has proved its key: `ReadOptions.afterAuth`. */
 export type AuthenticatedTap = {
   transceive: Transceiver
@@ -1542,7 +1558,7 @@ export type AuthenticatedTap = {
 
 export const readCashuCard = async (
   transceive: Transceiver,
-  { afterAuth }: ReadOptions = {},
+  { afterAuth, onUnverified }: ReadOptions = {},
 ): Promise<CashuCardInfo | null> => {
   try {
     await selectApplet(transceive)
@@ -1555,6 +1571,17 @@ export const readCashuCard = async (
   const read = await getInfo(transceive)
   const pubkeyBytes = await getPubkey(transceive)
   const pubkey = toHex(pubkeyBytes)
+  // GET_BALANCE is the only read before AUTH (ENG-707): the figure can be on
+  // screen while AUTH runs, marked unverified. A failed AUTH still throws
+  // below, and nothing from this read is returned.
+  const balance = await getBalance(transceive)
+  if (onUnverified) {
+    try {
+      onUnverified({ ...read, pubkey, balance })
+    } catch (err) {
+      console.warn("readCashuCard: onUnverified threw", err)
+    }
+  }
   await authenticateCard(transceive, pubkeyBytes)
   const recordRead = await getCardRecord(transceive)
   const changes = afterAuth
@@ -1571,7 +1598,6 @@ export const readCashuCard = async (
     changes?.clockMoved || changes?.refreshed
       ? await getCardRecord(transceive)
       : recordRead
-  const balance = await getBalance(transceive)
   const slots = await readKeysetSplit(transceive, info)
   return {
     ...info,
