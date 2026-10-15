@@ -6,7 +6,14 @@
  */
 import * as React from "react"
 import { Dimensions, Image, StyleSheet } from "react-native"
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native"
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react-native"
 import { Provider } from "react-redux"
 import { createTheme, ThemeProvider } from "@rneui/themed"
 import type { ReactTestRendererJSON } from "react-test-renderer"
@@ -25,7 +32,12 @@ import {
 import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
 import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
-import { TidyError, TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
+import {
+  RunTidyArgs,
+  TidyError,
+  TidyOffer,
+  TidyRecord,
+} from "../../app/utils/cashu-card-topup"
 import { CardError } from "../../app/utils/cashu-card"
 import { CardSpendError } from "../../app/utils/cashu-card-spend"
 import { ownerKeyStore } from "../../app/utils/cashu-card-owner-store"
@@ -1459,5 +1471,89 @@ describe("FlashcardV2Screen card tidy (ENG-702)", () => {
         LL.FlashcardV2.tidyFailed(),
       ),
     )
+  })
+
+  // ENG-706: while the tap runs, the screen says where the tidy has got to,
+  // and to keep holding the card, until the tap settles.
+  describe("progress", () => {
+    /** A tap whose tidy reports making 3 of 7 and waits; `finish` settles it. */
+    const tidyAtMaking = () => {
+      let finish: (() => void) | undefined
+      mockRunTidy.mockImplementation(
+        (_deps: unknown, args: RunTidyArgs) =>
+          new Promise((resolve) => {
+            args.onProgress?.({ stage: "making", done: 3, total: 7 })
+            finish = () => resolve({ status: "tidied", record: {} })
+          }),
+      )
+      mockRunCardOperation.mockImplementation(
+        async (op: (t: unknown, report: unknown) => unknown) => op(jest.fn(), jest.fn()),
+      )
+      return {
+        finish: () =>
+          act(async () => {
+            finish?.()
+          }),
+      }
+    }
+    const expectMaking = () =>
+      waitFor(() => {
+        const block = screen.getByTestId("flashcard-v2-tidy-progress")
+        expect(
+          within(block).getByText(
+            LL.FlashcardV2.tidyProgressMaking({ done: 3, total: 7 }),
+          ),
+        ).toBeTruthy()
+        expect(within(block).getByText(LL.FlashcardV2.tidyKeepHolding())).toBeTruthy()
+      })
+
+    it("shows the stage and Keep holding while a tidy taps", async () => {
+      tidyAtMaking()
+      mockCashuCard = card({ tidyOffer: offer() })
+      renderScreen()
+      await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+      fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+      await expectMaking()
+      expect(screen.queryByTestId("flashcard-v2-tidy-notice")).toBeNull()
+    })
+
+    it("shows it on Finish of a tidy still owed, with no offer on screen", async () => {
+      await Keychain.setInternetCredentials(
+        TIDY_SERVER,
+        "topups",
+        JSON.stringify({ format: 3, records: [saved("a", "signed")] }),
+      )
+      tidyAtMaking()
+      mockCashuCard = card()
+      renderScreen()
+      await waitFor(() =>
+        expect(screen.getByTestId("flashcard-v2-finish-tidy")).toBeTruthy(),
+      )
+      expect(screen.queryByTestId("flashcard-v2-tidy-offer")).toBeNull()
+
+      fireEvent.press(screen.getByTestId("flashcard-v2-finish-tidy"))
+
+      await expectMaking()
+    })
+
+    it("gives way to the result once the tap settles", async () => {
+      const tap = tidyAtMaking()
+      mockCashuCard = card({ tidyOffer: offer() })
+      renderScreen()
+      await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+      fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+      await expectMaking()
+
+      await tap.finish()
+
+      await waitFor(() =>
+        expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+          LL.FlashcardV2.tidyDone(),
+        ),
+      )
+      expect(screen.queryByTestId("flashcard-v2-tidy-progress")).toBeNull()
+    })
   })
 })

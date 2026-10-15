@@ -6,6 +6,7 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { PinPad } from "@app/components/card/PinPad"
 import type { CashuCardState } from "@app/contexts/Flashcard"
 import { useCardTidy } from "@app/hooks"
+import { tidyProgressText } from "@app/hooks/use-card-tidy"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import {
   CardError,
@@ -30,7 +31,8 @@ type Step =
  * slots are free for one, and the card's tidies still owed, each finished by
  * a tap. The PIN is asked for before the tap only where the card's no-PIN
  * allowance does not cover the tidy (Decision 1), or when the card asked for
- * it; it lives in this component's state only.
+ * it; it lives in this component's state only. While the tap runs, it says
+ * where the tidy has got to and to keep holding the card (ENG-706).
  */
 export const FlashcardV2Tidy: React.FC<{
   card: CashuCardState
@@ -39,7 +41,7 @@ export const FlashcardV2Tidy: React.FC<{
 }> = ({ card, formatAmount }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const { offer, records, notNow, tidy, dismiss } = useCardTidy(card)
+  const { offer, records, progress, notNow, tidy, dismiss } = useCardTidy(card)
   const [step, setStep] = useState<Step>({ name: "idle" })
   const [pinEntry, setPinEntry] = useState("")
 
@@ -79,6 +81,26 @@ export const FlashcardV2Tidy: React.FC<{
       <View accessibilityLiveRegion="polite">
         <Text type="p2" style={styles.notice} testID="flashcard-v2-tidy-notice">
           {step.text}
+        </Text>
+      </View>
+    ) : null
+
+  // Outside the offer: Finish on a tidy still owed taps with no offer shown.
+  // Up until the tap settles, re-read and all, then the notice replaces it.
+  const working =
+    step.name === "working" ? (
+      <View
+        accessibilityLiveRegion="polite"
+        style={styles.progress}
+        testID="flashcard-v2-tidy-progress"
+      >
+        <Text type="p2">
+          {progress
+            ? tidyProgressText(progress, LL)
+            : LL.FlashcardV2.tidyProgressReading()}
+        </Text>
+        <Text type="p2" bold>
+          {LL.FlashcardV2.tidyKeepHolding()}
         </Text>
       </View>
     ) : null
@@ -173,6 +195,7 @@ export const FlashcardV2Tidy: React.FC<{
           {LL.FlashcardV2.tidySlotsShort()}
         </Text>
       )}
+      {working}
       {notice}
     </>
   )
@@ -283,6 +306,12 @@ const useStyles = makeStyles(({ colors }) => ({
   pinEntry: {
     textAlign: "center",
     minHeight: 40,
+  },
+  progress: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    alignItems: "center",
+    gap: 4,
   },
   notice: {
     marginHorizontal: 20,
