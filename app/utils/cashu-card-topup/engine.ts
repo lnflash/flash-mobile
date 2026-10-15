@@ -1189,6 +1189,11 @@ export type LoadPiecesArgs = {
   /** The card as this session already read it (`reclaimSpentSlots`' `inventory`). */
   inventory?: CardInventory
   maxSlots: number
+  /**
+   * Told how many of the pieces this tap writes are on the card, before the
+   * first LOAD_PROOF and after each (ENG-706). Synchronous and never awaited.
+   */
+  onProgress?: (done: number, total: number) => void
 }
 
 /**
@@ -1201,7 +1206,7 @@ export type LoadPiecesArgs = {
 export async function loadPieces(
   transceive: Transceiver,
   proofs: readonly CardSlotProof[],
-  { loadStarted, onStart, mintStates, inventory, maxSlots }: LoadPiecesArgs,
+  { loadStarted, onStart, mintStates, inventory, maxSlots, onProgress }: LoadPiecesArgs,
 ): Promise<{ held: number }> {
   if (loadStarted && !mintStates) {
     throw new TopUpError("state", "a resumed load needs the mint's word on each proof")
@@ -1252,9 +1257,11 @@ export async function loadPieces(
   // still holds unspent): then it is not on the card to spend, and the record
   // stays unfinished until a reclaim frees that slot and a later load writes
   // it. Never retried: one APDU per piece, once.
-  for (const proof of pending) {
+  if (pending.length > 0) onProgress?.(0, pending.length)
+  for (const [i, proof] of pending.entries()) {
     const result = await loadProof(transceive, proof)
     if (result.alreadyOnCard && inSpentSlot.has(proof.nonce)) held += 1
+    onProgress?.(i + 1, pending.length)
   }
   return { held }
 }
