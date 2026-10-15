@@ -1,0 +1,90 @@
+import * as fs from "fs"
+import * as path from "path"
+
+/**
+ * ENG-686: `breezBtcRail` is one-line delegates over `@app/utils/breez-sdk`.
+ *
+ * Each method has to reach its own wrapper with the caller's arguments as
+ * given and hand back the wrapper's answer untouched. A swapped pair
+ * (payInvoice and payLnurl, say) would type-check whenever the signatures
+ * line up, and would send money down the wrong rail.
+ */
+jest.mock("@app/utils/breez-sdk", () => ({
+  payLightningBreez: jest.fn(),
+  payLnurlBreez: jest.fn(),
+  payOnchainBreez: jest.fn(),
+}))
+
+import * as breezSdk from "@app/utils/breez-sdk"
+import { BtcRail, breezBtcRail } from "@app/payments/btc-rail"
+
+const wrappers = breezSdk as unknown as Record<string, jest.Mock>
+const WRAPPERS = ["payLightningBreez", "payLnurlBreez", "payOnchainBreez"]
+
+// rail method → the wrapper it must delegate to, and the arguments a caller
+// would pass it.
+const delegates: [keyof BtcRail, string, unknown[]][] = [
+  ["payInvoice", "payLightningBreez", ["lnbc1invoice", 2100]],
+  ["payLnurl", "payLnurlBreez", ["alice@flashapp.me", 2100, "coffee"]],
+  ["payOnchain", "payOnchainBreez", ["bc1qdestination", 2100, "slow"]],
+]
+
+beforeEach(() => {
+  jest.clearAllMocks()
+})
+
+describe("breezBtcRail", () => {
+  delegates.forEach(([method, wrapper, args]) => {
+    it(`${method} forwards its arguments to ${wrapper} and returns its answer`, async () => {
+      const answer = { from: wrapper }
+      wrappers[wrapper].mockResolvedValue(answer)
+
+      const call = breezBtcRail[method] as (...a: unknown[]) => Promise<unknown>
+      const result = await call(...args)
+
+      expect(result).toBe(answer)
+      expect(wrappers[wrapper]).toHaveBeenCalledTimes(1)
+      expect(wrappers[wrapper].mock.calls[0]).toEqual(args)
+      // ...and no other wrapper was touched.
+      WRAPPERS.filter((name) => name !== wrapper).forEach((name) =>
+        expect(wrappers[name]).not.toHaveBeenCalled(),
+      )
+    })
+  })
+
+  it("passes a wrapper's rejection through unchanged", async () => {
+    // payLnurlBreez reports a failure by throwing. sendPayment's catch turns
+    // that into a Failure, so the rail must not swallow it.
+    const refusal = new Error("Unsupported input type")
+    wrappers.payLnurlBreez.mockRejectedValue(refusal)
+
+    await expect(breezBtcRail.payLnurl("not-an-lnurl", 2100, "")).rejects.toBe(refusal)
+  })
+})
+
+describe("app/payments", () => {
+  it("never imports the Breez SDK itself", () => {
+    // breezBtcRail reaches Breez through the @app/utils/breez-sdk wrappers
+    // (spec §2.1, docs/ai-assistant-tool-registry.md), so nothing under
+    // app/payments imports an @breeztech package: no .ts or .tsx file, at
+    // any depth. This scan covers app/payments only; modules elsewhere
+    // still import SDK enums and types until ENG-693 moves them behind the
+    // rail.
+    const dir = path.join(__dirname, "../../app/payments")
+    // Recursive, with paths relative to `dir` (e.g. "rails/foo.ts").
+    const sources = fs
+      .readdirSync(dir, { encoding: "utf8", recursive: true })
+      .filter((file) => /\.tsx?$/.test(file))
+    expect(sources).toContain("btc-rail.ts")
+    // An import or require of any @breeztech package; a comment naming one
+    // does not count.
+    const sdkImport = /(?:\bfrom|\bimport\(?|\brequire\()\s*["']@breeztech\//
+    sources.forEach((file) => {
+      const source = fs.readFileSync(path.join(dir, file), "utf8")
+      expect({ file, importsSdk: sdkImport.test(source) }).toEqual({
+        file,
+        importsSdk: false,
+      })
+    })
+  })
+})

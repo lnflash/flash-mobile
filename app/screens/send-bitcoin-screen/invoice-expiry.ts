@@ -308,10 +308,11 @@ export type HeldInvoiceTransmissionArgs = {
  * about the send that is about to happen.
  *
  * It usually is, but not on the Breez/Spark BTC wallet's LNURL and
- * intraledger paths: `useSendPayment` routes those to `payLnurlBreez`, which
- * re-resolves the lightning address and mints a *brand-new* invoice at send
- * time (app/utils/breez-sdk/spark.ts). The held bolt11 is dead weight there,
- * so checking its expiry would refuse a payment Breez would have completed —
+ * intraledger paths: `sendPayment` (app/payments/send-payment.ts) routes
+ * those through the BTC rail to `payLnurlBreez`, which re-resolves the
+ * lightning address and mints a *brand-new* invoice at send time
+ * (app/utils/breez-sdk/spark.ts). The held bolt11 is dead weight there, so
+ * checking its expiry would refuse a payment Breez would have completed —
  * exactly the false positive the guard exists to avoid.
  *
  * BTC + `lightning` is the opposite case: `payLightningBreez` is handed the
