@@ -23,9 +23,9 @@ import {
   cardLast4,
   cardNotices,
   FlashcardV2Screen,
-  formatUnitAmount,
   shortPubkey,
 } from "../../app/screens/card-screen/flashcard-v2"
+import { formatUnitAmount } from "../../app/utils/cashu-card-format"
 import { cardInfo, cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
 import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
@@ -41,6 +41,12 @@ const mockNavigate = jest.fn()
 const mockGoBack = jest.fn()
 const mockAddListener = jest.fn((_event: string, _listener: () => void) => jest.fn())
 let mockIsFocused = true
+const mockNavigation = {
+  navigate: mockNavigate,
+  goBack: mockGoBack,
+  addListener: mockAddListener,
+  isFocused: () => mockIsFocused,
+}
 const mockTapFlashcard = jest.fn(async () => ({}))
 const mockForgetCashuCard = jest.fn()
 const mockResetFlashcard = jest.fn()
@@ -66,12 +72,9 @@ jest.mock("@react-navigation/native", () => ({
   // No navigator here: a focus effect runs once on mount.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   useFocusEffect: (effect: () => void) => require("react").useEffect(effect, [effect]),
-  useNavigation: () => ({
-    navigate: mockNavigate,
-    goBack: mockGoBack,
-    addListener: mockAddListener,
-    isFocused: () => mockIsFocused,
-  }),
+  // One object for the screen's life, as React Navigation's is: an effect that
+  // depends on it re-runs for its other deps, never because it changed.
+  useNavigation: () => mockNavigation,
 }))
 jest.mock("react-native-safe-area-context", () =>
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -944,7 +947,7 @@ describe("FlashcardV2Screen, a card still verifying (ENG-707)", () => {
     ).toBe(LL.FlashcardV2.unitUnknown({ amount: "2,500" }))
     // The verified figure's ids, which the e2e flows wait on, are not used.
     expect(screen.queryByTestId("flashcard-v2-balance-unknown")).toBeNull()
-    expect(screen.getByTestId("flashcard-v2-balance-verifying").props.children).toBe(
+    expect(screen.getByTestId("flashcard-v2-preview-verifying").props.children).toBe(
       LL.FlashcardV2.verifying(),
     )
     expect(screen.getByText("3 loaded · 5 spent · 120 free of 128")).toBeTruthy()
@@ -976,7 +979,7 @@ describe("FlashcardV2Screen, a card still verifying (ENG-707)", () => {
 
     renderScreen()
 
-    expect(screen.getByTestId("flashcard-v2-balance-verifying")).toBeTruthy()
+    expect(screen.getByTestId("flashcard-v2-preview-verifying")).toBeTruthy()
     expect(screen.queryByTestId("flashcard-v2-balance-sat")).toBeNull()
     expect(screen.getByTestId("flashcard-v2-preview-card-id").props.children).toBe(
       shortPubkey("03" + "cd".repeat(32)),
@@ -988,7 +991,38 @@ describe("FlashcardV2Screen, a card still verifying (ENG-707)", () => {
   it("a verified card says nothing about verifying", () => {
     renderScreen()
 
-    expect(screen.queryByTestId("flashcard-v2-balance-verifying")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-preview-verifying")).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-actions")).toBeTruthy()
+  })
+
+  // The tap hook never pops the screen it pushed (use-tap-flashcard): when a
+  // first-tap card fails AUTH, the provider drops the preview with no card in
+  // its place, and this screen's own effect is what leaves.
+  it("leaves the screen when a first tap's card fails to verify", () => {
+    mockCashuCard = undefined
+    mockCashuCardPreview = preview()
+
+    const { rerender } = renderScreen()
+    expect(mockGoBack).not.toHaveBeenCalled()
+
+    mockCashuCardPreview = undefined
+    rerender(screenTree())
+
+    expect(mockGoBack).toHaveBeenCalledTimes(1)
+  })
+
+  it("stays on the screen when a first tap's card verifies", () => {
+    mockCashuCard = undefined
+    mockCashuCardPreview = preview()
+
+    const { rerender } = renderScreen()
+
+    mockCashuCard = card()
+    mockCashuCardPreview = undefined
+    rerender(screenTree())
+
+    expect(mockGoBack).not.toHaveBeenCalled()
+    expect(screen.queryByTestId("flashcard-v2-preview-verifying")).toBeNull()
     expect(screen.getByTestId("flashcard-v2-actions")).toBeTruthy()
   })
 })

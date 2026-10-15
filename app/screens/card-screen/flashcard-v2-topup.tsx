@@ -37,6 +37,7 @@ import {
   triesLeft,
 } from "@app/utils/cashu-card"
 import { stubbedPayOutcome } from "@app/utils/cashu-card-bridge"
+import { formatUnitAmount } from "@app/utils/cashu-card-format"
 import {
   CardUnit,
   MAX_TOPUP_AMOUNT,
@@ -54,7 +55,7 @@ import {
   topUpAmountProblem,
 } from "@app/utils/cashu-card-topup"
 
-import { formatUnitAmount, shortPubkey } from "./flashcard-v2"
+import { shortPubkey } from "./flashcard-v2"
 
 type LLType = TranslationFunctions
 

@@ -35,9 +35,6 @@ import { FlashcardV2Tidy } from "./flashcard-v2-tidy"
 
 import Sync from "@app/assets/icons/sync.svg"
 
-// Kept here too: the top-up screen and older callers import them from the screen.
-export { balanceLines, formatUnitAmount }
-
 /**
  * Flashcard v2 — the Cashu NFC card (ENG-616).
  *
@@ -398,7 +395,7 @@ const FlashcardV2Verifying: React.FC<{
         <Text
           type="caption"
           style={styles.balanceCaption}
-          testID="flashcard-v2-balance-verifying"
+          testID="flashcard-v2-preview-verifying"
         >
           {LL.FlashcardV2.verifying()}
         </Text>
