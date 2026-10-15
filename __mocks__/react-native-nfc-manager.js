@@ -6,6 +6,8 @@ const NfcManager = {
   // Tech handlers live on the manager, not on the tag returned by getTag().
   isoDepHandler: { transceive: jest.fn() },
   requestTechnology: jest.fn(),
+  // iOS's system NFC sheet text (a card operation's progress, ENG-706).
+  setAlertMessageIOS: jest.fn(async () => undefined),
   // Android's IsoDep transceive timeout (a card operation raises it).
   setTimeout: jest.fn(),
   start: jest.fn(),

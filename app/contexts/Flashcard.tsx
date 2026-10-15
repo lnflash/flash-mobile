@@ -49,7 +49,7 @@ import {
   selectApplet,
   toHex,
 } from "../utils/cashu-card"
-import { extendCardTimeout } from "../utils/cashu-card-nfc"
+import { extendCardTimeout, setCardAlertMessage } from "../utils/cashu-card-nfc"
 import { bridgeTransceiver, getCardBridge } from "../utils/cashu-card-bridge"
 import { feedHeader, keptHeader, refreshTipHeader } from "../utils/cashu-card-headers"
 import { ownerSigner, refreshCard } from "../utils/cashu-card-owner"
@@ -434,9 +434,14 @@ export interface FlashcardInterface {
    * different card, a tag without the applet, or a lost channel gets no
    * re-read. Every failure is rethrown after the release; the caller owns the
    * message.
+   *
+   * `op` may `report` where it has got to (ENG-706): the text replaces the
+   * scan sheet's prompt on Android and sets iOS's NFC sheet message, until the
+   * operation ends. Fire-and-forget: `report` never waits on the screen, so a
+   * card command never waits on it either.
    */
   runCardOperation: <T>(
-    op: (transceive: Transceiver) => Promise<T>,
+    op: (transceive: Transceiver, report: (text: string) => void) => Promise<T>,
     expectedPubkey: string,
     options?: CardOperationOptions<T>,
   ) => Promise<T>
@@ -473,6 +478,8 @@ export const FlashcardProvider = ({ children }: Props) => {
   const { updateState, persistentState } = usePersistentStateContext()
 
   const [visible, setVisible] = useState(false)
+  // What a card operation says it is doing, in place of the sheet's prompt.
+  const [operationText, setOperationText] = useState<string>()
   const [tag, setTag] = useState<TagEvent>()
   const [k1, setK1] = useState<string>()
   const [callback, setCallback] = useState<string>()
@@ -901,12 +908,18 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   const runCardOperation = async <T,>(
-    op: (transceive: Transceiver) => Promise<T>,
+    op: (transceive: Transceiver, report: (text: string) => void) => Promise<T>,
     expectedPubkey: string,
     { assume, onReread, learned, rereadSlots }: CardOperationOptions<T> = {},
   ): Promise<T> => {
     // Development builds only: the card is cardsim, over HTTP (ENG-634).
     const bridge = getCardBridge()
+    // Never awaited: the next APDU goes out while the screen catches up.
+    const report = (text: string) => {
+      setOperationText(text)
+      if (!bridge) setCardAlertMessage(text).catch(() => undefined)
+    }
+    setOperationText(undefined)
     setVisible(true)
     if (!bridge) NfcManager.start()
     try {
@@ -941,7 +954,7 @@ export const FlashcardProvider = ({ children }: Props) => {
 
       let result: T
       try {
-        result = await op(transceive)
+        result = await op(transceive, report)
       } catch (err) {
         // The card answered and refused: the channel is alive and this is
         // the card on screen (GET_PUBKEY above). A refusal can change the
@@ -967,6 +980,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       }
       return result
     } finally {
+      // Also clears the op's text (`cancelTechnologyRequest`).
       cancelTechnologyRequest()
     }
   }
@@ -1079,6 +1093,8 @@ export const FlashcardProvider = ({ children }: Props) => {
 
   const cancelTechnologyRequest = () => {
     setVisible(false)
+    // No operation's text outlives it, or shows on the next one's sheet.
+    setOperationText(undefined)
     // A bridge tap opened no NFC session.
     if (!getCardBridge()) NfcManager.cancelTechnologyRequest()
   }
@@ -1162,7 +1178,9 @@ export const FlashcardProvider = ({ children }: Props) => {
               <Text type="h02" bold>
                 Ready to Scan
               </Text>
-              <Text type="bm">Please tap NFC tags</Text>
+              <Text type="bm" testID="flashcard-scan-sheet-status">
+                {operationText ?? "Please tap NFC tags"}
+              </Text>
               <Animatable.View
                 animation="pulse"
                 easing="ease-out"
