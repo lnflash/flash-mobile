@@ -43,6 +43,7 @@ import {
   validateAmountWithinLimits,
 } from "./fee-errors"
 import { extractFeeFromPaymentMethod } from "./fee-extraction"
+import { LnurlPayOutcomeUnknownError } from "./lnurl-pay-errors"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -471,35 +472,46 @@ export const payLnurlBreez = async (
   amountSats: number,
   memo?: string,
 ): Promise<LnurlPayResponse> => {
-  try {
-    const sdk = getSDKInstance()
+  const sdk = getSDKInstance()
 
-    const input = await sdk.parse(lnurl)
-    const payRequest = lnurlPayRequestDetailsFromInput(input)
+  const input = await sdk.parse(lnurl)
+  const payRequest = lnurlPayRequestDetailsFromInput(input)
 
-    if (payRequest) {
-      const prepareResponse = await sdk.prepareLnurlPay({
-        amount: BigInt(amountSats),
-        payRequest,
-        comment: memo,
-        validateSuccessActionUrl: true,
-        tokenIdentifier: undefined,
-        conversionOptions: undefined,
-        feePolicy: undefined,
-      })
+  if (payRequest) {
+    const prepareResponse = await sdk.prepareLnurlPay({
+      amount: BigInt(amountSats),
+      payRequest,
+      comment: memo,
+      validateSuccessActionUrl: true,
+      tokenIdentifier: undefined,
+      conversionOptions: undefined,
+      feePolicy: undefined,
+    })
 
-      const response = await sdk.lnurlPay({
+    // ENG-711: nothing has been sent until lnurlPay runs. Every error above
+    // passes through as it is, as does the plain "Unsupported input type"
+    // below, and Confirm re-arms on it. A rejection from lnurlPay itself can
+    // come after the SSP already has the payment, and the call carries no
+    // idempotency key, so a retry would pay a fresh invoice a second time. It
+    // is rethrown as LnurlPayOutcomeUnknownError, which keeps Confirm
+    // disarmed. Keep this try around lnurlPay alone: widened over the steps
+    // above, it disarms on refusals that sent nothing. And never catch the
+    // error it throws to rethrow a plain Error: that brings the double pay
+    // back.
+    let response: LnurlPayResponse
+    try {
+      response = await sdk.lnurlPay({
         prepareResponse,
         idempotencyKey: undefined,
       })
-      console.log("Lnurl Pay Response: ", response)
-
-      return response
+    } catch (error) {
+      throw new LnurlPayOutcomeUnknownError(error)
     }
-    throw new Error("Unsupported input type")
-  } catch (error) {
-    throw error
+    console.log("Lnurl Pay Response: ", response)
+
+    return response
   }
+  throw new Error("Unsupported input type")
 }
 
 export const lnurlWithdraw = async (
