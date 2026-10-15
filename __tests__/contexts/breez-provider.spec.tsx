@@ -11,7 +11,8 @@ const mockInitializeBreezSDK = jest.fn()
 const mockGetInfo = jest.fn()
 const mockGetLightningAddress = jest.fn()
 const mockRegisterLightningAddress = jest.fn()
-const mockClearBreezSDKInitFailure = jest.fn()
+const mockMarkSwitchedOff = jest.fn()
+const mockMarkSwitchedOn = jest.fn()
 
 // Only what BreezProvider imports. The Liquid-to-Spark migration is gone, so
 // a provider that still reached for it would find nothing here and fail.
@@ -20,7 +21,11 @@ jest.mock("@app/utils/breez-sdk", () => ({
   getInfo: () => mockGetInfo(),
   getLightningAddress: () => mockGetLightningAddress(),
   registerLightningAddress: (...args: unknown[]) => mockRegisterLightningAddress(...args),
-  clearBreezSDKInitFailure: () => mockClearBreezSDKInitFailure(),
+  markBreezSDKSwitchedOff: () => mockMarkSwitchedOff(),
+  markBreezSDKSwitchedOn: () => mockMarkSwitchedOn(),
+  // Read by breezBtcRail's reads, which the provider's balance goes through.
+  // Switched on: the provider reads the wallet only in advanced mode.
+  assertBreezSDKSwitchedOn: () => undefined,
 }))
 
 const mockUpdateState = jest.fn()
@@ -111,10 +116,11 @@ describe("BreezProvider", () => {
     expect(mockUpdateState).not.toHaveBeenCalled()
   })
 
-  it("has the wallet read as off, not failed, once advanced mode is off", async () => {
-    // ENG-687: a start that failed while advanced mode was on would otherwise
-    // keep the BTC rail answering `failed` ("couldn't start") after the user
-    // switched the wallet off, where `disabled` points to the setting.
+  it("switches the BTC wallet off when advanced mode is off", async () => {
+    // ENG-687: nothing stops the SDK when advanced mode goes off, and a start
+    // may still be retrying. The switch is what has the BTC rail answer
+    // `disabled`, not a balance or "couldn't start", as the screens hide the
+    // wallet.
     mockPersistentState = { isAdvanceMode: false }
 
     render(
@@ -124,10 +130,11 @@ describe("BreezProvider", () => {
     )
 
     expect(await screen.findByText("ready:0:")).toBeTruthy()
-    expect(mockClearBreezSDKInitFailure).toHaveBeenCalledTimes(1)
+    expect(mockMarkSwitchedOff).toHaveBeenCalledTimes(1)
+    expect(mockMarkSwitchedOn).not.toHaveBeenCalled()
   })
 
-  it("leaves a failed start on record while advanced mode is on", async () => {
+  it("switches the BTC wallet on before it starts the SDK", async () => {
     mockPersistentState = { isAdvanceMode: true, breezBalance: 0 }
 
     render(
@@ -137,7 +144,49 @@ describe("BreezProvider", () => {
     )
 
     expect(await screen.findByText("ready:2100:btc-wallet-1")).toBeTruthy()
-    expect(mockClearBreezSDKInitFailure).not.toHaveBeenCalled()
+    expect(mockMarkSwitchedOff).not.toHaveBeenCalled()
+    expect(mockMarkSwitchedOn).toHaveBeenCalledTimes(1)
+    expect(mockMarkSwitchedOn.mock.invocationCallOrder[0]).toBeLessThan(
+      mockInitializeBreezSDK.mock.invocationCallOrder[0],
+    )
+  })
+
+  it("switches the wallet back on when advanced mode returns while a start is still connecting", async () => {
+    // On, off and on again before the first start answers. The second turn-on
+    // finds that start in flight and leaves it be, and must still switch the
+    // wallet back on.
+    let finishStart: (started: boolean) => void = () => undefined
+    mockInitializeBreezSDK.mockReturnValue(
+      new Promise((resolve) => {
+        finishStart = resolve
+      }),
+    )
+    mockPersistentState = { isAdvanceMode: true, breezBalance: 0 }
+    // A new element each time, so the provider renders again with the
+    // persistent state as it now is.
+    const tree = () => (
+      <BreezProvider>
+        <Probe />
+      </BreezProvider>
+    )
+    const { rerender } = render(tree())
+    expect(await screen.findByText("loading:0:")).toBeTruthy()
+
+    mockPersistentState = { isAdvanceMode: false, breezBalance: 0 }
+    rerender(tree())
+    mockPersistentState = { isAdvanceMode: true, breezBalance: 0 }
+    rerender(tree())
+
+    expect(mockMarkSwitchedOff).toHaveBeenCalledTimes(1)
+    expect(mockMarkSwitchedOn).toHaveBeenCalledTimes(2)
+    expect(mockMarkSwitchedOn.mock.invocationCallOrder[1]).toBeGreaterThan(
+      mockMarkSwitchedOff.mock.invocationCallOrder[0],
+    )
+    // The first start is still the only one.
+    expect(mockInitializeBreezSDK).toHaveBeenCalledTimes(1)
+
+    finishStart(true)
+    expect(await screen.findByText("ready:2100:btc-wallet-1")).toBeTruthy()
   })
 
   it("reads its balance through the BTC rail, so it and getBalanceSats report the same sats", async () => {

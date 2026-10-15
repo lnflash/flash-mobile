@@ -228,12 +228,17 @@ export const setupSendingExecutor = ({
       }
     }
   }
-  /** $5 to alice, prepared now: an intraledger USD send, valid 10 minutes (spec §5). */
-  const prepare = (threadId = "thread-1") =>
+  /**
+   * $5 to alice, prepared now: an intraledger USD send, valid 10 minutes
+   * (spec §5). A memo shows on the card only: the payment's identity leaves
+   * it out (hashPaymentDetail), so every action this prepares is one payment.
+   */
+  const prepare = (threadId = "thread-1", { memo }: { memo?: string } = {}) =>
     makeAction({
       threadId,
       createdAt: clock,
       expiresAt: clock + 10 * 60_000,
+      summary: memo === undefined ? SUMMARY : { ...SUMMARY, memo },
       dispatch: DISPATCH,
       execute: jest.fn(execute),
     })

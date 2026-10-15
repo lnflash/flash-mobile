@@ -7666,7 +7666,7 @@ type RootTranslation = {
 		 */
 		checkHistory: string
 		/**
-		 * T​h​i​s​ ​p​a​y​m​e​n​t​ ​a​l​r​e​a​d​y​ ​w​e​n​t​ ​t​h​r​o​u​g​h​.​ ​Y​o​u​ ​c​a​n​ ​s​e​e​ ​i​t​ ​i​n​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​.
+		 * A​ ​p​a​y​m​e​n​t​ ​o​f​ ​t​h​i​s​ ​a​m​o​u​n​t​ ​t​o​ ​t​h​i​s​ ​r​e​c​i​p​i​e​n​t​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​s​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​,​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​ ​i​f​ ​y​o​u​ ​m​e​a​n​t​ ​t​o​ ​s​e​n​d​ ​a​n​o​t​h​e​r​.
 		 */
 		alreadySent: string
 		/**
@@ -15188,7 +15188,7 @@ export type TranslationFunctions = {
 		 */
 		checkHistory: () => LocalizedString
 		/**
-		 * This payment already went through. You can see it in your transaction history.
+		 * A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.
 		 */
 		alreadySent: () => LocalizedString
 		/**

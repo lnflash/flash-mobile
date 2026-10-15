@@ -4,8 +4,9 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
 import {
-  clearBreezSDKInitFailure,
   initializeBreezSDK,
+  markBreezSDKSwitchedOff,
+  markBreezSDKSwitchedOn,
   registerLightningAddress,
   getLightningAddress,
 } from "@app/utils/breez-sdk"
@@ -111,9 +112,11 @@ export const BreezProvider = ({ children }: Props) => {
       if (persistentState.isAdvanceMode) {
         getBreezInfo()
       } else {
-        // The BTC wallet is off by the user's choice now: a start that failed
-        // earlier no longer explains it, so it reads as off (ENG-687).
-        clearBreezSDKInitFailure()
+        // The user switched the BTC wallet off. Nothing stops the SDK, and a
+        // start may still be retrying, so the BTC rail's reads go by this
+        // switch: they answer `disabled` from now on, as the screens hide the
+        // wallet, and a start that gives up later reads as off (ENG-687).
+        markBreezSDKSwitchedOff()
         setBtcWallet({
           id: "",
           walletCurrency: "BTC",
@@ -254,6 +257,10 @@ export const BreezProvider = ({ children }: Props) => {
   }, [persistentState.isAdvanceMode, breezReady, meData?.me?.username, btcWallet.id])
 
   const getBreezInfo = async () => {
+    // Switched on before anything starts the SDK, so the rail reads it again.
+    // Ahead of the in-flight check: advance mode turned off and on while a
+    // start is still connecting must switch the wallet back on too (ENG-687).
+    markBreezSDKSwitchedOn()
     if (initializingRef.current) return
     initializingRef.current = true
     try {

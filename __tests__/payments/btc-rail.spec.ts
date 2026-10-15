@@ -10,6 +10,9 @@ import * as path from "path"
  * line up, and would send money down the wrong rail.
  */
 jest.mock("@app/utils/breez-sdk", () => ({
+  // Advance mode's switch (ENG-687): a no-op is a wallet switched on. A case
+  // that switches it off makes it throw, as spark.ts does.
+  assertBreezSDKSwitchedOn: jest.fn(),
   getInfo: jest.fn(),
   listPaymentsBreezSDK: jest.fn(),
   payLightningBreez: jest.fn(),
@@ -51,8 +54,15 @@ const delegates: [keyof BtcRail, string, unknown[]][] = [
   ["payOnchain", "payOnchainBreez", ["bc1qdestination", 2100, "slow"]],
 ]
 
+/** Advance mode off: the rail's reads find the wallet switched off, as spark.ts reports it. */
+const switchOff = () =>
+  wrappers.assertBreezSDKSwitchedOn.mockImplementation(() => {
+    throw new BreezSdkNotInitializedError({ reason: "off" })
+  })
+
 beforeEach(() => {
   jest.clearAllMocks()
+  wrappers.assertBreezSDKSwitchedOn.mockReset()
 })
 
 afterEach(() => {
@@ -96,6 +106,19 @@ describe("breezBtcRail.listPayments", () => {
 
     expect(wrappers.listPaymentsBreezSDK.mock.calls[0]).toEqual([0, 3])
   })
+
+  it("rejects with the off error, and lists nothing, while the wallet is switched off", async () => {
+    // ENG-687: turning advance mode off does not stop the SDK, which would
+    // still list the wallet's payments. The rail does not ask it.
+    switchOff()
+    wrappers.listPaymentsBreezSDK.mockResolvedValue([{ id: "p1" }])
+
+    const listed = breezBtcRail.listPayments(0, 100, { assets: "bitcoin" })
+
+    await expect(listed).rejects.toBeInstanceOf(BreezSdkNotInitializedError)
+    await expect(listed).rejects.toMatchObject({ reason: "off" })
+    expect(wrappers.listPaymentsBreezSDK).not.toHaveBeenCalled()
+  })
 })
 
 describe("breezBtcRail.getBalanceSats", () => {
@@ -113,6 +136,20 @@ describe("breezBtcRail.getBalanceSats", () => {
     )
 
     await expect(breezBtcRail.getBalanceSats()).resolves.toEqual({ state: "syncing" })
+  })
+
+  it("is disabled while the wallet is switched off, without reading the SDK that still runs", async () => {
+    // ENG-687: advance mode off, the screens hide the BTC wallet, and the
+    // rail shows no number for it either, though getInfo() would answer.
+    switchOff()
+    wrappers.getInfo.mockResolvedValue({
+      balanceSats: BigInt(50_000),
+      tokenBalances: new Map(),
+    })
+
+    await expect(breezBtcRail.getBalanceSats()).resolves.toEqual({ state: "disabled" })
+    await expect(readBreezWallet()).resolves.toEqual({ state: "disabled" })
+    expect(wrappers.getInfo).not.toHaveBeenCalled()
   })
 
   it("is failed, not disabled, once initializeBreezSDK() has given up", async () => {
@@ -135,7 +172,7 @@ describe("breezBtcRail.getBalanceSats", () => {
     const balance = await breezBtcRail.getBalanceSats()
 
     expect(balance).toEqual({ state: "ok", sats: 2100 })
-    // Only the three-state answer leaves the rail: no SDK object rides along.
+    // Only the BtcBalance answer leaves the rail: no SDK object rides along.
     expect(Object.keys(balance).sort()).toEqual(["sats", "state"])
   })
 
@@ -203,7 +240,7 @@ describe("breezBtcRail.getBalanceSats", () => {
   })
 
   it("rejects on any other failure, so runTool can report it as one", async () => {
-    // The spec gives the rail three states and is silent on other failures:
+    // The spec gives the rail four states and is silent on other failures:
     // a network error is not "disabled" and not a balance.
     const failure = new Error("connection reset")
     wrappers.getInfo.mockRejectedValue(failure)

@@ -55,11 +55,18 @@ export let breezSDKInitialized = false
 let breezSDKInitializing: Promise<boolean> | null = null
 let sdkInstance: BreezSdkInterface | null = null
 // Whether the last initializeBreezSDK() gave up. Cleared by a start that
-// succeeds, by disconnectToSDK, and by clearBreezSDKInitFailure when advance
-// mode is turned off (ENG-687).
+// succeeds and by disconnectToSDK.
 let breezSDKInitFailed = false
+// Whether the user has switched the BTC wallet off: advance mode is off
+// (BreezContext.tsx). Turning advance mode off stops nothing, so the SDK can
+// still be running, or a start still retrying, and this flag, not the
+// instance, is what says the wallet is off (ENG-687).
+let breezSDKSwitchedOff = false
 
 const notRunningReason = (): BreezSdkNotRunningReason => {
+  // Off by the user's choice comes first: a start still connecting, or one
+  // that gave up, does not explain a wallet the user switched off.
+  if (breezSDKSwitchedOff) return "off"
   if (breezSDKInitializing) return "starting"
   return breezSDKInitFailed ? "failed" : "off"
 }
@@ -67,8 +74,9 @@ const notRunningReason = (): BreezSdkNotRunningReason => {
 /**
  * Get the initialized SDK instance
  * @throws BreezSdkNotInitializedError if SDK is not initialized, with the
- * reason: `starting` while initializeBreezSDK() is still connecting,
- * `failed` after it gave up, `off` otherwise
+ * reason: `off` while the wallet is switched off, else `starting` while
+ * initializeBreezSDK() is still connecting, `failed` after it gave up, `off`
+ * otherwise
  */
 export const getSDKInstance = (): BreezSdkInterface => {
   if (!sdkInstance) {
@@ -78,12 +86,30 @@ export const getSDKInstance = (): BreezSdkInterface => {
 }
 
 /**
- * Advance mode was turned off: the BTC wallet is off by the user's choice
- * now, so a start that failed before no longer explains why there is no SDK
- * instance, and the wallet reads as off rather than failed.
+ * Advance mode was turned off: the user switched the BTC wallet off. Nothing
+ * is stopped, but from now on the BTC rail's reads find the wallet off
+ * (assertBreezSDKSwitchedOn) even while an SDK instance still runs, and a
+ * start that gives up after this reads as off, not failed (ENG-687).
+ * BreezContext calls markBreezSDKSwitchedOn before it starts the SDK again.
  */
-export const clearBreezSDKInitFailure = (): void => {
-  breezSDKInitFailed = false
+export const markBreezSDKSwitchedOff = (): void => {
+  breezSDKSwitchedOff = true
+}
+
+/** Advance mode is on: the BTC wallet is switched on again (ENG-687). */
+export const markBreezSDKSwitchedOn = (): void => {
+  breezSDKSwitchedOff = false
+}
+
+/**
+ * For the BTC rail's reads of the wallet's balance and payments
+ * (app/payments/btc-rail.ts): throws BreezSdkNotInitializedError, reason
+ * `off`, while the wallet is switched off, whether or not an SDK instance is
+ * running. The screens hide the BTC wallet then, and the rail shows nothing
+ * of it either (ENG-687).
+ */
+export const assertBreezSDKSwitchedOn = (): void => {
+  if (breezSDKSwitchedOff) throw new BreezSdkNotInitializedError({ reason: "off" })
 }
 
 export const lnurlPayRequestDetailsFromInput = (

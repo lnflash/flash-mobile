@@ -8,7 +8,11 @@ module.exports = {
   // the not-initialized error, which breezBtcRail reports as `disabled`.
   getInfo: jest.fn(() => Promise.reject(new BreezSdkNotInitializedError())),
   listPaymentsBreezSDK: jest.fn(() => Promise.reject(new BreezSdkNotInitializedError())),
-  clearBreezSDKInitFailure: jest.fn(),
+  // The advance-mode switch (ENG-687). Left switched on: the two reads above
+  // already answer as a wallet that is not running.
+  markBreezSDKSwitchedOff: jest.fn(),
+  markBreezSDKSwitchedOn: jest.fn(),
+  assertBreezSDKSwitchedOn: jest.fn(),
   receiveOnchainBreez: jest.fn(() => Promise.resolve({ paymentRequest: "" })),
   receivePaymentBreez: jest.fn(() => Promise.resolve({ paymentRequest: "" })),
   fetchBreezFee: jest.fn(() => Promise.resolve({ fee: 0, err: null })),

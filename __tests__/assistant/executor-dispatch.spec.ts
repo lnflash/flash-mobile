@@ -3,6 +3,8 @@ import {
   RECONCILE_STALE_AFTER_MS,
 } from "@app/assistant/engine/reconcile"
 import { PaymentSendResult } from "@app/graphql/generated"
+import { i18nObject } from "@app/i18n/i18n-util"
+import { loadLocale } from "@app/i18n/i18n-util.sync"
 import {
   DISPATCH,
   lostResponse,
@@ -20,6 +22,10 @@ import { graphqlTx, page } from "./fakes"
 // transaction list cannot settle. Most cases run the real journal, the real
 // reconciler and the real sendPayment (setupSendingExecutor), not a scripted
 // verdict.
+
+loadLocale("en")
+/** The thread's replies, in English, as the cards will show them. */
+const LL = i18nObject("en")
 
 /** Let every pending promise callback run. */
 const flush = () =>
@@ -205,6 +211,9 @@ describe("an earlier dispatch whose action is still held (spec §5, Idempotency)
 
 describe("Confirms of one payment, one at a time", () => {
   it("lets a second card for the payment wait, and send nothing once the first went through", async () => {
+    // "send alice $5 for lunch" and "send alice $5 for parking": two cards,
+    // and one payment to the executor, since a payment's identity leaves the
+    // memo out (hashPaymentDetail).
     const run = setupSendingExecutor()
     let answer: (value: unknown) => void = () => undefined
     run.intraLedgerUsdPaymentSend.mockImplementationOnce(
@@ -213,8 +222,10 @@ describe("Confirms of one payment, one at a time", () => {
           answer = resolve
         }),
     )
-    const a = run.prepare()
-    const b = run.prepare()
+    const a = run.prepare("thread-1", { memo: "lunch" })
+    const b = run.prepare("thread-1", { memo: "parking" })
+    expect(b.summary).not.toEqual(a.summary)
+    expect(b.dispatch).toEqual(a.dispatch)
     run.executor.addPrepared(a, "text")
     run.executor.addPrepared(b, "text")
 
@@ -230,7 +241,8 @@ describe("Confirms of one payment, one at a time", () => {
       kind: "executed",
       outcome: { status: "succeeded" },
     })
-    // B was tapped before A's outcome was known: it was the same payment.
+    // B was tapped before A's outcome was known, for the same payment: it
+    // sends nothing.
     await expect(confirmB).resolves.toEqual({
       kind: "alreadySent",
       actionId: b.id,
@@ -240,6 +252,21 @@ describe("Confirms of one payment, one at a time", () => {
     await expect(run.executor.canConfirm(b.id)).resolves.toMatchObject({
       enabled: false,
     })
+    // B's card says only what the executor knows: a payment of this amount
+    // to this recipient went. B's own, for parking, never did.
+    expect(LL.Assistant.alreadySent()).toBe(
+      "A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.",
+    )
+
+    // Asking again, as the reply says, sends another.
+    const again = run.prepare("thread-1", { memo: "parking" })
+    run.executor.addPrepared(again, "text")
+    run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
+    await expect(run.executor.executePreparedAction(again.id)).resolves.toMatchObject({
+      kind: "executed",
+      outcome: { status: "succeeded" },
+    })
+    expect(run.intraLedgerUsdPaymentSend).toHaveBeenCalledTimes(2)
   })
 
   it("blocks the second card while the first's outcome is unknown", async () => {

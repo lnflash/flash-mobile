@@ -1,4 +1,5 @@
 import {
+  assertBreezSDKSwitchedOn,
   getInfo,
   listPaymentsBreezSDK,
   payLightningBreez,
@@ -33,8 +34,9 @@ type SameAs<F extends (...args: never[]) => unknown> = (
  * - `ok`: a synced read, in sats.
  * - `syncing`: the SDK is starting, or its synced read did not answer within
  *   BTC_BALANCE_SYNC_TIMEOUT_MS.
- * - `disabled`: the SDK is not running. Breez starts only in advance mode
- *   (BreezContext.tsx), so with advance mode off this is the normal answer.
+ * - `disabled`: the wallet is off. Advance mode is off, whether or not the
+ *   SDK still runs (turning advance mode off does not stop it), or the SDK
+ *   was never started: Breez starts only in advance mode (BreezContext.tsx).
  * - `failed`: the SDK is not running because its start gave up (offline at
  *   launch, say). Advance mode is on, so this is not `disabled`, whose reply
  *   sends the user to a setting that is already on.
@@ -77,9 +79,10 @@ const UNAVAILABLE_STATE: Record<BreezSdkNotRunningReason, BtcUnavailableState> =
 
 /**
  * Which not-running state an error from the wallet stands for: `disabled`
- * when the wallet is off, `syncing` while initializeBreezSDK() is still
- * connecting, `failed` once it has given up. Any other error is a real
- * failure and gets `undefined`, so the caller can let it reject.
+ * when the wallet is off (switched off, or never started), `syncing` while
+ * initializeBreezSDK() is still connecting, `failed` once it has given up.
+ * Any other error is a real failure and gets `undefined`, so the caller can
+ * let it reject.
  */
 export const btcRailUnavailableState = (
   err: unknown,
@@ -123,7 +126,8 @@ const withSyncTimeout = <T>(
  *
  * The SDK answers `balanceSats` as a bigint; it becomes a number as
  * BreezContext always made it, with `Number()`. A wallet that is not running
- * is reported as such and never as zero. Without `syncTimeoutMs` the read
+ * is reported as such and never as zero, and so is a wallet the user switched
+ * off, though its SDK may still be running. Without `syncTimeoutMs` the read
  * waits for the synced answer however long it takes, which is what
  * BreezContext has always done.
  */
@@ -132,6 +136,9 @@ export const readBreezWallet = async ({
 }: { syncTimeoutMs?: number } = {}): Promise<BreezWalletRead> => {
   let info: BreezWalletInfo | typeof SYNC_TIMED_OUT
   try {
+    // Advance mode off: the wallet is off, and is not read, even while the
+    // SDK runs on (ENG-687).
+    assertBreezSDKSwitchedOn()
     info = await withSyncTimeout(getInfo(), syncTimeoutMs)
   } catch (err) {
     const state = btcRailUnavailableState(err)
@@ -143,14 +150,22 @@ export const readBreezWallet = async ({
 }
 
 export const breezBtcRail: BtcRail = {
-  // Not a one-line delegate: getInfo() throws while the SDK is not running,
-  // and the rail owes a BtcBalance. Any other failure still rejects.
+  // Not a one-line delegate: the wallet can be switched off or not running,
+  // and the rail owes a BtcBalance either way. Any other failure still
+  // rejects.
   getBalanceSats: async () => {
     const read = await readBreezWallet({ syncTimeoutMs: BTC_BALANCE_SYNC_TIMEOUT_MS })
     return read.state === "ok" ? { state: "ok", sats: read.sats } : { state: read.state }
   },
+  // A delegate once the wallet is on. Switched off (advance mode off), it
+  // rejects with the off error rather than list the wallet's payments, even
+  // while the SDK runs on (ENG-687). The two screens that list BTC payments
+  // call listPaymentsBreezSDK themselves, and only in advance mode.
+  listPayments: async (...args) => {
+    assertBreezSDKSwitchedOn()
+    return listPaymentsBreezSDK(...args)
+  },
   // One-line delegates, resolved at call time.
-  listPayments: (...args) => listPaymentsBreezSDK(...args),
   payInvoice: (...args) => payLightningBreez(...args),
   payLnurl: (...args) => payLnurlBreez(...args),
   payOnchain: (...args) => payOnchainBreez(...args),

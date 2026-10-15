@@ -2091,7 +2091,7 @@
         "authDenied": "We couldn't confirm it's you. Nothing went through.",
         "actionNotFound": "That request is no longer open. Ask again to start over.",
         "checkHistory": "This payment may have already been sent. Check your transaction history before trying again.",
-        "alreadySent": "This payment already went through. You can see it in your transaction history.",
+        "alreadySent": "A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.",
         "insufficientBalance": "You don't have enough in this wallet for that payment.",
         "limitExceeded": "That payment is over your account limit.",
         "btcSyncing": "Your BTC wallet is still syncing. Try again in a moment.",

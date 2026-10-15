@@ -26,9 +26,12 @@ import { createThreadMetrics } from "./thread-metrics"
 //
 //   1. The action must still be held, and armed.
 //   2. Confirms of one payment run one at a time, from here to the outcome.
-//      A Confirm that waited behind a send of its payment which went through
-//      is answered "already sent": it was given before that outcome was
-//      known, and the payment it confirms has gone.
+//      Two actions are one payment when their paymentDetailHash matches,
+//      which leaves the memo out (attempt-journal.ts). A Confirm that waited
+//      behind a send of its payment which went through is answered "already
+//      sent": it was given before that outcome was known. The reply claims
+//      only what the executor knows, that a payment of this amount to this
+//      recipient went, not that this card's did.
 //   3. A dispatch of the same payment whose outcome is unknown blocks the
 //      attempt. While this run still holds that dispatch's action, the
 //      action's own card is the way to retry it, under its own key, and its
@@ -91,7 +94,16 @@ export type ConfirmResult =
        */
       historyCheckable: boolean
     }
-  | { kind: "alreadySent"; actionId: string; replyKey: "Assistant.alreadySent" }
+  | {
+      /**
+       * A payment of this amount to this recipient, from this wallet, was
+       * already sent: this Confirm waited behind it, or the transaction list
+       * shows it. The action is retired; asking again prepares a new one.
+       */
+      kind: "alreadySent"
+      actionId: string
+      replyKey: "Assistant.alreadySent"
+    }
 
 export type ConfirmOptions = {
   /**
@@ -230,7 +242,12 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
     historyCheckable,
   })
 
-  /** The payment already went: the action is retired, its card says so. */
+  /**
+   * The same payment already went: the action is retired, and its card says
+   * a payment of this amount to this recipient was sent. It does not say this
+   * card's payment was: the memo is not part of a payment's identity, so the
+   * executor cannot tell.
+   */
   const alreadySent = (actionId: string): ConfirmResult => {
     store.remove(actionId)
     return { kind: "alreadySent", actionId, replyKey: "Assistant.alreadySent" }
@@ -540,8 +557,9 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
     if (store.stateOf(actionId) === "disarmed") {
       return { kind: "disarmed", actionId, replyKey: "Assistant.checkHistory" }
     }
-    // A send of this payment went through while this Confirm waited: it was
-    // tapped before that outcome was known, and the payment has gone.
+    // A send of the same payment went through while this Confirm waited. It
+    // was tapped before that outcome was known, so it does not send again;
+    // the reply tells the user to ask again if they meant another payment.
     if (sendsThroughOf(paymentOf(held.action)) > sentBefore) return alreadySent(actionId)
 
     const blocked = await reconcileGate(held.action, historyChecked)
