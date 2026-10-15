@@ -287,9 +287,11 @@ export const sendPayment = async (
   // sends carry no idempotency key, so a retry is a new send, never a replay
   // of the first. Re-arming is therefore only safe when the outcome is known
   // and nothing went out: a payment the SDK reports Failed, or a rejection
-  // before the SDK dispatched. A rejection from sdk.lnurlPay itself is not
-  // one: it can come after the leaves went to the SSP, yet the catch below
-  // still re-arms on it, so the next tap can pay twice: ENG-711.
+  // before the SDK dispatched. A rejection after the SDK dispatched is not
+  // one, and every Breez send re-arms on it today: sdk.lnurlPay's through
+  // the catch below (ENG-711), and sdk.sendPayment's inside payInvoice and
+  // payOnchain, whose wrappers turn every rejection into success: false
+  // (ENG-712). On-chain, the next tap is a second withdrawal (ENG-714).
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false
