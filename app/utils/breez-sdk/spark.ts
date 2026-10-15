@@ -43,6 +43,7 @@ import {
   validateAmountWithinLimits,
 } from "./fee-errors"
 import { extractFeeFromPaymentMethod } from "./fee-extraction"
+import { BreezSdkNotInitializedError } from "./sdk-errors"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -55,11 +56,14 @@ let sdkInstance: BreezSdkInterface | null = null
 
 /**
  * Get the initialized SDK instance
- * @throws Error if SDK is not initialized
+ * @throws BreezSdkNotInitializedError if SDK is not initialized, flagged
+ * `initializing` while initializeBreezSDK() is still connecting
  */
 export const getSDKInstance = (): BreezSdkInterface => {
   if (!sdkInstance) {
-    throw new Error("Breez SDK not initialized. Call initializeBreezSDK first.")
+    throw new BreezSdkNotInitializedError({
+      initializing: breezSDKInitializing !== null,
+    })
   }
   return sdkInstance
 }
@@ -582,6 +586,10 @@ export const parse = async (input: string): Promise<InputType> => {
 export const listPaymentsBreezSDK = async (
   offset?: number,
   limit?: number,
+  // Unix seconds: only payments created at or after this moment. The
+  // assistant's transaction search bounds its BTC window with it (ENG-687);
+  // the screens leave it out and list from the newest payment back.
+  fromTimestamp?: number,
 ): Promise<Payment[]> => {
   const sdk = getSDKInstance()
 
@@ -589,7 +597,8 @@ export const listPaymentsBreezSDK = async (
     typeFilter: undefined,
     statusFilter: undefined,
     assetFilter: undefined,
-    fromTimestamp: undefined,
+    fromTimestamp:
+      fromTimestamp === undefined ? undefined : BigInt(Math.floor(fromTimestamp)),
     toTimestamp: undefined,
     offset,
     limit,

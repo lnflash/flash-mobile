@@ -111,6 +111,9 @@ const fakeClient = () => {
 }
 
 const mockRail = () => ({
+  // The rail's two reads (ENG-687). A send never calls them.
+  getBalanceSats: jest.fn(),
+  listPayments: jest.fn(),
   payInvoice: jest.fn().mockResolvedValue({ success: true }),
   // payLnurl resolves with the SDK's LnurlPayResponse. Only a payment that
   // went out (Completed or Pending) reads as Success (ENG-694).
