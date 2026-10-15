@@ -68,6 +68,9 @@ import { WalletDescriptor } from "@app/types/wallets"
 // The shared manual mock (__mocks__/breez-sdk.js), which jest.config.js maps
 // @app/utils/breez-sdk to. breezBtcRail calls it.
 import { payLightningBreez } from "@app/utils/breez-sdk"
+// The real class, by the deep path payLnurlBreez and sendPayment use: Jest maps
+// the @app/utils/breez-sdk barrel to a mock that does not export it.
+import { LnurlPayOutcomeUnknownError } from "@app/utils/breez-sdk/lnurl-pay-errors"
 import {
   btcSendingWalletDescriptor,
   convertMoneyAmountMock,
@@ -832,9 +835,11 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
   })
 
   // A rejection before sdk.lnurlPay dispatches, like the one here, proves that
-  // nothing was sent, so re-arming is right. One from lnurlPay itself proves
-  // nothing (it can come after the send left) and re-arms all the same today:
-  // ENG-711, pinned by the next case.
+  // nothing was sent, so re-arming is right. payLnurlBreez lets every such
+  // rejection through as it is, and its own refusal, here, is a plain Error.
+  // One from lnurlPay itself proves nothing (it can come after the send left):
+  // payLnurlBreez rethrows it as LnurlPayOutcomeUnknownError, which stays
+  // disarmed (ENG-711, the next case).
   it("lnurl and intraledger: a payLnurl that rejects is a Failure with the thrown message, and re-arms", async () => {
     for (const detail of [lnurl(), intraledger()]) {
       const ctx = setup()
@@ -855,35 +860,49 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     }
   })
 
-  // ENG-711 pins today's behavior here; it is the known double pay, not the
-  // behavior we want. A dropped connection after the leaves went to the SSP
-  // rejects lnurlPay with an SdkError.SparkError, whose message the React
-  // Native binding builds from the type and variant only. The catch re-arms,
-  // so the next tap runs payLnurl again for the same payment, and
-  // payLnurlBreez prepares and pays a fresh invoice. ENG-711 flips this case:
-  // a rejection from lnurlPay itself must leave the button disarmed.
-  it("lnurl and intraledger: after a rejection from lnurlPay itself, the next call pays again (known double pay, ENG-711)", async () => {
+  // ENG-711. This case pinned the known double pay, and is flipped on
+  // purpose. A dropped connection after the leaves went to the SSP rejects
+  // lnurlPay with an SdkError.SparkError, whose message the React Native
+  // binding builds from the type and variant only, and payLnurlBreez rethrows
+  // it as LnurlPayOutcomeUnknownError. The payment may have left, and the old
+  // re-arm let the next tap prepare and pay a fresh invoice. Now the button
+  // stays disarmed and the user is sent to their history, as the GraphQL
+  // branch does for an outcome it cannot prove: the next call is ignored, and
+  // payLnurl runs once.
+  it("lnurl and intraledger: a rejection from lnurlPay itself sends the user to their history and stays disarmed (ENG-711)", async () => {
     for (const detail of [lnurl(), intraledger()]) {
       const ctx = setup()
-      ctx.rail.payLnurl.mockRejectedValueOnce(new Error("SdkError.SparkError"))
+      ctx.rail.payLnurl.mockRejectedValueOnce(
+        new LnurlPayOutcomeUnknownError(new Error("SdkError.SparkError")),
+      )
+      const graphqlSend = jest.fn()
       const send = () =>
         sendPayment(
-          { sendPaymentMutation: jest.fn(), paymentDetail: detail },
+          { sendPaymentMutation: graphqlSend, paymentDetail: detail },
           ctx.deps,
           ctx.state,
         )
 
       await expect(send()).resolves.toEqual({
         status: PaymentSendResult.Failure,
-        errorsMessage: "SdkError.SparkError",
+        errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
       })
-      expectRearmed(ctx.state)
+      // Not re-armed: the inverse of expectRearmed.
+      expect(ctx.state.inFlightRef.current).toBe(true)
+      expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+
+      // A second tap is ignored and pays nothing.
       await expect(send()).resolves.toEqual({
-        status: PaymentSendResult.Success,
+        status: undefined,
         errorsMessage: undefined,
+        ignored: true,
       })
-      expect(ctx.rail.payLnurl).toHaveBeenCalledTimes(2)
-      expect(ctx.rail.payLnurl.mock.calls[1]).toEqual(ctx.rail.payLnurl.mock.calls[0])
+      expect(ctx.rail.payLnurl).toHaveBeenCalledTimes(1)
+      expect(ctx.state.inFlightRef.current).toBe(true)
+      expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+      // A Breez send holds no GraphQL attempt, and none was started.
+      expect(ctx.state.attemptRef.current).toBeNull()
+      expectNoGraphql({ mutate: ctx.mutate, graphqlSend })
     }
   })
 
