@@ -19,8 +19,11 @@ tags: [flashcard]
     id: flashcard-v2-action-change-pin
 - assertVisible:
     id: flashcard-v2-action-limits
-- assertVisible:
-    id: flashcard-v2-owner
+# The owner row sits below the tidy offer (ENG-702: this 21-sat card is
+# short of its ladder, and this phone is its owner): scroll to it.
+- scrollUntilVisible:
+    element:
+      id: flashcard-v2-owner
 - assertNotVisible:
     id: flashcard-v2-action-remove-pin
 - assertNotVisible:
@@ -29,6 +32,10 @@ tags: [flashcard]
 - runScript: scripts/card-state.js
 - assertTrue: ${output.card.now === 1791814824}
 # A second tap reads the same card again.
+- scrollUntilVisible:
+    element:
+      id: flashcard-v2-refresh
+    direction: UP
 - tapOn:
     id: flashcard-v2-refresh
 - assertVisible:
