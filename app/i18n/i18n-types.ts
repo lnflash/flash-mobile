@@ -764,6 +764,10 @@ type RootTranslation = {
 		 */
 		topUpCantUnknownUnit: string
 		/**
+		 * T​h​i​s​ ​a​p​p​ ​h​a​s​n​'​t​ ​r​e​a​d​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​s​p​e​n​t​ ​s​l​o​t​s​ ​y​e​t​,​ ​a​n​d​ ​a​ ​t​o​p​-​u​p​ ​n​e​e​d​s​ ​t​h​e​m​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​,​ ​t​h​e​n​ ​t​o​p​ ​u​p​.
+		 */
+		topUpCantReread: string
+		/**
 		 * T​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​i​s​ ​b​l​o​c​k​e​d​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​t​a​k​e​ ​n​e​w​ ​f​u​n​d​s​.​ ​T​h​e​ ​p​h​o​n​e​ ​t​h​a​t​ ​o​w​n​s​ ​i​t​ ​c​a​n​ ​u​n​b​l​o​c​k​ ​i​t​.
 		 */
 		topUpCantBlocked: string
@@ -8330,6 +8334,10 @@ export type TranslationFunctions = {
 		 * This app hasn't read which unit this card holds yet. Tap the card again, then top up.
 		 */
 		topUpCantUnknownUnit: () => LocalizedString
+		/**
+		 * This app hasn't read this card's spent slots yet, and a top-up needs them. Tap the card again, then top up.
+		 */
+		topUpCantReread: () => LocalizedString
 		/**
 		 * This card's PIN is blocked, so it can't take new funds. The phone that owns it can unblock it.
 		 */

@@ -836,8 +836,13 @@ export const FlashcardProvider = ({ children }: Props) => {
           // names the fee off the session too. The dev bridge's key is the
           // simulated card's owner by construction (a development build's
           // e2e flows), and is never offered as the read's grant.
+          // Gated on what the read did, not on the connectivity hint now:
+          // `isOffline` clears the moment the phone is back, which can be
+          // during the slot read, after it skipped the spent slots. A tidy
+          // run on such a read would ask the mint about no spent slot and
+          // free none, so only a read that took both is offered one.
           const owner = ownership.granted || ownership.key?.source === "dev"
-          if (fullSlotRead() && owner && info.unspentSlots) {
+          if (isAuthed && owner && info.unspentSlots && info.spentSlots !== undefined) {
             resolveTidyOffer(info, cashuGeneration.current)
           }
           return { cashuCard: info }

@@ -122,6 +122,7 @@ export type TopUpEligibility =
         | "pin-unknown"
         | "mixed"
         | "unit-unknown"
+        | "reread"
         | "unfinished-unit"
         | "usd-off"
         | "usd-off-unfinished"
@@ -142,6 +143,19 @@ export const asksForPinBeforePaying = (
   >,
 ): boolean => card.pinState === "set" && cardOwnership(card) === "other"
 
+/**
+ * The card has spent slots that its last read never looked at: a read that
+ * skipped the GET_PROOFs (offline, or signed out: ENG-708) leaves
+ * `spentSlots` undefined. A load from such a read asks the mint about no
+ * spent slot, frees none, and counts every one as still settling, so a load
+ * that needs them is refused with a reason that is not true. The card is read
+ * again first (`reread`). A resumed top-up skips `topUpEligibility`, so its
+ * load is refused the same way; the record stays saved, to finish once the
+ * card has been read again.
+ */
+export const spentSlotsUnread = (card: Pick<CashuCardState, "spent" | "spentSlots">) =>
+  card.spent > 0 && card.spentSlots === undefined
+
 export const topUpEligibility = (
   card: CashuCardState,
   {
@@ -153,6 +167,7 @@ export const topUpEligibility = (
   const ownedHere = cardOwnership(card) === "mine"
   if (card.pinState === "blocked" && !ownedHere) return { ok: false, reason: "blocked" }
   if (card.pinState === "unknown") return { ok: false, reason: "pin-unknown" }
+  if (spentSlotsUnread(card)) return { ok: false, reason: "reread" }
   let cardUnit: CardUnit | undefined
   if (card.balance > 0) {
     const totals = card.unitTotals
@@ -181,6 +196,7 @@ const refusal = (reason: Exclude<TopUpEligibility, { ok: true }>["reason"], LL: 
     "pin-unknown": LL.FlashcardV2.topUpCantPinUnknown(),
     "mixed": LL.FlashcardV2.topUpCantMixed(),
     "unit-unknown": LL.FlashcardV2.topUpCantUnknownUnit(),
+    "reread": LL.FlashcardV2.topUpCantReread(),
     "unfinished-unit": LL.FlashcardV2.topUpCantUnfinishedUnit(),
     "usd-off": LL.FlashcardV2.topUpCantUsd(),
     "usd-off-unfinished": LL.FlashcardV2.topUpCantUsdUnfinished(),
@@ -460,8 +476,14 @@ export const FlashcardV2TopUpScreen = () => {
 
   const asksForPin = cashuCard !== undefined && asksForPinBeforePaying(cashuCard)
 
+  const refusedUnread = () => {
+    const unread = cashuCard !== undefined && spentSlotsUnread(cashuCard)
+    if (unread) setStep({ name: "refused", message: refusal("reread", LL) })
+    return unread
+  }
   const readyToLoad = (record: TopUpRecord) => {
     setError(undefined)
+    if (refusedUnread()) return
     if (asksForPin && !pin) {
       setStep({ name: "pin", purpose: "load", record })
     } else {
@@ -605,7 +627,7 @@ export const FlashcardV2TopUpScreen = () => {
   }
 
   const loadCard = async (record: TopUpRecord, pinToUse?: string) => {
-    if (!cashuCard) return
+    if (!cashuCard || refusedUnread()) return
     setBusy(true)
     setError(undefined)
     try {

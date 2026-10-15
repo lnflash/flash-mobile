@@ -224,6 +224,8 @@ const en: BaseTranslation = {
       "This card holds funds in more than one unit, or funds this app can't identify, so it can't take a top-up.",
     topUpCantUnknownUnit:
       "This app hasn't read which unit this card holds yet. Tap the card again, then top up.",
+    topUpCantReread:
+      "This app hasn't read this card's spent slots yet, and a top-up needs them. Tap the card again, then top up.",
     topUpCantBlocked:
       "This card's PIN is blocked, so it can't take new funds. The phone that owns it can unblock it.",
     topUpCantPinUnknown: "This app can't read this card's PIN state, so it won't load funds onto it.",

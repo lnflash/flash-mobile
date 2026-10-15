@@ -23,6 +23,7 @@ import {
   keysetUnitsLearned,
   resetFlashcardV2,
 } from "@app/store/redux/slices/flashcardV2Slice"
+import { topUpEligibility } from "@app/screens/card-screen/flashcard-v2-topup"
 import { balanceLines } from "@app/utils/cashu-card-format"
 import { saveOwnerKey } from "@app/utils/cashu-card-owner-store"
 
@@ -54,9 +55,25 @@ jest.mock("@app/utils/cashu-card-topup/connected", () => ({
   topUpMint: () => ({ url: "https://mint.test", feePpk: mockFeePpk }),
 }))
 // The phone's connectivity, as the provider's `useConnectivity` reports it.
+// `mockConnectivityChanged` re-renders every component using it, as the real
+// hook does when the phone comes back.
 let mockOffline = false
+const mockConnectivityListeners = new Set<() => void>()
+const mockConnectivityChanged = () =>
+  mockConnectivityListeners.forEach((rerender) => rerender())
 jest.mock("@app/hooks/use-connectivity", () => ({
-  useConnectivity: () => ({ isOffline: mockOffline, justReconnected: false }),
+  useConnectivity: () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useEffect, useReducer } = require("react")
+    const [, rerender] = useReducer((n: number) => n + 1, 0)
+    useEffect(() => {
+      mockConnectivityListeners.add(rerender)
+      return () => {
+        mockConnectivityListeners.delete(rerender)
+      }
+    }, [])
+    return { isOffline: mockOffline, justReconnected: false }
+  },
 }))
 
 loadLocale("en")
@@ -296,6 +313,39 @@ describe("FlashcardProvider reads the card's pieces only when something needs th
     expect(mockFeePpk).not.toHaveBeenCalled()
   })
 
+  it("offers no tidy when the phone comes back during the slot read: the read skipped the spent slots", async () => {
+    holding(AFTER_A_TILL)
+    await ownItHere()
+    mockOffline = true
+    await mount()
+    // Online again while the pieces are read: after the read decided to skip
+    // the GET_PROOFs, before the tidy is considered.
+    transceive.mockImplementation(async (bytes: number[]) => {
+      if (bytes[1] === INS_GET_PIECES && mockOffline) {
+        mockOffline = false
+        mockConnectivityChanged()
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0)
+        })
+      }
+      return card.transceive(bytes)
+    })
+    await act(async () => {
+      await latest?.readFlashcard(false)
+    })
+    await waitFor(() => expect(cancelTechnologyRequest).toHaveBeenCalled())
+    await waitFor(() => expect(latest?.cashuCard?.balance).toBe(BALANCE))
+
+    expect(mockOffline).toBe(false)
+    expect(sent(INS_GET_PIECES)).toBeGreaterThan(0)
+    expect(sent(INS_GET_PROOF)).toBe(0)
+    expect(latest?.cashuCard?.unspentSlots).toBeDefined()
+    expect(latest?.cashuCard?.spentSlots).toBeUndefined()
+    await act(async () => undefined)
+    expect(latest?.cashuCard?.tidyOffer).toBeUndefined()
+    expect(mockFeePpk).not.toHaveBeenCalled()
+  })
+
   describe("the unit this phone recorded, for display only", () => {
     it("labels an offline read with it when the card still says the recorded balance", async () => {
       holding(AFTER_A_TILL)
@@ -347,6 +397,30 @@ describe("FlashcardProvider reads the card's pieces only when something needs th
       expect(store.getState().flashcardV2.cards[card.pubkey]).toMatchObject({
         lastBalance: BALANCE,
         unit: "sat",
+      })
+    })
+
+    it("offline, when the balance moved, the labelled read is no top-up's: its spent slots were never read, so the card is tapped again", async () => {
+      holding(AFTER_A_TILL)
+      await ownItHere()
+      store.dispatch(keysetUnitsLearned({ "00aabbccddeeff00": "sat" }))
+      recorded(BALANCE + 3, "sat")
+      mockOffline = true
+      mockUnitsForKeysets.mockRejectedValue(new Error("Network request failed"))
+      await tap()
+
+      const read = latest?.cashuCard
+      if (!read) throw new Error("no card in context")
+      // Labelled from the units the mint named before, with a spent slot on
+      // the card that this read did not look at.
+      expect(read.unitTotals).toBeDefined()
+      expect(read.spent).toBeGreaterThan(0)
+      expect(read.spentSlots).toBeUndefined()
+      // A top-up from it would ask the mint about no spent slot and call
+      // every one settling: it is refused before that, and the card read again.
+      expect(topUpEligibility(read, { usdEnabled: true })).toEqual({
+        ok: false,
+        reason: "reread",
       })
     })
 

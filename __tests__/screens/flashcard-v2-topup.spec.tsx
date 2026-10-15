@@ -351,6 +351,45 @@ describe("topUpEligibility", () => {
   })
 })
 
+describe("topUpEligibility, a read that skipped the spent slots (ENG-708)", () => {
+  const usdOn = { usdEnabled: true }
+  // An offline read whose record could not label the balance: the pieces were
+  // read, and the units the mint named before label them, but no GET_PROOF.
+  const offlineRead = (over: Partial<CashuCardState> = {}) =>
+    card({
+      balance: 500,
+      unspent: 3,
+      spent: 4,
+      empty: 25,
+      unitTotals: { byUnit: [{ unit: "sat", amount: 500 }], unknown: 0 },
+      spentSlots: undefined,
+      ...over,
+    })
+
+  it("sends the user to tap the card again: a load could not reclaim slots it never read", () => {
+    expect(topUpEligibility(offlineRead(), usdOn)).toEqual({
+      ok: false,
+      reason: "reread",
+    })
+    // The owner's grant changes nothing: its load reclaims from the same read.
+    expect(topUpEligibility(offlineRead({ ownerKeySource: "seed" }), usdOn)).toEqual({
+      ok: false,
+      reason: "reread",
+    })
+  })
+
+  it("lets a read that took the spent slots, or a card with none spent, top up", () => {
+    expect(topUpEligibility(offlineRead({ spentSlots: spentSlots(4) }), usdOn)).toEqual({
+      ok: true,
+      unit: "sat",
+    })
+    expect(topUpEligibility(offlineRead({ spent: 0 }), usdOn)).toEqual({
+      ok: true,
+      unit: "sat",
+    })
+  })
+})
+
 describe("FlashcardV2TopUpScreen", () => {
   it("refuses a blocked card before any amount is asked for", async () => {
     mockCard = card({ pinState: "blocked" })
@@ -1096,6 +1135,70 @@ describe("FlashcardV2TopUpScreen", () => {
       LL.FlashcardV2.topUpHeld(),
     )
     expect(screen.queryByTestId("topup-done")).toBeNull()
+  })
+})
+
+describe("FlashcardV2TopUpScreen: a read that skipped the spent slots (ENG-708)", () => {
+  it("refuses a new top-up from a read that skipped the spent slots, before any amount is asked for", async () => {
+    mockCard = card({
+      balance: 500,
+      unspent: 3,
+      spent: 4,
+      empty: 25,
+      unitTotals: { byUnit: [{ unit: "sat", amount: 500 }], unknown: 0 },
+      spentSlots: undefined,
+    })
+    await renderSettled()
+    expect(screen.getByTestId("topup-refused").props.children).toBe(
+      LL.FlashcardV2.topUpCantReread(),
+    )
+    expect(screen.queryByTestId("amount-input")).toBeNull()
+    expect(mockPrepare).not.toHaveBeenCalled()
+  })
+
+  const resumesWithoutLoading = async (state: "minted" | "paid") => {
+    mockParams = { topUpId: "topup-1" }
+    mockCard = card({
+      balance: 500,
+      unspent: 3,
+      spent: 4,
+      empty: 25,
+      unitTotals: { byUnit: [{ unit: "sat", amount: 500 }], unknown: 0 },
+      spentSlots: undefined,
+    })
+    mockStoreGet.mockResolvedValue(record({ state }))
+    renderScreen()
+
+    await waitFor(() =>
+      expect(screen.getByTestId("topup-refused").props.children).toBe(
+        LL.FlashcardV2.topUpCantReread(),
+      ),
+    )
+    expect(screen.queryByTestId("topup-load")).toBeNull()
+    expect(mockLoad).not.toHaveBeenCalled()
+    // The top-up stays saved, to finish after the card is read again.
+    expect(mockCancel).not.toHaveBeenCalled()
+  }
+
+  it("a resumed minted top-up from a read that skipped the spent slots never loads: tap the card again", () =>
+    resumesWithoutLoading("minted"))
+
+  it("a resumed paid top-up from a read that skipped the spent slots never loads: tap the card again", () =>
+    resumesWithoutLoading("paid"))
+
+  it("a resumed load from a read that took the spent slots goes ahead", async () => {
+    mockParams = { topUpId: "topup-1" }
+    mockCard = card({ spent: 4, empty: 28, spentSlots: spentSlots(4) })
+    mockStoreGet.mockResolvedValue(record({ state: "minted" }))
+    renderScreen()
+
+    await waitFor(() => expect(screen.getByTestId("topup-load")).toBeTruthy())
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    expect(mockLoad).toHaveBeenCalledWith(
+      expect.objectContaining({ state: "minted" }),
+      mockCard,
+      undefined,
+    )
   })
 })
 
