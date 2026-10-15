@@ -1538,6 +1538,52 @@ describe("FlashcardV2Screen card tidy (ENG-702)", () => {
       await expectMaking()
     })
 
+    it("says nothing about the card until the tap reports a stage", async () => {
+      // The tidy asks the mint, then waits for the card: no stage reported yet.
+      let report: ((p: { stage: "reading" }) => void) | undefined
+      let finish: (() => void) | undefined
+      mockRunTidy.mockImplementation(
+        (_deps: unknown, args: RunTidyArgs) =>
+          new Promise((resolve) => {
+            report = (p) => args.onProgress?.(p)
+            finish = () => resolve({ status: "tidied", record: {} })
+          }),
+      )
+      mockRunCardOperation.mockImplementation(
+        async (op: (t: unknown, r: unknown) => unknown) => op(jest.fn(), jest.fn()),
+      )
+      mockCashuCard = card({ tidyOffer: offer() })
+      renderScreen()
+      await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+      fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+      await waitFor(() => expect(report).toBeDefined())
+      expect(screen.queryByTestId("flashcard-v2-tidy-progress")).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.tidyProgressReading())).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.tidyKeepHolding())).toBeNull()
+      expect(screen.queryByTestId("flashcard-v2-tidy-notice")).toBeNull()
+
+      await act(async () => {
+        report?.({ stage: "reading" })
+      })
+      await waitFor(() => {
+        const block = screen.getByTestId("flashcard-v2-tidy-progress")
+        expect(within(block).getByText(LL.FlashcardV2.tidyProgressReading())).toBeTruthy()
+        expect(within(block).getByText(LL.FlashcardV2.tidyKeepHolding())).toBeTruthy()
+      })
+
+      await act(async () => {
+        finish?.()
+      })
+      await waitFor(() =>
+        expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+          LL.FlashcardV2.tidyDone(),
+        ),
+      )
+      expect(screen.queryByTestId("flashcard-v2-tidy-progress")).toBeNull()
+    })
+
     it("gives way to the result once the tap settles", async () => {
       const tap = tidyAtMaking()
       mockCashuCard = card({ tidyOffer: offer() })

@@ -86,19 +86,18 @@ export const FlashcardV2Tidy: React.FC<{
     ) : null
 
   // Outside the offer: Finish on a tidy still owed taps with no offer shown.
-  // Up until the tap settles, re-read and all, then the notice replaces it.
+  // Only once the tap has reported a stage: before that the tidy is still
+  // asking the mint, or waiting for the card, or ends with no tap at all, and
+  // "Reading the card… Keep holding" would not be true. The button's spinner
+  // covers that time. It goes when the tap settles; the notice replaces it.
   const working =
-    step.name === "working" ? (
+    step.name === "working" && progress ? (
       <View
         accessibilityLiveRegion="polite"
         style={styles.progress}
         testID="flashcard-v2-tidy-progress"
       >
-        <Text type="p2">
-          {progress
-            ? tidyProgressText(progress, LL)
-            : LL.FlashcardV2.tidyProgressReading()}
-        </Text>
+        <Text type="p2">{tidyProgressText(progress, LL)}</Text>
         <Text type="p2" bold>
           {LL.FlashcardV2.tidyKeepHolding()}
         </Text>
