@@ -385,6 +385,12 @@ type PayResponse = {
   success: boolean
   error?: string
   payment?: SendPaymentResponse
+  // ENG-714: set only by payOnchainBreez, and only when sdk.sendPayment itself
+  // rejected. The withdrawal may already have left, so the caller must not
+  // offer a retry. `error` then holds the SDK's own message, which is for the
+  // log only: it may name the address or the amount, and the screen shows the
+  // history message instead.
+  outcomeUnknown?: boolean
 }
 
 export const payLightningBreez = async (
@@ -423,10 +429,14 @@ export const payLightningBreez = async (
   }
 }
 
+// ESLint reports max-params at the arrow, below the parameter list, so the
+// directive has to span the declaration.
+/* eslint-disable max-params -- the attempt's key joins the three send inputs, and BtcRail.payOnchain takes this signature as it is (ENG-714) */
 export const payOnchainBreez = async (
   paymentRequest: string,
   amountSats: number,
   selectedFeeType: "fast" | "medium" | "slow",
+  idempotencyKey?: string,
 ): Promise<PayResponse> => {
   try {
     const sdk = getSDKInstance()
@@ -453,7 +463,10 @@ export const payOnchainBreez = async (
     const response = await sdk.sendPayment({
       prepareResponse,
       options,
-      idempotencyKey: undefined,
+      // The caller's attempt key (ENG-714). In 0.22.3 it becomes the
+      // cooperative exit's transfer id, but nothing may rely on the SDK
+      // replaying it until ENG-715 proves that.
+      idempotencyKey,
     })
 
     return { success: true, payment: response }
@@ -465,6 +478,7 @@ export const payOnchainBreez = async (
     }
   }
 }
+/* eslint-enable max-params */
 
 // LNURL Payments
 export const payLnurlBreez = async (

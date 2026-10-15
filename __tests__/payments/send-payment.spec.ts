@@ -609,7 +609,9 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     ['"fast" when none is selected', undefined, "fast"],
   ]
   feeCases.forEach(([label, selectedFeeType, expectedFee]) => {
-    it(`onchain: payOnchain(destination, amount, fee) with ${label}`, async () => {
+    // The fourth argument is the attempt's key (ENG-714): the uuid mock's
+    // first value, minted for this send.
+    it(`onchain: payOnchain(destination, amount, fee, key) with ${label}`, async () => {
       const ctx = sendBtc(onchain(), selectedFeeType)
 
       await expect(ctx.outcome).resolves.toEqual({
@@ -617,12 +619,15 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
         errorsMessage: undefined,
       })
       expect(ctx.rail.payOnchain.mock.calls).toEqual([
-        [ADDRESS, testAmount.amount, expectedFee],
+        [ADDRESS, testAmount.amount, expectedFee, "uuid-1"],
       ])
       expectNoGraphql(ctx)
     })
   })
 
+  // A refusal before sdk.sendPayment dispatched: payOnchainBreez answers it
+  // without outcomeUnknown, and nothing left the wallet, so re-arming is
+  // right. The attempt ends with it, so the next tap mints a new key.
   it("onchain: a failed payOnchain is a Failure with its error, and re-arms", async () => {
     const ctx = setup()
     ctx.rail.payOnchain.mockResolvedValue({ success: false, error: "insufficient funds" })
@@ -638,6 +643,138 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
       errorsMessage: "insufficient funds",
     })
     expectRearmed(ctx.state)
+    expect(ctx.state.attemptRef.current).toBeNull()
+  })
+
+  // ENG-714. payOnchainBreez answers a rejection from sdk.sendPayment itself
+  // with outcomeUnknown: in spark-sdk 0.22.3 the cooperative exit can already
+  // be out by then (a lost complete_coop_exit answer). The old branch re-armed
+  // on it, and the next tap withdrew a second time. Each call of `send` is
+  // one tap on the same state, so a case can tap twice.
+  const onchainSender = () => {
+    const ctx = setup()
+    const graphqlSend = jest.fn()
+    const send = () =>
+      sendPayment(
+        { sendPaymentMutation: graphqlSend, paymentDetail: onchain() },
+        ctx.deps,
+        ctx.state,
+      )
+    return { ...ctx, graphqlSend, send }
+  }
+
+  // payOnchainBreez's answer for a rejection after the dispatch. `error` is
+  // the SDK's own message, which the screen must never show.
+  const unknownOutcome = () => ({
+    success: false,
+    error: "SdkError.SparkError",
+    outcomeUnknown: true,
+  })
+
+  it("onchain: a rejection after dispatch (outcomeUnknown) sends the user to their history and stays disarmed (ENG-714)", async () => {
+    const ctx = onchainSender()
+    ctx.rail.payOnchain.mockResolvedValueOnce(unknownOutcome())
+
+    await expect(ctx.send()).resolves.toEqual({
+      status: PaymentSendResult.Failure,
+      errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+    })
+    // Not re-armed: the inverse of expectRearmed.
+    expect(ctx.state.inFlightRef.current).toBe(true)
+    expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+    // The attempt is kept, holding the key the withdrawal carried.
+    expect(ctx.rail.payOnchain.mock.calls).toEqual([
+      [ADDRESS, testAmount.amount, "fast", "uuid-1"],
+    ])
+    expect(ctx.state.attemptRef.current).toEqual({
+      key: "uuid-1",
+      dispatched: true,
+      wentKeyless: false,
+    })
+    expectNoGraphql(ctx)
+  })
+
+  it("onchain: after an unknown outcome, a second call is ignored and dispatches nothing (ENG-714)", async () => {
+    const ctx = onchainSender()
+    ctx.rail.payOnchain.mockResolvedValueOnce(unknownOutcome())
+    await ctx.send()
+
+    // The re-tap that used to be a second withdrawal.
+    await expect(ctx.send()).resolves.toEqual({
+      status: undefined,
+      errorsMessage: undefined,
+      ignored: true,
+    })
+    expect(ctx.rail.payOnchain).toHaveBeenCalledTimes(1)
+    expect(ctx.state.inFlightRef.current).toBe(true)
+    expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+    expect(ctx.state.attemptRef.current).toMatchObject({ key: "uuid-1" })
+  })
+
+  it("onchain: a retained attempt reuses its key", async () => {
+    // An attempt kept from an earlier on-chain call, with the button armed:
+    // the state a keyed retry (ENG-715) would start from. Whether the SDK
+    // then replays the withdrawal is that ticket's to prove.
+    const ctx = onchainSender()
+    ctx.state.attemptRef.current = {
+      key: "kept-key",
+      dispatched: true,
+      wentKeyless: false,
+    }
+
+    await expect(ctx.send()).resolves.toEqual({
+      status: PaymentSendResult.Success,
+      errorsMessage: undefined,
+    })
+    expect(ctx.rail.payOnchain.mock.calls).toEqual([
+      [ADDRESS, testAmount.amount, "fast", "kept-key"],
+    ])
+    // No key was minted, and the known outcome ends the attempt.
+    expect(uuidCounter).toBe(0)
+    expect(ctx.state.attemptRef.current).toBeNull()
+  })
+
+  it("onchain: two separate attempt states mint different keys", async () => {
+    const first = onchainSender()
+    const second = onchainSender()
+
+    await first.send()
+    await second.send()
+
+    expect(first.rail.payOnchain.mock.calls).toEqual([
+      [ADDRESS, testAmount.amount, "fast", "uuid-1"],
+    ])
+    expect(second.rail.payOnchain.mock.calls).toEqual([
+      [ADDRESS, testAmount.amount, "fast", "uuid-2"],
+    ])
+  })
+
+  it("onchain: success clears the attempt and stays disarmed", async () => {
+    const ctx = onchainSender()
+    ctx.rail.payOnchain.mockResolvedValueOnce({
+      success: true,
+      payment: { payment: { status: PaymentStatus.Pending } },
+    })
+
+    await expect(ctx.send()).resolves.toEqual({
+      status: PaymentSendResult.Success,
+      errorsMessage: undefined,
+    })
+    // The withdrawal carried this attempt's key, and the attempt is over.
+    expect(ctx.rail.payOnchain.mock.calls).toEqual([
+      [ADDRESS, testAmount.amount, "fast", "uuid-1"],
+    ])
+    expect(ctx.state.attemptRef.current).toBeNull()
+    expect(ctx.state.inFlightRef.current).toBe(true)
+    expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+
+    // A second tap is ignored: the withdrawal is not sent twice.
+    await expect(ctx.send()).resolves.toEqual({
+      status: undefined,
+      errorsMessage: undefined,
+      ignored: true,
+    })
+    expect(ctx.rail.payOnchain).toHaveBeenCalledTimes(1)
   })
 
   it('an unknown payment type is "Wrong invoice type" and touches no rail', async () => {
@@ -931,6 +1068,40 @@ describe("sendPayment: the ENG-533 attempt lifecycle", () => {
       mutate.mock.calls.map(([options]) => options.variables.input.idempotencyKey),
     ).toEqual(["uuid-1", "uuid-1"])
     expect(state.attemptRef.current).toBeNull()
+  })
+
+  // ENG-714: an attempt with no closure is a Breez on-chain one, kept because
+  // its withdrawal may have left. The GraphQL branch has nothing to replay it
+  // with, so it answers as for a keyless retry: disarmed, history message,
+  // nothing dispatched, and no throw.
+  it("a retained attempt with no closure stays disarmed with the history message, and calls neither the closure nor Apollo", async () => {
+    const { mutate, deps, state } = setup()
+    const breezAttempt = { key: "breez-key", dispatched: true, wentKeyless: false }
+    state.attemptRef.current = breezAttempt
+    const run = jest.fn()
+    const detail = usdInvoice()
+
+    const outcome = await sendPayment(
+      { sendPaymentMutation: run, paymentDetail: detail },
+      deps,
+      state,
+    )
+
+    expect(outcome).toEqual({
+      status: PaymentSendResult.Failure,
+      errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+    })
+    expect(run).not.toHaveBeenCalled()
+    expect(mutate).not.toHaveBeenCalled()
+    expect(state.inFlightRef.current).toBe(true)
+    expect(state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+    // The attempt is left exactly as it was.
+    expect(state.attemptRef.current).toBe(breezAttempt)
+    expect(breezAttempt).toEqual({
+      key: "breez-key",
+      dispatched: true,
+      wentKeyless: false,
+    })
   })
 
   it("refuses to retry an attempt that went out keyless, without dispatching", async () => {

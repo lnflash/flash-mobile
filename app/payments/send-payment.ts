@@ -127,6 +127,10 @@ export const createGraphqlMutationFns = (
  * random key. Why an attempt is an object and not a content fingerprint, and
  * when one is created, retained and cleared, is the ENG-533 comment on
  * `attemptRef` in use-send-payment.ts.
+ *
+ * A Breez on-chain send (ENG-714) holds an attempt with a key and no
+ * closure. The key goes to sdk.sendPayment. The attempt is cleared once the
+ * outcome is known, and kept, with Confirm disarmed, when it is not.
  */
 export type Attempt = {
   key: string
@@ -145,7 +149,8 @@ export type Attempt = {
   // second payment. Such an attempt must never be auto-retried; the user is
   // sent to their history instead.
   wentKeyless: boolean
-  run: (params: SendPaymentMutationParams) => ReturnType<SendPaymentMutation>
+  // The GraphQL send closure. A Breez on-chain attempt has none.
+  run?: (params: SendPaymentMutationParams) => ReturnType<SendPaymentMutation>
 }
 
 /**
@@ -158,9 +163,9 @@ export type Attempt = {
  * caller creates its refs once and hands the same `inFlightRef` and
  * `attemptRef` to every call for that payment, each retry included (the
  * wrapper object may be rebuilt per call, as `useSendPayment` does).
- * `sendPayment` mints the idempotency key itself, when a GraphQL send starts
- * a new `Attempt`, and keeps it in `attemptRef` until a status comes back;
- * nothing else holds it between calls.
+ * `sendPayment` mints the idempotency key itself, when a GraphQL send or a
+ * Breez on-chain send starts a new `Attempt`, and keeps it in `attemptRef`
+ * until the outcome is known; nothing else holds it between calls.
  *
  * - Never recreate the refs per call (per Confirm tap, say). A retry after a
  *   dropped response would then find no `Attempt` and mint a new key. If the
@@ -259,9 +264,9 @@ const lnurlPaymentSent = (answer: LnurlPayAnswer | undefined): boolean => {
  * attempt, created once and reused across every retry of that attempt; a
  * new attempt (a re-prepared action, new amounts) gets a new state (ENG-533,
  * see `AttemptState`). The idempotency key is minted in here, when a GraphQL
- * send starts a new `Attempt`, so a caller that recreates the state per call
- * sends each retry under a new key, and a retry after a dropped response can
- * pay twice.
+ * send or a Breez on-chain send starts a new `Attempt`, so a caller that
+ * recreates the state per call sends each retry under a new key, and a retry
+ * after a dropped response can pay twice.
  *
  * The code is useSendPayment's dispatch moved here unchanged (ENG-686) apart
  * from three substitutions: the Breez calls go through `deps.btcRail`, the
@@ -286,17 +291,19 @@ export const sendPayment = async (
   setHasAttemptedSend(true)
 
   // Shared failure epilogue for the Breez branch: re-arm the button for a
-  // fresh attempt, as the GraphQL branch below does for a Failure. Breez
-  // sends carry no idempotency key, so a retry is a new send, never a replay
-  // of the first. Re-arming is therefore only safe when the outcome is known
-  // and nothing went out: a payment the SDK reports Failed, or a rejection
-  // before the SDK dispatched. A rejection after the SDK dispatched is not
-  // one. sdk.lnurlPay's never reaches finish: payLnurlBreez rethrows it as
-  // LnurlPayOutcomeUnknownError, and the catch below answers that without
-  // re-arming (ENG-711). sdk.sendPayment's still re-arms, inside payInvoice
-  // and payOnchain, whose wrappers turn every rejection into success: false.
-  // On-chain, the next tap is a second withdrawal (ENG-714); a keyed retry
-  // for both is ENG-715.
+  // fresh attempt, as the GraphQL branch below does for a Failure. The next
+  // tap is a new send, never a replay of the first: the bolt11 and LNURL
+  // sends carry no key, and the on-chain branch drops its attempt, key and
+  // all, before it re-arms (ENG-714). Re-arming is therefore only safe when
+  // the outcome is known and nothing went out: a payment the SDK reports
+  // Failed, or a rejection before the SDK dispatched. A rejection after the
+  // SDK dispatched is not one. payLnurlBreez rethrows sdk.lnurlPay's as
+  // LnurlPayOutcomeUnknownError, which the catch below answers without
+  // re-arming (ENG-711). payOnchainBreez answers sdk.sendPayment's with
+  // outcomeUnknown, which the on-chain branch answers without calling finish
+  // (ENG-714). payInvoice still brings one here: payLightningBreez turns every
+  // rejection into success: false, so the bolt11 branch re-arms on it (the
+  // bolt11 half of ENG-714, still open). A keyed retry is ENG-715.
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false
@@ -357,13 +364,40 @@ export const sendPayment = async (
         })
       } else if (paymentType === "onchain") {
         console.log("Starting payOnchainBreez")
+        // ENG-714: one key per attempt, minted here as the GraphQL branch mints
+        // its own, and sent with the withdrawal. An attempt kept from an
+        // earlier call keeps its key.
+        if (!attemptRef.current) {
+          attemptRef.current = { key: uuidv4(), dispatched: false, wentKeyless: false }
+        }
+        const attempt = attemptRef.current
+        attempt.dispatched = true
         const response = await deps.btcRail.payOnchain(
           destination,
           settlementAmount.amount,
           selectedFeeType || "fast",
+          attempt.key,
         )
         console.log("Response payOnchainBreez: ", response)
 
+        // ENG-714: sdk.sendPayment itself rejected, so the withdrawal may have
+        // left, and the next tap could withdraw again. No finish():
+        // inFlightRef and hasAttemptedSend keep the true set above, so Confirm
+        // stays disarmed, a second call comes back ignored, and the attempt
+        // keeps its key. The user gets the history message, the answer the
+        // GraphQL branch gives an outcome it cannot prove, and never
+        // response.error, the SDK's raw message.
+        if (!response.success && response.outcomeUnknown) {
+          return {
+            status: PaymentSendResult.Failure,
+            errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+          }
+        }
+
+        // A known outcome: the withdrawal went out, or it was refused before
+        // the dispatch. The attempt is over.
+        // eslint-disable-next-line require-atomic-updates -- ref as a synchronous flag; the write-after-await IS the design
+        attemptRef.current = null
         return finish({
           status: response.success
             ? PaymentSendResult.Success
@@ -408,6 +442,17 @@ export const sendPayment = async (
       }
     }
     const attempt = attemptRef.current
+    // ENG-714: an attempt with no closure belongs to a Breez on-chain send
+    // whose withdrawal may have left. There is nothing here to replay, so stay
+    // disarmed with the history message, as for a keyless retry below, and
+    // never throw. Only a state reused for a different send gets here, which
+    // AttemptState forbids.
+    if (!attempt.run) {
+      return {
+        status: PaymentSendResult.Failure,
+        errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+      }
+    }
     const attemptIsRetry = attempt.dispatched
 
     // A retry of an attempt whose earlier dispatch went out KEYLESS:
