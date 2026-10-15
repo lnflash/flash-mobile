@@ -10,6 +10,7 @@ import { InvoiceType } from "@app/screens/receive-bitcoin-screen/payment/index.t
 import { ParseDestinationResult } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { PaymentType as ParsedPaymentType } from "@galoymoney/client"
 import { getAnalytics } from "@react-native-firebase/analytics"
+import type { AssistantToolEvent } from "@app/assistant/engine/telemetry"
 
 export const logRequestAuthCode = ({
   instance,
@@ -241,5 +242,55 @@ export const logFeaturedViewOpened = (params: LogFeaturedViewOpenedParams) => {
 export const logPlaidLinkFailure = ({ errorCode }: { errorCode: string }) => {
   getAnalytics().logEvent("plaid_link_failure", {
     error_code: errorCode,
+  })
+}
+
+// ============================================
+// Flash assistant (ENG-687, docs/ai-assistant-tool-registry.md §8)
+// ============================================
+// Every parameter below is a closed union, a number or a boolean: none can
+// carry a memo, a payee or an amount, so no payload text reaches Firebase.
+
+/** One tool call or one Confirm: its intent, tier, outcome and latency. */
+export const logAssistantEvent = (params: AssistantToolEvent) => {
+  getAnalytics().logEvent("assistant_event", {
+    intent: params.intent,
+    tier: params.tier,
+    outcome: params.outcome,
+    latency_ms: Math.round(params.latencyMs),
+    on_device_model_available: params.onDeviceModelAvailable,
+  })
+}
+
+/** An assistant thread was opened. Weekly active assistant users count these. */
+export const logAssistantThreadOpened = () => {
+  getAnalytics().logEvent("assistant_thread_opened")
+}
+
+/** A thread was left while a clarification was still unanswered. */
+export const logAssistantClarificationAbandoned = ({
+  clarificationCount,
+}: {
+  clarificationCount: number
+}) => {
+  getAnalytics().logEvent("assistant_clarification_abandoned", {
+    clarification_count: clarificationCount,
+  })
+}
+
+type LogSendOpenToConfirmParams = {
+  /**
+   * `assistant`: from opening a thread to the first confirmed send in it.
+   * `classic`: from opening the send flow's destination screen to a confirmed
+   * send, the same measure for the screens, for comparison (spec §8).
+   */
+  flow: "assistant" | "classic"
+  openToConfirmMs: number
+}
+
+export const logSendOpenToConfirm = (params: LogSendOpenToConfirmParams) => {
+  getAnalytics().logEvent("send_open_to_confirm", {
+    flow: params.flow,
+    open_to_confirm_ms: Math.round(params.openToConfirmMs),
   })
 }

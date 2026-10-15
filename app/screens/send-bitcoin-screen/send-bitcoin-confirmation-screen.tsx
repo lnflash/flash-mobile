@@ -56,7 +56,9 @@ import {
   logPaymentAttempt,
   logPaymentBlockedExpiredInvoice,
   logPaymentResult,
+  logSendOpenToConfirm,
 } from "@app/utils/analytics"
+import { takeSendFlowOpenToConfirmMs } from "@app/utils/send-open-to-confirm"
 import { getCashWallet } from "@app/graphql/wallets-utils"
 import { useChatContext } from "../chat/chatContext"
 import { addToContactList } from "@app/utils/nostr"
@@ -319,6 +321,12 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
         })
 
         if (status === "SUCCESS" || status === "PENDING") {
+          // The classic flow's open-to-confirm time, the baseline the
+          // assistant's own is compared with (ENG-687).
+          const openToConfirmMs = takeSendFlowOpenToConfirmMs()
+          if (openToConfirmMs !== undefined) {
+            logSendOpenToConfirm({ flow: "classic", openToConfirmMs })
+          }
           navigation.navigate("sendBitcoinSuccess", {
             walletCurrency: sendingWalletDescriptor.currency,
             unitOfAccountAmount:

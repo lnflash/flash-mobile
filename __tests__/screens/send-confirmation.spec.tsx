@@ -25,6 +25,11 @@ import { payLightningBreez, payLnurlBreez } from "@app/utils/breez-sdk"
 // __tests__/mocks/breez-sdk-spark-mock-parity.spec.ts.
 import { PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
 import { getAnalytics } from "@react-native-firebase/analytics"
+import {
+  clearSendFlowOpened,
+  markSendFlowOpened,
+  takeSendFlowOpenToConfirmMs,
+} from "@app/utils/send-open-to-confirm"
 import baseTranslation from "@app/i18n/en"
 import type { Translation } from "@app/i18n/i18n-types"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
@@ -413,6 +418,60 @@ describe("expired held invoice", () => {
         expect.objectContaining({ payment_status: PaymentSendResult.Failure }),
       ],
     ])
+  })
+
+  // ENG-687: the classic flow's open-to-confirm time, the baseline the
+  // assistant's thread-open-to-confirm time is compared with.
+  describe("open-to-confirm", () => {
+    const openToConfirmEvents = () =>
+      (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+        ([event]) => event === "send_open_to_confirm",
+      )
+
+    beforeEach(() => {
+      clearSendFlowOpened()
+    })
+
+    it("reports the time from the flow's open to a confirmed send", async () => {
+      // The destination screen opened the flow 90 s before the send.
+      markSendFlowOpened(LONG_AFTER_EXPIRY_MS - 90_000)
+
+      const { navigate, confirm } = await renderConfirmation(btcLnurlPaymentDetail())
+      await confirm()
+
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything()),
+      )
+      expect(openToConfirmEvents()).toEqual([
+        // eslint-disable-next-line camelcase -- Firebase event params are snake_case
+        ["send_open_to_confirm", { flow: "classic", open_to_confirm_ms: 90_000 }],
+      ])
+    })
+
+    it("reports nothing for a failed send, and keeps the open for the retry", async () => {
+      markSendFlowOpened(LONG_AFTER_EXPIRY_MS - 90_000)
+      ;(payLnurlBreez as jest.Mock).mockResolvedValueOnce({
+        payment: { status: PaymentStatus.Failed },
+        successAction: undefined,
+      })
+
+      const { queryByText, confirm } = await renderConfirmation(btcLnurlPaymentDetail())
+      await confirm()
+
+      await waitFor(() => expect(queryByText("Something went wrong")).toBeTruthy())
+      expect(openToConfirmEvents()).toEqual([])
+      expect(takeSendFlowOpenToConfirmMs(LONG_AFTER_EXPIRY_MS)).toBe(90_000)
+    })
+
+    it("reports nothing when the flow did not open on the destination screen", async () => {
+      const { navigate, confirm } = await renderConfirmation(btcLnurlPaymentDetail())
+      await confirm()
+
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything()),
+      )
+      expect(openToConfirmEvents()).toEqual([])
+    })
   })
 })
 
