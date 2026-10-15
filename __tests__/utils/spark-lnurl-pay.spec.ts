@@ -10,11 +10,11 @@
  * reason the SDK gave, since nothing the app logs after payLnurlBreez tells one
  * apart from another: the screen shows the history message and payment_result
  * records a plain FAILURE. The line goes to the console and, through appendLog,
- * to the Spark log CSV that Settings > Export Spark logs shares: in a release
- * build that CSV is the only copy support can ask a user for. The RN binding
- * builds an SdkError's message from the variant alone ("SdkError.SparkError")
- * and carries the reason in `inner`, so the rejections below are shaped like its
- * errors.
+ * to the Spark log CSV that Settings > Advanced > Export Logs shares: in a
+ * release build that CSV is the only copy support can ask a user for. The RN
+ * binding builds an SdkError's message from the variant alone
+ * ("SdkError.SparkError") and carries the reason in `inner`, so the rejections
+ * below are shaped like its errors.
  *
  * The SDK module is replaced by a fake whose builder hands back a fake SDK, so
  * the real initializeBreezSDK connects to it and payLnurlBreez runs unchanged.

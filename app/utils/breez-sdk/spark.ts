@@ -510,10 +510,10 @@ export const payLnurlBreez = async (
       // records a plain FAILURE, so this line is the record that this send was
       // disarmed and why. Beside the SDK's own lines, it tells a lost
       // request_lightning_send answer from a harmless SSP timeout. A release
-      // build sends the SDK's lines to the Spark log CSV that Settings > Export
-      // Spark logs shares, but console.error reaches only logcat or os_log,
-      // which no user can export, so the line goes to both. A dev build never
-      // writes the CSV (connectToSDK skips initLogBuffer), and there the
+      // build sends the SDK's lines to the Spark log CSV that Settings >
+      // Advanced > Export Logs shares, but console.error reaches only logcat or
+      // os_log, which no user can export, so the line goes to both. A dev build
+      // never writes the CSV (connectToSDK skips initLogBuffer), and there the
       // console is the record.
       //
       // The RN binding (uniffi) builds an SdkError's message from its type and
