@@ -14,7 +14,11 @@ import type { ReactTestRendererJSON } from "react-test-renderer"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import appTheme from "../../app/rne-theme/theme"
-import type { CardOwnership, CashuCardState } from "../../app/contexts/Flashcard"
+import type {
+  CardOwnership,
+  CashuCardPreview,
+  CashuCardState,
+} from "../../app/contexts/Flashcard"
 import {
   cardLast4,
   cardNotices,
@@ -22,7 +26,7 @@ import {
   formatUnitAmount,
   shortPubkey,
 } from "../../app/screens/card-screen/flashcard-v2"
-import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
+import { cardInfo, cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
 import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
 import { TidyError, TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
@@ -41,6 +45,7 @@ const mockTapFlashcard = jest.fn(async () => ({}))
 const mockForgetCashuCard = jest.fn()
 const mockResetFlashcard = jest.fn()
 let mockCashuCard: CashuCardState | undefined
+let mockCashuCardPreview: CashuCardPreview | undefined
 let mockIsAuthed = true
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let mockUnfinishedTopUps: any[] = []
@@ -83,6 +88,7 @@ jest.mock("@app/graphql/is-authed-context", () => ({
 jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
     cashuCard: mockCashuCard,
+    cashuCardPreview: mockCashuCardPreview,
     forgetCashuCard: mockForgetCashuCard,
     resetFlashcard: mockResetFlashcard,
   }),
@@ -150,6 +156,7 @@ describe("FlashcardV2Screen", () => {
     mockIsAuthed = true
     mockIsFocused = true
     mockCashuCard = card()
+    mockCashuCardPreview = undefined
     mockUnfinishedTopUps = []
   })
 
@@ -872,6 +879,120 @@ describe("FlashcardV2Screen", () => {
 // ENG-675: Remove PIN (0.x CLEAR_PIN) is gone with 0.x: a 2.0 card's PIN is
 // the owner's to change, never to remove. In its place, the owner's limits,
 // the setup of a card with no owner, and what the card says of its clock.
+describe("FlashcardV2Screen, a card still verifying (ENG-707)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockIsAuthed = true
+    mockIsFocused = true
+    mockCashuCard = card()
+    mockCashuCardPreview = undefined
+    mockUnfinishedTopUps = []
+  })
+
+  afterEach(() => {
+    mockCashuCardPreview = undefined
+  })
+
+  /** What a read tap has before AUTH: another card, 2,500 on it, no unit yet. */
+  const preview = (overrides: Partial<CashuCardPreview> = {}): CashuCardPreview => ({
+    ...cardInfo({ pinState: "unset", hasOwner: false }),
+    pubkey: "03" + "cd".repeat(32),
+    balance: 2500,
+    ...overrides,
+  })
+
+  /** Nothing a verified card offers is on screen: no action, notice, tidy, top-up or owner. */
+  const expectNothingToActOn = () => {
+    expect(screen.queryByTestId("flashcard-v2-actions")).toBeNull()
+    for (const id of [
+      "flashcard-v2-action-setup",
+      "flashcard-v2-action-topup",
+      "flashcard-v2-action-set-pin",
+      "flashcard-v2-action-change-pin",
+      "flashcard-v2-action-limits",
+      "flashcard-v2-finish-topup",
+      "flashcard-v2-dismiss-topup",
+      "flashcard-v2-unfinished-topup",
+      "flashcard-v2-owner",
+      "flashcard-v2-refresh",
+      "flashcard-v2-not-set-up",
+      "flashcard-v2-no-pin",
+      "flashcard-v2-blocked",
+      "flashcard-v2-pin-unknown",
+      "flashcard-v2-refresh-needed",
+      "flashcard-v2-tidy-offer",
+      "flashcard-v2-tidy-notice",
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull()
+    }
+    expect(screen.queryByText(LL.CardScreen.removeCard())).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.setUp())).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.topUp())).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.topUpFinish())).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.topUpDismiss())).toBeNull()
+  }
+
+  it("shows the figure as verifying, and nothing to act on, on a first tap", () => {
+    mockCashuCard = undefined
+    mockCashuCardPreview = preview()
+    mockUnfinishedTopUps = [{ id: "a", state: "paid", amount: 10, unit: "sat" }]
+
+    renderScreen()
+
+    expect(
+      screen.getByTestId("flashcard-v2-preview-balance-unknown").props.children,
+    ).toBe(LL.FlashcardV2.unitUnknown({ amount: "2,500" }))
+    // The verified figure's ids, which the e2e flows wait on, are not used.
+    expect(screen.queryByTestId("flashcard-v2-balance-unknown")).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-balance-verifying").props.children).toBe(
+      LL.FlashcardV2.verifying(),
+    )
+    expect(screen.getByText("3 loaded · 5 spent · 120 free of 128")).toBeTruthy()
+    expectNothingToActOn()
+    // The tap is still going: the screen stays up.
+    expect(mockGoBack).not.toHaveBeenCalled()
+  })
+
+  it("labels the figure with the unit the phone recorded for it", () => {
+    mockCashuCard = undefined
+    mockCashuCardPreview = preview({
+      unitTotals: { byUnit: [{ unit: "sat", amount: 2500 }], unknown: 0 },
+    })
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-preview-balance-sat").props.children).toBe(
+      "2,500 sats",
+    )
+    expect(screen.queryByTestId("flashcard-v2-balance-sat")).toBeNull()
+  })
+
+  it("stands in for a verified card A while a re-tap verifies: none of A's actions show", () => {
+    // Card A, its PIN unset, with a paid top-up to finish: a notice, Finish
+    // and the owner's actions would all show for it.
+    mockCashuCard = card({ pinState: "unset" })
+    mockUnfinishedTopUps = [{ id: "a", state: "paid", amount: 10, unit: "sat" }]
+    mockCashuCardPreview = preview()
+
+    renderScreen()
+
+    expect(screen.getByTestId("flashcard-v2-balance-verifying")).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-balance-sat")).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-preview-card-id").props.children).toBe(
+      shortPubkey("03" + "cd".repeat(32)),
+    )
+    expectNothingToActOn()
+    expect(mockGoBack).not.toHaveBeenCalled()
+  })
+
+  it("a verified card says nothing about verifying", () => {
+    renderScreen()
+
+    expect(screen.queryByTestId("flashcard-v2-balance-verifying")).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-actions")).toBeTruthy()
+  })
+})
+
 describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
   beforeEach(() => {
     jest.clearAllMocks()

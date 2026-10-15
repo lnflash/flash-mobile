@@ -1,6 +1,8 @@
-# A tap reads the loaded card (2.0: SELECT, GET_INFO, GET_PUBKEY, AUTH,
-# GET_CARD, the clock, GET_BALANCE, the pieces): 21 sat, the mint names the
-# unit, the PIN set, this phone the owner.
+# A tap reads the loaded card (2.0: SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE,
+# AUTH, GET_CARD, the clock, the pieces): 21 sat, the mint names the unit, the
+# PIN set, this phone the owner. The flows wait on flashcard-v2-balance-*, the
+# verified figure: what the card says before AUTH (ENG-707) shows under
+# flashcard-v2-preview-balance-*, never under these ids.
 appId: com.lnflash
 name: Flashcard balance read
 tags: [flashcard]

@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useRef, useState } from "react"
+import React, { createContext, useContext, useEffect, useRef, useState } from "react"
 import { Dimensions, Platform, View } from "react-native"
 import RNModal from "react-native-modal"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -7,14 +7,17 @@ import * as Animatable from "react-native-animatable"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { getParams } from "js-lnurl"
 import axios from "axios"
+import { ApolloClient, getApolloContext } from "@apollo/client"
 
 // components
 import { PrimaryBtn } from "@app/components/buttons"
 import { Loading } from "./ActivityIndicatorContext"
 
 // hooks
+import { HideBalanceDocument, HideBalanceQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import type { TranslationFunctions } from "@app/i18n/i18n-types"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import {
@@ -22,6 +25,7 @@ import {
   cardSeen,
   cardUnitResolved,
   keysetUnitsLearned,
+  KnownCard,
 } from "@app/store/redux/slices/flashcardV2Slice"
 
 // utils
@@ -38,6 +42,7 @@ import {
   CardSlotRead,
   CashuCardInfo,
   ReadChanges,
+  ReadPreview,
   Transceiver,
   WrongCardError,
   getBalance as getCardBalance,
@@ -49,6 +54,7 @@ import {
   selectApplet,
   toHex,
 } from "../utils/cashu-card"
+import { balanceLines } from "../utils/cashu-card-format"
 import { extendCardTimeout } from "../utils/cashu-card-nfc"
 import { bridgeTransceiver, getCardBridge } from "../utils/cashu-card-bridge"
 import { feedHeader, keptHeader, refreshTipHeader } from "../utils/cashu-card-headers"
@@ -270,6 +276,15 @@ export type FlashcardReadResult = {
   boltCard?: boolean
 }
 
+/**
+ * What a read tap has from a Cashu card before AUTH (ENG-707): what GET_INFO,
+ * GET_PUBKEY and GET_BALANCE said, none of it proven. Shown as "Verifying…"
+ * while AUTH runs, and dropped when the tap ends, whatever its outcome:
+ * nothing reads it to act, and nothing stores it. `unitTotals` is the unit
+ * this phone recorded for the card when the balance is the one it recorded.
+ */
+export type CashuCardPreview = ReadPreview & { unitTotals?: CardUnitTotals }
+
 /** A Cashu card as the app holds it: what the card said, plus what the mint said. */
 export type CashuCardState = CashuCardInfo & {
   /**
@@ -409,6 +424,12 @@ export interface FlashcardInterface {
   transactions?: TransactionItem[]
   /** The last Cashu card this app session read: balance, PIN state, pubkey. */
   cashuCard?: CashuCardState
+  /**
+   * A read tap's card before it has proved its key (ENG-707): set at
+   * GET_BALANCE, cleared when the tap ends. Never a verified card: `cashuCard`
+   * is set only once AUTH has passed, and a failed AUTH leaves it as it was.
+   */
+  cashuCardPreview?: CashuCardPreview
   loading?: boolean
   error?: string
   /** Forgets the BoltCard: context and its persisted link. The Cashu card stays. */
@@ -419,7 +440,15 @@ export interface FlashcardInterface {
    * screen signed out.
    */
   forgetCashuCard: () => void
-  readFlashcard: (isPayment?: boolean) => Promise<FlashcardReadResult>
+  /**
+   * One read tap. `onUnverified` runs once a Cashu card has said its balance,
+   * before it proves its key (`cashuCardPreview` is then set): the card
+   * screen can open on it while the tap goes on.
+   */
+  readFlashcard: (
+    isPayment?: boolean,
+    onUnverified?: () => void,
+  ) => Promise<FlashcardReadResult>
   /**
    * One more tap, for something that changes the card: PIN, load, spend.
    * Opens a session, selects the applet, checks it is `expectedPubkey`'s card,
@@ -450,6 +479,7 @@ export const FlashcardContext = createContext<FlashcardInterface>({
   balanceInSats: undefined,
   transactions: undefined,
   cashuCard: undefined,
+  cashuCardPreview: undefined,
   loading: undefined,
   error: undefined,
   resetFlashcard: () => {},
@@ -459,6 +489,52 @@ export const FlashcardContext = createContext<FlashcardInterface>({
     throw new Error("FlashcardProvider is not mounted")
   },
 })
+
+/**
+ * A preview (ENG-707) with the unit this phone recorded for the card, when the
+ * card still says the balance recorded with it; an empty card needs no unit.
+ * Otherwise it has none: the keyset split is read only after AUTH.
+ */
+export const previewWithKnownUnit = (
+  preview: ReadPreview,
+  cards?: Record<string, KnownCard>,
+): CashuCardPreview => {
+  if (preview.balance === 0) return { ...preview, unitTotals: { byUnit: [], unknown: 0 } }
+  const known = cards?.[preview.pubkey]
+  if (!known?.unit || known.lastBalance !== preview.balance) return preview
+  return {
+    ...preview,
+    unitTotals: { byUnit: [{ unit: known.unit, amount: preview.balance }], unknown: 0 },
+  }
+}
+
+/** Hide-balance, from Apollo's cache: false where no client is mounted. */
+const balanceHidden = (client?: ApolloClient<unknown>): boolean => {
+  try {
+    return (
+      client?.readQuery<HideBalanceQuery>({ query: HideBalanceDocument })?.hideBalance ??
+      false
+    )
+  } catch {
+    return false
+  }
+}
+
+/** What the scan sheet says while the card verifies (ENG-707): its figure, unless hidden. */
+const scanSheetVerifying = (
+  preview: CashuCardPreview,
+  hidden: boolean,
+  LL: TranslationFunctions,
+): string =>
+  hidden
+    ? LL.FlashcardV2.scanVerifyingHidden()
+    : LL.FlashcardV2.scanVerifying({
+        amount: balanceLines(preview, LL)
+          .map(({ text }) => text)
+          .join(" · "),
+      })
+
+type ReadFlashcard = FlashcardInterface["readFlashcard"]
 
 type Props = {
   children: string | JSX.Element | JSX.Element[]
@@ -500,6 +576,13 @@ export const FlashcardProvider = ({ children }: Props) => {
   const knownKeysetUnits = useAppSelector((state) => state.flashcardV2.keysetUnits)
   const knownKeysetUnitsRef = useRef(knownKeysetUnits)
   knownKeysetUnitsRef.current = knownKeysetUnits
+  const [cashuCardPreview, setCashuCardPreview] = useState<CashuCardPreview>()
+  const knownCards = useAppSelector((state) => state.flashcardV2.cards)
+  const knownCardsRef = useRef(knownCards)
+  knownCardsRef.current = knownCards
+  const { client: apollo } = useContext(getApolloContext())
+  const verifyingText = (preview: CashuCardPreview) =>
+    scanSheetVerifying(preview, balanceHidden(apollo), LL)
 
   /** A split's units from what the mint named before; undefined unless it named them all. */
   const knownUnitTotals = (keysets?: CardKeysetTotal[]): CardUnitTotals | undefined => {
@@ -524,7 +607,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     }
   }
 
-  const readFlashcard = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
+  const readFlashcard: ReadFlashcard = async (isPayment, onUnverified) => {
     // The card's clock is fed from the newest header the phone holds; ask for
     // the tip now, off the tap, which never waits for it.
     refreshTipHeader().catch(() => undefined)
@@ -533,7 +616,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     loadSeed().catch(() => undefined)
     // A development build's simulated card (cardsim) needs no NFC: a
     // simulator has none.
-    if (getCardBridge()) return handleTag(isPayment)
+    if (getCardBridge()) return handleTag(isPayment, onUnverified)
     const isSupported = await NfcManager.isSupported()
     const isEnabled = await NfcManager.isEnabled()
 
@@ -553,10 +636,10 @@ export const FlashcardProvider = ({ children }: Props) => {
       })
       return {}
     }
-    return handleTag(isPayment)
+    return handleTag(isPayment, onUnverified)
   }
 
-  const handleTag = async (isPayment?: boolean): Promise<FlashcardReadResult> => {
+  const handleTag: ReadFlashcard = async (isPayment, onUnverified) => {
     let boltCard = false
     // Development builds only: the card is cardsim, over HTTP (ENG-634).
     const bridge = getCardBridge()
@@ -595,7 +678,21 @@ export const FlashcardProvider = ({ children }: Props) => {
             bridge
               ? bridgeTransceiver(bridge.url)
               : (bytes) => NfcManager.isoDepHandler.transceive(bytes),
-            { afterAuth: (tap) => tendCard(tap, ownership) },
+            {
+              afterAuth: (tap) => tendCard(tap, ownership),
+              // Nothing proven yet: shown as "Verifying…", never stored.
+              onUnverified: (read) => {
+                const preview = previewWithKnownUnit(read, knownCardsRef.current)
+                setCashuCardPreview(preview)
+                // iOS's own NFC sheet says it; Android's in-app sheet is below.
+                if (Platform.OS === "ios" && !bridge) {
+                  NfcManager.setAlertMessageIOS(verifyingText(preview)).catch(
+                    () => undefined,
+                  )
+                }
+                onUnverified?.()
+              },
+            },
           )
         } catch (err) {
           // A card of an older protocol: nothing more was sent to it, and it
@@ -612,7 +709,7 @@ export const FlashcardProvider = ({ children }: Props) => {
           // tap is over: it must not be re-read as a BoltCard. Every NDEF-side
           // failure toasts, so this one does too. Rethrowing keeps the outer
           // catch as the only logging site and the finally as the only release.
-          // A card that could not prove its key (AUTH) shows and stores nothing.
+          // A card that could not prove its key (AUTH) stores nothing.
           toastShow({
             position: "top",
             message:
@@ -638,6 +735,9 @@ export const FlashcardProvider = ({ children }: Props) => {
               : {}),
             ...(ownerPaymentLimit === undefined ? {} : { ownerPaymentLimit }),
           })
+          // Verified: the card replaces its preview, set first so that no
+          // render has neither (the card screen would pop).
+          setCashuCardPreview(undefined)
           // A signed-in phone remembers the card: the applet keeps no history
           // of its own, so this device-local record is the only one (ENG-616).
           // A read while signed out stays in memory, as a BoltCard's does.
@@ -715,6 +815,8 @@ export const FlashcardProvider = ({ children }: Props) => {
     } catch (ex) {
       console.warn("Oops!", ex)
     } finally {
+      // A preview (ENG-707) lasts as long as its tap: `cashuCard` is the proof.
+      setCashuCardPreview(undefined)
       cancelTechnologyRequest()
     }
     return boltCard ? { boltCard } : {}
@@ -1109,6 +1211,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     cashuGeneration.current += 1
     if (cashuCard) dispatch(cardForgotten({ pubkey: cashuCard.pubkey }))
     setCashuCard(undefined)
+    setCashuCardPreview(undefined)
   }
 
   return (
@@ -1121,6 +1224,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         balanceInSats,
         transactions,
         cashuCard,
+        cashuCardPreview,
         loading,
         error,
         resetFlashcard,
@@ -1162,7 +1266,15 @@ export const FlashcardProvider = ({ children }: Props) => {
               <Text type="h02" bold>
                 Ready to Scan
               </Text>
-              <Text type="bm">Please tap NFC tags</Text>
+              {/* Once the card has said its balance (ENG-707): the figure, and hold on. */}
+              <Text
+                type="bm"
+                testID={cashuCardPreview && "flashcard-scan-sheet-verifying"}
+              >
+                {cashuCardPreview
+                  ? verifyingText(cashuCardPreview)
+                  : "Please tap NFC tags"}
+              </Text>
               <Animatable.View
                 animation="pulse"
                 easing="ease-out"

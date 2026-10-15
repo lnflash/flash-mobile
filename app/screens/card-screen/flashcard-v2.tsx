@@ -16,6 +16,7 @@ import { FlashcardV2Art, flashcardV2ArtWidth } from "@app/components/flashcard-v
 import HideableArea from "@app/components/hideable-area/hideable-area"
 import {
   CardOwnership,
+  CashuCardPreview,
   CashuCardState,
   OwnerUnsettled,
   cardOwnership,
@@ -25,7 +26,7 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { CashuCardInfo } from "@app/utils/cashu-card"
+import { CardInfo } from "@app/utils/cashu-card"
 import { balanceLines, formatUnitAmount } from "@app/utils/cashu-card-format"
 import { TopUpRecord, isCurrentFormat, quoteIsDead } from "@app/utils/cashu-card-topup"
 import { soleUnit } from "@app/utils/cashu-mint"
@@ -60,7 +61,7 @@ export const FlashcardV2Screen = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { width: windowWidth } = useWindowDimensions()
-  const { cashuCard, forgetCashuCard } = useFlashcard()
+  const { cashuCard, cashuCardPreview, forgetCashuCard } = useFlashcard()
   // Paid top-ups not on the card yet, and ones whose payment may still land.
   // A quote with no payment out (never sent, or refused) is not shown.
   const { records: savedTopUps, dismiss: dismissTopUp } = useUnfinishedTopUps(
@@ -92,10 +93,19 @@ export const FlashcardV2Screen = () => {
   // Nothing to show without a card; the caller navigates here only after a
   // read, but "Remove card" from this very screen lands us here too. Only
   // while focused: forgetting the card on the way out must not pop a second
-  // screen.
+  // screen. A tap still verifying its card (ENG-707) keeps the screen up: the
+  // read navigates here at GET_BALANCE, and pops it here if AUTH then fails.
   useEffect(() => {
-    if (!cashuCard && navigation.isFocused()) navigation.goBack()
-  }, [cashuCard, navigation])
+    if (!cashuCard && !cashuCardPreview && navigation.isFocused()) navigation.goBack()
+  }, [cashuCard, cashuCardPreview, navigation])
+
+  // A tap that has the card's balance but not yet its proof (AUTH): only what
+  // the card said, marked as verifying, with nothing to act on. It stands in
+  // for a verified card on screen too, so a re-tap never shows card A's
+  // actions next to card B's figure.
+  if (cashuCardPreview) {
+    return <FlashcardV2Verifying preview={cashuCardPreview} hideBalance={hideBalance} />
+  }
 
   if (!cashuCard) return null
 
@@ -335,6 +345,78 @@ export const FlashcardV2Screen = () => {
   )
 }
 
+/**
+ * The card as a read tap saw it before AUTH (ENG-707): its art, its balance
+ * and its details, said to be verifying. Nothing here can be acted on: no
+ * action, no refresh, no tidy, no top-up to finish. No notice and no owner
+ * either: whose card it is is settled only after AUTH (`tendCard`), so until
+ * then an owner's own card would read "Another phone".
+ */
+const FlashcardV2Verifying: React.FC<{
+  preview: CashuCardPreview
+  hideBalance: boolean
+}> = ({ preview, hideBalance }) => {
+  const styles = useStyles()
+  const { colors } = useTheme().theme
+  const { LL } = useI18nContext()
+  const { width: windowWidth } = useWindowDimensions()
+  const last4 = cardLast4(preview.pubkey)
+  return (
+    <Screen preset="scroll" backgroundColor={colors.background}>
+      <FlashcardV2Art
+        width={flashcardV2ArtWidth(windowWidth)}
+        style={styles.flashcard}
+        accessibilityLabel={
+          last4
+            ? LL.FlashcardV2.cardEnding({ last4: last4.split("").join(" ") })
+            : LL.FlashcardV2.title()
+        }
+        testID="flashcard-v2-card-art"
+      />
+
+      <View style={styles.balanceWrapper}>
+        <HideableArea isContentVisible={hideBalance}>
+          <View>
+            {/* Ids of their own: the e2e flows wait on flashcard-v2-balance-*
+                for the verified figure, never this one. */}
+            {balanceLines(preview, LL).map(({ testID, text }) => (
+              <Text
+                key={testID}
+                type="h03"
+                testID={testID.replace(
+                  "flashcard-v2-balance",
+                  "flashcard-v2-preview-balance",
+                )}
+              >
+                {text}
+              </Text>
+            ))}
+          </View>
+        </HideableArea>
+      </View>
+      <View accessibilityLiveRegion="polite">
+        <Text
+          type="caption"
+          style={styles.balanceCaption}
+          testID="flashcard-v2-balance-verifying"
+        >
+          {LL.FlashcardV2.verifying()}
+        </Text>
+      </View>
+
+      <View style={styles.details}>
+        <DetailRow label={LL.FlashcardV2.slots()} value={slotSummary(preview, LL)} />
+        <DetailRow label={LL.FlashcardV2.appletVersion()} value={`v${preview.version}`} />
+        <DetailRow
+          label={LL.FlashcardV2.cardId()}
+          value={shortPubkey(preview.pubkey)}
+          testID="flashcard-v2-preview-card-id"
+        />
+      </View>
+    </Screen>
+  )
+}
+
 type Notice = { testID: string; title: string; body: string; severe: boolean }
 
 /**
@@ -514,7 +596,10 @@ const unfinishedText = (record: TopUpRecord, expired: boolean, LL: LLType): stri
   return LL.FlashcardV2.topUpUnfinishedUnpaid({ amount })
 }
 
-const slotSummary = (card: CashuCardInfo, LL: LLType) =>
+const slotSummary = (
+  card: Pick<CardInfo, "unspent" | "spent" | "empty" | "maxSlots">,
+  LL: LLType,
+) =>
   LL.FlashcardV2.slotSummary({
     unspent: card.unspent,
     spent: card.spent,

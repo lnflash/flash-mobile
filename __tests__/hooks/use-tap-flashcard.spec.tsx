@@ -12,11 +12,15 @@ import {
 } from "@app/hooks/use-tap-flashcard"
 
 const mockNavigate = jest.fn()
-const mockReadFlashcard = jest.fn<Promise<FlashcardReadResult>, []>()
+const mockGoBack = jest.fn()
+const mockReadFlashcard = jest.fn<
+  Promise<FlashcardReadResult>,
+  [isPayment?: boolean, onUnverified?: () => void]
+>()
 let mockFlashcard: { lnurl?: string; cashuCard?: { pubkey: string } } = {}
 
 jest.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({ navigate: mockNavigate }),
+  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
 }))
 jest.mock("@app/hooks/useFlashcard", () => ({
   useFlashcard: () => ({ ...mockFlashcard, readFlashcard: mockReadFlashcard }),
@@ -65,6 +69,51 @@ describe("useTapFlashcard", () => {
     await tap()
 
     expect(mockNavigate).not.toHaveBeenCalled()
+  })
+})
+
+describe("useTapFlashcard opens the Cashu screen as soon as the card says its balance (ENG-707)", () => {
+  it("navigates when the read reports the unverified balance, before the read settles", async () => {
+    let settle: (result: FlashcardReadResult) => void = () => {}
+    mockReadFlashcard.mockImplementation(
+      (_isPayment, onUnverified) =>
+        new Promise((resolve) => {
+          onUnverified?.()
+          settle = resolve
+        }),
+    )
+    const { result } = renderHook(() => useTapFlashcard())
+
+    let read: Promise<FlashcardReadResult> = Promise.resolve({})
+    act(() => {
+      read = result.current()
+    })
+
+    // AUTH has not answered: the screen is open on the verifying card.
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2")
+    expect(mockNavigate).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      settle({ cashuCard: CASHU_CARD })
+      await read
+    })
+    // The verified card: navigating to the route already on top does nothing.
+    expect(mockNavigate).toHaveBeenLastCalledWith("FlashcardV2")
+    expect(mockGoBack).not.toHaveBeenCalled()
+  })
+
+  it("does not go back itself when the card then fails AUTH: the screen pops itself", async () => {
+    mockReadFlashcard.mockImplementation(async (_isPayment, onUnverified) => {
+      onUnverified?.()
+      return {}
+    })
+
+    const read = await tap()
+
+    expect(read).toEqual({})
+    expect(mockNavigate).toHaveBeenCalledTimes(1)
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2")
+    expect(mockGoBack).not.toHaveBeenCalled()
   })
 })
 
