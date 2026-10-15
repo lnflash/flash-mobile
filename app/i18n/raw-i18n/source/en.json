@@ -2079,5 +2079,27 @@
         "statusRejectedDesc": "We could not approve this request.",
         "resubmit": "Resubmit",
         "successResubmitted": "Your new photos have been submitted for review"
+    },
+    "Assistant": {
+        "unknownIntent": "I can't help with that yet.",
+        "notYetAvailable": "I can't do that here yet. Use the home screen for now.",
+        "invalidArguments": "I didn't catch the details. Try asking another way.",
+        "toolFailed": "Something went wrong. Try again in a moment.",
+        "refreshed": "The numbers changed since you asked. Check them and confirm again.",
+        "expired": "This request expired. Ask again to get fresh numbers.",
+        "authUnavailable": "Turn on a PIN or biometrics in Settings to confirm this.",
+        "authDenied": "We couldn't confirm it's you. Nothing went through.",
+        "actionNotFound": "That request is no longer open. Ask again to start over.",
+        "checkHistory": "This payment may have already been sent. Check your transaction history before trying again.",
+        "alreadySent": "This payment already went through. You can see it in your transaction history.",
+        "insufficientBalance": "You don't have enough in this wallet for that payment.",
+        "limitExceeded": "That payment is over your account limit.",
+        "btcSyncing": "Your BTC wallet is still syncing. Try again in a moment.",
+        "btcDisabled": "Your BTC wallet is off. Turn on Advanced Mode in Settings to use it.",
+        "balanceUnavailable": "This balance isn't available right now.",
+        "searchedWindow": "Searched your last {count:number} payments.",
+        "noContactMatch": "I couldn't find a contact by that name.",
+        "pickContact": "Which contact do you mean?",
+        "detailsUnavailable": "Details aren't available for this payment."
     }
 }
