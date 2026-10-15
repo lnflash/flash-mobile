@@ -561,10 +561,11 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     expectRearmed(ctx.state)
   })
 
-  // ENG-712. payLightningBreez waits up to 60 s for the payment to settle and
-  // answers success: true for whatever sdk.sendPayment resolves with, so a
-  // payment that fails inside that wait comes back Failed with success: true.
-  // The branch reads the payment's status, with the LNURL branch's table.
+  // ENG-712. payLightningBreez waits up to 60 s for the payment to settle, so
+  // a payment that fails inside that wait resolves with status Failed. The
+  // wrapper answered success: true for it. It now answers success: false
+  // (__tests__/utils/spark-pay-lightning.spec.ts), and the branch also reads
+  // the payment's status, with the LNURL branch's table, as a second guard.
   // The Failed case pinned the old answer, Success, as a known gap; it is
   // flipped on purpose.
   //
@@ -580,6 +581,32 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
       )
     return { ...ctx, graphqlSend, send }
   }
+
+  // The wrapper's own answer for a Failed payment: success: false with the
+  // payment and no error, since the SDK gives no reason. It shows the same
+  // copy as a Failed status behind success: true below.
+  it("lightning: a success: false answer whose payment is Failed is a Failure with the screen's copy, and re-arms", async () => {
+    const ctx = invoiceSender()
+    ctx.rail.payInvoice.mockResolvedValue({
+      success: false,
+      payment: { payment: { status: PaymentStatus.Failed } },
+    })
+
+    await expect(ctx.send()).resolves.toEqual({
+      status: PaymentSendResult.Failure,
+      errorsMessage: "Something went wrong",
+    })
+    expectRearmed(ctx.state)
+    // A Breez send holds no GraphQL attempt, so the retry is a new send.
+    expect(ctx.state.attemptRef.current).toBeNull()
+    // Re-armed: the next tap sends again.
+    await ctx.send()
+    expect(ctx.rail.payInvoice.mock.calls).toEqual([
+      [INVOICE, testAmount.amount],
+      [INVOICE, testAmount.amount],
+    ])
+    expectNoGraphql(ctx)
+  })
 
   const sentInvoicePayments: [string, PaymentStatus][] = [
     ["Completed", PaymentStatus.Completed],

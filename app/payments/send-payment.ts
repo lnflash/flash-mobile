@@ -282,7 +282,9 @@ const breezPaymentSent = (status: BreezPaymentStatus | undefined): boolean =>
  * `lnAddressHostname` come from `deps`. ENG-694 then changed one behavior
  * the move had kept: the LNURL/intraledger Breez branch reads the rail's
  * answer instead of reporting Success unconditionally. ENG-712 did the same
- * for the lightning branch, which read only the answer's `success` flag.
+ * for the lightning branch, which read only the answer's `success` flag:
+ * payLightningBreez answers success: false for a Failed payment, and the
+ * branch reads the payment's status as well.
  */
 export const sendPayment = async (
   { sendPaymentMutation, paymentDetail, selectedFeeType }: SendPaymentArgs,
@@ -302,12 +304,12 @@ export const sendPayment = async (
   // fresh attempt, as the GraphQL branch below does for a Failure. Breez
   // sends carry no idempotency key, so a retry is a new send, never a replay
   // of the first. Re-arming is therefore only safe when the outcome is known
-  // and nothing went out: a payment the SDK reports Failed, or a rejection
+  // and nothing was paid: a payment the SDK reports Failed, or a rejection
   // before the SDK dispatched. A rejection after the SDK dispatched is not
   // one, and every Breez send re-arms on it today: sdk.lnurlPay's through
   // the catch below (ENG-711), and sdk.sendPayment's inside payInvoice and
   // payOnchain, whose wrappers turn every rejection into success: false
-  // (ENG-712). On-chain, the next tap is a second withdrawal (ENG-714).
+  // (ENG-714). On-chain, the next tap is a second withdrawal.
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false
@@ -327,24 +329,28 @@ export const sendPayment = async (
           settlementAmount.amount,
         )
         console.log("Response payLightningBreez: ", response)
-        // success: false is payLightningBreez's answer to any rejection it
-        // caught, with the rejection's message, and maps as it always has
-        // (see the note on finish() above).
+        // success: false is payLightningBreez's answer to a rejection it
+        // caught, with the rejection's message, and since ENG-712 to a
+        // payment that resolved Failed, with no message. Both are a Failure
+        // that re-arms (see the note on finish() above), and a Failed payment
+        // shows the screen's copy, as the status read below does.
         if (!response.success) {
           return finish({
             status: PaymentSendResult.Failure,
-            errorsMessage: response.error,
+            errorsMessage: response.error ?? BREEZ_PAYMENT_FAILED_MESSAGE,
           })
         }
-        // ENG-712: success: true says only that sdk.sendPayment resolved.
-        // payLightningBreez waits up to 60 s for the payment to settle, and a
-        // payment that fails inside that wait resolves with status Failed. So
-        // the payment's status decides, through the table the LNURL branch
-        // reads. Completed, and Pending (still in flight when the wait ends),
-        // are a Success that keeps the button disarmed. Failed is a Failure
-        // that re-arms it: no funds move on a Failed payment, so the user can
-        // retry. An answer with no status is a Failure too, as in the LNURL
-        // branch.
+        // ENG-712: payLightningBreez waits up to 60 s for the payment to
+        // settle, and a payment that fails inside that wait resolves with
+        // status Failed, so the payment's status decides. The wrapper answers
+        // success: false for a Failed payment, and the status is read here
+        // too, as a second guard, through the table the LNURL branch reads.
+        // Completed, and Pending (still in flight when the wait ends), are a
+        // Success that keeps the button disarmed. Failed is a Failure that
+        // re-arms it: the SDK reports Completed whenever a preimage exists, so
+        // a Failed payment was not received, and a retry of the same invoice
+        // pays it at most once. An answer with no status is a Failure too, as
+        // in the LNURL branch.
         const sent = breezPaymentSent(response.payment?.payment?.status)
         return finish({
           status: sent ? PaymentSendResult.Success : PaymentSendResult.Failure,

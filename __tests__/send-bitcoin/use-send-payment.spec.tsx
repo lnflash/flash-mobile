@@ -369,10 +369,19 @@ describe("useSendPayment — loading", () => {
     expect(payLightningBreez).toHaveBeenCalledTimes(1)
     expect(result.current.loading).toBe(false)
 
+    // payLightningBreez's answer for a payment that went out. A bare
+    // { success: true } carries no payment, which the lightning branch reads
+    // as a Failure since ENG-712.
     await act(async () => {
-      finishPay({ success: true })
+      finishPay({
+        success: true,
+        payment: { payment: { status: PaymentStatus.Completed } },
+      })
       await send
     })
+    await expect(send).resolves.toEqual({ status: "SUCCESS", errorsMessage: undefined })
+    // A Success keeps the button disarmed.
+    expect(result.current.hasAttemptedSend).toBe(true)
     expect(result.current.loading).toBe(false)
     expect(mockClient.mutate).not.toHaveBeenCalled()
     expect(mutation).not.toHaveBeenCalled()
