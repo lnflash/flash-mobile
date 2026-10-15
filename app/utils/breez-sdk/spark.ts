@@ -505,13 +505,23 @@ export const payLnurlBreez = async (
         idempotencyKey: undefined,
       })
     } catch (error) {
-      // Log the SDK's reason: past here the user sees only the history
-      // message, and payment_result records a plain FAILURE.
+      const outcomeUnknown = new LnurlPayOutcomeUnknownError(error)
+      // The one record of what the SDK said: past here the user sees only the
+      // history message, and payment_result records a plain FAILURE. The RN
+      // binding (uniffi) builds an SdkError's message from its type and
+      // variant alone, so every SSP or transport failure reads
+      // "SdkError.SparkError". The SDK's reason is in `inner`, a frozen
+      // [string] for each variant that carries text, and is logged after the
+      // message. An object `inner` logs "". Never JSON.stringify it: some
+      // carry bigints, and a throw here escapes as a plain Error that re-arms
+      // Confirm for a second payment.
+      const inner = (error as { inner?: unknown } | null | undefined)?.inner
       console.error(
         "payLnurlBreez error after dispatch:",
-        error instanceof Error ? error.message : String(error),
+        outcomeUnknown.message,
+        Array.isArray(inner) ? inner.join(" ") : "",
       )
-      throw new LnurlPayOutcomeUnknownError(error)
+      throw outcomeUnknown
     }
     console.log("Lnurl Pay Response: ", response)
 
