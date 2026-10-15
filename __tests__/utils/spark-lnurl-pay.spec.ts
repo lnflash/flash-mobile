@@ -45,6 +45,10 @@ type FakeSdk = {
 }
 
 const LNURL = "bob@example.com"
+// The label of the log line for a rejection from lnurlPay. The tests that
+// expect no such line check the first argument of every console.error call:
+// toHaveBeenCalledWith matches the whole argument list, so a negative one with
+// a different number of arguments than the log line never fails.
 const AFTER_DISPATCH = "payLnurlBreez error after dispatch:"
 const AMOUNT_SATS = 2100
 const MEMO = "lunch"
@@ -187,7 +191,7 @@ describe("payLnurlBreez", () => {
     await expect(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO)).rejects.toBe(refusal)
     expect(sdk.prepareLnurlPay).not.toHaveBeenCalled()
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
-    expect(consoleError).not.toHaveBeenCalledWith(AFTER_DISPATCH, expect.anything())
+    expect(consoleError.mock.calls.map(([label]) => label)).not.toContain(AFTER_DISPATCH)
   })
 
   it("passes a prepareLnurlPay rejection through untouched, and never dispatches", async () => {
@@ -196,7 +200,7 @@ describe("payLnurlBreez", () => {
 
     await expect(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO)).rejects.toBe(refusal)
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
-    expect(consoleError).not.toHaveBeenCalledWith(AFTER_DISPATCH, expect.anything())
+    expect(consoleError.mock.calls.map(([label]) => label)).not.toContain(AFTER_DISPATCH)
   })
 
   it('refuses an input that is not LNURL-pay with a plain "Unsupported input type", and never dispatches', async () => {
@@ -209,6 +213,6 @@ describe("payLnurlBreez", () => {
     expect((error as Error).message).toBe("Unsupported input type")
     expect(sdk.prepareLnurlPay).not.toHaveBeenCalled()
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
-    expect(consoleError).not.toHaveBeenCalledWith(AFTER_DISPATCH, expect.anything())
+    expect(consoleError.mock.calls.map(([label]) => label)).not.toContain(AFTER_DISPATCH)
   })
 })
