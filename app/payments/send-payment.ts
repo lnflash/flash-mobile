@@ -31,6 +31,9 @@ import {
   CHECK_TRANSACTION_HISTORY_MESSAGE,
   isIdempotencyKeyReuseError,
 } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
+// The deep path, never the @app/utils/breez-sdk barrel: the leaf module loads
+// no SDK, and Jest maps the barrel to a mock without this class.
+import { LnurlPayOutcomeUnknownError } from "@app/utils/breez-sdk/lnurl-pay-errors"
 
 // types
 import {
@@ -288,9 +291,10 @@ export const sendPayment = async (
   // of the first. Re-arming is therefore only safe when the outcome is known
   // and nothing went out: a payment the SDK reports Failed, or a rejection
   // before the SDK dispatched. A rejection after the SDK dispatched is not
-  // one, and every Breez send re-arms on it today: sdk.lnurlPay's through
-  // the catch below (ENG-711), and sdk.sendPayment's inside payInvoice and
-  // payOnchain, whose wrappers turn every rejection into success: false
+  // one. sdk.lnurlPay's never reaches finish: payLnurlBreez rethrows it as
+  // LnurlPayOutcomeUnknownError, and the catch below answers that without
+  // re-arming (ENG-711). sdk.sendPayment's still re-arms, inside payInvoice
+  // and payOnchain, whose wrappers turn every rejection into success: false
   // (ENG-712). On-chain, the next tap is a second withdrawal (ENG-714).
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
@@ -336,15 +340,15 @@ export const sendPayment = async (
         // ENG-694: read the answer, as the lightning branch reads its own: the
         // payment's status says whether it went out. A rejection before
         // sdk.lnurlPay dispatches (parse, prepare, "Unsupported input type")
-        // is a failure. A rejection from lnurlPay itself proves nothing: in SDK
-        // 0.22.3 it can come after the payment left (a dropped connection
-        // after the leaves went to the SSP, an SSP answer the SDK cannot read,
-        // a failed storage write: ENG-711). The catch below still re-arms on
-        // every rejection, as it did before ENG-694, so the next tap prepares
-        // a fresh invoice and can pay the recipient twice. Treating a
-        // rejection from lnurlPay as an unknown outcome (stay disarmed and
-        // send the user to their history, as the GraphQL branch does) is
-        // ENG-711.
+        // is a failure, and the catch below re-arms on it. A rejection from
+        // lnurlPay itself proves nothing: in SDK 0.22.3 it can come after the
+        // payment left (a dropped connection after the leaves went to the SSP,
+        // an SSP answer the SDK cannot read, a failed storage write). A second
+        // tap would prepare a fresh invoice and could pay the recipient twice,
+        // so payLnurlBreez rethrows that one as LnurlPayOutcomeUnknownError,
+        // and the catch below answers it as an unknown outcome: it stays
+        // disarmed and sends the user to their history, as the GraphQL branch
+        // does (ENG-711).
         const sent = lnurlPaymentSent(response)
         return finish({
           status: sent ? PaymentSendResult.Success : PaymentSendResult.Failure,
@@ -374,6 +378,16 @@ export const sendPayment = async (
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- moved verbatim from useSendPayment (ENG-686)
     } catch (err: any) {
+      // ENG-711: sdk.lnurlPay rejected, so the payment may have left. No
+      // finish(): inFlightRef and hasAttemptedSend keep the true set above, so
+      // Confirm stays disarmed and a second call comes back ignored. Same
+      // answer as the GraphQL branch gives an outcome it cannot prove.
+      if (err instanceof LnurlPayOutcomeUnknownError) {
+        return {
+          status: PaymentSendResult.Failure,
+          errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+        }
+      }
       return finish({
         status: PaymentSendResult.Failure,
         errorsMessage: err.message,
