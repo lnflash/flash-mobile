@@ -238,9 +238,9 @@ describe("payOnchainBreez", () => {
   })
 
   it("still answers outcomeUnknown when inner is an object holding a bigint, and logs no reason", async () => {
-    // InsufficientCpfpFunds' shape. JSON.stringify throws on the bigint, and a
+    // InsufficientCpfpFunds' shape. JSON.stringify throws on the bigint. A
     // TypeError out of the catch would reach sendPayment as a rejection, which
-    // re-arms Confirm.
+    // keeps Confirm disarmed, but the line that records why would be lost.
     mockSdk.sendPayment.mockRejectedValue(
       sdkError("InsufficientCpfpFunds", { requiredSat: BigInt(1000) }),
     )

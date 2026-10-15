@@ -711,6 +711,62 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     expect(ctx.state.attemptRef.current).toMatchObject({ key: "uuid-1" })
   })
 
+  // ENG-714. payOnchainBreez answers every refusal before sdk.sendPayment
+  // instead of rejecting, so a rejection from the rail itself comes from past
+  // the dispatch or from a broken rail, and cannot prove that nothing left the
+  // wallet. The shared catch used to re-arm Confirm on it while the attempt
+  // still held its key, and the re-tap sent that key again: a keyed retry that
+  // nothing may rely on until ENG-715. It is answered as outcomeUnknown is.
+  const railFailures: [string, (rail: ReturnType<typeof mockRail>) => void][] = [
+    [
+      "rejects",
+      (rail) =>
+        rail.payOnchain.mockRejectedValueOnce(
+          new Error("complete_coop_exit: connection reset"),
+        ),
+    ],
+    [
+      // A broken delegate, before any promise exists.
+      "throws",
+      (rail) =>
+        rail.payOnchain.mockImplementationOnce(() => {
+          throw new TypeError("payOnchainBreez is not a function")
+        }),
+    ],
+  ]
+  railFailures.forEach(([label, fail]) => {
+    it(`onchain: a payOnchain that ${label} sends the user to their history, stays disarmed and keeps the attempt (ENG-714)`, async () => {
+      const ctx = onchainSender()
+      fail(ctx.rail)
+
+      await expect(ctx.send()).resolves.toEqual({
+        status: PaymentSendResult.Failure,
+        errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+      })
+      // Not re-armed: the inverse of expectRearmed.
+      expect(ctx.state.inFlightRef.current).toBe(true)
+      expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+      // The attempt is kept, holding the key the withdrawal carried.
+      expect(ctx.state.attemptRef.current).toEqual({
+        key: "uuid-1",
+        dispatched: true,
+        wentKeyless: false,
+      })
+
+      // The re-tap that used to send the same key a second time.
+      await expect(ctx.send()).resolves.toEqual({
+        status: undefined,
+        errorsMessage: undefined,
+        ignored: true,
+      })
+      expect(ctx.rail.payOnchain.mock.calls).toEqual([
+        [ADDRESS, testAmount.amount, "fast", "uuid-1"],
+      ])
+      expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+      expectNoGraphql(ctx)
+    })
+  })
+
   it("onchain: a retained attempt reuses its key", async () => {
     // An attempt kept from an earlier on-chain call, with the button armed:
     // the state a keyed retry (ENG-715) would start from. Whether the SDK

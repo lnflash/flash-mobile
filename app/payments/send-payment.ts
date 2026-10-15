@@ -125,12 +125,13 @@ export const createGraphqlMutationFns = (
 /**
  * One send attempt: the send closure captured at the first tap plus one
  * random key. Why an attempt is an object and not a content fingerprint, and
- * when one is created, retained and cleared, is the ENG-533 comment on
- * `attemptRef` in use-send-payment.ts.
+ * when a GraphQL one is created, retained and cleared, is the ENG-533 comment
+ * on `attemptRef` in use-send-payment.ts.
  *
  * A Breez on-chain send (ENG-714) holds an attempt with a key and no
  * closure. The key goes to sdk.sendPayment. The attempt is cleared once the
- * outcome is known, and kept, with Confirm disarmed, when it is not.
+ * outcome is known, and kept, with Confirm disarmed, when it is not. It is
+ * never retried until ENG-715 proves the SDK replays the key.
  */
 export type Attempt = {
   key: string
@@ -300,10 +301,11 @@ export const sendPayment = async (
   // SDK dispatched is not one. payLnurlBreez rethrows sdk.lnurlPay's as
   // LnurlPayOutcomeUnknownError, which the catch below answers without
   // re-arming (ENG-711). payOnchainBreez answers sdk.sendPayment's with
-  // outcomeUnknown, which the on-chain branch answers without calling finish
-  // (ENG-714). payInvoice still brings one here: payLightningBreez turns every
-  // rejection into success: false, so the bolt11 branch re-arms on it (the
-  // bolt11 half of ENG-714, still open). A keyed retry is ENG-715.
+  // outcomeUnknown, and the on-chain branch answers that, and any rejection
+  // from payOnchain itself, without calling finish (ENG-714). payInvoice still
+  // brings one here: payLightningBreez turns every rejection into success:
+  // false, so the bolt11 branch re-arms on it (ENG-720). A keyed retry is
+  // ENG-715.
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false
@@ -372,12 +374,28 @@ export const sendPayment = async (
         }
         const attempt = attemptRef.current
         attempt.dispatched = true
-        const response = await deps.btcRail.payOnchain(
-          destination,
-          settlementAmount.amount,
-          selectedFeeType || "fast",
-          attempt.key,
-        )
+        // ENG-714: a rejection from the rail is an unknown outcome too.
+        // payOnchainBreez answers every refusal before sdk.sendPayment, so a
+        // rejection comes from past the dispatch or from a broken rail, and
+        // cannot prove that nothing left the wallet. Left to the Breez branch's
+        // shared catch, it would re-arm Confirm while this attempt still holds
+        // its key, and the next tap would send that key again: a keyed retry,
+        // which nothing may rely on until ENG-715. So it gets outcomeUnknown's
+        // answer: no finish(), the history message, and the attempt kept.
+        let response: Awaited<ReturnType<BtcRail["payOnchain"]>>
+        try {
+          response = await deps.btcRail.payOnchain(
+            destination,
+            settlementAmount.amount,
+            selectedFeeType || "fast",
+            attempt.key,
+          )
+        } catch {
+          return {
+            status: PaymentSendResult.Failure,
+            errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+          }
+        }
         console.log("Response payOnchainBreez: ", response)
 
         // ENG-714: sdk.sendPayment itself rejected, so the withdrawal may have

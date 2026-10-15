@@ -440,7 +440,9 @@ export const payOnchainBreez = async (
   idempotencyKey?: string,
 ): Promise<PayResponse> => {
   // Before the dispatch. Nothing has left the wallet if any of this throws, so
-  // the answer is a plain refusal, and sendPayment re-arms Confirm on it.
+  // the answer is a plain refusal, and sendPayment re-arms Confirm on it. It
+  // has to be an answer, never a rejection: sendPayment keeps Confirm disarmed
+  // on any rejection out of payOnchainBreez (ENG-714).
   let sdk: BreezSdkInterface
   let request: SendPaymentRequest
   try {
@@ -496,10 +498,10 @@ export const payOnchainBreez = async (
     // record that the withdrawal is in doubt, and why. It goes to the console
     // and to the Spark log CSV, the same way as payLnurlBreez's line after its
     // dispatch: see the comment there for why both, and why the reason comes
-    // from `inner`. Nothing here may throw: a rejection out of payOnchainBreez
-    // reaches sendPayment's catch, which re-arms Confirm for a second
-    // withdrawal. Never JSON.stringify `inner`, since some variants carry
-    // bigints.
+    // from `inner`. Nothing here should throw. sendPayment answers a rejection
+    // out of payOnchainBreez as it answers outcomeUnknown, disarmed with the
+    // history message, but a throw here loses this line. Never JSON.stringify
+    // `inner`, since some variants carry bigints.
     const label = "payOnchainBreez error after dispatch:"
     const message = error instanceof Error ? error.message : String(error)
     const inner = (error as { inner?: unknown } | null | undefined)?.inner
