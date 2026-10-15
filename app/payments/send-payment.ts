@@ -282,10 +282,14 @@ export const sendPayment = async (
   inFlightRef.current = true
   setHasAttemptedSend(true)
 
-  // Shared failure epilogue for the Breez branch: a Failure is a KNOWN
-  // outcome, so re-arm the button for a fresh attempt — same semantics
-  // as the GraphQL branch below. (Breez sends are local SDK calls with
-  // no idempotency key; a retry is simply a new attempt.)
+  // Shared failure epilogue for the Breez branch: re-arm the button for a
+  // fresh attempt, as the GraphQL branch below does for a Failure. Breez
+  // sends carry no idempotency key, so a retry is a new send, never a replay
+  // of the first. Re-arming is therefore only safe when the outcome is known
+  // and nothing went out: a payment the SDK reports Failed, or a rejection
+  // before the SDK dispatched. A rejection from sdk.lnurlPay itself is not
+  // one: it can come after the leaves went to the SSP, yet the catch below
+  // still re-arms on it, so the next tap can pay twice: ENG-711.
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false
@@ -305,6 +309,10 @@ export const sendPayment = async (
           settlementAmount.amount,
         )
         console.log("Response payLightningBreez: ", response)
+        // payLightningBreez answers success: true for any payment
+        // sdk.sendPayment resolves with, and it waits up to 60 s for the
+        // payment to settle, so one that fails inside that wait comes back
+        // Failed with success: true and reads as Success here: ENG-712.
         return finish({
           status: response.success
             ? PaymentSendResult.Success
@@ -326,13 +334,15 @@ export const sendPayment = async (
         // ENG-694: read the answer, as the lightning branch reads its own: the
         // payment's status says whether it went out. A rejection before
         // sdk.lnurlPay dispatches (parse, prepare, "Unsupported input type")
-        // is a failure. lnurlPay itself can reject after the Spark service
-        // provider accepted the send (SDK 0.22.3: an answer from it the SDK
-        // cannot read, or a failed write to on-device storage), so a
-        // rejection is not proof that nothing left. The catch below still
-        // re-arms on every rejection, as it did before ENG-694. Treating one
-        // from lnurlPay as an unknown outcome (stay disarmed and send the user
-        // to their history, as the GraphQL branch does) is a follow-up.
+        // is a failure. A rejection from lnurlPay itself proves nothing: in SDK
+        // 0.22.3 it can come after the payment left (a dropped connection
+        // after the leaves went to the SSP, an SSP answer the SDK cannot read,
+        // a failed storage write: ENG-711). The catch below still re-arms on
+        // every rejection, as it did before ENG-694, so the next tap prepares
+        // a fresh invoice and can pay the recipient twice. Treating a
+        // rejection from lnurlPay as an unknown outcome (stay disarmed and
+        // send the user to their history, as the GraphQL branch does) is
+        // ENG-711.
         const sent = lnurlPaymentSent(response)
         return finish({
           status: sent ? PaymentSendResult.Success : PaymentSendResult.Failure,
