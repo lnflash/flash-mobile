@@ -1488,7 +1488,8 @@ export interface CashuCardInfo extends CardInfo {
  * → AUTH → GET_CARD → [`afterAuth`: the clock and the owner] → [GET_CARD,
  * and GET_INFO, again when `afterAuth` changed the card; GET_INFO again under
  * the owner's grant], then the slots (GET_PIECES pages, GET_PROOF per spent
- * slot) when the card holds anything. Nothing but `afterAuth` writes.
+ * slot) when the card holds anything and `needsPieces` says something needs
+ * them (ENG-708). Nothing but `afterAuth` writes.
  *
  * GET_BALANCE is the one read that precedes AUTH (ENG-707): it needs nothing
  * on the card, is read-only, and is not part of what AUTH signs, so the same
@@ -1502,9 +1503,10 @@ export interface CashuCardInfo extends CardInfo {
  * to other card types: the applet AID said 6A82 and the package AID said
  * 6A82 or a bare 9000 (an opener), and no withdrawn AID selected (an NTAG 424
  * BoltCard says 6A82 to every Cashu SELECT). Throws on a transport failure, and when GET_INFO,
- * GET_PUBKEY, GET_BALANCE or GET_CARD fails. The slot read after them is best
- * effort (`readKeysetSplit`): its failure leaves `keysets` and `spentSlots`
- * undefined.
+ * GET_PUBKEY, GET_BALANCE or GET_CARD fails. The slot read after them runs
+ * only when `needsPieces` allows it, and is best effort when it runs
+ * (`readKeysetSplit`): a skipped read and a failed one both leave `keysets`,
+ * `pieces`, `spentSlots` and `unspentSlots` undefined.
  */
 export type ReadOptions = {
   /**
@@ -1515,6 +1517,18 @@ export type ReadOptions = {
    * so the read asks the card again rather than return what it said before.
    */
   afterAuth?: (tap: AuthenticatedTap) => Promise<ReadChanges | undefined>
+  /**
+   * Whether this read needs the card's slots (ENG-708): its keyset split, its
+   * pieces and its spent slots, which cost a GET_PIECES per page plus a
+   * GET_PROOF per spent slot. Evaluated once, after `afterAuth` resolves and
+   * after GET_BALANCE, so it can read what `afterAuth` learned. Omitted, or
+   * `true`, reads the slots as before. `false` sends no GET_PIECES and no
+   * GET_PROOF, and leaves `keysets`, `pieces`, `spentSlots` and
+   * `unspentSlots` undefined, as a slot read that failed does. An empty card's
+   * split costs no APDU, so it is returned either way and the predicate is
+   * not asked.
+   */
+  needsPieces?: () => boolean
   /**
    * Runs in the tap once GET_BALANCE is in, before AUTH: nothing it receives
    * is proven (the card has not yet shown it holds the key it reported), so a
@@ -1558,7 +1572,7 @@ export type AuthenticatedTap = {
 
 export const readCashuCard = async (
   transceive: Transceiver,
-  { afterAuth, onUnverified }: ReadOptions = {},
+  { afterAuth, needsPieces, onUnverified }: ReadOptions = {},
 ): Promise<CashuCardInfo | null> => {
   try {
     await selectApplet(transceive)
@@ -1598,7 +1612,13 @@ export const readCashuCard = async (
     changes?.clockMoved || changes?.refreshed
       ? await getCardRecord(transceive)
       : recordRead
-  const slots = await readKeysetSplit(transceive, info)
+  // The slots only when something needs them (ENG-708): an empty card's
+  // split is free (`readKeysetSplit` sends nothing for it), so it is kept.
+  const empty = info.unspent === 0 && info.spent === 0
+  const slots =
+    empty || (needsPieces?.() ?? true)
+      ? await readKeysetSplit(transceive, info)
+      : undefined
   return {
     ...info,
     pubkey,

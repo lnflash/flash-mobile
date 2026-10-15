@@ -1883,6 +1883,82 @@ describe("readCashuCard", () => {
     expect(card.ins()).toEqual([0xa4, 0xa4, 0xa4])
   })
 
+  // ENG-708: the slots are read only when the caller says something needs them.
+  it("with needsPieces false, sends no GET_PIECES and no GET_PROOF, and returns the balance with no split", async () => {
+    const card = loadedCard()
+    const info = await readCashuCard(card.transceive, { needsPieces: () => false })
+    expect(info).toMatchObject({ balance: 500, pubkey: card.pubkey, unspent: 1 })
+    expect(info?.keysets).toBeUndefined()
+    expect(info?.pieces).toBeUndefined()
+    expect(info?.spentSlots).toBeUndefined()
+    expect(info?.unspentSlots).toBeUndefined()
+    expect(card.ins()).not.toContain(INS.GET_PIECES)
+    expect(card.ins()).not.toContain(INS.GET_PROOF)
+    expect(card.ins()).toEqual([
+      0xa4,
+      INS.GET_INFO,
+      INS.GET_PUBKEY,
+      INS.GET_BALANCE,
+      INS.AUTH,
+      INS.GET_CARD,
+    ])
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it("asks needsPieces once, after afterAuth resolves and after GET_BALANCE, so it can read what afterAuth learned", async () => {
+    const card = loadedCard()
+    let learned = false
+    let insAtCall: number[] = []
+    const afterAuth = jest.fn(async () => {
+      // Resolves on a later tick: the predicate must wait for it.
+      await Promise.resolve()
+      learned = true
+      return {}
+    })
+    const needsPieces = jest.fn(() => {
+      insAtCall = card.ins()
+      return !learned
+    })
+    const info = await readCashuCard(card.transceive, { afterAuth, needsPieces })
+    expect(needsPieces).toHaveBeenCalledTimes(1)
+    expect(insAtCall).toEqual([
+      0xa4,
+      INS.GET_INFO,
+      INS.GET_PUBKEY,
+      INS.GET_BALANCE,
+      INS.AUTH,
+      INS.GET_CARD,
+    ])
+    // `afterAuth` set the flag before the predicate ran, and its false held.
+    expect(card.ins()).not.toContain(INS.GET_PIECES)
+    expect(info?.keysets).toBeUndefined()
+  })
+
+  it("with needsPieces true, reads the slots as without it", async () => {
+    const card = loadedCard()
+    const info = await readCashuCard(card.transceive, { needsPieces: () => true })
+    expect(info).toMatchObject({
+      keysets: [{ keysetId: KEYSET_HEX, amount: 500 }],
+      pieces: [500],
+    })
+    expect(info?.spentSlots?.map((slot) => slot.slot)).toEqual([1])
+    expect(card.ins().slice(-2)).toEqual([INS.GET_PIECES, INS.GET_PROOF])
+  })
+
+  it("keeps an empty card's split, which costs no APDU, whatever needsPieces says, and does not ask it", async () => {
+    const card = createFakeCard()
+    const needsPieces = jest.fn(() => false)
+    await expect(readCashuCard(card.transceive, { needsPieces })).resolves.toMatchObject({
+      balance: 0,
+      keysets: [],
+      pieces: [],
+      spentSlots: [],
+      unspentSlots: [],
+    })
+    expect(needsPieces).not.toHaveBeenCalled()
+    expect(card.ins()).not.toContain(INS.GET_PIECES)
+  })
+
   it("reads no slots on an empty card", async () => {
     const card = createFakeCard()
     await expect(readCashuCard(card.transceive)).resolves.toMatchObject({
