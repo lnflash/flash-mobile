@@ -491,9 +491,13 @@ export const FlashcardContext = createContext<FlashcardInterface>({
 })
 
 /**
- * A preview (ENG-707) with the unit this phone recorded for the card, when the
- * card still says the balance recorded with it; an empty card needs no unit.
- * Otherwise it has none: the keyset split is read only after AUTH.
+ * A preview (ENG-707) labelled with the unit this phone recorded for the card
+ * (`KnownCard.unit`, kept only for a card whose pieces were all in one unit);
+ * an empty card needs no unit. The balance may have moved since: a payment
+ * spends pieces, it does not change their unit, so the label still holds.
+ * Display only: the verified read replaces it with the keyset split read
+ * after AUTH, and nothing is decided on it. A card this phone never labelled
+ * has no unit until then.
  */
 export const previewWithKnownUnit = (
   preview: ReadPreview,
@@ -501,7 +505,7 @@ export const previewWithKnownUnit = (
 ): CashuCardPreview => {
   if (preview.balance === 0) return { ...preview, unitTotals: { byUnit: [], unknown: 0 } }
   const known = cards?.[preview.pubkey]
-  if (!known?.unit || known.lastBalance !== preview.balance) return preview
+  if (!known?.unit) return preview
   return {
     ...preview,
     unitTotals: { byUnit: [{ unit: known.unit, amount: preview.balance }], unknown: 0 },

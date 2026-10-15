@@ -1120,7 +1120,9 @@ describe("FlashcardProvider shows the balance before AUTH, verified only after i
     await finish(done)
   })
 
-  it("leaves the preview's unit unknown when the card's balance moved since it was recorded", async () => {
+  it("keeps the recorded unit on the preview when the card's balance moved since it was recorded", async () => {
+    // Seen on the Max: the card was read at 160 sat, then paid 14 offline at
+    // a till. Spending changes the balance, not the pieces' unit.
     store.dispatch(
       cardSeen({
         pubkey: PUBKEY_HEX,
@@ -1134,6 +1136,32 @@ describe("FlashcardProvider shows the balance before AUTH, verified only after i
       }),
     )
     store.dispatch(cardUnitResolved({ pubkey: PUBKEY_HEX, unit: "sat" }))
+    await mountWithHistory()
+    const release = holdAuth(loadedCard())
+
+    const done = startTap()
+    await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+    expect(latest?.cashuCardPreview?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 500 }],
+      unknown: 0,
+    })
+    release()
+    await finish(done)
+  })
+
+  it("leaves the preview's unit unknown for a card this phone never labelled", async () => {
+    store.dispatch(
+      cardSeen({
+        pubkey: PUBKEY_HEX,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 900,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
     await mountWithHistory()
     const release = holdAuth(loadedCard())
 
