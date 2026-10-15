@@ -9,13 +9,18 @@
  * again. The rejection from lnurlPay is also logged, with its message and the
  * reason the SDK gave, since nothing the app logs after payLnurlBreez tells one
  * apart from another: the screen shows the history message and payment_result
- * records a plain FAILURE. The RN binding builds an SdkError's message from the
- * variant alone ("SdkError.SparkError") and carries the reason in `inner`, so
- * the rejections below are shaped like its errors.
+ * records a plain FAILURE. The line goes to the console and, through appendLog,
+ * to the Spark log CSV that Settings > Export Spark logs shares: in a release
+ * build that CSV is the only copy support can ask a user for. The RN binding
+ * builds an SdkError's message from the variant alone ("SdkError.SparkError")
+ * and carries the reason in `inner`, so the rejections below are shaped like its
+ * errors.
  *
  * The SDK module is replaced by a fake whose builder hands back a fake SDK, so
  * the real initializeBreezSDK connects to it and payLnurlBreez runs unchanged.
  * The Keychain and RNFS calls on the way go to their manual mocks in __mocks__.
+ * appendLog is a jest.fn that records the lines it is handed; the rest of the
+ * log buffer is the real module.
  */
 jest.mock("@breeztech/breez-sdk-spark-react-native", () => ({
   __esModule: true,
@@ -30,7 +35,13 @@ jest.mock("@breeztech/breez-sdk-spark-react-native", () => ({
     }
   },
 }))
+jest.mock("@app/utils/breez-sdk/log-buffer", () => ({
+  __esModule: true,
+  ...jest.requireActual("@app/utils/breez-sdk/log-buffer"),
+  appendLog: jest.fn(),
+}))
 
+import { appendLog } from "@app/utils/breez-sdk/log-buffer"
 import { LnurlPayOutcomeUnknownError } from "@app/utils/breez-sdk/lnurl-pay-errors"
 import {
   getSDKInstance,
@@ -44,11 +55,15 @@ type FakeSdk = {
   lnurlPay: jest.Mock
 }
 
+const appendLogMock = appendLog as jest.MockedFunction<typeof appendLog>
+
 const LNURL = "bob@example.com"
-// The label of the log line for a rejection from lnurlPay. The tests that
-// expect no such line check the first argument of every console.error call:
-// toHaveBeenCalledWith matches the whole argument list, so a negative one with
-// a different number of arguments than the log line never fails.
+// The label of the log line for a rejection from lnurlPay, which also starts
+// its line in the Spark log CSV. The tests that expect no such line check the
+// first argument of every console.error call: toHaveBeenCalledWith matches the
+// whole argument list, so a negative one with a different number of arguments
+// than the log line never fails. Nothing else in payLnurlBreez calls appendLog,
+// so those tests expect no call to it at all.
 const AFTER_DISPATCH = "payLnurlBreez error after dispatch:"
 const AMOUNT_SATS = 2100
 const MEMO = "lunch"
@@ -114,6 +129,7 @@ describe("payLnurlBreez", () => {
     sdk.lnurlPay.mockReset()
     sdk.lnurlPay.mockResolvedValue(answer)
     consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+    appendLogMock.mockClear()
   })
 
   afterEach(() => {
@@ -147,13 +163,16 @@ describe("payLnurlBreez", () => {
     expect(sdk.lnurlPay).toHaveBeenCalledTimes(1)
   })
 
-  it("logs the message and the SDK's reason from inner for a rejection from lnurlPay itself", async () => {
+  it("logs the message and the SDK's reason from inner, to the console and the Spark log CSV, for a rejection from lnurlPay itself", async () => {
     sdk.lnurlPay.mockRejectedValue(sdkError("SparkError", [TRANSPORT_ERROR]))
 
     await rejectionOf(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO))
 
     expect(consoleError.mock.calls).toEqual([
       [AFTER_DISPATCH, "SdkError.SparkError", TRANSPORT_ERROR],
+    ])
+    expect(appendLogMock.mock.calls).toEqual([
+      ["ERROR", `${AFTER_DISPATCH} SdkError.SparkError ${TRANSPORT_ERROR}`],
     ])
   })
 
@@ -171,6 +190,9 @@ describe("payLnurlBreez", () => {
     expect(consoleError.mock.calls).toEqual([
       [AFTER_DISPATCH, "SdkError.InsufficientCpfpFunds", ""],
     ])
+    expect(appendLogMock.mock.calls).toEqual([
+      ["ERROR", `${AFTER_DISPATCH} SdkError.InsufficientCpfpFunds`],
+    ])
   })
 
   it("logs and wraps a rejection from lnurlPay that is not an Error by its string form", async () => {
@@ -182,6 +204,9 @@ describe("payLnurlBreez", () => {
     expect((error as LnurlPayOutcomeUnknownError).sdkError).toBe("connection reset")
     expect((error as LnurlPayOutcomeUnknownError).message).toBe("connection reset")
     expect(consoleError.mock.calls).toEqual([[AFTER_DISPATCH, "connection reset", ""]])
+    expect(appendLogMock.mock.calls).toEqual([
+      ["ERROR", `${AFTER_DISPATCH} connection reset`],
+    ])
   })
 
   it("passes a parse rejection through untouched, and never dispatches", async () => {
@@ -192,6 +217,7 @@ describe("payLnurlBreez", () => {
     expect(sdk.prepareLnurlPay).not.toHaveBeenCalled()
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
     expect(consoleError.mock.calls.map(([label]) => label)).not.toContain(AFTER_DISPATCH)
+    expect(appendLogMock).not.toHaveBeenCalled()
   })
 
   it("passes a prepareLnurlPay rejection through untouched, and never dispatches", async () => {
@@ -201,6 +227,7 @@ describe("payLnurlBreez", () => {
     await expect(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO)).rejects.toBe(refusal)
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
     expect(consoleError.mock.calls.map(([label]) => label)).not.toContain(AFTER_DISPATCH)
+    expect(appendLogMock).not.toHaveBeenCalled()
   })
 
   it('refuses an input that is not LNURL-pay with a plain "Unsupported input type", and never dispatches', async () => {
@@ -214,5 +241,6 @@ describe("payLnurlBreez", () => {
     expect(sdk.prepareLnurlPay).not.toHaveBeenCalled()
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
     expect(consoleError.mock.calls.map(([label]) => label)).not.toContain(AFTER_DISPATCH)
+    expect(appendLogMock).not.toHaveBeenCalled()
   })
 })

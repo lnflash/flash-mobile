@@ -506,21 +506,31 @@ export const payLnurlBreez = async (
       })
     } catch (error) {
       const outcomeUnknown = new LnurlPayOutcomeUnknownError(error)
-      // The one record of what the SDK said: past here the user sees only the
-      // history message, and payment_result records a plain FAILURE. The RN
-      // binding (uniffi) builds an SdkError's message from its type and
+      // Past here the user sees only the history message, and payment_result
+      // records a plain FAILURE, so this line is the record that this send was
+      // disarmed and why. Beside the SDK's own lines, it tells a lost
+      // request_lightning_send answer from a harmless SSP timeout. A release
+      // build sends the SDK's lines to the Spark log CSV that Settings > Export
+      // Spark logs shares, but console.error reaches only logcat or os_log,
+      // which no user can export, so the line goes to both. A dev build never
+      // writes the CSV (connectToSDK skips initLogBuffer), and there the
+      // console is the record.
+      //
+      // The RN binding (uniffi) builds an SdkError's message from its type and
       // variant alone, so every SSP or transport failure reads
       // "SdkError.SparkError". The SDK's reason is in `inner`, a frozen
       // [string] for each variant that carries text, and is logged after the
-      // message. An object `inner` logs "". Never JSON.stringify it: some
-      // carry bigints, and a throw here escapes as a plain Error that re-arms
-      // Confirm for a second payment.
+      // message. An object `inner` logs "".
+      //
+      // Nothing here may throw: a throw escapes as a plain Error that re-arms
+      // Confirm for a second payment. Never JSON.stringify `inner`, since some
+      // carry bigints. appendLog cannot throw: it is synchronous and only
+      // queues the line.
+      const label = "payLnurlBreez error after dispatch:"
       const inner = (error as { inner?: unknown } | null | undefined)?.inner
-      console.error(
-        "payLnurlBreez error after dispatch:",
-        outcomeUnknown.message,
-        Array.isArray(inner) ? inner.join(" ") : "",
-      )
+      const reason = Array.isArray(inner) ? inner.join(" ") : ""
+      console.error(label, outcomeUnknown.message, reason)
+      appendLog("ERROR", `${label} ${outcomeUnknown.message} ${reason}`.trimEnd())
       throw outcomeUnknown
     }
     console.log("Lnurl Pay Response: ", response)
