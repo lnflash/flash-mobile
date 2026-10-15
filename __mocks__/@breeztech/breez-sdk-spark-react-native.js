@@ -60,6 +60,35 @@ const PaymentStatus = {
   Failed: 2,
 }
 
+// generated: OnchainConfirmationSpeed — Fast = 0, Medium = 1, Slow = 2
+const OnchainConfirmationSpeed = {
+  Fast: 0,
+  Medium: 1,
+  Slow: 2,
+}
+
+// sendPayment's `options` is a tagged union too; app code constructs
+// `new SendPaymentOptions.BitcoinAddress({ confirmationSpeed })`. Each class
+// mirrors the generated one, as PaymentRequest.Input does above: its `tag`,
+// and the constructor's argument frozen as `inner`.
+const SendPaymentOptions_Tags = {
+  BitcoinAddress: "BitcoinAddress",
+  Bolt11Invoice: "Bolt11Invoice",
+  SparkAddress: "SparkAddress",
+}
+const sendPaymentOption = (tag) =>
+  class {
+    constructor(inner) {
+      this.tag = tag
+      this.inner = Object.freeze({ ...inner })
+    }
+  }
+const SendPaymentOptions = {
+  BitcoinAddress: sendPaymentOption(SendPaymentOptions_Tags.BitcoinAddress),
+  Bolt11Invoice: sendPaymentOption(SendPaymentOptions_Tags.Bolt11Invoice),
+  SparkAddress: sendPaymentOption(SendPaymentOptions_Tags.SparkAddress),
+}
+
 class Bolt11Invoice {
   constructor(args) {
     Object.assign(this, args)
@@ -78,6 +107,7 @@ module.exports = {
   __esModule: true,
   BitcoinAddress,
   Bolt11Invoice,
+  OnchainConfirmationSpeed,
   PaymentStatus,
   PaymentType,
   ReceivePaymentMethod: {
@@ -85,6 +115,8 @@ module.exports = {
     Bolt11Invoice,
   },
   SdkEvent_Tags,
+  SendPaymentOptions,
+  SendPaymentOptions_Tags,
   connect: jest.fn(),
   defaultConfig: jest.fn(),
   disconnect: jest.fn(),
