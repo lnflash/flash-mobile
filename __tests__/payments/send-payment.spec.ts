@@ -23,6 +23,9 @@ jest.mock("uuid", () => ({
 }))
 
 import type { ApolloClient, DocumentNode } from "@apollo/client"
+// The manual mock, which mirrors the generated enum: see
+// __tests__/mocks/breez-sdk-spark-mock-parity.spec.ts.
+import { PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
 import { OperationDefinitionNode } from "graphql"
 import { LnUrlPayServiceResponse, Satoshis } from "lnurl-pay/dist/types/types"
 import { createMock } from "ts-auto-mock"
@@ -87,9 +90,6 @@ const USDT: WalletDescriptor<WalletCurrency> = {
 }
 const BTC: WalletDescriptor<WalletCurrency> = btcSendingWalletDescriptor
 
-// PaymentStatus.Failed in the Spark SDK's generated enum.
-const SPARK_PAYMENT_STATUS_FAILED = 2
-
 const lnurlParams = () =>
   createMock<LnUrlPayServiceResponse>({ min: 1 as Satoshis, max: 100000 as Satoshis })
 
@@ -112,7 +112,12 @@ const fakeClient = () => {
 
 const mockRail = () => ({
   payInvoice: jest.fn().mockResolvedValue({ success: true }),
-  payLnurl: jest.fn().mockResolvedValue({ payment: {}, successAction: undefined }),
+  // payLnurl resolves with the SDK's LnurlPayResponse. Only a payment that
+  // went out (Completed or Pending) reads as Success (ENG-694).
+  payLnurl: jest.fn().mockResolvedValue({
+    payment: { status: PaymentStatus.Completed },
+    successAction: undefined,
+  }),
   payOnchain: jest.fn().mockResolvedValue({ success: true }),
 })
 
@@ -638,24 +643,84 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     expectRearmed(ctx.state)
   })
 
-  // Pinned, not endorsed. The LNURL/intraledger branch never reads payLnurl's
-  // answer, so any answer that resolves is reported as Success. The real
-  // payLnurlBreez throws on the failures it can see, but a resolved answer is
-  // still not proof of payment. ENG-686 moves this branch unchanged
-  // (ENG-684 Phase 1a: no behavior change). The fix is ENG-694, and it should
-  // flip these cases.
+  // ENG-694. The first two cases here pinned the always-Success answer that
+  // ENG-686 moved over unchanged; they are flipped on purpose. payLnurl
+  // answers in one of two ways: it rejects on every failure payLnurlBreez sees
+  // (the SDK's errors and its own "Unsupported input type"), or it resolves
+  // with the SDK's LnurlPayResponse, whose payment status can be Failed. Only
+  // a Completed or Pending payment is a Success. Anything else is a Failure
+  // with the screen's own copy, and re-arms the button like every other
+  // Breez Failure.
   const failedAnswers: [string, unknown][] = [
+    // The other two sends' answer, never payLnurl's, so its `error` is not read.
     ["a { success: false } answer", { success: false, error: "no route" }],
     [
       "a payment whose status is Failed",
-      { payment: { status: SPARK_PAYMENT_STATUS_FAILED }, successAction: undefined },
+      { payment: { status: PaymentStatus.Failed }, successAction: undefined },
     ],
+    // The SDK always sets a status, so an answer without one did not come
+    // from it and proves nothing.
+    ["a payment with no status", { payment: {}, successAction: undefined }],
+    ["no answer at all", undefined],
   ]
   failedAnswers.forEach(([label, railAnswer]) => {
-    it(`lnurl and intraledger report Success even for ${label} (preserved; ENG-694)`, async () => {
+    it(`lnurl and intraledger report Failure for ${label}, and re-arm`, async () => {
       for (const detail of [lnurl(), intraledger()]) {
         const ctx = setup()
         ctx.rail.payLnurl.mockResolvedValue(railAnswer)
+
+        const outcome = await sendPayment(
+          { sendPaymentMutation: jest.fn(), paymentDetail: detail },
+          ctx.deps,
+          ctx.state,
+        )
+
+        expect(outcome).toEqual({
+          status: PaymentSendResult.Failure,
+          errorsMessage: "Something went wrong",
+        })
+        expectRearmed(ctx.state)
+        // A Breez send holds no GraphQL attempt, so the retry is a new send.
+        expect(ctx.state.attemptRef.current).toBeNull()
+      }
+    })
+  })
+
+  it("lnurl and intraledger: a payLnurl that rejects is a Failure with the thrown message, and re-arms", async () => {
+    for (const detail of [lnurl(), intraledger()]) {
+      const ctx = setup()
+      // payLnurlBreez's own refusal of an input that is not LNURL-pay.
+      ctx.rail.payLnurl.mockRejectedValue(new Error("Unsupported input type"))
+
+      const outcome = await sendPayment(
+        { sendPaymentMutation: jest.fn(), paymentDetail: detail },
+        ctx.deps,
+        ctx.state,
+      )
+
+      expect(outcome).toEqual({
+        status: PaymentSendResult.Failure,
+        errorsMessage: "Unsupported input type",
+      })
+      expectRearmed(ctx.state)
+    }
+  })
+
+  // Pending is the usual answer: the SDK's LNURL pay does not wait for the
+  // payment to settle. Reporting it as a Failure would re-arm the button
+  // while the money is on its way, and the next tap would pay again.
+  const sentStatuses: [string, PaymentStatus][] = [
+    ["Completed", PaymentStatus.Completed],
+    ["Pending", PaymentStatus.Pending],
+  ]
+  sentStatuses.forEach(([label, status]) => {
+    it(`lnurl and intraledger report Success for a ${label} payment, and stay disarmed`, async () => {
+      for (const detail of [lnurl(), intraledger()]) {
+        const ctx = setup()
+        ctx.rail.payLnurl.mockResolvedValue({
+          payment: { status },
+          successAction: undefined,
+        })
 
         const outcome = await sendPayment(
           { sendPaymentMutation: jest.fn(), paymentDetail: detail },
@@ -668,6 +733,7 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
           errorsMessage: undefined,
         })
         expect(ctx.state.inFlightRef.current).toBe(true)
+        expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
       }
     })
   })

@@ -209,6 +209,46 @@ export type SendPaymentOutcome = {
 }
 
 /**
+ * What `payLnurl` resolves with: the Spark SDK's `LnurlPayResponse`, typed
+ * through the rail so this module does not import the SDK
+ * (docs/ai-assistant-tool-registry.md §2.1).
+ */
+type LnurlPayAnswer = Awaited<ReturnType<BtcRail["payLnurl"]>>
+
+/**
+ * ENG-694: which payment statuses mean an LNURL or intraledger send went out,
+ * keyed by the SDK's generated `PaymentStatus` values. The Record is
+ * exhaustive over that enum, so an SDK bump that adds a status fails tsc here
+ * until someone decides what the new status means for a send.
+ */
+const LNURL_PAYMENT_SENT: Record<LnurlPayAnswer["payment"]["status"], boolean> = {
+  0: true, // Completed
+  // Pending: in flight. The SDK's LNURL pay returns without waiting for the
+  // payment to settle, so this is its usual answer. The lightning branch also
+  // reports a payment that is still pending after its own wait as Success.
+  1: true,
+  2: false, // Failed
+}
+
+/**
+ * The confirmation screen's own copy for a Failure that carries no message
+ * (send-bitcoin-confirmation-screen.tsx). A Failed payment comes back without
+ * a reason, so the LNURL branch shows that copy instead of a new string.
+ */
+const LNURL_PAYMENT_FAILED_MESSAGE = "Something went wrong"
+
+/**
+ * Whether `payLnurl`'s answer reports a payment that went out: a Completed or
+ * Pending one. A Failed payment is not one, and neither is an answer that
+ * carries no payment status: the SDK always sets one, so an answer without
+ * it did not come from the SDK and proves nothing.
+ */
+const lnurlPaymentSent = (answer: LnurlPayAnswer | undefined): boolean => {
+  const status = answer?.payment?.status
+  return status !== undefined && LNURL_PAYMENT_SENT[status] === true
+}
+
+/**
  * Send one payment: through the BTC rail for the BTC wallet, through
  * GraphQL for every other wallet.
  *
@@ -224,9 +264,9 @@ export type SendPaymentOutcome = {
  * from three substitutions: the Breez calls go through `deps.btcRail`, the
  * nine triggers come from `deps.mutations` (spread ahead of the attempt's
  * own fields, so they cannot replace them), and `graphqlUri` and
- * `lnAddressHostname` come from `deps`. Moving it unchanged also keeps
- * behavior a later ticket will fix, such as the LNURL/intraledger Breez
- * branch reporting Success without reading the rail's answer (ENG-694).
+ * `lnAddressHostname` come from `deps`. ENG-694 then changed one behavior
+ * the move had kept: the LNURL/intraledger Breez branch reads the rail's
+ * answer instead of reporting Success unconditionally.
  */
 export const sendPayment = async (
   { sendPaymentMutation, paymentDetail, selectedFeeType }: SendPaymentArgs,
@@ -283,10 +323,15 @@ export const sendPayment = async (
           "",
         )
         console.log("Response payLnurlBreez: ", response)
-        return {
-          status: PaymentSendResult.Success,
-          errorsMessage: undefined,
-        }
+        // ENG-694: read the answer, as the lightning branch reads its own.
+        // payLnurl rejects on every failure payLnurlBreez can see (the catch
+        // below turns that into a Failure and re-arms). Otherwise it resolves
+        // with the payment, whose status says whether it went out.
+        const sent = lnurlPaymentSent(response)
+        return finish({
+          status: sent ? PaymentSendResult.Success : PaymentSendResult.Failure,
+          errorsMessage: sent ? undefined : LNURL_PAYMENT_FAILED_MESSAGE,
+        })
       } else if (paymentType === "onchain") {
         console.log("Starting payOnchainBreez")
         const response = await deps.btcRail.payOnchain(
