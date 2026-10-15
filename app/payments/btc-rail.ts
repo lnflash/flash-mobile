@@ -35,3 +35,4 @@ export const breezBtcRail: BtcRail = {
   payLnurl: (...args) => payLnurlBreez(...args),
   payOnchain: (...args) => payOnchainBreez(...args),
 }
+// Path-filter probe for #779: this branch is never merged.
