@@ -21,6 +21,7 @@ import type {
   SdkEvent,
   InputType,
   ReceivePaymentResponse,
+  SendPaymentRequest,
   SendPaymentResponse,
   ClaimDepositRequest,
   DepositInfo,
@@ -438,8 +439,12 @@ export const payOnchainBreez = async (
   selectedFeeType: "fast" | "medium" | "slow",
   idempotencyKey?: string,
 ): Promise<PayResponse> => {
+  // Before the dispatch. Nothing has left the wallet if any of this throws, so
+  // the answer is a plain refusal, and sendPayment re-arms Confirm on it.
+  let sdk: BreezSdkInterface
+  let request: SendPaymentRequest
   try {
-    const sdk = getSDKInstance()
+    sdk = getSDKInstance()
 
     const prepareResponse = await sdk.prepareSendPayment({
       // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
@@ -458,25 +463,53 @@ export const payOnchainBreez = async (
         ? OnchainConfirmationSpeed.Medium
         : OnchainConfirmationSpeed.Slow
 
-    const options = new SendPaymentOptions.BitcoinAddress({ confirmationSpeed })
-
-    const response = await sdk.sendPayment({
+    request = {
       prepareResponse,
-      options,
+      options: new SendPaymentOptions.BitcoinAddress({ confirmationSpeed }),
       // The caller's attempt key (ENG-714). In 0.22.3 it becomes the
       // cooperative exit's transfer id, but nothing may rely on the SDK
       // replaying it until ENG-715 proves that.
       idempotencyKey,
-    })
-
-    return { success: true, payment: response }
-  } catch (err) {
+    }
+  } catch {
     return {
       success: false,
       error:
         "Failed to pay the invoice. Please make sure you have enough balance to cover the payment and the network fee.",
     }
   }
+
+  // ENG-714: the dispatch boundary. Anything that throws once sdk.sendPayment
+  // is entered is an unknown outcome. In spark-sdk 0.22.3 it can reject after
+  // the cooperative exit went out: the leaves are already with the SSP when
+  // the complete_coop_exit answer is lost, and the try_into and storage write
+  // after the withdrawal can fail too. So the answer is outcomeUnknown, and
+  // sendPayment keeps Confirm disarmed on it. Keep this try around
+  // sdk.sendPayment alone: widened over the steps above, it disarms on
+  // refusals that sent nothing; merged with the catch above, the next tap can
+  // withdraw a second time.
+  let response: SendPaymentResponse
+  try {
+    response = await sdk.sendPayment(request)
+  } catch (error) {
+    // Past here the user sees only the history message, so this line is the
+    // record that the withdrawal is in doubt, and why. It goes to the console
+    // and to the Spark log CSV, the same way as payLnurlBreez's line after its
+    // dispatch: see the comment there for why both, and why the reason comes
+    // from `inner`. Nothing here may throw: a rejection out of payOnchainBreez
+    // reaches sendPayment's catch, which re-arms Confirm for a second
+    // withdrawal. Never JSON.stringify `inner`, since some variants carry
+    // bigints.
+    const label = "payOnchainBreez error after dispatch:"
+    const message = error instanceof Error ? error.message : String(error)
+    const inner = (error as { inner?: unknown } | null | undefined)?.inner
+    const reason = Array.isArray(inner) ? inner.join(" ") : ""
+    console.error(label, message, reason)
+    appendLog("ERROR", `${label} ${message} ${reason}`.trimEnd())
+    return { success: false, error: message, outcomeUnknown: true }
+  }
+
+  return { success: true, payment: response }
 }
 /* eslint-enable max-params */
 
