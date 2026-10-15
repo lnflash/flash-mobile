@@ -803,9 +803,22 @@ type RootTranslation = {
 		 */
 		needsUpdateShort: string
 		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​c​o​u​l​d​n​'​t​ ​p​r​o​v​e​ ​i​t​'​s​ ​g​e​n​u​i​n​e​.​ ​N​o​t​h​i​n​g​ ​f​r​o​m​ ​i​t​ ​w​a​s​ ​s​h​o​w​n​ ​o​r​ ​s​a​v​e​d​.
+		 * T​h​i​s​ ​c​a​r​d​ ​c​o​u​l​d​n​'​t​ ​p​r​o​v​e​ ​i​t​'​s​ ​g​e​n​u​i​n​e​.​ ​N​o​t​h​i​n​g​ ​f​r​o​m​ ​i​t​ ​w​a​s​ ​s​a​v​e​d​.
 		 */
 		authFailed: string
+		/**
+		 * V​e​r​i​f​y​i​n​g​…
+		 */
+		verifying: string
+		/**
+		 * {​a​m​o​u​n​t​}​ ​·​ ​V​e​r​i​f​y​i​n​g​…​ ​k​e​e​p​ ​h​o​l​d​i​n​g
+		 * @param {string} amount
+		 */
+		scanVerifying: RequiredParams<'amount'>
+		/**
+		 * V​e​r​i​f​y​i​n​g​…​ ​k​e​e​p​ ​h​o​l​d​i​n​g
+		 */
+		scanVerifyingHidden: string
 		/**
 		 * T​h​i​s​ ​c​a​r​d​ ​i​s​n​'​t​ ​s​e​t​ ​u​p
 		 */
@@ -8330,9 +8343,21 @@ export type TranslationFunctions = {
 		 */
 		needsUpdateShort: () => LocalizedString
 		/**
-		 * This card couldn't prove it's genuine. Nothing from it was shown or saved.
+		 * This card couldn't prove it's genuine. Nothing from it was saved.
 		 */
 		authFailed: () => LocalizedString
+		/**
+		 * Verifying…
+		 */
+		verifying: () => LocalizedString
+		/**
+		 * {amount} · Verifying… keep holding
+		 */
+		scanVerifying: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Verifying… keep holding
+		 */
+		scanVerifyingHidden: () => LocalizedString
 		/**
 		 * This card isn't set up
 		 */
