@@ -4,6 +4,7 @@ import { PaymentType } from "@galoymoney/client"
 import * as Keychain from "react-native-keychain"
 import {
   PaymentRequest,
+  PaymentStatus,
   defaultConfig,
   Network,
   ReceivePaymentMethod,
@@ -387,6 +388,36 @@ type PayResponse = {
   payment?: SendPaymentResponse
 }
 
+/**
+ * ENG-712: which statuses of a payment sdk.sendPayment resolved with mean a
+ * bolt11 send went out, keyed by the SDK's `PaymentStatus`. The Record is
+ * exhaustive over that enum, so an SDK bump that adds a status fails tsc here
+ * until someone decides what it means. send-payment.ts keeps its own table,
+ * BREEZ_PAYMENT_SENT, because it does not import the SDK.
+ */
+const LIGHTNING_PAYMENT_SENT: Record<PaymentStatus, boolean> = {
+  [PaymentStatus.Completed]: true,
+  // Still in flight when the wait ends. It may yet complete, so it is not a
+  // failure the caller may retry.
+  [PaymentStatus.Pending]: true,
+  [PaymentStatus.Failed]: false,
+}
+
+/**
+ * payLightningBreez's answer for a send that sdk.sendPayment resolved
+ * (ENG-712). With a completion timeout the SDK waits for the payment to
+ * leave Pending, so a payment that fails inside the wait resolves with status
+ * Failed: a resolved send is not a sent payment. A Failed payment is
+ * `success: false`. It carries no reason, so there is no `error`, and each
+ * caller shows its own copy: a chat zap its "Payment could not be sent.",
+ * useSwap and the confirmation screen their generic error. The payment rides
+ * along either way.
+ */
+export const lightningPayResponse = (response: SendPaymentResponse): PayResponse => ({
+  success: LIGHTNING_PAYMENT_SENT[response.payment.status] === true,
+  payment: response,
+})
+
 export const payLightningBreez = async (
   paymentRequest: string,
   amountSats?: number,
@@ -415,7 +446,7 @@ export const payLightningBreez = async (
       idempotencyKey: undefined,
     })
 
-    return { success: true, payment: response }
+    return lightningPayResponse(response)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error("payLightningBreez error:", message)

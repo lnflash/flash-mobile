@@ -41,6 +41,7 @@ import {
   PaymentSendResult,
   WalletCurrency,
 } from "@app/graphql/generated"
+import { breezBtcRail } from "@app/payments/btc-rail"
 import {
   AttemptState,
   GraphqlMutationFns,
@@ -64,6 +65,9 @@ import {
   resetIdempotencyKeySupport,
 } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 import { WalletDescriptor } from "@app/types/wallets"
+// The shared manual mock (__mocks__/breez-sdk.js), which jest.config.js maps
+// @app/utils/breez-sdk to. breezBtcRail calls it.
+import { payLightningBreez } from "@app/utils/breez-sdk"
 // The real class, by the deep path payLnurlBreez and sendPayment use: Jest maps
 // the @app/utils/breez-sdk barrel to a mock that does not export it.
 import { LnurlPayOutcomeUnknownError } from "@app/utils/breez-sdk/lnurl-pay-errors"
@@ -114,7 +118,14 @@ const fakeClient = () => {
 }
 
 const mockRail = () => ({
-  payInvoice: jest.fn().mockResolvedValue({ success: true }),
+  // payInvoice resolves with payLightningBreez's { success, error, payment },
+  // where payment is the SDK's SendPaymentResponse. Only a success: true
+  // answer whose payment went out (Completed or Pending) reads as Success
+  // (ENG-712).
+  payInvoice: jest.fn().mockResolvedValue({
+    success: true,
+    payment: { payment: { status: PaymentStatus.Completed } },
+  }),
   // payLnurl resolves with the SDK's LnurlPayResponse. Only a payment that
   // went out (Completed or Pending) reads as Success (ENG-694).
   payLnurl: jest.fn().mockResolvedValue({
@@ -553,22 +564,128 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     expectRearmed(ctx.state)
   })
 
-  // ENG-712 pins today's behavior here; it is the ENG-694 symptom on the
-  // bolt11 send, not the behavior we want. payLightningBreez waits up to 60 s
-  // for the payment to settle and answers success: true for whatever
-  // sdk.sendPayment resolves with, so a payment that fails inside that wait
-  // comes back Failed with success: true, and this branch reads only
-  // `success`. ENG-712 flips this case.
-  it("lightning: a success: true answer whose payment Failed still reads as Success (known gap, ENG-712)", async () => {
+  // ENG-712. payLightningBreez waits up to 60 s for the payment to settle, so
+  // a payment that fails inside that wait resolves with status Failed. The
+  // wrapper answered success: true for it. It now answers success: false
+  // (__tests__/utils/spark-pay-lightning.spec.ts), and the branch also reads
+  // the payment's status, with the LNURL branch's table, as a second guard.
+  // The Failed case pinned the old answer, Success, as a known gap; it is
+  // flipped on purpose.
+  //
+  // Each call of `send` is one tap on the same state, so a case can tap twice.
+  const invoiceSender = () => {
     const ctx = setup()
+    const graphqlSend = jest.fn()
+    const send = () =>
+      sendPayment(
+        { sendPaymentMutation: graphqlSend, paymentDetail: lightning() },
+        ctx.deps,
+        ctx.state,
+      )
+    return { ...ctx, graphqlSend, send }
+  }
+
+  // The wrapper's own answer for a Failed payment: success: false with the
+  // payment and no error, since the SDK gives no reason. It shows the same
+  // copy as a Failed status behind success: true below.
+  it("lightning: a success: false answer whose payment is Failed is a Failure with the screen's copy, and re-arms", async () => {
+    const ctx = invoiceSender()
     ctx.rail.payInvoice.mockResolvedValue({
-      success: true,
+      success: false,
       payment: { payment: { status: PaymentStatus.Failed } },
     })
 
+    await expect(ctx.send()).resolves.toEqual({
+      status: PaymentSendResult.Failure,
+      errorsMessage: "Something went wrong",
+    })
+    expectRearmed(ctx.state)
+    // A Breez send holds no GraphQL attempt, so the retry is a new send.
+    expect(ctx.state.attemptRef.current).toBeNull()
+    // Re-armed: the next tap sends again.
+    await ctx.send()
+    expect(ctx.rail.payInvoice.mock.calls).toEqual([
+      [INVOICE, testAmount.amount],
+      [INVOICE, testAmount.amount],
+    ])
+    expectNoGraphql(ctx)
+  })
+
+  const sentInvoicePayments: [string, PaymentStatus][] = [
+    ["Completed", PaymentStatus.Completed],
+    // Still in flight when the wait ended. Reporting it as a Failure would
+    // re-arm the button while the money is on its way, and the next tap
+    // would pay again.
+    ["Pending", PaymentStatus.Pending],
+  ]
+  sentInvoicePayments.forEach(([label, status]) => {
+    it(`lightning: a success: true answer whose payment is ${label} is a Success, and stays disarmed`, async () => {
+      const ctx = invoiceSender()
+      ctx.rail.payInvoice.mockResolvedValue({
+        success: true,
+        payment: { payment: { status } },
+      })
+
+      await expect(ctx.send()).resolves.toEqual({
+        status: PaymentSendResult.Success,
+        errorsMessage: undefined,
+      })
+      expect(ctx.state.inFlightRef.current).toBe(true)
+      expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+      // Disarmed: the next tap sends nothing.
+      await expect(ctx.send()).resolves.toEqual({
+        status: undefined,
+        errorsMessage: undefined,
+        ignored: true,
+      })
+      expect(ctx.rail.payInvoice.mock.calls).toEqual([[INVOICE, testAmount.amount]])
+      expectNoGraphql(ctx)
+    })
+  })
+
+  const unsentInvoiceAnswers: [string, unknown][] = [
+    [
+      "a payment whose status is Failed",
+      { success: true, payment: { payment: { status: PaymentStatus.Failed } } },
+    ],
+    // The SDK always sets a status, so an answer without one did not come
+    // from it and proves nothing. Read as in the LNURL branch.
+    ["a payment with no status", { success: true, payment: { payment: {} } }],
+    ["a SendPaymentResponse with no payment", { success: true, payment: {} }],
+    // The shared mock's answer before ENG-712.
+    ["no payment at all", { success: true, error: undefined }],
+  ]
+  unsentInvoiceAnswers.forEach(([label, railAnswer]) => {
+    it(`lightning: a success: true answer with ${label} is a Failure with the screen's copy, and re-arms`, async () => {
+      const ctx = invoiceSender()
+      ctx.rail.payInvoice.mockResolvedValue(railAnswer)
+
+      await expect(ctx.send()).resolves.toEqual({
+        status: PaymentSendResult.Failure,
+        errorsMessage: "Something went wrong",
+      })
+      expectRearmed(ctx.state)
+      // A Breez send holds no GraphQL attempt, so the retry is a new send.
+      expect(ctx.state.attemptRef.current).toBeNull()
+      // Re-armed: the next tap sends again.
+      await ctx.send()
+      expect(ctx.rail.payInvoice.mock.calls).toEqual([
+        [INVOICE, testAmount.amount],
+        [INVOICE, testAmount.amount],
+      ])
+      expectNoGraphql(ctx)
+    })
+  })
+
+  // The shared @app/utils/breez-sdk mock gives payLightningBreez a Completed
+  // payment by default, so a test that sends a BTC invoice through the real
+  // rail still reads a Success now that the branch reads the status.
+  it("lightning through breezBtcRail: the shared mock's default answer is a Success", async () => {
+    const ctx = setup()
+
     const outcome = await sendPayment(
       { sendPaymentMutation: jest.fn(), paymentDetail: lightning() },
-      ctx.deps,
+      { ...ctx.deps, btcRail: breezBtcRail },
       ctx.state,
     )
 
@@ -576,6 +693,9 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
       status: PaymentSendResult.Success,
       errorsMessage: undefined,
     })
+    expect(payLightningBreez).toHaveBeenCalledTimes(1)
+    expect(payLightningBreez).toHaveBeenCalledWith(INVOICE, testAmount.amount)
+    expect(ctx.rail.payInvoice).not.toHaveBeenCalled()
     expect(ctx.state.inFlightRef.current).toBe(true)
     expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
   })
