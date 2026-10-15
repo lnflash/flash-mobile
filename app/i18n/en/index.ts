@@ -245,7 +245,10 @@ const en: BaseTranslation = {
     needsUpdateBody:
       "Flash can't use this card's software any more. Nothing is written to it and nothing is spent from it. Contact support to have it updated.",
     needsUpdateShort: "Needs an update",
-    authFailed: "This card couldn't prove it's genuine. Nothing from it was shown or saved.",
+    authFailed: "This card couldn't prove it's genuine. Nothing from it was saved.",
+    verifying: "Verifying…",
+    scanVerifying: "{amount:string} · Verifying… keep holding",
+    scanVerifyingHidden: "Verifying… keep holding",
     notSetUpTitle: "This card isn't set up",
     notSetUpBody:
       "Set it up before you load it. An empty card that hasn't been set up belongs to the first phone that sets it up.",

@@ -34,7 +34,14 @@ export const useTapFlashcard = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { readFlashcard } = useFlashcard()
   return useCallback(async () => {
-    const result = await readFlashcard()
+    // A Cashu card opens its screen as soon as it has said its balance
+    // (ENG-707), which shows it as verifying until the card proves its key.
+    // If it never does, the screen pops itself (it has no card to show), so
+    // nothing here goes back.
+    const result = await readFlashcard(undefined, () =>
+      navigation.navigate("FlashcardV2"),
+    )
+    // A no-op when the verifying screen is already on top.
     if (result.cashuCard) navigation.navigate("FlashcardV2")
     else if (result.boltCard && openBoltCard) navigation.navigate("Card")
     return result
