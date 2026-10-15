@@ -1,9 +1,11 @@
 import * as React from "react"
 import { Alert, Text } from "react-native"
-import { render, screen } from "@testing-library/react-native"
+import { render, screen, waitFor } from "@testing-library/react-native"
 
 import { BreezProvider } from "@app/contexts/BreezContext"
 import { useBreez } from "@app/hooks/useBreez"
+import { breezBtcRail } from "@app/payments/btc-rail"
+import { BreezSdkNotInitializedError } from "@app/utils/breez-sdk/sdk-errors"
 
 const mockInitializeBreezSDK = jest.fn()
 const mockGetInfo = jest.fn()
@@ -104,6 +106,70 @@ describe("BreezProvider", () => {
     expect(await screen.findByText("ready:0:")).toBeTruthy()
     expect(mockInitializeBreezSDK).not.toHaveBeenCalled()
     expect(mockGetInfo).not.toHaveBeenCalled()
+    expect(mockUpdateState).not.toHaveBeenCalled()
+  })
+
+  it("reads its balance through the BTC rail, so it and getBalanceSats report the same sats", async () => {
+    // ENG-687, one BTC balance source: the SDK answers balanceSats as a
+    // bigint, and the home screen and the assistant must turn the same
+    // answer into the same number.
+    mockPersistentState = { isAdvanceMode: true, breezBalance: 0 }
+    mockGetInfo.mockResolvedValue({
+      balanceSats: BigInt(123456),
+      tokenBalances: new Map(),
+    })
+
+    render(
+      <BreezProvider>
+        <Probe />
+      </BreezProvider>,
+    )
+
+    expect(await screen.findByText("ready:123456:btc-wallet-1")).toBeTruthy()
+    await expect(breezBtcRail.getBalanceSats()).resolves.toEqual({
+      state: "ok",
+      sats: 123456,
+    })
+    const saved = mockUpdateState.mock.calls.map(([update]) => update({}))
+    expect(saved).toEqual([{ breezBalance: 123456 }])
+  })
+
+  it("keeps the last balance when the wallet is not running at the read", async () => {
+    // initializeBreezSDK() answered, but by the read the SDK instance is gone
+    // (disconnected in between). getInfo() used to throw out of the init path
+    // here, which raised "BTC wallet initialization failed" and skipped the
+    // Lightning address. The rail reports `disabled` instead, and the
+    // provider keeps the figure it had rather than writing a zero over it.
+    mockPersistentState = { isAdvanceMode: true, breezBalance: 777 }
+    mockGetInfo.mockRejectedValue(new BreezSdkNotInitializedError())
+
+    render(
+      <BreezProvider>
+        <Probe />
+      </BreezProvider>,
+    )
+
+    expect(await screen.findByText("ready:777:btc-wallet-1")).toBeTruthy()
+    expect(Alert.alert).not.toHaveBeenCalled()
+    expect(mockUpdateState).not.toHaveBeenCalled()
+  })
+
+  it("still reports any other read failure as before", async () => {
+    mockPersistentState = { isAdvanceMode: true, breezBalance: 777 }
+    mockGetInfo.mockRejectedValue(new Error("connection reset"))
+
+    render(
+      <BreezProvider>
+        <Probe />
+      </BreezProvider>,
+    )
+
+    await waitFor(() =>
+      expect(Alert.alert).toHaveBeenCalledWith(
+        "BTC wallet initialization failed",
+        "Error: connection reset",
+      ),
+    )
     expect(mockUpdateState).not.toHaveBeenCalled()
   })
 })

@@ -5,10 +5,10 @@ import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
 import {
   initializeBreezSDK,
-  getInfo,
   registerLightningAddress,
   getLightningAddress,
 } from "@app/utils/breez-sdk"
+import { readBreezWallet } from "@app/payments/btc-rail"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useAddressScreenQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -126,16 +126,26 @@ export const BreezProvider = ({ children }: Props) => {
     if (updatingBalanceRef.current) return
     updatingBalanceRef.current = true
     try {
-      const walletInfo = await getInfo()
+      // One BTC balance source (ENG-687): the balance is read and converted
+      // by the same function as breezBtcRail.getBalanceSats, so the home
+      // screen and the assistant cannot report different sats for one answer
+      // from the SDK. No sync timeout: the provider waits for the synced read
+      // however long it takes, as it always has.
+      const wallet = await readBreezWallet()
+      // The SDK stopped, or never started, between the caller's check and
+      // this read: there is no figure, so keep the last one rather than
+      // writing a zero over it.
+      if (wallet.state !== "ok") return
+      const { sats, info: walletInfo } = wallet
       setBtcWallet((prev) => ({
         ...prev,
-        balance: Number(walletInfo.balanceSats),
+        balance: sats,
       }))
       updateState((state: any) => {
         if (state)
           return {
             ...state,
-            breezBalance: Number(walletInfo.balanceSats),
+            breezBalance: sats,
           }
         return undefined
       })
