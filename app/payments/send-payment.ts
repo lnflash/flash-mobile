@@ -294,8 +294,9 @@ export const sendPayment = async (
   // one. sdk.lnurlPay's never reaches finish: payLnurlBreez rethrows it as
   // LnurlPayOutcomeUnknownError, and the catch below answers that without
   // re-arming (ENG-711). sdk.sendPayment's still re-arms, inside payInvoice
-  // and payOnchain, whose wrappers turn every rejection into success: false
-  // (ENG-712). On-chain, the next tap is a second withdrawal (ENG-714).
+  // and payOnchain, whose wrappers turn every rejection into success: false.
+  // On-chain, the next tap is a second withdrawal (ENG-714); a keyed retry
+  // for both is ENG-715.
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false

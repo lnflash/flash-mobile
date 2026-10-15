@@ -505,6 +505,12 @@ export const payLnurlBreez = async (
         idempotencyKey: undefined,
       })
     } catch (error) {
+      // Log the SDK's reason: past here the user sees only the history
+      // message, and payment_result records a plain FAILURE.
+      console.error(
+        "payLnurlBreez error after dispatch:",
+        error instanceof Error ? error.message : String(error),
+      )
       throw new LnurlPayOutcomeUnknownError(error)
     }
     console.log("Lnurl Pay Response: ", response)

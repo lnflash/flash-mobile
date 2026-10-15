@@ -6,7 +6,9 @@
  * re-arms on any other rejection. So a rejection from lnurlPay has to come out
  * as that class, or the next tap pays a second time, and a refusal before the
  * dispatch has to stay a plain error: nothing was sent, and the user may try
- * again.
+ * again. The rejection from lnurlPay is also logged with the SDK's reason,
+ * since nothing the app logs after payLnurlBreez tells it apart: the screen
+ * shows the history message and payment_result records a plain FAILURE.
  *
  * The SDK module is replaced by a fake whose builder hands back a fake SDK, so
  * the real initializeBreezSDK connects to it and payLnurlBreez runs unchanged.
@@ -40,6 +42,7 @@ type FakeSdk = {
 }
 
 const LNURL = "bob@example.com"
+const AFTER_DISPATCH = "payLnurlBreez error after dispatch:"
 const AMOUNT_SATS = 2100
 const MEMO = "lunch"
 
@@ -77,6 +80,7 @@ describe("payLnurlBreez before the SDK is connected", () => {
 
 describe("payLnurlBreez", () => {
   let sdk: FakeSdk
+  let consoleError: jest.SpyInstance
 
   beforeAll(async () => {
     await initializeBreezSDK()
@@ -90,6 +94,11 @@ describe("payLnurlBreez", () => {
     sdk.prepareLnurlPay.mockResolvedValue(prepareResponse)
     sdk.lnurlPay.mockReset()
     sdk.lnurlPay.mockResolvedValue(answer)
+    consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleError.mockRestore()
   })
 
   it("prepares the parsed pay request, pays it once, and returns lnurlPay's answer", async () => {
@@ -119,6 +128,25 @@ describe("payLnurlBreez", () => {
     expect(sdk.lnurlPay).toHaveBeenCalledTimes(1)
   })
 
+  it("logs the SDK's reason for a rejection from lnurlPay itself before rethrowing it", async () => {
+    sdk.lnurlPay.mockRejectedValue(new Error("SdkError.SparkError"))
+
+    await rejectionOf(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO))
+
+    expect(consoleError.mock.calls).toEqual([[AFTER_DISPATCH, "SdkError.SparkError"]])
+  })
+
+  it("logs and wraps a rejection from lnurlPay that is not an Error by its string form", async () => {
+    sdk.lnurlPay.mockRejectedValue("connection reset")
+
+    const error = await rejectionOf(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO))
+
+    expect(error).toBeInstanceOf(LnurlPayOutcomeUnknownError)
+    expect((error as LnurlPayOutcomeUnknownError).sdkError).toBe("connection reset")
+    expect((error as LnurlPayOutcomeUnknownError).message).toBe("connection reset")
+    expect(consoleError.mock.calls).toEqual([[AFTER_DISPATCH, "connection reset"]])
+  })
+
   it("passes a parse rejection through untouched, and never dispatches", async () => {
     const refusal = new Error("invalid input")
     sdk.parse.mockRejectedValue(refusal)
@@ -126,6 +154,7 @@ describe("payLnurlBreez", () => {
     await expect(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO)).rejects.toBe(refusal)
     expect(sdk.prepareLnurlPay).not.toHaveBeenCalled()
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalledWith(AFTER_DISPATCH, expect.anything())
   })
 
   it("passes a prepareLnurlPay rejection through untouched, and never dispatches", async () => {
@@ -134,6 +163,7 @@ describe("payLnurlBreez", () => {
 
     await expect(payLnurlBreez(LNURL, AMOUNT_SATS, MEMO)).rejects.toBe(refusal)
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalledWith(AFTER_DISPATCH, expect.anything())
   })
 
   it('refuses an input that is not LNURL-pay with a plain "Unsupported input type", and never dispatches', async () => {
@@ -146,5 +176,6 @@ describe("payLnurlBreez", () => {
     expect((error as Error).message).toBe("Unsupported input type")
     expect(sdk.prepareLnurlPay).not.toHaveBeenCalled()
     expect(sdk.lnurlPay).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalledWith(AFTER_DISPATCH, expect.anything())
   })
 })
