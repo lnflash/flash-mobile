@@ -120,6 +120,19 @@ export type TidyResult =
   /** A saved tidy the card never signed: dropped, nothing burned. */
   | { status: "abandoned"; record: TidyRecord }
 
+/**
+ * Where a tap's tidy has got to (ENG-706), for the screen: the card read, each
+ * piece of change the card has made, the mint (the openings, the grant and the
+ * swap), each piece loaded, and done (the change on the card and the burned
+ * slots reclaimed). A resumed tidy reports only the stages it runs.
+ */
+export type TidyProgress =
+  | { stage: "reading" }
+  | { stage: "making"; done: number; total: number }
+  | { stage: "mint" }
+  | { stage: "loading"; done: number; total: number }
+  | { stage: "done" }
+
 export type RunTidyArgs = {
   /** An open card session on the record's card, the applet selected. */
   transceive: Transceiver
@@ -148,6 +161,36 @@ export type RunTidyArgs = {
   openForLoading: (transceive: Transceiver) => Promise<void>
   /** The mint's word on the card's spent slots as last read (`reclaimVerdicts`), asked before the tap. */
   verdicts?: ReclaimVerdicts
+  /**
+   * Told where the tidy has got to, between APDUs (ENG-706). Called
+   * synchronously and never awaited, and anything it throws is swallowed: it
+   * sends nothing to the card and must never hold up or abort the tap.
+   */
+  onProgress?: (progress: TidyProgress) => void
+}
+
+type Report = (progress: TidyProgress) => void
+
+/** A tap's args, with its one `reporter`. */
+type TapArgs = RunTidyArgs & { report: Report }
+
+/**
+ * `args.onProgress`, made safe for a tap: a throw is swallowed (a UI bug must
+ * never cut a tap after SIGN), and a report that repeats the last one exactly
+ * is dropped. Synchronous: the next APDU never waits on it.
+ */
+const reporter = (args: Pick<RunTidyArgs, "onProgress">): Report => {
+  let last: string | undefined
+  return (progress) => {
+    const key = JSON.stringify(progress)
+    if (key === last) return
+    last = key
+    try {
+      args.onProgress?.(progress)
+    } catch {
+      // Cosmetic: the tap carries on.
+    }
+  }
 }
 
 const sum = (amounts: readonly number[]): number => amounts.reduce((a, b) => a + b, 0)
@@ -438,10 +481,12 @@ const finishProofs = async (
  */
 const finishSigned = async (
   deps: TidyDeps,
-  args: RunTidyArgs,
+  args: TapArgs,
   { start, resumed }: { start: TidyRecord; resumed: boolean },
 ): Promise<TidyResult> => {
-  const { transceive } = args
+  const { transceive, report } = args
+  // One stage for the openings, the grant and the swap.
+  report({ stage: "mint" })
   const withOpenings = await (async () => {
     if (start.openings || start.proofs) return start
     const openings = openingsFor(start, await getChange(transceive))
@@ -480,6 +525,7 @@ const finishSigned = async (
     },
     mintStates,
     maxSlots: args.card.maxSlots,
+    onProgress: (done, total) => report({ stage: "loading", done, total }),
   })
   const loaded = started.record ?? finished
   // The swap spent the inputs at the mint: their slots are settled, and free
@@ -488,6 +534,7 @@ const finishSigned = async (
   loaded.inputs.forEach((input) => verdicts.set(input.nonce, "SPENT"))
   await reclaimSpentSlots(transceive, { maxSlots: args.card.maxSlots, verdicts })
   if (held > 0) return { status: "unfinished", record: loaded }
+  report({ stage: "done" })
   return { status: "tidied", record: await update(deps, loaded, { state: "loaded" }) }
 }
 
@@ -502,16 +549,17 @@ const finishSigned = async (
  */
 const recoverPlanned = async (
   deps: TidyDeps,
-  args: RunTidyArgs,
+  args: TapArgs,
   record: TidyRecord,
 ): Promise<TidyResult> => {
-  const { transceive } = args
+  const { transceive, report } = args
   // No change was made: SIGN was never sent.
   if (record.outputs.some((output) => !output.B_)) {
     return { status: "abandoned", record: await abandon(deps, record) }
   }
   // One APDU at a time: an IsoDep channel carries a single exchange. An
   // empty slot (6A88) is a burned piece cleared since: the card signed.
+  report({ stage: "reading" })
   let slots: CardProofSlot[] | undefined = []
   for (const input of record.inputs) {
     try {
@@ -527,6 +575,7 @@ const recoverPlanned = async (
       (slot, i) => slot.status === "unspent" && slot.nonce === record.inputs[i].nonce,
     ) ?? false
   if (untouched) {
+    report({ stage: "mint" })
     const states = await deps.mint.proofStates(
       record.inputs.map((input) => proofY(input.nonce, record.cardPubkey)),
     )
@@ -559,7 +608,7 @@ export async function runTidy(deps: TidyDeps, args: RunTidyArgs): Promise<TidyRe
     claimed.push(id)
   }
   try {
-    return await tidyInTap(deps, args, claim)
+    return await tidyInTap(deps, { ...args, report: reporter(args) }, claim)
   } finally {
     claimed.forEach((id) => inTap.delete(id))
   }
@@ -584,10 +633,10 @@ export const owedTidy = async (
 
 const tidyInTap = async (
   deps: TidyDeps,
-  args: RunTidyArgs,
+  args: TapArgs,
   claim: (id: string) => void,
 ): Promise<TidyResult> => {
-  const { transceive, card } = args
+  const { transceive, card, report } = args
   const cardPubkey = card.pubkey.toLowerCase()
   let unfinished = await owedTidy(deps, cardPubkey)
   if (unfinished) {
@@ -596,6 +645,7 @@ const tidyInTap = async (
     const pass = advancing.get(unfinished.id)
     if (pass) {
       // The pass may have the swap in flight: its answer, not a second swap.
+      report({ stage: "mint" })
       await pass
       unfinished = await owedTidy(deps, cardPubkey)
       if (unfinished) claim(unfinished.id)
@@ -608,6 +658,7 @@ const tidyInTap = async (
   // was asked, so nothing is planned.
   if (args.keysetId === undefined) return { status: "skipped", reason: "at-target" }
 
+  report({ stage: "reading" })
   const read = await readPieces(transceive)
   const held = await getChange(transceive)
   const committed = cardCommitments(
@@ -648,6 +699,8 @@ const tidyInTap = async (
   // Nothing is burned before SIGN: a refusal or a lost card up to it drops the record.
   try {
     if (args.verifyPin) await args.verifyPin(transceive)
+    const total = record.outputs.length
+    report({ stage: "making", done: 0, total })
     const named = await spendAllBegin(
       transceive,
       record.inputs.map((input) => input.slot),
@@ -665,6 +718,7 @@ const tidyInTap = async (
         amount: output.amount,
         B_: await spendAllChange(transceive, output.amount),
       })
+      report({ stage: "making", done: outputs.length, total })
     }
     // Saved before SIGN: from here the card may burn, and only these say
     // what it signed.

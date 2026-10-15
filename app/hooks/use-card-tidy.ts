@@ -3,6 +3,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import { v4 as uuidv4 } from "uuid"
 
 import type { CashuCardState } from "@app/contexts/Flashcard"
+import { useI18nContext } from "@app/i18n/i18n-react"
 import { useAppDispatch, useAppSelector } from "@app/store/redux"
 import { tidyOfferDismissed } from "@app/store/redux/slices/flashcardV2Slice"
 import { verifyCardPin } from "@app/utils/cashu-card"
@@ -11,6 +12,7 @@ import { ownerKeyFor } from "@app/utils/cashu-card-owner-store"
 import {
   TidyDeps,
   TidyOffer,
+  TidyProgress,
   TidyRecord,
   TidyResult,
   TopUpError,
@@ -26,6 +28,30 @@ import { topUpMint, topUpStore } from "@app/utils/cashu-card-topup/connected"
 
 import { nudgeTopUpMinter } from "./use-card-top-up"
 import { useFlashcard } from "./useFlashcard"
+
+type LLType = ReturnType<typeof useI18nContext>["LL"]
+
+/** Where a tap's tidy has got to, in the owner's words (ENG-706). */
+export const tidyProgressText = (progress: TidyProgress, LL: LLType): string => {
+  switch (progress.stage) {
+    case "reading":
+      return LL.FlashcardV2.tidyProgressReading()
+    case "making":
+      return LL.FlashcardV2.tidyProgressMaking({
+        done: progress.done,
+        total: progress.total,
+      })
+    case "mint":
+      return LL.FlashcardV2.tidyProgressMint()
+    case "loading":
+      return LL.FlashcardV2.tidyProgressLoading({
+        done: progress.done,
+        total: progress.total,
+      })
+    case "done":
+      return LL.FlashcardV2.tidyProgressDone()
+  }
+}
 
 type TidyCard = Pick<
   CashuCardState,
@@ -49,14 +75,19 @@ type TidyCard = Pick<
  * the change is the card's own, so it must reach the mint and come back in
  * the same tap, as Android's raised transceive timeout allows
  * (`runCardOperation` raises it).
+ *
+ * While the tap runs, `progress` says where its tidy has got to (ENG-706),
+ * and the same words, with "Keep holding the card", go to the NFC sheet.
  */
 export const useCardTidy = (card: TidyCard | undefined) => {
+  const { LL } = useI18nContext()
   const { runCardOperation } = useFlashcard()
   const dispatch = useAppDispatch()
   const dismissed = useAppSelector((state) =>
     card ? state.flashcardV2.tidyDismissed?.[card.pubkey] : undefined,
   )
   const [records, setRecords] = useState<TidyRecord[]>([])
+  const [progress, setProgress] = useState<TidyProgress>()
   const pubkey = card?.pubkey
 
   const list = useCallback(async () => {
@@ -125,6 +156,7 @@ export const useCardTidy = (card: TidyCard | undefined) => {
       pin,
       finishOnly = false,
     }: { pin?: string; finishOnly?: boolean } = {}): Promise<TidyResult> => {
+      setProgress(undefined)
       if (!card) throw new TopUpError("state", "no card to tidy")
       const mint = topUpMint()
       const deps: TidyDeps = { mint, store: topUpStore, now: Date.now, newId: uuidv4 }
@@ -157,7 +189,7 @@ export const useCardTidy = (card: TidyCard | undefined) => {
       let threw = false
       try {
         return await runCardOperation(
-          (transceive) =>
+          (transceive, report) =>
             runTidy(deps, {
               transceive,
               card: { pubkey: card.pubkey, maxSlots: card.maxSlots },
@@ -179,6 +211,11 @@ export const useCardTidy = (card: TidyCard | undefined) => {
                 }
               },
               verdicts,
+              // Between APDUs, never awaited: the screen and the NFC sheet.
+              onProgress: (p) => {
+                setProgress(p)
+                report?.(`${tidyProgressText(p, LL)} ${LL.FlashcardV2.tidyKeepHolding()}`)
+              },
             }),
           card.pubkey,
           { rereadSlots: true },
@@ -187,6 +224,7 @@ export const useCardTidy = (card: TidyCard | undefined) => {
         threw = true
         throw err
       } finally {
+        setProgress(undefined)
         list()
         // A tidy the card signed whose swap this tap did not make is the
         // minter's to swap without the card: asked now, and kept asking
@@ -200,8 +238,8 @@ export const useCardTidy = (card: TidyCard | undefined) => {
         }
       }
     },
-    [card, runCardOperation, list],
+    [card, runCardOperation, list, LL],
   )
 
-  return { offer, records, notNow, tidy, dismiss }
+  return { offer, records, progress, notNow, tidy, dismiss }
 }
