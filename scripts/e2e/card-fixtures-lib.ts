@@ -32,6 +32,7 @@ import {
   CardError,
   CardInfo,
   Transceiver,
+  readCardSlots,
   getBalance,
   getInfo,
   getPubkey,
@@ -70,6 +71,7 @@ export const FIXTURE_NAMES = [
   "full",
   "blocked",
   "limited",
+  "missing-small",
 ] as const
 export type FixtureName = (typeof FIXTURE_NAMES)[number]
 
@@ -115,6 +117,12 @@ export const FIXTURE_TIP_HEADER = {
 export const LOADED_AMOUNTS = [16, 4, 1]
 /** `spent`: the slots spent on the card by one payment and redeemed at the mint (the 4 and the 1). */
 export const SPENT_SLOTS = [1, 2]
+/**
+ * `missing-small` (ENG-702): 12 sat as 8 + 4, the fewest pieces, as a card
+ * topped up before ENG-700 holds it: no 1 or 2, so a till offline can take
+ * only 4, 8 or 12 exactly. A tidy reshapes it to 1 + 1 + 2 + 2 + 2 + 4.
+ */
+export const MISSING_SMALL_AMOUNTS = [8, 4]
 /** `full`: every one of the card's 128 slots holds 1 sat. */
 export const FULL_SLOTS = 128
 /** `limited`: the owner's limits, the rollover budget at its default. */
@@ -372,6 +380,7 @@ const setUp = async (
  * - `full`: set up, no PIN, 128 slots of 1 sat.
  * - `blocked`: `loaded`, with the PIN blocked by three wrong tries.
  * - `limited`: `loaded`, with the owner's limits `FIXTURE_LIMITS`.
+ * - `missing-small`: set up, no PIN, 12 sat as 8 + 4 (`MISSING_SMALL_AMOUNTS`).
  *
  * Every fixture starts from `reset` and ends with a SELECT, so the app's
  * first command finds an unverified session, as a fresh tap does.
@@ -390,6 +399,12 @@ export const loadFixture = async (
   log(`card ${pubkey}: ${name}`)
 
   if (name === "owned") await setUp(transceive, { mint: mint.url, form })
+
+  if (name === "missing-small") {
+    await setUp(transceive, { mint: mint.url, form })
+    const { slots } = await mintToCard(deps, pubkey, MISSING_SMALL_AMOUNTS)
+    await loadSlots(transceive, slots)
+  }
 
   if (name === "full") {
     await setUp(transceive, { mint: mint.url, form })
@@ -441,6 +456,63 @@ export const loadFixture = async (
   }
   log(JSON.stringify(summary))
   return summary
+}
+
+/** Some of `pieces` adding up to exactly `amount`, the fewest there are; undefined for none. */
+export const exactPieces = <P extends { amount: number }>(
+  pieces: readonly P[],
+  amount: number,
+): P[] | undefined => {
+  // Subsets by size, smallest first: a fixture card holds a handful of pieces.
+  const n = pieces.length
+  let best: P[] | undefined
+  for (let mask = 1; mask < 2 ** n; mask += 1) {
+    const chosen = pieces.filter((_, i) => Math.floor(mask / 2 ** i) % 2 === 1)
+    if (
+      chosen.reduce((sum, piece) => sum + piece.amount, 0) === amount &&
+      (!best || chosen.length < best.length)
+    ) {
+      best = chosen
+    }
+  }
+  return best
+}
+
+/**
+ * A till's offline payment of exactly `amount` from the fixture card, as the
+ * tidy flow's second tap is (ENG-702): pieces that add up to it, with no
+ * change, spent in one payment and redeemed at the mint (`spendAndRedeem`),
+ * the PIN given first on a card that has one. Throws when no pieces add up
+ * to it: a till offline would refuse the bill too.
+ */
+export const spendExactly = async (
+  deps: FixtureDeps,
+  amount: number,
+): Promise<{ balance: number; spent: number[] }> => {
+  const { transceive } = deps.card
+  await selectApplet(transceive)
+  const pubkey = toHex(await getPubkey(transceive))
+  const { pinState, sealed } = await getInfo(transceive)
+  const { unspent } = await readCardSlots(transceive)
+  const chosen = exactPieces(unspent, amount)
+  if (!chosen) throw new Error(`fixture: no pieces on the card pay exactly ${amount}`)
+  await selectApplet(transceive)
+  if (pinState === "set") {
+    await verifyCardPin(transceive, FIXTURE_PIN, { sealed, cardPubkey: pubkey })
+  }
+  await spendAndRedeem(deps, transceive, {
+    slots: chosen.map((piece) => piece.slot),
+    proofs: chosen.map((piece) => ({
+      id: piece.keysetId,
+      amount: Amount.from(piece.amount),
+      secret: buildCardP2PKSecret(piece.nonce, pubkey),
+      C: piece.C,
+    })),
+  })
+  await selectApplet(transceive)
+  const balance = await getBalance(transceive)
+  await selectApplet(transceive)
+  return { balance, spent: chosen.map((piece) => piece.amount) }
 }
 
 /** The format-4 secret of a piece on the fixture card (for a spec that rebuilds one). */

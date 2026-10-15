@@ -26,11 +26,7 @@ import {
 } from "@app/utils/cashu-card"
 import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
 import { OwnerKey, ownerKeyFor, saveOwnerKey } from "@app/utils/cashu-card-owner-store"
-import {
-  cardMintUrl,
-  isStaleDevMint,
-  stubbedPayOutcome,
-} from "@app/utils/cashu-card-bridge"
+import { isStaleDevMint, stubbedPayOutcome } from "@app/utils/cashu-card-bridge"
 import {
   CardFreeDeps,
   PayOutcome,
@@ -41,11 +37,10 @@ import {
   TopUpError,
   TopUpMint,
   TopUpRecord,
+  advanceTidies,
   advanceTopUps,
   cancelTopUp,
   createMinterLoop,
-  createTopUpMint,
-  createTopUpStore,
   loadTopUp,
   proofStatesForLoad,
   reclaimPlan,
@@ -53,6 +48,8 @@ import {
   reclaimVerdicts,
   unfinishedTopUps,
 } from "@app/utils/cashu-card-topup"
+
+import { topUpMint, topUpStore } from "@app/utils/cashu-card-topup/connected"
 
 import { useFlashcard } from "./useFlashcard"
 
@@ -72,20 +69,10 @@ gql`
   }
 `
 
-// One store for the whole app: its write queue is what keeps two screens from
-// saving over each other. One client for the connected mint, so its keysets
-// are fetched once; a new one only when a development build points the card
-// at another mint (`cardMintUrl`). A saved top-up stays bound to the mint
-// that issued it (`mintUrl`): the engine neither asks about, pays, mints nor
-// drops one through another mint, so one started against a dev mint is left
-// alone by the production one, and the other way round.
-const store = createTopUpStore()
-let connectedMint: TopUpMint | undefined
-export const topUpMint = (): TopUpMint => {
-  const url = cardMintUrl()
-  if (connectedMint?.url !== url) connectedMint = createTopUpMint(url)
-  return connectedMint
-}
+// The app's one top-up store and its client for the connected mint
+// (`connected.ts`), shared with the card context's tidy offer (ENG-702).
+const store = topUpStore
+export { topUpMint }
 /** What the card-free steps need: the mint and the store, no wallet, no card. */
 const cardFreeDeps = (mint: TopUpMint = topUpMint()): CardFreeDeps => ({
   mint,
@@ -452,7 +439,19 @@ export const nudgeTopUpMinter = () => nudgeMinter?.()
 export const useTopUpMinter = () => {
   useEffect(() => {
     const loop = createMinterLoop({
-      run: () => advanceTopUps(cardFreeDeps()),
+      // A card tidy the card signed is swapped without the card too (ENG-702),
+      // and each one still signed keeps the loop asking, as a top-up does.
+      run: async () => {
+        const deps = cardFreeDeps()
+        const result = await advanceTopUps(deps)
+        let tidiesWaiting = 0
+        try {
+          tidiesWaiting = (await advanceTidies(deps)).waiting
+        } catch {
+          // Asked again on the next pass.
+        }
+        return { ...result, waiting: result.waiting + tidiesWaiting }
+      },
       pollMs: TOP_UP_POLL_MS,
       isActive: () => AppState.currentState === "active",
     })

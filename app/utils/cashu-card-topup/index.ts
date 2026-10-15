@@ -1,6 +1,6 @@
 export * from "./types"
-export { createTopUpStore, fromFormat1, TopUpStoreError } from "./store"
-export type { TopUpStore } from "./store"
+export { createTopUpStore, fromFormat1, isTidy, TopUpStoreError } from "./store"
+export type { StoredRecord, TopUpStore } from "./store"
 export { createTopUpMint, TopUpMintError } from "./mint"
 export type { ProofState, QuoteState, TopUpMint, TopUpQuote } from "./mint"
 export {
@@ -14,6 +14,7 @@ export {
   cancelTopUp,
   cardCommitments,
   isCurrentFormat,
+  loadPieces,
   loadTopUp,
   mintTopUp,
   payTopUp,
@@ -26,12 +27,14 @@ export {
   reclaimSpentSlots,
   reclaimVerdicts,
   slotsNeeded,
+  tidyOwed,
   unfinishedTopUps,
 } from "./engine"
 export type {
   CardFreeDeps,
   CardInventory,
   LoadArgs,
+  LoadPiecesArgs,
   PayArgs,
   PayOutcome,
   PayResult,
@@ -46,3 +49,17 @@ export { createMinterLoop } from "./minter"
 export type { MinterLoop, MinterLoopOptions } from "./minter"
 export { topUpAmountProblem } from "./amount-problem"
 export type { TopUpAmountCheck, TopUpAmountProblem } from "./amount-problem"
+export { belowTarget, inputFee, planTidy, shapeDeficit, tidyKeyset } from "./ladder"
+export { piecesFingerprint, showsTidyOffer, tidyOfferFor } from "./offer"
+export type { TidyOffer } from "./offer"
+export type { TidyPiece, TidyPlan, TidyRoom, TidySkip } from "./ladder"
+export {
+  FINAL_MINT_REFUSALS,
+  TidyError,
+  advanceTidies,
+  isFinalMintRefusal,
+  owedTidy,
+  runTidy,
+  unfinishedTidies,
+} from "./tidy"
+export type { RunTidyArgs, TidyDeps, TidyFailure, TidyResult } from "./tidy"

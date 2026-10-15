@@ -145,3 +145,86 @@ export type TopUpRecord = {
   createdAt: number
   updatedAt: number
 }
+
+/**
+ * Where a card tidy (ENG-702) stands. Each state is saved before the next
+ * outside effect, as a top-up's are:
+ *
+ * - `planned`: the inputs and the change's amounts are saved, before
+ *   SPEND_ALL_BEGIN. Once the change's blinded messages are saved (`outputs`
+ *   with `B_`) the card may sign at any moment: whether it did is the card's
+ *   to say (its slots, SPEND_ALL_AGAIN), and nothing else can tell.
+ * - `signed`: the card signed (and burned the inputs). The mint owes
+ *   signatures on the change, for the saved witness.
+ * - `swapped`: the mint signed the change (`signatures`). Some or none of
+ *   the pieces are back on the card yet.
+ * - `loaded`: every piece is on the card. Dropped from the store.
+ * - `abandoned`: nothing was burned (every input still unspent on the card
+ *   and at the mint). Dropped from the store.
+ * - `needs-card`: a tidy no retry can finish: the mint refused its swap,
+ *   or spent its inputs for another payment and signs none of its change,
+ *   or the card holds no openings for its change (the card signed another
+ *   payment since, and gives only its last signature again). Kept for a
+ *   human with that signature,
+ *   until the owner dismisses it, which moves it to the tidy archive
+ *   (`TopUpStore.tidies.archive`), never drops it.
+ */
+export type TidyState =
+  | "planned"
+  | "signed"
+  | "swapped"
+  | "loaded"
+  | "abandoned"
+  | "needs-card"
+
+/** A piece a tidy burns, as the card held it. */
+export type TidyInput = {
+  slot: number
+  nonce: string
+  C: string
+  amount: number
+}
+
+/** One piece of the card's own change: its amount, and its blinded message once the card made it. */
+export type TidyOutput = {
+  amount: number
+  /** SPEND_ALL_CHANGE's answer, 66 hex chars: what the mint signs, and the NUT-09 restore key. */
+  B_?: string
+}
+
+/** A change opening GET_CHANGE gave, matched to its output by its blinded message. */
+export type TidyOpening = {
+  nonce: string
+  /** The blinding factor, 64 hex chars. */
+  r: string
+  B_: string
+}
+
+export type TidyRecord = {
+  kind: "tidy"
+  version: 1
+  id: string
+  cardPubkey: string
+  mintUrl: string
+  /** Every input's keyset and the change's: one keyset, as the card makes its change in. */
+  keysetId: string
+  /** The mint's NUT-02 input fee: the inputs less the change. */
+  fee: number
+  /** The pieces named to SPEND_ALL_BEGIN, in that order. */
+  inputs: TidyInput[]
+  /** The change, in the order it went to SPEND_ALL_CHANGE. */
+  outputs: TidyOutput[]
+  /** The card's SIG_ALL signature over inputs and outputs, hex: the swap's witness. */
+  signature?: string
+  /** One per output, in the outputs' order, once GET_CHANGE has given them. */
+  openings?: TidyOpening[]
+  /** The mint's blind signatures on the outputs, in their order, once swapped. */
+  signatures?: { C_: string; e: string; s: string }[]
+  /** Set once unblinded and checked: what each LOAD_PROOF writes. */
+  proofs?: CardSlotProof[]
+  /** Set before the first LOAD_PROOF, as a top-up's is. */
+  loadStarted: boolean
+  state: TidyState
+  createdAt: number
+  updatedAt: number
+}

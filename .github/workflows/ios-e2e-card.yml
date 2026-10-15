@@ -18,6 +18,7 @@ on:
       - "app/store/redux/slices/flashcardV2Slice.ts"
       - "ios/LNFlash/Info.plist"
       - "app/hooks/use-card-top-up.ts"
+      - "app/hooks/use-card-tidy.ts"
       - "app/hooks/use-tap-flashcard.ts"
       - "app/screens/card-screen/**"
       # What the flows tap and type into on the way to the card screens: a
@@ -132,7 +133,7 @@ jobs:
           nohup node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve --port 9877 \
             --bridge "$BRIDGE_URL" --mint "$MINT_URL" > .e2e/fixtures.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS "$FIXTURES_URL/health" > /dev/null && break; sleep 1; done
-          for fixture in fresh owned loaded spent full blocked limited; do
+          for fixture in fresh owned loaded spent full blocked limited missing-small; do
             curl -fsS -X POST "$FIXTURES_URL/load/$fixture"; echo
           done
 

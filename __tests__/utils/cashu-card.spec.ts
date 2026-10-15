@@ -1377,6 +1377,36 @@ describe("readCardSlots", () => {
       ],
       // The unspent pieces' amounts, in slot order, whatever their keyset.
       pieces: [16, 8, 250],
+      // And the pieces whole, for a tidy to name (ENG-702).
+      unspent: [
+        {
+          slot: 0,
+          status: "unspent",
+          keysetId: KEYSET_HEX,
+          amount: 16,
+          nonce: "ab".repeat(32),
+          C: "02" + "cd".repeat(32),
+          date: 0,
+        },
+        {
+          slot: 3,
+          status: "unspent",
+          keysetId: KEYSET_HEX,
+          amount: 8,
+          nonce: "33".repeat(32),
+          C: "02" + "cd".repeat(32),
+          date: 0,
+        },
+        {
+          slot: 5,
+          status: "unspent",
+          keysetId: hex(OTHER_KEYSET),
+          amount: 250,
+          nonce: "55".repeat(32),
+          C: "02" + "cd".repeat(32),
+          date: 0,
+        },
+      ],
       spentSlots: [
         {
           slot: 1,
@@ -1414,6 +1444,7 @@ describe("readCardSlots", () => {
     await expect(readCardSlots(card.transceive)).resolves.toEqual({
       keysets: [],
       pieces: [],
+      unspent: [],
       spentSlots: [],
     })
   })
@@ -1536,6 +1567,7 @@ describe("readKeysetSplit", () => {
     ).resolves.toEqual({
       keysets: [],
       pieces: [],
+      unspent: [],
       spentSlots: [],
     })
     expect(card.sent).toEqual([])

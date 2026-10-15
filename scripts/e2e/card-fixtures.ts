@@ -2,10 +2,12 @@
  * Card fixture loader for the Flashcard e2e flows (ENG-634; card protocol 2.0, ENG-675).
  *
  *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL]
- *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|owned|loaded|spent|full|blocked|limited> [--bridge URL] [--mint URL]
+ *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|owned|loaded|spent|full|blocked|limited|missing-small> [--bridge URL] [--mint URL]
  *
  * `serve` answers `POST /load/<name>` with the fixture's summary (the Maestro
- * flows and the developer screen call it); `load` provisions one and exits.
+ * flows and the developer screen call it), and `POST /spend/<amount>` with a
+ * till's offline payment of exactly that much from the card (ENG-702); `load`
+ * provisions one and exits.
  * The bridge is cardsim (lnflash/cashu-javacard tools/cardsim, default
  * http://127.0.0.1:9876) and the mint a local Nutshell on FakeWallet
  * (default http://127.0.0.1:3338). The production mint is refused: its quotes
@@ -26,6 +28,7 @@ import {
   PRODUCTION_MINT_HOST,
   isFixtureName,
   loadFixture,
+  spendExactly,
 } from "./card-fixtures-lib"
 
 const BRIDGE_TIMEOUT_MS = 5_000
@@ -83,7 +86,9 @@ export const fixtureMint = (url: string): FixtureMint => {
  * detail in the log only (one fixture at a time: the card is one card); and
  * the header stub the app's dev bridge points at (`headers=`), in Esplora's
  * shape: `GET /headers/blocks/tip/hash` and `GET /headers/block/<hash>/header`
- * answer `FIXTURE_TIP_HEADER` as text.
+ * answer `FIXTURE_TIP_HEADER` as text. `POST /spend/<amount>` pays exactly
+ * that much from the card as a till does offline, no change (`spendExactly`),
+ * and answers the balance left, or 500 when no pieces add up to it.
  */
 export const fixtureHandler = (
   deps: FixtureDeps,
@@ -113,6 +118,22 @@ export const fixtureHandler = (
       req.url === `/headers/block/${FIXTURE_TIP_HEADER.hash}/header`
     ) {
       text(200, FIXTURE_TIP_HEADER.header)
+      return
+    }
+    const spend = /^\/spend\/([0-9]{1,9})$/.exec(req.url ?? "")
+    if (req.method === "POST" && spend) {
+      const amount = Number(spend[1])
+      queue = queue.then(
+        () =>
+          spendExactly(deps, amount).then(
+            (spent) => reply(200, spent),
+            (err) => {
+              console.error("card-fixtures: spend %d failed:", amount, err)
+              reply(500, { error: "spend failed", amount })
+            },
+          ),
+        () => undefined,
+      )
       return
     }
     if (req.method !== "POST" || !match) {

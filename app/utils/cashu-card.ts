@@ -91,7 +91,12 @@ export const INS = {
   AUTH: 0x15,
   GET_CARD: 0x16,
   GET_PIECES: 0x17,
+  GET_CHANGE: 0x19,
   GET_DLEQ: 0x1a,
+  SPEND_ALL_BEGIN: 0x22,
+  SPEND_ALL_SIGN: 0x24,
+  SPEND_ALL_AGAIN: 0x25,
+  SPEND_ALL_CHANGE: 0x26,
   LOAD_PROOF: 0x30,
   CLEAR_SPENT: 0x31,
   SET_CARD: 0x32,
@@ -341,7 +346,7 @@ export async function sendCommand(
 
 const send = sendCommand
 
-const u32 = (value: number, what: string): number[] => {
+export const u32 = (value: number, what: string): number[] => {
   if (!Number.isInteger(value) || value < 0 || value > 0xffffffff) {
     throw new CardProtocolError(`${what} must be a whole number from 0 to 2^32-1`)
   }
@@ -353,7 +358,7 @@ const u32 = (value: number, what: string): number[] => {
   ]
 }
 
-const readU32 = (bytes: number[], at: number): number =>
+export const readU32 = (bytes: number[], at: number): number =>
   ((bytes[at] << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3]) >>> 0
 
 /**
@@ -1218,6 +1223,12 @@ export type CardSlotRead = {
    */
   pieces: number[]
   /**
+   * The unspent pieces themselves, in slot order: what a card tidy (ENG-702)
+   * names to SPEND_ALL_BEGIN and puts into the swap. Read in the same pages
+   * as `pieces`, with no APDU of their own.
+   */
+  unspent: CardProofSlot[]
+  /**
    * The spent slots, in slot order, data and all. A spent slot is owed until
    * the mint has settled it (NUT-07 SPENT), and only then may CLEAR_SPENT
    * free it: these are what the top-up asks the mint about before its load
@@ -1254,6 +1265,7 @@ export async function readCardSlots(transceive: Transceiver): Promise<CardSlotRe
   return {
     keysets: totalsByKeyset(unspent),
     pieces: unspent.map((proof) => proof.amount),
+    unspent,
     spentSlots,
   }
 }
@@ -1290,7 +1302,7 @@ export const readKeysetSplit = async (
   info: Pick<CardInfo, "unspent" | "spent">,
 ): Promise<CardSlotRead | undefined> => {
   if (info.unspent === 0 && info.spent === 0) {
-    return { keysets: [], pieces: [], spentSlots: [] }
+    return { keysets: [], pieces: [], unspent: [], spentSlots: [] }
   }
   try {
     return await readCardSlots(transceive)
@@ -1462,6 +1474,12 @@ export interface CashuCardInfo extends CardInfo {
    * and undefined whenever `keysets` is: the next top-up fills their gaps.
    */
   pieces?: number[]
+  /**
+   * The unspent pieces whole (`CardSlotRead.unspent`), read with the split,
+   * and undefined whenever `keysets` is: a card tidy (ENG-702) plans from
+   * them, and names their slots to the card.
+   */
+  unspentSlots?: CardProofSlot[]
 }
 
 /**
@@ -1563,5 +1581,6 @@ export const readCashuCard = async (
     keysets: slots?.keysets,
     spentSlots: slots?.spentSlots,
     pieces: slots?.pieces,
+    unspentSlots: slots?.unspent,
   }
 }

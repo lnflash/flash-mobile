@@ -67,6 +67,10 @@ import {
   totalsByUnit,
   unitsForKeysets,
 } from "../utils/cashu-mint"
+import { cardCommitments, tidyOwed } from "../utils/cashu-card-topup/engine"
+import { tidyKeyset } from "../utils/cashu-card-topup/ladder"
+import { TidyOffer, tidyOfferFor } from "../utils/cashu-card-topup/offer"
+import { topUpMint, topUpStore } from "../utils/cashu-card-topup/connected"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -103,6 +107,114 @@ const cardUnitTotals = async (
   } catch (err) {
     console.warn("Cashu mint keyset lookup failed:", describeError(err))
     return undefined
+  }
+}
+
+/**
+ * The tidy to offer for a card read under the owner's grant (ENG-702): the
+ * mint's fee for the keyset its pieces are in, the slots the card's
+ * unfinished top-ups and tidies will take, and `tidyOfferFor`. None for a
+ * card with a tidy still owed (the screen lists that one to finish), and none
+ * when the mint cannot be asked (offline) or the store cannot be read.
+ */
+const tidyOfferForRead = async (card: CashuCardInfo): Promise<TidyOffer | undefined> => {
+  const pieces = card.unspentSlots
+  const keysetId = pieces && tidyKeyset(pieces)
+  if (!pieces || !keysetId) return undefined
+  try {
+    const feePpk = await topUpMint().feePpk(keysetId)
+    const tidies = await topUpStore.tidies.list()
+    const pubkey = card.pubkey.toLowerCase()
+    if (tidies.some((t) => t.cardPubkey === pubkey && tidyOwed(t))) return undefined
+    const { slots } = cardCommitments(await topUpStore.list(), pubkey, tidies)
+    return tidyOfferFor(
+      { ...card, unspentSlots: pieces },
+      { feePpk, committedSlots: slots },
+    )
+  } catch (err) {
+    console.warn("Cashu card tidy offer skipped:", describeError(err))
+    return undefined
+  }
+}
+
+/**
+ * In a read tap, once the card has proved its key: the card's clock is fed
+ * (TELL_TIME, and SET_HEADER when the phone holds a newer header:
+ * `feedHeader`); an owned card is asked whether this phone is its owner, and
+ * the answer is left in `ownership`; and a card whose day's window has
+ * rolled since its owner last refreshed it is refreshed by its owner's
+ * phone (REFRESH, the owner's proof over the kept header).
+ *
+ * An unlocked card is asked by ALLOW_LOAD (`confirmOwnerKey`: the saved
+ * key, or the seed's, offered as its proof), then refreshed with the key it
+ * took. A locked card answers ALLOW_LOAD `6986` (spec/APDU.md, ALLOW_LOAD)
+ * and Foxy never sends it the grant, but REFRESH stays open to its owner
+ * (spec/APDU.md, REFRESH): a locked card that needs a refresh is sent one
+ * with this phone's key (`refreshAsOwner`), and its `9000` is the answer.
+ * A `6A91` there costs no PIN try and changes nothing. A locked card that
+ * needs no refresh is not asked: this tap leaves its owner unsettled
+ * (`ownership.unsettled` is `locked`), as does a question that failed for
+ * any other reason than the card's `6A91`/`6A90` (`failed`: a Keychain
+ * that cannot be read, a card that left): the screen never calls the
+ * holder's own card "Another phone" on a failure, and asks for another tap
+ * only when one can settle it.
+ *
+ * Best effort: nothing here fails the read, and nothing here waits on the
+ * network. Resolves what it changed, so the read asks the card again.
+ */
+const tendCard = async (
+  { transceive, info, pubkey, record }: AuthenticatedTap,
+  ownership: TapOwnership,
+): Promise<ReadChanges> => {
+  const clock = await feedHeader(transceive, info.now)
+  let now = clock.now
+  let refreshed = false
+  const header = keptHeader()
+  if (info.hasOwner && info.locked) {
+    if (record.rolls > 0 && header) {
+      try {
+        const answer = await refreshAsOwner(transceive, pubkey, header.bytes)
+        if (answer) {
+          ownership.key = answer.key
+          now = answer.now
+          refreshed = true
+        }
+      } catch (err) {
+        ownership.unsettled = "failed"
+        console.warn("Cashu card refresh skipped:", describeCardFailure(err))
+      }
+    } else {
+      // Not asked: a locked card takes no ALLOW_LOAD, and no REFRESH is due
+      // (or none can be sent without a header). Tapping again changes
+      // nothing until one is.
+      ownership.unsettled = "locked"
+    }
+  } else if (info.hasOwner) {
+    try {
+      ownership.key = await confirmOwnerKey(transceive, pubkey)
+      // Every key but the dev bridge's was offered as ALLOW_LOAD's proof.
+      ownership.granted = ownership.key !== undefined && ownership.key.source !== "dev"
+    } catch (err) {
+      ownership.unsettled = "failed"
+      console.warn("Cashu card owner check skipped:", describeCardFailure(err))
+    }
+    if (ownership.key && record.rolls > 0 && header) {
+      try {
+        now = await refreshCard(
+          transceive,
+          ownerSigner(ownership.key.privateKey),
+          header.bytes,
+        )
+        refreshed = true
+      } catch (err) {
+        console.warn("Cashu card refresh skipped:", describeCardFailure(err))
+      }
+    }
+  }
+  return {
+    clockMoved: now !== info.now,
+    refreshed,
+    granted: ownership.granted === true,
   }
 }
 
@@ -203,6 +315,14 @@ export type CashuCardState = CashuCardInfo & {
    * PIN change, say) never turns it into that 0.
    */
   ownerPaymentLimit?: number
+  /**
+   * The tidy the card screen offers (ENG-702), worked out once per read, off
+   * the tap: only on a signed-in read where the card took this phone's grant
+   * (its owner, online), once the mint has named its fee. Undefined while it
+   * is worked out, when the mint could not be asked, and when there is
+   * nothing to offer; dropped when a card operation changes the pieces.
+   */
+  tidyOffer?: TidyOffer
 }
 
 /**
@@ -272,6 +392,12 @@ export type CardOperationOptions<T = unknown> = {
    * was no re-read or it was lost.
    */
   onReread?: (info: CardInfo) => void
+  /**
+   * The operation may change the card's pieces without moving its balance or
+   * its spent count (a tidy, ENG-702): the re-read reads the slots again, so
+   * the screen and the next top-up see the pieces as they are now.
+   */
+  rereadSlots?: boolean
 }
 
 export interface FlashcardInterface {
@@ -540,6 +666,14 @@ export const FlashcardProvider = ({ children }: Props) => {
           // The mint names the units: ask it off the NFC session, which the
           // finally below releases without waiting.
           resolveCashuUnits(info, cashuGeneration.current)
+          // The owner's phone, online, may offer a tidy (ENG-702): the mint
+          // names the fee off the session too. The dev bridge's key is the
+          // simulated card's owner by construction (a development build's
+          // e2e flows), and is never offered as the read's grant.
+          const owner = ownership.granted || ownership.key?.source === "dev"
+          if (isAuthed && owner && info.unspentSlots) {
+            resolveTidyOffer(info, cashuGeneration.current)
+          }
           return { cashuCard: info }
         }
         // The applet SELECT was refused: not a Cashu card. Parse the same
@@ -587,87 +721,6 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   /**
-   * In a read tap, once the card has proved its key: the card's clock is fed
-   * (TELL_TIME, and SET_HEADER when the phone holds a newer header:
-   * `feedHeader`); an owned card is asked whether this phone is its owner, and
-   * the answer is left in `ownership`; and a card whose day's window has
-   * rolled since its owner last refreshed it is refreshed by its owner's
-   * phone (REFRESH, the owner's proof over the kept header).
-   *
-   * An unlocked card is asked by ALLOW_LOAD (`confirmOwnerKey`: the saved
-   * key, or the seed's, offered as its proof), then refreshed with the key it
-   * took. A locked card answers ALLOW_LOAD `6986` (spec/APDU.md, ALLOW_LOAD)
-   * and Foxy never sends it the grant, but REFRESH stays open to its owner
-   * (spec/APDU.md, REFRESH): a locked card that needs a refresh is sent one
-   * with this phone's key (`refreshAsOwner`), and its `9000` is the answer.
-   * A `6A91` there costs no PIN try and changes nothing. A locked card that
-   * needs no refresh is not asked: this tap leaves its owner unsettled
-   * (`ownership.unsettled` is `locked`), as does a question that failed for
-   * any other reason than the card's `6A91`/`6A90` (`failed`: a Keychain
-   * that cannot be read, a card that left): the screen never calls the
-   * holder's own card "Another phone" on a failure, and asks for another tap
-   * only when one can settle it.
-   *
-   * Best effort: nothing here fails the read, and nothing here waits on the
-   * network. Resolves what it changed, so the read asks the card again.
-   */
-  const tendCard = async (
-    { transceive, info, pubkey, record }: AuthenticatedTap,
-    ownership: TapOwnership,
-  ): Promise<ReadChanges> => {
-    const clock = await feedHeader(transceive, info.now)
-    let now = clock.now
-    let refreshed = false
-    const header = keptHeader()
-    if (info.hasOwner && info.locked) {
-      if (record.rolls > 0 && header) {
-        try {
-          const answer = await refreshAsOwner(transceive, pubkey, header.bytes)
-          if (answer) {
-            ownership.key = answer.key
-            now = answer.now
-            refreshed = true
-          }
-        } catch (err) {
-          ownership.unsettled = "failed"
-          console.warn("Cashu card refresh skipped:", describeCardFailure(err))
-        }
-      } else {
-        // Not asked: a locked card takes no ALLOW_LOAD, and no REFRESH is due
-        // (or none can be sent without a header). Tapping again changes
-        // nothing until one is.
-        ownership.unsettled = "locked"
-      }
-    } else if (info.hasOwner) {
-      try {
-        ownership.key = await confirmOwnerKey(transceive, pubkey)
-        // Every key but the dev bridge's was offered as ALLOW_LOAD's proof.
-        ownership.granted = ownership.key !== undefined && ownership.key.source !== "dev"
-      } catch (err) {
-        ownership.unsettled = "failed"
-        console.warn("Cashu card owner check skipped:", describeCardFailure(err))
-      }
-      if (ownership.key && record.rolls > 0 && header) {
-        try {
-          now = await refreshCard(
-            transceive,
-            ownerSigner(ownership.key.privateKey),
-            header.bytes,
-          )
-          refreshed = true
-        } catch (err) {
-          console.warn("Cashu card refresh skipped:", describeCardFailure(err))
-        }
-      }
-    }
-    return {
-      clockMoved: now !== info.now,
-      refreshed,
-      granted: ownership.granted === true,
-    }
-  }
-
-  /**
    * Puts the mint's units on a Cashu card that was just read: per-unit totals
    * on the card in context and, signed in, the card's single unit (if it has
    * exactly one) on its record. A mint that cannot be reached leaves the card
@@ -698,6 +751,19 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   /**
+   * Puts the tidy offer on a card just read under the owner's grant (ENG-702,
+   * `tidyOfferForRead`), unless a newer read, a forget, or an operation that
+   * changed the pieces came first.
+   */
+  const resolveTidyOffer = async (card: CashuCardInfo, generation: number) => {
+    const offer = await tidyOfferForRead(card)
+    const current = cashuCardRef.current
+    if (!offer || generation !== cashuGeneration.current) return
+    if (!current || current.unspentSlots !== card.unspentSlots) return
+    setCashuCard({ ...current, tidyOffer: offer })
+  }
+
+  /**
    * Puts what a card operation learned on the card in context and, signed
    * in, on its record. Only the card on screen is touched: the operation ran
    * against it (`runCardOperation` checked the pubkey), and a card forgotten
@@ -718,7 +784,10 @@ export const FlashcardProvider = ({ children }: Props) => {
   const recordCardOperation = (
     pubkey: string,
     { record: recordUpdate, ...update }: AssumedCard & { balance?: number },
-    slots?: CardSlotRead,
+    {
+      slots,
+      piecesChanged = false,
+    }: { slots?: CardSlotRead; piecesChanged?: boolean } = {},
   ) => {
     const previous = cashuCardRef.current
     if (previous?.pubkey !== pubkey) return
@@ -732,15 +801,22 @@ export const FlashcardProvider = ({ children }: Props) => {
     const keysets = slots?.keysets
     // The new split is labelled at once when the mint named its keysets before.
     const known = moved ? knownUnitTotals(keysets) : undefined
+    // The pieces themselves changed (a tidy) or the value did: the pieces
+    // read in the same session replace the old ones, and an offer made for
+    // the old ones goes (ENG-702).
+    const reshaped = moved || piecesChanged
     const card: CashuCardState = {
       ...previous,
       ...update,
       record,
       // A split read in the same session as the move replaces the old one.
       keysets: moved ? keysets : previous.keysets,
-      spentSlots: moved || spentChanged ? slots?.spentSlots : previous.spentSlots,
-      pieces: moved ? slots?.pieces : previous.pieces,
+      spentSlots:
+        moved || spentChanged || piecesChanged ? slots?.spentSlots : previous.spentSlots,
+      pieces: reshaped ? slots?.pieces : previous.pieces,
+      unspentSlots: reshaped ? slots?.unspent : previous.unspentSlots,
       unitTotals: moved ? known : previous.unitTotals,
+      tidyOffer: reshaped ? undefined : previous.tidyOffer,
     }
     setCashuCard(card)
     if (moved && keysets) {
@@ -784,7 +860,13 @@ export const FlashcardProvider = ({ children }: Props) => {
   const rereadCard = async (
     transceive: Transceiver,
     pubkey: string,
-    assumeRecord?: Partial<CardRecord>,
+    {
+      assumeRecord,
+      rereadSlots = false,
+    }: {
+      assumeRecord?: Partial<CardRecord>
+      rereadSlots?: boolean
+    } = {},
   ): Promise<CardInfo | undefined> => {
     try {
       const info = await getInfo(transceive)
@@ -803,9 +885,14 @@ export const FlashcardProvider = ({ children }: Props) => {
       const previous = cashuCardRef.current
       const same = previous?.pubkey === pubkey
       const changed =
-        same && (balance !== previous.balance || info.spent !== previous.spent)
+        same &&
+        (rereadSlots || balance !== previous.balance || info.spent !== previous.spent)
       const slots = changed ? await readKeysetSplit(transceive, info) : undefined
-      recordCardOperation(pubkey, { ...info, balance, record }, slots)
+      recordCardOperation(
+        pubkey,
+        { ...info, balance, record },
+        { slots, piecesChanged: same && rereadSlots },
+      )
       return info
     } catch (err) {
       console.warn("Cashu card re-read after an operation failed:", describeError(err))
@@ -816,7 +903,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   const runCardOperation = async <T,>(
     op: (transceive: Transceiver) => Promise<T>,
     expectedPubkey: string,
-    { assume, onReread, learned }: CardOperationOptions<T> = {},
+    { assume, onReread, learned, rereadSlots }: CardOperationOptions<T> = {},
   ): Promise<T> => {
     // Development builds only: the card is cardsim, over HTTP (ENG-634).
     const bridge = getCardBridge()
@@ -844,7 +931,10 @@ export const FlashcardProvider = ({ children }: Props) => {
       // After a refusal nothing the operation would prove holds, so a lost
       // GET_CARD keeps the record the card said before.
       const reread = async (assumeRecord?: Partial<CardRecord>) => {
-        const info = await rereadCard(transceive, expectedPubkey, assumeRecord)
+        const info = await rereadCard(transceive, expectedPubkey, {
+          assumeRecord,
+          rereadSlots,
+        })
         if (info) onReread?.(info)
         return info
       }

@@ -17,6 +17,7 @@ import {
   Proof,
   SerializedBlindedMessage,
   SerializedBlindedSignature,
+  blindMessage,
   createBlindSignature,
   createDLEQProof,
   createNewMintKeys,
@@ -79,13 +80,16 @@ export type FakeMint = TopUpMint & {
    * NUT-11 SIG_ALL witness, the BIP-340 signature by the key every input
    * locks to over every input's secret and C and every output's amount and
    * B_; no input may be spent already. The inputs turn SPENT
-   * (`proofStatesByY`) and the outputs are signed, as Nutshell does. Fees are
-   * the keyset's `input_fee_ppk`, 0 here.
+   * (`proofStatesByY`) and the outputs are signed, as Nutshell does. The
+   * inputs must come to the outputs and the fee: `ceil(inputs · ppk / 1000)`,
+   * `inputFeePpk` of the keyset (0 unless a spec sets it).
    */
   swap: (
     inputs: Proof[],
     outputs: SerializedBlindedMessage[],
   ) => Promise<SerializedBlindedSignature[]>
+  /** NUT-02 `input_fee_ppk` by keyset id; a spec sets one to charge a fee. */
+  inputFeePpk: Map<string, number>
 }
 
 /** The mint's Lightning node key: it signs every quote's invoice, as phoenixd does. */
@@ -170,7 +174,18 @@ export const createFakeMint = ({
     return quote
   }
 
+  const inputFeePpk = new Map<string, number>()
+  const feeFor = (inputs: Proof[]) =>
+    Math.ceil(
+      inputs.reduce((total, input) => total + (inputFeePpk.get(input.id) ?? 0), 0) / 1000,
+    )
+
   const fake: FakeMint = {
+    inputFeePpk,
+    feePpk: jest.fn(async (id: string) => {
+      if (!byId(id)) throw new Error(`the mint does not list keyset ${id} as active`)
+      return inputFeePpk.get(id) ?? 0
+    }),
     url: "https://mint.test",
     keysetId: keysets[0].keyset.id,
     usdKeysetId: keysets[1].keyset.id,
@@ -265,7 +280,7 @@ export const createFakeMint = ({
     swap: jest.fn(async (inputs: Proof[], outputs: SerializedBlindedMessage[]) => {
       const total = (items: { amount: Proof["amount"] }[]) =>
         items.reduce((sum, item) => sum + Amount.from(item.amount).toNumber(), 0)
-      if (total(inputs) !== total(outputs)) {
+      if (total(inputs) !== total(outputs) + feeFor(inputs)) {
         throw new MintOperationError(11000, "inputs and outputs do not balance")
       }
       const Ys = inputs.map((input) =>
@@ -304,7 +319,10 @@ export const createFakeMint = ({
         throw new MintOperationError(10001, "no valid signature provided for input.")
       }
       Ys.forEach((Y) => proofStatesByY.set(Y, "SPENT"))
-      return outputs.map(sign)
+      const signatures = outputs.map(sign)
+      // Kept for NUT-09, as a mint's swap outputs are.
+      outputs.forEach((output, i) => signed.set(output.B_, signatures[i]))
+      return signatures
     }),
   }
   return fake
@@ -359,6 +377,12 @@ export type FakeCard = {
   rolls: () => number
   /** The card's public key, 33 bytes hex. */
   pubkey: string
+  /** The change openings the card holds (ENG-702): signed for and not back on it. */
+  openings: () => { amount: number; nonce: string; r: string }[]
+  /** What the day's window has signed for: the pieces less the card's own change. */
+  spentToday: () => number
+  /** What has been signed for with no PIN, on a card with one. */
+  nopinSpent: () => number
 }
 
 export type FakeCardOptions = {
@@ -434,8 +458,13 @@ const LEGACY_AIDS = { "0.x": LEGACY_CASHU_AID, "1.x": FOXY_LEGACY_AID }
  * TELL_TIME, VERIFY_PIN / SET_PIN / CHANGE_PIN (clear and sealed), SET_OWNER,
  * GET_NONCE (P1 = 0 and 1), ALLOW_LOAD and REFRESH, with the owner's proof
  * (ECDSA P-256 over label ‖ nonce ‖ value, one try per nonce) checked as the
- * applet checks it. And a till's SPEND_ALL_BEGIN, SPEND_ALL_OUTPUTS and
- * SPEND_ALL_SIGN, for the e2e fixtures' spent slots. SELECT ends the session:
+ * applet checks it. And a payment: SPEND_ALL_BEGIN, SPEND_ALL_OUTPUTS,
+ * SPEND_ALL_CHANGE (the card's own change, its openings kept until the piece
+ * is back on it: GET_CHANGE), SPEND_ALL_SIGN (the PIN, or the no-PIN
+ * allowance, for what leaves the card: the pieces less its change; the daily
+ * limit likewise) and SPEND_ALL_AGAIN, for the e2e fixtures' spent slots and
+ * a card tidy (ENG-702). Any other command between BEGIN and SIGN gives the
+ * payment up. SELECT ends the session:
  * the verified PIN, the owner's nonce and the grant go, as on a new tap.
  * The real applet is cardsim's: `__tests__/integration/card-topup-cardsim.spec.ts`
  * holds this app to it.
@@ -479,7 +508,36 @@ export const createFakeCard = (
   let now = 0
   let rolls = initialRolls
   let limits = { day: 0, payment: 0, allowance: 0, rollBudget: 7, ...initialLimits }
-  let payment: { slots: number[]; outputs: number[][] } | undefined
+  let payment:
+    | { slots: number[]; outputs: number[][]; change: number; drafts: number[] }
+    | undefined
+  /** CHANGE_MOST openings: empty, a draft of the payment in hand, or signed for. */
+  type Opening = {
+    state: "empty" | "draft" | "pending"
+    amount: number
+    keyset: number[]
+    date: number[]
+    nonce: number[]
+    r: string
+  }
+  const openings: Opening[] = Array.from({ length: 8 }, () => ({
+    state: "empty",
+    amount: 0,
+    keyset: [],
+    date: [],
+    nonce: [],
+    r: "",
+  }))
+  let spentToday = 0
+  let nopinSpent = 0
+  let lastSig: { signature: number[]; noPin: boolean } | undefined
+  /** The payment in hand is given up: its drafts go with it. */
+  const dropPayment = () => {
+    payment = undefined
+    openings.forEach((opening) => {
+      if (opening.state === "draft") opening.state = "empty"
+    })
+  }
 
   const pinOf = (bytes: number[]) => String.fromCharCode(...bytes)
   const counts = () =>
@@ -594,7 +652,7 @@ export const createFakeCard = (
       verified = false
       grant = false
       nonce = undefined
-      payment = undefined
+      dropPayment()
       openerSelected = false
       if (legacy) return sameBytes(data, LEGACY_AIDS[legacy]) ? SW_OK : sw(0x6a82)
       if (opener && sameBytes(data, CASHU_AID)) {
@@ -609,6 +667,8 @@ export const createFakeCard = (
     if (openerSelected) return sw(0x6d00)
     if (legacy) return sw(0x6e00)
     if (cla !== 0xb0) return sw(0x6e00)
+    // Any command but the payment's own gives a payment begun up.
+    if (payment && ![0x23, 0x24, 0x26].includes(ins)) dropPayment()
     switch (ins) {
       case 0x01: {
         const [empty, unspent, spent] = counts()
@@ -629,14 +689,14 @@ export const createFakeCard = (
           owner ? 1 : 0,
           ...u32(now),
           ...u32(0),
-          ...u32(0),
+          ...u32(spentToday),
           0,
         ]
         if (p1 === 1)
           body.push(
             ...u32(grant ? limits.payment : 0),
             ...u32(limits.allowance),
-            ...u32(0),
+            ...u32(nopinSpent),
           )
         return [...body, ...SW_OK]
       }
@@ -724,6 +784,12 @@ export const createFakeCard = (
         const index = slots.findIndex((slot) => slot[0] === 0)
         if (index < 0) return sw(0x6a84)
         slots[index] = [1, ...piece]
+        // The change's opening is let go once its piece is back on the card.
+        openings.forEach((opening) => {
+          if (opening.state !== "empty" && sameBytes(opening.nonce, pieceNonce)) {
+            opening.state = "empty"
+          }
+        })
         if (withDleq) {
           dleqs.set(index, data.slice(SLOT_DATA))
           return [index, 1, ...SW_OK]
@@ -900,12 +966,19 @@ export const createFakeCard = (
       }
       case 0x22: {
         if (data.length < 1) return sw(0x6700)
+        const seen = new Set<number>()
         for (const slot of data) {
           if (slot >= maxSlots) return sw(0x6a83)
           if (slots[slot][0] === 0) return sw(0x6a88)
           if (slots[slot][0] === 2) return sw(0x6985)
+          if (seen.has(slot)) return sw(0x6a80)
+          seen.add(slot)
+          if (!sameBytes(slots[slot].slice(78, 82), slots[data[0]].slice(78, 82))) {
+            return sw(0x6a80)
+          }
         }
-        payment = { slots: data, outputs: [] }
+        dropPayment()
+        payment = { slots: data, outputs: [], change: 0, drafts: [] }
         return [
           ...u32(data.reduce((sum, slot) => sum + readU32(slots[slot], 9), 0)),
           ...SW_OK,
@@ -920,9 +993,25 @@ export const createFakeCard = (
       }
       case 0x24: {
         if (!payment) return sw(0x6985)
-        if (pinState !== 0 && !verified) {
-          payment = undefined
+        const total = payment.slots.reduce(
+          (sum, slot) => sum + readU32(slots[slot], 9),
+          0,
+        )
+        // What leaves the card for good: the pieces less its own change.
+        const net = total - payment.change
+        const noPin = pinState !== 0 && (!verified || pinState === 2)
+        if (
+          noPin &&
+          (pinState !== 1 ||
+            limits.allowance === 0 ||
+            nopinSpent + net > limits.allowance)
+        ) {
+          dropPayment()
           return sw(0x6a94)
+        }
+        if (limits.day > 0 && spentToday + net > limits.day) {
+          dropPayment()
+          return sw(0x6a8f)
         }
         let message = ""
         payment.slots.forEach((slot) => {
@@ -940,8 +1029,83 @@ export const createFakeCard = (
         payment.slots.forEach((slot) => {
           slots[slot][0] = 2
         })
+        payment.drafts.forEach((k) => {
+          openings[k].state = "pending"
+        })
+        spentToday += net
+        if (noPin) nopinSpent += net
+        lastSig = { signature, noPin }
         payment = undefined
         return [...signature, ...SW_OK]
+      }
+      case 0x25: {
+        if (lastSig && !lastSig.noPin && pinState !== 0 && !verified) return sw(0x6982)
+        if (!lastSig) return sw(0x6a88)
+        return [...lastSig.signature, ...SW_OK]
+      }
+      case 0x26: {
+        if (!payment) return sw(0x6985)
+        if (data.length !== 4) {
+          dropPayment()
+          return sw(0x6700)
+        }
+        const amount = readU32(data, 0)
+        const total = payment.slots.reduce(
+          (sum, slot) => sum + readU32(slots[slot], 9),
+          0,
+        )
+        if (amount === 0 || payment.change + amount > total) {
+          dropPayment()
+          return sw(0x6a80)
+        }
+        const k = openings.findIndex((opening) => opening.state === "empty")
+        if (k < 0) {
+          dropPayment()
+          return sw(0x6a84)
+        }
+        const first = slots[payment.slots[0]]
+        const changeNonce = Array.from({ length: 32 }, () =>
+          Math.floor(Math.random() * 256),
+        )
+        const secret = `["P2PK",{"nonce":"${toHex(
+          changeNonce,
+        )}","data":"${pubkey}","tags":[["sigflag","SIG_ALL"]]}]`
+        const blinded = blindMessage(new TextEncoder().encode(secret))
+        const B_ = Array.from(blinded.B_.toBytes(true))
+        openings[k] = {
+          state: "draft",
+          amount,
+          keyset: first.slice(1, 9),
+          date: first.slice(78, 82),
+          nonce: changeNonce,
+          r: blinded.r.toString(16).padStart(64, "0"),
+        }
+        payment.drafts.push(k)
+        payment.change += amount
+        payment.outputs.push([...u32(amount), ...B_])
+        return [...B_, ...SW_OK]
+      }
+      case 0x19: {
+        const held = openings.filter((opening) => {
+          if (opening.state !== "pending") return false
+          const onCard = slots.some(
+            (slot) => slot[0] !== 0 && sameBytes(slot.slice(13, 45), opening.nonce),
+          )
+          if (onCard) opening.state = "empty"
+          return !onCard
+        })
+        const page = held.slice(p1 * 3, p1 * 3 + 3)
+        return [
+          page.length,
+          ...page.flatMap((opening) => [
+            ...u32(opening.amount),
+            ...opening.keyset,
+            ...opening.date,
+            ...opening.nonce,
+            ...hexToBytes(opening.r),
+          ]),
+          ...SW_OK,
+        ]
       }
       default:
         return sw(0x6d00)
@@ -966,6 +1130,16 @@ export const createFakeCard = (
     limits: () => limits,
     rolls: () => rolls,
     pubkey,
+    openings: () =>
+      openings
+        .filter((opening) => opening.state === "pending")
+        .map((opening) => ({
+          amount: opening.amount,
+          nonce: toHex(opening.nonce),
+          r: opening.r,
+        })),
+    spentToday: () => spentToday,
+    nopinSpent: () => nopinSpent,
   }
 }
 

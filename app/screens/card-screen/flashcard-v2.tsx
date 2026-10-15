@@ -27,6 +27,9 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { CashuCardInfo } from "@app/utils/cashu-card"
 import { TopUpRecord, isCurrentFormat, quoteIsDead } from "@app/utils/cashu-card-topup"
+import { soleUnit } from "@app/utils/cashu-mint"
+
+import { FlashcardV2Tidy } from "./flashcard-v2-tidy"
 
 import Sync from "@app/assets/icons/sync.svg"
 
@@ -212,6 +215,20 @@ export const FlashcardV2Screen = () => {
       )}
 
       <CardNotices card={cashuCard} ownership={ownership} />
+
+      {/* The tidy (ENG-702): offered after an online read by the owner. */}
+      {isAuthed && (
+        <FlashcardV2Tidy
+          card={cashuCard}
+          formatAmount={(amount) =>
+            formatUnitAmount(
+              amount,
+              (cashuCard.unitTotals && soleUnit(cashuCard.unitTotals)) ?? "sat",
+              LL,
+            )
+          }
+        />
+      )}
 
       {unfinishedTopUps.map((record) => {
         // A sent payment whose invoice expired long enough ago that nothing

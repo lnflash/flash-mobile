@@ -2,6 +2,7 @@ import {
   Amount,
   Mint,
   MintKeys,
+  Proof,
   SerializedBlindedMessage,
   SerializedBlindedSignature,
 } from "@cashu/cashu-ts"
@@ -60,6 +61,20 @@ export type TopUpMint = {
    * order asked. Every Y must come back with a known state, or this throws.
    */
   proofStates: (Ys: string[]) => Promise<ProofState[]>
+  /**
+   * NUT-03: swap `inputs` for signatures on `outputs`, in order (a card tidy,
+   * ENG-702). The inputs carry their witness as the card signed them.
+   */
+  swap: (
+    inputs: Proof[],
+    outputs: SerializedBlindedMessage[],
+  ) => Promise<SerializedBlindedSignature[]>
+  /**
+   * NUT-02: keyset `id`'s `input_fee_ppk`, 0 when the mint states none.
+   * Throws when the mint does not list the keyset as active: a swap's
+   * outputs must be in an active keyset.
+   */
+  feePpk: (id: string) => Promise<number>
 }
 
 /**
@@ -136,6 +151,15 @@ export const createTopUpMint = (url: string): TopUpMint => {
       return state as QuoteState
     },
     mint: async (payload) => (await mint.mintBolt11(payload)).signatures,
+    swap: async (inputs, outputs) => (await mint.swap({ inputs, outputs })).signatures,
+    feePpk: async (id) => {
+      const { keysets: all } = await mint.getKeySets()
+      const found = all.find((k) => k.id === id)
+      if (!found?.active) {
+        throw new TopUpMintError(`the mint does not list keyset ${id} as active`)
+      }
+      return found.input_fee_ppk ?? 0
+    },
     restore: (outputs) => mint.restore({ outputs }),
     proofStates: async (Ys) => {
       const { states } = await mint.check({ Ys })

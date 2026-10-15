@@ -26,6 +26,7 @@ import {
   toHex,
 } from "../cashu-card"
 import {
+  CardSlotProof,
   buildCardP2PKSecret,
   cardSlotFromProof,
   makeCanonicalCardOutput,
@@ -37,7 +38,13 @@ import { sameMint } from "./mint-url"
 import { signMintQuote } from "./nut20"
 import type { ProofState, TopUpMint } from "./mint"
 import type { TopUpStore } from "./store"
-import type { CardUnit, TopUpFailure, TopUpOutput, TopUpRecord } from "./types"
+import type {
+  CardUnit,
+  TidyRecord,
+  TopUpFailure,
+  TopUpOutput,
+  TopUpRecord,
+} from "./types"
 
 /**
  * A card top-up, minted by the app at the mint it is connected to (ENG-616
@@ -385,17 +392,33 @@ const committedPieces = (records: TopUpRecord[], cardPubkey: string): number[] =
  * proofs will take (all of them, even for a load cut part way), and their
  * units. A new top-up is sized against what is left, and may only be in the
  * unit they are in (ENG-616 D1: a card never holds two units).
+ *
+ * A card's unfinished tidies (ENG-702) hold its slots too: their change goes
+ * into empty slots, and their burned inputs free none until the mint has
+ * settled them. Every tidy still owed counts, whatever its state.
  */
 export const cardCommitments = (
   records: TopUpRecord[],
   cardPubkey: string,
+  tidies: readonly TidyRecord[] = [],
 ): { slots: number; units: CardUnit[] } => {
   const holding = holdingCard(records, cardPubkey)
+  const pubkey = cardPubkey.toLowerCase()
+  const tidySlots = tidies
+    .filter((t) => t.cardPubkey === pubkey && tidyOwed(t))
+    .reduce((sum, t) => sum + t.outputs.length, 0)
   return {
-    slots: holding.reduce((sum, r) => sum + r.outputs.length, 0),
+    slots: holding.reduce((sum, r) => sum + r.outputs.length, 0) + tidySlots,
     units: [...new Set(holding.map((r) => r.unit))],
   }
 }
+
+/**
+ * A tidy whose change may still go onto the card: anything not finished.
+ * One `needs-card` is kept for a human, and its change will never come.
+ */
+export const tidyOwed = (record: TidyRecord): boolean =>
+  record.state === "planned" || record.state === "signed" || record.state === "swapped"
 
 export type PrepareArgs = {
   cardPubkey: string
@@ -510,7 +533,7 @@ export async function prepareTopUp(
   }
   const cardPubkey = args.cardPubkey.toLowerCase()
   const records = await deps.store.list()
-  const committed = cardCommitments(records, cardPubkey)
+  const committed = cardCommitments(records, cardPubkey, await deps.store.tidies.list())
   const units = [...committed.units, ...(args.card.unit ? [args.card.unit] : [])]
   if (units.some((held) => held !== unit)) {
     throw new TopUpError(
@@ -1142,18 +1165,55 @@ export async function loadTopUp(
   if (record.state !== "minted" || !proofs) {
     throw new TopUpError("state", "the top-up has no proofs to load yet")
   }
-  if (record.loadStarted && !mintStates) {
+  const { held } = await loadPieces(transceive, proofs, {
+    loadStarted: record.loadStarted,
+    onStart: async () => {
+      await deps.store.update(id, (r) => ({ ...r, loadStarted: true }))
+    },
+    mintStates,
+    inventory,
+    maxSlots: card.maxSlots,
+  })
+  if (held > 0) return load(deps, id)
+  return deps.store.update(id, (r) => ({ ...r, state: "loaded" }))
+}
+
+/** How `loadPieces` writes a set of pieces: see `loadTopUp`, whose load it is. */
+export type LoadPiecesArgs = {
+  /** A load of these pieces began before: the card is read first, and the mint's word is needed. */
+  loadStarted: boolean
+  /** Saves that a load began, before the first LOAD_PROOF; awaited. */
+  onStart: () => Promise<void>
+  /** Required when `loadStarted`: the mint's NUT-07 word on each piece, by nonce. */
+  mintStates?: ReadonlyMap<string, ProofState>
+  /** The card as this session already read it (`reclaimSpentSlots`' `inventory`). */
+  inventory?: CardInventory
+  maxSlots: number
+}
+
+/**
+ * The load itself, for a top-up (`loadTopUp`) and a card tidy's change
+ * (ENG-702) alike: what `loadTopUp` describes, from the slot read to the
+ * LOAD_PROOFs, unchanged. Resolves how many pieces are `held`: not on the
+ * card and not written, a PENDING one or one whose nonce sits in a spent
+ * slot. Zero means every piece is on the card. Never retried.
+ */
+export async function loadPieces(
+  transceive: Transceiver,
+  proofs: readonly CardSlotProof[],
+  { loadStarted, onStart, mintStates, inventory, maxSlots }: LoadPiecesArgs,
+): Promise<{ held: number }> {
+  if (loadStarted && !mintStates) {
     throw new TopUpError("state", "a resumed load needs the mint's word on each proof")
   }
-  const statuses =
-    inventory?.statuses ?? (await getSlotStatuses(transceive, card.maxSlots))
-  let pending = proofs
+  const statuses = inventory?.statuses ?? (await getSlotStatuses(transceive, maxSlots))
+  let pending: readonly CardSlotProof[] = proofs
   let held = 0
   // Nonces this tap found in spent slots, remnants included: a 2.0 card
   // refuses to load a piece whose nonce is in any slot (6A94), so one of these
   // answering "already on the card" is not on it to spend.
   const inSpentSlot = new Set<string>()
-  if (record.loadStarted && mintStates) {
+  if (loadStarted && mintStates) {
     const spentRead = new Map(
       (inventory?.spent ?? []).map((found) => [found.slot, found]),
     )
@@ -1184,9 +1244,7 @@ export async function loadTopUp(
       `${pending.length} proofs to load and ${empty} empty slots on the card`,
     )
   }
-  if (!record.loadStarted) {
-    await deps.store.update(id, (r) => ({ ...r, loadStarted: true }))
-  }
+  if (!loadStarted) await onStart()
   // One piece to a command, with the mint's DLEQ proof (P1 = 1). A 6A94 is a
   // piece already on the card (`alreadyOnCard`): an earlier load whose answer
   // was lost landed, and it counts as loaded. Unless this tap found its nonce
@@ -1198,8 +1256,7 @@ export async function loadTopUp(
     const result = await loadProof(transceive, proof)
     if (result.alreadyOnCard && inSpentSlot.has(proof.nonce)) held += 1
   }
-  if (held > 0) return load(deps, id)
-  return deps.store.update(id, (r) => ({ ...r, state: "loaded" }))
+  return { held }
 }
 
 /**

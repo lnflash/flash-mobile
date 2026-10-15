@@ -29,9 +29,11 @@ import {
 import {
   CardError,
   Transceiver,
+  getInfo,
   getProof,
   readCashuCard,
   selectApplet,
+  setHeader,
   verifyCardPin,
 } from "@app/utils/cashu-card"
 import {
@@ -62,7 +64,11 @@ import {
   reclaimPlan,
   reclaimSpentSlots,
   reclaimVerdicts,
+  TidyDeps,
+  runTidy,
+  tidyKeyset,
 } from "@app/utils/cashu-card-topup"
+import { CardSpendError } from "@app/utils/cashu-card-spend"
 
 import {
   FIXTURE_OWNER_KEY,
@@ -443,5 +449,121 @@ describeWithCardsim("the 2.0 card against cardsim and a FakeWallet mint", () => 
       sw: 0x6a91,
     })
     expect(CardError).toBeDefined()
+  })
+
+  it("tidies a card short of small pieces in one owner's tap: the card's own change, its witness taken, only the fee counted (ENG-702)", async () => {
+    await loadFixture("missing-small")
+    const transceive = bridgeTransceiver(bridge)
+    // A daily limit, and a clock, so the card counts what leaves it.
+    await selectApplet(transceive)
+    await setHeader(transceive, headerBytes(HEADER_VECTORS[2]))
+    await setLimits(transceive, ownerSigner(FIXTURE_OWNER_KEY), {
+      day: 5000,
+      payment: 0,
+      allowance: 0,
+      rollBudget: 7,
+    })
+    const card = await readCashuCard(transceive)
+    if (!card?.unspentSlots) throw new Error("the missing-small fixture did not read")
+    expect([...(card.pieces ?? [])].sort((a, b) => a - b)).toEqual([4, 8])
+    // A till offline cannot take 3 exactly from 8 + 4.
+    const refused = await fetch(`${CARD_FIXTURES_URL}/spend/3`, { method: "POST" })
+    expect(refused.status).toBe(500)
+
+    const mint = createTopUpMint(mintUrl)
+    const keysetId = tidyKeyset(card.unspentSlots) as string
+    const feePpk = await mint.feePpk(keysetId)
+    const spentBefore = card.spentToday
+    let ids = 0
+    const tap = counting(transceive)
+    await selectApplet(tap.transceive)
+    const result = await runTidy(
+      {
+        mint,
+        store: createTopUpStore(),
+        now: Date.now,
+        newId: () => `tidy-${(ids += 1)}`,
+      },
+      {
+        transceive: tap.transceive,
+        card: { pubkey: card.pubkey, maxSlots: card.maxSlots },
+        keysetId,
+        feePpk,
+        openForLoading: (t) => allowLoad(t, ownerSigner(FIXTURE_OWNER_KEY)),
+        verdicts: new Map(),
+      },
+    )
+    if (result.status !== "tidied") throw new Error(`the tidy ended ${result.status}`)
+    // The 8 alone, as 2 + 2 + 2 + 1 + 1 beside the 4. Every output was the
+    // card's own change: no SPEND_ALL_OUTPUTS, and SIGN took a payment with none.
+    expect(result.record.inputs.map((input) => input.amount)).toEqual([8])
+    expect(tap.count(0x23)).toBe(0)
+    expect(tap.count(0x26)).toBe(5)
+    console.log(`ENG-702 tidy tap cost: ${tap.total()} APDUs, swap included`)
+
+    const state = await (await fetch(`${bridge}/state`)).json()
+    expect(state.balance).toBe(12)
+    expect(state.counts.spent).toBe(0)
+    expect(unspentAmounts(state)).toEqual(targetPieces(12))
+    // The day's count rose by the fee alone.
+    await selectApplet(transceive)
+    expect((await getInfo(transceive)).spentToday).toBe(
+      spentBefore + (result.record.fee ?? 0),
+    )
+
+    // The card made each new piece's secret as buildCardP2PKSecret rebuilds
+    // it: a till now takes exactly 3 from them, and the mint takes the card's
+    // SIG_ALL witness for them.
+    const paid = await fetch(`${CARD_FIXTURES_URL}/spend/3`, { method: "POST" })
+    expect(paid.status).toBe(200)
+    expect(await paid.json()).toMatchObject({ balance: 9 })
+    await selectApplet(transceive)
+    expect((await getInfo(transceive)).spentToday).toBe(spentBefore + 3)
+  })
+
+  it("a PIN card with no no-PIN allowance refuses a tidy without its PIN, burning nothing, and takes one after VERIFY_PIN (ENG-702, decision 1)", async () => {
+    // 21 as 16 + 4 + 1, PIN set, no allowance: short of its 1s and 2s.
+    await loadFixture("loaded")
+    const transceive = bridgeTransceiver(bridge)
+    const card = await readCashuCard(transceive)
+    if (!card?.unspentSlots) throw new Error("the loaded fixture did not read")
+    const mint = createTopUpMint(mintUrl)
+    const keysetId = tidyKeyset(card.unspentSlots) as string
+    const feePpk = await mint.feePpk(keysetId)
+    let ids = 0
+    const deps: TidyDeps = {
+      mint,
+      store: createTopUpStore(),
+      now: Date.now,
+      newId: () => `tidy-pin-${(ids += 1)}`,
+    }
+    const args = {
+      transceive,
+      card: { pubkey: card.pubkey, maxSlots: card.maxSlots },
+      keysetId,
+      feePpk,
+      openForLoading: (t: Transceiver) => allowLoad(t, ownerSigner(FIXTURE_OWNER_KEY)),
+      verdicts: new Map(),
+    }
+
+    await selectApplet(transceive)
+    const refused = runTidy(deps, args)
+    await expect(refused).rejects.toBeInstanceOf(CardSpendError)
+    await expect(refused).rejects.toMatchObject({ reason: "pin-needed", sw: 0x6a94 })
+    let state = await (await fetch(`${bridge}/state`)).json()
+    expect(state.counts.spent).toBe(0)
+    expect(state.balance).toBe(21)
+
+    await selectApplet(transceive)
+    const result = await runTidy(deps, {
+      ...args,
+      verifyPin: (t: Transceiver) =>
+        verifyCardPin(t, FIXTURE_PIN, { sealed: card.sealed, cardPubkey: card.pubkey }),
+    })
+    expect(result.status).toBe("tidied")
+    state = await (await fetch(`${bridge}/state`)).json()
+    expect(state.balance).toBe(21)
+    expect(state.counts.spent).toBe(0)
+    expect(unspentAmounts(state)).toEqual(targetPieces(21))
   })
 })

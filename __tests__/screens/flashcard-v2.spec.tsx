@@ -6,7 +6,8 @@
  */
 import * as React from "react"
 import { Dimensions, Image, StyleSheet } from "react-native"
-import { act, fireEvent, render, screen } from "@testing-library/react-native"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native"
+import { Provider } from "react-redux"
 import { createTheme, ThemeProvider } from "@rneui/themed"
 import type { ReactTestRendererJSON } from "react-test-renderer"
 
@@ -22,6 +23,12 @@ import {
   shortPubkey,
 } from "../../app/screens/card-screen/flashcard-v2"
 import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
+import { store } from "../../app/store/redux"
+import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
+import { TidyError, TidyOffer, TidyRecord } from "../../app/utils/cashu-card-topup"
+import { CardError } from "../../app/utils/cashu-card"
+import { CardSpendError } from "../../app/utils/cashu-card-spend"
+import { ownerKeyStore } from "../../app/utils/cashu-card-owner-store"
 
 loadLocale("en")
 const LL = i18nObject("en")
@@ -38,6 +45,12 @@ let mockIsAuthed = true
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let mockUnfinishedTopUps: any[] = []
 const mockDismissTopUp = jest.fn()
+const mockRunCardOperation = jest.fn()
+const mockFeePpk = jest.fn(async (_id: string) => 0)
+// The tidy engine and the PIN check, for the specs that let the tap run the
+// tidy's own operation: what it was handed is what they check.
+const mockRunTidy = jest.fn()
+const mockVerifyCardPin = jest.fn()
 
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -45,6 +58,9 @@ jest.mock("@app/i18n/i18n-react", () => ({
 }))
 jest.mock("@react-navigation/native", () => ({
   ...jest.requireActual("@react-navigation/native"),
+  // No navigator here: a focus effect runs once on mount.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  useFocusEffect: (effect: () => void) => require("react").useEffect(effect, [effect]),
   useNavigation: () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
@@ -76,6 +92,26 @@ jest.mock("@app/hooks", () => ({
     records: mockUnfinishedTopUps.map((record) => ({ cardFormat: 4, ...record })),
     dismiss: mockDismissTopUp,
   }),
+  // The real tidy hook (ENG-702), over the store and a card session mocked below.
+  useCardTidy: (...args: unknown[]) =>
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require("../../app/hooks/use-card-tidy").useCardTidy(...args),
+}))
+// What the tidy hook taps through, and the mint it asks for the fee.
+jest.mock("@app/hooks/useFlashcard", () => ({
+  useFlashcard: () => ({ runCardOperation: mockRunCardOperation }),
+}))
+jest.mock("@app/utils/cashu-card-topup/connected", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-topup/connected"),
+  topUpMint: () => ({ url: "https://mint.test", feePpk: mockFeePpk }),
+}))
+jest.mock("@app/utils/cashu-card-topup", () => ({
+  ...jest.requireActual("@app/utils/cashu-card-topup"),
+  runTidy: (...args: unknown[]) => mockRunTidy(...args),
+}))
+jest.mock("@app/utils/cashu-card", () => ({
+  ...jest.requireActual("@app/utils/cashu-card"),
+  verifyCardPin: (...args: unknown[]) => mockVerifyCardPin(...args),
 }))
 const PUBKEY = "02" + "ab".repeat(32)
 const SAT_KEYSET = "0059534ce0bfa19a"
@@ -91,8 +127,9 @@ const card = (overrides: Partial<CashuCardState> = {}): CashuCardState =>
 const othersCard = (overrides: Partial<CashuCardState> = {}) =>
   card({ ownerKeySource: undefined, ...overrides })
 
-const renderScreen = () =>
-  render(
+/** The screen under the store and the theme it reads. */
+const screenTree = () => (
+  <Provider store={store}>
     <ThemeProvider
       theme={createTheme({
         mode: "light",
@@ -101,8 +138,11 @@ const renderScreen = () =>
       })}
     >
       <FlashcardV2Screen />
-    </ThemeProvider>,
-  )
+    </ThemeProvider>
+  </Provider>
+)
+
+const renderScreen = () => render(screenTree())
 
 describe("FlashcardV2Screen", () => {
   beforeEach(() => {
@@ -1048,5 +1088,376 @@ describe("shortPubkey", () => {
 
   it("leaves anything short alone", () => {
     expect(shortPubkey("02abcd")).toBe("02abcd")
+  })
+})
+
+describe("FlashcardV2Screen card tidy (ENG-702)", () => {
+  const offer = (
+    over: Partial<Extract<TidyOffer, { kind: "offer" }>> = {},
+  ): TidyOffer => ({
+    kind: "offer",
+    fee: 0,
+    outputs: 5,
+    complete: true,
+    needsPin: false,
+    fingerprint: "pieces-1",
+    ...over,
+  })
+  const TIDY_SERVER = "flashcard-v2-topups"
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Keychain = require("react-native-keychain")
+
+  const saved = (id: string, state: TidyRecord["state"]): TidyRecord => ({
+    kind: "tidy",
+    version: 1,
+    id,
+    cardPubkey: PUBKEY,
+    mintUrl: "https://mint.test",
+    keysetId: SAT_KEYSET,
+    fee: 0,
+    inputs: [],
+    outputs: [{ amount: 1 }],
+    loadStarted: false,
+    state,
+    createdAt: id === "a" ? 1 : 2,
+    updatedAt: 1,
+  })
+
+  beforeEach(async () => {
+    jest.clearAllMocks()
+    store.dispatch(resetFlashcardV2())
+    await Keychain.resetInternetCredentials({ server: TIDY_SERVER })
+    await Keychain.resetInternetCredentials({ server: "flashcard-v2-tidy-archive" })
+    await Keychain.resetInternetCredentials({ server: "flashcard-v2-owner" })
+    // This phone owns the card: its key is saved, so the tap can load the change.
+    await ownerKeyStore.put(PUBKEY, {
+      privateKey: "42".repeat(32),
+      source: "device",
+      createdAt: 1,
+    })
+    mockIsAuthed = true
+    mockIsFocused = true
+    mockUnfinishedTopUps = []
+    mockCashuCard = card()
+    mockRunCardOperation.mockResolvedValue({ status: "tidied", record: {} })
+  })
+
+  it("offers a tidy when the read found the card below its shape, with no fee line at a fee of 0", async () => {
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-offer")).toBeTruthy(),
+    )
+    expect(screen.getByText(LL.FlashcardV2.tidyBody({ outputs: 5 }))).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-tidy-fee")).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-tidy-not-now")).toBeTruthy()
+  })
+
+  it("offers nothing when the read made no offer: not the owner's grant, offline, or at its shape", async () => {
+    mockCashuCard = card({ tidyOffer: undefined })
+    renderScreen()
+    await act(async () => undefined)
+    expect(screen.queryByTestId("flashcard-v2-tidy-offer")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-tidy-slots-short")).toBeNull()
+  })
+
+  it("offers nothing signed out", async () => {
+    mockIsAuthed = false
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await act(async () => undefined)
+    expect(screen.queryByTestId("flashcard-v2-tidy-offer")).toBeNull()
+  })
+
+  it("shows the mint's fee when it is above 0", async () => {
+    mockCashuCard = card({ tidyOffer: offer({ fee: 2 }) })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy-fee")).toBeTruthy())
+    expect(screen.getByTestId("flashcard-v2-tidy-fee").props.children).toBe(
+      LL.FlashcardV2.tidyFee({ fee: "2 sats" }),
+    )
+  })
+
+  it("hides the offer on Not now until the card's pieces change", async () => {
+    mockCashuCard = card({ tidyOffer: offer() })
+    const { rerender } = renderScreen()
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-offer")).toBeTruthy(),
+    )
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-not-now"))
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("flashcard-v2-tidy-offer")).toBeNull(),
+    )
+    expect(store.getState().flashcardV2.tidyDismissed).toEqual({ [PUBKEY]: "pieces-1" })
+
+    // The next read, same pieces: still hidden.
+    mockCashuCard = card({ tidyOffer: offer() })
+    rerender(screenTree())
+    expect(screen.queryByTestId("flashcard-v2-tidy-offer")).toBeNull()
+
+    // A till took a piece since: the pieces changed, and the offer is back.
+    mockCashuCard = card({ tidyOffer: offer({ fingerprint: "pieces-2" }) })
+    rerender(screenTree())
+    expect(screen.getByTestId("flashcard-v2-tidy-offer")).toBeTruthy()
+  })
+
+  it("notes when too few slots are free to tidy, with nothing to tap", async () => {
+    mockCashuCard = card({ tidyOffer: { kind: "slots-short", fingerprint: "pieces-1" } })
+    renderScreen()
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-slots-short").props.children).toBe(
+        LL.FlashcardV2.tidySlotsShort(),
+      ),
+    )
+    expect(screen.queryByTestId("flashcard-v2-tidy")).toBeNull()
+  })
+
+  it("tidies with one tap on the card and says so", async () => {
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.tidyDone(),
+      ),
+    )
+    expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
+    expect(mockRunCardOperation.mock.calls[0][1]).toBe(PUBKEY)
+    // The re-read reads the pieces again: a tidy moves no balance.
+    expect(mockRunCardOperation.mock.calls[0][2]).toEqual({ rereadSlots: true })
+  })
+
+  it("asks for the PIN before the tap where the no-PIN allowance does not cover the tidy", async () => {
+    mockCashuCard = card({ tidyOffer: offer({ needsPin: true }) })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    expect(screen.getByTestId("flashcard-v2-tidy-pin")).toBeTruthy()
+    expect(mockRunCardOperation).not.toHaveBeenCalled()
+    ;["1", "2", "3", "4"].forEach((digit) =>
+      fireEvent.press(screen.getByTestId(`pin-${digit}`)),
+    )
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-pin-submit"))
+
+    await waitFor(() => expect(mockRunCardOperation).toHaveBeenCalledTimes(1))
+  })
+
+  it("lists a tidy still owed with Finish, and one kept for a human without", async () => {
+    await Keychain.setInternetCredentials(
+      TIDY_SERVER,
+      "topups",
+      JSON.stringify({
+        format: 3,
+        records: [saved("a", "signed"), saved("b", "needs-card")],
+      }),
+    )
+    // An owed tidy holds back any new offer.
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId("flashcard-v2-unfinished-tidy")).toHaveLength(2),
+    )
+    expect(screen.getByText(LL.FlashcardV2.tidyInProgress())).toBeTruthy()
+    expect(screen.getByText(LL.FlashcardV2.tidyNeedsCard())).toBeTruthy()
+    expect(screen.getAllByTestId("flashcard-v2-finish-tidy")).toHaveLength(1)
+    // The one kept for a human has Dismiss instead.
+    expect(screen.getAllByTestId("flashcard-v2-dismiss-tidy")).toHaveLength(1)
+    expect(screen.queryByTestId("flashcard-v2-tidy-offer")).toBeNull()
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-finish-tidy"))
+    await waitFor(() => expect(mockRunCardOperation).toHaveBeenCalledTimes(1))
+  })
+
+  it("still offers a tidy beside one kept for a human, and Dismiss takes that one off the screen", async () => {
+    await Keychain.setInternetCredentials(
+      TIDY_SERVER,
+      "topups",
+      JSON.stringify({ format: 3, records: [saved("b", "needs-card")] }),
+    )
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId("flashcard-v2-unfinished-tidy")).toHaveLength(1),
+    )
+    expect(screen.getByTestId("flashcard-v2-tidy-offer")).toBeTruthy()
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-dismiss-tidy"))
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("flashcard-v2-unfinished-tidy")).toBeNull(),
+    )
+    expect(screen.getByTestId("flashcard-v2-tidy-offer")).toBeTruthy()
+    const archive = await Keychain.getInternetCredentials("flashcard-v2-tidy-archive")
+    expect(JSON.parse(archive.password).records).toEqual([
+      expect.objectContaining({ id: "b", state: "needs-card" }),
+    ])
+  })
+
+  const outcomes: [string, unknown, () => string][] = [
+    [
+      "a skip for its openings",
+      { status: "skipped", reason: "openings" },
+      () => LL.FlashcardV2.tidyNothing(),
+    ],
+    [
+      "a skip at its shape",
+      { status: "skipped", reason: "at-target" },
+      () => LL.FlashcardV2.tidyNothing(),
+    ],
+    [
+      "a skip short of slots",
+      { status: "skipped", reason: "slots" },
+      () => LL.FlashcardV2.tidySlotsShort(),
+    ],
+    [
+      "a saved tidy dropped unsigned",
+      { status: "abandoned", record: {} },
+      () => LL.FlashcardV2.tidyNothing(),
+    ],
+  ]
+  outcomes.forEach(([what, result, text]) => {
+    it(`says what ${what} means, never to try again`, async () => {
+      mockRunCardOperation.mockResolvedValue(result)
+      mockCashuCard = card({ tidyOffer: offer() })
+      renderScreen()
+      await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+      fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+      await waitFor(() =>
+        expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+          text(),
+        ),
+      )
+      expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
+    })
+  })
+
+  /** The card refuses the tap for its PIN once, then the tap runs the tidy. */
+  const pinNeededOnce = () => {
+    mockRunTidy.mockResolvedValue({ status: "tidied", record: {} })
+    mockRunCardOperation
+      .mockRejectedValueOnce(new CardSpendError("pin-needed", 0x6a94, "SPEND_ALL_SIGN"))
+      .mockImplementationOnce(async (op: (t: unknown) => unknown) => op(jest.fn()))
+  }
+  const enterPin = (digits: string) =>
+    Array.from(digits).forEach((digit) =>
+      fireEvent.press(screen.getByTestId(`pin-${digit}`)),
+    )
+  /** The PIN the second tap's tidy verifies on the card, as the card was asked. */
+  const expectSecondTapVerifies = async (pin: string) => {
+    await waitFor(() => expect(mockRunTidy).toHaveBeenCalledTimes(1))
+    const [, args] = mockRunTidy.mock.calls[0]
+    await args.verifyPin("transceive")
+    expect(mockVerifyCardPin).toHaveBeenCalledWith("transceive", pin, expect.anything())
+    return args
+  }
+
+  it("asks for the PIN when the card refuses the tidy for it, and taps again with that PIN", async () => {
+    pinNeededOnce()
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy-pin")).toBeTruthy())
+    expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
+    enterPin("1234")
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-pin-submit"))
+
+    await waitFor(() => expect(mockRunCardOperation).toHaveBeenCalledTimes(2))
+    await expectSecondTapVerifies("1234")
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.tidyDone(),
+      ),
+    )
+  })
+
+  it("asks for the PIN when the card refuses Finish on a tidy still owed, and finishes it with that PIN", async () => {
+    await Keychain.setInternetCredentials(
+      TIDY_SERVER,
+      "topups",
+      JSON.stringify({ format: 3, records: [saved("a", "signed")] }),
+    )
+    pinNeededOnce()
+    mockCashuCard = card()
+    renderScreen()
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-finish-tidy")).toBeTruthy(),
+    )
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-finish-tidy"))
+
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy-pin")).toBeTruthy())
+    enterPin("1234")
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-pin-submit"))
+
+    await waitFor(() => expect(mockRunCardOperation).toHaveBeenCalledTimes(2))
+    const args = await expectSecondTapVerifies("1234")
+    // Still Finish after the PIN: no keyset a new tidy could plan in.
+    expect(args.keysetId).toBeUndefined()
+  })
+
+  it("says how many tries are left when the card refuses the PIN", async () => {
+    mockRunCardOperation.mockRejectedValue(new CardError(0x63c2, "VERIFY_PIN"))
+    mockCashuCard = card({ tidyOffer: offer({ needsPin: true }) })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+    enterPin("1234")
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy-pin-submit"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.wrongPin({ tries: 2 }),
+      ),
+    )
+    expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
+  })
+
+  it("says a tidy no retry can finish is for support, never to try again", async () => {
+    mockRunCardOperation.mockRejectedValue(
+      new TidyError("needs-card", "the mint refused this tidy's swap"),
+    )
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.tidyNeedsCard(),
+      ),
+    )
+    expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
+  })
+
+  it("says to try again only when the tap failed", async () => {
+    mockRunCardOperation.mockRejectedValue(new Error("Tag was lost"))
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.tidyFailed(),
+      ),
+    )
   })
 })
