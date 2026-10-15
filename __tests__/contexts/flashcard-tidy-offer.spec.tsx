@@ -84,12 +84,7 @@ const tap = async (options: ProviderOptions = {}) => {
     await latest?.readFlashcard(false)
   })
   await waitFor(() => expect(cancelTechnologyRequest).toHaveBeenCalled())
-  // A signed-out read skips the keyset split (ENG-708): no units to wait for.
-  if (options.isAuthed === false) {
-    await waitFor(() => expect(latest?.cashuCard).toBeDefined())
-  } else {
-    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
-  }
+  await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
 }
 
 /** This phone holds the owner's key for the card: the read's ALLOW_LOAD takes it. */
@@ -154,7 +149,9 @@ describe("FlashcardProvider tidy offer (ENG-702)", () => {
     await ownItHere()
     await tap({ isAuthed: false })
     await act(async () => undefined)
-    expect(latest?.cashuCard?.unspentSlots).toBeUndefined()
+    // The read took the pieces to name the unit (ENG-708): the offer is
+    // withheld for being signed out, not for want of pieces.
+    expect(latest?.cashuCard?.unspentSlots).toBeDefined()
     expect(latest?.cashuCard?.tidyOffer).toBeUndefined()
     expect(mockFeePpk).not.toHaveBeenCalled()
   })

@@ -1245,6 +1245,27 @@ export type CardSlotRead = {
  * out. Reads only; nothing is spent or cleared.
  */
 export async function readCardSlots(transceive: Transceiver): Promise<CardSlotRead> {
+  const { spentNumbers, ...pieces } = await readPiecePages(transceive)
+  const spentSlots: CardProofSlot[] = []
+  for (const slot of spentNumbers) {
+    const proof = await getProof(transceive, slot)
+    // Read twice, by two commands: a slot the page called spent and the proof
+    // another way is counted as neither.
+    if (proof.status === "spent") spentSlots.push(proof)
+  }
+  return { ...pieces, spentSlots }
+}
+
+/** `readCardSlots` without the spent slots: what the GET_PIECES pages alone say. */
+export type CardPieceRead = Omit<CardSlotRead, "spentSlots">
+
+/**
+ * GET_PIECES from slot 0 until the page that ends at 128: the unspent pieces
+ * whole, and the numbers of the spent slots, whose data it leaves out.
+ */
+const readPiecePages = async (
+  transceive: Transceiver,
+): Promise<CardPieceRead & { spentNumbers: number[] }> => {
   const unspent: CardProofSlot[] = []
   const spentNumbers: number[] = []
   let first = 0
@@ -1255,18 +1276,11 @@ export async function readCardSlots(transceive: Transceiver): Promise<CardSlotRe
     spentNumbers.push(...page.spent)
     first = page.next
   }
-  const spentSlots: CardProofSlot[] = []
-  for (const slot of spentNumbers) {
-    const proof = await getProof(transceive, slot)
-    // Read twice, by two commands: a slot the page called spent and the proof
-    // another way is counted as neither.
-    if (proof.status === "spent") spentSlots.push(proof)
-  }
   return {
     keysets: totalsByKeyset(unspent),
     pieces: unspent.map((proof) => proof.amount),
     unspent,
-    spentSlots,
+    spentNumbers,
   }
 }
 
@@ -1304,8 +1318,31 @@ export const readKeysetSplit = async (
   if (info.unspent === 0 && info.spent === 0) {
     return { keysets: [], pieces: [], unspent: [], spentSlots: [] }
   }
+  return slotsBestEffort(() => readCardSlots(transceive))
+}
+
+/**
+ * `readKeysetSplit` without the spent slots (ENG-708): the GET_PIECES pages
+ * only, no GET_PROOF. The split names the units; the spent slots feed only a
+ * top-up's reclaim, which a read that cannot top up has no use for. Best
+ * effort the same way.
+ */
+const readPieceSplit = async (
+  transceive: Transceiver,
+  info: Pick<CardInfo, "unspent" | "spent">,
+): Promise<CardPieceRead | undefined> => {
+  if (info.unspent === 0 && info.spent === 0) {
+    return { keysets: [], pieces: [], unspent: [] }
+  }
+  return slotsBestEffort(async () => {
+    const { spentNumbers: _spent, ...pieces } = await readPiecePages(transceive)
+    return pieces
+  })
+}
+
+const slotsBestEffort = async <T>(read: () => Promise<T>): Promise<T | undefined> => {
   try {
-    return await readCardSlots(transceive)
+    return await read()
   } catch (error) {
     console.warn(`Cashu card keyset split skipped: ${failureLabel(error)}`)
     return undefined
@@ -1489,7 +1526,8 @@ export interface CashuCardInfo extends CardInfo {
  * and GET_INFO, again when `afterAuth` changed the card; GET_INFO again under
  * the owner's grant], then the slots (GET_PIECES pages, GET_PROOF per spent
  * slot) when the card holds anything and `needsPieces` says something needs
- * them (ENG-708). Nothing but `afterAuth` writes.
+ * them, the GET_PROOFs only when `needsSpentSlots` does too (ENG-708).
+ * Nothing but `afterAuth` writes.
  *
  * GET_BALANCE is the one read that precedes AUTH (ENG-707): it needs nothing
  * on the card, is read-only, and is not part of what AUTH signs, so the same
@@ -1506,7 +1544,8 @@ export interface CashuCardInfo extends CardInfo {
  * GET_PUBKEY, GET_BALANCE or GET_CARD fails. The slot read after them runs
  * only when `needsPieces` allows it, and is best effort when it runs
  * (`readKeysetSplit`): a skipped read and a failed one both leave `keysets`,
- * `pieces`, `spentSlots` and `unspentSlots` undefined.
+ * `pieces`, `spentSlots` and `unspentSlots` undefined. A read that skipped
+ * only the GET_PROOFs (`needsSpentSlots`) leaves `spentSlots` undefined.
  */
 export type ReadOptions = {
   /**
@@ -1518,17 +1557,24 @@ export type ReadOptions = {
    */
   afterAuth?: (tap: AuthenticatedTap) => Promise<ReadChanges | undefined>
   /**
-   * Whether this read needs the card's slots (ENG-708): its keyset split, its
-   * pieces and its spent slots, which cost a GET_PIECES per page plus a
-   * GET_PROOF per spent slot. Evaluated once, after `afterAuth` resolves and
-   * after GET_BALANCE, so it can read what `afterAuth` learned. Omitted, or
-   * `true`, reads the slots as before. `false` sends no GET_PIECES and no
-   * GET_PROOF, and leaves `keysets`, `pieces`, `spentSlots` and
-   * `unspentSlots` undefined, as a slot read that failed does. An empty card's
-   * split costs no APDU, so it is returned either way and the predicate is
-   * not asked.
+   * Whether this read needs the card's pieces (ENG-708): its keyset split,
+   * which names the balance's unit, and its pieces, at a GET_PIECES per page.
+   * Asked about the card the read found (`read`: its pubkey and its balance),
+   * once, after `afterAuth` resolves and after GET_BALANCE, so it can read
+   * what `afterAuth` learned. Omitted, or `true`, reads the slots as before.
+   * `false` sends no GET_PIECES and no GET_PROOF, and leaves `keysets`,
+   * `pieces`, `spentSlots` and `unspentSlots` undefined, as a slot read that
+   * failed does. An empty card's split costs no APDU, so it is returned
+   * either way and neither predicate is asked.
    */
-  needsPieces?: () => boolean
+  needsPieces?: (read: SlotReadQuery) => boolean
+  /**
+   * Whether this read also needs the card's spent slots, at a GET_PROOF per
+   * spent slot (ENG-708): only a top-up's reclaim uses them. Asked once, and
+   * only when the pieces are read. Omitted, or `true`, reads them as before;
+   * `false` reads the pieces alone and leaves `spentSlots` undefined.
+   */
+  needsSpentSlots?: (read: SlotReadQuery) => boolean
   /**
    * Runs in the tap once GET_BALANCE is in, before AUTH: nothing it receives
    * is proven (the card has not yet shown it holds the key it reported), so a
@@ -1537,6 +1583,9 @@ export type ReadOptions = {
    */
   onUnverified?: (preview: ReadPreview) => void
 }
+
+/** The card a read found, as `ReadOptions.needsPieces` is asked about it. */
+export type SlotReadQuery = Pick<CashuCardInfo, "pubkey" | "balance">
 
 /** What `ReadOptions.afterAuth` changed on the card. */
 export type ReadChanges = {
@@ -1572,7 +1621,7 @@ export type AuthenticatedTap = {
 
 export const readCashuCard = async (
   transceive: Transceiver,
-  { afterAuth, needsPieces, onUnverified }: ReadOptions = {},
+  { afterAuth, needsPieces, needsSpentSlots, onUnverified }: ReadOptions = {},
 ): Promise<CashuCardInfo | null> => {
   try {
     await selectApplet(transceive)
@@ -1614,11 +1663,17 @@ export const readCashuCard = async (
       : recordRead
   // The slots only when something needs them (ENG-708): an empty card's
   // split is free (`readKeysetSplit` sends nothing for it), so it is kept.
+  // The pieces and the spent slots are asked about apart: the split names
+  // the balance's unit, the spent slots serve a top-up alone.
   const empty = info.unspent === 0 && info.spent === 0
-  const slots =
-    empty || (needsPieces?.() ?? true)
-      ? await readKeysetSplit(transceive, info)
-      : undefined
+  const query: SlotReadQuery = { pubkey, balance }
+  let slots: (CardPieceRead & { spentSlots?: CardProofSlot[] }) | undefined
+  if (empty || (needsPieces?.(query) ?? true)) {
+    slots =
+      empty || (needsSpentSlots?.(query) ?? true)
+        ? await readKeysetSplit(transceive, info)
+        : await readPieceSplit(transceive, info)
+  }
   return {
     ...info,
     pubkey,

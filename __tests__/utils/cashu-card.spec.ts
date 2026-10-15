@@ -1948,7 +1948,10 @@ describe("readCashuCard", () => {
   it("keeps an empty card's split, which costs no APDU, whatever needsPieces says, and does not ask it", async () => {
     const card = createFakeCard()
     const needsPieces = jest.fn(() => false)
-    await expect(readCashuCard(card.transceive, { needsPieces })).resolves.toMatchObject({
+    const needsSpentSlots = jest.fn(() => false)
+    await expect(
+      readCashuCard(card.transceive, { needsPieces, needsSpentSlots }),
+    ).resolves.toMatchObject({
       balance: 0,
       keysets: [],
       pieces: [],
@@ -1956,7 +1959,45 @@ describe("readCashuCard", () => {
       unspentSlots: [],
     })
     expect(needsPieces).not.toHaveBeenCalled()
+    expect(needsSpentSlots).not.toHaveBeenCalled()
     expect(card.ins()).not.toContain(INS.GET_PIECES)
+  })
+
+  it("asks needsPieces and needsSpentSlots about the card the read found: its pubkey and its balance", async () => {
+    const card = loadedCard()
+    const needsPieces = jest.fn(() => true)
+    const needsSpentSlots = jest.fn(() => true)
+    await readCashuCard(card.transceive, { needsPieces, needsSpentSlots })
+    expect(needsPieces).toHaveBeenCalledWith({ pubkey: card.pubkey, balance: 500 })
+    expect(needsSpentSlots).toHaveBeenCalledTimes(1)
+    expect(needsSpentSlots).toHaveBeenCalledWith({ pubkey: card.pubkey, balance: 500 })
+  })
+
+  it("with needsSpentSlots false, reads the split and the pieces but sends no GET_PROOF, and leaves spentSlots undefined", async () => {
+    const card = loadedCard()
+    const info = await readCashuCard(card.transceive, {
+      needsPieces: () => true,
+      needsSpentSlots: () => false,
+    })
+    expect(info).toMatchObject({
+      balance: 500,
+      keysets: [{ keysetId: KEYSET_HEX, amount: 500 }],
+      pieces: [500],
+    })
+    expect(info?.unspentSlots?.map((slot) => slot.amount)).toEqual([500])
+    expect(info?.spentSlots).toBeUndefined()
+    expect(card.ins()).toContain(INS.GET_PIECES)
+    expect(card.ins()).not.toContain(INS.GET_PROOF)
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it("does not ask needsSpentSlots when needsPieces said no", async () => {
+    const card = loadedCard()
+    const needsSpentSlots = jest.fn(() => true)
+    await readCashuCard(card.transceive, { needsPieces: () => false, needsSpentSlots })
+    expect(needsSpentSlots).not.toHaveBeenCalled()
+    expect(card.ins()).not.toContain(INS.GET_PIECES)
+    expect(card.ins()).not.toContain(INS.GET_PROOF)
   })
 
   it("reads no slots on an empty card", async () => {
@@ -2034,6 +2075,22 @@ describe("readCashuCard", () => {
     expect(info?.keysets).toBeUndefined()
     expect(info?.spentSlots).toBeUndefined()
     expect(info?.pieces).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: Error")
+  })
+
+  it("a pieces-only read (needsSpentSlots false) that loses the card midway still reads: balance and key, no split", async () => {
+    const card = loadedCard()
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      if (apdu[1] === INS.GET_PIECES) throw new Error("Tag was lost")
+      return answer(apdu)
+    })
+    const info = await readCashuCard(card.transceive, { needsSpentSlots: () => false })
+    expect(info).toMatchObject({ balance: 500, pubkey: card.pubkey })
+    expect(info?.keysets).toBeUndefined()
+    expect(info?.pieces).toBeUndefined()
+    expect(info?.unspentSlots).toBeUndefined()
+    expect(info?.spentSlots).toBeUndefined()
     expect(warn).toHaveBeenCalledWith("Cashu card keyset split skipped: Error")
   })
 

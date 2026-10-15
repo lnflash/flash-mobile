@@ -1,23 +1,29 @@
 /* eslint-disable no-bitwise -- the fake card's slots are written byte by byte. */
 /**
- * ENG-708: a read tap asks the card for its slots (GET_PIECES pages, a
- * GET_PROOF per spent slot) only when something can use them: a top-up (the
- * owner's, or a PIN top-up from another phone) or the owner's tidy offer,
- * both of which need the phone signed in and online. A signed-out or offline
- * read shows the balance without them, labelled with the unit this phone
- * recorded for the same balance (display only). An online, signed-in read
- * still reads them, after the balance is already on screen (ENG-707).
+ * ENG-708: a read tap asks the card for its slots only when something can use
+ * them. A top-up (the owner's, or a PIN top-up from another phone) and the
+ * owner's tidy offer need the pieces (GET_PIECES pages) and the spent slots
+ * (a GET_PROOF each), and the phone signed in and online; such a read still
+ * takes both, after the balance is already on screen (ENG-707). Any other
+ * read (signed out, or offline) needs the pieces only to name the balance's
+ * unit: it skips them when this phone's record names the unit for the same
+ * balance (display only), reads them otherwise so the units the mint named
+ * before still label it, and never sends a GET_PROOF.
  */
 import * as Keychain from "react-native-keychain"
 import { act, waitFor } from "@testing-library/react-native"
 import NfcManager, { NfcTech } from "react-native-nfc-manager"
 
+import { i18nObject } from "@app/i18n/i18n-util"
+import { loadLocale } from "@app/i18n/i18n-util.sync"
 import { store } from "@app/store/redux"
 import {
   cardSeen,
   cardUnitResolved,
+  keysetUnitsLearned,
   resetFlashcardV2,
 } from "@app/store/redux/slices/flashcardV2Slice"
+import { balanceLines } from "@app/utils/cashu-card-format"
 import { saveOwnerKey } from "@app/utils/cashu-card-owner-store"
 
 import { FAKE_OWNER_KEY, FakeCard, createFakeCard } from "../helpers/fake-cashu"
@@ -52,6 +58,9 @@ let mockOffline = false
 jest.mock("@app/hooks/use-connectivity", () => ({
   useConnectivity: () => ({ isOffline: mockOffline, justReconnected: false }),
 }))
+
+loadLocale("en")
+const LL = i18nObject("en")
 
 const INS_GET_PIECES = 0x17
 const INS_GET_PROOF = 0x13
@@ -138,6 +147,10 @@ const tap = async (options: ProviderOptions = {}) => {
 
 const sent = (ins: number) => card.ins().filter((i) => i === ins).length
 
+/** The card screen's balance lines' testIDs for the card in context. */
+const shownAs = () =>
+  latest?.cashuCard ? balanceLines(latest.cashuCard, LL).map(({ testID }) => testID) : []
+
 describe("FlashcardProvider reads the card's pieces only when something needs them (ENG-708)", () => {
   jest.setTimeout(PROVIDER_RENDER_TIMEOUT_MS)
   let warn: jest.SpyInstance
@@ -153,7 +166,8 @@ describe("FlashcardProvider reads the card's pieces only when something needs th
     transceive.mockReset()
     mockFeePpk.mockReset()
     mockFeePpk.mockResolvedValue(0)
-    mockUnitsForKeysets.mockClear()
+    mockUnitsForKeysets.mockReset()
+    mockUnitsForKeysets.mockImplementation(async () => ({ "00aabbccddeeff00": "sat" }))
     ;(NfcManager.isSupported as jest.Mock).mockResolvedValue(true)
     ;(NfcManager.isEnabled as jest.Mock).mockResolvedValue(true)
   })
@@ -163,23 +177,33 @@ describe("FlashcardProvider reads the card's pieces only when something needs th
     jest.clearAllMocks()
   })
 
-  it("a signed-out read of an owned card sends no GET_PIECES and no GET_PROOF, and still shows the balance", async () => {
+  it("a signed-out read with no record sends GET_PIECES for the unit but no GET_PROOF, and the mint names the unit", async () => {
     holding(AFTER_A_TILL)
     await ownItHere()
     await tap({ isAuthed: false })
 
-    expect(sent(INS_GET_PIECES)).toBe(0)
+    expect(sent(INS_GET_PIECES)).toBeGreaterThan(0)
     expect(sent(INS_GET_PROOF)).toBe(0)
     expect(latest?.cashuCard).toMatchObject({ balance: BALANCE, pubkey: card.pubkey })
-    expect(latest?.cashuCard?.keysets).toBeUndefined()
-    expect(latest?.cashuCard?.pieces).toBeUndefined()
+    // The spent slots serve a top-up alone: not read signed out.
     expect(latest?.cashuCard?.spentSlots).toBeUndefined()
-    expect(mockUnitsForKeysets).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(latest?.cashuCard?.unitTotals).toEqual({
+        byUnit: [{ unit: "sat", amount: BALANCE }],
+        unknown: 0,
+      }),
+    )
+    expect(shownAs()).toEqual(["flashcard-v2-balance-sat"])
+    // Signed out, nothing is offered or kept.
+    await act(async () => undefined)
+    expect(latest?.cashuCard?.tidyOffer).toBeUndefined()
+    expect(mockFeePpk).not.toHaveBeenCalled()
   })
 
-  it("the owner's read while offline sends no GET_PIECES, and offers no tidy", async () => {
+  it("the owner's read while offline, of the balance this phone recorded, sends no GET_PIECES, and offers no tidy", async () => {
     holding(AFTER_A_TILL)
     await ownItHere()
+    recorded(BALANCE, "sat")
     mockOffline = true
     await tap()
 
@@ -256,6 +280,22 @@ describe("FlashcardProvider reads the card's pieces only when something needs th
     )
   })
 
+  it("the owner's read while offline, with no record, sends GET_PIECES but no GET_PROOF, and offers no tidy", async () => {
+    holding(AFTER_A_TILL)
+    await ownItHere()
+    mockOffline = true
+    await tap()
+
+    expect(sent(INS_GET_PIECES)).toBeGreaterThan(0)
+    expect(sent(INS_GET_PROOF)).toBe(0)
+    expect(latest?.cashuCard?.unspentSlots).toBeDefined()
+    expect(latest?.cashuCard?.spentSlots).toBeUndefined()
+    // Offline, the tidy is not offered even with the pieces in hand.
+    await act(async () => undefined)
+    expect(latest?.cashuCard?.tidyOffer).toBeUndefined()
+    expect(mockFeePpk).not.toHaveBeenCalled()
+  })
+
   describe("the unit this phone recorded, for display only", () => {
     it("labels an offline read with it when the card still says the recorded balance", async () => {
       holding(AFTER_A_TILL)
@@ -272,23 +312,57 @@ describe("FlashcardProvider reads the card's pieces only when something needs th
       expect(store.getState().flashcardV2.cards[card.pubkey].unit).toBe("sat")
     })
 
-    it("labels a signed-out read with it too", async () => {
+    it("labels a signed-out read with it too, and skips the slots", async () => {
       holding(AFTER_A_TILL)
       recorded(BALANCE, "usd")
       await tap({ isAuthed: false })
 
+      expect(sent(INS_GET_PIECES)).toBe(0)
+      expect(sent(INS_GET_PROOF)).toBe(0)
       expect(latest?.cashuCard?.recordUnit).toBe("usd")
+      expect(shownAs()).toEqual(["flashcard-v2-balance-usd"])
     })
 
-    it("leaves the unit unknown when the balance moved since it was recorded", async () => {
+    it("offline, when the balance moved since it was recorded, reads the pieces so the units the mint named before label it, and the record keeps its unit", async () => {
+      holding(AFTER_A_TILL)
+      await ownItHere()
+      // An earlier online tap: the mint named the card's keyset, and the
+      // record has the unit at the balance before a spend at a merchant.
+      store.dispatch(keysetUnitsLearned({ "00aabbccddeeff00": "sat" }))
+      recorded(BALANCE + 3, "sat")
+      mockOffline = true
+      mockUnitsForKeysets.mockRejectedValue(new Error("Network request failed"))
+      await tap()
+
+      expect(sent(INS_GET_PIECES)).toBeGreaterThan(0)
+      expect(sent(INS_GET_PROOF)).toBe(0)
+      expect(latest?.cashuCard?.recordUnit).toBeUndefined()
+      expect(latest?.cashuCard?.unitTotals).toEqual({
+        byUnit: [{ unit: "sat", amount: BALANCE }],
+        unknown: 0,
+      })
+      expect(shownAs()).toEqual(["flashcard-v2-balance-sat"])
+      // The read moved the record to the new balance and kept its unit.
+      await act(async () => undefined)
+      expect(store.getState().flashcardV2.cards[card.pubkey]).toMatchObject({
+        lastBalance: BALANCE,
+        unit: "sat",
+      })
+    })
+
+    it("offline, when the balance moved and the mint never named the keyset, leaves the unit unknown", async () => {
       holding(AFTER_A_TILL)
       await ownItHere()
       recorded(BALANCE + 3, "sat")
       mockOffline = true
+      mockUnitsForKeysets.mockRejectedValue(new Error("Network request failed"))
       await tap()
 
+      expect(sent(INS_GET_PIECES)).toBeGreaterThan(0)
+      await act(async () => undefined)
       expect(latest?.cashuCard?.recordUnit).toBeUndefined()
       expect(latest?.cashuCard?.unitTotals).toBeUndefined()
+      expect(shownAs()).toEqual(["flashcard-v2-balance-unknown"])
     })
 
     it("is not set on a read that has the split", async () => {
