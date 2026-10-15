@@ -18,12 +18,21 @@ import { isPlainObject } from "./schema-validator"
 
 export type DispatchRecord = {
   preparedActionId: string
-  /** The key the dispatch carried; null for a keyless one. */
+  /** The key the action's first dispatch carried; null for a keyless one. */
   idempotencyKey: string | null
   /** hashPaymentDetail of the payment, which a new action for it shares. */
   paymentDetailHash: string
-  /** Epoch milliseconds of the action's first dispatch. */
+  /**
+   * Epoch milliseconds of the action's first dispatch: the earliest the
+   * payment can have reached the server, so the list is read back to it.
+   */
   dispatchedAt: number
+  /**
+   * Epoch milliseconds of the action's latest dispatch, a retry under the
+   * same key included: the latest the payment can have set off, so its
+   * absence from the list proves nothing until this one is old enough.
+   */
+  lastDispatchedAt: number
   /** How to find the payment in the transaction list (reconcile.ts). */
   match: TransactionMatch
 }
@@ -33,8 +42,9 @@ export type AttemptJournal = {
   pending: () => Promise<readonly DispatchRecord[]>
   /**
    * Write a dispatch down. Rejects when it cannot, so nothing is sent
-   * unrecorded. An action's first dispatch is the one kept: it is the
-   * earliest the payment can have reached the server.
+   * unrecorded. An action's first dispatch makes its record; each later one
+   * (a retry under the same key) moves only the record's lastDispatchedAt
+   * forward, so the record spans every moment the payment can have left.
    */
   record: (record: DispatchRecord) => Promise<void>
   /** Cross an action's dispatch off: a status came back. */
@@ -67,7 +77,22 @@ const isRecord = (value: unknown): value is DispatchRecord =>
   (typeof value.idempotencyKey === "string" || value.idempotencyKey === null) &&
   typeof value.paymentDetailHash === "string" &&
   typeof value.dispatchedAt === "number" &&
+  typeof value.lastDispatchedAt === "number" &&
   isMatch(value.match)
+
+/**
+ * A stored record, or undefined for one the journal cannot use. A record
+ * written before lastDispatchedAt existed is read as one with a single
+ * dispatch: dropping it would let its payment go again unreconciled.
+ */
+const parseRecord = (value: unknown): DispatchRecord | undefined => {
+  if (!isPlainObject(value)) return undefined
+  const record =
+    value.lastDispatchedAt === undefined
+      ? { ...value, lastDispatchedAt: value.dispatchedAt }
+      : value
+  return isRecord(record) ? record : undefined
+}
 
 /** The journal in AsyncStorage, one JSON list, written one operation at a time. */
 export const createAttemptJournal = ({
@@ -88,7 +113,11 @@ export const createAttemptJournal = ({
     if (!raw) return []
     try {
       const parsed: unknown = JSON.parse(raw)
-      return Array.isArray(parsed) ? parsed.filter(isRecord) : []
+      if (!Array.isArray(parsed)) return []
+      return parsed.flatMap((value) => {
+        const record = parseRecord(value)
+        return record ? [record] : []
+      })
     } catch (err) {
       console.warn("[assistant] unreadable dispatch journal", err)
       return []
@@ -102,14 +131,21 @@ export const createAttemptJournal = ({
     record: (record) =>
       serially(async () => {
         const records = await read()
-        if (
-          records.some(
-            ({ preparedActionId }) => preparedActionId === record.preparedActionId,
-          )
-        ) {
+        const held = records.find(
+          ({ preparedActionId }) => preparedActionId === record.preparedActionId,
+        )
+        if (!held) {
+          await write([...records, record])
           return
         }
-        await write([...records, record])
+        // A retry: the payment can set off again from now, so the window in
+        // which it may still land starts over. The first dispatch stays, as
+        // the earliest it can have landed.
+        const retried: DispatchRecord = {
+          ...held,
+          lastDispatchedAt: Math.max(held.lastDispatchedAt, record.lastDispatchedAt),
+        }
+        await write(records.map((existing) => (existing === held ? retried : existing)))
       }),
     clear: (preparedActionId) =>
       serially(async () => {

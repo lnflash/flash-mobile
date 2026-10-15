@@ -25,10 +25,29 @@ export type CashBalance =
       replyKey: "Assistant.balanceUnavailable"
     }
 
+/**
+ * A BTC wallet with no figure to give, and the reply that says why: it is
+ * still syncing, it is switched off (advance mode), or it failed to start.
+ */
+export type BtcUnavailable =
+  | { state: "syncing"; replyKey: "Assistant.btcSyncing" }
+  | { state: "disabled"; replyKey: "Assistant.btcDisabled" }
+  | { state: "failed"; replyKey: "Assistant.btcFailed" }
+
+export const btcUnavailable = (state: BtcUnavailable["state"]): BtcUnavailable => {
+  switch (state) {
+    case "syncing":
+      return { state, replyKey: "Assistant.btcSyncing" }
+    case "disabled":
+      return { state, replyKey: "Assistant.btcDisabled" }
+    case "failed":
+      return { state, replyKey: "Assistant.btcFailed" }
+  }
+}
+
 export type BtcBalanceEntry =
   | { wallet: "BTC"; state: "ok"; balance: BtcMoneyAmount }
-  | { wallet: "BTC"; state: "syncing"; replyKey: "Assistant.btcSyncing" }
-  | { wallet: "BTC"; state: "disabled"; replyKey: "Assistant.btcDisabled" }
+  | ({ wallet: "BTC" } & BtcUnavailable)
 
 export type BalancesPayload = { balances: (CashBalance | BtcBalanceEntry)[] }
 
@@ -79,10 +98,7 @@ export type TxWindow = {
   replyKey: "Assistant.searchedWindow"
 }
 
-export type BtcRailState =
-  | { state: "ok" }
-  | { state: "syncing"; replyKey: "Assistant.btcSyncing" }
-  | { state: "disabled"; replyKey: "Assistant.btcDisabled" }
+export type BtcRailState = { state: "ok" } | BtcUnavailable
 
 export type TransactionsPayload = {
   transactions: TxRow[]

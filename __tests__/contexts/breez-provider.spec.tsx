@@ -11,6 +11,7 @@ const mockInitializeBreezSDK = jest.fn()
 const mockGetInfo = jest.fn()
 const mockGetLightningAddress = jest.fn()
 const mockRegisterLightningAddress = jest.fn()
+const mockClearBreezSDKInitFailure = jest.fn()
 
 // Only what BreezProvider imports. The Liquid-to-Spark migration is gone, so
 // a provider that still reached for it would find nothing here and fail.
@@ -19,6 +20,7 @@ jest.mock("@app/utils/breez-sdk", () => ({
   getInfo: () => mockGetInfo(),
   getLightningAddress: () => mockGetLightningAddress(),
   registerLightningAddress: (...args: unknown[]) => mockRegisterLightningAddress(...args),
+  clearBreezSDKInitFailure: () => mockClearBreezSDKInitFailure(),
 }))
 
 const mockUpdateState = jest.fn()
@@ -107,6 +109,35 @@ describe("BreezProvider", () => {
     expect(mockInitializeBreezSDK).not.toHaveBeenCalled()
     expect(mockGetInfo).not.toHaveBeenCalled()
     expect(mockUpdateState).not.toHaveBeenCalled()
+  })
+
+  it("has the wallet read as off, not failed, once advanced mode is off", async () => {
+    // ENG-687: a start that failed while advanced mode was on would otherwise
+    // keep the BTC rail answering `failed` ("couldn't start") after the user
+    // switched the wallet off, where `disabled` points to the setting.
+    mockPersistentState = { isAdvanceMode: false }
+
+    render(
+      <BreezProvider>
+        <Probe />
+      </BreezProvider>,
+    )
+
+    expect(await screen.findByText("ready:0:")).toBeTruthy()
+    expect(mockClearBreezSDKInitFailure).toHaveBeenCalledTimes(1)
+  })
+
+  it("leaves a failed start on record while advanced mode is on", async () => {
+    mockPersistentState = { isAdvanceMode: true, breezBalance: 0 }
+
+    render(
+      <BreezProvider>
+        <Probe />
+      </BreezProvider>,
+    )
+
+    expect(await screen.findByText("ready:2100:btc-wallet-1")).toBeTruthy()
+    expect(mockClearBreezSDKInitFailure).not.toHaveBeenCalled()
   })
 
   it("reads its balance through the BTC rail, so it and getBalanceSats report the same sats", async () => {

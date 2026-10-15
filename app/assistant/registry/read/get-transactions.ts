@@ -5,6 +5,7 @@ import type { GraphqlRail, TransactionRow } from "../../rails/graphql-rail"
 import { defineRead } from "../define"
 import {
   BtcRailState,
+  btcUnavailable,
   projectTransactions,
   TransactionsPayload,
   TxRail,
@@ -45,6 +46,18 @@ const BTC_STATUS: Record<BtcPayment["status"], TxRow["status"]> = {
   0: "SUCCESS", // Completed
   1: "PENDING", // Pending
   2: "FAILURE", // Failed
+}
+// PaymentMethod: whether a payment of each method states its amount and fee
+// in sats. A Spark token payment states them in the token's base units (5
+// USDT is 5,000,000), and this tool reports every BTC row as sats, so it
+// leaves token payments out.
+const BTC_METHOD_IN_SATS: Record<BtcPayment["method"], boolean> = {
+  0: true, // Lightning
+  1: true, // Spark
+  2: false, // Token
+  3: true, // Deposit
+  4: true, // Withdraw
+  5: true, // Unknown: listed under the Bitcoin asset filter, so not a token
 }
 
 /** A string field of an SDK object, read without the SDK's types. */
@@ -126,6 +139,9 @@ const rowMatcher = ({ direction, query }: Args) => {
 const oldest = (rows: readonly TxRow[]): number =>
   rows.reduce((min, row) => Math.min(min, row.timestamp), Infinity)
 
+const oldestPayment = (payments: readonly BtcPayment[]): number =>
+  payments.reduce((min, payment) => Math.min(min, Number(payment.timestamp)), Infinity)
+
 /** The GraphQL pages a search reads: up to TX_MAX_PAGES, stopping on enough matches. */
 const readGraphql = async (
   graphql: GraphqlRail,
@@ -143,29 +159,35 @@ const readGraphql = async (
   return { rows, exhausted: false }
 }
 
-/** The BTC wallet's payments since `fromTimestamp`, or the reason there are none. */
+/**
+ * The BTC wallet's payments since `fromTimestamp`, or the reason there are
+ * none. `listedFrom` is set when the list came back full: older payments may
+ * exist that it did not return, so it covers time only back to its oldest.
+ */
 const readBtc = async (
   btcRail: BtcReadRail,
   fromTimestamp: number | undefined,
-): Promise<{ rows: TxRow[]; truncated: boolean; state: BtcRailState }> => {
+): Promise<{ rows: TxRow[]; listedFrom: number | undefined; state: BtcRailState }> => {
   try {
-    const payments = await btcRail.listPayments(0, BTC_PAYMENTS_LIMIT, fromTimestamp)
+    // Bitcoin payments only: the wallet can hold Spark tokens too (USDT,
+    // ENG-473), and a token payment's amount is not sats.
+    const payments = await btcRail.listPayments(0, BTC_PAYMENTS_LIMIT, {
+      fromTimestamp,
+      assets: "bitcoin",
+    })
     return {
-      rows: payments.map(btcTxRow),
-      truncated: payments.length >= BTC_PAYMENTS_LIMIT,
+      // A token payment that reaches here anyway is left out, never read as sats.
+      rows: payments
+        .filter((payment) => BTC_METHOD_IN_SATS[payment.method] === true)
+        .map(btcTxRow),
+      listedFrom:
+        payments.length >= BTC_PAYMENTS_LIMIT ? oldestPayment(payments) : undefined,
       state: { state: "ok" },
     }
   } catch (err) {
     const state = btcRailUnavailableState(err)
     if (!state) throw err
-    return {
-      rows: [],
-      truncated: false,
-      state:
-        state === "disabled"
-          ? { state, replyKey: "Assistant.btcDisabled" }
-          : { state, replyKey: "Assistant.btcSyncing" },
-    }
+    return { rows: [], listedFrom: undefined, state: btcUnavailable(state) }
   }
 }
 
@@ -183,11 +205,10 @@ const run = async (
   const graphqlFrom =
     graphql.exhausted || graphql.rows.length === 0 ? undefined : oldest(graphql.rows)
   const btc = await readBtc(ctx.btcRail, graphqlFrom)
+
   // A full BTC list may have left older payments out: then the window
   // starts at the oldest one it listed.
-  const btcFrom = btc.truncated ? oldest(btc.rows) : undefined
-
-  const bounds = [graphqlFrom, btcFrom].filter(
+  const bounds = [graphqlFrom, btc.listedFrom].filter(
     (bound): bound is number => bound !== undefined,
   )
   const windowFrom = bounds.length > 0 ? Math.max(...bounds) : undefined

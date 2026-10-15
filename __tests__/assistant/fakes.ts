@@ -136,15 +136,19 @@ export const btcPayment = ({
   fees = 3,
   description,
   lnAddress,
+  method = 0,
 }: {
   id: string
   timestamp: number
   paymentType?: 0 | 1
   status?: 0 | 1 | 2
+  /** The amount: sats, or a token's base units for a token payment. */
   sats?: number
   fees?: number
   description?: string
   lnAddress?: string
+  /** PaymentMethod: 0 Lightning, 1 Spark, 2 Token, 3 Deposit, 4 Withdraw, 5 Unknown. */
+  method?: 0 | 1 | 2 | 3 | 4 | 5
 }): BtcPayment =>
   ({
     id,
@@ -153,9 +157,17 @@ export const btcPayment = ({
     amount: BigInt(sats),
     fees: BigInt(fees),
     timestamp: BigInt(timestamp),
-    method: 0,
+    method,
     details:
-      description === undefined && lnAddress === undefined
+      method === 2
+        ? {
+            tag: "Token",
+            inner: {
+              metadata: { identifier: "usdt-token", ticker: "USDT", decimals: 6 },
+              txHash: `tx-${id}`,
+            },
+          }
+        : description === undefined && lnAddress === undefined
         ? undefined
         : {
             tag: "Lightning",

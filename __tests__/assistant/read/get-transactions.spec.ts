@@ -133,11 +133,10 @@ describe("getTransactions", () => {
       ])
       // GraphQL ran out of pages, so its whole history was read and the BTC
       // list is not bounded.
-      expect(setup.btcRail.listPayments).toHaveBeenCalledWith(
-        0,
-        BTC_PAYMENTS_LIMIT,
-        undefined,
-      )
+      expect(setup.btcRail.listPayments).toHaveBeenCalledWith(0, BTC_PAYMENTS_LIMIT, {
+        fromTimestamp: undefined,
+        assets: "bitcoin",
+      })
       expect(payload.window).toMatchObject({ searchedCount: 5, oldestTimestamp: 60 })
     })
 
@@ -147,11 +146,10 @@ describe("getTransactions", () => {
 
       await answer(setup, { query: "nothing matches this" })
 
-      expect(setup.btcRail.listPayments).toHaveBeenCalledWith(
-        0,
-        BTC_PAYMENTS_LIMIT,
-        10_000 - 99,
-      )
+      expect(setup.btcRail.listPayments).toHaveBeenCalledWith(0, BTC_PAYMENTS_LIMIT, {
+        fromTimestamp: 10_000 - 99,
+        assets: "bitcoin",
+      })
     })
 
     it("starts the window at the oldest BTC payment listed when the BTC list was cut off", async () => {
@@ -196,12 +194,24 @@ describe("getTransactions", () => {
     it("says the BTC wallet is syncing while it starts", async () => {
       const setup = serve([[graphqlTx({ id: "g1", createdAt: 1 })]])
       setup.btcRail.listPayments.mockRejectedValue(
-        new BreezSdkNotInitializedError({ initializing: true }),
+        new BreezSdkNotInitializedError({ reason: "starting" }),
       )
 
       const payload = await answer(setup)
 
       expect(payload.btc).toEqual({ state: "syncing", replyKey: "Assistant.btcSyncing" })
+    })
+
+    it("says the BTC wallet failed to start, not that it is off, when its start gave up", async () => {
+      const setup = serve([[graphqlTx({ id: "g1", createdAt: 1 })]])
+      setup.btcRail.listPayments.mockRejectedValue(
+        new BreezSdkNotInitializedError({ reason: "failed" }),
+      )
+
+      const payload = await answer(setup)
+
+      expect(payload.btc).toEqual({ state: "failed", replyKey: "Assistant.btcFailed" })
+      expect(payload.window.rails).toEqual(["graphql"])
     })
 
     it("lets any other BTC failure reject, for runTool to report", async () => {
@@ -241,6 +251,46 @@ describe("getTransactions", () => {
         status: "SUCCESS",
         timestamp: 1,
       })
+    })
+
+    it("lists Bitcoin payments only, and never reports a Spark token payment as sats", async () => {
+      // A 5 USDT receive on Spark is 5,000,000 token base units. The rail is
+      // asked for Bitcoin payments; one that comes back anyway is left out.
+      const setup = serve([[]])
+      enableBtc(setup, [
+        btcPayment({ id: "usdt-in", timestamp: 3, paymentType: 1, method: 2, sats: 5e6 }),
+        btcPayment({ id: "sats-in", timestamp: 2, paymentType: 1, sats: 2100 }),
+      ])
+
+      const payload = await answer(setup)
+
+      expect(setup.btcRail.listPayments).toHaveBeenCalledWith(0, BTC_PAYMENTS_LIMIT, {
+        fromTimestamp: undefined,
+        assets: "bitcoin",
+      })
+      expect(payload.transactions.map(({ id, amount }) => [id, amount])).toEqual([
+        ["sats-in", toBtcMoneyAmount(2100)],
+      ])
+      expect(JSON.stringify(payload)).not.toMatch(/5000000|usdt-in/)
+    })
+
+    it("still bounds the window by the oldest payment listed when a token payment is left out", async () => {
+      const setup = serve([[graphqlTx({ id: "g10", createdAt: 10 })]])
+      // A full list whose oldest entry is a token payment.
+      enableBtc(setup, [
+        ...Array.from({ length: BTC_PAYMENTS_LIMIT - 1 }, (_, i) =>
+          btcPayment({ id: `b${900 - i}`, timestamp: 900 - i }),
+        ),
+        btcPayment({ id: "usdt", timestamp: 500, method: 2 }),
+      ])
+
+      const payload = await answer(setup, { first: 20 })
+
+      // Older BTC payments may exist that the full list left out, so the
+      // window starts at the oldest one it listed and g10 is not searched.
+      expect(payload.window).toMatchObject({ oldestTimestamp: 500 })
+      expect(payload.transactions.map((row) => row.id)).not.toContain("g10")
+      expect(payload.transactions.map((row) => row.id)).not.toContain("usdt")
     })
 
     it("reads a BTC payment's direction and status from the SDK's enums", async () => {

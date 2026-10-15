@@ -10,7 +10,6 @@ import { InvoiceType } from "@app/screens/receive-bitcoin-screen/payment/index.t
 import { ParseDestinationResult } from "@app/screens/send-bitcoin-screen/payment-destination/index.types"
 import { PaymentType as ParsedPaymentType } from "@galoymoney/client"
 import { getAnalytics } from "@react-native-firebase/analytics"
-import type { AssistantToolEvent } from "@app/assistant/engine/telemetry"
 
 export const logRequestAuthCode = ({
   instance,
@@ -248,11 +247,48 @@ export const logPlaidLinkFailure = ({ errorCode }: { errorCode: string }) => {
 // ============================================
 // Flash assistant (ENG-687, docs/ai-assistant-tool-registry.md §8)
 // ============================================
-// Every parameter below is a closed union, a number or a boolean: none can
-// carry a memo, a payee or an amount, so no payload text reaches Firebase.
+// The assistant's engine reports through these (app/assistant/engine/
+// telemetry.ts). Their parameter types are declared here, not imported from
+// app/assistant/: the assistant depends on the rest of the app, never the
+// other way round (spec §2). Every parameter is a closed union, a number or
+// a boolean, except `intent`, which the engine narrows to its closed intent
+// set; none can carry a memo, a payee or an amount, so no payload text
+// reaches Firebase.
+
+/**
+ * How an assistant tool call or Confirm ended. telemetry.ts says which path
+ * reports which, as AssistantOutcome.
+ */
+export type AssistantEventOutcome =
+  | "answered"
+  | "clarification"
+  | "prepared"
+  | "error"
+  | "rejected"
+  | "confirmed"
+  | "failed"
+  | "unknown"
+  | "denied"
+  | "refreshed"
+  | "expired"
+
+/** The parameters of one `assistant_event`. */
+export type AssistantEventParams = {
+  /**
+   * The intent's name, or "unknown" when the router could not read one. The
+   * engine's AssistantToolEvent narrows it to the closed intent set.
+   */
+  intent: string
+  /** "none" when the router could not read an intent from the call. */
+  tier: "read" | "action" | "none"
+  outcome: AssistantEventOutcome
+  latencyMs: number
+  /** Whether an on-device model served the call. False until Phase 3. */
+  onDeviceModelAvailable: boolean
+}
 
 /** One tool call or one Confirm: its intent, tier, outcome and latency. */
-export const logAssistantEvent = (params: AssistantToolEvent) => {
+export const logAssistantEvent = (params: AssistantEventParams) => {
   getAnalytics().logEvent("assistant_event", {
     intent: params.intent,
     tier: params.tier,

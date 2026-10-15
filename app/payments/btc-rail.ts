@@ -5,7 +5,10 @@ import {
   payLnurlBreez,
   payOnchainBreez,
 } from "@app/utils/breez-sdk"
-import { BreezSdkNotInitializedError } from "@app/utils/breez-sdk/sdk-errors"
+import {
+  BreezSdkNotInitializedError,
+  BreezSdkNotRunningReason,
+} from "@app/utils/breez-sdk/sdk-errors"
 
 // The self-custodial BTC wallet as one seam (ENG-686, Phase 1a of ENG-684).
 //
@@ -23,20 +26,27 @@ type SameAs<F extends (...args: never[]) => unknown> = (
 ) => ReturnType<F>
 
 /**
- * The BTC wallet's balance, in one of three states. `syncing` and `disabled`
- * carry no number on purpose: a screen or a reply that shows one must not be
- * able to show a stale figure or a zero for a wallet it could not read.
+ * The BTC wallet's balance, in one of four states. Only `ok` carries a
+ * number, on purpose: a screen or a reply that shows one must not be able to
+ * show a stale figure or a zero for a wallet it could not read.
  *
  * - `ok`: a synced read, in sats.
  * - `syncing`: the SDK is starting, or its synced read did not answer within
  *   BTC_BALANCE_SYNC_TIMEOUT_MS.
  * - `disabled`: the SDK is not running. Breez starts only in advance mode
  *   (BreezContext.tsx), so with advance mode off this is the normal answer.
+ * - `failed`: the SDK is not running because its start gave up (offline at
+ *   launch, say). Advance mode is on, so this is not `disabled`, whose reply
+ *   sends the user to a setting that is already on.
  */
 export type BtcBalance =
   | { state: "ok"; sats: number }
   | { state: "syncing" }
   | { state: "disabled" }
+  | { state: "failed" }
+
+/** The states of a BTC wallet that has no figure to give. */
+export type BtcUnavailableState = Exclude<BtcBalance["state"], "ok">
 
 /**
  * How long `getBalanceSats` waits on Breez's synced read (`getInfo()` asks the
@@ -49,8 +59,8 @@ export const BTC_BALANCE_SYNC_TIMEOUT_MS = 10_000
 // shipped the three sends, ENG-687 adds the two reads its assistant tools
 // call (getBalanceSats and listPayments), and ENG-688 adds createInvoice,
 // getOnchainAddress and probeFee. Each takes the shape the spec gives it,
-// which is not always a wrapper's own: getBalanceSats answers a three-state
-// BtcBalance where getInfo() throws while the SDK is not running.
+// which is not always a wrapper's own: getBalanceSats answers a BtcBalance
+// state where getInfo() throws while the SDK is not running.
 export type BtcRail = {
   getBalanceSats: () => Promise<BtcBalance>
   listPayments: SameAs<typeof listPaymentsBreezSDK>
@@ -59,17 +69,23 @@ export type BtcRail = {
   payOnchain: SameAs<typeof payOnchainBreez>
 }
 
+const UNAVAILABLE_STATE: Record<BreezSdkNotRunningReason, BtcUnavailableState> = {
+  off: "disabled",
+  starting: "syncing",
+  failed: "failed",
+}
+
 /**
  * Which not-running state an error from the wallet stands for: `disabled`
- * when there is no SDK instance, `syncing` while initializeBreezSDK() is
- * still connecting. Any other error is a real failure and gets `undefined`,
- * so the caller can let it reject.
+ * when the wallet is off, `syncing` while initializeBreezSDK() is still
+ * connecting, `failed` once it has given up. Any other error is a real
+ * failure and gets `undefined`, so the caller can let it reject.
  */
 export const btcRailUnavailableState = (
   err: unknown,
-): "syncing" | "disabled" | undefined => {
+): BtcUnavailableState | undefined => {
   if (!(err instanceof BreezSdkNotInitializedError)) return undefined
-  return err.initializing ? "syncing" : "disabled"
+  return UNAVAILABLE_STATE[err.reason]
 }
 
 type BreezWalletInfo = Awaited<ReturnType<typeof getInfo>>
@@ -80,8 +96,7 @@ type BreezWalletInfo = Awaited<ReturnType<typeof getInfo>>
  */
 export type BreezWalletRead =
   | { state: "ok"; sats: number; info: BreezWalletInfo }
-  | { state: "syncing" }
-  | { state: "disabled" }
+  | { state: BtcUnavailableState }
 
 const SYNC_TIMED_OUT = Symbol("Breez synced read timed out")
 
@@ -129,7 +144,7 @@ export const readBreezWallet = async ({
 
 export const breezBtcRail: BtcRail = {
   // Not a one-line delegate: getInfo() throws while the SDK is not running,
-  // and the rail owes a three-state answer. Any other failure still rejects.
+  // and the rail owes a BtcBalance. Any other failure still rejects.
   getBalanceSats: async () => {
     const read = await readBreezWallet({ syncTimeoutMs: BTC_BALANCE_SYNC_TIMEOUT_MS })
     return read.state === "ok" ? { state: "ok", sats: read.sats } : { state: read.state }

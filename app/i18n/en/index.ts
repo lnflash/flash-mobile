@@ -2323,6 +2323,7 @@ const en: BaseTranslation = {
     limitExceeded: "That payment is over your account limit.",
     btcSyncing: "Your BTC wallet is still syncing. Try again in a moment.",
     btcDisabled: "Your BTC wallet is off. Turn on Advanced Mode in Settings to use it.",
+    btcFailed: "Your BTC wallet couldn't start. Close and reopen the app to try again.",
     balanceUnavailable: "This balance isn't available right now.",
     searchedWindow: "Searched your last {count:number} payments.",
     noContactMatch: "I couldn't find a contact by that name.",

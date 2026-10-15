@@ -10,16 +10,29 @@ import type { DispatchRecord } from "./attempt-journal"
 
 /**
  * - settled: the payment is in the list, sent or still pending.
- * - absent: the list since the dispatch was read in full, the dispatch is
- *   old enough that the server would have recorded it, and it is not there.
+ * - absent: the list since the first dispatch was read in full, the latest
+ *   dispatch (a retry's, if there was one) is old enough that the server
+ *   would have recorded it, and the payment is not there.
  * - unknown: anything else. The caller blocks a new attempt.
  */
 export type ReconcileVerdict = "settled" | "absent" | "unknown"
 
 export type Reconcile = (record: DispatchRecord) => Promise<ReconcileVerdict>
 
-/** How long after a dispatch its absence from the list means it never landed. */
+/**
+ * How long after a record's latest dispatch its absence from the list means
+ * it never landed. A retry under the same key starts the wait over.
+ */
 export const RECONCILE_MIN_AGE_MS = 2 * 60 * 1000
+
+/**
+ * How long after a record's latest dispatch nothing about it can still be on
+ * its way. The list is read back only RECONCILE_MAX_PAGES pages, so a record
+ * older than the newest hundred payments can never be settled by it; past
+ * this age the executor lets the user clear it on their word that their
+ * history does not show the payment (executor.ts, `historyChecked`).
+ */
+export const RECONCILE_STALE_AFTER_MS = 24 * 60 * 60 * 1000
 
 /** Slack for the device clock against the server's createdAt (as invoice-expiry.ts allows). */
 export const RECONCILE_CLOCK_SKEW_SECONDS = 120
@@ -71,6 +84,7 @@ export const createTransactionListReconciler = ({
   minAgeMs?: number
 }): Reconcile => {
   return async (record) => {
+    // Back to the first dispatch: a retry can only have landed after it.
     const since = Math.floor(record.dispatchedAt / 1000) - RECONCILE_CLOCK_SKEW_SECONDS
     let after: string | undefined
     let readSinceDispatch = false
@@ -94,6 +108,8 @@ export const createTransactionListReconciler = ({
       return "unknown"
     }
     if (!readSinceDispatch) return "unknown"
-    return now() - record.dispatchedAt >= minAgeMs ? "absent" : "unknown"
+    // Measured from the latest dispatch: a retry can still land for as long
+    // after it as the first could after the first.
+    return now() - record.lastDispatchedAt >= minAgeMs ? "absent" : "unknown"
   }
 }

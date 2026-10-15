@@ -39,9 +39,13 @@ const WRAPPERS = [
 // rail method → the wrapper it must delegate to, and the arguments a caller
 // would pass it.
 const delegates: [keyof BtcRail, string, unknown[]][] = [
-  // offset, limit, fromTimestamp (Unix seconds): ENG-687's transaction search
-  // bounds the BTC window with the third.
-  ["listPayments", "listPaymentsBreezSDK", [0, 100, 1760000000]],
+  // offset, limit, filter: ENG-687's transaction search bounds the BTC
+  // window with fromTimestamp (Unix seconds) and lists Bitcoin payments only.
+  [
+    "listPayments",
+    "listPaymentsBreezSDK",
+    [0, 100, { fromTimestamp: 1760000000, assets: "bitcoin" }],
+  ],
   ["payInvoice", "payLightningBreez", ["lnbc1invoice", 2100]],
   ["payLnurl", "payLnurlBreez", ["alice@flashapp.me", 2100, "coffee"]],
   ["payOnchain", "payOnchainBreez", ["bc1qdestination", 2100, "slow"]],
@@ -105,10 +109,20 @@ describe("breezBtcRail.getBalanceSats", () => {
 
   it("is syncing while initializeBreezSDK() is still connecting", async () => {
     wrappers.getInfo.mockRejectedValue(
-      new BreezSdkNotInitializedError({ initializing: true }),
+      new BreezSdkNotInitializedError({ reason: "starting" }),
     )
 
     await expect(breezBtcRail.getBalanceSats()).resolves.toEqual({ state: "syncing" })
+  })
+
+  it("is failed, not disabled, once initializeBreezSDK() has given up", async () => {
+    // Advance mode is on and the wallet could not start: `disabled` would
+    // send the user to turn on a setting that is already on.
+    wrappers.getInfo.mockRejectedValue(
+      new BreezSdkNotInitializedError({ reason: "failed" }),
+    )
+
+    await expect(breezBtcRail.getBalanceSats()).resolves.toEqual({ state: "failed" })
   })
 
   it("converts the SDK's bigint balanceSats to a number, as BreezContext does", async () => {
@@ -227,8 +241,14 @@ describe("btcRailUnavailableState", () => {
   it("reads only the not-initialized error as a not-running state", () => {
     expect(btcRailUnavailableState(new BreezSdkNotInitializedError())).toBe("disabled")
     expect(
-      btcRailUnavailableState(new BreezSdkNotInitializedError({ initializing: true })),
+      btcRailUnavailableState(new BreezSdkNotInitializedError({ reason: "off" })),
+    ).toBe("disabled")
+    expect(
+      btcRailUnavailableState(new BreezSdkNotInitializedError({ reason: "starting" })),
     ).toBe("syncing")
+    expect(
+      btcRailUnavailableState(new BreezSdkNotInitializedError({ reason: "failed" })),
+    ).toBe("failed")
     // Same words, wrong type: not proof the wallet is off.
     expect(
       btcRailUnavailableState(

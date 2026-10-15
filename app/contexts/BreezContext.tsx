@@ -4,6 +4,7 @@ import { usePersistentStateContext } from "@app/store/persistent-state"
 import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
 import {
+  clearBreezSDKInitFailure,
   initializeBreezSDK,
   registerLightningAddress,
   getLightningAddress,
@@ -110,6 +111,9 @@ export const BreezProvider = ({ children }: Props) => {
       if (persistentState.isAdvanceMode) {
         getBreezInfo()
       } else {
+        // The BTC wallet is off by the user's choice now: a start that failed
+        // earlier no longer explains it, so it reads as off (ENG-687).
+        clearBreezSDKInitFailure()
         setBtcWallet({
           id: "",
           walletCurrency: "BTC",

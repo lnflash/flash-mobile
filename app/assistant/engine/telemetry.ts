@@ -1,4 +1,6 @@
 import {
+  AssistantEventOutcome,
+  AssistantEventParams,
   logAssistantClarificationAbandoned,
   logAssistantEvent,
   logAssistantThreadOpened,
@@ -10,7 +12,9 @@ import type { Intent, Tier } from "../registry/types"
 // field is a closed union, a number or a boolean, so no memo, payee or amount
 // text can reach analytics through these types. The engine is handed an
 // AssistantTelemetry rather than calling Firebase, so tests read the events
-// directly.
+// directly. The event's parameters are declared in app/utils/analytics.ts,
+// which must not import from app/assistant/ (spec §2); the types here narrow
+// them to the engine's closed sets.
 
 /**
  * How a tool call or a Confirm ended.
@@ -24,28 +28,18 @@ import type { Intent, Tier } from "../registry/types"
  *   prepared events is the expired rate, which past 3% sends the TTLs back
  *   for review (spec §5.1).
  */
-export type AssistantOutcome =
-  | "answered"
-  | "clarification"
-  | "prepared"
-  | "error"
-  | "rejected"
-  | "confirmed"
-  | "failed"
-  | "unknown"
-  | "denied"
-  | "refreshed"
-  | "expired"
+export type AssistantOutcome = AssistantEventOutcome
 
-export type AssistantToolEvent = {
+/**
+ * One `assistant_event` as the engine reports it: the parameters
+ * app/utils/analytics.ts declares, with the intent and tier narrowed to the
+ * engine's own closed sets.
+ */
+export type AssistantToolEvent = Omit<AssistantEventParams, "intent" | "tier"> & {
   /** "unknown" when the router could not read an intent from the call. */
   intent: Intent | "unknown"
   /** "none" when the router could not read an intent from the call. */
   tier: Tier | "none"
-  outcome: AssistantOutcome
-  latencyMs: number
-  /** Whether an on-device model served the call. False until Phase 3. */
-  onDeviceModelAvailable: boolean
 }
 
 export type AssistantTelemetry = {

@@ -1,11 +1,13 @@
 /**
- * ENG-687: the two spark.ts changes the BTC rail's reads stand on.
+ * ENG-687: the spark.ts changes the BTC rail's reads stand on.
  *
- * - getSDKInstance() throws BreezSdkNotInitializedError, flagged while
- *   initializeBreezSDK() is connecting, so the rail can answer `disabled` or
- *   `syncing` instead of failing (or showing zero).
+ * - getSDKInstance() throws BreezSdkNotInitializedError with its reason:
+ *   `starting` while initializeBreezSDK() is connecting, `failed` once it has
+ *   given up, `off` otherwise. The rail answers `syncing`, `failed` or
+ *   `disabled` from it instead of failing (or showing zero).
  * - listPaymentsBreezSDK takes an optional fromTimestamp and hands it to the
- *   SDK as the bigint it expects; its two existing callers leave it out.
+ *   SDK as the bigint it expects, and can list Bitcoin payments only; its two
+ *   existing callers leave both out.
  *
  * Each case loads a fresh spark.ts, whose SDK instance is module state.
  */
@@ -21,6 +23,12 @@ const mockSdk = {
 let mockBuild: () => Promise<unknown> = () => Promise.resolve(mockSdk)
 
 jest.mock("@breeztech/breez-sdk-spark-react-native", () => ({
+  // The generated tagged union's shape: the SDK reads `tag`.
+  AssetFilter: {
+    Bitcoin: class {
+      tag = "Bitcoin"
+    },
+  },
   defaultConfig: () => ({}),
   initLogging: jest.fn(),
   MaxFee: { NetworkRecommended: class {} },
@@ -49,8 +57,12 @@ beforeEach(() => {
   mockBuild = () => Promise.resolve(mockSdk)
 })
 
+afterEach(() => {
+  jest.useRealTimers()
+})
+
 describe("getSDKInstance", () => {
-  it("throws BreezSdkNotInitializedError, not flagged initializing, before the wallet starts", () => {
+  it("throws BreezSdkNotInitializedError, reason off, before the wallet starts", () => {
     const { spark, errors } = load()
 
     let thrown: unknown
@@ -62,13 +74,13 @@ describe("getSDKInstance", () => {
 
     expect(thrown).toBeInstanceOf(errors.BreezSdkNotInitializedError)
     expect(thrown).toMatchObject({
-      initializing: false,
+      reason: "off",
       // The message the plain Error it replaces carried.
       message: "Breez SDK not initialized. Call initializeBreezSDK first.",
     })
   })
 
-  it("flags the error initializing while initializeBreezSDK() is connecting", async () => {
+  it("gives the reason starting while initializeBreezSDK() is connecting", async () => {
     let finishBuild: (sdk: unknown) => void = () => undefined
     mockBuild = () =>
       new Promise((resolve) => {
@@ -82,12 +94,74 @@ describe("getSDKInstance", () => {
       setImmediate(resolve)
     })
     expect(() => spark.getSDKInstance()).toThrow(
-      expect.objectContaining({ initializing: true }),
+      expect.objectContaining({ reason: "starting" }),
     )
 
     finishBuild(mockSdk)
     await expect(starting).resolves.toBe(true)
     expect(spark.getSDKInstance()).toBe(mockSdk)
+  })
+
+  /** Start the wallet with every connection attempt failing, until it gives up. */
+  const failToStart = async (spark: SparkModule) => {
+    jest.useFakeTimers()
+    // initializeBreezSDK() logs its giving up; this case expects it.
+    const logged = jest.spyOn(console, "error").mockImplementation(() => undefined)
+    mockBuild = () => Promise.reject(new Error("offline"))
+    const gaveUp = spark.initializeBreezSDK().then(
+      () => "started",
+      (err: Error) => err.message,
+    )
+    // Three attempts, five seconds apart.
+    await jest.advanceTimersByTimeAsync(10_000)
+    expect(await gaveUp).toBe("Failed to connect to Breez SDK: offline")
+    jest.useRealTimers()
+    logged.mockRestore()
+  }
+
+  it("gives the reason failed once initializeBreezSDK() has given up, not off", async () => {
+    // Advance mode is on and the wallet could not start (offline at launch):
+    // `off` would have the assistant send the user to a setting that is
+    // already on.
+    const { spark } = load()
+
+    await failToStart(spark)
+
+    expect(() => spark.getSDKInstance()).toThrow(
+      expect.objectContaining({ reason: "failed" }),
+    )
+  })
+
+  it("forgets a failed start once a start succeeds", async () => {
+    const { spark } = load()
+    await failToStart(spark)
+
+    mockBuild = () => Promise.resolve(mockSdk)
+    await expect(spark.initializeBreezSDK()).resolves.toBe(true)
+
+    expect(spark.getSDKInstance()).toBe(mockSdk)
+  })
+
+  it("reads as off again after a failed start once advance mode is turned off", async () => {
+    const { spark } = load()
+    await failToStart(spark)
+
+    spark.clearBreezSDKInitFailure()
+
+    expect(() => spark.getSDKInstance()).toThrow(
+      expect.objectContaining({ reason: "off" }),
+    )
+  })
+
+  it("reads as off again after a failed start once the wallet is disconnected", async () => {
+    const { spark } = load()
+    await failToStart(spark)
+
+    await spark.disconnectToSDK()
+
+    expect(() => spark.getSDKInstance()).toThrow(
+      expect.objectContaining({ reason: "off" }),
+    )
   })
 
   it("makes getInfo() reject with it while the wallet is not running", async () => {
@@ -111,7 +185,9 @@ describe("listPaymentsBreezSDK", () => {
   it("hands fromTimestamp to the SDK as a bigint of whole seconds", async () => {
     const spark = await started()
 
-    const payments = await spark.listPaymentsBreezSDK(0, 100, 1760000000.9)
+    const payments = await spark.listPaymentsBreezSDK(0, 100, {
+      fromTimestamp: 1760000000.9,
+    })
 
     expect(payments).toEqual([{ id: "p1" }])
     expect(mockSdk.listPayments).toHaveBeenCalledWith(
@@ -124,14 +200,34 @@ describe("listPaymentsBreezSDK", () => {
     )
   })
 
-  it("leaves fromTimestamp unset for the two screens, which pass only offset and limit", async () => {
+  it("leaves fromTimestamp and the asset filter unset for the two screens, which pass only offset and limit", async () => {
     const spark = await started()
 
     await spark.listPaymentsBreezSDK(0, 3)
 
     expect(mockSdk.listPayments).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 0, limit: 3, fromTimestamp: undefined }),
+      expect.objectContaining({
+        offset: 0,
+        limit: 3,
+        fromTimestamp: undefined,
+        assetFilter: undefined,
+      }),
     )
+  })
+
+  it("asks the SDK for Bitcoin payments only when told to, so no token amount reads as sats", async () => {
+    // Payment.amount is "satoshis or token base units": 5 USDT on Spark is
+    // 5,000,000, which the assistant would otherwise report as sats.
+    const spark = await started()
+
+    await spark.listPaymentsBreezSDK(0, 100, {
+      fromTimestamp: 1760000000,
+      assets: "bitcoin",
+    })
+
+    const [request] = mockSdk.listPayments.mock.calls[0]
+    expect(request.assetFilter).toMatchObject({ tag: "Bitcoin" })
+    expect(request).toMatchObject({ offset: 0, limit: 100 })
   })
 })
 

@@ -23,6 +23,7 @@ const record = (overrides: Partial<DispatchRecord> = {}): DispatchRecord => ({
   idempotencyKey: "key-1",
   paymentDetailHash: DISPATCH.paymentDetailHash,
   dispatchedAt: T0,
+  lastDispatchedAt: T0,
   match: DISPATCH.match,
   ...overrides,
 })
@@ -38,13 +39,56 @@ describe("the dispatch journal", () => {
     await expect(journal.pending()).resolves.toEqual([])
   })
 
-  it("keeps an action's first dispatch, the earliest the payment could have landed", async () => {
+  it("keeps an action's first dispatch, and moves its latest forward on a retry", async () => {
+    // The first dispatch is the earliest the payment could have landed; the
+    // retry is the latest it could still set off, so the wait for its
+    // absence to mean anything starts over from it (reconcile.ts).
     const journal = createAttemptJournal({ storage: memoryStorage() })
 
     await journal.record(record({ dispatchedAt: T0, idempotencyKey: "key-1" }))
-    await journal.record(record({ dispatchedAt: T0 + 5_000, idempotencyKey: null }))
+    await journal.record(
+      record({
+        dispatchedAt: T0 + 150_000,
+        lastDispatchedAt: T0 + 150_000,
+        idempotencyKey: null,
+      }),
+    )
 
-    await expect(journal.pending()).resolves.toEqual([record()])
+    await expect(journal.pending()).resolves.toEqual([
+      record({ lastDispatchedAt: T0 + 150_000 }),
+    ])
+  })
+
+  it("never moves the latest dispatch back", async () => {
+    const journal = createAttemptJournal({ storage: memoryStorage() })
+
+    await journal.record(record({ lastDispatchedAt: T0 + 9_000 }))
+    await journal.record(
+      record({ dispatchedAt: T0 + 5_000, lastDispatchedAt: T0 + 5_000 }),
+    )
+
+    await expect(journal.pending()).resolves.toEqual([
+      record({ lastDispatchedAt: T0 + 9_000 }),
+    ])
+  })
+
+  it("reads a record stored without lastDispatchedAt as one dispatch, never dropping it", async () => {
+    // Dropping it would let its payment go again unreconciled.
+    const storage = memoryStorage()
+    const { lastDispatchedAt: _absent, ...older } = record({ preparedActionId: "older" })
+    storage.data.set(ATTEMPT_JOURNAL_KEY, JSON.stringify([older]))
+    const journal = createAttemptJournal({ storage })
+
+    await expect(journal.pending()).resolves.toEqual([
+      record({ preparedActionId: "older", lastDispatchedAt: T0 }),
+    ])
+
+    await journal.record(
+      record({ preparedActionId: "older", lastDispatchedAt: T0 + 150_000 }),
+    )
+    await expect(journal.pending()).resolves.toEqual([
+      record({ preparedActionId: "older", lastDispatchedAt: T0 + 150_000 }),
+    ])
   })
 
   it("loses no record when dispatches are written at once", async () => {
@@ -276,7 +320,7 @@ describe("a dispatch that outlives the app", () => {
     const first = launch()
     first.intraLedgerUsdPaymentSend.mockReturnValue(new Promise<never>(() => {}))
     const action = first.prepare()
-    first.executor.addPrepared(action)
+    first.executor.addPrepared(action, "text")
     first.executor.executePreparedAction(action.id)
     await new Promise((resolve) => {
       setImmediate(resolve)
@@ -295,6 +339,7 @@ describe("a dispatch that outlives the app", () => {
         idempotencyKey: key,
         paymentDetailHash: DISPATCH.paymentDetailHash,
         dispatchedAt: T0,
+        lastDispatchedAt: T0,
         match: DISPATCH.match,
       },
     ])
@@ -305,12 +350,13 @@ describe("a dispatch that outlives the app", () => {
     const { key } = await dieMidSend()
     const relaunched = launch("unknown", T0 + 30_000)
     const again = relaunched.prepare()
-    relaunched.executor.addPrepared(again)
+    relaunched.executor.addPrepared(again, "text")
 
     await expect(relaunched.executor.executePreparedAction(again.id)).resolves.toEqual({
       kind: "pendingDispatch",
       actionId: again.id,
       replyKey: "Assistant.checkHistory",
+      historyCheckable: false,
     })
     expect(relaunched.reconcile).toHaveBeenCalledWith(
       expect.objectContaining({ idempotencyKey: key }),
@@ -323,7 +369,7 @@ describe("a dispatch that outlives the app", () => {
     await dieMidSend()
     const relaunched = launch("settled", T0 + 30_000)
     const again = relaunched.prepare()
-    relaunched.executor.addPrepared(again)
+    relaunched.executor.addPrepared(again, "text")
 
     await expect(
       relaunched.executor.executePreparedAction(again.id),
@@ -344,7 +390,7 @@ describe("a dispatch that outlives the app", () => {
       },
     })
     const again = relaunched.prepare()
-    relaunched.executor.addPrepared(again)
+    relaunched.executor.addPrepared(again, "text")
 
     await expect(
       relaunched.executor.executePreparedAction(again.id),
@@ -366,7 +412,7 @@ describe("a dispatch that outlives the app", () => {
       },
     })
     const action = first.prepare()
-    first.executor.addPrepared(action)
+    first.executor.addPrepared(action, "text")
     await first.executor.executePreparedAction(action.id)
 
     const relaunched = launch()
@@ -376,7 +422,7 @@ describe("a dispatch that outlives the app", () => {
       },
     })
     const again = relaunched.prepare()
-    relaunched.executor.addPrepared(again)
+    relaunched.executor.addPrepared(again, "text")
 
     await expect(
       relaunched.executor.executePreparedAction(again.id),
@@ -395,7 +441,7 @@ describe("a dispatch that outlives the app", () => {
         return { status: "succeeded" }
       }),
     })
-    run.executor.addPrepared(action)
+    run.executor.addPrepared(action, "text")
 
     // The journal write throws before anything is sent: an unknown outcome,
     // never a silent send.

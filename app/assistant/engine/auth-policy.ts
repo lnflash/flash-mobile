@@ -1,7 +1,12 @@
 import type { PreparedAction } from "../registry/types"
 
 /** How the user asked for the action: in text (typed or tapped), or by voice. */
-export type AuthOrigin = "text" | "voice"
+export const AUTH_ORIGINS = ["text", "voice"] as const
+
+export type AuthOrigin = (typeof AUTH_ORIGINS)[number]
+
+export const isAuthOrigin = (value: unknown): value is AuthOrigin =>
+  typeof value === "string" && (AUTH_ORIGINS as readonly string[]).includes(value)
 
 export type AuthRequirement = "none" | "biometric"
 
@@ -19,7 +24,8 @@ export type AuthPolicy = (action: PreparedAction, origin: AuthOrigin) => AuthReq
  * v1: the confirm card is the same review-and-confirm the send screens give,
  * so a text-initiated action needs nothing more, as a send from the screens
  * does not. A voice-initiated one needs biometrics, since a bystander could
- * speak a send into an unlocked phone (Phase 4).
+ * speak a send into an unlocked phone (Phase 4). Only an origin known to be
+ * text skips the gate: anything else gets the stricter answer.
  */
 export const authPolicy: AuthPolicy = (_action, origin) =>
-  origin === "voice" ? "biometric" : "none"
+  origin === "text" ? "none" : "biometric"

@@ -7686,6 +7686,10 @@ type RootTranslation = {
 		 */
 		btcDisabled: string
 		/**
+		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​c​o​u​l​d​n​'​t​ ​s​t​a​r​t​.​ ​C​l​o​s​e​ ​a​n​d​ ​r​e​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​t​o​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		btcFailed: string
+		/**
 		 * T​h​i​s​ ​b​a​l​a​n​c​e​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​r​i​g​h​t​ ​n​o​w​.
 		 */
 		balanceUnavailable: string
@@ -15203,6 +15207,10 @@ export type TranslationFunctions = {
 		 * Your BTC wallet is off. Turn on Advanced Mode in Settings to use it.
 		 */
 		btcDisabled: () => LocalizedString
+		/**
+		 * Your BTC wallet couldn't start. Close and reopen the app to try again.
+		 */
+		btcFailed: () => LocalizedString
 		/**
 		 * This balance isn't available right now.
 		 */

@@ -86,9 +86,12 @@ describe("getBalances", () => {
       ])
     })
 
-    const notRunning: ["syncing" | "disabled", string][] = [
+    // `failed`: advance mode is on and the wallet's start gave up, so the
+    // reply must not send the user to turn advance mode on.
+    const notRunning: ["syncing" | "disabled" | "failed", string][] = [
       ["syncing", "Assistant.btcSyncing"],
       ["disabled", "Assistant.btcDisabled"],
+      ["failed", "Assistant.btcFailed"],
     ]
     notRunning.forEach(([state, replyKey]) =>
       it(`reports ${state} with no number at all, never zero`, async () => {

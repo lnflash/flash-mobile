@@ -19,6 +19,15 @@ describe("authPolicy", () => {
     }),
   )
 
+  it("asks biometrics for an origin it does not know, never nothing", () => {
+    // Only a text-initiated action skips the gate. An origin that is missing
+    // or misspelled (the executor refuses both) gets the stricter answer.
+    const unknown = [undefined, "", "Voice", "assistant"] as unknown as AuthOrigin[]
+    unknown.forEach((origin) => {
+      expect(authPolicy(makeAction(), origin)).toBe("biometric")
+    })
+  })
+
   it("asks the same of every action intent", () => {
     const intents = [
       "prepareSend",

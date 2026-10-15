@@ -3,6 +3,7 @@ import RNFS from "react-native-fs"
 import { PaymentType } from "@galoymoney/client"
 import * as Keychain from "react-native-keychain"
 import {
+  AssetFilter,
   PaymentRequest,
   defaultConfig,
   Network,
@@ -43,7 +44,7 @@ import {
   validateAmountWithinLimits,
 } from "./fee-errors"
 import { extractFeeFromPaymentMethod } from "./fee-extraction"
-import { BreezSdkNotInitializedError } from "./sdk-errors"
+import { BreezSdkNotInitializedError, BreezSdkNotRunningReason } from "./sdk-errors"
 
 // Constants
 export const KEYCHAIN_MNEMONIC_KEY = "mnemonic_key"
@@ -53,19 +54,36 @@ const STORAGE_DIR = "breez-spark-data"
 export let breezSDKInitialized = false
 let breezSDKInitializing: Promise<boolean> | null = null
 let sdkInstance: BreezSdkInterface | null = null
+// Whether the last initializeBreezSDK() gave up. Cleared by a start that
+// succeeds, by disconnectToSDK, and by clearBreezSDKInitFailure when advance
+// mode is turned off (ENG-687).
+let breezSDKInitFailed = false
+
+const notRunningReason = (): BreezSdkNotRunningReason => {
+  if (breezSDKInitializing) return "starting"
+  return breezSDKInitFailed ? "failed" : "off"
+}
 
 /**
  * Get the initialized SDK instance
- * @throws BreezSdkNotInitializedError if SDK is not initialized, flagged
- * `initializing` while initializeBreezSDK() is still connecting
+ * @throws BreezSdkNotInitializedError if SDK is not initialized, with the
+ * reason: `starting` while initializeBreezSDK() is still connecting,
+ * `failed` after it gave up, `off` otherwise
  */
 export const getSDKInstance = (): BreezSdkInterface => {
   if (!sdkInstance) {
-    throw new BreezSdkNotInitializedError({
-      initializing: breezSDKInitializing !== null,
-    })
+    throw new BreezSdkNotInitializedError({ reason: notRunningReason() })
   }
   return sdkInstance
+}
+
+/**
+ * Advance mode was turned off: the BTC wallet is off by the user's choice
+ * now, so a start that failed before no longer explains why there is no SDK
+ * instance, and the wallet reads as off rather than failed.
+ */
+export const clearBreezSDKInitFailure = (): void => {
+  breezSDKInitFailed = false
 }
 
 export const lnurlPayRequestDetailsFromInput = (
@@ -96,8 +114,10 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
     try {
       await retry(() => connectToSDK(), 5000, 3)
       breezSDKInitialized = true
+      breezSDKInitFailed = false
       return true
     } catch (error: unknown) {
+      breezSDKInitFailed = true
       const message = error instanceof Error ? error.message : String(error)
       console.error("Failed to connect to Breez SDK after retries:", message)
       throw new Error(`Failed to connect to Breez SDK: ${message}`)
@@ -175,6 +195,7 @@ export const disconnectToSDK = async (): Promise<void> => {
 
     breezSDKInitialized = false
     breezSDKInitializing = null
+    breezSDKInitFailed = false
   } catch (error) {
     console.error("Disconnect error:", error)
     throw error
@@ -583,20 +604,35 @@ export const parse = async (input: string): Promise<InputType> => {
 }
 
 // Payment History
+
+/** Which of the wallet's payments listPaymentsBreezSDK lists (ENG-687). */
+export type BreezPaymentsFilter = {
+  /**
+   * Unix seconds: only payments created at or after this moment. The
+   * assistant's transaction search bounds its BTC window with it; the
+   * screens leave it out and list from the newest payment back.
+   */
+  fromTimestamp?: number
+  /**
+   * `bitcoin` leaves out Spark token payments, whose amount and fees are in
+   * the token's base units, not sats (5 USDT is 5,000,000). The assistant
+   * asks for it, since it reports every amount as sats. `all`, the default,
+   * lists token payments too, as the screens always have.
+   */
+  assets?: "all" | "bitcoin"
+}
+
 export const listPaymentsBreezSDK = async (
   offset?: number,
   limit?: number,
-  // Unix seconds: only payments created at or after this moment. The
-  // assistant's transaction search bounds its BTC window with it (ENG-687);
-  // the screens leave it out and list from the newest payment back.
-  fromTimestamp?: number,
+  { fromTimestamp, assets = "all" }: BreezPaymentsFilter = {},
 ): Promise<Payment[]> => {
   const sdk = getSDKInstance()
 
   const response = await sdk.listPayments({
     typeFilter: undefined,
     statusFilter: undefined,
-    assetFilter: undefined,
+    assetFilter: assets === "bitcoin" ? new AssetFilter.Bitcoin() : undefined,
     fromTimestamp:
       fromTimestamp === undefined ? undefined : BigInt(Math.floor(fromTimestamp)),
     toTimestamp: undefined,

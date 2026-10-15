@@ -19,11 +19,15 @@ const intraledger = {
   amount: 500,
 }
 
-const record = (match: DispatchRecord["match"] = intraledger): DispatchRecord => ({
+const record = (
+  match: DispatchRecord["match"] = intraledger,
+  lastDispatchedAt = DISPATCHED_AT_MS,
+): DispatchRecord => ({
   preparedActionId: "a1",
   idempotencyKey: "k1",
   paymentDetailHash: "h",
   dispatchedAt: DISPATCHED_AT_MS,
+  lastDispatchedAt,
   match,
 })
 
@@ -171,6 +175,33 @@ describe("createTransactionListReconciler", () => {
     ).resolves.toBe("unknown")
   })
 
+  it("waits out a retry under the same key as it waits out the first dispatch", async () => {
+    // First dispatch at t0, a retry at t0 + 150 s, both answers lost. At
+    // t0 + 170 s the first is old enough, but the retry can still land.
+    const retriedAt = DISPATCHED_AT_MS + 150_000
+    const retried = record(intraledger, retriedAt)
+
+    await expect(
+      reconcilerOver([[]], DISPATCHED_AT_MS + 170_000).reconcile(retried),
+    ).resolves.toBe("unknown")
+    await expect(
+      reconcilerOver([[]], retriedAt + RECONCILE_MIN_AGE_MS).reconcile(retried),
+    ).resolves.toBe("absent")
+  })
+
+  it("looks for the payment back to the first dispatch, not only since the retry", async () => {
+    // Landed from the first dispatch, before the retry went out.
+    const landedEarly = send({ createdAt: DISPATCHED_AT_S + 10 })
+    const retried = record(intraledger, DISPATCHED_AT_MS + 150_000)
+
+    await expect(
+      reconcilerOver([[landedEarly]], DISPATCHED_AT_MS + 170_000).reconcile(retried),
+    ).resolves.toBe("settled")
+  })
+
+  // The executor, not the reconciler, gets the user out of this: a record a
+  // day old that the list cannot settle may be cleared on their word
+  // (executor-dispatch.spec.ts, "a dispatch the list cannot settle").
   it("reads back page by page, and is unknown when the pages run out before the dispatch", async () => {
     const newer = (p: number) =>
       Array.from({ length: 20 }, (_, i) =>

@@ -1,7 +1,15 @@
 import { MAX_PREPARED_PER_THREAD } from "@app/assistant/engine/action-store"
+import type { AuthOrigin } from "@app/assistant/engine/auth-policy"
 import type { ExecuteContext, ExecutionOutcome } from "@app/assistant/registry/types"
 import { PrepareRefusedError } from "@app/assistant/registry/refusals"
-import { makeAction, refreshingTo, setupExecutor, SUMMARY, T0 } from "./executor-harness"
+import {
+  DISPATCH,
+  makeAction,
+  refreshingTo,
+  setupExecutor,
+  SUMMARY,
+  T0,
+} from "./executor-harness"
 
 const executed = (outcome: ExecutionOutcome) => jest.fn(async () => outcome)
 
@@ -11,7 +19,7 @@ describe("executor", () => {
       const { executor } = setupExecutor()
       const actions = [makeAction(), makeAction(), makeAction(), makeAction()]
 
-      const evicted = actions.map((action) => executor.addPrepared(action))
+      const evicted = actions.map((action) => executor.addPrepared(action, "text"))
 
       expect(evicted).toEqual([[], [], [], [actions[0].id]])
       // The evicted card's Confirm finds nothing, and nothing runs.
@@ -28,15 +36,17 @@ describe("executor", () => {
 
     it("counts each thread on its own", () => {
       const { executor } = setupExecutor()
-      ;[1, 2, 3].forEach(() => executor.addPrepared(makeAction({ threadId: "a" })))
+      ;[1, 2, 3].forEach(() =>
+        executor.addPrepared(makeAction({ threadId: "a" }), "text"),
+      )
 
-      expect(executor.addPrepared(makeAction({ threadId: "b" }))).toEqual([])
+      expect(executor.addPrepared(makeAction({ threadId: "b" }), "text")).toEqual([])
     })
 
     it("drops a dismissed card's action", async () => {
       const { executor } = setupExecutor()
       const action = makeAction()
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       executor.dismiss(action.id)
 
@@ -54,8 +64,8 @@ describe("executor", () => {
       const { executor } = setupExecutor()
       const here = makeAction({ threadId: "here" })
       const elsewhere = makeAction({ threadId: "elsewhere" })
-      executor.addPrepared(here)
-      executor.addPrepared(elsewhere)
+      executor.addPrepared(here, "text")
+      executor.addPrepared(elsewhere, "text")
 
       executor.leaveThread("here")
 
@@ -73,7 +83,7 @@ describe("executor", () => {
       const { executor, advance } = setupExecutor()
       const fresh = makeAction({ createdAt: T0 + 61_000, summary: { ...SUMMARY } })
       const stale = makeAction({ refresh: refreshingTo(fresh) })
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
       advance(61_000)
 
       const result = await executor.executePreparedAction(stale.id)
@@ -95,7 +105,7 @@ describe("executor", () => {
         summary: { ...SUMMARY, feeText: "$0.01", totalText: "$5.01" },
       })
       const stale = makeAction({ refresh: refreshingTo(fresh) })
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
       advance(61_000)
 
       const result = await executor.executePreparedAction(stale.id)
@@ -125,7 +135,7 @@ describe("executor", () => {
       const reordered = Object.fromEntries(Object.entries(SUMMARY).reverse())
       const fresh = makeAction({ createdAt: T0 + 61_000, summary: reordered })
       const stale = makeAction({ refresh: refreshingTo(fresh) })
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
       advance(61_000)
 
       await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
@@ -140,7 +150,7 @@ describe("executor", () => {
           throw new PrepareRefusedError("insufficientBalance")
         }),
       })
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
       advance(61_000)
 
       const result = await executor.executePreparedAction(stale.id)
@@ -164,7 +174,7 @@ describe("executor", () => {
     it("keeps an action whose refresh failed, expired, for another try", async () => {
       const { executor, advance } = setupExecutor()
       const stale = makeAction()
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
       advance(61_000)
 
       await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
@@ -181,11 +191,31 @@ describe("executor", () => {
       })
     })
 
+    it("shows a refreshed action that makes another payment, though its numbers match", async () => {
+      // Confirms queue, and earlier dispatches are checked, by the payment
+      // the approved card makes. A refreshed action for another payment was
+      // checked for neither, so it is a new card to confirm.
+      const { executor, advance } = setupExecutor()
+      const fresh = makeAction({
+        createdAt: T0 + 61_000,
+        dispatch: { ...DISPATCH, paymentDetailHash: "hash:bob:500:USD" },
+      })
+      const stale = makeAction({ refresh: refreshingTo(fresh) })
+      executor.addPrepared(stale, "text")
+      advance(61_000)
+
+      await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
+        kind: "refreshed",
+        actionId: fresh.id,
+      })
+      expect(fresh.execute).not.toHaveBeenCalled()
+    })
+
     it("never executes a refreshed action that is itself already past expiry", async () => {
       const { executor, advance } = setupExecutor()
       const alsoStale = makeAction({ createdAt: T0 - 120_000 })
       const stale = makeAction({ refresh: refreshingTo(alsoStale) })
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
       advance(61_000)
 
       await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
@@ -241,7 +271,7 @@ describe("executor", () => {
           next: "retrySameAttempt",
         }),
       })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
       await executor.executePreparedAction(action.id)
       advance(61_000)
       action.execute.mockResolvedValue({ status: "succeeded" })
@@ -257,7 +287,7 @@ describe("executor", () => {
     it("reports the expired outcome once per prepared action", async () => {
       const { executor, advance, toolEvents } = setupExecutor()
       const stale = makeAction()
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
       advance(61_000)
 
       await executor.executePreparedAction(stale.id)
@@ -281,15 +311,24 @@ describe("executor", () => {
       expect(auth.authenticate).not.toHaveBeenCalled()
     })
 
-    it("treats an action with no stated origin as text", async () => {
+    it("refuses an action with no stated origin rather than read it as text", async () => {
+      // The origin is the one input the policy decides on. Defaulting it to
+      // text would let a voice action that forgot to say so skip biometrics.
       const { executor, auth } = setupExecutor({ availability: "none" })
       const action = makeAction()
-      executor.addPrepared(action)
 
-      await executor.executePreparedAction(action.id)
+      // @ts-expect-error -- the origin is required: the type says so too
+      expect(() => executor.addPrepared(action)).toThrow(/origin/)
+      expect(() => executor.addPrepared(action, "smoke-signal" as AuthOrigin)).toThrow(
+        /origin/,
+      )
 
+      // Nothing was held, so nothing can run.
+      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+        kind: "notFound",
+      })
       expect(auth.authenticate).not.toHaveBeenCalled()
-      expect(action.execute).toHaveBeenCalledTimes(1)
+      expect(action.execute).not.toHaveBeenCalled()
     })
 
     it("fails a voice action closed where the device has no way to authenticate", async () => {
@@ -376,7 +415,7 @@ describe("executor", () => {
             }),
         ),
       })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       const first = executor.executePreparedAction(action.id)
       const second = executor.executePreparedAction(action.id)
@@ -405,7 +444,7 @@ describe("executor", () => {
       )
       const fresh = makeAction({ createdAt: T0 + 61_000, execute: recordAttempt })
       const action = makeAction({ execute: recordAttempt, refresh: refreshingTo(fresh) })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       await executor.executePreparedAction(action.id)
       await executor.executePreparedAction(action.id)
@@ -421,7 +460,7 @@ describe("executor", () => {
     it("retires an action that succeeded", async () => {
       const { executor } = setupExecutor()
       const action = makeAction()
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
         kind: "executed",
@@ -443,7 +482,7 @@ describe("executor", () => {
           next: "confirmAgain",
         }),
       })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       await executor.executePreparedAction(action.id)
       await expect(executor.canConfirm(action.id)).resolves.toEqual({ enabled: true })
@@ -461,7 +500,7 @@ describe("executor", () => {
           next: "reprepare",
         }),
       })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       await executor.executePreparedAction(action.id)
 
@@ -479,7 +518,7 @@ describe("executor", () => {
           next: "checkHistory",
         }),
       })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       await executor.executePreparedAction(action.id)
 
@@ -503,7 +542,7 @@ describe("executor", () => {
           throw new Error("socket closed")
         }),
       })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
         kind: "executed",
@@ -540,9 +579,11 @@ describe("executor", () => {
         summary: { ...SUMMARY, feeText: "$1.00" },
       })
       const stale = makeAction({ threadId: "other", refresh: refreshingTo(changed) })
-      ;[confirmed, failed, unknown].forEach((action) => executor.addPrepared(action))
+      ;[confirmed, failed, unknown].forEach((action) =>
+        executor.addPrepared(action, "text"),
+      )
       executor.addPrepared(denied, "voice")
-      executor.addPrepared(stale)
+      executor.addPrepared(stale, "text")
 
       for (const action of [confirmed, failed, unknown, denied]) {
         await executor.executePreparedAction(action.id)
@@ -598,8 +639,8 @@ describe("executor", () => {
       advance(42_000)
       const first = makeAction()
       const second = makeAction()
-      executor.addPrepared(first)
-      executor.addPrepared(second)
+      executor.addPrepared(first, "text")
+      executor.addPrepared(second, "text")
 
       await executor.executePreparedAction(first.id)
       advance(5_000)
@@ -620,7 +661,7 @@ describe("executor", () => {
           next: "checkHistory",
         }),
       })
-      executor.addPrepared(action)
+      executor.addPrepared(action, "text")
 
       await executor.executePreparedAction(action.id)
 

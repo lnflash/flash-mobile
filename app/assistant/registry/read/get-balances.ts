@@ -5,6 +5,7 @@ import { defineRead } from "../define"
 import {
   BalancesPayload,
   BtcBalanceEntry,
+  btcUnavailable,
   CashBalance,
   CashWallet,
   projectBalances,
@@ -17,16 +18,12 @@ import {
 
 const CASH_WALLETS: readonly string[] = [WalletCurrency.Usd, WalletCurrency.Usdt]
 
-const btcEntry = (balance: BtcBalance): BtcBalanceEntry => {
-  switch (balance.state) {
-    case "ok":
-      return { wallet: "BTC", state: "ok", balance: toBtcMoneyAmount(balance.sats) }
-    case "syncing":
-      return { wallet: "BTC", state: "syncing", replyKey: "Assistant.btcSyncing" }
-    case "disabled":
-      return { wallet: "BTC", state: "disabled", replyKey: "Assistant.btcDisabled" }
-  }
-}
+// Syncing, switched off or failed to start: no number, only the reply that
+// says which.
+const btcEntry = (balance: BtcBalance): BtcBalanceEntry =>
+  balance.state === "ok"
+    ? { wallet: "BTC", state: "ok", balance: toBtcMoneyAmount(balance.sats) }
+    : { wallet: "BTC", ...btcUnavailable(balance.state) }
 
 export const getBalances = defineRead({
   intent: "getBalances",

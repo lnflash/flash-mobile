@@ -150,8 +150,9 @@ export type DispatchIdentity = {
  * - `attempt` is the action's own AttemptState, the same object on every
  *   Confirm of this action, so a retry after a dropped response reuses its
  *   idempotency key (ENG-533). A refreshed action has a new one.
- * - `journalDispatch` must be awaited immediately before each dispatch: it
- *   persists the dispatch record, and rejects (so nothing is sent) when it
+ * - `journalDispatch` must be awaited immediately before each dispatch, a
+ *   retry's included: it persists the dispatch record (a retry moves the
+ *   record's lastDispatchedAt), and rejects (so nothing is sent) when it
  *   cannot. journalMutations (engine/attempt-journal.ts) wires it into the
  *   GraphQL triggers.
  */
