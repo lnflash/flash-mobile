@@ -205,20 +205,21 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(requestTechnology).toHaveBeenCalledWith([NfcTech.IsoDep, NfcTech.Ndef])
     // The applet SELECT goes out first, verbatim, over the manager's handler.
     expect(transceive.mock.calls[0][0]).toEqual(buildSelectApdu())
-    // SELECT, GET_INFO, GET_PUBKEY, AUTH (the card proves its key before
-    // anything it says about value is taken), GET_CARD, TELL_TIME (the
-    // card's clock is told the phone's time; no header is kept to show it),
-    // GET_BALANCE, then the pieces by page and a GET_PROOF per spent slot,
-    // the seven spent ones (ENG-631: the next top-up asks the mint about
-    // them) — a read touches nothing else, and never sends CLEAR_SPENT.
+    // SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE (shown as unverified while
+    // the card signs, ENG-707), AUTH (the card proves its key before anything
+    // it said is kept), GET_CARD, TELL_TIME (the card's clock is told the
+    // phone's time; no header is kept to show it), then the pieces by page
+    // and a GET_PROOF per spent slot, the seven spent ones (ENG-631: the next
+    // top-up asks the mint about them) — a read touches nothing else, and
+    // never sends CLEAR_SPENT.
     expect(transceive.mock.calls.map((call) => call[0][1])).toEqual([
       INS_SELECT,
       0x01,
       0x10,
+      0x11,
       0x15,
       0x16,
       0x37,
-      0x11,
       0x17,
       ...new Array(7).fill(0x13),
     ])
@@ -743,11 +744,13 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
     expect(result.cashuCard).toBeUndefined()
     expect(latest?.cashuCard).toBeUndefined()
     expect(knownCards()).toEqual({})
-    // Nothing the card says about value is asked once AUTH failed.
+    // Nothing is asked once AUTH failed. GET_BALANCE, before it, is all a
+    // clone gets to say, and only as unverified (ENG-707).
     expect(transceive.mock.calls.map((call) => call[0][1])).toEqual([
       INS_SELECT,
       0x01,
       0x10,
+      0x11,
       0x15,
     ])
     expect(toastShow).toHaveBeenCalledWith(
@@ -772,17 +775,18 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
     const result = await tapOnce()
 
     const sent = transceive.mock.calls.map((call) => call[0][1])
-    expect(sent.slice(0, 10)).toEqual([
+    expect(sent.slice(0, 11)).toEqual([
       INS_SELECT,
       0x01,
       0x10,
+      0x11,
       0x15,
       0x16,
       0x37,
       0x36,
       0x01,
       0x16,
-      0x11,
+      0x17,
     ])
     expect(result.cashuCard?.now).toBe(HEADER_VECTORS[2].time)
     expect(headers.refreshTipHeader).toHaveBeenCalled()
