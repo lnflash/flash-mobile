@@ -323,10 +323,16 @@ export const sendPayment = async (
           "",
         )
         console.log("Response payLnurlBreez: ", response)
-        // ENG-694: read the answer, as the lightning branch reads its own.
-        // payLnurl rejects on every failure payLnurlBreez can see (the catch
-        // below turns that into a Failure and re-arms). Otherwise it resolves
-        // with the payment, whose status says whether it went out.
+        // ENG-694: read the answer, as the lightning branch reads its own: the
+        // payment's status says whether it went out. A rejection before
+        // sdk.lnurlPay dispatches (parse, prepare, "Unsupported input type")
+        // is a failure. lnurlPay itself can reject after the Spark service
+        // provider accepted the send (SDK 0.22.3: an answer from it the SDK
+        // cannot read, or a failed write to on-device storage), so a
+        // rejection is not proof that nothing left. The catch below still
+        // re-arms on every rejection, as it did before ENG-694. Treating one
+        // from lnurlPay as an unknown outcome (stay disarmed and send the user
+        // to their history, as the GraphQL branch does) is a follow-up.
         const sent = lnurlPaymentSent(response)
         return finish({
           status: sent ? PaymentSendResult.Success : PaymentSendResult.Failure,

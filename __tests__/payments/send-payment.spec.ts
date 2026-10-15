@@ -644,13 +644,11 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
   })
 
   // ENG-694. The first two cases here pinned the always-Success answer that
-  // ENG-686 moved over unchanged; they are flipped on purpose. payLnurl
-  // answers in one of two ways: it rejects on every failure payLnurlBreez sees
-  // (the SDK's errors and its own "Unsupported input type"), or it resolves
-  // with the SDK's LnurlPayResponse, whose payment status can be Failed. Only
-  // a Completed or Pending payment is a Success. Anything else is a Failure
-  // with the screen's own copy, and re-arms the button like every other
-  // Breez Failure.
+  // ENG-686 moved over unchanged; they are flipped on purpose. payLnurl either
+  // resolves with the SDK's LnurlPayResponse, whose payment status can be
+  // Failed, or rejects. Only a Completed or Pending payment is a Success. Any
+  // other answer it resolves with is a Failure with the screen's own copy, and
+  // re-arms the button like every other Breez Failure.
   const failedAnswers: [string, unknown][] = [
     // The other two sends' answer, never payLnurl's, so its `error` is not read.
     ["a { success: false } answer", { success: false, error: "no route" }],
@@ -686,6 +684,10 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     })
   })
 
+  // A rejection before sdk.lnurlPay dispatches, like the one here, proves that
+  // nothing was sent, so re-arming is right. One from lnurlPay itself proves
+  // nothing (it can come after the send left) and re-arms all the same today:
+  // the follow-up named in send-payment.ts's LNURL branch.
   it("lnurl and intraledger: a payLnurl that rejects is a Failure with the thrown message, and re-arms", async () => {
     for (const detail of [lnurl(), intraledger()]) {
       const ctx = setup()

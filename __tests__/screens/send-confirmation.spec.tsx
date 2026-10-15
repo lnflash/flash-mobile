@@ -17,10 +17,13 @@ import {
 import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
 import { ActivityIndicatorContext } from "@app/contexts/ActivityIndicatorContext"
 import { BreezContext } from "@app/contexts/BreezContext"
-import { WalletCurrency } from "@app/graphql/generated"
+import { PaymentSendResult, WalletCurrency } from "@app/graphql/generated"
 import { DisplayCurrency, toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 import { light as lightColors } from "@app/rne-theme/colors"
 import { payLightningBreez, payLnurlBreez } from "@app/utils/breez-sdk"
+// The manual mock, which mirrors the generated enum: see
+// __tests__/mocks/breez-sdk-spark-mock-parity.spec.ts.
+import { PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
 import { getAnalytics } from "@react-native-firebase/analytics"
 import baseTranslation from "@app/i18n/en"
 import type { Translation } from "@app/i18n/i18n-types"
@@ -349,12 +352,10 @@ describe("expired held invoice", () => {
     expect(sendPaymentMutation).toHaveBeenCalled()
   })
 
-  it("does not block a BTC LNURL send, which mints a fresh invoice anyway", async () => {
-    // useSendPayment routes BTC + lnurl to payLnurlBreez, which re-resolves
-    // the lightning address and mints at send time. The held bolt11 never
-    // goes out, so refusing on its expiry would kill a payment Breez would
-    // have completed — the false positive this guard must never produce.
-    const paymentDetail = createLnurlPaymentDetails({
+  // The Breez BTC wallet's LNURL send, for the two cases below. Only the SDK's
+  // answer differs between them.
+  const btcLnurlPaymentDetail = () =>
+    createLnurlPaymentDetails({
       lnurl: "someone@flashapp.me",
       lnurlParams: lnurlParams(),
       paymentRequest: INCIDENT_INVOICE,
@@ -363,6 +364,13 @@ describe("expired held invoice", () => {
       convertMoneyAmount,
       sendingWalletDescriptor: btcSendingWalletDescriptor,
     })
+
+  it("does not block a BTC LNURL send, which mints a fresh invoice anyway", async () => {
+    // useSendPayment routes BTC + lnurl to payLnurlBreez, which re-resolves
+    // the lightning address and mints at send time. The held bolt11 never
+    // goes out, so refusing on its expiry would kill a payment Breez would
+    // have completed — the false positive this guard must never produce.
+    const paymentDetail = btcLnurlPaymentDetail()
 
     const { queryByText, navigate, confirm } = await renderConfirmation(paymentDetail)
     await confirm()
@@ -374,6 +382,37 @@ describe("expired held invoice", () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything()),
     )
+  })
+
+  it("shows a BTC LNURL send the SDK reports Failed as a failure, not a success (ENG-694)", async () => {
+    // The ENG-694 symptom: payLnurlBreez resolved with a Failed payment, and
+    // the user still landed on the success screen while payment_result
+    // logged SUCCESS.
+    ;(payLnurlBreez as jest.Mock).mockResolvedValueOnce({
+      payment: { status: PaymentStatus.Failed },
+      successAction: undefined,
+    })
+
+    const { queryByText, navigate, confirm } = await renderConfirmation(
+      btcLnurlPaymentDetail(),
+    )
+    // Nothing on screen reads as a failure before the tap.
+    expect(queryByText("Something went wrong")).toBeNull()
+    await confirm()
+
+    expect(payLnurlBreez).toHaveBeenCalled()
+    await waitFor(() => expect(queryByText("Something went wrong")).toBeTruthy())
+    expect(navigate).not.toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything())
+    const paymentResults = (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+      ([event]) => event === "payment_result",
+    )
+    expect(paymentResults).toEqual([
+      [
+        "payment_result",
+        // eslint-disable-next-line camelcase -- Firebase event params are snake_case
+        expect.objectContaining({ payment_status: PaymentSendResult.Failure }),
+      ],
+    ])
   })
 })
 

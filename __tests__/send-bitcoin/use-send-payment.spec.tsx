@@ -62,6 +62,9 @@ jest.mock("uuid", () => ({
 import { useSendPayment } from "@app/screens/send-bitcoin-screen/use-send-payment"
 import { SendPaymentMutationParams } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
 import { payLightningBreez, payLnurlBreez } from "@app/utils/breez-sdk"
+// The manual mock, which mirrors the generated enum: see
+// __tests__/mocks/breez-sdk-spark-mock-parity.spec.ts.
+import { PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
 
 // A USD payment detail: only the fields the hook reads on the GraphQL path.
 const usdPaymentDetail = {
@@ -482,9 +485,10 @@ describe("useSendPayment — BTC intraledger address", () => {
     settlementAmount: { amount: 100, currency: "BTC", currencyCode: "BTC" },
   } as never
 
+  // An ordinary send: the SDK's LnurlPayResponse for a payment that went out.
   beforeEach(() => {
     ;(payLnurlBreez as jest.Mock).mockResolvedValue({
-      payment: {},
+      payment: { status: PaymentStatus.Completed },
       successAction: undefined,
     })
   })
@@ -493,8 +497,9 @@ describe("useSendPayment — BTC intraledger address", () => {
     const mutation = jest.fn()
     const { result } = renderHook(() => useSendPayment(mutation, btcIntraledgerDetail))
 
+    let outcome
     await act(async () => {
-      await result.current.sendPayment?.()
+      outcome = await result.current.sendPayment?.()
     })
 
     expect((payLnurlBreez as jest.Mock).mock.calls).toEqual([
@@ -502,6 +507,10 @@ describe("useSendPayment — BTC intraledger address", () => {
     ])
     expect(mutation).not.toHaveBeenCalled()
     expect(mockClient.mutate).not.toHaveBeenCalled()
+    // The answer comes back through the real breezBtcRail unchanged, so a
+    // Completed payment reads as a Success and the button stays disarmed.
+    expect(outcome).toEqual({ status: "SUCCESS", errorsMessage: undefined })
+    expect(result.current.hasAttemptedSend).toBe(true)
   })
 
   it("pays at the new host after lnAddressHostname changes between renders", async () => {
