@@ -136,6 +136,10 @@ const mockRail = () => ({
     successAction: undefined,
   }),
   payOnchain: jest.fn().mockResolvedValue({ success: true }),
+  // The rail's three prepare members (ENG-688). A send never calls them.
+  createInvoice: jest.fn(),
+  getOnchainAddress: jest.fn(),
+  probeFee: jest.fn(),
 })
 
 const freshState = () => ({

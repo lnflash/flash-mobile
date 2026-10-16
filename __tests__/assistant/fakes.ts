@@ -37,6 +37,9 @@ export const fakeBtcRail = () => ({
   payInvoice: jest.fn(),
   payLnurl: jest.fn(),
   payOnchain: jest.fn(),
+  createInvoice: jest.fn(),
+  getOnchainAddress: jest.fn(),
+  probeFee: jest.fn(),
 })
 
 export const NOW_MS = 1_760_000_000_000
