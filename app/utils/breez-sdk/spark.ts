@@ -3,7 +3,9 @@ import RNFS from "react-native-fs"
 import { PaymentType } from "@galoymoney/client"
 import * as Keychain from "react-native-keychain"
 import {
+  AssetFilter,
   PaymentRequest,
+  PaymentStatus,
   defaultConfig,
   Network,
   ReceivePaymentMethod,
@@ -44,6 +46,7 @@ import {
   validateAmountWithinLimits,
 } from "./fee-errors"
 import { extractFeeFromPaymentMethod } from "./fee-extraction"
+import { BreezSdkNotInitializedError, BreezSdkNotRunningReason } from "./sdk-errors"
 import { LnurlPayOutcomeUnknownError } from "./lnurl-pay-errors"
 
 // Constants
@@ -54,16 +57,62 @@ const STORAGE_DIR = "breez-spark-data"
 export let breezSDKInitialized = false
 let breezSDKInitializing: Promise<boolean> | null = null
 let sdkInstance: BreezSdkInterface | null = null
+// Whether the last initializeBreezSDK() gave up. Cleared by a start that
+// succeeds and by disconnectToSDK.
+let breezSDKInitFailed = false
+// Whether the user has switched the BTC wallet off: advance mode is off
+// (BreezContext.tsx). Turning advance mode off stops nothing, so the SDK can
+// still be running, or a start still retrying, and this flag, not the
+// instance, is what says the wallet is off (ENG-687).
+let breezSDKSwitchedOff = false
+
+const notRunningReason = (): BreezSdkNotRunningReason => {
+  // Off by the user's choice comes first: a start still connecting, or one
+  // that gave up, does not explain a wallet the user switched off.
+  if (breezSDKSwitchedOff) return "off"
+  if (breezSDKInitializing) return "starting"
+  return breezSDKInitFailed ? "failed" : "off"
+}
 
 /**
  * Get the initialized SDK instance
- * @throws Error if SDK is not initialized
+ * @throws BreezSdkNotInitializedError if SDK is not initialized, with the
+ * reason: `off` while the wallet is switched off, else `starting` while
+ * initializeBreezSDK() is still connecting, `failed` after it gave up, `off`
+ * otherwise
  */
 export const getSDKInstance = (): BreezSdkInterface => {
   if (!sdkInstance) {
-    throw new Error("Breez SDK not initialized. Call initializeBreezSDK first.")
+    throw new BreezSdkNotInitializedError({ reason: notRunningReason() })
   }
   return sdkInstance
+}
+
+/**
+ * Advance mode was turned off: the user switched the BTC wallet off. Nothing
+ * is stopped, but from now on the BTC rail's reads find the wallet off
+ * (assertBreezSDKSwitchedOn) even while an SDK instance still runs, and a
+ * start that gives up after this reads as off, not failed (ENG-687).
+ * BreezContext calls markBreezSDKSwitchedOn before it starts the SDK again.
+ */
+export const markBreezSDKSwitchedOff = (): void => {
+  breezSDKSwitchedOff = true
+}
+
+/** Advance mode is on: the BTC wallet is switched on again (ENG-687). */
+export const markBreezSDKSwitchedOn = (): void => {
+  breezSDKSwitchedOff = false
+}
+
+/**
+ * For the BTC rail's reads of the wallet's balance and payments
+ * (app/payments/btc-rail.ts): throws BreezSdkNotInitializedError, reason
+ * `off`, while the wallet is switched off, whether or not an SDK instance is
+ * running. The screens hide the BTC wallet then, and the rail shows nothing
+ * of it either (ENG-687).
+ */
+export const assertBreezSDKSwitchedOn = (): void => {
+  if (breezSDKSwitchedOff) throw new BreezSdkNotInitializedError({ reason: "off" })
 }
 
 export const lnurlPayRequestDetailsFromInput = (
@@ -94,8 +143,10 @@ export const initializeBreezSDK = async (): Promise<boolean> => {
     try {
       await retry(() => connectToSDK(), 5000, 3)
       breezSDKInitialized = true
+      breezSDKInitFailed = false
       return true
     } catch (error: unknown) {
+      breezSDKInitFailed = true
       const message = error instanceof Error ? error.message : String(error)
       console.error("Failed to connect to Breez SDK after retries:", message)
       throw new Error(`Failed to connect to Breez SDK: ${message}`)
@@ -173,6 +224,7 @@ export const disconnectToSDK = async (): Promise<void> => {
 
     breezSDKInitialized = false
     breezSDKInitializing = null
+    breezSDKInitFailed = false
   } catch (error) {
     console.error("Disconnect error:", error)
     throw error
@@ -394,6 +446,36 @@ type PayResponse = {
   outcomeUnknown?: boolean
 }
 
+/**
+ * ENG-712: which statuses of a payment sdk.sendPayment resolved with mean a
+ * bolt11 send went out, keyed by the SDK's `PaymentStatus`. The Record is
+ * exhaustive over that enum, so an SDK bump that adds a status fails tsc here
+ * until someone decides what it means. send-payment.ts keeps its own table,
+ * BREEZ_PAYMENT_SENT, because it does not import the SDK.
+ */
+const LIGHTNING_PAYMENT_SENT: Record<PaymentStatus, boolean> = {
+  [PaymentStatus.Completed]: true,
+  // Still in flight when the wait ends. It may yet complete, so it is not a
+  // failure the caller may retry.
+  [PaymentStatus.Pending]: true,
+  [PaymentStatus.Failed]: false,
+}
+
+/**
+ * payLightningBreez's answer for a send that sdk.sendPayment resolved
+ * (ENG-712). With a completion timeout the SDK waits for the payment to
+ * leave Pending, so a payment that fails inside the wait resolves with status
+ * Failed: a resolved send is not a sent payment. A Failed payment is
+ * `success: false`. It carries no reason, so there is no `error`, and each
+ * caller shows its own copy: a chat zap its "Payment could not be sent.",
+ * useSwap and the confirmation screen their generic error. The payment rides
+ * along either way.
+ */
+export const lightningPayResponse = (response: SendPaymentResponse): PayResponse => ({
+  success: LIGHTNING_PAYMENT_SENT[response.payment.status] === true,
+  payment: response,
+})
+
 export const payLightningBreez = async (
   paymentRequest: string,
   amountSats?: number,
@@ -422,7 +504,7 @@ export const payLightningBreez = async (
       idempotencyKey: undefined,
     })
 
-    return { success: true, payment: response }
+    return lightningPayResponse(response)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error("payLightningBreez error:", message)
@@ -666,17 +748,37 @@ export const parse = async (input: string): Promise<InputType> => {
 }
 
 // Payment History
+
+/** Which of the wallet's payments listPaymentsBreezSDK lists (ENG-687). */
+export type BreezPaymentsFilter = {
+  /**
+   * Unix seconds: only payments created at or after this moment. The
+   * assistant's transaction search bounds its BTC window with it; the
+   * screens leave it out and list from the newest payment back.
+   */
+  fromTimestamp?: number
+  /**
+   * `bitcoin` leaves out Spark token payments, whose amount and fees are in
+   * the token's base units, not sats (5 USDT is 5,000,000). The assistant
+   * asks for it, since it reports every amount as sats. `all`, the default,
+   * lists token payments too, as the screens always have.
+   */
+  assets?: "all" | "bitcoin"
+}
+
 export const listPaymentsBreezSDK = async (
   offset?: number,
   limit?: number,
+  { fromTimestamp, assets = "all" }: BreezPaymentsFilter = {},
 ): Promise<Payment[]> => {
   const sdk = getSDKInstance()
 
   const response = await sdk.listPayments({
     typeFilter: undefined,
     statusFilter: undefined,
-    assetFilter: undefined,
-    fromTimestamp: undefined,
+    assetFilter: assets === "bitcoin" ? new AssetFilter.Bitcoin() : undefined,
+    fromTimestamp:
+      fromTimestamp === undefined ? undefined : BigInt(Math.floor(fromTimestamp)),
     toTimestamp: undefined,
     offset,
     limit,

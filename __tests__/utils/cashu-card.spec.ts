@@ -28,6 +28,7 @@ import {
   LEGACY_CASHU_AID,
   MAX_SLOTS,
   PROOF_SIZE,
+  ReadChanges,
   authMessage,
   authenticateCard,
   buildApdu,
@@ -1678,7 +1679,7 @@ describe("readCashuCard", () => {
     return card
   }
 
-  it("selects, reads info, the key, proves the key (AUTH), the record, the balance and the slots, in that order and nothing else", async () => {
+  it("selects, reads info, the key, the balance, proves the key (AUTH), reads the record and the slots, in that order and nothing else (ENG-707)", async () => {
     const card = loadedCard()
     const info = await readCashuCard(card.transceive)
     expect(info).toMatchObject({
@@ -1696,22 +1697,104 @@ describe("readCashuCard", () => {
       0xa4,
       INS.GET_INFO,
       INS.GET_PUBKEY,
+      INS.GET_BALANCE,
       INS.AUTH,
       INS.GET_CARD,
-      INS.GET_BALANCE,
       INS.GET_PIECES,
       INS.GET_PROOF,
     ])
   })
 
-  it("a card that cannot prove its key shows no balance: CardAuthError, and nothing after AUTH", async () => {
+  it("a card that cannot prove its key returns nothing: CardAuthError, and nothing after AUTH", async () => {
     const card = createFakeCard(MAX_SLOTS, { badAuth: true })
     card.slots[0] = proofSlot(1, 500)
     await expect(readCashuCard(card.transceive)).rejects.toBeInstanceOf(CardAuthError)
-    expect(card.ins()).toEqual([0xa4, INS.GET_INFO, INS.GET_PUBKEY, INS.AUTH])
+    expect(card.ins()).toEqual([
+      0xa4,
+      INS.GET_INFO,
+      INS.GET_PUBKEY,
+      INS.GET_BALANCE,
+      INS.AUTH,
+    ])
   })
 
-  it("runs the clock's tap work after AUTH and the record, before the balance, and re-reads nothing when it changed nothing", async () => {
+  // The security gate (ENG-707): GET_BALANCE is the one read allowed ahead of
+  // AUTH. Whatever the tap work does after AUTH, nothing else may cross it.
+  const tapWork: [string, ReadChanges][] = [
+    ["changed nothing", {}],
+    ["moved the clock", { clockMoved: true }],
+    ["refreshed the card", { refreshed: true }],
+    ["took the owner's grant", { granted: true }],
+  ]
+  for (const [what, changes] of tapWork) {
+    it(`sends nothing but SELECT, GET_INFO, GET_PUBKEY and GET_BALANCE before AUTH when the tap work ${what}`, async () => {
+      const card = loadedCard()
+      await readCashuCard(card.transceive, { afterAuth: async () => changes })
+      const ins = card.ins()
+      const authAt = ins.indexOf(INS.AUTH)
+      expect(authAt).toBeGreaterThan(-1)
+      expect(ins.slice(0, authAt)).toEqual([
+        0xa4,
+        INS.GET_INFO,
+        INS.GET_PUBKEY,
+        INS.GET_BALANCE,
+      ])
+      // And GET_BALANCE is not asked again after it: the figure returned is
+      // the one read before AUTH, which nothing in this tap can change.
+      expect(ins.slice(authAt + 1)).not.toContain(INS.GET_BALANCE)
+    })
+  }
+
+  it("hands onUnverified the card's info, key and balance once, before AUTH is sent", async () => {
+    const card = loadedCard()
+    let insAtCall: number[] = []
+    const onUnverified = jest.fn(() => {
+      insAtCall = card.ins()
+    })
+    const info = await readCashuCard(card.transceive, { onUnverified })
+    expect(onUnverified).toHaveBeenCalledTimes(1)
+    expect(onUnverified).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pubkey: card.pubkey,
+        balance: 500,
+        version: "2.0",
+        hasOwner: true,
+        unspent: 1,
+      }),
+    )
+    expect(insAtCall).toEqual([0xa4, INS.GET_INFO, INS.GET_PUBKEY, INS.GET_BALANCE])
+    expect(info?.balance).toBe(500)
+  })
+
+  it("a clone's figure reaches onUnverified only, then the read throws CardAuthError and sends nothing after AUTH", async () => {
+    const card = createFakeCard(MAX_SLOTS, { badAuth: true })
+    card.slots[0] = proofSlot(1, 1_000_000)
+    const onUnverified = jest.fn()
+    await expect(readCashuCard(card.transceive, { onUnverified })).rejects.toBeInstanceOf(
+      CardAuthError,
+    )
+    expect(onUnverified).toHaveBeenCalledTimes(1)
+    expect(onUnverified).toHaveBeenCalledWith(
+      expect.objectContaining({ balance: 1_000_000 }),
+    )
+    expect(card.ins()[card.ins().length - 1]).toBe(INS.AUTH)
+  })
+
+  it("a throwing onUnverified does not fail the read", async () => {
+    const card = loadedCard()
+    const onUnverified = jest.fn(() => {
+      throw new Error("screen gone")
+    })
+    await expect(readCashuCard(card.transceive, { onUnverified })).resolves.toMatchObject(
+      { balance: 500, pubkey: card.pubkey },
+    )
+    expect(warn).toHaveBeenCalledWith(
+      "readCashuCard: onUnverified threw",
+      expect.any(Error),
+    )
+  })
+
+  it("runs the clock's tap work after AUTH and the record, before the slots, and re-reads nothing when it changed nothing", async () => {
     const card = loadedCard()
     const afterAuth = jest.fn(async () => ({ clockMoved: false, refreshed: false }))
     await readCashuCard(card.transceive, { afterAuth })
@@ -1721,13 +1804,14 @@ describe("readCashuCard", () => {
       pubkey: card.pubkey,
       record: expect.objectContaining({ mint: "https://mint.test" }),
     })
-    expect(card.ins().slice(0, 6)).toEqual([
+    expect(card.ins().slice(0, 7)).toEqual([
       0xa4,
       INS.GET_INFO,
       INS.GET_PUBKEY,
+      INS.GET_BALANCE,
       INS.AUTH,
       INS.GET_CARD,
-      INS.GET_BALANCE,
+      INS.GET_PIECES,
     ])
   })
 
@@ -1740,12 +1824,12 @@ describe("readCashuCard", () => {
     })
     const info = await readCashuCard(card.transceive, { afterAuth })
     expect(info?.now).toBe(newest.time)
-    expect(card.ins().slice(4, 9)).toEqual([
+    expect(card.ins().slice(5, 10)).toEqual([
       INS.GET_CARD,
       INS.SET_HEADER,
       INS.GET_INFO,
       INS.GET_CARD,
-      INS.GET_BALANCE,
+      INS.GET_PIECES,
     ])
   })
 

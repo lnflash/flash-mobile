@@ -245,7 +245,10 @@ const en: BaseTranslation = {
     needsUpdateBody:
       "Flash can't use this card's software any more. Nothing is written to it and nothing is spent from it. Contact support to have it updated.",
     needsUpdateShort: "Needs an update",
-    authFailed: "This card couldn't prove it's genuine. Nothing from it was shown or saved.",
+    authFailed: "This card couldn't prove it's genuine. Nothing from it was saved.",
+    verifying: "Verifying…",
+    scanVerifying: "{amount:string} · Verifying… keep holding",
+    scanVerifyingHidden: "Verifying… keep holding",
     notSetUpTitle: "This card isn't set up",
     notSetUpBody:
       "Set it up before you load it. An empty card that hasn't been set up belongs to the first phone that sets it up.",
@@ -2304,7 +2307,32 @@ const en: BaseTranslation = {
       statusRejectedDesc: "We could not approve this request.",
       resubmit: "Resubmit",
       successResubmitted: "Your new photos have been submitted for review"
-    }
+    },
+  // The Flash assistant's templated replies (ENG-687). The assistant never
+  // composes text of its own: every reply it shows is one of these keys.
+  Assistant: {
+    unknownIntent: "I can't help with that yet.",
+    notYetAvailable: "I can't do that here yet. Use the home screen for now.",
+    invalidArguments: "I didn't catch the details. Try asking another way.",
+    toolFailed: "Something went wrong. Try again in a moment.",
+    refreshed: "The numbers changed since you asked. Check them and confirm again.",
+    expired: "This request expired. Ask again to get fresh numbers.",
+    authUnavailable: "Turn on a PIN or biometrics in Settings to confirm this.",
+    authDenied: "We couldn't confirm it's you. Nothing went through.",
+    actionNotFound: "That request is no longer open. Ask again to start over.",
+    checkHistory: "This payment may have already been sent. Check your transaction history before trying again.",
+    alreadySent: "A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.",
+    insufficientBalance: "You don't have enough in this wallet for that payment.",
+    limitExceeded: "That payment is over your account limit.",
+    btcSyncing: "Your BTC wallet is still syncing. Try again in a moment.",
+    btcDisabled: "Your BTC wallet is off. Turn on Advanced Mode in Settings to use it.",
+    btcFailed: "Your BTC wallet couldn't start. Close and reopen the app to try again.",
+    balanceUnavailable: "This balance isn't available right now.",
+    searchedWindow: "Searched your last {count:number} payments.",
+    noContactMatch: "I couldn't find a contact by that name.",
+    pickContact: "Which contact do you mean?",
+    detailsUnavailable: "Details aren't available for this payment."
+  }
 }
 
 export default en

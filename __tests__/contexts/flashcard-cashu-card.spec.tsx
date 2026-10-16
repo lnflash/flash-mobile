@@ -1,9 +1,12 @@
-import { act, waitFor } from "@testing-library/react-native"
+import React from "react"
+import { act, screen, waitFor } from "@testing-library/react-native"
 import { Platform } from "react-native"
+import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client"
 import NfcManager, { Ndef, NfcTech } from "react-native-nfc-manager"
 import axios from "axios"
 
 import { CASHU_AID, CASHU_APPLET_AID, buildSelectApdu } from "@app/utils/cashu-card"
+import { HideBalanceDocument } from "@app/graphql/generated"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { store } from "@app/store/redux"
@@ -53,8 +56,9 @@ import { CARD_TRANSCEIVE_TIMEOUT_MS } from "@app/utils/cashu-card-nfc"
 //     screen can render it and the caller can navigate on it (ENG-616); only
 //     a signed-in read is written to the phone's record of cards
 //   - a card that needs an update shows the notice, is sent nothing more and
-//     is not read as a BoltCard; a card that fails AUTH shows and stores
-//     nothing (ENG-675)
+//     is not read as a BoltCard; a card that fails AUTH stores nothing
+//     (ENG-675), and its balance, shown as verifying from GET_BALANCE on,
+//     leaves the screen with the tap (ENG-707)
 //   - the Cashu card and the BoltCard are forgotten separately
 
 const ok = (data: number[]) => [...data, 0x90, 0x00]
@@ -205,20 +209,21 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     expect(requestTechnology).toHaveBeenCalledWith([NfcTech.IsoDep, NfcTech.Ndef])
     // The applet SELECT goes out first, verbatim, over the manager's handler.
     expect(transceive.mock.calls[0][0]).toEqual(buildSelectApdu())
-    // SELECT, GET_INFO, GET_PUBKEY, AUTH (the card proves its key before
-    // anything it says about value is taken), GET_CARD, TELL_TIME (the
-    // card's clock is told the phone's time; no header is kept to show it),
-    // GET_BALANCE, then the pieces by page and a GET_PROOF per spent slot,
-    // the seven spent ones (ENG-631: the next top-up asks the mint about
-    // them) — a read touches nothing else, and never sends CLEAR_SPENT.
+    // SELECT, GET_INFO, GET_PUBKEY, GET_BALANCE (shown as unverified while
+    // the card signs, ENG-707), AUTH (the card proves its key before anything
+    // it said is kept), GET_CARD, TELL_TIME (the card's clock is told the
+    // phone's time; no header is kept to show it), then the pieces by page
+    // and a GET_PROOF per spent slot, the seven spent ones (ENG-631: the next
+    // top-up asks the mint about them) — a read touches nothing else, and
+    // never sends CLEAR_SPENT.
     expect(transceive.mock.calls.map((call) => call[0][1])).toEqual([
       INS_SELECT,
       0x01,
       0x10,
+      0x11,
       0x15,
       0x16,
       0x37,
-      0x11,
       0x17,
       ...new Array(7).fill(0x13),
     ])
@@ -735,19 +740,22 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
     expect(transceive).toHaveBeenCalledTimes(4)
   })
 
-  it("a card that fails AUTH shows no balance, stores nothing, and says why", async () => {
+  it("a card that fails AUTH leaves no balance, stores nothing, and says why", async () => {
     tapCashuCard({ badAuth: true })
 
     const result = await tapOnce()
 
     expect(result.cashuCard).toBeUndefined()
     expect(latest?.cashuCard).toBeUndefined()
+    expect(latest?.cashuCardPreview).toBeUndefined()
     expect(knownCards()).toEqual({})
-    // Nothing the card says about value is asked once AUTH failed.
+    // Nothing is asked once AUTH failed. GET_BALANCE, before it, is all a
+    // clone gets to say, and only as unverified (ENG-707).
     expect(transceive.mock.calls.map((call) => call[0][1])).toEqual([
       INS_SELECT,
       0x01,
       0x10,
+      0x11,
       0x15,
     ])
     expect(toastShow).toHaveBeenCalledWith(
@@ -772,17 +780,18 @@ describe("FlashcardProvider and card protocol 2.0 (ENG-675)", () => {
     const result = await tapOnce()
 
     const sent = transceive.mock.calls.map((call) => call[0][1])
-    expect(sent.slice(0, 10)).toEqual([
+    expect(sent.slice(0, 11)).toEqual([
       INS_SELECT,
       0x01,
       0x10,
+      0x11,
       0x15,
       0x16,
       0x37,
       0x36,
       0x01,
       0x16,
-      0x11,
+      0x17,
     ])
     expect(result.cashuCard?.now).toBe(HEADER_VECTORS[2].time)
     expect(headers.refreshTipHeader).toHaveBeenCalled()
@@ -887,5 +896,354 @@ describe("FlashcardProvider forgets each card on its own", () => {
 
     expect(latest?.cashuCard).toBeUndefined()
     expect(knownCards()).toEqual({})
+  })
+})
+
+describe("FlashcardProvider shows the balance before AUTH, verified only after it (ENG-707)", () => {
+  jest.setTimeout(PROVIDER_RENDER_TIMEOUT_MS)
+
+  const INS_AUTH = 0x15
+  /** Card B's key, apart from the fake card's own (card A). */
+  const OTHER_CARD_KEY = "0b".repeat(32)
+
+  let warn: jest.SpyInstance
+  /** Every context value the provider rendered, in order. */
+  let history: FlashcardSnapshot[]
+
+  beforeEach(() => {
+    latest = undefined
+    history = []
+    store.dispatch(resetFlashcardV2())
+    warn = jest.spyOn(console, "warn").mockImplementation(() => {})
+    requestTechnology.mockReset()
+    transceive.mockReset()
+    getTag.mockReset()
+    lookupUnits.mockReset()
+    lookupUnits.mockResolvedValue({ [KEYSET_HEX]: "sat" })
+    ;(NfcManager.isSupported as jest.Mock).mockResolvedValue(true)
+    ;(NfcManager.isEnabled as jest.Mock).mockResolvedValue(true)
+    jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    warn.mockRestore()
+    jest.clearAllMocks()
+  })
+
+  const mountWithHistory = async (options: ProviderOptions = {}) => {
+    renderProvider((snapshot) => {
+      latest = snapshot
+      history.push(snapshot)
+    }, options)
+    await waitFor(() => expect(latest?.readFlashcard).toBeDefined())
+  }
+
+  /** Answers as `card` does, holding its AUTH answer until the returned release. */
+  const holdAuth = (card: FakeCard) => {
+    let release: () => void = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+    transceive.mockImplementation(async (bytes: number[]) => {
+      if (bytes[1] === INS_AUTH) await held
+      return card.transceive(bytes)
+    })
+    return release
+  }
+
+  /** Starts a tap and leaves it running; resolves to the tap's result. */
+  const startTap = (onUnverified?: () => void) => {
+    let done: ReturnType<FlashcardSnapshot["readFlashcard"]> = Promise.resolve({})
+    act(() => {
+      done = latest?.readFlashcard(false, onUnverified) ?? done
+    })
+    return done
+  }
+
+  /** A whole tap, start to release. */
+  const finish = async (done: Promise<unknown>) => {
+    await act(async () => {
+      await done
+    })
+    await waitFor(() => expect(cancelTechnologyRequest).toHaveBeenCalled())
+  }
+
+  it("holds the card's balance as unverified while AUTH runs, then verified once it passes", async () => {
+    await mountWithHistory()
+    const card = loadedCard()
+    const release = holdAuth(card)
+    const onUnverified = jest.fn()
+
+    const done = startTap(onUnverified)
+
+    // GET_BALANCE is in and AUTH has not answered: the figure is there, said
+    // to be unproven, and nothing is verified or recorded.
+    await waitFor(() => expect(latest?.cashuCardPreview?.balance).toBe(500))
+    expect(latest?.cashuCardPreview?.pubkey).toBe(PUBKEY_HEX)
+    expect(latest?.cashuCard).toBeUndefined()
+    expect(knownCards()).toEqual({})
+    expect(onUnverified).toHaveBeenCalledTimes(1)
+    expect(transceive.mock.calls.map((call) => call[0][1])).toEqual([
+      INS_SELECT,
+      0x01,
+      0x10,
+      0x11,
+      INS_AUTH,
+    ])
+
+    release()
+    await finish(done)
+
+    await waitFor(() => expect(latest?.cashuCard?.balance).toBe(500))
+    expect(latest?.cashuCardPreview).toBeUndefined()
+    expect(knownCards()[PUBKEY_HEX]).toMatchObject({ lastBalance: 500 })
+    // From the preview on, no render had neither: the card screen, open on
+    // the preview, would have popped itself.
+    const shown = history.findIndex((snapshot) => snapshot.cashuCardPreview !== undefined)
+    expect(
+      history
+        .slice(shown)
+        .every((snapshot) => snapshot.cashuCard || snapshot.cashuCardPreview),
+    ).toBe(true)
+  })
+
+  it("a card that fails AUTH: the preview shown mid-tap is cleared, nothing is verified or recorded, and the toast says why", async () => {
+    await mountWithHistory()
+    const card = loadedCard({ badAuth: true })
+    const release = holdAuth(card)
+
+    const done = startTap()
+    await waitFor(() => expect(latest?.cashuCardPreview?.balance).toBe(500))
+    release()
+    await finish(done)
+
+    expect(latest?.cashuCardPreview).toBeUndefined()
+    expect(latest?.cashuCard).toBeUndefined()
+    expect(knownCards()).toEqual({})
+    expect(toastShow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "error",
+        message: i18nObject("en").FlashcardV2.authFailed(),
+      }),
+    )
+  })
+
+  /** A clone holding a large balance, tapped: it is never verified, on any render. */
+  const cloneNeverVerified = (isAuthed: boolean) => async () => {
+    await mountWithHistory({ isAuthed })
+    const clone = createFakeCard(128, { badAuth: true })
+    clone.slots[0] = slotOf(1, KEYSET, 1_000_000)
+    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+    transceive.mockImplementation((bytes: number[]) => clone.transceive(bytes))
+
+    await finish(startTap())
+
+    expect(
+      history.some((snapshot) => snapshot.cashuCardPreview?.balance === 1_000_000),
+    ).toBe(true)
+    expect(history.every((snapshot) => snapshot.cashuCard === undefined)).toBe(true)
+    expect(latest?.cashuCardPreview).toBeUndefined()
+    expect(knownCards()).toEqual({})
+    expect(lookupUnits).not.toHaveBeenCalled()
+  }
+
+  it(
+    "a clone's large balance is never verified (signed in): cashuCard is set on no render",
+    cloneNeverVerified(true),
+  )
+
+  it(
+    "a clone's large balance is never verified (signed out): cashuCard is set on no render",
+    cloneNeverVerified(false),
+  )
+
+  it("a refresh tap whose card leaves at AUTH clears its preview and leaves card A exactly as it was", async () => {
+    await mountWithHistory()
+    currentCard = loadedCard()
+    requestTechnology.mockResolvedValue(NfcTech.IsoDep)
+    transceive.mockImplementation(cashuCard)
+    await finish(startTap())
+    await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
+    const cardA = latest?.cashuCard
+    cancelTechnologyRequest.mockClear()
+
+    // Card B says its balance, then leaves the field while it signs.
+    const cardB = createFakeCard(128, { cardKey: OTHER_CARD_KEY })
+    cardB.slots[0] = slotOf(1, KEYSET, 42)
+    transceive.mockImplementation(async (bytes: number[]) => {
+      if (bytes[1] === INS_AUTH) throw new Error("Tag was lost")
+      return cardB.transceive(bytes)
+    })
+    history = []
+    await finish(startTap())
+
+    expect(cardB.pubkey).not.toBe(PUBKEY_HEX)
+    // B's figure showed over A while it verified...
+    expect(
+      history.some(
+        (snapshot) =>
+          snapshot.cashuCardPreview?.pubkey === cardB.pubkey &&
+          snapshot.cashuCard?.pubkey === PUBKEY_HEX,
+      ),
+    ).toBe(true)
+    // ...and is gone, with A untouched, and B nowhere on this phone.
+    expect(latest?.cashuCardPreview).toBeUndefined()
+    expect(latest?.cashuCard).toEqual(cardA)
+    expect(knownCards()[cardB.pubkey]).toBeUndefined()
+  })
+
+  it("labels the preview with the unit this phone recorded, while the card still says the recorded balance", async () => {
+    store.dispatch(
+      cardSeen({
+        pubkey: PUBKEY_HEX,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 500,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
+    store.dispatch(cardUnitResolved({ pubkey: PUBKEY_HEX, unit: "sat" }))
+    await mountWithHistory()
+    const release = holdAuth(loadedCard())
+
+    const done = startTap()
+    await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+    expect(latest?.cashuCardPreview?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 500 }],
+      unknown: 0,
+    })
+    release()
+    await finish(done)
+  })
+
+  it("keeps the recorded unit on the preview when the card's balance moved since it was recorded", async () => {
+    // Seen on the Max: the card was read at 160 sat, then paid 14 offline at
+    // a till. Spending changes the balance, not the pieces' unit.
+    store.dispatch(
+      cardSeen({
+        pubkey: PUBKEY_HEX,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 900,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
+    store.dispatch(cardUnitResolved({ pubkey: PUBKEY_HEX, unit: "sat" }))
+    await mountWithHistory()
+    const release = holdAuth(loadedCard())
+
+    const done = startTap()
+    await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+    expect(latest?.cashuCardPreview?.unitTotals).toEqual({
+      byUnit: [{ unit: "sat", amount: 500 }],
+      unknown: 0,
+    })
+    release()
+    await finish(done)
+  })
+
+  it("leaves the preview's unit unknown for a card this phone never labelled", async () => {
+    store.dispatch(
+      cardSeen({
+        pubkey: PUBKEY_HEX,
+        version: "2.0",
+        pinState: "set",
+        lastBalance: 900,
+        owned: true,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
+    await mountWithHistory()
+    const release = holdAuth(loadedCard())
+
+    const done = startTap()
+    await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+    expect(latest?.cashuCardPreview?.unitTotals).toBeUndefined()
+    release()
+    await finish(done)
+  })
+
+  it("forgetCashuCard drops a preview too", async () => {
+    await mountWithHistory()
+    const release = holdAuth(loadedCard())
+    const done = startTap()
+    await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+
+    act(() => {
+      latest?.forgetCashuCard()
+    })
+    expect(latest?.cashuCardPreview).toBeUndefined()
+
+    release()
+    await finish(done)
+  })
+
+  describe("the scan sheet says the figure while the card verifies", () => {
+    it("Android: the in-app sheet's subtitle", async () => {
+      const os = jest.replaceProperty(Platform, "OS", "android")
+      try {
+        await mountWithHistory()
+        const release = holdAuth(loadedCard())
+        const done = startTap()
+        await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+        expect(screen.getByTestId("flashcard-scan-sheet-verifying").props.children).toBe(
+          "500 · unit unknown · Verifying… keep holding",
+        )
+        release()
+        await finish(done)
+        expect(screen.queryByTestId("flashcard-scan-sheet-verifying")).toBeNull()
+      } finally {
+        os.restore()
+      }
+    })
+
+    it("iOS: the system NFC sheet's message", async () => {
+      const os = jest.replaceProperty(Platform, "OS", "ios")
+      try {
+        await mountWithHistory()
+        const release = holdAuth(loadedCard())
+        const done = startTap()
+        await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+        expect(NfcManager.setAlertMessageIOS).toHaveBeenCalledWith(
+          "500 · unit unknown · Verifying… keep holding",
+        )
+        release()
+        await finish(done)
+      } finally {
+        os.restore()
+      }
+    })
+
+    it("says no figure when the balance is hidden", async () => {
+      const os = jest.replaceProperty(Platform, "OS", "ios")
+      const cache = new InMemoryCache()
+      cache.writeQuery({ query: HideBalanceDocument, data: { hideBalance: true } })
+      const client = new ApolloClient({ cache })
+      const WithApollo = ({ children }: React.PropsWithChildren) => (
+        <ApolloProvider client={client}>{children}</ApolloProvider>
+      )
+      try {
+        await mountWithHistory({ container: WithApollo })
+        const release = holdAuth(loadedCard())
+        const done = startTap()
+        await waitFor(() => expect(latest?.cashuCardPreview).toBeDefined())
+        expect(NfcManager.setAlertMessageIOS).toHaveBeenCalledWith(
+          "Verifying… keep holding",
+        )
+        release()
+        await finish(done)
+      } finally {
+        os.restore()
+      }
+    })
   })
 })

@@ -213,22 +213,22 @@ export const logAppFeedback = (params: LogAppFeedbackParams) => {
 // ============================================
 
 type LogFeaturedProfileSelectedParams = {
-  discoveryMethod: 'search' | 'long_press' | 'profile'
+  discoveryMethod: "search" | "long_press" | "profile"
 }
 
 export const logFeaturedProfileSelected = (params: LogFeaturedProfileSelectedParams) => {
-  getAnalytics().logEvent('featured_profile_selected', {
+  getAnalytics().logEvent("featured_profile_selected", {
     discovery_method: params.discoveryMethod,
   })
 }
 
 type LogFeaturedViewOpenedParams = {
-  entryPoint: 'search' | 'long_press' | 'profile'
+  entryPoint: "search" | "long_press" | "profile"
   isFirstAccess: boolean
 }
 
 export const logFeaturedViewOpened = (params: LogFeaturedViewOpenedParams) => {
-  getAnalytics().logEvent('featured_view_opened', {
+  getAnalytics().logEvent("featured_view_opened", {
     entry_point: params.entryPoint,
     is_first_access: params.isFirstAccess,
   })
@@ -241,5 +241,92 @@ export const logFeaturedViewOpened = (params: LogFeaturedViewOpenedParams) => {
 export const logPlaidLinkFailure = ({ errorCode }: { errorCode: string }) => {
   getAnalytics().logEvent("plaid_link_failure", {
     error_code: errorCode,
+  })
+}
+
+// ============================================
+// Flash assistant (ENG-687, docs/ai-assistant-tool-registry.md §8)
+// ============================================
+// The assistant's engine reports through these (app/assistant/engine/
+// telemetry.ts). Their parameter types are declared here, not imported from
+// app/assistant/: the assistant depends on the rest of the app, never the
+// other way round (spec §2). Every parameter is a closed union, a number or
+// a boolean, except `intent`, which the engine narrows to its closed intent
+// set; none can carry a memo, a payee or an amount, so no payload text
+// reaches Firebase.
+
+/**
+ * How an assistant tool call or Confirm ended. telemetry.ts says which path
+ * reports which, as AssistantOutcome.
+ */
+export type AssistantEventOutcome =
+  | "answered"
+  | "clarification"
+  | "prepared"
+  | "error"
+  | "rejected"
+  | "confirmed"
+  | "failed"
+  | "unknown"
+  | "denied"
+  | "refreshed"
+  | "expired"
+
+/** The parameters of one `assistant_event`. */
+export type AssistantEventParams = {
+  /**
+   * The intent's name, or "unknown" when the router could not read one. The
+   * engine's AssistantToolEvent narrows it to the closed intent set.
+   */
+  intent: string
+  /** "none" when the router could not read an intent from the call. */
+  tier: "read" | "action" | "none"
+  outcome: AssistantEventOutcome
+  latencyMs: number
+  /** Whether an on-device model served the call. False until Phase 3. */
+  onDeviceModelAvailable: boolean
+}
+
+/** One tool call or one Confirm: its intent, tier, outcome and latency. */
+export const logAssistantEvent = (params: AssistantEventParams) => {
+  getAnalytics().logEvent("assistant_event", {
+    intent: params.intent,
+    tier: params.tier,
+    outcome: params.outcome,
+    latency_ms: Math.round(params.latencyMs),
+    on_device_model_available: params.onDeviceModelAvailable,
+  })
+}
+
+/** An assistant thread was opened. Weekly active assistant users count these. */
+export const logAssistantThreadOpened = () => {
+  getAnalytics().logEvent("assistant_thread_opened")
+}
+
+/** A thread was left while a clarification was still unanswered. */
+export const logAssistantClarificationAbandoned = ({
+  clarificationCount,
+}: {
+  clarificationCount: number
+}) => {
+  getAnalytics().logEvent("assistant_clarification_abandoned", {
+    clarification_count: clarificationCount,
+  })
+}
+
+type LogSendOpenToConfirmParams = {
+  /**
+   * `assistant`: from opening a thread to the first confirmed send in it.
+   * `classic`: from opening the send flow's destination screen to a confirmed
+   * send, the same measure for the screens, for comparison (spec §8).
+   */
+  flow: "assistant" | "classic"
+  openToConfirmMs: number
+}
+
+export const logSendOpenToConfirm = (params: LogSendOpenToConfirmParams) => {
+  getAnalytics().logEvent("send_open_to_confirm", {
+    flow: params.flow,
+    open_to_confirm_ms: Math.round(params.openToConfirmMs),
   })
 }

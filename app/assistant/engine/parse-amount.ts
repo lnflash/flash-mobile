@@ -1,0 +1,81 @@
+import { WalletCurrency } from "@app/graphql/generated"
+import {
+  MoneyAmount,
+  toBtcMoneyAmount,
+  toUsdMoneyAmount,
+  toWalletAmount,
+} from "@app/types/amounts"
+
+// The one place a model-emitted amount becomes a MoneyAmount
+// (docs/ai-assistant-tool-registry.md §3, "Amounts"). Amounts arrive as
+// decimal strings in display units, never as JSON numbers, and leave as an
+// integer count of minor units: cents for USD and USDT, sats for BTC. The
+// conversion is string arithmetic, so no float ever holds the amount and
+// nothing is rounded: a string with more places than the currency has is
+// refused.
+
+/** Every amount string matches this: digits, then at most 8 decimal places. */
+export const AMOUNT_PATTERN = "^[0-9]+(\\.[0-9]{1,8})?$"
+
+const AMOUNT_RE = new RegExp(AMOUNT_PATTERN)
+
+export const AMOUNT_CURRENCIES = ["BTC", "USD", "USDT"] as const
+
+export type AmountCurrency = (typeof AMOUNT_CURRENCIES)[number]
+
+/**
+ * Places after the point in each currency's display unit. A BTC amount is in
+ * bitcoin, so its 8 places are sats ("0.00021" is 21,000 sats); USD and USDT
+ * amounts are in dollars, so their 2 places are cents.
+ */
+const DISPLAY_PLACES: Record<AmountCurrency, number> = {
+  BTC: 8,
+  USD: 2,
+  USDT: 2,
+}
+
+export type AmountRefusal = "format" | "precision" | "range"
+
+export type ParsedAmount =
+  | { ok: true; amount: MoneyAmount<WalletCurrency> }
+  | { ok: false; reason: AmountRefusal }
+
+const toMoneyAmount = (
+  minorUnits: number,
+  currency: AmountCurrency,
+): MoneyAmount<WalletCurrency> => {
+  switch (currency) {
+    case "BTC":
+      return toBtcMoneyAmount(minorUnits)
+    case "USD":
+      return toUsdMoneyAmount(minorUnits)
+    case "USDT":
+      return toWalletAmount({ amount: minorUnits, currency: WalletCurrency.Usdt })
+  }
+}
+
+/**
+ * Parse a decimal amount string into minor units of `currency`.
+ *
+ * - "12.50" USD is 1250 cents; "0.00021" BTC is 21000 sats.
+ * - Trailing zeros past the currency's places are exact and accepted
+ *   ("12.500" USD is 1250 cents). Any other digit there would need rounding
+ *   and is refused ("12.505" USD).
+ * - Anything that is not a plain decimal string, a JSON number included, is
+ *   refused, as is an amount too large to count in minor units exactly.
+ */
+export const parseAmount = (value: unknown, currency: AmountCurrency): ParsedAmount => {
+  if (typeof value !== "string" || !AMOUNT_RE.test(value)) {
+    return { ok: false, reason: "format" }
+  }
+  const [whole, fraction = ""] = value.split(".")
+  const places = DISPLAY_PLACES[currency]
+  if (/[^0]/.test(fraction.slice(places))) {
+    return { ok: false, reason: "precision" }
+  }
+  const minorUnits = BigInt(whole + fraction.slice(0, places).padEnd(places, "0"))
+  if (minorUnits > BigInt(Number.MAX_SAFE_INTEGER)) {
+    return { ok: false, reason: "range" }
+  }
+  return { ok: true, amount: toMoneyAmount(Number(minorUnits), currency) }
+}

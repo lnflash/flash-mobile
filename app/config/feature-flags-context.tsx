@@ -9,29 +9,53 @@ const BridgeTopupEnabledKey = "bridgeTopupEnabled"
 // until flash-pos refuses or supports USD cards (ENG-619): today it prices
 // every card proof as sats, so a USD card would be charged many times over.
 const CashuCardUsdEnabledKey = "cashuCardUsdEnabled"
+// The Flash assistant (ENG-684, docs/ai-assistant-tool-registry.md §1, rule 7):
+// the assistant itself, voice input, spoken replies, and the server-side
+// model fallback. All four stay off until Remote Config turns them on, on
+// the Local instance too: dogfooding flips the remote flag.
+const AssistantEnabledKey = "assistantEnabled"
+const AssistantVoiceKey = "assistantVoice"
+const AssistantVoiceRepliesKey = "assistantVoiceReplies"
+const AssistantServerFallbackKey = "assistantServerFallback"
 
 type FeatureFlags = {
   deviceAccountEnabled: boolean
   bridgeTopupEnabled: boolean
   cashuCardUsdEnabled: boolean
+  assistantEnabled: boolean
+  assistantVoice: boolean
+  assistantVoiceReplies: boolean
+  assistantServerFallback: boolean
 }
 
 type RemoteConfig = {
   [DeviceAccountEnabledKey]: boolean
   [BridgeTopupEnabledKey]: boolean
   [CashuCardUsdEnabledKey]: boolean
+  [AssistantEnabledKey]: boolean
+  [AssistantVoiceKey]: boolean
+  [AssistantVoiceRepliesKey]: boolean
+  [AssistantServerFallbackKey]: boolean
 }
 
 const defaultRemoteConfig: RemoteConfig = {
   deviceAccountEnabledRestAuth: true,
   bridgeTopupEnabled: false,
   cashuCardUsdEnabled: false,
+  assistantEnabled: false,
+  assistantVoice: false,
+  assistantVoiceReplies: false,
+  assistantServerFallback: false,
 }
 
 const defaultFeatureFlags = {
   deviceAccountEnabled: false,
   bridgeTopupEnabled: false,
   cashuCardUsdEnabled: false,
+  assistantEnabled: false,
+  assistantVoice: false,
+  assistantVoiceReplies: false,
+  assistantServerFallback: false,
 }
 
 // Resolves once the native side has handed JS its values: the defaults above
@@ -66,6 +90,10 @@ const readActive = (): RemoteConfig => {
     [DeviceAccountEnabledKey]: read(DeviceAccountEnabledKey),
     [BridgeTopupEnabledKey]: read(BridgeTopupEnabledKey),
     [CashuCardUsdEnabledKey]: read(CashuCardUsdEnabledKey),
+    [AssistantEnabledKey]: read(AssistantEnabledKey),
+    [AssistantVoiceKey]: read(AssistantVoiceKey),
+    [AssistantVoiceRepliesKey]: read(AssistantVoiceRepliesKey),
+    [AssistantServerFallbackKey]: read(AssistantServerFallbackKey),
   }
 }
 
@@ -125,6 +153,11 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
       remoteConfig.deviceAccountEnabledRestAuth || galoyInstance.id === "Local",
     bridgeTopupEnabled: remoteConfig.bridgeTopupEnabled || galoyInstance.id === "Local",
     cashuCardUsdEnabled: remoteConfig.cashuCardUsdEnabled || galoyInstance.id === "Local",
+    // No Local override for the assistant flags (spec §1, rule 7).
+    assistantEnabled: remoteConfig.assistantEnabled,
+    assistantVoice: remoteConfig.assistantVoice,
+    assistantVoiceReplies: remoteConfig.assistantVoiceReplies,
+    assistantServerFallback: remoteConfig.assistantServerFallback,
   }
 
   if (!remoteConfigReady && currentLevel === "NonAuth") {

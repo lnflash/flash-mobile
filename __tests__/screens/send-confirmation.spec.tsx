@@ -25,6 +25,11 @@ import { payLightningBreez, payLnurlBreez } from "@app/utils/breez-sdk"
 // __tests__/mocks/breez-sdk-spark-mock-parity.spec.ts.
 import { PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
 import { getAnalytics } from "@react-native-firebase/analytics"
+import {
+  clearSendFlowOpened,
+  markSendFlowOpened,
+  takeSendFlowOpenToConfirmMs,
+} from "@app/utils/send-open-to-confirm"
 import baseTranslation from "@app/i18n/en"
 import type { Translation } from "@app/i18n/i18n-types"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
@@ -413,6 +418,119 @@ describe("expired held invoice", () => {
         expect.objectContaining({ payment_status: PaymentSendResult.Failure }),
       ],
     ])
+  })
+
+  // ENG-687: the classic flow's open-to-confirm time, the baseline the
+  // assistant's thread-open-to-confirm time is compared with.
+  describe("open-to-confirm", () => {
+    const openToConfirmEvents = () =>
+      (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+        ([event]) => event === "send_open_to_confirm",
+      )
+
+    beforeEach(() => {
+      clearSendFlowOpened()
+    })
+
+    it("reports the time from the flow's open to a confirmed send", async () => {
+      // The destination screen opened the flow 90 s before the send.
+      markSendFlowOpened(LONG_AFTER_EXPIRY_MS - 90_000)
+
+      const { navigate, confirm } = await renderConfirmation(btcLnurlPaymentDetail())
+      await confirm()
+
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything()),
+      )
+      expect(openToConfirmEvents()).toEqual([
+        // eslint-disable-next-line camelcase -- Firebase event params are snake_case
+        ["send_open_to_confirm", { flow: "classic", open_to_confirm_ms: 90_000 }],
+      ])
+    })
+
+    it("reports nothing for a failed send, and keeps the open for the retry", async () => {
+      markSendFlowOpened(LONG_AFTER_EXPIRY_MS - 90_000)
+      ;(payLnurlBreez as jest.Mock).mockResolvedValueOnce({
+        payment: { status: PaymentStatus.Failed },
+        successAction: undefined,
+      })
+
+      const { queryByText, confirm } = await renderConfirmation(btcLnurlPaymentDetail())
+      await confirm()
+
+      await waitFor(() => expect(queryByText("Something went wrong")).toBeTruthy())
+      expect(openToConfirmEvents()).toEqual([])
+      expect(takeSendFlowOpenToConfirmMs(LONG_AFTER_EXPIRY_MS)).toBe(90_000)
+    })
+
+    it("reports nothing when the flow did not open on the destination screen", async () => {
+      const { navigate, confirm } = await renderConfirmation(btcLnurlPaymentDetail())
+      await confirm()
+
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything()),
+      )
+      expect(openToConfirmEvents()).toEqual([])
+    })
+  })
+
+  // The Breez BTC wallet's bolt11 send. payLightningBreez is handed the held
+  // invoice, so the expiry gate applies to it.
+  const btcInvoicePaymentDetail = () =>
+    createAmountLightningPaymentDetails({
+      paymentRequest: INCIDENT_INVOICE,
+      paymentRequestAmount: amount,
+      convertMoneyAmount,
+      sendingWalletDescriptor: btcSendingWalletDescriptor,
+    })
+
+  // The ENG-712 symptom: payLightningBreez answered success: true for a
+  // payment that failed inside its 60-second wait, and the user landed on the
+  // success screen while payment_result logged SUCCESS and Confirm stayed
+  // disarmed. The wrapper now answers success: false, and the send path reads
+  // the status behind it too, so both answers must read as a failure.
+  const failedInvoiceAnswers: [string, unknown][] = [
+    [
+      "payLightningBreez's success: false",
+      { success: false, payment: { payment: { status: PaymentStatus.Failed } } },
+    ],
+    [
+      "the old wrapper's success: true",
+      { success: true, payment: { payment: { status: PaymentStatus.Failed } } },
+    ],
+  ]
+  failedInvoiceAnswers.forEach(([label, answer]) => {
+    it(`shows a BTC invoice send the SDK reports Failed as a failure and re-arms Confirm, with ${label} (ENG-712)`, async () => {
+      ;(payLightningBreez as jest.Mock).mockResolvedValueOnce(answer)
+
+      const { getByText, queryByText, navigate, confirm } = await renderConfirmation(
+        btcInvoicePaymentDetail(),
+      )
+      // Nothing on screen reads as a failure before the tap.
+      expect(queryByText("Something went wrong")).toBeNull()
+      // Tapped at mount, four seconds into the invoice's 60-second life: the
+      // held invoice is live, so the expiry gate lets it go out.
+      await confirm(MOUNTED_MS)
+
+      expect(blockedEvents()).toHaveLength(0)
+      expect((payLightningBreez as jest.Mock).mock.calls).toEqual([
+        [INCIDENT_INVOICE, amount.amount],
+      ])
+      await waitFor(() => expect(queryByText("Something went wrong")).toBeTruthy())
+      expect(navigate).not.toHaveBeenCalledWith("sendBitcoinSuccess", expect.anything())
+      const paymentResults = (getAnalytics().logEvent as jest.Mock).mock.calls.filter(
+        ([event]) => event === "payment_result",
+      )
+      expect(paymentResults).toEqual([
+        [
+          "payment_result",
+          // eslint-disable-next-line camelcase -- Firebase event params are snake_case
+          expect.objectContaining({ payment_status: PaymentSendResult.Failure }),
+        ],
+      ])
+      // Re-armed: Confirm takes the next tap.
+      expect(getByText(en.SendBitcoinConfirmationScreen.title)).toBeEnabled()
+    })
   })
 })
 

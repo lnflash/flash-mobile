@@ -28,6 +28,12 @@ jest.mock("@breeztech/breez-sdk-spark-react-native", () => ({
   defaultConfig: () => ({}),
   Seed: { Mnemonic: class {} },
   MaxFee: { NetworkRecommended: class {} },
+  // Not exercised by this file's own cases, but spark.ts reads it at module
+  // scope (LIGHTNING_PAYMENT_SENT, ENG-712, for the unrelated lightning
+  // branch), so importing payLnurlBreez from this mock needs it defined.
+  // Values mirror the shared manual mock (generated: Completed=0, Pending=1,
+  // Failed=2; see __tests__/mocks/breez-sdk-spark-mock-parity.spec.ts).
+  PaymentStatus: { Completed: 0, Pending: 1, Failed: 2 },
   SdkBuilder: class {
     async withDefaultStorage() {}
     async build() {
