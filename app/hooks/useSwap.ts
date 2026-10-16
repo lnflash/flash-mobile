@@ -24,6 +24,7 @@ import {
   receivePaymentBreez,
 } from "@app/utils/breez-sdk"
 import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
+import { CHECK_TRANSACTION_HISTORY_MESSAGE } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { useDisplayCurrency } from "./use-display-currency"
 import { useFormatSats } from "./use-format-sats"
@@ -248,6 +249,12 @@ export const useSwap = () => {
     }
 
     const res = await payLightningBreez(lnInvoice, amount)
+    // ENG-720: sdk.sendPayment itself rejected, so the payment may already
+    // have left. The history message, which the confirmation screen disarms
+    // Convert on, and never res.error, the SDK's raw message.
+    if (res.outcomeUnknown) {
+      throw new Error(CHECK_TRANSACTION_HISTORY_MESSAGE)
+    }
     // Previously a failed Breez send returned undefined here, which the
     // confirmation screen read as "no result" and silently ignored.
     if (!res.success) {

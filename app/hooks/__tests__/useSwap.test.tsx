@@ -4,6 +4,7 @@ import { loadAllLocales } from "../../i18n/i18n-util.sync"
 import { useSwap } from "../useSwap"
 import { payLightningBreez, receivePaymentBreez } from "@app/utils/breez-sdk"
 import { PaymentStatus } from "@breeztech/breez-sdk-spark-react-native"
+import { CHECK_TRANSACTION_HISTORY_MESSAGE } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 
 loadAllLocales()
 
@@ -210,6 +211,30 @@ describe("useSwap — swap() result reporting", () => {
     await expect(current.swap("lnbc1", "BTC", 8442)).rejects.toThrow(
       i18nObject("en").errors.generic(),
     )
+  })
+
+  // ENG-720. payLightningBreez's answer for a rejection from sdk.sendPayment
+  // itself: the payment may already have left. The hook throws the history
+  // message, on which the confirmation screen disarms Convert, and never the
+  // SDK's raw message.
+  it("throws exactly the history message, not the SDK's, when Breez answers outcomeUnknown", async () => {
+    mockPayLightningBreez.mockResolvedValue({
+      success: false,
+      error: "SdkError.SparkError",
+      outcomeUnknown: true,
+    })
+
+    const { current } = renderUseSwap()
+    const error = await current.swap("lnbc1", "BTC", 8442).then(
+      () => {
+        throw new Error("expected swap to reject")
+      },
+      (err: unknown) => err,
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toBe(CHECK_TRANSACTION_HISTORY_MESSAGE)
+    expect((error as Error).message).not.toContain("SdkError")
   })
 })
 
