@@ -1,3 +1,4 @@
+import { ACTION_TOOLS } from "./actions"
 import { createRegistry, RegisteredTool } from "./define"
 import { decodePaymentRequest } from "./read/decode-payment-request"
 import { getAccountLimits } from "./read/get-account-limits"
@@ -23,4 +24,4 @@ export const READ_TOOLS: readonly RegisteredTool[] = [
   decodePaymentRequest,
 ]
 
-export const assistantRegistry = createRegistry(READ_TOOLS)
+export const assistantRegistry = createRegistry([...READ_TOOLS, ...ACTION_TOOLS])

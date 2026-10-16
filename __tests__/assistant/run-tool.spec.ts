@@ -6,7 +6,7 @@ import {
   defineRead,
   RegisteredTool,
 } from "@app/assistant/registry/define"
-import { assistantRegistry } from "@app/assistant/registry"
+import { assistantRegistry, READ_TOOLS } from "@app/assistant/registry"
 import { PrepareRefusedError } from "@app/assistant/registry/refusals"
 import type { ActionToolCtx, ReadToolCtx } from "@app/assistant/registry/types"
 import { toUsdMoneyAmount } from "@app/types/amounts"
@@ -104,9 +104,22 @@ describe("runTool", () => {
       kind: "error",
       userMessage: "Assistant.unknownIntent",
     })
-    await expect(runTool({ intent: "prepareSend", args: {} }, deps)).resolves.toEqual({
+    // A known intent with no tool registered. Since ENG-688 every intent
+    // has one in the assistant's registry, so a registry of the read tools
+    // alone stands in.
+    await expect(
+      runTool(
+        { intent: "prepareSend", args: {} },
+        setup(createRegistry(READ_TOOLS)).deps,
+      ),
+    ).resolves.toEqual({
       kind: "error",
       userMessage: "Assistant.notYetAvailable",
+    })
+    // With the tool registered, its schema refuses the call first.
+    await expect(runTool({ intent: "prepareSend", args: {} }, deps)).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.invalidArguments",
     })
     await expect(
       runTool({ intent: "getTransactions", args: { first: "ten" } }, deps),
@@ -364,6 +377,20 @@ describe("runTool with action tools (ENG-688)", () => {
       userMessage: "Assistant.notYetAvailable",
       card: { type: "prepareRefused", reason: "notAvailableYet" },
     })
+  })
+})
+
+describe("the assistant's registry (ENG-688)", () => {
+  it("answers a valid prepare call notYetAvailable, preparing nothing, without action deps", async () => {
+    const { deps, graphql } = setup()
+
+    await expect(
+      runTool(
+        { intent: "prepareSend", args: { payee: "Alice", amount: "5", currency: "USD" } },
+        deps,
+      ),
+    ).resolves.toEqual({ kind: "error", userMessage: "Assistant.notYetAvailable" })
+    expect(graphql.contacts).not.toHaveBeenCalled()
   })
 })
 

@@ -15,10 +15,10 @@ export type SourceWallet = {
   balance: WalletAmount<WalletCurrency>
 }
 
-/** The account's wallet rows, and the cash wallet among them (USDT before USD, as the screens pick it). */
-export const cashWalletOf = (
-  wallets: Awaited<ReturnType<ActionToolCtx["graphql"]["wallets"]>>,
-) => getCashWallet(wallets)
+export type WalletRows = Awaited<ReturnType<ActionToolCtx["graphql"]["wallets"]>>
+
+/** The cash wallet among the account's wallets: USDT before USD, as the screens pick it. */
+export const cashWalletOf = (wallets: WalletRows) => getCashWallet(wallets)
 
 /**
  * The wallet a payment comes from (or goes to) and its balance. USD and USDT
@@ -30,8 +30,10 @@ export const cashWalletOf = (
 export const readWallet = async (
   ctx: Pick<ActionToolCtx, "graphql" | "btcRail">,
   choice: WalletChoice | undefined,
+  /** The account's wallet rows, when the caller has read them already. */
+  rows?: WalletRows,
 ): Promise<SourceWallet> => {
-  const wallets = await ctx.graphql.wallets()
+  const wallets = rows ?? (await ctx.graphql.wallets())
   if (choice === "BTC") {
     const row = getBtcWallet(wallets)
     if (!row) throw new ToolReplyError("Assistant.walletUnavailable")
