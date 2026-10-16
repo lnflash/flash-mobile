@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react"
-import { Linking } from "react-native"
+import { Linking, LogBox } from "react-native"
 
 // The assistant's switch for development and e2e builds (ENG-689, architect
 // decision 3). assistantEnabled follows Remote Config, with no Local-instance
@@ -14,7 +14,10 @@ import { Linking } from "react-native"
 // It turns on the assistant only, never voice, spoken replies or the server
 // fallback, and it lives in memory: a relaunch forgets it. The navigation
 // container ignores every flash://dev/ link (isDevLink), so the :payment
-// route never sees this one.
+// route never sees this one. Like the card bridge's link (useDevCardLinks),
+// turning it on means the e2e flows are driving this build, so it hides
+// LogBox: its toasts sit over the bottom of the screen, where the thread's
+// input and Ask button are, and take the flows' taps.
 
 const isDev = (): boolean => typeof __DEV__ !== "undefined" && __DEV__ === true
 
@@ -71,7 +74,10 @@ export const useDevAssistantLink = (): void => {
     if (!isDev()) return undefined
     const handle = (url: string | null) => {
       const value = url ? parseAssistantDevLink(url) : undefined
-      if (value !== undefined) setAssistantDevOverride(value)
+      if (value === undefined) return
+      setAssistantDevOverride(value)
+      // Off leaves LogBox as it is: the card bridge may be hiding it too.
+      if (value) LogBox.ignoreAllLogs(true)
     }
     Linking.getInitialURL().then(handle, () => undefined)
     const subscription = Linking.addEventListener("url", ({ url }) => handle(url))

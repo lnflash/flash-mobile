@@ -5,7 +5,7 @@
  * and the server fallback stay Remote Config's alone.
  */
 import * as React from "react"
-import { Linking, Text } from "react-native"
+import { Linking, LogBox, Text } from "react-native"
 import { act, render, renderHook } from "@testing-library/react-native"
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 
@@ -82,6 +82,7 @@ beforeEach(() => {
     asBoolean: () => false,
     getSource: () => "remote",
   }))
+  jest.spyOn(LogBox, "ignoreAllLogs").mockImplementation(() => undefined)
   jest.spyOn(Linking, "getInitialURL").mockResolvedValue(null)
   jest.spyOn(Linking, "addEventListener").mockImplementation(((
     _type: string,
@@ -174,6 +175,21 @@ describe("useDevAssistantLink", () => {
     expect(assistantDevOverride()).toBe(true)
   })
 
+  it("hides LogBox when it turns the assistant on, as the card bridge's link does", async () => {
+    // Its toasts cover the thread's input and Ask button, where the flows tap.
+    render(<DevAssistantLink />)
+    await act(async () => {})
+
+    act(() => urlListener?.({ url: "flash://dev/assistant?on=1" }))
+    expect(LogBox.ignoreAllLogs).toHaveBeenCalledWith(true)
+
+    // Off leaves it as it is: the card bridge may be hiding it too.
+    ;(LogBox.ignoreAllLogs as jest.Mock).mockClear()
+    act(() => urlListener?.({ url: "flash://dev/assistant?off=1" }))
+    act(() => urlListener?.({ url: "flash://dev/card-tap" }))
+    expect(LogBox.ignoreAllLogs).not.toHaveBeenCalled()
+  })
+
   it("acts on links that arrive while the app runs, and stops listening on unmount", async () => {
     const view = render(<DevAssistantLink />)
     await act(async () => {})
@@ -197,5 +213,6 @@ describe("useDevAssistantLink", () => {
 
     expect(Linking.addEventListener).not.toHaveBeenCalled()
     expect(Linking.getInitialURL).not.toHaveBeenCalled()
+    expect(LogBox.ignoreAllLogs).not.toHaveBeenCalled()
   })
 })
