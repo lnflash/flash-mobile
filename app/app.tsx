@@ -53,6 +53,7 @@ import { DevAssistantLink } from "./config/assistant-dev-override"
 import { PersistGate } from "redux-persist/integration/react"
 import { useEffect } from "react"
 import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
+import { reportOnDeviceModelCoverage } from "./utils/on-device-model-coverage"
 import { AppState } from "react-native"
 
 // FIXME should we only load the currently used local?
@@ -90,6 +91,12 @@ export const App = () => {
       sub.remove()
       nostrRuntime.stop()
     }
+  }, [])
+
+  // Once per install, whatever the assistant's flag: whether this device
+  // could run an on-device model, to size Phase 3 (ENG-689).
+  useEffect(() => {
+    reportOnDeviceModelCoverage()
   }, [])
 
   return (

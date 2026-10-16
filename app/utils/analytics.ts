@@ -330,3 +330,32 @@ export const logSendOpenToConfirm = (params: LogSendOpenToConfirmParams) => {
     open_to_confirm_ms: Math.round(params.openToConfirmMs),
   })
 }
+
+/**
+ * Whether this device could run an on-device model, reported once per
+ * install, whatever the assistant's flag (ENG-689, decision 4): it sizes
+ * Phase 3's addressable base (docs/ai-assistant-tool-registry.md §7.1).
+ * Device capability only, nothing that identifies the user or the device.
+ */
+export type AssistantCoverageParams = {
+  onDeviceModelAvailable: boolean
+  platform: "ios" | "android" | "other"
+  /** The OS's major version, when it reads as one. */
+  osMajorVersion: number | null
+  /**
+   * The model's generation, never its full identifier: "iPhone17" on iOS;
+   * "android" or "other" elsewhere.
+   */
+  deviceClass: string
+}
+
+export const logAssistantCoverage = (params: AssistantCoverageParams) => {
+  getAnalytics().logEvent("assistant_coverage", {
+    on_device_model_available: params.onDeviceModelAvailable,
+    platform: params.platform,
+    ...(params.osMajorVersion === null
+      ? {}
+      : { os_major_version: params.osMajorVersion }),
+    device_class: params.deviceClass,
+  })
+}
