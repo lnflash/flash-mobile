@@ -227,7 +227,7 @@ describe("prepareCashout", () => {
     expect(fake.actions.initiateCashout).toHaveBeenCalledTimes(1)
   })
 
-  it("points to the history when the offer was already used, or the answer was lost", async () => {
+  it("points to the history when the offer was already used, the answer was lost, or it said nothing", async () => {
     const used = setup()
     used.actions.initiateCashout.mockResolvedValue({
       id: null,
@@ -237,8 +237,11 @@ describe("prepareCashout", () => {
     })
     const lost = setup()
     lost.actions.initiateCashout.mockRejectedValue(new Error("Network request failed"))
+    // Neither an id nor an error: nothing says the offer did not go.
+    const silent = setup()
+    silent.actions.initiateCashout.mockResolvedValue({ id: null, errors: [] })
 
-    for (const fake of [used, lost]) {
+    for (const fake of [used, lost, silent]) {
       await expect(confirm(prepared(await run(HUNDRED, fake)))).resolves.toEqual({
         status: "unknown",
         replyKey: "Assistant.checkHistory",

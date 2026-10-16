@@ -76,8 +76,13 @@ const outcomeOf = (answer: {
   errors: readonly { code?: string | null }[]
 }): ExecutionOutcome => {
   if (answer.id) return { status: "succeeded" }
-  if (answer.errors.some(({ code }) => code === OFFER_ALREADY_EXECUTED)) {
-    // The offer went already, if not from this card: something may have moved.
+  // The offer went already, if not from this card; or the server answered
+  // neither an id nor an error, which says nothing either way: something
+  // may have moved.
+  if (
+    answer.errors.length === 0 ||
+    answer.errors.some(({ code }) => code === OFFER_ALREADY_EXECUTED)
+  ) {
     return { status: "unknown", replyKey: "Assistant.checkHistory", next: "checkHistory" }
   }
   return { status: "failed", replyKey: "Assistant.cashoutFailed", next: "reprepare" }
