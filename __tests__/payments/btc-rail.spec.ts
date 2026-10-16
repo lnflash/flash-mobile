@@ -51,7 +51,13 @@ const delegates: [keyof BtcRail, string, unknown[]][] = [
   ],
   ["payInvoice", "payLightningBreez", ["lnbc1invoice", 2100]],
   ["payLnurl", "payLnurlBreez", ["alice@flashapp.me", 2100, "coffee"]],
-  ["payOnchain", "payOnchainBreez", ["bc1qdestination", 2100, "slow"]],
+  // The fourth argument is the attempt's idempotency key (ENG-714), which has
+  // to reach the wrapper too.
+  [
+    "payOnchain",
+    "payOnchainBreez",
+    ["bc1qdestination", 2100, "slow", "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed"],
+  ],
 ]
 
 /** Advance mode off: the rail's reads find the wallet switched off, as spark.ts reports it. */

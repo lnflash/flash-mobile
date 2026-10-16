@@ -125,6 +125,11 @@ export const useSendPayment = (
   //             and no 24h cached FAILURE can lock anyone out (its key is
   //             never reused).
   //
+  // That lifecycle is the GraphQL attempt's. A Breez on-chain attempt
+  // (ENG-714) holds a key and no closure: it is cleared on a known outcome,
+  // and on an unknown one it is kept with Confirm disarmed, and never retried
+  // until ENG-715 proves the SDK replays the key.
+  //
   // Deliberately NOT persisted. A force-quit mid-send discards the attempt,
   // which leaves exactly today's pre-existing risk — no worse — and avoids
   // guessing across sessions with content fingerprints. Cross-session

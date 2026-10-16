@@ -58,4 +58,28 @@ describe("breez-sdk-spark manual mock parity with the generated SDK enums", () =
   it("PaymentType mirrors the generated numeric enum exactly — members and values", () => {
     expect(mock.PaymentType).toEqual(realEnumMembers("PaymentType"))
   })
+
+  it("OnchainConfirmationSpeed mirrors the generated numeric enum exactly — members and values", () => {
+    expect(mock.OnchainConfirmationSpeed).toEqual(
+      realEnumMembers("OnchainConfirmationSpeed"),
+    )
+  })
+
+  it("SendPaymentOptions_Tags mirrors the generated enum exactly — members and values", () => {
+    expect(mock.SendPaymentOptions_Tags).toEqual(
+      realEnumMembers("SendPaymentOptions_Tags"),
+    )
+  })
+
+  it("SendPaymentOptions has a class for every generated tag, carrying that tag and its frozen argument", () => {
+    Object.entries(realEnumMembers("SendPaymentOptions_Tags")).forEach(([name, tag]) => {
+      const option = new mock.SendPaymentOptions[name]({ field: name })
+      expect({ name, tag: option.tag, inner: option.inner }).toEqual({
+        name,
+        tag,
+        inner: { field: name },
+      })
+      expect(Object.isFrozen(option.inner)).toBe(true)
+    })
+  })
 })
