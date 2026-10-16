@@ -427,6 +427,8 @@ describe("prepareConversion through the executor (spec §5.1)", () => {
       reconcile,
       telemetry: recordingTelemetry().telemetry,
       now,
+      // The phone's clock is the server's.
+      serverClockOffsetMs: () => 0,
     })
     return {
       fake,

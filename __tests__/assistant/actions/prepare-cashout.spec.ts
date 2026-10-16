@@ -401,6 +401,8 @@ describe("prepareCashout's settlements through the executor, journal and reconci
       }),
       telemetry: recordingTelemetry().telemetry,
       now,
+      // The phone's clock is the server's.
+      serverClockOffsetMs: () => 0,
     })
     let offers = 0
     fake.actions.requestCashout.mockImplementation(async () => {

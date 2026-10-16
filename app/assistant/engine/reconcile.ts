@@ -67,14 +67,28 @@ import type { DispatchRecord } from "./attempt-journal"
 // before the dispatch can confirm after it, and rank above the payment. The
 // paying wallet's block must be in the list, and every block in it read
 // back so.
+//
+// The dispatch and the rows are stamped by different clocks. The record's
+// dispatchedAt is the phone's, and a row's createdAt is IBEX's
+// (get-transactions-for-wallet.ts:84). On a phone running minutes fast, the
+// payment's own row would come before the dispatch. It would be neither
+// matched nor counted among the rows since the dispatch, but taken for a row
+// from before it that shows its block read back, and the list would call
+// absent a payment it shows. So the record keeps the phone's clock less the
+// server's when it first dispatched (serverClockOffsetMs, from the Date
+// header of the latest GraphQL answer before it, app/graphql/server-clock.ts),
+// and the list is read back to dispatchedAt less that offset, on the
+// server's clock, less RECONCILE_CLOCK_SKEW_SECONDS. A record without the
+// offset cannot place its dispatch among the rows: it is unknown, and the
+// list is not read.
 
 /**
  * - settled: the payment is in the list, sent or still pending.
- * - absent: the list ends on its first page and shows the paying wallet's
- *   rows, and every wallet's rows since the first dispatch in full (see the
- *   note at the top), the latest dispatch (a retry's, if there was one) is
- *   old enough that the server would have recorded it, and the payment is
- *   not there.
+ * - absent: the record places its first dispatch on the server's clock, the
+ *   list ends on its first page and shows the paying wallet's rows, and
+ *   every wallet's rows since that dispatch in full (see the note at the
+ *   top), the latest dispatch (a retry's, if there was one) is old enough
+ *   that the server would have recorded it, and the payment is not there.
  * - unknown: anything else. The caller blocks a new attempt.
  */
 export type ReconcileVerdict = "settled" | "absent" | "unknown"
@@ -98,7 +112,17 @@ export const RECONCILE_MIN_AGE_MS = 2 * 60 * 1000
  */
 export const RECONCILE_STALE_AFTER_MS = 24 * 60 * 60 * 1000
 
-/** Slack for the device clock against the server's createdAt (as invoice-expiry.ts allows). */
+/**
+ * Slack, in seconds, for reading the list back to a dispatch placed on the
+ * server's clock (see the note at the top). How far the phone's clock runs
+ * from the server's is in the record's serverClockOffsetMs. This covers the
+ * rest: IBEX stamps the rows by its own clock, not the API's, whose Date
+ * header measured the offset; the header and createdAt are whole seconds;
+ * and the phone's clock can drift between that answer and the dispatch.
+ * invoice-expiry.ts allows a device clock the same 120 s, and there a clock
+ * past it refuses a send. Here it would let a payment the list shows go
+ * again, so the device clock is measured, not allowed for.
+ */
 export const RECONCILE_CLOCK_SKEW_SECONDS = 120
 
 /**
@@ -126,11 +150,12 @@ type WalletBlock = {
 
 /**
  * Whether a row settled before the dispatch, as far as the row can show it.
- * The list ranks rows by when they settled, which a row does not carry, so
- * a row created before the dispatch is taken to have settled before it,
- * unless it is on-chain: an on-chain row is created when first seen and
- * settles when it confirms, which can be long after, so one created before
- * the dispatch can rank above the payment.
+ * `since` is the dispatch on the server's clock, which stamps createdAt,
+ * less the slack. The list ranks rows by when they settled, which a row
+ * does not carry, so a row created before the dispatch is taken to have
+ * settled before it, unless it is on-chain: an on-chain row is created when
+ * first seen and settles when it confirms, which can be long after, so one
+ * created before the dispatch can rank above the payment.
  */
 const settledBefore = (tx: TransactionRow, since: number): boolean =>
   tx.createdAt < since && tx.initiationVia.__typename !== "InitiationViaOnChain"
@@ -257,8 +282,15 @@ export const createTransactionListReconciler = ({
     if (record.match.kind === "btcRail" || record.match.kind === "cashout") {
       return "unknown"
     }
-    // Back to the first dispatch: a retry can only have landed after it.
-    const since = Math.floor(record.dispatchedAt / 1000) - RECONCILE_CLOCK_SKEW_SECONDS
+    // Without the phone's clock less the server's, the dispatch cannot be
+    // placed among rows the server's clock stamps: no row is surely from
+    // before it, nor since it (see the note at the top).
+    const offsetMs = record.serverClockOffsetMs
+    if (typeof offsetMs !== "number" || !Number.isFinite(offsetMs)) return "unknown"
+    // Back to the first dispatch, on the server's clock: a retry can only
+    // have landed after it.
+    const since =
+      Math.floor((record.dispatchedAt - offsetMs) / 1000) - RECONCILE_CLOCK_SKEW_SECONDS
     let after: string | undefined
     // The list was read to its end: its last page said there is no next.
     let listEnded = false

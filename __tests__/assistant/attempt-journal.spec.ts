@@ -24,6 +24,7 @@ const record = (overrides: Partial<DispatchRecord> = {}): DispatchRecord => ({
   paymentDetailHash: DISPATCH.paymentDetailHash,
   dispatchedAt: T0,
   lastDispatchedAt: T0,
+  serverClockOffsetMs: 0,
   match: DISPATCH.match,
   sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
   ...overrides,
@@ -117,6 +118,61 @@ describe("the dispatch journal", () => {
     await expect(journal.pending()).resolves.toEqual([
       record({ preparedActionId: "older", sourceWalletCurrency: null }),
       record({ preparedActionId: "garbled", sourceWalletCurrency: null }),
+      record({ preparedActionId: "newer" }),
+    ])
+  })
+
+  it("keeps the first dispatch's clock offset on a retry", async () => {
+    // The list is read back to the first dispatch, which is placed on the
+    // server's clock by the offset measured when it went (reconcile.ts).
+    const journal = createAttemptJournal({ storage: memoryStorage() })
+
+    await journal.record(record({ serverClockOffsetMs: 300_000 }))
+    await journal.record(
+      record({
+        dispatchedAt: T0 + 150_000,
+        lastDispatchedAt: T0 + 150_000,
+        serverClockOffsetMs: 0,
+      }),
+    )
+
+    await expect(journal.pending()).resolves.toEqual([
+      record({ lastDispatchedAt: T0 + 150_000, serverClockOffsetMs: 300_000 }),
+    ])
+  })
+
+  it("reads a record stored without the clock offset as one whose offset is not known, never dropping it", async () => {
+    // Written before the journal kept serverClockOffsetMs, or with one it
+    // cannot use. Dropping it would let its payment go again unreconciled;
+    // read with a null offset, it is never called absent (reconcile.ts).
+    const storage = memoryStorage()
+    const { serverClockOffsetMs: _absent, ...older } = record({
+      preparedActionId: "older",
+    })
+    const garbled = {
+      ...record({ preparedActionId: "garbled" }),
+      serverClockOffsetMs: "300000",
+    }
+    // JSON.stringify writes no such number; a stored 1e400 reads as Infinity.
+    const infinite = JSON.stringify(record({ preparedActionId: "infinite" })).replace(
+      '"serverClockOffsetMs":0',
+      '"serverClockOffsetMs":1e400',
+    )
+    storage.data.set(
+      ATTEMPT_JOURNAL_KEY,
+      `[${JSON.stringify(older)},${JSON.stringify(garbled)},${infinite}]`,
+    )
+    const journal = createAttemptJournal({ storage })
+    const unplaced = ["older", "garbled", "infinite"].map((preparedActionId) =>
+      record({ preparedActionId, serverClockOffsetMs: null }),
+    )
+
+    await expect(journal.pending()).resolves.toEqual(unplaced)
+
+    // A later write keeps them, as read.
+    await journal.record(record({ preparedActionId: "newer" }))
+    await expect(journal.pending()).resolves.toEqual([
+      ...unplaced,
       record({ preparedActionId: "newer" }),
     ])
   })
@@ -416,6 +472,10 @@ describe("a dispatch that outlives the app", () => {
         paymentDetailHash: DISPATCH.paymentDetailHash,
         dispatchedAt: T0,
         lastDispatchedAt: T0,
+        // No GraphQL answer has shown the server's clock in this run of the
+        // app (no Apollo client runs here), so the record says it is not
+        // known, and the relaunched app never calls the payment absent.
+        serverClockOffsetMs: null,
         match: DISPATCH.match,
         sourceWalletCurrency: "USD",
       },

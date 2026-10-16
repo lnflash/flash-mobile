@@ -180,11 +180,17 @@ export const lostResponse = () => Promise.reject(new Error("Network request fail
  * funded history and nothing since: one page holding only the deposit that
  * funded the cash wallet, a day before T0, which settled before any
  * dispatch. A trigger that rejects is a lost response: execute() reports an
- * unknown outcome to retry under the same key, as prepareSend's does.
+ * unknown outcome to retry under the same key, as prepareSend's does. The
+ * phone's clock is the server's (each dispatch is journaled with a
+ * serverClockOffsetMs of 0) unless the case says otherwise.
  */
 export const setupSendingExecutor = ({
   storage = memoryStorage(),
-}: { storage?: JournalStorage } = {}) => {
+  serverClockOffsetMs = () => 0,
+}: {
+  storage?: JournalStorage
+  serverClockOffsetMs?: () => number | null
+} = {}) => {
   let clock = T0
   const now = () => clock
   const advance = (ms: number) => {
@@ -206,6 +212,7 @@ export const setupSendingExecutor = ({
     reconcile,
     telemetry: recordingTelemetry().telemetry,
     now,
+    serverClockOffsetMs,
   })
   const execute = async (ctx: ExecuteContext): Promise<ExecutionOutcome> => {
     try {

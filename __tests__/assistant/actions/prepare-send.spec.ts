@@ -1138,6 +1138,8 @@ describe("prepareSend after a lost answer, with the real reconciler", () => {
       }),
       telemetry: recordingTelemetry().telemetry,
       now,
+      // The phone's clock is the server's.
+      serverClockOffsetMs: () => 0,
     })
     const { graphql, displayCurrency, now: _fixed, ...actionDeps } = fake.ctx
     const prepare = async (args: PrepareSendArgs) =>

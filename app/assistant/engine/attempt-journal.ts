@@ -24,16 +24,29 @@ export type DispatchRecord = {
   /** hashPaymentDetail of the payment, which a new action for it shares. */
   paymentDetailHash: string
   /**
-   * Epoch milliseconds of the action's first dispatch: the earliest the
-   * payment can have reached the server, so the list is read back to it.
+   * Epoch milliseconds of the action's first dispatch, on the phone's clock.
+   * Less serverClockOffsetMs, it is the earliest the payment can have
+   * reached the server, on the server's clock, which stamps the list's rows:
+   * the list is read back to that moment.
    */
   dispatchedAt: number
   /**
    * Epoch milliseconds of the action's latest dispatch, a retry under the
-   * same key included: the latest the payment can have set off, so its
-   * absence from the list proves nothing until this one is old enough.
+   * same key included, on the phone's clock: the latest the payment can have
+   * set off, so its absence from the list proves nothing until this one is
+   * old enough by the same clock.
    */
   lastDispatchedAt: number
+  /**
+   * The phone's clock less the server's, in milliseconds, when the action
+   * first dispatched, from the Date header of the latest GraphQL answer
+   * before it (app/graphql/server-clock.ts). It places dispatchedAt among
+   * the list's rows, which the server's clock stamps. Null when no answer
+   * had shown it, or for a record written before the journal kept it: the
+   * reconciler cannot place the dispatch, so it never calls its payment
+   * absent.
+   */
+  serverClockOffsetMs: number | null
   /** How to find the payment in the transaction list (reconcile.ts). */
   match: TransactionMatch
   /**
@@ -102,6 +115,9 @@ const WALLET_CURRENCIES: readonly unknown[] = Object.values(WalletCurrency)
 const isWalletCurrency = (value: unknown): value is WalletCurrency =>
   WALLET_CURRENCIES.includes(value)
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value)
+
 const isRecord = (value: unknown): value is DispatchRecord =>
   isPlainObject(value) &&
   typeof value.preparedActionId === "string" &&
@@ -109,6 +125,7 @@ const isRecord = (value: unknown): value is DispatchRecord =>
   typeof value.paymentDetailHash === "string" &&
   typeof value.dispatchedAt === "number" &&
   typeof value.lastDispatchedAt === "number" &&
+  (isFiniteNumber(value.serverClockOffsetMs) || value.serverClockOffsetMs === null) &&
   isMatch(value.match) &&
   (isWalletCurrency(value.sourceWalletCurrency) || value.sourceWalletCurrency === null)
 
@@ -116,8 +133,9 @@ const isRecord = (value: unknown): value is DispatchRecord =>
  * A stored record, or undefined for one the journal cannot use. Dropping a
  * record would let its payment go again unreconciled, so a field a record
  * was written without is read as its absence means: no lastDispatchedAt as
- * a single dispatch, and no readable sourceWalletCurrency as a paying wallet
- * not known (null), which the reconciler never calls absent.
+ * a single dispatch, and no readable serverClockOffsetMs or
+ * sourceWalletCurrency as an offset or a paying wallet not known (null),
+ * either of which the reconciler never calls absent.
  */
 const parseRecord = (value: unknown): DispatchRecord | undefined => {
   if (!isPlainObject(value)) return undefined
@@ -125,6 +143,9 @@ const parseRecord = (value: unknown): DispatchRecord | undefined => {
     ...value,
     lastDispatchedAt:
       value.lastDispatchedAt === undefined ? value.dispatchedAt : value.lastDispatchedAt,
+    serverClockOffsetMs: isFiniteNumber(value.serverClockOffsetMs)
+      ? value.serverClockOffsetMs
+      : null,
     sourceWalletCurrency: isWalletCurrency(value.sourceWalletCurrency)
       ? value.sourceWalletCurrency
       : null,
@@ -178,7 +199,8 @@ export const createAttemptJournal = ({
         }
         // A retry: the payment can set off again from now, so the window in
         // which it may still land starts over. The first dispatch stays, as
-        // the earliest it can have landed.
+        // the earliest it can have landed, with the clock offset that places
+        // it on the server's clock.
         const retried: DispatchRecord = {
           ...held,
           lastDispatchedAt: Math.max(held.lastDispatchedAt, record.lastDispatchedAt),

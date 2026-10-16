@@ -1160,6 +1160,7 @@ describe("executor, for the action tier (ENG-688)", () => {
         paymentDetailHash: DISPATCH.paymentDetailHash,
         dispatchedAt: T0 - 10 * 60_000,
         lastDispatchedAt: T0 - 10 * 60_000,
+        serverClockOffsetMs: 0,
         match: DISPATCH.match,
         sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
       })

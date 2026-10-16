@@ -1,12 +1,21 @@
+import { ApolloLink, execute, gql, Observable } from "@apollo/client"
+
 import {
   RECONCILE_MIN_AGE_MS,
   RECONCILE_PAGE_SIZE,
   RECONCILE_STALE_AFTER_MS,
 } from "@app/assistant/engine/reconcile"
+import { createExecutor } from "@app/assistant/engine/executor"
+import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
+import type { ExecuteContext, ExecutionOutcome } from "@app/assistant/registry/types"
 import { PaymentSendResult } from "@app/graphql/generated"
+import { serverClock } from "@app/graphql/server-clock"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
-import { ATTEMPT_JOURNAL_KEY } from "@app/assistant/engine/attempt-journal"
+import {
+  ATTEMPT_JOURNAL_KEY,
+  createAttemptJournal,
+} from "@app/assistant/engine/attempt-journal"
 import {
   DISPATCH,
   lostResponse,
@@ -17,7 +26,7 @@ import {
   setupSendingExecutor,
   T0,
 } from "./executor-harness"
-import { graphqlTx, page } from "./fakes"
+import { fundedBefore, graphqlTx, page, recordingTelemetry } from "./fakes"
 
 // The executor against earlier dispatches of the same payment
 // (docs/ai-assistant-tool-registry.md §5 "Idempotency", §5.1 "Process
@@ -246,7 +255,9 @@ describe("an earlier dispatch, over the rows lnflash/flash lists", () => {
     // An earlier version of the app wrote the record, with no
     // sourceWalletCurrency, and was killed mid-send. The list now shows a
     // funded history and nothing since, which would prove a record that
-    // names its wallet absent; this one cannot say whose rows to read.
+    // names its wallet absent; this one cannot say whose rows to read. It
+    // carries a clock offset, so the missing wallet is all that stands in
+    // the way (a record with no offset is the case below).
     const storage = memoryStorage()
     const dispatchedAt = T0 - 10 * 60_000
     storage.data.set(
@@ -258,6 +269,7 @@ describe("an earlier dispatch, over the rows lnflash/flash lists", () => {
           paymentDetailHash: DISPATCH.paymentDetailHash,
           dispatchedAt,
           lastDispatchedAt: dispatchedAt,
+          serverClockOffsetMs: 0,
           match: DISPATCH.match,
         },
       ]),
@@ -282,6 +294,164 @@ describe("an earlier dispatch, over the rows lnflash/flash lists", () => {
         sourceWalletCurrency: null,
       }),
     ])
+  })
+
+  it("never calls absent a dispatch recorded before the journal kept the clock offset", async () => {
+    // An earlier version of the app wrote the record, with no
+    // serverClockOffsetMs, and was killed mid-send. Its dispatchedAt is the
+    // phone's clock, which cannot be placed among rows stamped on the
+    // server's: the funded history that would prove a placed record absent
+    // proves nothing about this one.
+    const storage = memoryStorage()
+    const dispatchedAt = T0 - 10 * 60_000
+    storage.data.set(
+      ATTEMPT_JOURNAL_KEY,
+      JSON.stringify([
+        {
+          preparedActionId: "before-the-clock-offset",
+          idempotencyKey: "k-old",
+          paymentDetailHash: DISPATCH.paymentDetailHash,
+          dispatchedAt,
+          lastDispatchedAt: dispatchedAt,
+          match: DISPATCH.match,
+          sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
+        },
+      ]),
+    )
+    const run = setupSendingExecutor({ storage })
+    run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
+
+    const b = run.prepare("thread-b")
+    run.executor.addPrepared(b, "text")
+
+    await expect(run.executor.executePreparedAction(b.id)).resolves.toEqual({
+      kind: "pendingDispatch",
+      actionId: b.id,
+      replyKey: "Assistant.checkHistory",
+      historyCheckable: false,
+    })
+    expect(run.keysSent()).toEqual([])
+    await expect(run.reconcile.mock.results[0].value).resolves.toBe("unknown")
+    await expect(run.journal.pending()).resolves.toEqual([
+      expect.objectContaining({
+        preparedActionId: "before-the-clock-offset",
+        serverClockOffsetMs: null,
+      }),
+    ])
+  })
+
+  it("never calls absent a dispatch that went before any answer showed the server's clock", async () => {
+    // The executor's reader had no offset when A went out (no GraphQL
+    // answer with a Date header yet), so A's record cannot place its
+    // dispatch among the rows. The list shows a funded history and nothing
+    // since, past the minimum age: a record with an offset would read absent.
+    const run = setupSendingExecutor({ serverClockOffsetMs: () => null })
+    run.intraLedgerUsdPaymentSend.mockImplementation(lostResponse)
+    const a = run.prepare("thread-a")
+    run.executor.addPrepared(a, "text")
+    await expect(run.executor.executePreparedAction(a.id)).resolves.toMatchObject({
+      outcome: { status: "unknown", next: "retrySameAttempt" },
+    })
+    run.executor.leaveThread("thread-a")
+    run.advance(RECONCILE_MIN_AGE_MS + 60_000)
+    run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
+
+    const b = run.prepare("thread-b")
+    run.executor.addPrepared(b, "text")
+
+    await expect(run.executor.executePreparedAction(b.id)).resolves.toEqual({
+      kind: "pendingDispatch",
+      actionId: b.id,
+      replyKey: "Assistant.checkHistory",
+      historyCheckable: false,
+    })
+    expect(run.keysSent()).toHaveLength(1)
+    await expect(run.reconcile.mock.results[0].value).resolves.toBe("unknown")
+    await expect(run.journal.pending()).resolves.toEqual([
+      expect.objectContaining({ preparedActionId: a.id, serverClockOffsetMs: null }),
+    ])
+  })
+
+  describe("on a phone whose clock runs five minutes fast", () => {
+    // The executor journals each dispatch with the phone's clock less the
+    // server's (serverClockOffsetMs). The answer to $5 to Alice is lost, the
+    // user leaves the thread, and asks for the same $5 again. The list shows
+    // the send, stamped on the server's clock five minutes before the
+    // phone's dispatchedAt. Read on the phone's clock, it would be a row from
+    // before the dispatch, which proves the cash wallet's rows read back:
+    // absent, and B would pay Alice a second time under a new key.
+    const FIVE_MINUTES_MS = 5 * 60_000
+    /** When the first send landed: two seconds after its dispatch, on the server's clock. */
+    const landedAt = Math.floor((T0 - FIVE_MINUTES_MS) / 1000) + 2
+
+    const lostThenAskedAgain = async (listed: TransactionRow) => {
+      const run = setupSendingExecutor({ serverClockOffsetMs: () => FIVE_MINUTES_MS })
+      run.intraLedgerUsdPaymentSend.mockImplementation(lostResponse)
+      const a = run.prepare("thread-a")
+      run.executor.addPrepared(a, "text")
+      await expect(run.executor.executePreparedAction(a.id)).resolves.toMatchObject({
+        outcome: { status: "unknown", next: "retrySameAttempt" },
+      })
+      run.executor.leaveThread("thread-a")
+      run.advance(RECONCILE_MIN_AGE_MS + 60_000)
+      // The send, and the deposit that funded the cash wallet a day before
+      // the dispatch on the server's clock.
+      run.graphql.transactions.mockResolvedValue(
+        page([listed, fundedBefore(T0 - FIVE_MINUTES_MS, "USD")]),
+      )
+      run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
+
+      const b = run.prepare("thread-b")
+      run.executor.addPrepared(b, "text")
+      return { run, a, b, result: await run.executor.executePreparedAction(b.id) }
+    }
+
+    it("never sends again a payment the list shows under no name", async () => {
+      const { run, a, b, result } = await lostThenAskedAgain({
+        ...ibexSendSince(T0),
+        createdAt: landedAt,
+      })
+
+      expect(result).toEqual({
+        kind: "pendingDispatch",
+        actionId: b.id,
+        replyKey: "Assistant.checkHistory",
+        historyCheckable: false,
+      })
+      expect(run.keysSent()).toHaveLength(1)
+      await expect(run.reconcile.mock.results[0].value).resolves.toBe("unknown")
+      // A's record still answers for the payment, with the offset it went with.
+      await expect(run.journal.pending()).resolves.toEqual([
+        expect.objectContaining({
+          preparedActionId: a.id,
+          dispatchedAt: T0,
+          serverClockOffsetMs: FIVE_MINUTES_MS,
+        }),
+      ])
+    })
+
+    it("says already sent when the list names the payment", async () => {
+      const toAlice = {
+        counterPartyWalletId: "alice-wallet",
+        counterPartyUsername: "alice",
+      }
+      const { run, b, result } = await lostThenAskedAgain(
+        graphqlTx({
+          id: "landed",
+          createdAt: landedAt,
+          initiationVia: { __typename: "InitiationViaIntraLedger", ...toAlice },
+          settlementVia: { __typename: "SettlementViaIntraLedger", ...toAlice },
+        }),
+      )
+
+      expect(result).toEqual({
+        kind: "alreadySent",
+        actionId: b.id,
+        replyKey: "Assistant.alreadySent",
+      })
+      expect(run.keysSent()).toHaveLength(1)
+      await expect(run.journal.pending()).resolves.toEqual([])
+    })
   })
 })
 
@@ -623,5 +793,75 @@ describe("a dispatch the list cannot settle (spec §5.1)", () => {
     })
     expect(run.reconcile).not.toHaveBeenCalled()
     expect(run.keysSent()).toHaveLength(1)
+  })
+})
+
+describe("the clock offset a dispatch is journaled with", () => {
+  /**
+   * An answer through `link`, as HttpLink gives one: the fetch Response on
+   * the operation's context, carrying `date` as its Date header, then the
+   * parsed result.
+   */
+  const answerThrough = (link: ApolloLink, date: string) =>
+    new Promise<unknown>((resolve, reject) => {
+      const http = new ApolloLink((operation) => {
+        operation.setContext({
+          response: {
+            headers: {
+              get: (name: string) => (name.toLowerCase() === "date" ? date : null),
+            },
+          },
+        })
+        return Observable.of({ data: { __typename: "Query" } })
+      })
+      execute(ApolloLink.from([link, http]), {
+        query: gql`
+          query ServerClockProbe {
+            __typename
+          }
+        `,
+      }).subscribe({ next: resolve, error: reject })
+    })
+
+  it("is what the app's GraphQL answers measured, for an executor given no reader", async () => {
+    // client.tsx chains serverClock.link in front of the HttpLink, and an
+    // executor given no serverClockOffsetMs reads serverClock.offsetMs, as
+    // it reads Date.now for `now`: wiring the executor into the app
+    // (ENG-689) cannot leave its records without the offset.
+    const phoneClock = jest.spyOn(Date, "now").mockReturnValue(T0)
+    try {
+      // An answer stamped by a server whose clock is five minutes behind.
+      await answerThrough(serverClock.link, new Date(T0 - 5 * 60_000).toUTCString())
+      const journal = createAttemptJournal({ storage: memoryStorage() })
+      const executor = createExecutor({
+        auth: { availability: async () => "none", authenticate: async () => false },
+        journal,
+        reconcile: jest.fn(async () => "unknown" as const),
+        telemetry: recordingTelemetry().telemetry,
+      })
+      const action = makeAction({
+        execute: jest.fn(async (ctx: ExecuteContext): Promise<ExecutionOutcome> => {
+          await ctx.journalDispatch("k-1")
+          return {
+            status: "unknown",
+            replyKey: "Assistant.checkHistory",
+            next: "retrySameAttempt",
+          }
+        }),
+      })
+      executor.addPrepared(action, "text")
+
+      await executor.executePreparedAction(action.id)
+
+      await expect(journal.pending()).resolves.toEqual([
+        expect.objectContaining({
+          preparedActionId: action.id,
+          dispatchedAt: T0,
+          serverClockOffsetMs: 5 * 60_000,
+        }),
+      ])
+    } finally {
+      phoneClock.mockRestore()
+    }
   })
 })

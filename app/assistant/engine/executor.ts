@@ -1,3 +1,4 @@
+import { serverClock } from "@app/graphql/server-clock"
 import type { AttemptState } from "@app/payments/send-payment"
 import { prepareRefusalResult, PrepareRefusedError } from "../registry/refusals"
 import type {
@@ -259,6 +260,14 @@ export type ExecutorDeps = {
   authPolicy?: AuthPolicy
   /** Epoch milliseconds. */
   now?: () => number
+  /**
+   * The phone's clock less the server's, in milliseconds, or null while no
+   * GraphQL answer has shown it. Each dispatch's record keeps it, so the
+   * reconciler reads the list back to the dispatch on the server's clock,
+   * and never calls absent a record that has none. The app's
+   * (app/graphql/server-clock.ts) unless given another.
+   */
+  serverClockOffsetMs?: () => number | null
   maxPreparedPerThread?: number
 }
 
@@ -305,6 +314,7 @@ const paymentOf = (action: PreparedAction): string | undefined =>
 
 export const createExecutor = (deps: ExecutorDeps): Executor => {
   const now = deps.now ?? Date.now
+  const serverClockOffsetMs = deps.serverClockOffsetMs ?? serverClock.offsetMs
   const policy = deps.authPolicy ?? defaultAuthPolicy
   const store = createActionStore(deps.maxPreparedPerThread ?? MAX_PREPARED_PER_THREAD)
   const metrics = createThreadMetrics({ now, telemetry: deps.telemetry })
@@ -667,14 +677,18 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       throw new Error(`${action.intent} dispatched a payment with no dispatch identity`)
     }
     const dispatchedAt = now()
-    // A retry's write keeps the record's first dispatch and moves its
-    // lastDispatchedAt to now (attempt-journal.ts).
+    // Read with dispatchedAt, it places the dispatch on the server's clock.
+    const offsetMs = serverClockOffsetMs()
+    // A retry's write keeps the record's first dispatch, and its offset, and
+    // moves its lastDispatchedAt to now (attempt-journal.ts).
     await deps.journal.record({
       preparedActionId: action.id,
       idempotencyKey,
       paymentDetailHash: action.dispatch.paymentDetailHash,
       dispatchedAt,
       lastDispatchedAt: dispatchedAt,
+      serverClockOffsetMs:
+        typeof offsetMs === "number" && Number.isFinite(offsetMs) ? offsetMs : null,
       match: action.dispatch.match,
       sourceWalletCurrency: action.dispatch.sourceWalletCurrency,
     })

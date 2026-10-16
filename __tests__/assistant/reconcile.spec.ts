@@ -40,6 +40,9 @@ const record = (
   paymentDetailHash: "h",
   dispatchedAt: DISPATCHED_AT_MS,
   lastDispatchedAt,
+  // The phone's clock is the server's unless a case says otherwise, so
+  // DISPATCHED_AT_MS is the dispatch on the server's clock too.
+  serverClockOffsetMs: 0,
   match,
   sourceWalletCurrency,
 })
@@ -328,7 +331,9 @@ describe("createTransactionListReconciler", () => {
     await expect(pending.reconcile(record())).resolves.toBe("settled")
   })
 
-  it("allows for the device clock running ahead of the server", async () => {
+  it("reads back RECONCILE_CLOCK_SKEW_SECONDS before the dispatch, for IBEX's clock against the API's", async () => {
+    // The dispatch is placed on the API's clock (serverClockOffsetMs); the
+    // rows are stamped by IBEX, whose clock may run behind it.
     const early = send({ createdAt: DISPATCHED_AT_S - RECONCILE_CLOCK_SKEW_SECONDS + 1 })
 
     await expect(reconcilerOver([[early]], old).reconcile(record())).resolves.toBe(
@@ -491,6 +496,87 @@ describe("createTransactionListReconciler", () => {
 
     await expect(reconcile(record({ kind: "cashout" }))).resolves.toBe("unknown")
     expect(graphql.transactions).not.toHaveBeenCalled()
+  })
+
+  describe("on a phone whose clock is not the server's", () => {
+    // The record stamps the dispatch on the phone's clock (dispatchedAt) and
+    // keeps the phone's clock less the server's (serverClockOffsetMs); the
+    // rows are stamped on the server's clock. A phone five minutes fast
+    // dispatched at DISPATCHED_AT_MS by its own clock, five minutes earlier
+    // by the server's, and its payment's row is stamped from there.
+    const FIVE_MINUTES_MS = 5 * 60_000
+
+    /** The dispatch, in seconds on the server's clock, for a phone `offsetMs` ahead of it. */
+    const dispatchOnServer = (offsetMs: number) =>
+      Math.floor((DISPATCHED_AT_MS - offsetMs) / 1000)
+
+    const offsets: { phone: string; offsetMs: number }[] = [
+      { phone: "on time", offsetMs: 0 },
+      { phone: "60 s fast", offsetMs: 60_000 },
+      { phone: "119 s fast", offsetMs: 119_000 },
+      { phone: "121 s fast", offsetMs: 121_000 },
+      { phone: "150 s fast", offsetMs: 150_000 },
+      { phone: "five minutes fast", offsetMs: FIVE_MINUTES_MS },
+      { phone: "an hour fast", offsetMs: 60 * 60_000 },
+      { phone: "a day fast", offsetMs: 24 * 60 * 60_000 },
+      { phone: "five minutes slow", offsetMs: -FIVE_MINUTES_MS },
+      { phone: "an hour slow", offsetMs: -60 * 60_000 },
+    ]
+    offsets.forEach(({ phone, offsetMs }) =>
+      it(`never calls absent the payment the list shows, on a phone ${phone}`, async () => {
+        const paid = { ...record(), serverClockOffsetMs: offsetMs }
+        // The deposit that funded the wallet, a day before the dispatch on
+        // the server's clock: the block reads back past it.
+        const fundedOnServer = fundedBefore(DISPATCHED_AT_MS - offsetMs)
+        // The payment's own row, three seconds after the dispatch on the
+        // server's clock. As lnflash/flash lists it, it names nothing.
+        const asListed = apiLightningRow({ createdAt: dispatchOnServer(offsetMs) + 3 })
+        // Should the API name it, it settles the record.
+        const named = send({ createdAt: dispatchOnServer(offsetMs) + 3 })
+
+        for (const nowMs of [old, old + 86_400_000]) {
+          await expect(
+            reconcilerOver([[asListed, fundedOnServer]], nowMs).reconcile(paid),
+          ).resolves.toBe("unknown")
+        }
+        await expect(
+          reconcilerOver([[named, fundedOnServer]], old).reconcile(paid),
+        ).resolves.toBe("settled")
+      }),
+    )
+
+    it("does not take an identical payment from before the dispatch for it, on a phone five minutes slow", async () => {
+      // The same $5 to bob, three minutes before the dispatch on the
+      // server's clock: past the slack, so an earlier payment, not this
+      // dispatch landing. By the slow phone's clock it came two minutes
+      // after the dispatch.
+      const slow = { ...record(), serverClockOffsetMs: -FIVE_MINUTES_MS }
+      const earlier = send({ createdAt: dispatchOnServer(-FIVE_MINUTES_MS) - 180 })
+
+      await expect(
+        reconcilerOver([[earlier, fundedBefore(DISPATCHED_AT_MS)]], old).reconcile(slow),
+      ).resolves.toBe("absent")
+    })
+
+    it("is unknown for a record that does not say how far the phone's clock ran, without reading the list", async () => {
+      // A record written before the journal kept the offset, or before any
+      // GraphQL answer showed the server's clock: its dispatch cannot be
+      // placed among the rows. The list holds a funded history and nothing
+      // since, past the minimum age, which proves a record with an offset
+      // absent.
+      const unplaced: unknown[] = [null, undefined, Number.NaN, Number.POSITIVE_INFINITY]
+      for (const serverClockOffsetMs of unplaced) {
+        const { reconcile, graphql } = reconcilerOver([[funded()]], old)
+
+        await expect(
+          reconcile({ ...record(), serverClockOffsetMs } as DispatchRecord),
+        ).resolves.toBe("unknown")
+        expect(graphql.transactions).not.toHaveBeenCalled()
+      }
+      await expect(reconcilerOver([[funded()]], old).reconcile(record())).resolves.toBe(
+        "absent",
+      )
+    })
   })
 
   describe("over the rows lnflash/flash returns", () => {

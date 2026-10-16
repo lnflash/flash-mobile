@@ -506,6 +506,7 @@ describe("ConfirmPaymentCard after a remount: the executor is the source of trut
       paymentDetailHash: DISPATCH.paymentDetailHash,
       dispatchedAt: T0 - 10 * 60_000,
       lastDispatchedAt: T0 - 10 * 60_000,
+      serverClockOffsetMs: 0,
       match: DISPATCH.match,
       sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
     })
