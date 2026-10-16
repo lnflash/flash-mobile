@@ -34,11 +34,13 @@ import type { DispatchRecord } from "./attempt-journal"
 // It never serves the next page: its cursor is a row's IBEX id, a UUID
 // (connections.ts:55), and checkedConnectionArgs refuses an `after` that is
 // not 24 hex characters (connections.ts:9,171-175, consumer-account.ts:185).
-// That read throws, so a list longer than one page is unknown. ENG-724 makes
-// the next page real; the reasoning below about each wallet's rows is to be
-// revisited then. Until it lands, a list the reconciler can judge is one page
-// holding every row the API returned: each wallet's newest RECONCILE_PAGE_SIZE
-// rows by settlement, one wallet's block after another's.
+// That read throws. ENG-724 makes the next page real, and the reasoning below
+// about each wallet's rows, made for one page, is to be revisited then. Until
+// it is, only a list that ends on its first page can prove a payment absent:
+// one page holding every row the API returned, each wallet's newest
+// RECONCILE_PAGE_SIZE rows by settlement, one wallet's block after another's.
+// A page past the first, refused today and served once ENG-724 lands, can
+// show the payment settled, never absent.
 //
 // Nor does a list without the paying wallet's rows prove anything, an empty
 // list included: the API serves a wallet whose IBEX read failed as no rows
@@ -68,10 +70,11 @@ import type { DispatchRecord } from "./attempt-journal"
 
 /**
  * - settled: the payment is in the list, sent or still pending.
- * - absent: the list shows the paying wallet's rows, and every wallet's
- *   rows since the first dispatch in full (see the note at the top), the
- *   latest dispatch (a retry's, if there was one) is old enough that the
- *   server would have recorded it, and the payment is not there.
+ * - absent: the list ends on its first page and shows the paying wallet's
+ *   rows, and every wallet's rows since the first dispatch in full (see the
+ *   note at the top), the latest dispatch (a retry's, if there was one) is
+ *   old enough that the server would have recorded it, and the payment is
+ *   not there.
  * - unknown: anything else. The caller blocks a new attempt.
  */
 export type ReconcileVerdict = "settled" | "absent" | "unknown"
@@ -99,9 +102,10 @@ export const RECONCILE_STALE_AFTER_MS = 24 * 60 * 60 * 1000
 export const RECONCILE_CLOCK_SKEW_SECONDS = 120
 
 /**
- * The most pages read looking for one payment. lnflash/flash refuses the
- * cursor of the second (see the note at the top), so until ENG-724 a list
- * longer than one page is unknown after two reads.
+ * The most pages read looking for one payment. A page past the first can
+ * only show it settled: a list longer than one page is never absent (see the
+ * note at the top). lnflash/flash refuses the second page's cursor until
+ * ENG-724, so today such a list is unknown after two reads.
  */
 export const RECONCILE_MAX_PAGES = 5
 
@@ -258,12 +262,15 @@ export const createTransactionListReconciler = ({
     let after: string | undefined
     // The list was read to its end: its last page said there is no next.
     let listEnded = false
+    // How many of its pages were read: absent needs it to end on its first.
+    let pagesRead = 0
     const blocks = new Map<string, WalletBlock>()
     // A sent row since the dispatch that names nothing, which could be it.
     let unnamedSince = false
     try {
       for (let page = 0; page < RECONCILE_MAX_PAGES && !listEnded; page += 1) {
         const result = await graphql.transactions({ first: RECONCILE_PAGE_SIZE, after })
+        pagesRead += 1
         // A failed payment moved nothing: it is not the dispatch landing.
         const landed = result.rows.filter(
           (tx) => tx.createdAt >= since && tx.status !== "FAILURE",
@@ -287,9 +294,12 @@ export const createTransactionListReconciler = ({
       // top): a list read in part is unknown, as is one that cannot be read.
       return "unknown"
     }
-    // The list must be read to its end: every wallet's block is judged
-    // whole, and the rows past a page could hold the payment.
-    if (!listEnded) return "unknown"
+    // The list must be read to its end, and end on its first page: every
+    // wallet's block is judged whole, the rows past a page could hold the
+    // payment, and the reasoning about each wallet's rows is made for one
+    // page (see the note at the top; ENG-724 revisits it). A later page can
+    // still show the payment settled, above.
+    if (!listEnded || pagesRead > 1) return "unknown"
     // The paying wallet's rows must be in the list. A list without them, an
     // empty one included, may be one whose read of that wallet failed
     // (ENG-725), and a record that does not say which wallet paid cannot be

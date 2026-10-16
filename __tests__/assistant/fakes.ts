@@ -264,6 +264,34 @@ export const flashTransactions =
     return { rows, hasNextPage: pages.length > 1, endCursor: last ? last.id : null }
   }
 
+/** Page `index`'s cursor, which asks for the page after it: 24 hex characters. */
+const servedCursor = (index: number): string => index.toString(16).padStart(24, "0")
+
+/**
+ * Account.transactions over a list of `pages`, every page served, as
+ * lnflash/flash would serve it with a cursor it takes (ENG-724): each page
+ * says hasNextPage when more follow, and its cursor is 24 hex characters,
+ * which checkedConnectionArgs accepts (connections.ts:9). An `after` that is
+ * not one is refused as flash refuses it (connections.ts:171-175).
+ */
+export const servedTransactions =
+  (pages: readonly (readonly TransactionRow[])[]) =>
+  async ({ after }: { first: number; after?: string }): Promise<TransactionPage> => {
+    if (after !== undefined && !FLASH_CURSOR.test(after)) {
+      throw new Error(FLASH_CURSOR_REFUSED)
+    }
+    const index = after === undefined ? 0 : parseInt(after, 16) + 1
+    if (index > 0 && index >= pages.length) {
+      throw new Error(`the fake handed out no cursor such as ${after}`)
+    }
+    const rows = pages[index] ?? []
+    return {
+      rows,
+      hasNextPage: index < pages.length - 1,
+      endCursor: rows.length > 0 ? servedCursor(index) : null,
+    }
+  }
+
 // ---------------------------------------------------------------------------
 // The action tier (ENG-688)
 // ---------------------------------------------------------------------------

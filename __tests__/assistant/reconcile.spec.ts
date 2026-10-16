@@ -12,9 +12,11 @@ import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
 import {
   fakeGraphqlRail,
   flashTransactions,
+  FLASH_CURSOR,
   FLASH_CURSOR_REFUSED,
   fundedBefore,
   graphqlTx,
+  servedTransactions,
 } from "./fakes"
 
 const DISPATCHED_AT_MS = 1_760_000_000_000
@@ -735,6 +737,78 @@ describe("createTransactionListReconciler", () => {
         )
       }),
     )
+
+    describe("were the next page served (ENG-724)", () => {
+      // ENG-724 makes lnflash/flash serve the next page. The reasoning about
+      // each wallet's rows (the note at the top of reconcile.ts) is made for
+      // one page, each wallet's newest 20 rows, and is to be revisited then.
+      // Until it is, a page past the first can show the payment settled but
+      // never prove it absent. These fakes hand out a cursor flash takes, 24
+      // hex characters, and serve the next page.
+      const servedOver = (pages: TransactionRow[][]) => {
+        const graphql = fakeGraphqlRail()
+        graphql.transactions.mockImplementation(servedTransactions(pages))
+        const reconcile = createTransactionListReconciler({
+          graphql: graphql as never,
+          now: () => old,
+        })
+        return { reconcile, graphql }
+      }
+
+      // Read to its end, each list shows the paying USDT wallet's rows, has
+      // every wallet's block read back past the dispatch, and holds no sent
+      // row since it: everything absent asks for but ending on its first
+      // page.
+      const readBackOverTwoPages: { list: string; pages: TransactionRow[][] }[] = [
+        {
+          list: "a USDT block that reaches back, then the USD block from before the dispatch",
+          pages: [usdtReachingBack, [rowBefore("usd-old")]],
+        },
+        {
+          list: "five USDT rows, the whole wallet, then the USD block from before the dispatch, split across the page",
+          pages: [
+            fiveUsdtThenUsd.slice(0, RECONCILE_PAGE_SIZE),
+            fiveUsdtThenUsd.slice(RECONCILE_PAGE_SIZE),
+          ],
+        },
+      ]
+      readBackOverTwoPages.forEach(({ list, pages }) =>
+        it(`is unknown though the second page is served and reads back: ${list}`, async () => {
+          const { reconcile, graphql } = servedOver(pages)
+          const usdtSend = record(
+            { ...intraledger, settlementCurrency: "USDT" },
+            DISPATCHED_AT_MS,
+            "USDT",
+          )
+
+          await expect(reconcile(usdtSend)).resolves.toBe("unknown")
+          // It asked for the second page with a cursor flash takes, and got
+          // it, to the list's end.
+          expect(graphql.transactions).toHaveBeenCalledTimes(2)
+          expect(graphql.transactions.mock.calls[1][0]).toEqual({
+            first: RECONCILE_PAGE_SIZE,
+            after: expect.stringMatching(FLASH_CURSOR),
+          })
+          await expect(graphql.transactions.mock.results[1].value).resolves.toEqual({
+            rows: pages[1],
+            hasNextPage: false,
+            endCursor: expect.stringMatching(FLASH_CURSOR),
+          })
+        }),
+      )
+
+      it("still settles a payment the second page shows", async () => {
+        // Paid from the legacy USD wallet, before the account was cut over:
+        // the send is among its rows, after a full USDT page.
+        const { reconcile, graphql } = servedOver([
+          receiptsSince(RECONCILE_PAGE_SIZE, "USDT"),
+          [send(), funded("USD")],
+        ])
+
+        await expect(reconcile(record())).resolves.toBe("settled")
+        expect(graphql.transactions).toHaveBeenCalledTimes(2)
+      })
+    })
 
     it("is unknown when the list says there is more but gives no cursor to ask for it", async () => {
       const graphql = fakeGraphqlRail()
