@@ -5,7 +5,12 @@ import { createTheme, ThemeProvider } from "@rneui/themed"
 import { act, render } from "@testing-library/react-native"
 
 import type { CardActions } from "@app/assistant/cards/card-actions"
-import type { CanConfirm, ConfirmResult, Executor } from "@app/assistant/engine/executor"
+import type {
+  CanConfirm,
+  ConfirmOptions,
+  ConfirmResult,
+  Executor,
+} from "@app/assistant/engine/executor"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 
@@ -45,7 +50,8 @@ export const flush = () =>
 export const executorActions = (executor: Executor) => {
   const actions = {
     canConfirm: (id: string) => executor.canConfirm(id),
-    executePreparedAction: (id: string) => executor.executePreparedAction(id),
+    executePreparedAction: (id: string, options?: ConfirmOptions) =>
+      executor.executePreparedAction(id, options),
     reprepare: jest.fn(),
     onResult: jest.fn(),
   }

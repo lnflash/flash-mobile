@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-import type { ConfirmResult, ConfirmState } from "../engine/executor"
+import type { ConfirmOptions, ConfirmResult, ConfirmState } from "../engine/executor"
 import type { AssistantReplyKey } from "../registry/types"
 import { AfterConfirm, afterConfirm, afterRetirement, CardActions } from "./card-actions"
 
@@ -64,6 +64,9 @@ export const useConfirm = (
   const [submitting, setSubmitting] = useState(false)
   const [used, setUsed] = useState(false)
   const [result, setResult] = useState<ConfirmResult | undefined>(undefined)
+  // Set the moment a Confirm starts, before React renders it: a second tap
+  // in the same frame finds it set and does nothing.
+  const running = useRef(false)
   const can = useCanConfirm(actions, preparedActionId, result)
   // What this card's last Confirm left it offering, or, with none to
   // remember (a remount), what the executor's retirement of the action left
@@ -72,25 +75,50 @@ export const useConfirm = (
     ? afterConfirm(result)
     : afterRetirement(can)
 
-  const confirm = useCallback(async () => {
-    if (submitting || (singleUse && used)) return
-    setSubmitting(true)
-    setUsed(true)
-    let answer: ConfirmResult
-    try {
-      answer = await actions.executePreparedAction(preparedActionId)
-    } catch {
-      // The executor never rejects. If it did, the outcome is not known.
-      answer = {
-        kind: "disarmed",
-        actionId: preparedActionId,
-        replyKey: "Assistant.checkHistory",
+  const run = useCallback(
+    async (options?: ConfirmOptions) => {
+      running.current = true
+      setSubmitting(true)
+      setUsed(true)
+      let answer: ConfirmResult
+      try {
+        // The card's id and nothing else, unless the history check passes
+        // its one option.
+        answer = await (options
+          ? actions.executePreparedAction(preparedActionId, options)
+          : actions.executePreparedAction(preparedActionId))
+      } catch {
+        // The executor never rejects. If it did, the outcome is not known.
+        answer = {
+          kind: "disarmed",
+          actionId: preparedActionId,
+          replyKey: "Assistant.checkHistory",
+        }
       }
-    }
-    setResult(answer)
-    setSubmitting(false)
-    actions.onResult?.(answer)
-  }, [actions, preparedActionId, singleUse, submitting, used])
+      running.current = false
+      setResult(answer)
+      setSubmitting(false)
+      actions.onResult?.(answer)
+    },
+    [actions, preparedActionId],
+  )
+
+  const confirm = useCallback(async () => {
+    if (running.current || submitting || (singleUse && used)) return
+    await run()
+  }, [run, singleUse, submitting, used])
+
+  const historyCheckable = after?.historyCheck === true
+  /**
+   * "I checked my history" (ENG-689): Confirm again on the user's word that
+   * their history does not show the day-old payment in the way. Only after
+   * a Confirm the executor blocked with historyCheckable, which stopped
+   * before any dispatch, so a single-use offer was not spent by it.
+   */
+  const confirmHistoryChecked = useCallback(async () => {
+    if (running.current || submitting || !historyCheckable) return
+    await run({ historyChecked: true })
+  }, [historyCheckable, run, submitting])
 
   const blocked =
     submitting ||
@@ -100,6 +128,7 @@ export const useConfirm = (
 
   return {
     confirm,
+    confirmHistoryChecked,
     submitting,
     /** Confirm is offered and may run now. */
     canPress: !blocked,

@@ -182,6 +182,34 @@ describe("afterConfirm", () => {
   })
 })
 
+describe("afterConfirm and the history check (ENG-689)", () => {
+  const blocked = (historyCheckable: boolean): ConfirmResult => ({
+    kind: "pendingDispatch",
+    actionId: "a",
+    replyKey: "Assistant.checkHistory",
+    historyCheckable,
+  })
+
+  it("offers the history check after a Confirm blocked by a day-old dispatch, and nothing more", () => {
+    expect(afterConfirm(blocked(true))).toEqual({
+      replyKey: "Assistant.checkHistory",
+      done: false,
+      confirmAgain: false,
+      reprepare: false,
+      historyCheck: true,
+    })
+  })
+
+  it("offers it after no other result", () => {
+    expect(afterConfirm(blocked(false))).not.toHaveProperty("historyCheck")
+    TABLE.forEach(([, result]) => {
+      if (result.kind !== "pendingDispatch" || !result.historyCheckable) {
+        expect(afterConfirm(result)).not.toHaveProperty("historyCheck")
+      }
+    })
+  })
+})
+
 describe("afterRetirement: what a remounted card offers for an action the executor retired", () => {
   it("offers what the Confirm that retired it left the card offering", () => {
     expect(afterRetirement({ state: "sent" })).toEqual(

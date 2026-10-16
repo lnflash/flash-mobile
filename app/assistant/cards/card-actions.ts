@@ -1,4 +1,9 @@
-import type { CanConfirm, ConfirmResult, ConfirmState } from "../engine/executor"
+import type {
+  CanConfirm,
+  ConfirmOptions,
+  ConfirmResult,
+  ConfirmState,
+} from "../engine/executor"
 import type { AssistantReplyKey } from "../registry/types"
 
 // What a card can do (docs/ai-assistant-tool-registry.md §6). The thread
@@ -8,7 +13,16 @@ import type { AssistantReplyKey } from "../registry/types"
 
 export type CardActions = {
   canConfirm: (preparedActionId: string) => Promise<CanConfirm>
-  executePreparedAction: (preparedActionId: string) => Promise<ConfirmResult>
+  /**
+   * The executor's own. Confirm passes the card's id and nothing else; only
+   * "I checked my history" passes `historyChecked` (ENG-689), after a
+   * Confirm the executor blocked on a day-old dispatch it calls
+   * historyCheckable (spec §5.1).
+   */
+  executePreparedAction: (
+    preparedActionId: string,
+    options?: ConfirmOptions,
+  ) => Promise<ConfirmResult>
   /**
    * Prepare the action again from the same inputs, into a new card: the
    * expired card's Refresh, and "Try again" after a failure where nothing
@@ -32,6 +46,14 @@ export type AfterConfirm = {
    * (spec v0.2.6 §5).
    */
   reprepare: boolean
+  /**
+   * Set when the Confirm was blocked by earlier dispatches of the payment
+   * that the transaction list cannot settle, each at least a day old
+   * (pendingDispatch, historyCheckable): the card may offer "I checked my
+   * history", which confirms again with `historyChecked` (spec §5.1,
+   * ENG-689). Absent otherwise.
+   */
+  historyCheck?: true
 }
 
 export const afterConfirm = (result: ConfirmResult): AfterConfirm => {
@@ -88,8 +110,17 @@ export const afterConfirm = (result: ConfirmResult): AfterConfirm => {
         confirmAgain: false,
         reprepare: false,
       }
-    case "disarmed":
     case "pendingDispatch":
+      // Blocked before any dispatch: nothing ran. Only the user's word that
+      // their history does not show a day-old payment lets it through.
+      return {
+        replyKey: result.replyKey,
+        done: false,
+        confirmAgain: false,
+        reprepare: false,
+        ...(result.historyCheckable ? { historyCheck: true as const } : {}),
+      }
+    case "disarmed":
     case "alreadySent":
       return {
         replyKey: result.replyKey,
