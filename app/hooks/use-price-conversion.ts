@@ -1,12 +1,10 @@
 import { useRealtimePriceQuery, WalletCurrency } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
+import { createToDisplayAmount } from "@app/types/amounts"
 import {
-  createToDisplayAmount,
-  DisplayCurrency,
-  MoneyAmount,
-  moneyAmountIsCurrencyType,
-  WalletOrDisplayCurrency,
-} from "@app/types/amounts"
+  createConvertMoneyAmount,
+  priceOfCurrencyInCurrencyFor,
+} from "@app/utils/price-conversion"
 import { useMemo } from "react"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 
@@ -28,110 +26,28 @@ export const usePriceConversion = () => {
     data?.me?.defaultAccount?.realtimePrice?.denominatorCurrency ||
     defaultDisplayCurrency.id
 
-  const priceData = useMemo(() => {
-    const realtimePrice = data?.me?.defaultAccount?.realtimePrice
-
-    if (!realtimePrice) {
-      return {
-        displayCurrencyPerSat: NaN,
-        displayCurrencyPerCent: NaN,
-      }
-    }
-
-    return {
-      displayCurrencyPerSat:
-        realtimePrice.btcSatPrice.base / 10 ** realtimePrice.btcSatPrice.offset,
-      displayCurrencyPerCent:
-        realtimePrice.usdCentPrice.base / 10 ** realtimePrice.usdCentPrice.offset,
-    }
-  }, [data?.me?.defaultAccount?.realtimePrice])
-
-  const priceOfCurrencyInCurrency = useMemo(() => {
-    const { displayCurrencyPerSat, displayCurrencyPerCent } = priceData
-
-    if (!displayCurrencyPerSat || !displayCurrencyPerCent) {
-      return undefined
-    }
-
-    // has units of denomiatedInCurrency/currency
-    return (
-      currency: WalletOrDisplayCurrency,
-      inCurrency: WalletOrDisplayCurrency,
-    ): number => {
-      const priceOfCurrencyInCurrency = {
-        [WalletCurrency.Btc]: {
-          [DisplayCurrency]: displayCurrencyPerSat,
-          [WalletCurrency.Usd]: displayCurrencyPerSat * (1 / displayCurrencyPerCent),
-          [WalletCurrency.Usdt]:
-            displayCurrencyPerSat *
-            (1 / displayCurrencyPerCent),
-          [WalletCurrency.Btc]: 1,
-        },
-        [WalletCurrency.Usd]: {
-          [DisplayCurrency]: displayCurrencyPerCent,
-          [WalletCurrency.Btc]: displayCurrencyPerCent * (1 / displayCurrencyPerSat),
-          [WalletCurrency.Usd]: 1,
-          [WalletCurrency.Usdt]: 1,
-        },
-        [WalletCurrency.Usdt]: {
-          [DisplayCurrency]: displayCurrencyPerCent ,
-          [WalletCurrency.Btc]:
-            (displayCurrencyPerCent ) *
-            (1 / displayCurrencyPerSat),
-          [WalletCurrency.Usd]: 1 ,
-          [WalletCurrency.Usdt]: 1,
-        },
-        [DisplayCurrency]: {
-          [WalletCurrency.Btc]: 1 / displayCurrencyPerSat,
-          [WalletCurrency.Usd]: 1 / displayCurrencyPerCent,
-          [WalletCurrency.Usdt]: (1 / displayCurrencyPerCent),
-          [DisplayCurrency]: 1,
-        },
-      }
-      return priceOfCurrencyInCurrency[currency][inCurrency]
-    }
-  }, [priceData])
+  // The math lives in app/utils/price-conversion.ts, which the assistant's
+  // action tools convert through too (ENG-688).
+  const priceOfCurrencyInCurrency = useMemo(
+    () => priceOfCurrencyInCurrencyFor(data?.me?.defaultAccount?.realtimePrice),
+    [data?.me?.defaultAccount?.realtimePrice],
+  )
 
   const convertMoneyAmount = useMemo(() => {
     if (!priceOfCurrencyInCurrency) {
       return undefined
     }
 
-    return <T extends WalletOrDisplayCurrency>(
-      moneyAmount: MoneyAmount<WalletOrDisplayCurrency>,
-      toCurrency: T,
-    ): MoneyAmount<T> => {
-      // If the money amount is already the correct currency, return it
-      if (moneyAmountIsCurrencyType(moneyAmount, toCurrency)) {
-        return moneyAmount
-      }
-
-      let amount =
-        moneyAmount.amount * priceOfCurrencyInCurrency(moneyAmount.currency, toCurrency)
-
-      if (toCurrency === "BTC") {
-        amount = Math.round(amount)
-      }
-
-      if (
-        moneyAmountIsCurrencyType(moneyAmount, DisplayCurrency) &&
-        moneyAmount.currencyCode !== displayCurrency
-      ) {
-        amount = NaN
-
+    return createConvertMoneyAmount({
+      priceOfCurrencyInCurrency,
+      displayCurrency,
+      onDisplayCurrencyMismatch: (moneyAmount) =>
         getCrashlytics().recordError(
           new Error(
             `Price conversion is out of sync with display currency. Money amount: ${moneyAmount.currencyCode}, display currency: ${displayCurrency}`,
           ),
-        )
-      }
-
-      return {
-        amount,
-        currency: toCurrency,
-        currencyCode: toCurrency === DisplayCurrency ? displayCurrency : toCurrency,
-      }
-    }
+        ),
+    })
   }, [priceOfCurrencyInCurrency, displayCurrency])
 
   return {
