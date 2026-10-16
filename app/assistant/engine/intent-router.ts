@@ -42,8 +42,8 @@ const parseAmountFields = (
  * Route a raw tool call.
  *
  * - Not a known intent: `unknownIntent`.
- * - A known intent with no tool registered (the five prepare intents, until
- *   ENG-688 registers them): `notYetAvailable`, distinct from unknown.
+ * - A known intent with no tool registered: `notYetAvailable`, distinct
+ *   from unknown.
  * - Arguments the tool's schema refuses, or an amount that does not parse:
  *   `invalidArguments`.
  */

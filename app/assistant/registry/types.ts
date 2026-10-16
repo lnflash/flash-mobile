@@ -1,8 +1,11 @@
 import type { WalletCurrency } from "@app/graphql/generated"
+import type { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
 import type { BtcRail } from "@app/payments/btc-rail"
-import type { AttemptState } from "@app/payments/send-payment"
+import type { AttemptState, SendPaymentDeps } from "@app/payments/send-payment"
+import type { GraphqlActionRail } from "../rails/graphql-action-rail"
 import type { GraphqlRail } from "../rails/graphql-rail"
+import type { LnurlInvoiceRequest } from "../rails/lnurl-invoice"
 
 // The assistant's core contracts (docs/ai-assistant-tool-registry.md §3).
 
@@ -78,7 +81,16 @@ export type ClarificationCard = {
   options: ClarificationOption[]
 }
 
-export type PrepareRefusalReason = "insufficientBalance" | "limitExceeded"
+/**
+ * - insufficientBalance, limitExceeded: the affordability check (spec §5.1).
+ * - notAvailableYet: a payment the assistant may not dispatch yet because
+ *   the branch it would take is gated on an open bug (ENG-688: BTC-wallet
+ *   bolt11 sends until ENG-720, BTC-wallet on-chain sends until ENG-714).
+ */
+export type PrepareRefusalReason =
+  | "insufficientBalance"
+  | "limitExceeded"
+  | "notAvailableYet"
 
 /**
  * The templated error card for an action its `prepare` refused (spec §5.1,
@@ -182,6 +194,10 @@ export type ExecuteContext = {
  * What one Confirm did. The executor follows `next` and keeps no other
  * knowledge of payment rails.
  *
+ * `summary`, when present, is what the card shows after this Confirm: a
+ * group send's legs with the status each one reached (ENG-688). The executor
+ * passes it through to the card and reads nothing in it.
+ *
  * - succeeded: the action did what it was for.
  * - failed: nothing moved, by proof (a resolved Failure status, or a refusal
  *   before dispatch). `confirmAgain` keeps the card armed for a new attempt;
@@ -193,12 +209,18 @@ export type ExecuteContext = {
  *   left, spec v0.2.6).
  */
 export type ExecutionOutcome =
-  | { status: "succeeded" }
-  | { status: "failed"; replyKey: AssistantReplyKey; next: "confirmAgain" | "reprepare" }
+  | { status: "succeeded"; summary?: ActionSummary }
+  | {
+      status: "failed"
+      replyKey: AssistantReplyKey
+      next: "confirmAgain" | "reprepare"
+      summary?: ActionSummary
+    }
   | {
       status: "unknown"
       replyKey: AssistantReplyKey
       next: "retrySameAttempt" | "checkHistory"
+      summary?: ActionSummary
     }
 
 export type PreparedAction = {
@@ -236,6 +258,43 @@ export type ReadToolCtx = {
   btcRail: BtcReadRail
   /** The account's display currency, as `realtimePrice` takes it ("USD", "JMD"). */
   displayCurrency: string
+  /** Epoch milliseconds. */
+  now: () => number
+}
+
+/**
+ * The app's display-currency formatter (useDisplayCurrency), as the action
+ * tools fill every card's *Text field with it: a card never formats (spec
+ * §6). Whoever builds the context inside React hands the hook's own
+ * functions in. `fractionDigits` is the display currency's places, which a
+ * bare amount (no unit) is read in (spec v0.2.5 §5.1).
+ */
+export type DisplayFormatter = Pick<
+  ReturnType<typeof useDisplayCurrency>,
+  "formatMoneyAmount" | "formatDisplayAndWalletAmount" | "fractionDigits"
+>
+
+/**
+ * What an action tool is handed: the read rails, plus what preparing and
+ * executing a payment takes (ENG-688). The send triggers and the BTC rail's
+ * sends are reached only from inside a prepared action's execute(), which
+ * only the executor calls, after a Confirm.
+ */
+export type ActionToolCtx = {
+  /** The thread the prepared action belongs to. */
+  threadId: string
+  graphql: GraphqlRail
+  /** The custodial rail's fee probes, invoices, addresses and settlement calls. */
+  graphqlActions: GraphqlActionRail
+  /** The whole BTC rail: its reads, its prepare members and its sends. */
+  btcRail: BtcRail
+  /** The nine GraphQL send triggers and the instance's endpoint and host. */
+  send: Omit<SendPaymentDeps, "btcRail">
+  /** An invoice from an LNURL-pay service, as the send screen asks for one. */
+  requestLnurlInvoice: LnurlInvoiceRequest
+  /** The account's display currency, as `realtimePrice` takes it ("USD", "JMD"). */
+  displayCurrency: string
+  display: DisplayFormatter
   /** Epoch milliseconds. */
   now: () => number
 }

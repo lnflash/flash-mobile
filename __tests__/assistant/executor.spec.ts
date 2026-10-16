@@ -552,6 +552,35 @@ describe("executor", () => {
         kind: "disarmed",
       })
     })
+
+    it("hands an outcome's summary to the card as it is, and follows only `next` (ENG-688)", async () => {
+      // A group send reports each leg's status in the summary. The executor
+      // reads nothing in it: the state it leaves is what `next` says.
+      const { executor } = setupExecutor()
+      const legs = {
+        legs: [
+          { payeeLabel: "Alice", status: "success" },
+          { payeeLabel: "Bob", status: "failed" },
+        ],
+      }
+      const outcome: ExecutionOutcome = {
+        status: "unknown",
+        replyKey: "Assistant.groupSendPartial",
+        next: "retrySameAttempt",
+        summary: legs,
+      }
+      const action = makeAction({ execute: executed(outcome) })
+      executor.addPrepared(action, "text")
+
+      await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+        kind: "executed",
+        actionId: action.id,
+        outcome,
+      })
+      // Unresolved, so a second Confirm runs execute() again.
+      await executor.executePreparedAction(action.id)
+      expect(action.execute).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe("telemetry", () => {

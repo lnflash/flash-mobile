@@ -9,8 +9,17 @@ import type {
   TransactionRow,
   WalletRow,
 } from "@app/assistant/rails/graphql-rail"
-import type { BtcReadRail, ReadToolCtx } from "@app/assistant/registry/types"
+import type { GraphqlActionRail } from "@app/assistant/rails/graphql-action-rail"
+import type {
+  ActionToolCtx,
+  BtcReadRail,
+  DisplayFormatter,
+  ReadToolCtx,
+} from "@app/assistant/registry/types"
 import type { BtcBalance } from "@app/payments/btc-rail"
+import type { GraphqlMutationFns } from "@app/payments/send-payment"
+import type { GetFeeParams } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
+import { DisplayCurrency, MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 
 export type BtcPayment = Awaited<ReturnType<BtcReadRail["listPayments"]>>[number]
 
@@ -198,3 +207,109 @@ export const page = (
   hasNextPage: next !== undefined,
   endCursor: next ?? null,
 })
+
+// ---------------------------------------------------------------------------
+// The action tier (ENG-688)
+// ---------------------------------------------------------------------------
+
+const notStubbed = (name: string) =>
+  jest.fn(async () => {
+    throw new Error(`${name} not stubbed`)
+  })
+
+export type FakeActionRail = {
+  [K in Exclude<keyof GraphqlActionRail, "feeProbes">]: jest.Mock
+} & { feeProbes: { [K in keyof GetFeeParams]: jest.Mock } }
+
+/** The custodial action rail; each case stubs what it calls. */
+export const fakeActionRail = (): FakeActionRail => ({
+  feeProbes: {
+    lnInvoiceFeeProbe: notStubbed("lnInvoiceFeeProbe"),
+    lnNoAmountInvoiceFeeProbe: notStubbed("lnNoAmountInvoiceFeeProbe"),
+    lnNoAmountUsdInvoiceFeeProbe: notStubbed("lnNoAmountUsdInvoiceFeeProbe"),
+    lnUsdInvoiceFeeProbe: notStubbed("lnUsdInvoiceFeeProbe"),
+    onChainTxFee: notStubbed("onChainTxFee"),
+    onChainUsdTxFee: notStubbed("onChainUsdTxFee"),
+    onChainUsdTxFeeAsBtcDenominated: notStubbed("onChainUsdTxFeeAsBtcDenominated"),
+  },
+  lnUsdInvoiceCreate: notStubbed("lnUsdInvoiceCreate"),
+  onChainAddressCurrent: notStubbed("onChainAddressCurrent"),
+  accountCapabilities: jest.fn(async () => ({ bankPayout: false })),
+  bankAccounts: jest.fn(async () => []),
+  requestCashout: notStubbed("requestCashout"),
+  initiateCashout: notStubbed("initiateCashout"),
+})
+
+export type FakeSendTriggers = { [K in keyof GraphqlMutationFns]: jest.Mock }
+
+/** The nine GraphQL send triggers; a case scripts the one its send calls. */
+export const fakeSendTriggers = (): FakeSendTriggers => ({
+  intraLedgerPaymentSend: notStubbed("intraLedgerPaymentSend"),
+  intraLedgerUsdPaymentSend: notStubbed("intraLedgerUsdPaymentSend"),
+  lnInvoicePaymentSend: notStubbed("lnInvoicePaymentSend"),
+  lnNoAmountInvoicePaymentSend: notStubbed("lnNoAmountInvoicePaymentSend"),
+  lnNoAmountUsdInvoicePaymentSend: notStubbed("lnNoAmountUsdInvoicePaymentSend"),
+  onChainPaymentSend: notStubbed("onChainPaymentSend"),
+  onChainPaymentSendAll: notStubbed("onChainPaymentSendAll"),
+  onChainUsdPaymentSend: notStubbed("onChainUsdPaymentSend"),
+  onChainUsdPaymentSendAsBtcDenominated: notStubbed(
+    "onChainUsdPaymentSendAsBtcDenominated",
+  ),
+})
+
+/** "USD 500", "JMD 78000", "BTC 2100": a money amount as the fake formatter writes it. */
+export const fmt = (moneyAmount: MoneyAmount<WalletOrDisplayCurrency>): string =>
+  `${moneyAmount.currencyCode} ${moneyAmount.amount}`
+
+/**
+ * A display formatter with useDisplayCurrency's shape and a format a spec
+ * can predict: the primary amount (the display amount by default), then the
+ * wallet amount in brackets when its currency differs from the display one.
+ */
+export const fakeDisplay = (fractionDigits = 2): DisplayFormatter => ({
+  fractionDigits,
+  formatMoneyAmount: ({ moneyAmount }) => fmt(moneyAmount),
+  formatDisplayAndWalletAmount: ({ primaryAmount, displayAmount, walletAmount }) => {
+    const primary = primaryAmount ?? displayAmount
+    if (walletAmount.currency === displayAmount.currencyCode) return fmt(primary)
+    const secondary = primary.currency === DisplayCurrency ? walletAmount : displayAmount
+    return `${fmt(primary)} (${fmt(secondary)})`
+  },
+})
+
+/** An action context over fakes: the thread, both rails, the triggers, the formatter. */
+export const fakeActionCtx = (
+  overrides: {
+    graphql?: FakeGraphqlRail
+    btcRail?: ReturnType<typeof fakeBtcRail>
+    actions?: FakeActionRail
+    mutations?: FakeSendTriggers
+    displayCurrency?: string
+    fractionDigits?: number
+    now?: () => number
+  } = {},
+) => {
+  const graphql = overrides.graphql ?? fakeGraphqlRail()
+  const btcRail = overrides.btcRail ?? fakeBtcRail()
+  const actions = overrides.actions ?? fakeActionRail()
+  const mutations = overrides.mutations ?? fakeSendTriggers()
+  const requestLnurlInvoice = jest.fn(async (): Promise<{ invoice: string }> => {
+    throw new Error("requestLnurlInvoice not stubbed")
+  })
+  const ctx: ActionToolCtx = {
+    threadId: "thread-1",
+    graphql: graphql as unknown as ActionToolCtx["graphql"],
+    graphqlActions: actions as unknown as ActionToolCtx["graphqlActions"],
+    btcRail: btcRail as unknown as ActionToolCtx["btcRail"],
+    send: {
+      mutations: mutations as unknown as GraphqlMutationFns,
+      graphqlUri: "https://api.example/graphql",
+      lnAddressHostname: "flashapp.me",
+    },
+    requestLnurlInvoice,
+    displayCurrency: overrides.displayCurrency ?? "USD",
+    display: fakeDisplay(overrides.fractionDigits),
+    now: overrides.now ?? (() => NOW_MS),
+  }
+  return { ctx, graphql, btcRail, actions, mutations, requestLnurlInvoice }
+}
