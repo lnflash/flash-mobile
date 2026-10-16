@@ -5,10 +5,12 @@ import { Alert, Platform } from "react-native"
 import { v4 as uuidv4 } from "uuid"
 import {
   initializeBreezSDK,
-  getInfo,
+  markBreezSDKSwitchedOff,
+  markBreezSDKSwitchedOn,
   registerLightningAddress,
   getLightningAddress,
 } from "@app/utils/breez-sdk"
+import { readBreezWallet } from "@app/payments/btc-rail"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useAddressScreenQuery } from "@app/graphql/generated"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
@@ -110,6 +112,11 @@ export const BreezProvider = ({ children }: Props) => {
       if (persistentState.isAdvanceMode) {
         getBreezInfo()
       } else {
+        // The user switched the BTC wallet off. Nothing stops the SDK, and a
+        // start may still be retrying, so the BTC rail's reads go by this
+        // switch: they answer `disabled` from now on, as the screens hide the
+        // wallet, and a start that gives up later reads as off (ENG-687).
+        markBreezSDKSwitchedOff()
         setBtcWallet({
           id: "",
           walletCurrency: "BTC",
@@ -126,16 +133,26 @@ export const BreezProvider = ({ children }: Props) => {
     if (updatingBalanceRef.current) return
     updatingBalanceRef.current = true
     try {
-      const walletInfo = await getInfo()
+      // One BTC balance source (ENG-687): the balance is read and converted
+      // by the same function as breezBtcRail.getBalanceSats, so the home
+      // screen and the assistant cannot report different sats for one answer
+      // from the SDK. No sync timeout: the provider waits for the synced read
+      // however long it takes, as it always has.
+      const wallet = await readBreezWallet()
+      // The SDK stopped, or never started, between the caller's check and
+      // this read: there is no figure, so keep the last one rather than
+      // writing a zero over it.
+      if (wallet.state !== "ok") return
+      const { sats, info: walletInfo } = wallet
       setBtcWallet((prev) => ({
         ...prev,
-        balance: Number(walletInfo.balanceSats),
+        balance: sats,
       }))
       updateState((state: any) => {
         if (state)
           return {
             ...state,
-            breezBalance: Number(walletInfo.balanceSats),
+            breezBalance: sats,
           }
         return undefined
       })
@@ -240,6 +257,10 @@ export const BreezProvider = ({ children }: Props) => {
   }, [persistentState.isAdvanceMode, breezReady, meData?.me?.username, btcWallet.id])
 
   const getBreezInfo = async () => {
+    // Switched on before anything starts the SDK, so the rail reads it again.
+    // Ahead of the in-flight check: advance mode turned off and on while a
+    // start is still connecting must switch the wallet back on too (ENG-687).
+    markBreezSDKSwitchedOn()
     if (initializingRef.current) return
     initializingRef.current = true
     try {

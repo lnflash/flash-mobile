@@ -1,4 +1,18 @@
+// The real class, so `instanceof` in app code holds for errors made here.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { BreezSdkNotInitializedError } = require("../app/utils/breez-sdk/sdk-errors")
+
 module.exports = {
+  // A test environment has no BTC wallet running, so the two reads answer the
+  // way spark.ts answers with no SDK instance (ENG-687): getInfo rejects with
+  // the not-initialized error, which breezBtcRail reports as `disabled`.
+  getInfo: jest.fn(() => Promise.reject(new BreezSdkNotInitializedError())),
+  listPaymentsBreezSDK: jest.fn(() => Promise.reject(new BreezSdkNotInitializedError())),
+  // The advance-mode switch (ENG-687). Left switched on: the two reads above
+  // already answer as a wallet that is not running.
+  markBreezSDKSwitchedOff: jest.fn(),
+  markBreezSDKSwitchedOn: jest.fn(),
+  assertBreezSDKSwitchedOn: jest.fn(),
   receiveOnchainBreez: jest.fn(() => Promise.resolve({ paymentRequest: "" })),
   receivePaymentBreez: jest.fn(() => Promise.resolve({ paymentRequest: "" })),
   fetchBreezFee: jest.fn(() => Promise.resolve({ fee: 0, err: null })),

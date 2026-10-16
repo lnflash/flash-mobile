@@ -7637,6 +7637,93 @@ type RootTranslation = {
 		 */
 		successResubmitted: string
 	}
+	Assistant: {
+		/**
+		 * I​ ​c​a​n​'​t​ ​h​e​l​p​ ​w​i​t​h​ ​t​h​a​t​ ​y​e​t​.
+		 */
+		unknownIntent: string
+		/**
+		 * I​ ​c​a​n​'​t​ ​d​o​ ​t​h​a​t​ ​h​e​r​e​ ​y​e​t​.​ ​U​s​e​ ​t​h​e​ ​h​o​m​e​ ​s​c​r​e​e​n​ ​f​o​r​ ​n​o​w​.
+		 */
+		notYetAvailable: string
+		/**
+		 * I​ ​d​i​d​n​'​t​ ​c​a​t​c​h​ ​t​h​e​ ​d​e​t​a​i​l​s​.​ ​T​r​y​ ​a​s​k​i​n​g​ ​a​n​o​t​h​e​r​ ​w​a​y​.
+		 */
+		invalidArguments: string
+		/**
+		 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
+		 */
+		toolFailed: string
+		/**
+		 * T​h​e​ ​n​u​m​b​e​r​s​ ​c​h​a​n​g​e​d​ ​s​i​n​c​e​ ​y​o​u​ ​a​s​k​e​d​.​ ​C​h​e​c​k​ ​t​h​e​m​ ​a​n​d​ ​c​o​n​f​i​r​m​ ​a​g​a​i​n​.
+		 */
+		refreshed: string
+		/**
+		 * T​h​i​s​ ​r​e​q​u​e​s​t​ ​e​x​p​i​r​e​d​.​ ​A​s​k​ ​a​g​a​i​n​ ​t​o​ ​g​e​t​ ​f​r​e​s​h​ ​n​u​m​b​e​r​s​.
+		 */
+		expired: string
+		/**
+		 * T​u​r​n​ ​o​n​ ​a​ ​P​I​N​ ​o​r​ ​b​i​o​m​e​t​r​i​c​s​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​c​o​n​f​i​r​m​ ​t​h​i​s​.
+		 */
+		authUnavailable: string
+		/**
+		 * W​e​ ​c​o​u​l​d​n​'​t​ ​c​o​n​f​i​r​m​ ​i​t​'​s​ ​y​o​u​.​ ​N​o​t​h​i​n​g​ ​w​e​n​t​ ​t​h​r​o​u​g​h​.
+		 */
+		authDenied: string
+		/**
+		 * T​h​a​t​ ​r​e​q​u​e​s​t​ ​i​s​ ​n​o​ ​l​o​n​g​e​r​ ​o​p​e​n​.​ ​A​s​k​ ​a​g​a​i​n​ ​t​o​ ​s​t​a​r​t​ ​o​v​e​r​.
+		 */
+		actionNotFound: string
+		/**
+		 * T​h​i​s​ ​p​a​y​m​e​n​t​ ​m​a​y​ ​h​a​v​e​ ​a​l​r​e​a​d​y​ ​b​e​e​n​ ​s​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​ ​b​e​f​o​r​e​ ​t​r​y​i​n​g​ ​a​g​a​i​n​.
+		 */
+		checkHistory: string
+		/**
+		 * A​ ​p​a​y​m​e​n​t​ ​o​f​ ​t​h​i​s​ ​a​m​o​u​n​t​ ​t​o​ ​t​h​i​s​ ​r​e​c​i​p​i​e​n​t​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​s​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​,​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​ ​i​f​ ​y​o​u​ ​m​e​a​n​t​ ​t​o​ ​s​e​n​d​ ​a​n​o​t​h​e​r​.
+		 */
+		alreadySent: string
+		/**
+		 * Y​o​u​ ​d​o​n​'​t​ ​h​a​v​e​ ​e​n​o​u​g​h​ ​i​n​ ​t​h​i​s​ ​w​a​l​l​e​t​ ​f​o​r​ ​t​h​a​t​ ​p​a​y​m​e​n​t​.
+		 */
+		insufficientBalance: string
+		/**
+		 * T​h​a​t​ ​p​a​y​m​e​n​t​ ​i​s​ ​o​v​e​r​ ​y​o​u​r​ ​a​c​c​o​u​n​t​ ​l​i​m​i​t​.
+		 */
+		limitExceeded: string
+		/**
+		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​i​s​ ​s​t​i​l​l​ ​s​y​n​c​i​n​g​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
+		 */
+		btcSyncing: string
+		/**
+		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​i​s​ ​o​f​f​.​ ​T​u​r​n​ ​o​n​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​u​s​e​ ​i​t​.
+		 */
+		btcDisabled: string
+		/**
+		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​c​o​u​l​d​n​'​t​ ​s​t​a​r​t​.​ ​C​l​o​s​e​ ​a​n​d​ ​r​e​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​t​o​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		btcFailed: string
+		/**
+		 * T​h​i​s​ ​b​a​l​a​n​c​e​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​r​i​g​h​t​ ​n​o​w​.
+		 */
+		balanceUnavailable: string
+		/**
+		 * S​e​a​r​c​h​e​d​ ​y​o​u​r​ ​l​a​s​t​ ​{​c​o​u​n​t​}​ ​p​a​y​m​e​n​t​s​.
+		 * @param {number} count
+		 */
+		searchedWindow: RequiredParams<'count'>
+		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​f​i​n​d​ ​a​ ​c​o​n​t​a​c​t​ ​b​y​ ​t​h​a​t​ ​n​a​m​e​.
+		 */
+		noContactMatch: string
+		/**
+		 * W​h​i​c​h​ ​c​o​n​t​a​c​t​ ​d​o​ ​y​o​u​ ​m​e​a​n​?
+		 */
+		pickContact: string
+		/**
+		 * D​e​t​a​i​l​s​ ​a​r​e​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​t​h​i​s​ ​p​a​y​m​e​n​t​.
+		 */
+		detailsUnavailable: string
+	}
 }
 
 export type TranslationFunctions = {
@@ -15083,6 +15170,92 @@ export type TranslationFunctions = {
 		 * Your new photos have been submitted for review
 		 */
 		successResubmitted: () => LocalizedString
+	}
+	Assistant: {
+		/**
+		 * I can't help with that yet.
+		 */
+		unknownIntent: () => LocalizedString
+		/**
+		 * I can't do that here yet. Use the home screen for now.
+		 */
+		notYetAvailable: () => LocalizedString
+		/**
+		 * I didn't catch the details. Try asking another way.
+		 */
+		invalidArguments: () => LocalizedString
+		/**
+		 * Something went wrong. Try again in a moment.
+		 */
+		toolFailed: () => LocalizedString
+		/**
+		 * The numbers changed since you asked. Check them and confirm again.
+		 */
+		refreshed: () => LocalizedString
+		/**
+		 * This request expired. Ask again to get fresh numbers.
+		 */
+		expired: () => LocalizedString
+		/**
+		 * Turn on a PIN or biometrics in Settings to confirm this.
+		 */
+		authUnavailable: () => LocalizedString
+		/**
+		 * We couldn't confirm it's you. Nothing went through.
+		 */
+		authDenied: () => LocalizedString
+		/**
+		 * That request is no longer open. Ask again to start over.
+		 */
+		actionNotFound: () => LocalizedString
+		/**
+		 * This payment may have already been sent. Check your transaction history before trying again.
+		 */
+		checkHistory: () => LocalizedString
+		/**
+		 * A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.
+		 */
+		alreadySent: () => LocalizedString
+		/**
+		 * You don't have enough in this wallet for that payment.
+		 */
+		insufficientBalance: () => LocalizedString
+		/**
+		 * That payment is over your account limit.
+		 */
+		limitExceeded: () => LocalizedString
+		/**
+		 * Your BTC wallet is still syncing. Try again in a moment.
+		 */
+		btcSyncing: () => LocalizedString
+		/**
+		 * Your BTC wallet is off. Turn on Advanced Mode in Settings to use it.
+		 */
+		btcDisabled: () => LocalizedString
+		/**
+		 * Your BTC wallet couldn't start. Close and reopen the app to try again.
+		 */
+		btcFailed: () => LocalizedString
+		/**
+		 * This balance isn't available right now.
+		 */
+		balanceUnavailable: () => LocalizedString
+		/**
+		 * Searched your last {count} payments.
+		 */
+		searchedWindow: (arg: { count: number }) => LocalizedString
+		/**
+		 * I couldn't find a contact by that name.
+		 */
+		noContactMatch: () => LocalizedString
+		/**
+		 * Which contact do you mean?
+		 */
+		pickContact: () => LocalizedString
+		/**
+		 * Details aren't available for this payment.
+		 */
+		detailsUnavailable: () => LocalizedString
 	}
 }
 

@@ -37,6 +37,7 @@ import { toUsdMoneyAmount } from "@app/types/amounts"
 import { parseDestination } from "./payment-destination"
 import { maybeResolveManualUsernameToLnurl } from "./payment-destination/resolve-username-to-lnurl"
 import { logParseDestinationResult } from "@app/utils/analytics"
+import { clearSendFlowOpened, markSendFlowOpened } from "@app/utils/send-open-to-confirm"
 
 // store
 import {
@@ -92,6 +93,13 @@ const SendBitcoinDestinationScreen: React.FC<Props> = ({ navigation, route }) =>
 
   const wallets = data?.me?.defaultAccount.wallets
   const bitcoinNetwork = data?.globals?.network
+
+  // The send flow opens here, for the open-to-confirm measure the
+  // confirmation screen reports on a confirmed send (ENG-687).
+  useEffect(() => {
+    markSendFlowOpened()
+    return clearSendFlowOpened
+  }, [])
 
   useEffect(() => {
     handleNavigation()

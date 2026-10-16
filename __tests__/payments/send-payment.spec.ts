@@ -118,6 +118,9 @@ const fakeClient = () => {
 }
 
 const mockRail = () => ({
+  // The rail's two reads (ENG-687). A send never calls them.
+  getBalanceSats: jest.fn(),
+  listPayments: jest.fn(),
   // payInvoice resolves with payLightningBreez's { success, error, payment },
   // where payment is the SDK's SendPaymentResponse. Only a success: true
   // answer whose payment went out (Completed or Pending) reads as Success
