@@ -1,0 +1,23 @@
+# Golden path 1 (spec §9): "check balance". The grammar reads the ask,
+# getBalances answers from the network, and the thread draws every wallet's
+# balance from the tool's payload. The Test review account holds nothing,
+# so the flow asserts the answer is there and live, not its figures.
+appId: com.lnflash
+name: Ask Flash check balance
+tags: [assistant]
+---
+- runFlow: subflows/open-ask-flash.yaml
+- tapOn:
+    id: ask-flash-input
+- inputText: "what's my balance"
+- tapOn:
+    id: ask-flash-send
+- assertVisible:
+    id: ask-flash-user-bubble
+- extendedWaitUntil:
+    visible:
+      id: ask-flash-balances
+    timeout: 30000
+# From the network, not the cache: no stale label.
+- assertNotVisible:
+    id: ask-flash-stale

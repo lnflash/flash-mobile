@@ -1,0 +1,7 @@
+# Ask Flash e2e flows (ENG-689). Every top-level flow runs, except what the
+# workflow excludes by tag: `funded` flows need a funded Test sender, which
+# does not exist yet (ENG-710's blocker record). See README.md.
+flows:
+  - "*"
+executionOrder:
+  continueOnFailure: true

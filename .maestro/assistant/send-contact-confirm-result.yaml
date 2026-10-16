@@ -1,0 +1,37 @@
+# Golden path 2 (spec §9): "send to a contact -> confirm card -> result
+# card". Tagged `funded`: it moves real money on the Test instance, which
+# settles on mainnet, so it needs a dedicated funded sender and payee
+# (ENG-710's blocker record), and the workflow skips it until they exist.
+#
+# Env: CONTACT, the payee as the sender's contact list names it (a sure
+# match, so the grammar's call meets no picker); AMOUNT, in US dollars,
+# named in the ask so the sender's display currency does not matter.
+appId: com.lnflash
+name: Ask Flash send to a contact
+tags: [assistant, funded]
+env:
+  CONTACT: ${CONTACT || "e2e-payee"}
+  AMOUNT: ${AMOUNT || "0.02"}
+---
+- runFlow: subflows/open-ask-flash.yaml
+- tapOn:
+    id: ask-flash-input
+- inputText: ${"send " + AMOUNT + " usd to " + CONTACT}
+- tapOn:
+    id: ask-flash-send
+# The confirm card: the payee in full, the amount, the fee, the total.
+- extendedWaitUntil:
+    visible:
+      id: assistant-card-confirm
+    timeout: 30000
+- assertVisible:
+    id: assistant-card-payee
+- assertVisible:
+    id: assistant-card-total
+- tapOn:
+    id: assistant-card-confirm-button
+# The result: the card says the payment went.
+- extendedWaitUntil:
+    visible:
+      id: assistant-card-done
+    timeout: 60000
