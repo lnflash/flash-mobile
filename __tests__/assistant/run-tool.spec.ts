@@ -8,7 +8,12 @@ import {
 } from "@app/assistant/registry/define"
 import { assistantRegistry, READ_TOOLS } from "@app/assistant/registry"
 import { PrepareRefusedError } from "@app/assistant/registry/refusals"
-import type { ActionToolCtx, ReadToolCtx } from "@app/assistant/registry/types"
+import {
+  ActionToolCtx,
+  INTENTS,
+  ReadToolCtx,
+  tierOf,
+} from "@app/assistant/registry/types"
 import { toUsdMoneyAmount } from "@app/types/amounts"
 import {
   fakeActionCtx,
@@ -381,6 +386,11 @@ describe("runTool with action tools (ENG-688)", () => {
 })
 
 describe("the assistant's registry (ENG-688)", () => {
+  it("registers a tool for every intent, each in its own tier", () => {
+    expect([...assistantRegistry.keys()].sort()).toEqual([...INTENTS].sort())
+    assistantRegistry.forEach((tool, intent) => expect(tool.tier).toBe(tierOf(intent)))
+  })
+
   it("answers a valid prepare call notYetAvailable, preparing nothing, without action deps", async () => {
     const { deps, graphql } = setup()
 
