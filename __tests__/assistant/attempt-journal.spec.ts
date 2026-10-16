@@ -502,7 +502,7 @@ describe("a dispatch that outlives the app", () => {
     expect(relaunched.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
   })
 
-  it("says a payment of this amount to this recipient was already sent when the list shows it", async () => {
+  it("says a payment of this amount to this person was already sent when the list shows it", async () => {
     await dieMidSend()
     const relaunched = launch("settled", T0 + 30_000)
     const again = relaunched.prepare()

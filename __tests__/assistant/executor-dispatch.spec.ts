@@ -592,7 +592,7 @@ describe("Confirms of one payment, one at a time", () => {
     // B's card says only what the executor knows: a payment of this amount
     // to this recipient went. B's own, for parking, never did.
     expect(LL.Assistant.alreadySent()).toBe(
-      "A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.",
+      "A payment of this amount to this person was already sent. Check your transaction history, and ask again if you meant to send another.",
     )
 
     // Asking again, as the reply says, sends another.

@@ -7679,7 +7679,7 @@ type RootTranslation = {
 		 */
 		checkHistory: string
 		/**
-		 * A​ ​p​a​y​m​e​n​t​ ​o​f​ ​t​h​i​s​ ​a​m​o​u​n​t​ ​t​o​ ​t​h​i​s​ ​r​e​c​i​p​i​e​n​t​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​s​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​,​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​ ​i​f​ ​y​o​u​ ​m​e​a​n​t​ ​t​o​ ​s​e​n​d​ ​a​n​o​t​h​e​r​.
+		 * A​ ​p​a​y​m​e​n​t​ ​o​f​ ​t​h​i​s​ ​a​m​o​u​n​t​ ​t​o​ ​t​h​i​s​ ​p​e​r​s​o​n​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​s​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​,​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​ ​i​f​ ​y​o​u​ ​m​e​a​n​t​ ​t​o​ ​s​e​n​d​ ​a​n​o​t​h​e​r​.
 		 */
 		alreadySent: string
 		/**
@@ -7691,15 +7691,15 @@ type RootTranslation = {
 		 */
 		limitExceeded: string
 		/**
-		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​i​s​ ​s​t​i​l​l​ ​s​y​n​c​i​n​g​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​i​s​ ​s​t​i​l​l​ ​s​y​n​c​i​n​g​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
 		 */
 		btcSyncing: string
 		/**
-		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​i​s​ ​o​f​f​.​ ​T​u​r​n​ ​o​n​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​u​s​e​ ​i​t​.
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​i​s​ ​o​f​f​.​ ​T​u​r​n​ ​o​n​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​u​s​e​ ​i​t​.
 		 */
 		btcDisabled: string
 		/**
-		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​c​o​u​l​d​n​'​t​ ​s​t​a​r​t​.​ ​C​l​o​s​e​ ​a​n​d​ ​r​e​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​t​o​ ​t​r​y​ ​a​g​a​i​n​.
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​c​o​u​l​d​n​'​t​ ​s​t​a​r​t​.​ ​C​l​o​s​e​ ​a​n​d​ ​r​e​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​t​o​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		btcFailed: string
 		/**
@@ -7740,7 +7740,7 @@ type RootTranslation = {
 		 */
 		invalidDestination: string
 		/**
-		 * T​h​i​s​ ​i​n​v​o​i​c​e​ ​h​a​s​ ​e​x​p​i​r​e​d​.​ ​A​s​k​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​ ​f​o​r​ ​a​ ​n​e​w​ ​o​n​e​.
+		 * T​h​i​s​ ​i​n​v​o​i​c​e​ ​h​a​s​ ​e​x​p​i​r​e​d​.​ ​A​s​k​ ​t​h​e​ ​p​e​r​s​o​n​ ​f​o​r​ ​a​ ​n​e​w​ ​o​n​e​.
 		 */
 		invoiceExpired: string
 		/**
@@ -7760,11 +7760,11 @@ type RootTranslation = {
 		 */
 		amountFixedByRequest: string
 		/**
-		 * T​h​e​ ​r​e​c​i​p​i​e​n​t​ ​c​a​n​'​t​ ​a​c​c​e​p​t​ ​t​h​a​t​ ​a​m​o​u​n​t​.
+		 * T​h​e​ ​p​e​r​s​o​n​ ​c​a​n​'​t​ ​a​c​c​e​p​t​ ​t​h​a​t​ ​a​m​o​u​n​t​.
 		 */
 		amountOutsideRecipientLimits: string
 		/**
-		 * I​ ​c​o​u​l​d​n​'​t​ ​g​e​t​ ​a​n​ ​i​n​v​o​i​c​e​ ​f​r​o​m​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
+		 * I​ ​c​o​u​l​d​n​'​t​ ​g​e​t​ ​a​n​ ​i​n​v​o​i​c​e​ ​f​r​o​m​ ​t​h​e​ ​p​e​r​s​o​n​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
 		 */
 		recipientInvoiceFailed: string
 		/**
@@ -7808,7 +7808,7 @@ type RootTranslation = {
 		 */
 		cashoutFailed: string
 		/**
-		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​5​,​5​0​0​ ​s​a​t​s​.
+		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​5​,​5​0​0​ ​s​a​t​s​.
 		 */
 		btcOnchainBelowMinimum: string
 		/**
@@ -15380,7 +15380,7 @@ export type TranslationFunctions = {
 		 */
 		checkHistory: () => LocalizedString
 		/**
-		 * A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.
+		 * A payment of this amount to this person was already sent. Check your transaction history, and ask again if you meant to send another.
 		 */
 		alreadySent: () => LocalizedString
 		/**
@@ -15392,15 +15392,15 @@ export type TranslationFunctions = {
 		 */
 		limitExceeded: () => LocalizedString
 		/**
-		 * Your BTC wallet is still syncing. Try again in a moment.
+		 * Your Bitcoin wallet is still syncing. Try again in a moment.
 		 */
 		btcSyncing: () => LocalizedString
 		/**
-		 * Your BTC wallet is off. Turn on Advanced Mode in Settings to use it.
+		 * Your Bitcoin wallet is off. Turn on Advanced Mode in Settings to use it.
 		 */
 		btcDisabled: () => LocalizedString
 		/**
-		 * Your BTC wallet couldn't start. Close and reopen the app to try again.
+		 * Your Bitcoin wallet couldn't start. Close and reopen the app to try again.
 		 */
 		btcFailed: () => LocalizedString
 		/**
@@ -15440,7 +15440,7 @@ export type TranslationFunctions = {
 		 */
 		invalidDestination: () => LocalizedString
 		/**
-		 * This invoice has expired. Ask the recipient for a new one.
+		 * This invoice has expired. Ask the person for a new one.
 		 */
 		invoiceExpired: () => LocalizedString
 		/**
@@ -15460,11 +15460,11 @@ export type TranslationFunctions = {
 		 */
 		amountFixedByRequest: () => LocalizedString
 		/**
-		 * The recipient can't accept that amount.
+		 * The person can't accept that amount.
 		 */
 		amountOutsideRecipientLimits: () => LocalizedString
 		/**
-		 * I couldn't get an invoice from the recipient. Try again in a moment.
+		 * I couldn't get an invoice from the person. Try again in a moment.
 		 */
 		recipientInvoiceFailed: () => LocalizedString
 		/**
@@ -15508,7 +15508,7 @@ export type TranslationFunctions = {
 		 */
 		cashoutFailed: () => LocalizedString
 		/**
-		 * On-chain sends from your BTC wallet need at least 5,500 sats.
+		 * On-chain sends from your Bitcoin wallet need at least 5,500 sats.
 		 */
 		btcOnchainBelowMinimum: () => LocalizedString
 		/**
