@@ -9,7 +9,7 @@ import { createExecutor } from "@app/assistant/engine/executor"
 import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
 import type { ExecuteContext, ExecutionOutcome } from "@app/assistant/registry/types"
 import { PaymentSendResult } from "@app/graphql/generated"
-import { serverClock } from "@app/graphql/server-clock"
+import { createServerClock, ServerClock, serverClock } from "@app/graphql/server-clock"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import {
@@ -863,5 +863,107 @@ describe("the clock offset a dispatch is journaled with", () => {
     } finally {
       phoneClock.mockRestore()
     }
+  })
+
+  describe("after the phone's clock stepped since the answer that measured it (ENG-726)", () => {
+    // A GraphQL answer at T0 shows the phone's clock right (offset 0). Then
+    // the phone's wall clock steps, an NTP correction or a manual change,
+    // before $5 to Alice dispatches, and the answer to that send is lost.
+    // The send landed: the list shows it, as IBEX lists it (naming nothing),
+    // two seconds after T0 on the server's clock, below the deposit that
+    // funded the cash wallet. The user leaves the thread and asks again.
+    const FIVE_MINUTES_MS = 5 * 60_000
+    const landed = graphqlTx({
+      id: "landed",
+      createdAt: Math.floor(T0 / 1000) + 2,
+      settlementAmount: -500,
+      initiationVia: { __typename: "InitiationViaLn", paymentHash: "" },
+      settlementVia: { __typename: "SettlementViaLn", paymentSecret: null },
+    })
+
+    /**
+     * The story above, with the wall clock stepping `stepMs` between the
+     * answer and the dispatch. The executor reads the offset from the app's
+     * kind of clock, over this case's wall and monotonic clocks, unless the
+     * case hands it `offset` instead.
+     */
+    const lostAfterStep = async (stepMs: number, offset?: () => number | null) => {
+      let monotonic = 0
+      // The server clock reads the phone's wall clock, which is the executor's.
+      const phone = { now: (): number => T0 }
+      const clock: ServerClock = createServerClock(
+        () => phone.now(),
+        () => monotonic,
+      )
+      const run = setupSendingExecutor({ serverClockOffsetMs: offset ?? clock.offsetMs })
+      phone.now = run.now
+      await answerThrough(clock.link, new Date(T0).toUTCString())
+      // The step moves the wall clock only.
+      run.advance(stepMs)
+
+      run.intraLedgerUsdPaymentSend.mockImplementation(lostResponse)
+      const a = run.prepare("thread-a")
+      run.executor.addPrepared(a, "text")
+      await expect(run.executor.executePreparedAction(a.id)).resolves.toMatchObject({
+        outcome: { status: "unknown", next: "retrySameAttempt" },
+      })
+      run.executor.leaveThread("thread-a")
+      // Time passes: both clocks move.
+      run.advance(RECONCILE_MIN_AGE_MS + 60_000)
+      monotonic += RECONCILE_MIN_AGE_MS + 60_000
+      run.graphql.transactions.mockResolvedValue(page([landed, fundedBefore(T0, "USD")]))
+      run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
+
+      const b = run.prepare("thread-b")
+      run.executor.addPrepared(b, "text")
+      return { run, a, b, result: await run.executor.executePreparedAction(b.id) }
+    }
+
+    it("journals no offset after a five-minute step, so the list is never read for an absent", async () => {
+      const { run, a, b, result } = await lostAfterStep(FIVE_MINUTES_MS)
+
+      expect(result).toEqual({
+        kind: "pendingDispatch",
+        actionId: b.id,
+        replyKey: "Assistant.checkHistory",
+        historyCheckable: false,
+      })
+      expect(run.keysSent()).toHaveLength(1)
+      await expect(run.reconcile.mock.results[0].value).resolves.toBe("unknown")
+      expect(run.graphql.transactions).not.toHaveBeenCalled()
+      await expect(run.journal.pending()).resolves.toEqual([
+        expect.objectContaining({
+          preparedActionId: a.id,
+          dispatchedAt: T0 + FIVE_MINUTES_MS,
+          serverClockOffsetMs: null,
+        }),
+      ])
+    })
+
+    it("would send twice on the offset measured before the step: the case the null closes", async () => {
+      // The same story, journaled with the offset as it was measured, as
+      // the executor did before ENG-726. The dispatch, stamped on the
+      // stepped clock, lands on the server's clock five minutes after the
+      // send it made: the list is read back from after the send's own row,
+      // which then counts as one from before the dispatch, and calls the
+      // payment absent.
+      const { run, result } = await lostAfterStep(FIVE_MINUTES_MS, () => 0)
+
+      expect(result).toMatchObject({ kind: "executed", outcome: { status: "succeeded" } })
+      await expect(run.reconcile.mock.results[0].value).resolves.toBe("absent")
+      expect(run.keysSent()).toHaveLength(2)
+    })
+
+    it("keeps the measured offset when the clock did not step", async () => {
+      const { run, a } = await lostAfterStep(0)
+
+      await expect(run.journal.pending()).resolves.toEqual([
+        expect.objectContaining({
+          preparedActionId: a.id,
+          dispatchedAt: T0,
+          serverClockOffsetMs: 0,
+        }),
+      ])
+    })
   })
 })

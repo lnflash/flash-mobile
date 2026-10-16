@@ -3,7 +3,13 @@ import * as path from "path"
 
 import { ApolloLink, execute, gql, Observable } from "@apollo/client"
 
-import { createServerClock, parseHttpDate } from "@app/graphql/server-clock"
+import { RECONCILE_CLOCK_SKEW_SECONDS } from "@app/assistant/engine/reconcile"
+import {
+  CLOCK_STEP_TOLERANCE_MS,
+  createServerClock,
+  monotonicNow,
+  parseHttpDate,
+} from "@app/graphql/server-clock"
 
 // The phone's clock against the API's, as the HTTP chain notes it from each
 // GraphQL answer's Date header (app/graphql/server-clock.ts). The assistant's
@@ -172,5 +178,135 @@ describe("the server clock", () => {
       .filter(Boolean)
 
     expect(links.slice(-2)).toEqual(["serverClock.link", "httpLink"])
+  })
+})
+
+describe("a step of the phone's clock (ENG-726)", () => {
+  // The offset places a dispatch, stamped on the phone's clock, on the
+  // server's. It was measured against the phone's clock as it read then: an
+  // NTP correction or a manual change since steps that clock, and the offset
+  // would place the dispatch minutes off. The clock keeps a monotonic
+  // reading with each measurement, and reads the offset only while the two
+  // clocks have moved alike.
+  const FIVE_MINUTES_MS = 5 * 60_000
+
+  /** A phone whose wall clock and monotonic clock a case moves apart or together. */
+  const phone = () => {
+    let wall = SERVER_MS + 1_000
+    let monotonic = 50_000
+    return {
+      clock: createServerClock(
+        () => wall,
+        () => monotonic,
+      ),
+      /** Time passes: both clocks move. */
+      wait: (ms: number) => {
+        wall += ms
+        monotonic += ms
+      },
+      /** The wall clock steps; the monotonic clock does not. */
+      step: (ms: number) => {
+        wall += ms
+      },
+    }
+  }
+
+  it("reads no offset once the clock stepped five minutes after the answer", async () => {
+    const { clock, wait, step } = phone()
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+    expect(clock.offsetMs()).toBe(1_000)
+
+    wait(10_000)
+    step(FIVE_MINUTES_MS)
+
+    expect(clock.offsetMs()).toBeNull()
+  })
+
+  it("reads no offset after a step back either", async () => {
+    const { clock, step } = phone()
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+
+    step(-FIVE_MINUTES_MS)
+
+    expect(clock.offsetMs()).toBeNull()
+  })
+
+  it("keeps the measured offset while no step came, however long ago it was measured", async () => {
+    const { clock, wait } = phone()
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+
+    wait(60 * 60_000)
+
+    expect(clock.offsetMs()).toBe(1_000)
+  })
+
+  it("keeps it through drift up to the tolerance, and drops it past", async () => {
+    const { clock, wait, step } = phone()
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+
+    wait(30 * 60_000)
+    step(CLOCK_STEP_TOLERANCE_MS)
+    expect(clock.offsetMs()).toBe(1_000)
+
+    step(1)
+    expect(clock.offsetMs()).toBeNull()
+  })
+
+  it("measures again from the next answer after a step", async () => {
+    const { clock, step } = phone()
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+    step(FIVE_MINUTES_MS)
+    expect(clock.offsetMs()).toBeNull()
+
+    // The next answer the server stamps at the same second: the phone now
+    // reads five minutes and a second ahead.
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+
+    expect(clock.offsetMs()).toBe(FIVE_MINUTES_MS + 1_000)
+  })
+
+  it("reads no offset when it has no monotonic clock to tell a step by", async () => {
+    const clock = createServerClock(
+      () => SERVER_MS,
+      () => undefined,
+    )
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+
+    expect(clock.offsetMs()).toBeNull()
+  })
+
+  it("reads no offset, rather than throw, when the monotonic clock fails", async () => {
+    let fails = false
+    const clock = createServerClock(
+      () => SERVER_MS,
+      () => {
+        if (fails) throw new Error("no clock")
+        return 0
+      },
+    )
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+    fails = true
+
+    expect(clock.offsetMs()).toBeNull()
+  })
+
+  it("allows the step the reconciler allows for the phone's drift", () => {
+    expect(CLOCK_STEP_TOLERANCE_MS).toBe(RECONCILE_CLOCK_SKEW_SECONDS * 1000)
+  })
+
+  it("tells steps by the runtime's monotonic clock", () => {
+    // Jest runs on Node, whose performance.now never steps; the app's
+    // runtime gives React Native's nativePerformanceNow first.
+    const first = monotonicNow()
+    expect(typeof first).toBe("number")
+    expect(monotonicNow() as number).toBeGreaterThanOrEqual(first as number)
+
+    const global = globalThis as { nativePerformanceNow?: () => number }
+    global.nativePerformanceNow = () => 42
+    try {
+      expect(monotonicNow()).toBe(42)
+    } finally {
+      delete global.nativePerformanceNow
+    }
   })
 })
