@@ -29,7 +29,7 @@ import { MessageBubble } from "./components/MessageBubble"
 import { MessageInput } from "./components/MessageInput"
 import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { QuickZapModal } from "@app/components/zaps/quick-zap-modal"
-import { sendZap } from "@app/utils/nostr/zap"
+import { sendZap, ZapPayResult } from "@app/utils/nostr/zap"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import {
@@ -39,6 +39,7 @@ import {
 } from "@app/graphql/generated"
 import { breezSDKInitialized, payLightningBreez } from "@app/utils/breez-sdk/spark"
 import { toastShow } from "@app/utils/toast"
+import { CHECK_TRANSACTION_HISTORY_MESSAGE } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 
 export type DeliveryInfo = {
   pending: boolean
@@ -101,7 +102,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   // Picks the right payment method at call time — no hardcoding needed.
   // Breez/Spark (advance mode) takes priority when it's already running;
   // otherwise falls back to the Galoy custodial wallet via GraphQL.
-  const payInvoice = async (pr: string): Promise<{ success: boolean; error?: string }> => {
+  const payInvoice = async (pr: string): Promise<ZapPayResult> => {
     if (breezSDKInitialized) {
       return payLightningBreez(pr)
     }
@@ -161,6 +162,11 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     }
 
     setIsZapping(true)
+    // ENG-720: set when the zap's payment may already have left. A retry would
+    // fetch a fresh invoice from the LNURL callback and pay the recipient a
+    // second time, so isZapping stays true, and the zap and quick-zap buttons
+    // stay disabled until the screen remounts.
+    let disarm = false
     try {
       const result = await sendZap({
         recipientPubkey,
@@ -172,11 +178,19 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
 
       if (result.success) {
         toastShow({ message: `Zapped ${amount} sats`, type: "success" })
+      } else if (result.outcomeUnknown) {
+        // The history message, never result.error: that is the SDK's raw
+        // message, for the log only.
+        disarm = true
+        toastShow({ message: CHECK_TRANSACTION_HISTORY_MESSAGE, type: "error" })
       } else {
-        toastShow({ message: result.error || "Payment could not be sent.", type: "error" })
+        toastShow({
+          message: result.error || "Payment could not be sent.",
+          type: "error",
+        })
       }
     } finally {
-      setIsZapping(false)
+      if (!disarm) setIsZapping(false)
     }
   }
 
@@ -334,6 +348,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
           onLongPress={() => !isZapping && setQuickZapVisible(true)}
           disabled={isZapping}
           hitSlop={8}
+          testID="chat-zap-button"
         >
           {isZapping ? (
             <ActivityIndicator size="small" color={colors.primary} />

@@ -20,6 +20,20 @@ const lnurlParamsUrl = (user: string, domain: string, _lnAddressHostname: string
 }
 
 /**
+ * What a zap's pay function answers. sendZap answers with the same shape, and
+ * passes the pay function's answer through unchanged. `outcomeUnknown`
+ * (ENG-720) means the payment may already have left, so the caller must not
+ * offer a retry: a retry fetches a fresh invoice from the LNURL callback and
+ * would pay the recipient a second time. `error` then holds the SDK's raw
+ * message, which is for the log only.
+ */
+export type ZapPayResult = {
+  success: boolean
+  error?: string
+  outcomeUnknown?: boolean
+}
+
+/**
  * Send a NIP-57 zap to a recipient.
  *
  * Flow:
@@ -43,9 +57,9 @@ export const sendZap = async ({
   lud16: string
   amountSats: number
   lnAddressHostname: string
-  payInvoice: (pr: string) => Promise<{ success: boolean; error?: string }>
+  payInvoice: (pr: string) => Promise<ZapPayResult>
   comment?: string
-}): Promise<{ success: boolean; error?: string }> => {
+}): Promise<ZapPayResult> => {
   try {
     const parts = lud16.split("@")
     if (parts.length !== 2) {
