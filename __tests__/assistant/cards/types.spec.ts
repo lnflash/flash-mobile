@@ -112,6 +112,9 @@ describe("validateCard: every card payload is checked before it renders", () => 
     expect(validateCard(without(confirmPaymentFixture, "memo")).valid).toBe(true)
     expect(validateCard(without(invoiceFixture, "amountText")).valid).toBe(true)
     expect(validateCard(without(invoiceFixture, "expiresAt")).valid).toBe(true)
+    // A conversion's confirm card names the wallet it pays (ENG-688).
+    expect(validateCard({ ...confirmPaymentFixture, toWallet: "BTC" }).valid).toBe(true)
+    expect(validateCard({ ...confirmPaymentFixture, toWallet: "EUR" }).valid).toBe(false)
     // A clarification may name the words it is about (ENG-688).
     expect(validateCard({ ...clarificationFixture, about: "ali" }).valid).toBe(true)
     expect(validateCard({ ...clarificationFixture, about: "" }).valid).toBe(false)

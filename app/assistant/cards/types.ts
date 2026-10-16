@@ -35,6 +35,12 @@ export type ConfirmPaymentCard = {
   /** The source wallet's balance after the payment (spec v0.2.5 §5.1). */
   balanceAfterText: string
   sourceWallet: CardWallet
+  /**
+   * Set for a conversion (prepareConversion): the payment goes to the
+   * user's own other wallet, which the card names, and payeeLabel holds
+   * that wallet's currency.
+   */
+  toWallet?: CardWallet
   /** The memo the payment carries, when it carries one. */
   memo?: string
   expiresAt: number
@@ -143,6 +149,7 @@ const SCHEMAS: Record<CardType, ObjectSchema> = {
       totalText: text,
       balanceAfterText: text,
       sourceWallet: wallet,
+      toWallet: wallet,
       memo: text,
       expiresAt: expiry,
       preparedActionId: text,

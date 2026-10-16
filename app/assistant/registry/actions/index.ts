@@ -1,4 +1,5 @@
 import type { RegisteredTool } from "../define"
+import { prepareConversion } from "./prepare-conversion"
 import { prepareGroupSend } from "./prepare-group-send"
 import { prepareReceive } from "./prepare-receive"
 import { prepareSend } from "./prepare-send"
@@ -10,4 +11,5 @@ export const ACTION_TOOLS: readonly RegisteredTool[] = [
   prepareSend,
   prepareReceive,
   prepareGroupSend,
+  prepareConversion,
 ]

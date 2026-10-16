@@ -31,7 +31,7 @@ import {
 import { probeSendFee } from "./fee"
 import { assertBreezSendOpen } from "./gates"
 import { journaledSendDeps } from "./journal"
-import { checkLimit } from "./limits"
+import { checkLimit, LimitBucket } from "./limits"
 import { DispatchResult, dispatchResultOf } from "./outcome"
 import type { ResolvedPayee } from "./payee"
 import type { PriceRead } from "./price"
@@ -53,6 +53,12 @@ export type SendLegInput = {
   memo?: string
   source: SourceWallet
   price: PriceRead
+  /**
+   * The limit the payment counts against, when not the send's own
+   * (internalSend to a Flash user, withdrawal otherwise): a conversion
+   * counts against convert.
+   */
+  limitBucket?: LimitBucket
 }
 
 export type PreparedSendLeg = {
@@ -191,7 +197,7 @@ const memoCarried = ({
 }
 
 export const prepareSendLeg = async (
-  { payee, amount, memo, source, price }: SendLegInput,
+  { payee, amount, memo, source, price, limitBucket }: SendLegInput,
   ctx: ActionToolCtx,
 ): Promise<SendLegResult> => {
   const paymentType = payee.destination.validDestination.paymentType
@@ -254,7 +260,7 @@ export const prepareSendLeg = async (
   }
   await checkLimit(
     ctx,
-    detail.paymentType === "intraledger" ? "internalSend" : "withdrawal",
+    limitBucket ?? (detail.paymentType === "intraledger" ? "internalSend" : "withdrawal"),
     // In cents, as the send screen counts a payment against its limits.
     detail.convertMoneyAmount(detail.unitOfAccountAmount, WalletCurrency.Usd).amount,
   )
