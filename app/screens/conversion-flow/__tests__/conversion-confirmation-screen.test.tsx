@@ -6,6 +6,7 @@ import { i18nObject } from "../../../i18n/i18n-util"
 import { loadAllLocales } from "../../../i18n/i18n-util.sync"
 import { ConversionConfirmationScreen } from "../conversion-confirmation-screen"
 import { toastShow } from "@app/utils/toast"
+import { CHECK_TRANSACTION_HISTORY_MESSAGE } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 
 // Without this, i18nObject("en") resolves every key to "" and text queries
 // match arbitrary empty text nodes.
@@ -152,6 +153,39 @@ describe("ConversionConfirmationScreen", () => {
     )
     expect(getByText("no route to destination")).toBeTruthy()
     expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
+  })
+
+  // ENG-720. useSwap throws the history message when the swap's Breez payment
+  // may already have left. Convert stays disabled, so a second press cannot
+  // pay the invoice again.
+  it("shows the history message and disables Convert when the swap's outcome is unknown, and a second press sends nothing (ENG-720)", async () => {
+    mockSwap.mockRejectedValue(new Error(CHECK_TRANSACTION_HISTORY_MESSAGE))
+
+    const { getByText, dispatch } = renderScreen()
+    await pressConvert(getByText)
+
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(mockToastShow).toHaveBeenCalledWith(
+      expect.objectContaining({ message: CHECK_TRANSACTION_HISTORY_MESSAGE }),
+    )
+    expect(getByText(CHECK_TRANSACTION_HISTORY_MESSAGE)).toBeTruthy()
+    expect(mockToggleActivityIndicator).toHaveBeenLastCalledWith(false)
+    expect(getByText(LL.common.convert())).toBeDisabled()
+
+    // The second press that would have paid the invoice again.
+    await pressConvert(getByText)
+    expect(mockSwap).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps Convert enabled after an ordinary failure, so the next press converts again (ENG-720)", async () => {
+    mockSwap.mockRejectedValue(new Error("no route to destination"))
+
+    const { getByText } = renderScreen()
+    await pressConvert(getByText)
+
+    expect(getByText(LL.common.convert())).toBeEnabled()
+    await pressConvert(getByText)
+    expect(mockSwap).toHaveBeenCalledTimes(2)
   })
 
   it("surfaces a non-Error rejection instead of leaving the spinner up", async () => {

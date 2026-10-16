@@ -18,6 +18,7 @@ import { useActivityIndicator, useBreez, useSwap } from "@app/hooks"
 // utils
 import { toastShow } from "@app/utils/toast"
 import { getCashWallet } from "@app/graphql/wallets-utils"
+import { CHECK_TRANSACTION_HISTORY_MESSAGE } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 
 // types
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -36,6 +37,10 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   const { swap } = useSwap()
 
   const [errorMessage, setErrorMessage] = useState<string | undefined>()
+  // ENG-720: set when the swap's payment may already have left, which useSwap
+  // reports with the history message. Convert stays disabled from then on, so
+  // the next tap cannot pay the invoice a second time.
+  const [disarmed, setDisarmed] = useState(false)
 
   const { data } = useConversionScreenQuery({
     fetchPolicy: "cache-first",
@@ -45,6 +50,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
   const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
 
   const convertHandler = async () => {
+    if (disarmed) return
     // No `if (lnInvoice)` guard: an empty invoice used to make this button a
     // silent dead tap. `swap()` throws on a missing invoice and the catch below
     // surfaces it.
@@ -61,6 +67,11 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
       const error =
         err instanceof Error ? err : new Error(`Non-Error thrown: ${String(err)}`)
       getCrashlytics().recordError(error)
+      // ENG-720: the shared constant, never a copy of its text, so a change to
+      // the message cannot quietly re-arm Convert.
+      if (err instanceof Error && err.message === CHECK_TRANSACTION_HISTORY_MESSAGE) {
+        setDisarmed(true)
+      }
       handlePaymentError(err instanceof Error ? error : new Error(LL.errors.generic()))
     }
   }
@@ -101,6 +112,7 @@ export const ConversionConfirmationScreen: React.FC<Props> = ({ navigation, rout
         label={LL.common.convert()}
         btnStyle={styles.btnStyls}
         onPress={convertHandler}
+        disabled={disarmed}
       />
     </Screen>
   )

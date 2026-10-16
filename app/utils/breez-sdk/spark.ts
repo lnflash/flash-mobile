@@ -438,11 +438,12 @@ type PayResponse = {
   success: boolean
   error?: string
   payment?: SendPaymentResponse
-  // ENG-714: set only by payOnchainBreez, and only when sdk.sendPayment itself
-  // rejected. The withdrawal may already have left, so the caller must not
-  // offer a retry. `error` then holds the SDK's own message, which is for the
-  // log only: it may name the address or the amount, and the screen shows the
-  // history message instead.
+  // ENG-714, ENG-720: set by payOnchainBreez and payLightningBreez, and only
+  // when sdk.sendPayment itself rejected. The withdrawal or the payment may
+  // already have left, so the caller must not offer a retry. `error` then
+  // holds the SDK's own message, which is for the log only and never for the
+  // screen: it may name the address, the invoice or the amount, and the
+  // caller shows the history message instead.
   outcomeUnknown?: boolean
 }
 
@@ -480,8 +481,15 @@ export const payLightningBreez = async (
   paymentRequest: string,
   amountSats?: number,
 ): Promise<PayResponse> => {
+  // Before the dispatch. Nothing has left the wallet if any of this throws, so
+  // the answer is a plain refusal that keeps the rejection's own message, and
+  // sendPayment re-arms Confirm on it. It has to be an answer, never a
+  // rejection: sendPayment keeps Confirm disarmed on any rejection out of
+  // payLightningBreez (ENG-720).
+  let sdk: BreezSdkInterface
+  let request: SendPaymentRequest
   try {
-    const sdk = getSDKInstance()
+    sdk = getSDKInstance()
 
     const prepareResponse = await sdk.prepareSendPayment({
       // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
@@ -493,23 +501,52 @@ export const payLightningBreez = async (
       feePolicy: undefined,
     })
 
-    const options = new SendPaymentOptions.Bolt11Invoice({
-      preferSpark: false,
-      completionTimeoutSecs: 60,
-    })
-
-    const response = await sdk.sendPayment({
+    request = {
       prepareResponse,
-      options,
+      options: new SendPaymentOptions.Bolt11Invoice({
+        preferSpark: false,
+        completionTimeoutSecs: 60,
+      }),
+      // Keyless: nothing may rely on the SDK replaying a key until ENG-715
+      // proves it.
       idempotencyKey: undefined,
-    })
-
-    return lightningPayResponse(response)
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error("payLightningBreez error:", message)
     return { success: false, error: message }
   }
+
+  // ENG-720: the dispatch boundary. Anything that throws once sdk.sendPayment
+  // is entered is an unknown outcome. In spark-sdk 0.22.3 it can reject after
+  // the payment left: a dropped connection after the leaves went to the SSP,
+  // an SSP answer the SDK cannot read, a storage write that fails after the
+  // send. So the answer is outcomeUnknown, and sendPayment, the chat zap and
+  // the swap stay disarmed on it. Keep this try around sdk.sendPayment alone:
+  // widened over the steps above, it disarms on refusals that sent nothing;
+  // merged with the catch above, the next tap can pay again.
+  let response: SendPaymentResponse
+  try {
+    response = await sdk.sendPayment(request)
+  } catch (error) {
+    // Past here the user sees only the history message, so this line is the
+    // record that the payment is in doubt, and why. It goes to the console
+    // and to the Spark log CSV, the same way as payLnurlBreez's line after its
+    // dispatch: see the comment there for why both, and why the reason comes
+    // from `inner`. Nothing here may throw: a throw loses this line, and the
+    // chat zap and the swap, which call payLightningBreez directly, would
+    // re-arm on it. Never JSON.stringify `inner`, since some variants carry
+    // bigints.
+    const label = "payLightningBreez error after dispatch:"
+    const message = error instanceof Error ? error.message : String(error)
+    const inner = (error as { inner?: unknown } | null | undefined)?.inner
+    const reason = Array.isArray(inner) ? inner.join(" ") : ""
+    console.error(label, message, reason)
+    appendLog("ERROR", `${label} ${message} ${reason}`.trimEnd())
+    return { success: false, error: message, outcomeUnknown: true }
+  }
+
+  return lightningPayResponse(response)
 }
 
 // ESLint reports max-params at the arrow, below the parameter list, so the
