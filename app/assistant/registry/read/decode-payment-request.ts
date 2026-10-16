@@ -34,7 +34,7 @@ type AccountDefaultWalletQueryFn = AccountDefaultWalletLazyQueryHookResult[0]
  * resolve-username-to-lnurl.ts): `{ data }` from the GraphQL rail stands in
  * for the rest of a QueryResult, which nothing reads.
  */
-const accountDefaultWalletQueryOver = (
+export const accountDefaultWalletQueryOver = (
   graphql: GraphqlRail,
 ): AccountDefaultWalletQueryFn => {
   const query = async (options?: { variables?: { username?: string } }) => {

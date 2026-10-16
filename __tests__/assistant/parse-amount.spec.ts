@@ -3,6 +3,7 @@ import {
   AMOUNT_PATTERN,
   AmountCurrency,
   parseAmount,
+  parseDisplayAmount,
 } from "@app/assistant/engine/parse-amount"
 import { toBtcMoneyAmount, toUsdMoneyAmount, toWalletAmount } from "@app/types/amounts"
 
@@ -115,5 +116,47 @@ describe("parseAmount", () => {
 
   it("matches the pattern the tool schemas declare", () => {
     expect(AMOUNT_PATTERN).toBe("^[0-9]+(\\.[0-9]{1,8})?$")
+  })
+})
+
+describe("parseDisplayAmount (ENG-688, a bare amount in the display currency)", () => {
+  it("reads an amount in the display currency's minor units", () => {
+    expect(parseDisplayAmount("500", 2, "JMD")).toEqual({
+      ok: true,
+      amount: { amount: 50_000, currency: "DisplayCurrency", currencyCode: "JMD" },
+    })
+    expect(parseDisplayAmount("12.5", 2, "JMD")).toMatchObject({
+      ok: true,
+      amount: { amount: 1250 },
+    })
+  })
+
+  it("reads a currency without minor units as whole units", () => {
+    expect(parseDisplayAmount("1500", 0, "XAF")).toMatchObject({
+      ok: true,
+      amount: { amount: 1500, currencyCode: "XAF" },
+    })
+    expect(parseDisplayAmount("1500.0", 0, "XAF")).toMatchObject({ ok: true })
+    expect(parseDisplayAmount("1500.5", 0, "XAF")).toEqual({
+      ok: false,
+      reason: "precision",
+    })
+  })
+
+  it("rounds nothing and refuses what is not a plain decimal string", () => {
+    expect(parseDisplayAmount("12.505", 2, "JMD")).toEqual({
+      ok: false,
+      reason: "precision",
+    })
+    expect(parseDisplayAmount(12.5, 2, "JMD")).toEqual({ ok: false, reason: "format" })
+    expect(parseDisplayAmount("1e3", 2, "JMD")).toEqual({ ok: false, reason: "format" })
+  })
+
+  it("refuses a nonsense number of places instead of trusting it", () => {
+    expect(parseDisplayAmount("5", -1, "JMD")).toEqual({ ok: false, reason: "precision" })
+    expect(parseDisplayAmount("5", 2.5, "JMD")).toEqual({
+      ok: false,
+      reason: "precision",
+    })
   })
 })

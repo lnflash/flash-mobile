@@ -1,5 +1,7 @@
 // Fake rails, telemetry and fixtures for the assistant specs. Not a spec
 // itself: the file name does not end in .spec or .test.
+import { createHash } from "crypto"
+import { encode, sign } from "bolt11"
 import type {
   AssistantTelemetry,
   AssistantToolEvent,
@@ -312,4 +314,66 @@ export const fakeActionCtx = (
     now: overrides.now ?? (() => NOW_MS),
   }
   return { ctx, graphql, btcRail, actions, mutations, requestLnurlInvoice }
+}
+
+const NODE_KEY = "11".repeat(32)
+
+/** The payment hash a fixture invoice made from `id` carries. */
+export const paymentHashOf = (id: string): string =>
+  createHash("sha256").update(id).digest("hex")
+
+/**
+ * A real, signed mainnet bolt11, so the decoders the tools use read it: its
+ * amount (none when `sats` is absent), its issue time and lifetime, and the
+ * payment hash paymentHashOf(id).
+ */
+export const bolt11 = ({
+  id = "invoice",
+  sats,
+  timestampMs = NOW_MS,
+  expirySeconds = 300,
+}: {
+  id?: string
+  sats?: number
+  timestampMs?: number
+  expirySeconds?: number
+} = {}): string => {
+  const unsigned = encode({
+    ...(sats === undefined ? {} : { satoshis: sats }),
+    timestamp: Math.floor(timestampMs / 1000),
+    tags: [
+      { tagName: "payment_hash", data: paymentHashOf(id) },
+      { tagName: "description", data: "assistant spec" },
+      { tagName: "expire_time", data: expirySeconds },
+    ],
+  })
+  return sign(unsigned, NODE_KEY).paymentRequest as string
+}
+
+/**
+ * A realtimePrice answer: J$157 to the dollar and $63,000 a bitcoin, so a
+ * sat is 0.063 US cents and J$0.09891.
+ */
+export const JMD_PRICE = {
+  __typename: "RealtimePrice" as const,
+  timestamp: 1_760_000_000,
+  denominatorCurrency: "JMD",
+  btcSatPrice: {
+    __typename: "PriceOfOneSatInMinorUnit" as const,
+    base: 9_891_000,
+    offset: 6,
+  },
+  usdCentPrice: {
+    __typename: "PriceOfOneUsdCentInMinorUnit" as const,
+    base: 157_000_000,
+    offset: 6,
+  },
+}
+
+/** The same rates for an account whose display currency is USD. */
+export const USD_PRICE = {
+  ...JMD_PRICE,
+  denominatorCurrency: "USD",
+  btcSatPrice: { ...JMD_PRICE.btcSatPrice, base: 63_000, offset: 6 },
+  usdCentPrice: { ...JMD_PRICE.usdCentPrice, base: 1_000_000, offset: 6 },
 }
