@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 
 import type { ConfirmResult, ConfirmState } from "../engine/executor"
 import type { AssistantReplyKey } from "../registry/types"
-import { AfterConfirm, afterConfirm, CardActions } from "./card-actions"
+import { AfterConfirm, afterConfirm, afterRetirement, CardActions } from "./card-actions"
 
 /** What the executor says about a card's action, once it has answered. */
 export type ConfirmView = {
@@ -65,7 +65,12 @@ export const useConfirm = (
   const [used, setUsed] = useState(false)
   const [result, setResult] = useState<ConfirmResult | undefined>(undefined)
   const can = useCanConfirm(actions, preparedActionId, result)
-  const after: AfterConfirm | undefined = result ? afterConfirm(result) : undefined
+  // What this card's last Confirm left it offering, or, with none to
+  // remember (a remount), what the executor's retirement of the action left
+  // it offering: a card that remounts offers what the card it replaces did.
+  const after: AfterConfirm | undefined = result
+    ? afterConfirm(result)
+    : afterRetirement(can)
 
   const confirm = useCallback(async () => {
     if (submitting || (singleUse && used)) return
@@ -111,10 +116,12 @@ export const useConfirm = (
     /**
      * Whether the card may turn into the expired card past expiresAt, with
      * Refresh. Only for an action the executor holds armed, or holds no
-     * longer, once it has said which, and not while a Confirm runs or after
-     * one answered: an unresolved action retries its own attempt whatever
-     * the time, and a disarmed one offers no re-prepare (spec §5), so their
-     * cards keep the retry or the history notice.
+     * longer and has no word of (gone), once it has said which, and not
+     * while a Confirm runs or after one answered: an unresolved action
+     * retries its own attempt whatever the time, a disarmed one offers no
+     * re-prepare (spec §5), one whose payment already went offers none
+     * either, and the rest of a group is prepared from its own Try again, so
+     * their cards keep the retry, the reply or the history notice.
      */
     mayExpire:
       !submitting &&

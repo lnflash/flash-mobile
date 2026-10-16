@@ -9,7 +9,9 @@ jest.mock("@app/i18n/i18n-react", () => {
 import { groupSendFixture } from "@app/assistant/cards/fixtures"
 import { GroupSendSummaryCard } from "@app/assistant/cards/GroupSendSummaryCard"
 import type { LegStatus } from "@app/assistant/cards/types"
-import { en, fakeActions, flush, renderCard } from "./render-card"
+import type { ExecutionOutcome } from "@app/assistant/registry/types"
+import { makeAction, setupExecutor } from "../executor-harness"
+import { en, executorActions, fakeActions, flush, renderCard } from "./render-card"
 
 const withStatuses = (...statuses: LegStatus[]) => ({
   ...groupSendFixture,
@@ -146,6 +148,45 @@ describe("GroupSendSummaryCard", () => {
     expect(await screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
     expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
     expect(screen.getByTestId("assistant-card-confirm-button")).toBeDisabled()
+    await flush()
+  })
+
+  it("after a remount with its outcome's legs, past expiresAt, still offers to prepare the rest of a group retired for it", async () => {
+    // Part of the group went and the rest's numbers went stale: the Confirm
+    // retired it (prepareRest), its record kept for the legs that went. The
+    // thread re-renders the card from that outcome's summary.
+    const run = setupExecutor()
+    const action = makeAction({
+      execute: jest.fn(
+        async (): Promise<ExecutionOutcome> => ({
+          status: "unknown",
+          replyKey: "Assistant.groupSendRestExpired",
+          next: "prepareRest",
+        }),
+      ),
+    })
+    run.executor.addPrepared(action, "text")
+    await run.executor.executePreparedAction(action.id)
+    const actions = executorActions(run.executor)
+
+    const screen = renderCard(
+      <GroupSendSummaryCard
+        payload={{
+          ...withStatuses("success", "failed", "not_attempted"),
+          preparedActionId: action.id,
+          expiresAt: Date.now() - 1,
+        }}
+        actions={actions}
+      />,
+    )
+
+    expect(await screen.findByText(en.Assistant.groupSendRestExpired())).toBeTruthy()
+    expect(screen.queryByText(en.Assistant.actionNotFound())).toBeNull()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    expect(screen.queryByTestId("assistant-card-confirm-button")).toBeNull()
+    fireEvent.press(screen.getByTestId("assistant-card-reprepare"))
+    expect(actions.reprepare).toHaveBeenCalledWith(action.id)
+    expect(action.execute).toHaveBeenCalledTimes(1)
     await flush()
   })
 

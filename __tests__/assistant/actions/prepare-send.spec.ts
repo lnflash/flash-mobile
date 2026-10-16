@@ -23,7 +23,10 @@ import {
   RATE_TTL_MS,
 } from "@app/assistant/registry/actions/shared/expiry"
 import { BTC_ONCHAIN_FEE_SPEED } from "@app/assistant/registry/actions/shared/fee"
-import { UNRECORDED_ONCHAIN_SEND } from "@app/assistant/registry/actions/shared/journal"
+import {
+  UNRECORDED_INVOICE_SEND,
+  UNRECORDED_ONCHAIN_SEND,
+} from "@app/assistant/registry/actions/shared/journal"
 import type {
   ExecuteContext,
   PreparedAction,
@@ -711,19 +714,114 @@ describe("prepareSend from the BTC wallet", () => {
     })
   })
 
-  it("refuses a BTC-wallet bolt11 send with the not-available card until ENG-720", async () => {
-    const fake = setup()
-    const invoice = bolt11({ id: "btc-bolt11", sats: 1_000 })
-    parse.mockResolvedValue(lightningDestination(invoice, 1_000))
+  describe("to a bolt11 invoice (ENG-720 merged, spec v0.2.11 §5.1)", () => {
+    // sendPayment's lightning branch keeps Confirm disarmed when the payment
+    // may already have left: payLightningBreez's outcomeUnknown, and any
+    // rejection out of payInvoice itself (send-payment.ts, ENG-720). These
+    // cases run that real sendPayment over the fake rail.
+    const INVOICE = bolt11({ id: "btc-bolt11", sats: 1_000 })
+    const BOLT11_BTC = { payee: INVOICE, sourceWallet: "BTC" } as const
 
-    await expect(
-      run({ payee: invoice, sourceWallet: "BTC" }, fake),
-    ).rejects.toMatchObject({
-      reason: "notAvailableYet",
+    const preparedBolt11 = async () => {
+      const fake = setup()
+      parse.mockResolvedValue(lightningDestination(INVOICE, 1_000))
+      fake.btcRail.probeFee.mockResolvedValue({ fee: 3, err: null })
+      return { fake, action: prepared(await run(BOLT11_BTC, fake)) }
+    }
+
+    it("probes the invoice through the rail, and holds the card 60 s", async () => {
+      const { fake, action } = await preparedBolt11()
+
+      expect(fake.btcRail.probeFee).toHaveBeenCalledWith({
+        paymentType: "lightning",
+        paymentRequest: INVOICE,
+        amountSats: 1_000,
+      })
+      // The invoice names the amount, so it leads in the display currency.
+      expect(action.summary).toMatchObject({
+        sourceWallet: "BTC",
+        amountText: "USD 63 (BTC 1000)",
+        feeText: "USD 0.189 (BTC 3)",
+        totalText: "USD 63.189 (BTC 1003)",
+      })
+      expect(action.expiresAt).toBe(NOW_MS + FEE_PROBE_TTL_MS)
+      expect(action.dispatch?.match).toEqual({ kind: "btcRail" })
     })
-    // Refused before any balance, price or fee is read.
-    expect(fake.btcRail.getBalanceSats).not.toHaveBeenCalled()
-    expect(fake.btcRail.probeFee).not.toHaveBeenCalled()
+
+    it("pays through the rail's payInvoice, journaled first", async () => {
+      const { fake, action } = await preparedBolt11()
+      const order: string[] = []
+      fake.btcRail.payInvoice.mockImplementation(async () => {
+        order.push("pay")
+        return { success: true, payment: { payment: { status: 0 } } }
+      })
+      const { ctx, journalDispatch } = confirmCtx(action)
+      journalDispatch.mockImplementation(async (key) => {
+        order.push(`journal:${key}`)
+      })
+
+      await expect(action.execute(ctx)).resolves.toEqual({ status: "succeeded" })
+
+      expect(order).toEqual(["journal:null", "pay"])
+      expect(fake.btcRail.payInvoice).toHaveBeenCalledWith(INVOICE, 1_000)
+    })
+
+    it("disarms the card when the payment may have left (ENG-720), offering no re-prepare", async () => {
+      // payLightningBreez answers a rejection from sdk.sendPayment itself
+      // with outcomeUnknown; a rejection from the rail itself is unknown too.
+      for (const answer of [
+        () => Promise.resolve({ success: false, error: "socket", outcomeUnknown: true }),
+        () => Promise.reject(new Error("bridge")),
+      ]) {
+        const { fake, action } = await preparedBolt11()
+        fake.btcRail.payInvoice.mockImplementation(answer)
+
+        await expect(action.execute(confirmCtx(action).ctx)).resolves.toEqual({
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "checkHistory",
+        })
+        // The second Confirm finds the attempt still in flight: nothing goes.
+        await expect(action.execute(confirmCtx(action).ctx)).resolves.toMatchObject({
+          status: "unknown",
+          next: "checkHistory",
+        })
+        expect(fake.btcRail.payInvoice).toHaveBeenCalledTimes(1)
+      }
+    })
+
+    it("offers a fresh prepare after a refusal before dispatch, or a payment that resolved Failed", async () => {
+      for (const answer of [
+        { success: false, error: "Failed to prepare the payment." },
+        // ENG-712: a Failed payment is a known failure.
+        { success: false, payment: { payment: { status: 2 } } },
+      ]) {
+        const { fake, action } = await preparedBolt11()
+        fake.btcRail.payInvoice.mockResolvedValue(answer)
+
+        await expect(action.execute(confirmCtx(action).ctx)).resolves.toEqual({
+          status: "failed",
+          replyKey: "Assistant.paymentFailed",
+          next: "reprepare",
+        })
+      }
+    })
+
+    it("sends nothing, and offers a fresh prepare, when the payment cannot be written down", async () => {
+      // A rejection out of payInvoice would read as a payment that may have
+      // left: the journal answers the refusal instead (shared/journal.ts).
+      const { fake, action } = await preparedBolt11()
+      const { ctx, journalDispatch } = confirmCtx(action)
+      journalDispatch.mockRejectedValue(new Error("disk full"))
+
+      await expect(action.execute(ctx)).resolves.toEqual({
+        status: "failed",
+        replyKey: "Assistant.paymentFailed",
+        next: "reprepare",
+      })
+      expect(fake.btcRail.payInvoice).not.toHaveBeenCalled()
+      expect(UNRECORDED_INVOICE_SEND).toMatch(/not sent/)
+    })
   })
 
   describe("to an on-chain address (ENG-714 merged, spec v0.2.10 §5.1)", () => {

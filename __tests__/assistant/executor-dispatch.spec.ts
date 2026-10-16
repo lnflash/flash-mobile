@@ -1,5 +1,6 @@
 import {
   RECONCILE_MIN_AGE_MS,
+  RECONCILE_PAGE_SIZE,
   RECONCILE_STALE_AFTER_MS,
 } from "@app/assistant/engine/reconcile"
 import { PaymentSendResult } from "@app/graphql/generated"
@@ -154,6 +155,52 @@ describe("an earlier dispatch, over the rows lnflash/flash lists", () => {
     })
     expect(run.keysSent()).toHaveLength(1)
     await expect(run.reconcile.mock.results[0].value).resolves.toBe("unknown")
+  })
+
+  it("never calls a lost send absent when the one page the list serves is full of receipts since it", async () => {
+    // lnflash/flash serves a cash wallet's newest 20 rows, with hasNextPage
+    // false, and no page after them (reconcile.ts). The answer to $5 to
+    // Alice is lost, the user leaves the thread, 20 receipts land, and they
+    // ask for the same $5 to Alice again. The send, if it went, is the 21st
+    // row: not seeing it proves nothing, so B must not go under a new key.
+    const run = setupSendingExecutor()
+    run.intraLedgerUsdPaymentSend.mockImplementation(lostResponse)
+    const a = run.prepare("thread-a")
+    run.executor.addPrepared(a, "text")
+    await expect(run.executor.executePreparedAction(a.id)).resolves.toMatchObject({
+      outcome: { status: "unknown", next: "retrySameAttempt" },
+    })
+    run.executor.leaveThread("thread-a")
+    run.advance(RECONCILE_MIN_AGE_MS + 60_000)
+    const newest = Math.floor(run.now() / 1000)
+    run.graphql.transactions.mockResolvedValue(
+      page(
+        Array.from({ length: RECONCILE_PAGE_SIZE }, (_, i) => ({
+          ...ibexSendSince(run.now()),
+          id: `in-${i}`,
+          createdAt: newest - i,
+          direction: "RECEIVE" as const,
+          settlementAmount: 100,
+        })),
+      ),
+    )
+    run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
+
+    const b = run.prepare("thread-b")
+    run.executor.addPrepared(b, "text")
+
+    await expect(run.executor.executePreparedAction(b.id)).resolves.toEqual({
+      kind: "pendingDispatch",
+      actionId: b.id,
+      replyKey: "Assistant.checkHistory",
+      historyCheckable: false,
+    })
+    expect(run.keysSent()).toHaveLength(1)
+    await expect(run.reconcile.mock.results[0].value).resolves.toBe("unknown")
+    // A's record still answers for the payment.
+    expect(
+      (await run.journal.pending()).map((record) => record.preparedActionId),
+    ).toEqual([a.id])
   })
 })
 

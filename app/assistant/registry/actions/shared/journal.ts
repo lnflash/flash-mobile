@@ -7,12 +7,17 @@ import type { ActionToolCtx, ExecuteContext } from "../../types"
 // §5.1, "Process death"). journalMutations does it for the nine GraphQL
 // triggers; this does it for the BTC rail's three sends, so a Breez send is
 // recorded too. A write that fails sends nothing, and says so in a way
-// sendPayment reads as a refusal before dispatch, which re-arms Confirm:
-// payInvoice and payLnurl reject, which the Breez branch's shared catch
-// answers that way; payOnchain answers success: false with no
-// outcomeUnknown, as payOnchainBreez answers every refusal before its
-// dispatch, because since ENG-714 sendPayment keeps Confirm disarmed on any
-// rejection out of payOnchain (spec v0.2.10 §5).
+// sendPayment reads as a refusal before dispatch, which re-arms Confirm.
+// sendPayment keeps Confirm disarmed on any rejection out of payInvoice
+// (ENG-720) or payOnchain (ENG-714), as a payment that may have left (spec
+// v0.2.11 §5): so those two answer success: false with no outcomeUnknown,
+// as payLightningBreez and payOnchainBreez answer every refusal before their
+// dispatch. payLnurl rejects: the LNURL branch's shared catch re-arms on any
+// rejection but LnurlPayOutcomeUnknownError (ENG-711).
+
+/** What the bolt11 send answers when its dispatch could not be written down. */
+export const UNRECORDED_INVOICE_SEND =
+  "The payment could not be recorded, so it was not sent."
 
 /** What the on-chain send answers when its dispatch could not be written down. */
 export const UNRECORDED_ONCHAIN_SEND =
@@ -25,7 +30,11 @@ export const journaledBtcRail = (
 ): BtcRail => ({
   ...rail,
   payInvoice: async (...args) => {
-    await journalDispatch(null)
+    try {
+      await journalDispatch(null)
+    } catch {
+      return { success: false, error: UNRECORDED_INVOICE_SEND }
+    }
     return rail.payInvoice(...args)
   },
   payLnurl: async (...args) => {

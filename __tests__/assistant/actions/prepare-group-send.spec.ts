@@ -669,9 +669,19 @@ describe("prepareGroupSend past its expiry (spec §5 Expiry, §8)", () => {
         },
       })
       expect(dispatches(fake).map(({ to }) => to)).toEqual(["alice-wallet", "bob-wallet"])
-      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
-        kind: "notFound",
+      // Retired: a Confirm runs nothing, and the card still offers to
+      // prepare the rest, remounted or not.
+      await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+        kind: "prepareRest",
+        actionId: action.id,
+        replyKey: "Assistant.groupSendRestExpired",
       })
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: false,
+        state: "prepareRest",
+        replyKey: "Assistant.groupSendRestExpired",
+      })
+      expect(dispatches(fake)).toHaveLength(2)
       await expect(journal.pending()).resolves.toEqual([
         expect.objectContaining({ preparedActionId: action.id }),
       ])

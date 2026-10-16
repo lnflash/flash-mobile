@@ -7,6 +7,7 @@ import {
   RECONCILE_CLOCK_SKEW_SECONDS,
   RECONCILE_MAX_PAGES,
   RECONCILE_MIN_AGE_MS,
+  RECONCILE_PAGE_SIZE,
 } from "@app/assistant/engine/reconcile"
 import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
 import { fakeGraphqlRail, graphqlTx, page } from "./fakes"
@@ -197,6 +198,26 @@ const apiUnnamedRow = (overrides: Partial<TransactionRow> = {}) =>
 
 const lightning = { kind: "lightning" as const, paymentHash: "hash-1" }
 const onchain = { kind: "onchain" as const, address: "bc1q-1" }
+
+/** `count` IBEX receipts since the dispatch, newest first, in one wallet's currency. */
+const receiptsSince = (count: number, currency: "USD" | "USDT" = "USD") =>
+  Array.from({ length: count }, (_, i) =>
+    apiLightningRow({
+      id: `in-${currency}-${i}`,
+      createdAt: DISPATCHED_AT_S + 500 - i,
+      direction: "RECEIVE",
+      settlementAmount: 100,
+      settlementCurrency: currency,
+    }),
+  )
+
+/** A row of one wallet's from before the dispatch. */
+const rowBefore = (id: string, currency: "USD" | "USDT" = "USD") =>
+  apiLightningRow({
+    id,
+    createdAt: DISPATCHED_AT_S - 3600,
+    settlementCurrency: currency,
+  })
 
 describe("cannotRuleOut: a sent row that might be the payment under no name", () => {
   it("cannot rule a Lightning row out for an intraledger send: it names no counterparty", () => {
@@ -476,19 +497,20 @@ describe("createTransactionListReconciler", () => {
       ).resolves.toBe("unknown")
     })
 
-    it("finds such a row on a later page too", async () => {
-      const receipts = Array.from({ length: 20 }, (_, i) =>
-        apiLightningRow({
-          id: `in-${i}`,
-          createdAt: DISPATCHED_AT_S + 500 - i,
-          direction: "RECEIVE",
-          settlementAmount: 100,
-        }),
+    it("is unknown when the one page it serves is full of rows since the dispatch", async () => {
+      // A single cash wallet's list is its newest 20 rows, and hasNextPage
+      // is false however many more it has: toIbexPaginationArgs asks IBEX
+      // for page 0 only (get-transactions-for-wallet.ts:213-236), and
+      // connectionFromPaginatedArray measures hasNextPage against what IBEX
+      // returned (src/graphql/connections.ts:60,68). Twenty receipts since
+      // the dispatch leave the send itself, if it went, one row past the end.
+      const { reconcile, graphql } = reconcilerOver(
+        [receiptsSince(RECONCILE_PAGE_SIZE)],
+        old,
       )
 
-      await expect(
-        reconcilerOver([receipts, [apiLightningRow()]], old).reconcile(record()),
-      ).resolves.toBe("unknown")
+      await expect(reconcile(record())).resolves.toBe("unknown")
+      expect(graphql.transactions).toHaveBeenCalledTimes(1)
     })
 
     it("still calls it absent when nothing was sent since the dispatch", async () => {
@@ -527,6 +549,92 @@ describe("createTransactionListReconciler", () => {
           old,
         ).reconcile(record(lightning)),
       ).resolves.toBe("settled")
+    })
+  })
+
+  describe("over the pages lnflash/flash serves: each wallet's newest 20 rows, one wallet after another", () => {
+    // Account.transactions lists every history wallet's IBEX page 0, the
+    // wallets one after another (get-transactions-for-wallet.ts:18-30), and
+    // slices that list by cursor (connections.ts:21-71). An account with a
+    // legacy USD wallet and a USDT one gets the USDT block first, then the
+    // USD block (cashWalletHistoryWalletIds, presentation.ts), and nothing
+    // past either wallet's newest 20.
+    it("calls it absent when the page shows a row from before the dispatch", async () => {
+      const rows = [...receiptsSince(RECONCILE_PAGE_SIZE - 1), rowBefore("before")]
+
+      await expect(reconcilerOver([rows], old).reconcile(record())).resolves.toBe(
+        "absent",
+      )
+    })
+
+    it("calls it absent when the page ends short of a full one: the wallet has no more rows", async () => {
+      await expect(
+        reconcilerOver([receiptsSince(RECONCILE_PAGE_SIZE - 1)], old).reconcile(record()),
+      ).resolves.toBe("absent")
+    })
+
+    it("is unknown when one wallet's block is full since the dispatch, though the next wallet's reaches back", async () => {
+      // Page 1 is the USDT wallet's 20 newest rows, all receipts since the
+      // dispatch; page 2 is the legacy USD wallet's, from before it. The USD
+      // block reaching back says nothing about the USDT one, whose send
+      // would be its 21st row.
+      const { reconcile, graphql } = reconcilerOver(
+        [receiptsSince(RECONCILE_PAGE_SIZE, "USDT"), [rowBefore("usd-old")]],
+        old,
+      )
+
+      await expect(reconcile(record())).resolves.toBe("unknown")
+      expect(graphql.transactions).toHaveBeenCalledTimes(2)
+    })
+
+    it("reads to the end of the list, past a page that reaches back, for the next wallet's rows", async () => {
+      // The USDT block reaches back, and ends the first page. The USD block
+      // on the next page is read too: its send since the dispatch, which
+      // names nothing, could be the payment.
+      const usdt = [
+        ...receiptsSince(RECONCILE_PAGE_SIZE - 1, "USDT"),
+        rowBefore("usdt-old", "USDT"),
+      ]
+      const unnamedUsdSend = apiLightningRow({ id: "usd-send" })
+
+      await expect(
+        reconcilerOver([usdt, [unnamedUsdSend]], old).reconcile(record()),
+      ).resolves.toBe("unknown")
+      await expect(
+        reconcilerOver([usdt, [rowBefore("usd-old")]], old).reconcile(record()),
+      ).resolves.toBe("absent")
+    })
+
+    it("calls it absent when every wallet's block reaches back or ends short", async () => {
+      // Five USDT rows, the whole wallet, then the USD block from before the
+      // dispatch, split across the two pages as the API slices it.
+      const list = [
+        ...receiptsSince(5, "USDT"),
+        ...Array.from({ length: 20 }, (_, i) => rowBefore(`usd-${i}`)),
+      ]
+
+      await expect(
+        reconcilerOver(
+          [list.slice(0, RECONCILE_PAGE_SIZE), list.slice(RECONCILE_PAGE_SIZE)],
+          old,
+        ).reconcile(record()),
+      ).resolves.toBe("absent")
+    })
+
+    it("is unknown when the list says there is more but gives no cursor to ask for it", async () => {
+      const graphql = fakeGraphqlRail()
+      graphql.transactions.mockResolvedValue({
+        rows: [rowBefore("before")],
+        hasNextPage: true,
+        endCursor: null,
+      })
+      const reconcile = createTransactionListReconciler({
+        graphql: graphql as never,
+        now: () => old,
+      })
+
+      await expect(reconcile(record())).resolves.toBe("unknown")
+      expect(graphql.transactions).toHaveBeenCalledTimes(1)
     })
   })
 })

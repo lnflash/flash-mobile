@@ -5,6 +5,7 @@ import { btcRailUnavailableState } from "@app/payments/btc-rail"
 import { createLightningDestination } from "@app/screens/send-bitcoin-screen/payment-destination"
 import { toBtcMoneyAmount, toSpendableBalance } from "@app/types/amounts"
 import type { CardSummary, CardWallet, ConfirmPaymentCard } from "../../cards/types"
+import { hashConversion } from "../../engine/attempt-journal"
 import { createAttemptState } from "../../engine/executor"
 import {
   AMOUNT_CURRENCIES,
@@ -42,9 +43,14 @@ import { readWallet, WalletChoice } from "./shared/wallets"
 // never makes an invoice: a card that expired is prepared again, which makes
 // a new one. useSwap itself is left as it is.
 //
-// The BTC -> cash pay leg is a BTC-wallet bolt11 send, the branch gated on
-// ENG-720: until it merges, that direction answers the not-available card
-// before anything is made.
+// The invoice is minted for each card, so a conversion's identity is the
+// request, not the invoice (hashConversion): two cards for the same
+// conversion are one payment to the executor's queue and journal gate
+// (spec §5.1). The record's match stays the invoice's.
+//
+// The BTC -> cash pay leg is a BTC-wallet bolt11 send. Since ENG-720,
+// sendPayment keeps Confirm disarmed when that send may already have left
+// (spec v0.2.11 §5), so no gate holds it back (shared/gates.ts).
 
 /** useSwap's own memos for the two directions. */
 export const SWAP_MEMO = {
@@ -86,7 +92,8 @@ export const prepareConversionRun = (
     const direction = directionOf(args)
     const amount = requestedAmount({ amount: args.amount, currency: args.currency }, ctx)
     if (!amount) throw new ToolReplyError("Assistant.invalidArguments")
-    // Refused before any invoice is made or any balance is read.
+    // A gated Breez branch is refused before any invoice is made or any
+    // balance is read. None is gated today (shared/gates.ts).
     if (direction === "btcToCash") assertBreezSendOpen("lightning")
 
     const wallets = await ctx.graphql.wallets()
@@ -188,7 +195,17 @@ export const prepareConversionRun = (
       expiresAt: leg.expiresAt,
       summary,
       attempt: createAttemptState(),
-      dispatch: { paymentDetailHash: leg.paymentDetailHash, match: leg.match },
+      // The request, not the invoice minted for this card: two cards for the
+      // same conversion are one payment (hashConversion).
+      dispatch: {
+        paymentDetailHash: hashConversion({
+          direction,
+          sourceWalletId: source.id,
+          targetWalletId: target.id,
+          amount,
+        }),
+        match: leg.match,
+      },
       // Pays the invoice prepare made; makes none.
       execute: async ({ attempt, journalDispatch }) =>
         executionOutcomeOf(

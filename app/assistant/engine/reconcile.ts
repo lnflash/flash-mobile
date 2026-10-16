@@ -19,10 +19,28 @@ import type { DispatchRecord } from "./attempt-journal"
 // payment the list cannot show at all (a BTC-rail payment, a settlement).
 // Only a list whose sent rows since the dispatch all name other payments, or
 // that holds none, proves it never landed.
+//
+// Nor does the list page past each wallet's newest rows. Account.transactions
+// asks IBEX for page 0 of every wallet, `first` rows long
+// (toIbexPaginationArgs, get-transactions-for-wallet.ts:213-236), lists the
+// wallets one after another (:18-30), and slices that by cursor, with
+// hasNextPage measured against what IBEX returned (connectionFromPaginatedArray,
+// src/graphql/connections.ts:21-71). So the whole list is each wallet's newest
+// RECONCILE_PAGE_SIZE rows, one wallet's block after another's: a single cash
+// wallet's list is one page with hasNextPage false, and a second page, when
+// there is one, holds the next wallet's rows. A block that fills a page, all of
+// it since the dispatch, may hide the payment one row further down, a row
+// the API never serves. A wallet's rows since the dispatch were all read only
+// when its block shows a row from before the dispatch, or is shorter than a
+// page; and every block must show it, since the payment can be in any of
+// them. Rows carry no wallet id, so a block is told by its settlement
+// currency: an account holds one cash wallet per currency (legacy USD, USDT;
+// resolveCashWalletPresentation, src/app/cash-wallet-cutover/presentation.ts).
 
 /**
  * - settled: the payment is in the list, sent or still pending.
- * - absent: the list since the first dispatch was read in full, the latest
+ * - absent: the list since the first dispatch was read in full (every
+ *   wallet's rows back past it, see the note at the top), the latest
  *   dispatch (a retry's, if there was one) is old enough that the server
  *   would have recorded it, and the payment is not there.
  * - unknown: anything else. The caller blocks a new attempt.
@@ -39,10 +57,12 @@ export const RECONCILE_MIN_AGE_MS = 2 * 60 * 1000
 
 /**
  * How long after a record's latest dispatch nothing about it can still be on
- * its way. The list is read back only RECONCILE_MAX_PAGES pages, so a record
- * older than the newest hundred payments can never be settled by it; past
- * this age the executor lets the user clear it on their word that their
- * history does not show the payment (executor.ts, `historyChecked`).
+ * its way. The list is read back at most RECONCILE_MAX_PAGES pages, and
+ * lnflash/flash serves only each wallet's newest RECONCILE_PAGE_SIZE rows
+ * (see the note at the top), so a record older than those can never be
+ * settled by it; past this age the executor lets the user clear it on their
+ * word that their history does not show the payment (executor.ts,
+ * `historyChecked`).
  */
 export const RECONCILE_STALE_AFTER_MS = 24 * 60 * 60 * 1000
 
@@ -52,7 +72,28 @@ export const RECONCILE_CLOCK_SKEW_SECONDS = 120
 /** The most of the list read looking for one payment. */
 export const RECONCILE_MAX_PAGES = 5
 
-const RECONCILE_PAGE_SIZE = 20
+/**
+ * How many rows each read asks for, and so how many of each wallet's newest
+ * rows lnflash/flash serves (see the note at the top): a wallet whose rows
+ * fill it may have more that the list never shows.
+ */
+export const RECONCILE_PAGE_SIZE = 20
+
+/** One wallet's rows in the list, told apart by their settlement currency. */
+type WalletBlock = {
+  /** How many of its rows the list served. */
+  rows: number
+  /** Whether one of them is from before the dispatch. */
+  reachesBack: boolean
+}
+
+/**
+ * Whether the list served every row a wallet made since the dispatch: its
+ * block shows a row from before it, or ends short of a page, so there is no
+ * row past it that the API kept back.
+ */
+const readBackToDispatch = ({ rows, reachesBack }: WalletBlock): boolean =>
+  reachesBack || rows < RECONCILE_PAGE_SIZE
 
 const intraledgerVia = (tx: TransactionRow) => {
   if (tx.settlementVia.__typename === "SettlementViaIntraLedger") return tx.settlementVia
@@ -171,11 +212,13 @@ export const createTransactionListReconciler = ({
     // Back to the first dispatch: a retry can only have landed after it.
     const since = Math.floor(record.dispatchedAt / 1000) - RECONCILE_CLOCK_SKEW_SECONDS
     let after: string | undefined
-    let readSinceDispatch = false
+    // The list was read to its end: its last page said there is no next.
+    let listEnded = false
+    const blocks = new Map<string, WalletBlock>()
     // A sent row since the dispatch that names nothing, which could be it.
     let unnamedSince = false
     try {
-      for (let page = 0; page < RECONCILE_MAX_PAGES && !readSinceDispatch; page += 1) {
+      for (let page = 0; page < RECONCILE_MAX_PAGES && !listEnded; page += 1) {
         const result = await graphql.transactions({ first: RECONCILE_PAGE_SIZE, after })
         // A failed payment moved nothing: it is not the dispatch landing.
         const landed = result.rows.filter(
@@ -183,15 +226,27 @@ export const createTransactionListReconciler = ({
         )
         if (landed.some((tx) => matchesTransaction(record.match, tx))) return "settled"
         if (landed.some((tx) => cannotRuleOut(record.match, tx))) unnamedSince = true
-        const recent = result.rows.filter((tx) => tx.createdAt >= since)
-        readSinceDispatch =
-          recent.length < result.rows.length || !result.hasNextPage || !result.endCursor
+        result.rows.forEach((tx) => {
+          const block = blocks.get(tx.settlementCurrency)
+          blocks.set(tx.settlementCurrency, {
+            rows: (block?.rows ?? 0) + 1,
+            reachesBack: (block?.reachesBack ?? false) || tx.createdAt < since,
+          })
+        })
+        listEnded = !result.hasNextPage
+        // More rows, and no way to ask for them: the rest stays unread.
+        if (!listEnded && !result.endCursor) break
         after = result.endCursor ?? undefined
       }
     } catch {
       return "unknown"
     }
-    if (!readSinceDispatch) return "unknown"
+    // Every wallet's block must be read back past the dispatch, and a block
+    // can start on any page (see the note at the top), so the list is read to
+    // its end. A page whose rows all came since the dispatch proves nothing on
+    // its own: it may be the one page the API serves of a wallet whose
+    // payment lies one row past it.
+    if (!listEnded || ![...blocks.values()].every(readBackToDispatch)) return "unknown"
     // Part of it is a payment the list cannot show: not seeing the rest says
     // nothing about that part.
     if (!listCanShow(record.match)) return "unknown"

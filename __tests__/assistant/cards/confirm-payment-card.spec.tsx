@@ -9,10 +9,16 @@ jest.mock("@app/i18n/i18n-react", () => {
 import type { CardActions } from "@app/assistant/cards/card-actions"
 import { ConfirmPaymentCard } from "@app/assistant/cards/ConfirmPaymentCard"
 import { confirmPaymentFixture } from "@app/assistant/cards/fixtures"
-import type { CanConfirm, ConfirmResult, Executor } from "@app/assistant/engine/executor"
+import type { CanConfirm, ConfirmResult } from "@app/assistant/engine/executor"
 import type { ExecutionOutcome } from "@app/assistant/registry/types"
-import { makeAction, setupExecutor } from "../executor-harness"
-import { en, fakeActions, flush, renderCard } from "./render-card"
+import {
+  DISPATCH,
+  makeAction,
+  refreshingTo,
+  setupExecutor,
+  T0,
+} from "../executor-harness"
+import { en, executorActions, fakeActions, flush, renderCard } from "./render-card"
 
 const ID = confirmPaymentFixture.preparedActionId
 
@@ -303,17 +309,6 @@ describe("ConfirmPaymentCard after a remount: the executor is the source of trut
   // mounts the card again with nothing remembered. What the card offers then
   // comes from the executor (canConfirm), never from the card's own state.
 
-  /** The card's two executor calls, wired to a real executor. */
-  const executorActions = (executor: Executor) => {
-    const actions = {
-      canConfirm: (id: string) => executor.canConfirm(id),
-      executePreparedAction: (id: string) => executor.executePreparedAction(id),
-      reprepare: jest.fn(),
-      onResult: jest.fn(),
-    }
-    return actions as typeof actions & CardActions
-  }
-
   const showOver = (payload: unknown, actions: CardActions) => ({
     screen: renderCard(<ConfirmPaymentCard payload={payload} actions={actions} />),
   })
@@ -397,6 +392,146 @@ describe("ConfirmPaymentCard after a remount: the executor is the source of trut
     expect(await screen.findByText(en.AssistantCards.legSent())).toBeTruthy()
     expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
     expect(screen.queryByTestId("assistant-card-confirm-button")).toBeNull()
+    await flush()
+  })
+
+  it("keeps the retry after an identical refresh lost its answer, mounted or remounted: no Refresh", async () => {
+    // Past expiry the card's Confirm ran an identical refreshed action in its
+    // place, whose answer was lost. The card still holds its own id: it must
+    // keep offering the retry, under the refreshed action's key, and never
+    // Refresh, which would prepare a third action with a third key.
+    const run = setupExecutor()
+    const fresh = makeAction({
+      createdAt: T0 + 61_000,
+      execute: jest
+        .fn()
+        .mockResolvedValueOnce({
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "retrySameAttempt",
+        })
+        .mockResolvedValueOnce({ status: "succeeded" }),
+    })
+    const stale = makeAction({ refresh: refreshingTo(fresh) })
+    run.executor.addPrepared(stale, "text")
+    const actions = executorActions(run.executor)
+    // The executor's clock is past the action's expiry; the card's is not yet.
+    run.advance(61_000)
+    const payload = {
+      ...confirmPaymentFixture,
+      preparedActionId: stale.id,
+      expiresAt: Date.now() + 60_000,
+    }
+    const first = showOver(payload, actions)
+    await waitFor(() => expect(confirmButton(first.screen)).not.toBeDisabled())
+    fireEvent.press(confirmButton(first.screen))
+    await waitFor(() => expect(actions.onResult).toHaveBeenCalled())
+
+    // Still mounted: the notice, over a Confirm that retries.
+    expect(await first.screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
+    await waitFor(() => expect(confirmButton(first.screen)).not.toBeDisabled())
+    first.screen.unmount()
+
+    // Remounted past the card's expiry: still the retry, never Refresh.
+    const { screen } = showOver({ ...payload, expiresAt: Date.now() - 1 }, actions)
+    expect(await screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
+    await waitFor(() => expect(confirmButton(screen)).not.toBeDisabled())
+    fireEvent.press(confirmButton(screen))
+
+    expect(await screen.findByText(en.AssistantCards.legSent())).toBeTruthy()
+    expect(fresh.execute).toHaveBeenCalledTimes(2)
+    expect(fresh.execute.mock.calls[1][0].attempt).toBe(
+      fresh.execute.mock.calls[0][0].attempt,
+    )
+    expect(stale.execute).not.toHaveBeenCalled()
+    expect(stale.refresh).toHaveBeenCalledTimes(1)
+    expect(actions.reprepare).not.toHaveBeenCalled()
+    await flush()
+  })
+
+  it("answers a tap on an unresolved card whose action was evicted with the history notice, and no Try again", async () => {
+    const run = setupExecutor()
+    const action = makeAction({
+      execute: jest.fn(
+        async (): Promise<ExecutionOutcome> => ({
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "retrySameAttempt",
+        }),
+      ),
+    })
+    run.executor.addPrepared(action, "text")
+    const actions = executorActions(run.executor)
+    const { screen } = showOver(
+      {
+        ...confirmPaymentFixture,
+        preparedActionId: action.id,
+        expiresAt: Date.now() + 60_000,
+      },
+      actions,
+    )
+    await waitFor(() => expect(confirmButton(screen)).not.toBeDisabled())
+    fireEvent.press(confirmButton(screen))
+    expect(await screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
+    await waitFor(() => expect(confirmButton(screen)).not.toBeDisabled())
+
+    // Three more cards in the thread evict it, while its card stays on
+    // screen still offering the retry.
+    ;[1, 2, 3].forEach(() => run.executor.addPrepared(makeAction(), "text"))
+    fireEvent.press(confirmButton(screen))
+
+    await waitFor(() => expect(actions.onResult).toHaveBeenCalledTimes(2))
+    expect(actions.onResult).toHaveBeenLastCalledWith({
+      kind: "disarmed",
+      actionId: action.id,
+      replyKey: "Assistant.checkHistory",
+    })
+    expect(screen.getByText(en.Assistant.checkHistory())).toBeTruthy()
+    expect(screen.queryByTestId("assistant-card-reprepare")).toBeNull()
+    expect(actions.reprepare).not.toHaveBeenCalled()
+    expect(action.execute).toHaveBeenCalledTimes(1)
+    await flush()
+  })
+
+  it("keeps the already-sent reply past expiresAt after a remount: no Refresh, no re-prepare", async () => {
+    // An earlier dispatch of the same payment, whose action this run no
+    // longer holds, shows in the list: the card's Confirm retires its action
+    // as already sent, and its record is cleared.
+    const run = setupExecutor({ verdict: "settled" })
+    await run.journal.record({
+      preparedActionId: "earlier",
+      idempotencyKey: "k0",
+      paymentDetailHash: DISPATCH.paymentDetailHash,
+      dispatchedAt: T0 - 10 * 60_000,
+      lastDispatchedAt: T0 - 10 * 60_000,
+      match: DISPATCH.match,
+    })
+    const action = makeAction()
+    run.executor.addPrepared(action, "text")
+    const actions = executorActions(run.executor)
+    const payload = {
+      ...confirmPaymentFixture,
+      preparedActionId: action.id,
+      expiresAt: Date.now() + 60_000,
+    }
+    const first = showOver(payload, actions)
+    await waitFor(() => expect(confirmButton(first.screen)).not.toBeDisabled())
+    fireEvent.press(confirmButton(first.screen))
+    expect(await first.screen.findByText(en.Assistant.alreadySent())).toBeTruthy()
+    first.screen.unmount()
+    await expect(run.journal.pending()).resolves.toEqual([])
+
+    const { screen } = showOver({ ...payload, expiresAt: Date.now() - 1 }, actions)
+
+    expect(await screen.findByText(en.Assistant.alreadySent())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
+    expect(screen.queryByTestId("assistant-card-reprepare")).toBeNull()
+    expect(screen.queryByTestId("assistant-card-confirm-button")).toBeNull()
+    expect(action.execute).not.toHaveBeenCalled()
+    expect(actions.reprepare).not.toHaveBeenCalled()
     await flush()
   })
 

@@ -473,8 +473,11 @@ describe("executor", () => {
         actionId: action.id,
         outcome: { status: "succeeded" },
       })
-      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
-        kind: "notFound",
+      // A second Confirm runs nothing, and says the payment went: never
+      // notFound, which a card answers with an offer to prepare it again.
+      await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+        kind: "sent",
+        actionId: action.id,
       })
       expect(action.execute).toHaveBeenCalledTimes(1)
     })
@@ -888,9 +891,15 @@ describe("executor, for the action tier (ENG-688)", () => {
           state: "disarmed",
           replyKey: "Assistant.checkHistory",
         })
-        await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
-          kind: "notFound",
+        // A tap from a card still on screen gets the same answer: disarmed,
+        // with the history, never notFound and its offer to prepare again.
+        await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+          kind: "disarmed",
+          actionId: action.id,
+          replyKey: "Assistant.checkHistory",
         })
+        expect(action.execute).toHaveBeenCalledTimes(1)
+        expect(action.refresh).not.toHaveBeenCalled()
       }
       // One let go before anything was sent is simply gone.
       await expect(executor.canConfirm(untouched.id)).resolves.toMatchObject({
@@ -930,6 +939,188 @@ describe("executor, for the action tier (ENG-688)", () => {
       })
     })
 
+    it("follows an identical refresh to the action that runs in the card's place: a lost answer reads unresolved, and the card's retry reuses that action's attempt", async () => {
+      // The card holds the id it was prepared under. Past expiry an
+      // identical refresh ran a new action in its place, and that action's
+      // answer was lost: the card must keep offering the retry under the new
+      // action's key, never Refresh, which would prepare a third action with
+      // a third key (spec §5, ENG-533).
+      const { executor, advance } = setupExecutor()
+      const fresh = makeAction({
+        createdAt: T0 + 61_000,
+        execute: jest
+          .fn()
+          .mockResolvedValueOnce({
+            status: "unknown",
+            replyKey: "Assistant.checkHistory",
+            next: "retrySameAttempt",
+          })
+          .mockResolvedValueOnce({ status: "succeeded" }),
+      })
+      const stale = makeAction({ refresh: refreshingTo(fresh) })
+      executor.addPrepared(stale, "text")
+      advance(61_000)
+
+      await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
+        kind: "executed",
+        actionId: fresh.id,
+        replacedActionId: stale.id,
+        outcome: { status: "unknown", next: "retrySameAttempt" },
+      })
+      await expect(executor.canConfirm(stale.id)).resolves.toEqual({
+        enabled: true,
+        state: "unresolved",
+        replyKey: "Assistant.checkHistory",
+      })
+
+      // Past the fresh action's own expiry too: a replay, never a re-prepare.
+      advance(5 * 60_000)
+      await expect(executor.executePreparedAction(stale.id)).resolves.toEqual({
+        kind: "executed",
+        actionId: fresh.id,
+        replacedActionId: stale.id,
+        outcome: { status: "succeeded" },
+      })
+      expect(fresh.execute).toHaveBeenCalledTimes(2)
+      expect(fresh.execute.mock.calls[0][0].attempt).toBe(fresh.attempt)
+      expect(fresh.execute.mock.calls[1][0].attempt).toBe(fresh.attempt)
+      expect(stale.execute).not.toHaveBeenCalled()
+      expect(stale.refresh).toHaveBeenCalledTimes(1)
+      expect(fresh.refresh).not.toHaveBeenCalled()
+      await expect(executor.canConfirm(stale.id)).resolves.toEqual({
+        enabled: false,
+        state: "sent",
+      })
+    })
+
+    it("joins a Confirm of the action that runs in the card's place rather than start another", async () => {
+      const { executor, advance } = setupExecutor()
+      let answer: (outcome: ExecutionOutcome) => void = () => undefined
+      const fresh = makeAction({
+        createdAt: T0 + 61_000,
+        execute: jest
+          .fn()
+          .mockResolvedValueOnce({
+            status: "unknown",
+            replyKey: "Assistant.checkHistory",
+            next: "retrySameAttempt",
+          })
+          .mockImplementationOnce(
+            () =>
+              new Promise<ExecutionOutcome>((resolve) => {
+                answer = resolve
+              }),
+          ),
+      })
+      const stale = makeAction({ refresh: refreshingTo(fresh) })
+      executor.addPrepared(stale, "text")
+      advance(61_000)
+      await executor.executePreparedAction(stale.id)
+
+      // The new action's own card (were the thread to show one) and the old
+      // card confirm together: one run, under one attempt.
+      const byFresh = executor.executePreparedAction(fresh.id)
+      const byStale = executor.executePreparedAction(stale.id)
+      expect(byStale).toBe(byFresh)
+      await new Promise((resolve) => {
+        setImmediate(resolve)
+      })
+      answer({ status: "succeeded" })
+      await expect(byFresh).resolves.toMatchObject({ kind: "executed" })
+      expect(fresh.execute).toHaveBeenCalledTimes(2)
+    })
+
+    it("drops the action in a card's place when the card is dismissed, remembering it disarmed", async () => {
+      const { executor, advance } = setupExecutor()
+      const fresh = makeAction({
+        createdAt: T0 + 61_000,
+        execute: executed({
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "retrySameAttempt",
+        }),
+      })
+      const stale = makeAction({ refresh: refreshingTo(fresh) })
+      executor.addPrepared(stale, "text")
+      advance(61_000)
+      await executor.executePreparedAction(stale.id)
+
+      executor.dismiss(stale.id)
+
+      for (const id of [stale.id, fresh.id]) {
+        await expect(executor.canConfirm(id)).resolves.toEqual({
+          enabled: false,
+          state: "disarmed",
+          replyKey: "Assistant.checkHistory",
+        })
+      }
+      await expect(executor.executePreparedAction(stale.id)).resolves.toEqual({
+        kind: "disarmed",
+        actionId: stale.id,
+        replyKey: "Assistant.checkHistory",
+      })
+      expect(fresh.execute).toHaveBeenCalledTimes(1)
+    })
+
+    it("never links a refresh with new numbers to the card: its old id is gone, and the new card is shown", async () => {
+      const { executor, advance } = setupExecutor()
+      const changed = makeAction({
+        createdAt: T0 + 61_000,
+        summary: { ...SUMMARY, feeText: "$0.01", totalText: "$5.01" },
+      })
+      const stale = makeAction({ refresh: refreshingTo(changed) })
+      executor.addPrepared(stale, "text")
+      advance(61_000)
+
+      await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
+        kind: "refreshed",
+        actionId: changed.id,
+      })
+
+      await expect(executor.canConfirm(stale.id)).resolves.toMatchObject({
+        state: "gone",
+      })
+      await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
+        kind: "notFound",
+      })
+      expect(changed.execute).not.toHaveBeenCalled()
+    })
+
+    it("remembers an action retired as already sent: its card keeps the reply, and offers no Refresh", async () => {
+      // An earlier dispatch of the same payment, whose action this run no
+      // longer holds, and which the list shows went.
+      const { executor, journal } = setupExecutor({ verdict: "settled" })
+      await journal.record({
+        preparedActionId: "earlier",
+        idempotencyKey: "k0",
+        paymentDetailHash: DISPATCH.paymentDetailHash,
+        dispatchedAt: T0 - 10 * 60_000,
+        lastDispatchedAt: T0 - 10 * 60_000,
+        match: DISPATCH.match,
+      })
+      const action = makeAction()
+      executor.addPrepared(action, "text")
+
+      await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+        kind: "alreadySent",
+        actionId: action.id,
+        replyKey: "Assistant.alreadySent",
+      })
+
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: false,
+        state: "alreadySent",
+        replyKey: "Assistant.alreadySent",
+      })
+      await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+        kind: "alreadySent",
+        actionId: action.id,
+        replyKey: "Assistant.alreadySent",
+      })
+      expect(action.execute).not.toHaveBeenCalled()
+      expect(action.refresh).not.toHaveBeenCalled()
+    })
+
     it(`remembers the newest ${RETIRED_ACTIONS_REMEMBERED} sent actions only`, async () => {
       const { executor } = setupExecutor()
       const actions = Array.from({ length: RETIRED_ACTIONS_REMEMBERED + 1 }, () =>
@@ -966,8 +1157,16 @@ describe("executor, for the action tier (ENG-688)", () => {
 
       await executor.executePreparedAction(action.id)
 
-      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
-        kind: "notFound",
+      // Its card, remounted or still on screen, offers to prepare the rest.
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: false,
+        state: "prepareRest",
+        replyKey: "Assistant.groupSendRestExpired",
+      })
+      await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+        kind: "prepareRest",
+        actionId: action.id,
+        replyKey: "Assistant.groupSendRestExpired",
       })
       expect(action.execute).toHaveBeenCalledTimes(1)
       // What went keeps its record: the same payment from another card is

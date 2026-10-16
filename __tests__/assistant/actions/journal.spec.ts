@@ -1,6 +1,7 @@
 import {
   journaledBtcRail,
   journaledSendDeps,
+  UNRECORDED_INVOICE_SEND,
   UNRECORDED_ONCHAIN_SEND,
 } from "@app/assistant/registry/actions/shared/journal"
 import type { BtcRail } from "@app/payments/btc-rail"
@@ -37,43 +38,49 @@ describe("journaledBtcRail", () => {
 
   // A write that fails sends nothing, and says so as the send's own wrapper
   // reports a refusal before its dispatch, so sendPayment reads it as one.
-  sends
-    .filter(([method]) => method !== "payOnchain")
-    .forEach(([method, args]) =>
-      it(`sends nothing through ${method} when the dispatch cannot be written down`, async () => {
-        const rail = fakeBtcRail()
-        const journal = jest.fn(async () => {
-          throw new Error("disk full")
-        })
-
-        const call = journaledBtcRail(rail as unknown as BtcRail, journal)[method] as (
-          ...a: unknown[]
-        ) => Promise<unknown>
-
-        await expect(call(...args)).rejects.toThrow("disk full")
-        expect(rail[method]).not.toHaveBeenCalled()
-      }),
-    )
-
-  it("sends nothing through payOnchain when the dispatch cannot be written down, and answers the refusal instead of rejecting", async () => {
-    // Since ENG-714 sendPayment keeps Confirm disarmed on any rejection out of
-    // payOnchain, as a withdrawal that may have left; payOnchainBreez answers
-    // every refusal before its dispatch with success: false (spec v0.2.10 §5).
+  // payLnurlBreez lets such a refusal through as a rejection, which the LNURL
+  // branch re-arms on; only LnurlPayOutcomeUnknownError keeps it disarmed
+  // (ENG-711).
+  it("sends nothing through payLnurl when the dispatch cannot be written down", async () => {
     const rail = fakeBtcRail()
     const journal = jest.fn(async () => {
       throw new Error("disk full")
     })
 
     await expect(
-      journaledBtcRail(rail as unknown as BtcRail, journal).payOnchain(
-        "bc1q",
-        6000,
-        "medium",
-        "attempt-key",
+      journaledBtcRail(rail as unknown as BtcRail, journal).payLnurl(
+        "alice@flashapp.me",
+        2100,
+        "",
       ),
-    ).resolves.toEqual({ success: false, error: UNRECORDED_ONCHAIN_SEND })
-    expect(rail.payOnchain).not.toHaveBeenCalled()
+    ).rejects.toThrow("disk full")
+    expect(rail.payLnurl).not.toHaveBeenCalled()
   })
+
+  // Since ENG-714 and ENG-720 sendPayment keeps Confirm disarmed on any
+  // rejection out of payOnchain or payInvoice, as a payment that may have
+  // left; payOnchainBreez and payLightningBreez answer every refusal before
+  // their dispatch with success: false (spec v0.2.11 §5). So these two answer
+  // the refusal instead of rejecting.
+  const refusingSends: [keyof BtcRail, unknown[], string][] = [
+    ["payInvoice", ["lnbc1", 2100], UNRECORDED_INVOICE_SEND],
+    ["payOnchain", ["bc1q", 6000, "medium", "attempt-key"], UNRECORDED_ONCHAIN_SEND],
+  ]
+  refusingSends.forEach(([method, args, error]) =>
+    it(`sends nothing through ${method} when the dispatch cannot be written down, and answers the refusal instead of rejecting`, async () => {
+      const rail = fakeBtcRail()
+      const journal = jest.fn(async () => {
+        throw new Error("disk full")
+      })
+
+      const call = journaledBtcRail(rail as unknown as BtcRail, journal)[method] as (
+        ...a: unknown[]
+      ) => Promise<unknown>
+
+      await expect(call(...args)).resolves.toEqual({ success: false, error })
+      expect(rail[method]).not.toHaveBeenCalled()
+    }),
+  )
 
   it("passes the reads and the prepare members through untouched", async () => {
     const rail = fakeBtcRail()

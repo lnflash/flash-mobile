@@ -1,4 +1,4 @@
-import type { CanConfirm, ConfirmResult } from "../engine/executor"
+import type { CanConfirm, ConfirmResult, ConfirmState } from "../engine/executor"
 import type { AssistantReplyKey } from "../registry/types"
 
 // What a card can do (docs/ai-assistant-tool-registry.md §6). The thread
@@ -97,6 +97,17 @@ export const afterConfirm = (result: ConfirmResult): AfterConfirm => {
         confirmAgain: false,
         reprepare: false,
       }
+    case "sent":
+      // Its payment went before this Confirm: nothing more to offer.
+      return { done: true, confirmAgain: false, reprepare: false }
+    case "prepareRest":
+      // What went is done; the card may prepare only the rest.
+      return {
+        replyKey: result.replyKey,
+        done: false,
+        confirmAgain: false,
+        reprepare: true,
+      }
   }
   // An answer this card does not know: assume something may have moved.
   return {
@@ -104,5 +115,43 @@ export const afterConfirm = (result: ConfirmResult): AfterConfirm => {
     done: false,
     confirmAgain: false,
     reprepare: false,
+  }
+}
+
+/**
+ * What a card offers for an action the executor retired, when the card
+ * remembers no Confirm of its own (a remount, a thread re-render): the same
+ * as the Confirm that retired it left the card offering. Undefined for an
+ * action the executor still holds, or holds no word of: the card then goes
+ * by canConfirm's `enabled` and reply, as before its first Confirm.
+ */
+export const afterRetirement = ({
+  state,
+  replyKey,
+}: {
+  state?: ConfirmState
+  replyKey?: AssistantReplyKey
+}): AfterConfirm | undefined => {
+  switch (state) {
+    case "sent":
+      return { done: true, confirmAgain: false, reprepare: false }
+    case "alreadySent":
+      // A payment of this amount went: the reply says so, and there is no
+      // Refresh, which would prepare it again.
+      return {
+        replyKey: replyKey ?? "Assistant.alreadySent",
+        done: false,
+        confirmAgain: false,
+        reprepare: false,
+      }
+    case "prepareRest":
+      return {
+        replyKey,
+        done: false,
+        confirmAgain: false,
+        reprepare: true,
+      }
+    default:
+      return undefined
   }
 }

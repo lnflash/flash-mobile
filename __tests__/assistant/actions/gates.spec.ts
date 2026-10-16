@@ -15,13 +15,21 @@ describe("the Breez send gates (ENG-688 addendum)", () => {
     expect(() => assertBreezSendOpen("onchain")).not.toThrow()
   })
 
-  it("refuses bolt11 until ENG-720, with the not-available card", () => {
-    expect(BREEZ_SEND_GATES.lightning).toBe("ENG-720")
+  it("lets the bolt11 branch through: ENG-720 is done (spec v0.2.11 §5.1)", () => {
+    expect(BREEZ_SEND_GATES.lightning).toBeNull()
+    expect(() => assertBreezSendOpen("lightning")).not.toThrow()
+  })
+
+  it("refuses a branch whose gate is closed, with the not-available card", () => {
+    const gate = BREEZ_SEND_GATES.lightning
+    BREEZ_SEND_GATES.lightning = "ENG-999"
     let refused: unknown
     try {
       assertBreezSendOpen("lightning")
     } catch (err) {
       refused = err
+    } finally {
+      BREEZ_SEND_GATES.lightning = gate
     }
     expect(refused).toBeInstanceOf(PrepareRefusedError)
     expect(refused).toMatchObject({ reason: "notAvailableYet" })

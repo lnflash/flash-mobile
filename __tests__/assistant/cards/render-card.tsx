@@ -5,7 +5,7 @@ import { createTheme, ThemeProvider } from "@rneui/themed"
 import { act, render } from "@testing-library/react-native"
 
 import type { CardActions } from "@app/assistant/cards/card-actions"
-import type { CanConfirm, ConfirmResult } from "@app/assistant/engine/executor"
+import type { CanConfirm, ConfirmResult, Executor } from "@app/assistant/engine/executor"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 
@@ -40,3 +40,14 @@ export const flush = () =>
   act(async () => {
     await Promise.resolve()
   })
+
+/** A card's two executor calls, wired to a real executor, and the thread's two callbacks. */
+export const executorActions = (executor: Executor) => {
+  const actions = {
+    canConfirm: (id: string) => executor.canConfirm(id),
+    executePreparedAction: (id: string) => executor.executePreparedAction(id),
+    reprepare: jest.fn(),
+    onResult: jest.fn(),
+  }
+  return actions as typeof actions & CardActions
+}

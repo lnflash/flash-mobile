@@ -1,5 +1,9 @@
-import { afterConfirm, AfterConfirm } from "@app/assistant/cards/card-actions"
-import type { ConfirmResult } from "@app/assistant/engine/executor"
+import {
+  afterConfirm,
+  AfterConfirm,
+  afterRetirement,
+} from "@app/assistant/cards/card-actions"
+import type { ConfirmResult, ConfirmState } from "@app/assistant/engine/executor"
 
 const executed = (outcome: Extract<ConfirmResult, { kind: "executed" }>["outcome"]) =>
   ({ kind: "executed", actionId: "a", outcome } as const)
@@ -121,6 +125,21 @@ const TABLE: [string, ConfirmResult, AfterConfirm][] = [
       reprepare: false,
     },
   ],
+  [
+    "a Confirm of an action whose payment went before it",
+    { kind: "sent", actionId: "a" },
+    { done: true, confirmAgain: false, reprepare: false },
+  ],
+  [
+    "a Confirm of a group retired with the rest to prepare",
+    { kind: "prepareRest", actionId: "a", replyKey: "Assistant.groupSendRestExpired" },
+    {
+      replyKey: "Assistant.groupSendRestExpired",
+      done: false,
+      confirmAgain: false,
+      reprepare: true,
+    },
+  ],
 ]
 
 describe("afterConfirm", () => {
@@ -156,8 +175,49 @@ describe("afterConfirm", () => {
         (result.kind === "executed" && result.outcome.status === "unknown") ||
         result.kind === "disarmed" ||
         result.kind === "pendingDispatch" ||
-        result.kind === "alreadySent"
+        result.kind === "alreadySent" ||
+        result.kind === "sent"
       if (mayHaveMoved) expect(afterConfirm(result).reprepare).toBe(false)
     })
+  })
+})
+
+describe("afterRetirement: what a remounted card offers for an action the executor retired", () => {
+  it("offers what the Confirm that retired it left the card offering", () => {
+    expect(afterRetirement({ state: "sent" })).toEqual(
+      afterConfirm({ kind: "sent", actionId: "a" }),
+    )
+    expect(
+      afterRetirement({ state: "alreadySent", replyKey: "Assistant.alreadySent" }),
+    ).toEqual(
+      afterConfirm({
+        kind: "alreadySent",
+        actionId: "a",
+        replyKey: "Assistant.alreadySent",
+      }),
+    )
+    expect(
+      afterRetirement({
+        state: "prepareRest",
+        replyKey: "Assistant.groupSendRestExpired",
+      }),
+    ).toEqual(
+      afterConfirm({
+        kind: "prepareRest",
+        actionId: "a",
+        replyKey: "Assistant.groupSendRestExpired",
+      }),
+    )
+  })
+
+  it("leaves an action the executor holds, or has no word of, to canConfirm", () => {
+    const states: (ConfirmState | undefined)[] = [
+      "armed",
+      "unresolved",
+      "disarmed",
+      "gone",
+      undefined,
+    ]
+    states.forEach((state) => expect(afterRetirement({ state })).toBeUndefined())
   })
 })

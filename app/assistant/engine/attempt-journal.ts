@@ -183,6 +183,8 @@ export const createAttemptJournal = ({
  * same, whatever was re-derived meanwhile: a settlement amount that moved
  * with the rate, or a freshly minted LNURL invoice, is not in it. The memo
  * is not in it either, so a payment cannot slip past the check by a new memo.
+ * A payment whose destination is itself minted for each action, a
+ * conversion's invoice, is not one this can name: see hashConversion.
  */
 export const hashPaymentDetail = (
   detail: Pick<
@@ -229,6 +231,43 @@ export const hashCashout = ({
       cashout: {
         walletId,
         bankAccountId,
+        amount: { amount: amount.amount, currency: amount.currency },
+      },
+    }),
+  )
+
+/**
+ * The identity of a conversion between the user's own wallets
+ * (prepareConversion, ENG-688): its direction, the wallet it leaves, the
+ * wallet it reaches, and the amount the user asked for, in the unit they
+ * named. A conversion pays an invoice its own prepare just minted on the
+ * receiving wallet, and that invoice is the payment detail's destination, so
+ * hashPaymentDetail would make every conversion a payment of its own and
+ * neither the per-payment queue nor the journal gate (spec §5.1) would ever
+ * apply to one. Like hashCashout, this leaves out what is minted for each new
+ * action: the invoice, and the settlement amount a display-currency amount
+ * converts to at the rate of the moment. Two cards for the same request are
+ * then one conversion to the executor, whichever invoice each pays, and a
+ * conversion whose answer was lost blocks the next card for the same
+ * request. Its record's match stays the invoice's own.
+ */
+export const hashConversion = ({
+  direction,
+  sourceWalletId,
+  targetWalletId,
+  amount,
+}: {
+  direction: "cashToBtc" | "btcToCash"
+  sourceWalletId: string
+  targetWalletId: string
+  amount: MoneyAmount<WalletOrDisplayCurrency>
+}): string =>
+  sha256(
+    canonicalJson({
+      conversion: {
+        direction,
+        sourceWalletId,
+        targetWalletId,
         amount: { amount: amount.amount, currency: amount.currency },
       },
     }),

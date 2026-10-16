@@ -91,8 +91,8 @@ export type ClarificationCard = {
 /**
  * - insufficientBalance, limitExceeded: the affordability check (spec §5.1).
  * - notAvailableYet: a payment the assistant may not dispatch yet because
- *   the branch it would take is gated on an open bug (ENG-688: BTC-wallet
- *   bolt11 sends until ENG-720; actions/shared/gates.ts).
+ *   the branch it would take is gated on an open bug (actions/shared/gates.ts;
+ *   no branch is gated since ENG-720 opened BTC-wallet bolt11 sends).
  */
 export type PrepareRefusalReason =
   | "insufficientBalance"
