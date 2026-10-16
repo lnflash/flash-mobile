@@ -158,8 +158,8 @@ const fromContactName = async (
   const result = await resolveContact.run({ hint }, createReadToolCtx(ctx))
   switch (result.kind) {
     case "clarification":
-      // Each option re-issues the call with its pick, which resolves to
-      // exactly that contact.
+      // Each option re-issues the call with its pick in place of the name
+      // the question is about, and a pick resolves to exactly that contact.
       return {
         kind: "clarification",
         card: {
@@ -168,6 +168,7 @@ const fromContactName = async (
             ...option,
             id: contactPick(option.id),
           })),
+          about: hint,
         },
       }
     case "answer": {

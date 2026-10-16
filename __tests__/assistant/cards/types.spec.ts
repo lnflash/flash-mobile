@@ -112,6 +112,9 @@ describe("validateCard: every card payload is checked before it renders", () => 
     expect(validateCard(without(confirmPaymentFixture, "memo")).valid).toBe(true)
     expect(validateCard(without(invoiceFixture, "amountText")).valid).toBe(true)
     expect(validateCard(without(invoiceFixture, "expiresAt")).valid).toBe(true)
+    // A clarification may name the words it is about (ENG-688).
+    expect(validateCard({ ...clarificationFixture, about: "ali" }).valid).toBe(true)
+    expect(validateCard({ ...clarificationFixture, about: "" }).valid).toBe(false)
   })
 
   it("refuses an unknown type, a non-object and a mismatched payload", () => {

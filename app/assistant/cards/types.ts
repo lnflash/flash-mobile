@@ -223,6 +223,7 @@ const SCHEMAS: Record<CardType, ObjectSchema> = {
         type: "array",
         items: closed({ id: text, label: text, sublabel: text }, ["id", "label"]),
       },
+      about: text,
     },
     ["type", "prompt", "options"],
   ),

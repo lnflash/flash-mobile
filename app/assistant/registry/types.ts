@@ -79,6 +79,13 @@ export type ClarificationCard = {
   type: "clarification"
   prompt: AssistantReplyKey
   options: ClarificationOption[]
+  /**
+   * The words of the call the question is about, when it is about one
+   * argument (ENG-688): the payee a send named. A pick re-issues the call
+   * with that argument (in a group send, that one payee) replaced by the
+   * option's id.
+   */
+  about?: string
 }
 
 /**

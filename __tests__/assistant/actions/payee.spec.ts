@@ -81,6 +81,8 @@ describe("resolvePayee: a contact the user names", () => {
           expect.objectContaining({ id: contactPick("alice"), sublabel: "alice" }),
           expect.objectContaining({ id: contactPick("alina"), sublabel: "alina" }),
         ],
+        // The words the question is about, for the pick to replace.
+        about: "ali",
       },
     })
   })
@@ -90,7 +92,12 @@ describe("resolvePayee: a contact the user names", () => {
 
     await expect(resolvePayee("mallory", ctx, MINE)).resolves.toEqual({
       kind: "clarification",
-      card: { type: "clarification", prompt: "Assistant.noContactMatch", options: [] },
+      card: {
+        type: "clarification",
+        prompt: "Assistant.noContactMatch",
+        options: [],
+        about: "mallory",
+      },
     })
     expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
   })
