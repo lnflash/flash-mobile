@@ -226,8 +226,9 @@ type LnurlPayAnswer = Awaited<ReturnType<BtcRail["payLnurl"]>>
 
 /**
  * What `payInvoice` resolves with: payLightningBreez's own `{ success, error,
- * payment }`, where `payment` is the SDK's `SendPaymentResponse` and holds the
- * payment one level down. Typed through the rail, as `LnurlPayAnswer` is.
+ * payment, outcomeUnknown }`, where `payment` is the SDK's
+ * `SendPaymentResponse` and holds the payment one level down. Typed through
+ * the rail, as `LnurlPayAnswer` is.
  */
 type InvoicePayAnswer = Awaited<ReturnType<BtcRail["payInvoice"]>>
 
@@ -320,10 +321,11 @@ export const sendPayment = async (
   // LnurlPayOutcomeUnknownError, which the catch below answers without
   // re-arming (ENG-711). payOnchainBreez answers sdk.sendPayment's with
   // outcomeUnknown, and the on-chain branch answers that, and any rejection
-  // from payOnchain itself, without calling finish (ENG-714). payInvoice still
-  // brings one here: payLightningBreez turns every rejection into success:
-  // false, so the bolt11 branch re-arms on it (ENG-720). A keyed retry is
-  // ENG-715.
+  // from payOnchain itself, without calling finish (ENG-714).
+  // payLightningBreez answers the bolt11 sdk.sendPayment's the same way, and
+  // the lightning branch answers that without calling finish (ENG-720). A
+  // rejection from payInvoice itself still reaches the shared catch below,
+  // which re-arms. A keyed retry is ENG-715.
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false
@@ -343,11 +345,24 @@ export const sendPayment = async (
           settlementAmount.amount,
         )
         console.log("Response payLightningBreez: ", response)
-        // success: false is payLightningBreez's answer to a rejection it
-        // caught, with the rejection's message, and since ENG-712 to a
-        // payment that resolved Failed, with no message. Both are a Failure
-        // that re-arms (see the note on finish() above), and a Failed payment
-        // shows the screen's copy, as the status read below does.
+        // ENG-720: sdk.sendPayment itself rejected, so the payment may have
+        // left, and the next tap could pay again. No finish(): inFlightRef
+        // and hasAttemptedSend keep the true set above, so Confirm stays
+        // disarmed and a second call comes back ignored. The user gets the
+        // history message, the answer the GraphQL branch gives an outcome it
+        // cannot prove, and never response.error, the SDK's raw message.
+        if (!response.success && response.outcomeUnknown) {
+          return {
+            status: PaymentSendResult.Failure,
+            errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+          }
+        }
+        // Any other success: false is a known outcome, and nothing went out:
+        // payLightningBreez's answer to a refusal before the dispatch, with
+        // the refusal's message, or since ENG-712 to a payment that resolved
+        // Failed, with no message. Both are a Failure that re-arms (see the
+        // note on finish() above), and a Failed payment shows the screen's
+        // copy, as the status read below does.
         if (!response.success) {
           return finish({
             status: PaymentSendResult.Failure,

@@ -1135,6 +1135,72 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
   })
 })
 
+// ENG-720: a BTC-wallet bolt11 send whose outcome is unknown. In spark-sdk
+// 0.22.3 sdk.sendPayment can reject after the payment left, and the lightning
+// branch re-armed Confirm on that, so the next tap could pay again. It now
+// answers with the history message and keeps Confirm disarmed. These cases
+// have their own describe only to keep the BtcRail one under the
+// max-lines-per-function lint limit.
+describe("sendPayment: a BTC-wallet bolt11 send whose outcome is unknown (ENG-720)", () => {
+  // Each call of `send` is one tap on the same state, so a case can tap twice.
+  const bolt11Sender = () => {
+    const ctx = setup()
+    const graphqlSend = jest.fn()
+    const paymentDetail = createAmountLightningPaymentDetails({
+      paymentRequest: INVOICE,
+      paymentRequestAmount: testAmount,
+      convertMoneyAmount: convertMoneyAmountMock,
+      sendingWalletDescriptor: BTC,
+    })
+    const send = () =>
+      sendPayment(
+        { sendPaymentMutation: graphqlSend, paymentDetail },
+        ctx.deps,
+        ctx.state,
+      )
+    return { ...ctx, graphqlSend, send }
+  }
+
+  // After the first tap: Confirm is still disarmed, the re-tap that used to
+  // pay a second time comes back ignored, and the invoice went to the rail
+  // once and to GraphQL never. A bolt11 send starts no attempt: it stays
+  // keyless until ENG-715.
+  const expectDisarmedAfterOneSend = async (ctx: ReturnType<typeof bolt11Sender>) => {
+    expect(ctx.state.inFlightRef.current).toBe(true)
+    expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+    await expect(ctx.send()).resolves.toEqual({
+      status: undefined,
+      errorsMessage: undefined,
+      ignored: true,
+    })
+    expect(ctx.rail.payInvoice.mock.calls).toEqual([[INVOICE, testAmount.amount]])
+    expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+    expect(ctx.state.attemptRef.current).toBeNull()
+    expect(ctx.graphqlSend).not.toHaveBeenCalled()
+    expect(ctx.mutate).not.toHaveBeenCalled()
+  }
+
+  // payLightningBreez's answer for a rejection from sdk.sendPayment itself.
+  // `error` is the SDK's own message, which the screen must never show.
+  it("an outcomeUnknown answer is a Failure with the history message, never the SDK's, and stays disarmed", async () => {
+    const ctx = bolt11Sender()
+    ctx.rail.payInvoice.mockResolvedValueOnce({
+      success: false,
+      error: "SdkError.SparkError",
+      outcomeUnknown: true,
+    })
+
+    const outcome = await ctx.send()
+
+    expect(outcome).toEqual({
+      status: PaymentSendResult.Failure,
+      errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+    })
+    expect(outcome.errorsMessage).not.toContain("SdkError")
+    await expectDisarmedAfterOneSend(ctx)
+  })
+})
+
 describe("sendPayment: the ENG-533 attempt lifecycle", () => {
   const usdInvoice = () =>
     createAmountLightningPaymentDetails({
