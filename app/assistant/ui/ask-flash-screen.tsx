@@ -237,9 +237,12 @@ const PriceAnswer: React.FC<{ payload: PricePayload }> = ({ payload }) => {
           amountInMajorUnits: perBitcoin / 100,
           currency: payload.currency,
         })
+  // The title says what it is; the figure is one bitcoin's price.
   return (
     <Answer title={LL.common.bitcoinPrice()} testID="ask-flash-price">
-      <AnswerRow label="1 BTC" value={value} testID="ask-flash-price-value" />
+      <Text type="h2" bold testID="ask-flash-price-value">
+        {value}
+      </Text>
     </Answer>
   )
 }
