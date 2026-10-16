@@ -1,6 +1,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
+import { appDir, sourcesUnder, specifiers } from "./import-scan"
+
 /**
  * app/assistant/ is a leaf (docs/ai-assistant-tool-registry.md §2): it
  * imports the rest of the app, and nothing outside it imports from it. What
@@ -8,21 +10,7 @@ import * as path from "path"
  * in app/utils/analytics.ts.
  */
 describe("app/assistant", () => {
-  const appDir = path.join(__dirname, "../../app")
   const assistantDir = path.join(appDir, "assistant")
-
-  /** Every module an import, export-from or require in `source` names. */
-  const specifiers = (source: string): string[] => {
-    const found: string[] = []
-    const pattern =
-      /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']([^"']+)["']/gm
-    let match = pattern.exec(source)
-    while (match) {
-      found.push(match[1])
-      match = pattern.exec(source)
-    }
-    return found
-  }
 
   const intoAssistant = (file: string, specifier: string): boolean => {
     if (specifier === "@app/assistant" || specifier.startsWith("@app/assistant/")) {
@@ -34,11 +22,9 @@ describe("app/assistant", () => {
   }
 
   it("is imported by nothing outside it", () => {
-    const sources = fs
-      .readdirSync(appDir, { encoding: "utf8", recursive: true })
-      .filter((file) => /\.tsx?$/.test(file))
-      .map((file) => path.join(appDir, file))
-      .filter((file) => !file.startsWith(assistantDir + path.sep))
+    const sources = sourcesUnder(appDir).filter(
+      (file) => !file.startsWith(assistantDir + path.sep),
+    )
     // The scan reached the app, not an empty directory.
     expect(sources.length).toBeGreaterThan(100)
 

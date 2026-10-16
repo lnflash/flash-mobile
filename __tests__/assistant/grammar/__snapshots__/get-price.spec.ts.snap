@@ -1,0 +1,40 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the grammar on getPrice, over the tuning corpus resolves the corpus as the snapshot records 1`] = `
+"en/USD "price" -> getPrice {}
+en/JMD "bitcoin price today?" -> getPrice {}
+en/USD "the BTC price" -> getPrice {}
+en/JMD "price of btc" -> getPrice {}
+en/USD "what's the price of bitcoin" -> getPrice {}
+en/JMD "what is the bitcoin price" -> getPrice {}
+en/USD "whats the btc price today" -> getPrice {}
+en/JMD "how much is a bitcoin" -> getPrice {}
+en/USD "how much is one bitcoin" -> getPrice {}
+en/JMD "how much is btc" -> getPrice {}
+en/USD "how much does bitcoin cost" -> getPrice {}
+en/JMD "what's btc worth" -> getPrice {}
+en/USD "what is bitcoin worth" -> getPrice {}
+en/JMD "bitcoin rate" -> getPrice {}
+en/USD "btc rate" -> getPrice {}
+en/JMD "what's the rate" -> getPrice {}
+en/USD "current bitcoin price" -> getPrice {}
+en/JMD "bitcoin price now" -> getPrice {}
+en/USD "what's bitcoin trading at" -> getPrice {}
+en/JMD "what is bitcoin at" -> getPrice {}
+en/USD "value of bitcoin" -> getPrice {}
+en/JMD "how much for one bitcoin" -> getPrice {}
+en/USD "price of 1 btc" -> getPrice {}
+en/JMD "btc price in usd" -> getPrice {"currency":"USD"}
+en/USD "bitcoin price in eur" -> getPrice {"currency":"EUR"}
+en/JMD "price in jmd" -> getPrice {"currency":"JMD"}
+en/USD "what's the bitcoin exchange rate" -> getPrice {}
+jm/JMD "wah di price" -> getPrice {}
+jm/JMD "wah di btc price" -> getPrice {}
+jm/JMD "how much bitcoin cost" -> getPrice {}
+jm/JMD "how much fi a bitcoin" -> getPrice {}
+jm/JMD "wah bitcoin a sell fa" -> getPrice {}
+jm/JMD "wah bitcoin deh pon" -> getPrice {}
+jm/JMD "wah di rate" -> getPrice {}
+jm/JMD "bitcoin price inna usd" -> getPrice {"currency":"USD"}
+jm/JMD "how much one bitcoin cost now" -> getPrice {}"
+`;

@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the grammar on prepareReceive, over the tuning corpus resolves the corpus as the snapshot records 1`] = `
+"en/USD "receive $20" -> prepareReceive {"amount":"20","currency":"USD"}
+en/USD "receive 20 dollars" -> prepareReceive {"amount":"20","currency":"USD"}
+en/USD "request $8" -> prepareReceive {"amount":"8","currency":"USD"}
+en/JMD "request 1500" -> prepareReceive {"amount":"1500"}
+en/USD "invoice" -> prepareReceive {}
+en/JMD "create invoice" -> prepareReceive {}
+en/USD "create an invoice" -> prepareReceive {}
+en/JMD "make a payment request" -> prepareReceive {}
+en/USD "make an invoice for $12" -> prepareReceive {"amount":"12","currency":"USD"}
+en/JMD "create an invoice for 2000" -> prepareReceive {"amount":"2000"}
+en/USD "generate an invoice for 1000 sats" -> prepareReceive {"amount":"0.00001000","currency":"BTC"}
+en/JMD "generate invoice 500 jmd" -> prepareReceive {"amount":"500"}
+en/USD "new invoice" -> prepareReceive {}
+en/JMD "payment request for 3000" -> prepareReceive {"amount":"3000"}
+en/USD "i want to get paid" -> prepareReceive {}
+en/JMD "i want to get paid 2000" -> prepareReceive {"amount":"2000"}
+en/USD "get paid" -> prepareReceive {}
+en/JMD "receive money" -> prepareReceive {}
+en/USD "receive bitcoin" -> prepareReceive {}
+en/JMD "receive payment" -> prepareReceive {}
+en/USD "i want to receive $5" -> prepareReceive {"amount":"5","currency":"USD"}
+en/JMD "i want to receive 800" -> prepareReceive {"amount":"800"}
+en/USD "show qr code" -> prepareReceive {}
+en/JMD "show me my qr code" -> prepareReceive {}
+en/USD "qr code" -> prepareReceive {}
+en/JMD "my qr" -> prepareReceive {}
+en/USD "give me a qr code for $6" -> prepareReceive {"amount":"6","currency":"USD"}
+en/JMD "lightning invoice" -> prepareReceive {}
+en/USD "bitcoin address" -> prepareReceive {"method":"onchain"}
+en/JMD "my btc address" -> prepareReceive {"method":"onchain"}
+en/USD "give me an onchain address" -> prepareReceive {"method":"onchain"}
+en/JMD "show my address" -> prepareReceive {"method":"onchain"}
+en/USD "receive on chain" -> prepareReceive {"method":"onchain"}
+en/JMD "receive to my btc wallet" -> prepareReceive {"wallet":"BTC"}
+en/USD "invoice for my bitcoin wallet" -> prepareReceive {"wallet":"BTC"}
+en/USD "invoice for 2000 sats to my bitcoin wallet" -> prepareReceive {"amount":"0.00002000","currency":"BTC","wallet":"BTC"}
+en/USD "bitcoin wallet address" -> prepareReceive {"method":"onchain","wallet":"BTC"}
+en/USD "request 5 usdt" -> prepareReceive {"amount":"5","currency":"USDT"}
+en/JMD "request 10 usd" -> prepareReceive {"amount":"10","currency":"USD"}
+jm/JMD "mek a invoice" -> prepareReceive {}
+jm/JMD "mek a invoice fi 1000" -> prepareReceive {"amount":"1000"}
+jm/JMD "mi wan receive money" -> prepareReceive {}
+jm/JMD "mi waan get paid" -> prepareReceive {}
+jm/JMD "mi wan get pay 1500" -> prepareReceive {"amount":"1500"}
+jm/JMD "gi mi a invoice" -> prepareReceive {}
+jm/JMD "gi mi a invoice fi 3000" -> prepareReceive {"amount":"3000"}
+jm/JMD "show mi di qr code" -> prepareReceive {}
+jm/JMD "mi qr code" -> prepareReceive {}
+jm/JMD "receive 2000" -> prepareReceive {"amount":"2000"}
+jm/JMD "request 1000 jmd" -> prepareReceive {"amount":"1000"}
+jm/JMD "mi bitcoin address" -> prepareReceive {"method":"onchain"}"
+`;

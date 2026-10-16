@@ -1,0 +1,88 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the grammar on what is no call, over the tuning corpus resolves the corpus as the snapshot records 1`] = `
+"jm/JMD "sen 700 to bob fi lunch" -> miss
+en/JMD "send $20 to bob" -> clarifyAmount
+en/JMD "send alice $5" -> clarifyAmount
+en/JMD "receive $100" -> clarifyAmount
+en/JMD "pay mom 50 dollars" -> clarifyAmount
+en/USD "send bob 10k" -> clarifyAmount
+en/USD "send 2m sats to bob" -> clarifyAmount
+en/USD "send alice 5 thousand" -> clarifyAmount
+en/USD "send a dollar to bob" -> clarifyAmount
+en/USD "send twenty dollars to alice" -> clarifyAmount
+en/USD "send bob money" -> clarifyAmount
+en/USD "pay alice" -> clarifyAmount
+en/USD "send something to mom" -> clarifyAmount
+en/USD "send $5 and $10 to bob" -> clarifyAmount
+en/USD "send 5 usd 10 sats to bob" -> clarifyAmount
+en/USD "send 1.5 sats to bob" -> clarifyAmount
+en/USD "send 5 euros to bob" -> clarifyAmount
+en/USD "request 5k" -> clarifyAmount
+en/USD "send bob 1,00 dollars" -> clarifyAmount
+jm/JMD "sen $500 to bob" -> clarifyAmount
+jm/JMD "sen bob 5 grand" -> clarifyAmount
+jm/JMD "sen tanya 3k" -> clarifyAmount
+jm/JMD "gi mom 10 dollars" -> clarifyAmount
+jm/JMD "sen money to mom" -> clarifyAmount
+jm/JMD "sen five hundred to bob" -> clarifyAmount
+en/USD "send her $5" -> miss
+en/USD "send them 10" -> miss
+en/USD "pay him" -> miss
+en/USD "send him the same" -> miss
+en/USD "do that again" -> miss
+en/USD "send it to bob" -> miss
+en/USD "send bob another $5" -> miss
+en/USD "send bob $5 more" -> miss
+en/USD "pay me $5" -> miss
+en/USD "send me $5" -> miss
+en/USD "send $5 to me" -> miss
+en/USD "send everyone $5" -> miss
+jm/JMD "sen him 500" -> miss
+jm/JMD "gi har 1000" -> miss
+jm/JMD "sen dem di money" -> miss
+jm/JMD "sen it fi mi" -> miss
+jm/JMD "same ting again" -> miss
+en/USD "pay lnbc1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq8rkx3yf5tcsyz3d73gafnh3cax9rn449d9p5uxz9ezhhypd0elx87sjle52x86fux2ypatgddc6k63n7erqz25le42c4u4ecky03ylcqca784w" -> miss
+en/USD "send 10000 sats to bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq" -> miss
+en/USD "send $5 to alice@flashapp.me" -> miss
+en/USD "pay bob@walletofsatoshi.com 1000 sats" -> miss
+en/USD "send to lightning:lnbc1u1pjexample" -> miss
+en/USD "pay bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq" -> miss
+en/USD "send $10 to bob and $5 to alice" -> miss
+en/USD "send $5 to bob, alice and tanya" -> miss
+en/USD "split the bill with bob" -> miss
+en/USD "convert 20 dollars to btc" -> miss
+en/USD "swap to bitcoin" -> miss
+en/USD "move $10 to my bitcoin wallet" -> miss
+en/USD "send $10 to my btc wallet" -> miss
+en/USD "transfer $20 to my bank" -> miss
+en/USD "transfer $20 to my savings" -> miss
+en/USD "cash out" -> miss
+en/USD "withdraw $50" -> miss
+en/USD "top up" -> miss
+en/USD "reload my flashcard" -> miss
+en/USD "send bob $5 next week" -> miss
+en/USD "send bob $5 every month" -> miss
+en/USD "send 10" -> miss
+en/USD "pay $5" -> miss
+en/USD "what can you do" -> miss
+en/USD "hi" -> miss
+en/USD "good morning" -> miss
+en/USD "thank you" -> miss
+en/USD "ok" -> miss
+en/USD "how does bitcoin work" -> miss
+en/USD "why is bitcoin going down" -> miss
+en/USD "what is lightning" -> miss
+en/USD "how do i receive money" -> miss
+en/USD "how much did i spend" -> miss
+en/USD "how much did bob send me" -> miss
+en/USD "can i get a loan" -> miss
+en/USD "set up my pin" -> miss
+en/USD "log out" -> miss
+en/USD "do i have enough to send bob $50" -> miss
+jm/JMD "wah yuh can do" -> miss
+jm/JMD "bless up" -> miss
+jm/JMD "mi wan top up mi card" -> miss
+jm/JMD "how mi fi sen money" -> miss"
+`;

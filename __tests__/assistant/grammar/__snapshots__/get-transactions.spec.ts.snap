@@ -1,0 +1,63 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the grammar on getTransactions, over the tuning corpus resolves the corpus as the snapshot records 1`] = `
+"en/USD "transactions" -> getTransactions {}
+en/JMD "my transactions" -> getTransactions {}
+en/USD "show transactions" -> getTransactions {}
+en/JMD "show me my transactions" -> getTransactions {}
+en/USD "list my transactions" -> getTransactions {}
+en/JMD "recent payments" -> getTransactions {}
+en/USD "my recent transactions" -> getTransactions {}
+en/JMD "history" -> getTransactions {}
+en/USD "payment history" -> getTransactions {}
+en/JMD "my payment history" -> getTransactions {}
+en/USD "show my activity" -> getTransactions {}
+en/JMD "recent activity" -> getTransactions {}
+en/USD "my payments" -> getTransactions {}
+en/JMD "show my payments" -> getTransactions {}
+en/USD "latest transactions" -> getTransactions {}
+en/JMD "show my latest payments" -> getTransactions {}
+en/USD "last 3 transactions" -> getTransactions {"first":3}
+en/JMD "show me my last 20 payments" -> getTransactions {"first":20}
+en/USD "show my last 50 transactions" -> getTransactions {"first":20}
+en/JMD "last five transactions" -> getTransactions {"first":5}
+en/USD "my last transaction" -> getTransactions {"first":1}
+en/JMD "last payment" -> getTransactions {"first":1}
+en/USD "show my last two payments" -> getTransactions {"first":2}
+en/JMD "what did i send" -> getTransactions {"direction":"SEND"}
+en/USD "what did i receive" -> getTransactions {"direction":"RECEIVE"}
+en/JMD "what have i sent" -> getTransactions {"direction":"SEND"}
+en/USD "who sent me money" -> getTransactions {"direction":"RECEIVE"}
+en/JMD "who sent me money recently" -> getTransactions {"direction":"RECEIVE"}
+en/USD "who did i pay" -> getTransactions {"direction":"SEND"}
+en/JMD "money i received" -> getTransactions {"direction":"RECEIVE"}
+en/USD "money i sent" -> getTransactions {"direction":"SEND"}
+en/JMD "sent payments" -> getTransactions {"direction":"SEND"}
+en/USD "received payments" -> getTransactions {"direction":"RECEIVE"}
+en/JMD "outgoing payments" -> getTransactions {"direction":"SEND"}
+en/USD "incoming transactions" -> getTransactions {"direction":"RECEIVE"}
+en/JMD "show my deposits" -> getTransactions {"direction":"RECEIVE"}
+en/USD "my sends" -> getTransactions {"direction":"SEND"}
+en/JMD "what came in" -> getTransactions {"direction":"RECEIVE"}
+en/USD "what have i spent" -> getTransactions {"direction":"SEND"}
+en/JMD "payments from alice" -> getTransactions {"direction":"RECEIVE","query":"alice"}
+en/USD "payments to kemar" -> getTransactions {"direction":"SEND","query":"kemar"}
+en/JMD "transactions with tanya" -> getTransactions {"query":"tanya"}
+en/USD "show my payments to mom" -> getTransactions {"direction":"SEND","query":"mom"}
+en/JMD "show money i received from dad" -> getTransactions {"direction":"RECEIVE","query":"dad"}
+en/USD "what did i send to bob" -> getTransactions {"direction":"SEND","query":"bob"}
+en/JMD "show my last 5 payments to alice" -> getTransactions {"direction":"SEND","first":5,"query":"alice"}
+jm/JMD "mi transactions" -> getTransactions {}
+jm/JMD "show mi mi payments" -> getTransactions {}
+jm/JMD "wah mi sen" -> getTransactions {"direction":"SEND"}
+jm/JMD "wah mi get" -> getTransactions {"direction":"RECEIVE"}
+jm/JMD "who pay mi" -> getTransactions {"direction":"RECEIVE"}
+jm/JMD "who sen mi anyting" -> getTransactions {"direction":"RECEIVE"}
+jm/JMD "show mi wah mi sen" -> getTransactions {"direction":"SEND"}
+jm/JMD "mi last transaction" -> getTransactions {"first":1}
+jm/JMD "show mi di last 10 transaction" -> getTransactions {"first":10}
+jm/JMD "mi payment history" -> getTransactions {}
+jm/JMD "wah come in" -> getTransactions {"direction":"RECEIVE"}
+jm/JMD "payments fi tanya" -> getTransactions {"direction":"SEND","query":"tanya"}
+jm/JMD "payments from mi madda" -> getTransactions {"direction":"RECEIVE","query":"madda"}"
+`;
