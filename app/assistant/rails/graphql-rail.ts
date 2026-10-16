@@ -31,7 +31,11 @@ import {
 //
 // Every read uses an existing generated document and asks the network, not
 // the cache: a balance, a price or a limit the assistant reports has to be
-// the server's current answer.
+// the server's current answer. The one exception is the thread offline
+// (ENG-689, spec §7.2): it reads balances and history through a copy of
+// the rail made with `fetchPolicy: "cache-only"`, and labels what that copy
+// answers as stale. What the cache does not hold is a failed read there,
+// never an empty answer.
 
 export type WalletRow = NonNullable<
   WalletOverviewScreenQuery["me"]
@@ -98,21 +102,41 @@ const signedInUser = <T>(me: T | null | undefined): T => {
 }
 
 /**
+ * Where a rail's reads come from: the network (the default, and the only
+ * source a tool that prepares a payment ever reads), or the cache alone,
+ * for the thread's reads while it is offline (ENG-689).
+ */
+export type GraphqlRailFetchPolicy = "network-only" | "cache-only"
+
+export type GraphqlRailOptions = { fetchPolicy?: GraphqlRailFetchPolicy }
+
+/**
+ * An answer the cache could not give in full: Apollo hands a cache-only
+ * read it does not hold back as partial, with no data, rather than failing.
+ */
+const missedCache = (result: { data?: unknown; partial?: boolean }): boolean =>
+  result.partial === true || result.data === undefined || result.data === null
+
+/**
  * The rail over the app's Apollo client. The client is built inside a React
  * effect (app/graphql/client.tsx), so there is no static one to import: the
  * caller passes it in.
  */
-export const createGraphqlRail = (client: ApolloClient<unknown>): GraphqlRail => {
+export const createGraphqlRail = (
+  client: ApolloClient<unknown>,
+  { fetchPolicy = "network-only" }: GraphqlRailOptions = {},
+): GraphqlRail => {
   const read = async <TData, TVariables extends OperationVariables = OperationVariables>(
     query: DocumentNode,
     variables?: TVariables,
   ): Promise<TData> => {
-    const { data } = await client.query<TData, TVariables>({
+    const result = await client.query<TData, TVariables>({
       query,
       variables,
-      fetchPolicy: "network-only",
+      fetchPolicy,
     })
-    return data
+    if (missedCache(result)) throw new GraphqlRailError("No answer in the cache")
+    return result.data
   }
 
   return {
@@ -154,17 +178,20 @@ export const createGraphqlRail = (client: ApolloClient<unknown>): GraphqlRail =>
     accountDefaultWallet: async (username) => {
       // As the send screens' lazy query does: a username with no account is
       // a GraphQL error and means "no wallet", not a failed read. Network
-      // failures still reject.
-      const { data } = await client.query<
+      // failures still reject, and so does a cache that does not hold it.
+      const result = await client.query<
         AccountDefaultWalletQuery,
         AccountDefaultWalletQueryVariables
       >({
         query: AccountDefaultWalletDocument,
         variables: { username },
-        fetchPolicy: "network-only",
+        fetchPolicy,
         errorPolicy: "all",
       })
-      return data?.accountDefaultWallet ?? null
+      if (fetchPolicy === "cache-only" && missedCache(result)) {
+        throw new GraphqlRailError("No answer in the cache")
+      }
+      return result.data?.accountDefaultWallet ?? null
     },
 
     realtimePrice: async (currency) => {

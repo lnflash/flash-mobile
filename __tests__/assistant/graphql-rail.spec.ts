@@ -12,7 +12,11 @@ import {
   TransactionListForDefaultAccountDocument,
   WalletOverviewScreenDocument,
 } from "@app/graphql/generated"
-import { createGraphqlRail, GraphqlRailError } from "@app/assistant/rails/graphql-rail"
+import {
+  createGraphqlRail,
+  GraphqlRail,
+  GraphqlRailError,
+} from "@app/assistant/rails/graphql-rail"
 
 const fakeClient = () => {
   const query = jest.fn()
@@ -242,6 +246,98 @@ describe("createGraphqlRail", () => {
     await expect(rail.contacts()).resolves.toBe(contacts)
     await expect(rail.businessMapMarkers()).resolves.toBe(markers)
     await expect(rail.accountLimits()).resolves.toBe(limits)
+  })
+})
+
+describe("createGraphqlRail's fetch policy (ENG-689)", () => {
+  // The thread reads balances and history from the cache while it is
+  // offline, through a cache-only copy of the rail, and labels the answer
+  // stale (spec §7.2). Everything else reads the network.
+
+  /** An answer every one of the eight reads can take. */
+  const ANY_ANSWER = {
+    data: {
+      me: {
+        defaultAccount: { wallets, transactions: null, limits: {} },
+        contacts: [],
+      },
+      transactionDetails: { errors: [], transactionDetails: null },
+      accountDefaultWallet: null,
+      realtimePrice: {},
+      businessMapMarkers: [],
+    },
+  }
+
+  /** Each of the rail's eight reads, called once. */
+  const readAll = (rail: GraphqlRail) =>
+    Promise.all([
+      rail.wallets(),
+      rail.transactions({ first: 20 }),
+      rail.transactionDetails("tx-1"),
+      rail.contacts(),
+      rail.accountDefaultWallet("alice"),
+      rail.realtimePrice("JMD"),
+      rail.businessMapMarkers(),
+      rail.accountLimits(),
+    ])
+
+  const policiesAsked = (query: jest.Mock): unknown[] =>
+    query.mock.calls.map(([options]) => options.fetchPolicy)
+
+  it("asks the network for every read unless told otherwise", async () => {
+    const { query, client } = fakeClient()
+    query.mockResolvedValue(ANY_ANSWER)
+
+    await readAll(createGraphqlRail(client))
+
+    expect(policiesAsked(query)).toEqual(Array(8).fill("network-only"))
+  })
+
+  it("asks the network when told to", async () => {
+    const { query, client } = fakeClient()
+    query.mockResolvedValue(ANY_ANSWER)
+
+    await readAll(createGraphqlRail(client, { fetchPolicy: "network-only" }))
+
+    expect(policiesAsked(query)).toEqual(Array(8).fill("network-only"))
+  })
+
+  it("asks only the cache for every read of a cache-only rail", async () => {
+    const { query, mutate, client } = fakeClient()
+    query.mockResolvedValue(ANY_ANSWER)
+
+    await readAll(createGraphqlRail(client, { fetchPolicy: "cache-only" }))
+
+    expect(policiesAsked(query)).toEqual(Array(8).fill("cache-only"))
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it("answers from the cache what the cache holds", async () => {
+    const { query, client } = fakeClient()
+    query.mockResolvedValue({ data: { me: { defaultAccount: { wallets } } } })
+
+    await expect(
+      createGraphqlRail(client, { fetchPolicy: "cache-only" }).wallets(),
+    ).resolves.toEqual(wallets)
+  })
+
+  it("fails a read the cache does not hold, never answering it empty or signed out", async () => {
+    // Apollo answers a cache-only query it cannot fill as partial, with
+    // empty data, rather than failing it.
+    const { query, client } = fakeClient()
+    query.mockResolvedValue({ data: {}, partial: true, loading: false, networkStatus: 7 })
+    const rail = createGraphqlRail(client, { fetchPolicy: "cache-only" })
+
+    await expect(rail.wallets()).rejects.toThrow(
+      new GraphqlRailError("No answer in the cache"),
+    )
+    await expect(rail.transactions({ first: 20 })).rejects.toThrow(
+      new GraphqlRailError("No answer in the cache"),
+    )
+    // Not "no wallet for that username", which is what null would say.
+    await expect(rail.accountDefaultWallet("alice")).rejects.toThrow(
+      new GraphqlRailError("No answer in the cache"),
+    )
   })
 })
 
