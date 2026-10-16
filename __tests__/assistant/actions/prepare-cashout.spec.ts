@@ -314,6 +314,8 @@ describe("prepareCashout's identity as a settlement (spec §5.1)", () => {
     expect(first.dispatch).toEqual({
       paymentDetailHash: expect.stringMatching(/^[0-9a-f]{64}$/),
       match: { kind: "cashout" },
+      // The cash wallet it leaves.
+      sourceWalletCurrency: "USD",
     })
     expect(second.dispatch?.paymentDetailHash).toBe(first.dispatch?.paymentDetailHash)
   })

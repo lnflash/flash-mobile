@@ -206,6 +206,8 @@ describe("prepareGroupSend", () => {
     expect(validateCard(cardOf(action)).valid).toBe(true)
     // Fixed cents to Flash users: the 10-minute cap, the shortest leg's.
     expect(action.expiresAt).toBe(NOW_MS + FIXED_CENT_INTRALEDGER_TTL_MS)
+    // Every leg leaves the cash wallet, whose rows the reconciler reads.
+    expect(action.dispatch?.sourceWalletCurrency).toBe("USD")
     expect(action.dispatch?.match).toEqual({
       kind: "anyOf",
       matches: [

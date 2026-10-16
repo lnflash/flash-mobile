@@ -16,7 +16,7 @@
  */
 import type { TransactionsPayload } from "@app/assistant/registry/projections"
 import type { GraphqlRail } from "@app/assistant/rails/graphql-rail"
-import { btcPayment, fakeGraphqlRail, NOW_MS } from "../assistant/fakes"
+import { btcPayment, fakeGraphqlRail, NOW_MS, page } from "../assistant/fakes"
 
 type SparkModule = typeof import("@app/utils/breez-sdk/spark")
 type ErrorsModule = typeof import("@app/utils/breez-sdk/sdk-errors")
@@ -321,10 +321,14 @@ describe("the BTC wallet switched off (advance mode off)", () => {
     rail,
     getTransactions,
   }: ReturnType<typeof loadWithRail>): Promise<TransactionsPayload> => {
+    // The GraphQL list holds no payments: one empty page. The fake rail has
+    // no default list (an empty one proves nothing to the reconciler).
+    const graphql = fakeGraphqlRail()
+    graphql.transactions.mockResolvedValue(page([]))
     const result = await getTransactions.run(
       {},
       {
-        graphql: fakeGraphqlRail() as unknown as GraphqlRail,
+        graphql: graphql as unknown as GraphqlRail,
         btcRail: rail.breezBtcRail,
         displayCurrency: "USD",
         now: () => NOW_MS,

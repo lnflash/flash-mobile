@@ -540,12 +540,12 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       else unsettled.push(record)
     }
     if (unsettled.length === 0) return undefined
-    // The list reads back only so far (each wallet's newest
-    // RECONCILE_PAGE_SIZE rows, reconcile.ts), so a dispatch older than those
-    // is never settled by it. Once nothing about it can still be on its way,
-    // the user's word that their history does not show the payment clears
-    // it. Without that, every later identical payment (rent, payroll) would
-    // be refused for good.
+    // The list shows one page (each wallet's newest RECONCILE_PAGE_SIZE
+    // rows, reconcile.ts), so a dispatch further back than that is never
+    // settled by it, nor shown absent. Once nothing about it can still be on
+    // its way, the user's word that their history does not show the payment
+    // clears it. Without that, every later identical payment (rent, payroll)
+    // would be refused for good.
     const historyCheckable = unsettled.every(isStale)
     if (!historyCheckable || !historyChecked) {
       return pendingDispatch(requestedId, historyCheckable)
@@ -676,6 +676,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       dispatchedAt,
       lastDispatchedAt: dispatchedAt,
       match: action.dispatch.match,
+      sourceWalletCurrency: action.dispatch.sourceWalletCurrency,
     })
   }
 

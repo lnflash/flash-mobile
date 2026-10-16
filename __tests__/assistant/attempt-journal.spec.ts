@@ -25,6 +25,7 @@ const record = (overrides: Partial<DispatchRecord> = {}): DispatchRecord => ({
   dispatchedAt: T0,
   lastDispatchedAt: T0,
   match: DISPATCH.match,
+  sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
   ...overrides,
 })
 
@@ -88,6 +89,35 @@ describe("the dispatch journal", () => {
     )
     await expect(journal.pending()).resolves.toEqual([
       record({ preparedActionId: "older", lastDispatchedAt: T0 + 150_000 }),
+    ])
+  })
+
+  it("reads a record stored without the paying wallet as one whose wallet is not known, never dropping it", async () => {
+    // Written before the journal kept sourceWalletCurrency. Dropping it would
+    // let its payment go again unreconciled; read with a null wallet, it is
+    // never called absent (reconcile.ts).
+    const storage = memoryStorage()
+    const { sourceWalletCurrency: _absent, ...older } = record({
+      preparedActionId: "older",
+    })
+    const garbled = {
+      ...record({ preparedActionId: "garbled" }),
+      sourceWalletCurrency: 7,
+    }
+    storage.data.set(ATTEMPT_JOURNAL_KEY, JSON.stringify([older, garbled]))
+    const journal = createAttemptJournal({ storage })
+
+    await expect(journal.pending()).resolves.toEqual([
+      record({ preparedActionId: "older", sourceWalletCurrency: null }),
+      record({ preparedActionId: "garbled", sourceWalletCurrency: null }),
+    ])
+
+    // A later write keeps it, as read.
+    await journal.record(record({ preparedActionId: "newer" }))
+    await expect(journal.pending()).resolves.toEqual([
+      record({ preparedActionId: "older", sourceWalletCurrency: null }),
+      record({ preparedActionId: "garbled", sourceWalletCurrency: null }),
+      record({ preparedActionId: "newer" }),
     ])
   })
 
@@ -387,6 +417,7 @@ describe("a dispatch that outlives the app", () => {
         dispatchedAt: T0,
         lastDispatchedAt: T0,
         match: DISPATCH.match,
+        sourceWalletCurrency: "USD",
       },
     ])
     expect(key).toMatch(/^[0-9a-f-]{36}$/)

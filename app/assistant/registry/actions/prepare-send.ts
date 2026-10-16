@@ -99,7 +99,11 @@ export const prepareSendRun = (
       // One AttemptState for this action, made here and handed to every
       // Confirm of it (ENG-533).
       attempt: createAttemptState(),
-      dispatch: { paymentDetailHash: leg.paymentDetailHash, match: leg.match },
+      dispatch: {
+        paymentDetailHash: leg.paymentDetailHash,
+        match: leg.match,
+        sourceWalletCurrency: leg.detail.sendingWalletDescriptor.currency,
+      },
       execute: async ({ attempt, journalDispatch }) =>
         executionOutcomeOf(
           await dispatchSendLeg({ leg, ctx, attempt, journalDispatch }),

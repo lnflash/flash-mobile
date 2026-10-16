@@ -507,6 +507,7 @@ describe("ConfirmPaymentCard after a remount: the executor is the source of trut
       dispatchedAt: T0 - 10 * 60_000,
       lastDispatchedAt: T0 - 10 * 60_000,
       match: DISPATCH.match,
+      sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
     })
     const action = makeAction()
     run.executor.addPrepared(action, "text")

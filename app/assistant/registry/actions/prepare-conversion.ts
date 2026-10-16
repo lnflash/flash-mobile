@@ -205,6 +205,8 @@ export const prepareConversionRun = (
           amount,
         }),
         match: leg.match,
+        // The paying side: the cash wallet, or the BTC wallet.
+        sourceWalletCurrency: leg.detail.sendingWalletDescriptor.currency,
       },
       // Pays the invoice prepare made; makes none.
       execute: async ({ attempt, journalDispatch }) =>

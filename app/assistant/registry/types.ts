@@ -183,12 +183,21 @@ export type TransactionMatch =
 
 /**
  * What the dispatch journal needs to know about an action that moves money:
- * a hash of the payment it makes (hashPaymentDetail) and how to find it in
- * the transaction list.
+ * a hash of the payment it makes (hashPaymentDetail), how to find it in the
+ * transaction list, and which wallet it leaves.
  */
 export type DispatchIdentity = {
   paymentDetailHash: string
   match: TransactionMatch
+  /**
+   * The currency of the wallet the payment leaves (ENG-688): the cash
+   * wallet's (USD, or USDT once the account is cut over) or BTC. Rows in the
+   * transaction list carry no wallet id, and an account holds one cash
+   * wallet per currency, so this names the paying wallet's rows there by
+   * their settlement currency. The list can prove the payment absent only
+   * when it shows that wallet's rows (engine/reconcile.ts).
+   */
+  sourceWalletCurrency: WalletCurrency
 }
 
 /**

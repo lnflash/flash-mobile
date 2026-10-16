@@ -168,6 +168,7 @@ export const prepareCashoutRun = (
           amount,
         }),
         match: { kind: "cashout" },
+        sourceWalletCurrency: cash.currency,
       },
       execute: async ({ journalDispatch }) => {
         // Single use, whatever the first Confirm's outcome.

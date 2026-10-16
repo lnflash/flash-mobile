@@ -1161,6 +1161,7 @@ describe("executor, for the action tier (ENG-688)", () => {
         dispatchedAt: T0 - 10 * 60_000,
         lastDispatchedAt: T0 - 10 * 60_000,
         match: DISPATCH.match,
+        sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
       })
       const action = makeAction()
       executor.addPrepared(action, "text")

@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { sha256 } from "js-sha256"
 
-import type { WalletCurrency } from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 import type { GraphqlMutationFns } from "@app/payments/send-payment"
 import type { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
 import type { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
@@ -36,6 +36,13 @@ export type DispatchRecord = {
   lastDispatchedAt: number
   /** How to find the payment in the transaction list (reconcile.ts). */
   match: TransactionMatch
+  /**
+   * The currency of the wallet the payment left (DispatchIdentity), which
+   * names that wallet's rows in the transaction list. Null for a record
+   * written before the journal kept it: the reconciler cannot tell which
+   * rows are that wallet's, so it never calls its payment absent.
+   */
+  sourceWalletCurrency: WalletCurrency | null
 }
 
 export type AttemptJournal = {
@@ -90,6 +97,11 @@ const isMatch = (value: unknown): value is TransactionMatch => {
   return isSingleMatch(value)
 }
 
+const WALLET_CURRENCIES: readonly unknown[] = Object.values(WalletCurrency)
+
+const isWalletCurrency = (value: unknown): value is WalletCurrency =>
+  WALLET_CURRENCIES.includes(value)
+
 const isRecord = (value: unknown): value is DispatchRecord =>
   isPlainObject(value) &&
   typeof value.preparedActionId === "string" &&
@@ -97,19 +109,26 @@ const isRecord = (value: unknown): value is DispatchRecord =>
   typeof value.paymentDetailHash === "string" &&
   typeof value.dispatchedAt === "number" &&
   typeof value.lastDispatchedAt === "number" &&
-  isMatch(value.match)
+  isMatch(value.match) &&
+  (isWalletCurrency(value.sourceWalletCurrency) || value.sourceWalletCurrency === null)
 
 /**
- * A stored record, or undefined for one the journal cannot use. A record
- * written before lastDispatchedAt existed is read as one with a single
- * dispatch: dropping it would let its payment go again unreconciled.
+ * A stored record, or undefined for one the journal cannot use. Dropping a
+ * record would let its payment go again unreconciled, so a field a record
+ * was written without is read as its absence means: no lastDispatchedAt as
+ * a single dispatch, and no readable sourceWalletCurrency as a paying wallet
+ * not known (null), which the reconciler never calls absent.
  */
 const parseRecord = (value: unknown): DispatchRecord | undefined => {
   if (!isPlainObject(value)) return undefined
-  const record =
-    value.lastDispatchedAt === undefined
-      ? { ...value, lastDispatchedAt: value.dispatchedAt }
-      : value
+  const record = {
+    ...value,
+    lastDispatchedAt:
+      value.lastDispatchedAt === undefined ? value.dispatchedAt : value.lastDispatchedAt,
+    sourceWalletCurrency: isWalletCurrency(value.sourceWalletCurrency)
+      ? value.sourceWalletCurrency
+      : null,
+  }
   return isRecord(record) ? record : undefined
 }
 

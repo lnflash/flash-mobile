@@ -45,6 +45,7 @@ import { memoryStorage } from "../executor-harness"
 import {
   bolt11,
   fakeActionCtx,
+  fundedBefore,
   graphqlTx,
   JMD_PRICE,
   NOW_MS,
@@ -198,7 +199,32 @@ describe("prepareSend to a contact from the cash wallet", () => {
         settlementCurrency: "USD",
         amount: 500,
       },
+      // The wallet it leaves, whose rows the reconciler reads (reconcile.ts).
+      sourceWalletCurrency: "USD",
     })
+  })
+
+  it("names the USDT cash wallet as the paying wallet once the account is cut over", async () => {
+    // The API shows this client the active settlement wallet, USDT after the
+    // cutover, and the send leaves it: its rows, not the legacy USD
+    // wallet's, are the ones the list must show (reconcile.ts).
+    const fake = setup()
+    fake.graphql.wallets.mockResolvedValue([
+      wallet({
+        __typename: "UsdtWallet",
+        id: "my-usdt",
+        walletCurrency: "USDT",
+        balance: 10_000,
+      }),
+      BTC_ROW,
+    ])
+
+    const action = prepared(
+      await run({ payee: "Alice", amount: "5", currency: "USD" }, fake),
+    )
+
+    expect(action.summary).toMatchObject({ sourceWallet: "USDT" })
+    expect(action.dispatch?.sourceWalletCurrency).toBe("USDT")
   })
 
   it("executes through sendPayment, under the action's key, writing the dispatch down first", async () => {
@@ -648,6 +674,7 @@ describe("prepareSend from the BTC wallet", () => {
     // GraphQL list.
     expect(action.expiresAt).toBe(NOW_MS + FEE_PROBE_TTL_MS)
     expect(action.dispatch?.match).toEqual({ kind: "btcRail" })
+    expect(action.dispatch?.sourceWalletCurrency).toBe("BTC")
   })
 
   it("pays through the rail's payLnurl, journaled first, with no memo", async () => {
@@ -1195,10 +1222,13 @@ describe("prepareSend after a lost answer, with the real reconciler", () => {
     run.executor.addPrepared(first, "text")
     await run.executor.executePreparedAction(first.id)
     run.executor.leaveThread("thread-1")
-    // Only a receipt since the dispatch: nothing that could be the send.
+    // Only a receipt since the dispatch, nothing that could be the send, and
+    // the deposit that funded the cash wallet, from before it: the wallet's
+    // rows are read back past the dispatch.
     run.fake.graphql.transactions.mockResolvedValue(
       page([
         { ...landedAsIbexRow(), id: "in", direction: "RECEIVE", settlementAmount: 900 },
+        fundedBefore(NOW_MS, "USD"),
       ]),
     )
 

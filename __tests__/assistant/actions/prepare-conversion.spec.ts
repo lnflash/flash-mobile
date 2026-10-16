@@ -136,6 +136,8 @@ describe("prepareConversion, cash -> BTC (useSwap's prepareUsdToBtc)", () => {
       kind: "lightning",
       paymentHash: paymentHashOf("breez-1"),
     })
+    // It leaves the cash wallet, whose rows the reconciler reads.
+    expect(action.dispatch?.sourceWalletCurrency).toBe("USD")
   })
 
   it("shows what leaves the cash wallet as amount + fee = total, and what reaches the BTC wallet on its own line", async () => {
@@ -313,6 +315,7 @@ describe("prepareConversion, BTC -> cash (useSwap's prepareBtcToUsd)", () => {
     // The cash wallet takes no fee for receiving: no line for what arrives.
     expect(action.summary).not.toHaveProperty("receiveText")
     expect(action.dispatch?.match).toEqual({ kind: "btcRail" })
+    expect(action.dispatch?.sourceWalletCurrency).toBe("BTC")
   })
 
   it("executes the pay leg only, through the rail, journaled first", async () => {

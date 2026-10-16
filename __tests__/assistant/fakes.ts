@@ -8,6 +8,7 @@ import type {
 } from "@app/assistant/engine/telemetry"
 import type {
   GraphqlRail,
+  TransactionPage,
   TransactionRow,
   WalletRow,
 } from "@app/assistant/rails/graphql-rail"
@@ -27,10 +28,17 @@ export type BtcPayment = Awaited<ReturnType<BtcReadRail["listPayments"]>>[number
 
 export type FakeGraphqlRail = { [K in keyof GraphqlRail]: jest.Mock }
 
-/** A GraphQL rail with an empty account; each case overrides what it reads. */
+/**
+ * A GraphQL rail with an empty account; each case overrides what it reads.
+ * The transaction list has no default: lnflash/flash serves an empty list
+ * both for a wallet with no rows and for one it could not read (ENG-725), so
+ * an empty list proves nothing, and a case says what the list shows.
+ */
 export const fakeGraphqlRail = (): FakeGraphqlRail => ({
   wallets: jest.fn(async () => []),
-  transactions: jest.fn(async () => ({ rows: [], hasNextPage: false, endCursor: null })),
+  transactions: jest.fn(async () => {
+    throw new Error("transactions not stubbed")
+  }),
   transactionDetails: jest.fn(async () => null),
   contacts: jest.fn(async () => []),
   accountDefaultWallet: jest.fn(async () => null),
@@ -209,6 +217,52 @@ export const page = (
   hasNextPage: next !== undefined,
   endCursor: next ?? null,
 })
+
+/**
+ * The deposit that funded a wallet, a day before `beforeMs`, as lnflash/flash
+ * lists it: an IBEX Lightning receipt with its hash blank. It is a row of that
+ * wallet's, in its currency, that settled before a dispatch at `beforeMs`, so
+ * the list shows the wallet's rows read back past it (reconcile.ts).
+ */
+export const fundedBefore = (
+  beforeMs: number,
+  currency: TransactionRow["settlementCurrency"] = "USD",
+): TransactionRow =>
+  graphqlTx({
+    id: `funded-${currency}`,
+    createdAt: Math.floor(beforeMs / 1000) - 86_400,
+    direction: "RECEIVE",
+    settlementAmount: 10_000,
+    settlementCurrency: currency,
+    initiationVia: { __typename: "InitiationViaLn", paymentHash: "" },
+    settlementVia: { __typename: "SettlementViaLn", paymentSecret: null },
+  })
+
+/** The cursors lnflash/flash takes as `after` (src/graphql/connections.ts:9). */
+export const FLASH_CURSOR = /^[A-Fa-f0-9]{24}$/
+
+/** What lnflash/flash answers an `after` it refuses (connections.ts:171-175). */
+export const FLASH_CURSOR_REFUSED = 'Argument "after" must be a valid cursor'
+
+/**
+ * Account.transactions over a list of `pages`, as lnflash/flash (d1cca3767)
+ * serves it: the first page, with hasNextPage when more follow and its last
+ * row's id as the cursor. That id is an IBEX transaction id, never the 24
+ * hex characters checkedConnectionArgs takes (connections.ts:9,171-175,
+ * consumer-account.ts:185), so a read of the next page is refused as flash
+ * refuses it, until ENG-724.
+ */
+export const flashTransactions =
+  (pages: readonly (readonly TransactionRow[])[]) =>
+  async ({ after }: { first: number; after?: string }): Promise<TransactionPage> => {
+    if (after !== undefined) {
+      if (!FLASH_CURSOR.test(after)) throw new Error(FLASH_CURSOR_REFUSED)
+      throw new Error(`the fake hands out no 24-hex cursor such as ${after}`)
+    }
+    const rows = pages[0] ?? []
+    const last = rows[rows.length - 1]
+    return { rows, hasNextPage: pages.length > 1, endCursor: last ? last.id : null }
+  }
 
 // ---------------------------------------------------------------------------
 // The action tier (ENG-688)

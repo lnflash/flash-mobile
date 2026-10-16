@@ -341,6 +341,8 @@ const prepareGroupRun = (
       dispatch: {
         paymentDetailHash: groupHash(legs),
         match: { kind: "anyOf", matches: preparedLegs.map(({ match }) => match) },
+        // Every leg leaves the cash wallet.
+        sourceWalletCurrency: source.currency,
       },
       execute: async ({ journalDispatch }: ExecuteContext) => {
         // The executor re-prepares an armed action past its expiry, but a
