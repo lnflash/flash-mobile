@@ -460,12 +460,17 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
    * together would otherwise both read a journal without the other's
    * dispatch, and both send. An action that moves no money has no payment
    * and does not queue.
+   *
+   * Either way `confirm` starts on a later microtask, never inside this
+   * call: it may claim an action as in flight (Confirming.claim) before its
+   * first await, and a claim needs the run it belongs to, which
+   * executePreparedAction has only once this call has returned.
    */
   const onePerPayment = <T>(
     payment: string | undefined,
     confirm: () => Promise<T>,
   ): Promise<T> => {
-    if (payment === undefined) return confirm()
+    if (payment === undefined) return Promise.resolve().then(confirm)
     const ahead = paymentQueues.get(payment) ?? Promise.resolve()
     const result = ahead.then(confirm)
     const settled = result.then(

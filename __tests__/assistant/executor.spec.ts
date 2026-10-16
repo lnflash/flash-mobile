@@ -1030,6 +1030,70 @@ describe("executor, for the action tier (ENG-688)", () => {
       expect(fresh.execute).toHaveBeenCalledTimes(2)
     })
 
+    // An action with no dispatch identity moves no money (registry/types.ts),
+    // so its Confirm does not queue behind a payment's: it starts at once.
+    // Past expiry an identical refresh ran a new action in the card's place,
+    // and that action's first run left it to be confirmed again. The card's
+    // next Confirm follows the link and claims that action as in flight
+    // before its first await; the claim must find the run it belongs to, not
+    // throw and disarm an action under which nothing moved.
+    const firstRuns: [string, ExecutionOutcome][] = [
+      [
+        "failed, nothing moved",
+        { status: "failed", replyKey: "Assistant.toolFailed", next: "confirmAgain" },
+      ],
+      [
+        "lost its answer",
+        {
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "retrySameAttempt",
+        },
+      ],
+    ]
+    firstRuns.forEach(([what, first]) =>
+      it(`runs the action in the card's place for an action with no dispatch whose first run ${what}`, async () => {
+        const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined)
+        const { executor, advance } = setupExecutor()
+        const fresh = makeAction({
+          createdAt: T0 + 61_000,
+          dispatch: undefined,
+          execute: jest
+            .fn()
+            .mockResolvedValueOnce(first)
+            .mockResolvedValueOnce({ status: "succeeded" }),
+        })
+        const stale = makeAction({ dispatch: undefined, refresh: refreshingTo(fresh) })
+        executor.addPrepared(stale, "text")
+        advance(61_000)
+        await expect(executor.executePreparedAction(stale.id)).resolves.toEqual({
+          kind: "executed",
+          actionId: fresh.id,
+          replacedActionId: stale.id,
+          outcome: first,
+        })
+
+        await expect(executor.executePreparedAction(stale.id)).resolves.toEqual({
+          kind: "executed",
+          actionId: fresh.id,
+          replacedActionId: stale.id,
+          outcome: { status: "succeeded" },
+        })
+        expect(fresh.execute).toHaveBeenCalledTimes(2)
+        expect(stale.execute).not.toHaveBeenCalled()
+        await expect(executor.canConfirm(stale.id)).resolves.toEqual({
+          enabled: false,
+          state: "sent",
+        })
+        // Nothing above failed: the executor's catch-all never ran.
+        expect(warn).not.toHaveBeenCalledWith(
+          "[assistant] Confirm failed",
+          expect.anything(),
+        )
+        warn.mockRestore()
+      }),
+    )
+
     it("drops the action in a card's place when the card is dismissed, remembering it disarmed", async () => {
       const { executor, advance } = setupExecutor()
       const fresh = makeAction({
