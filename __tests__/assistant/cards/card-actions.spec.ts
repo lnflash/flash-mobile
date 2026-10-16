@@ -130,6 +130,26 @@ describe("afterConfirm", () => {
     }),
   )
 
+  it("offers to prepare the rest of a group whose other legs went, and nothing else (prepareRest)", () => {
+    // The group's refresh prepares only the legs that did not go, and
+    // refuses while any leg's dispatch may have gone
+    // (prepare-group-send.spec.ts): it never prepares what moved again.
+    expect(
+      afterConfirm(
+        executed({
+          status: "unknown",
+          replyKey: "Assistant.groupSendRestExpired",
+          next: "prepareRest",
+        }),
+      ),
+    ).toEqual({
+      replyKey: "Assistant.groupSendRestExpired",
+      done: false,
+      confirmAgain: false,
+      reprepare: true,
+    })
+  })
+
   it("never offers to prepare again after an outcome where money may have moved", () => {
     TABLE.forEach(([, result]) => {
       const mayHaveMoved =

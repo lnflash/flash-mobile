@@ -124,13 +124,39 @@ describe("prepareConversion, cash -> BTC (useSwap's prepareUsdToBtc)", () => {
     })
   })
 
-  it("counts the BTC wallet's receive fee in the fee line, as the conversion screen does", async () => {
+  it("shows what leaves the cash wallet as amount + fee = total, and what reaches the BTC wallet on its own line", async () => {
     const fake = setup()
 
     const action = prepared(await run(CASH_TO_BTC, fake))
 
-    // 3 cents to send, 20 sats (1.26 cents) to receive.
-    expect(action.summary.feeText).toBe("USD 4.26")
+    // $5.00 asked: the invoice's 7,937 whole sats cost the cash wallet 500.031
+    // cents, and the fee to send them 3 more. Fee is only what the cash
+    // wallet pays on top of the amount, so the total is the two, 503.031
+    // cents ($5.03 on screen). The BTC wallet's 20-sat fee for receiving
+    // never leaves the cash wallet: it comes off the 7,937 sats that arrive
+    // (7,917 sats, 498.771 cents), on its own line. Counted in Fee, it made
+    // Amount $5.00, Fee $0.04, Total $5.03.
+    expect(action.summary).toMatchObject({
+      amountText: "USD 500",
+      feeText: "USD 3",
+      totalText: "USD 503.031",
+      receiveText: "USD 498.771 (BTC 7917)",
+      balanceAfterText: "USD 9496",
+    })
+    expect(validateCard(cardOf(action)).valid).toBe(true)
+  })
+
+  it("refuses a conversion the BTC wallet's fee for receiving would swallow", async () => {
+    const fake = setup()
+    fake.btcRail.createInvoice.mockImplementation(async (sats: number) => ({
+      paymentRequest: bolt11({ id: "swallowed", sats, expirySeconds: 3_600 }),
+      fee: BigInt(sats),
+    }))
+
+    await expect(run({ ...CASH_TO_BTC, amount: "0.01" }, fake)).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.amountTooSmall",
+    })
   })
 
   it("holds the card 60 s from the probe and the rate", async () => {
@@ -265,6 +291,8 @@ describe("prepareConversion, BTC -> cash (useSwap's prepareBtcToUsd)", () => {
       expect(fake.actions.feeProbes.lnUsdInvoiceFeeProbe).not.toHaveBeenCalled()
       expect(fake.btcRail.createInvoice).not.toHaveBeenCalled()
       expect(action.summary).toMatchObject({ toWallet: "USD", sourceWallet: "BTC" })
+      // The cash wallet takes no fee for receiving: no line for what arrives.
+      expect(action.summary).not.toHaveProperty("receiveText")
       expect(action.dispatch?.match).toEqual({ kind: "btcRail" })
     })
 

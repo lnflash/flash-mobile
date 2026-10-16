@@ -1,5 +1,6 @@
 import { MAX_PREPARED_PER_THREAD } from "@app/assistant/engine/action-store"
 import type { AuthOrigin } from "@app/assistant/engine/auth-policy"
+import { RETIRED_ACTIONS_REMEMBERED } from "@app/assistant/engine/executor"
 import type { ExecuteContext, ExecutionOutcome } from "@app/assistant/registry/types"
 import { PrepareRefusedError } from "@app/assistant/registry/refusals"
 import {
@@ -56,6 +57,7 @@ describe("executor", () => {
       expect(action.execute).not.toHaveBeenCalled()
       await expect(executor.canConfirm(action.id)).resolves.toEqual({
         enabled: false,
+        state: "gone",
         replyKey: "Assistant.actionNotFound",
       })
     })
@@ -303,7 +305,10 @@ describe("executor", () => {
       const action = makeAction()
       executor.addPrepared(action, "text")
 
-      await expect(executor.canConfirm(action.id)).resolves.toEqual({ enabled: true })
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: true,
+        state: "armed",
+      })
       await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
         kind: "executed",
       })
@@ -339,6 +344,7 @@ describe("executor", () => {
       // The card still renders for review; Confirm is disabled and says why.
       await expect(executor.canConfirm(action.id)).resolves.toEqual({
         enabled: false,
+        state: "armed",
         replyKey: "Assistant.authUnavailable",
       })
       await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
@@ -485,7 +491,10 @@ describe("executor", () => {
       executor.addPrepared(action, "text")
 
       await executor.executePreparedAction(action.id)
-      await expect(executor.canConfirm(action.id)).resolves.toEqual({ enabled: true })
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: true,
+        state: "armed",
+      })
       await executor.executePreparedAction(action.id)
 
       expect(action.execute).toHaveBeenCalledTimes(2)
@@ -524,6 +533,7 @@ describe("executor", () => {
 
       await expect(executor.canConfirm(action.id)).resolves.toEqual({
         enabled: false,
+        state: "disarmed",
         replyKey: "Assistant.checkHistory",
       })
       await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
@@ -731,6 +741,240 @@ describe("executor", () => {
       executor.leaveThread("thread-1")
 
       expect(events.map(({ type }) => type)).not.toContain("clarificationAbandoned")
+    })
+  })
+})
+
+describe("executor, for the action tier (ENG-688)", () => {
+  describe("where a card's action stands (canConfirm, ENG-688)", () => {
+    // A card renders from this, not from its own memory of its last
+    // Confirm, which a remount loses.
+    it("reports an action it holds and would run as armed", async () => {
+      const { executor } = setupExecutor()
+      const action = makeAction()
+      executor.addPrepared(action, "text")
+
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: true,
+        state: "armed",
+      })
+    })
+
+    it("reports a lost answer as unresolved, with its outcome's reply, past expiry too", async () => {
+      const { executor, advance } = setupExecutor()
+      const action = makeAction({
+        execute: executed({
+          status: "unknown",
+          replyKey: "Assistant.groupSendPartial",
+          next: "retrySameAttempt",
+        }),
+      })
+      executor.addPrepared(action, "text")
+      await executor.executePreparedAction(action.id)
+
+      advance(5 * 60_000)
+
+      // Confirm retries the same attempt, so it stays on; the card says why.
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: true,
+        state: "unresolved",
+        replyKey: "Assistant.groupSendPartial",
+      })
+    })
+
+    it("reports an outcome that cannot be retried as disarmed, past expiry too", async () => {
+      const { executor, advance } = setupExecutor()
+      const action = makeAction({
+        execute: executed({
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "checkHistory",
+        }),
+      })
+      executor.addPrepared(action, "text")
+      await executor.executePreparedAction(action.id)
+
+      advance(5 * 60_000)
+
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: false,
+        state: "disarmed",
+        replyKey: "Assistant.checkHistory",
+      })
+    })
+
+    it("reports an action whose payment went as sent, and one it does not hold as gone", async () => {
+      const { executor } = setupExecutor()
+      const sent = makeAction()
+      const dismissed = makeAction()
+      executor.addPrepared(sent, "text")
+      executor.addPrepared(dismissed, "text")
+
+      await executor.executePreparedAction(sent.id)
+      executor.dismiss(dismissed.id)
+
+      await expect(executor.canConfirm(sent.id)).resolves.toEqual({
+        enabled: false,
+        state: "sent",
+      })
+      await expect(executor.canConfirm(dismissed.id)).resolves.toEqual({
+        enabled: false,
+        state: "gone",
+        replyKey: "Assistant.actionNotFound",
+      })
+    })
+
+    it("reports the payment of an identical refresh as sent under the id the card holds too", async () => {
+      const { executor, advance } = setupExecutor()
+      const fresh = makeAction({ createdAt: T0 + 61_000 })
+      const stale = makeAction({ refresh: refreshingTo(fresh) })
+      executor.addPrepared(stale, "text")
+      advance(61_000)
+
+      await expect(executor.executePreparedAction(stale.id)).resolves.toMatchObject({
+        kind: "executed",
+        actionId: fresh.id,
+        replacedActionId: stale.id,
+      })
+
+      await expect(executor.canConfirm(stale.id)).resolves.toMatchObject({
+        state: "sent",
+      })
+      await expect(executor.canConfirm(fresh.id)).resolves.toMatchObject({
+        state: "sent",
+      })
+    })
+
+    it("reports an action let go while its dispatch may have gone as disarmed, never gone", async () => {
+      // Dismissed, evicted by a fourth card, or left with its thread: its
+      // Confirm can no longer run, and its card must never offer Refresh,
+      // which would prepare the payment again (spec §5).
+      const lost = () =>
+        makeAction({
+          execute: executed({
+            status: "unknown",
+            replyKey: "Assistant.checkHistory",
+            next: "retrySameAttempt",
+          }),
+        })
+      const { executor } = setupExecutor()
+      const dismissed = lost()
+      const evicted = lost()
+      const left = makeAction({
+        threadId: "thread-2",
+        execute: executed({
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "checkHistory",
+        }),
+      })
+      const untouched = makeAction({ threadId: "thread-2" })
+      for (const action of [dismissed, evicted, left, untouched]) {
+        executor.addPrepared(action, "text")
+      }
+      await executor.executePreparedAction(dismissed.id)
+      await executor.executePreparedAction(evicted.id)
+      await executor.executePreparedAction(left.id)
+
+      executor.dismiss(dismissed.id)
+      executor.addPrepared(makeAction(), "text")
+      executor.addPrepared(makeAction(), "text")
+      expect(executor.addPrepared(makeAction(), "text")).toEqual([evicted.id])
+      executor.leaveThread("thread-2")
+
+      for (const action of [dismissed, evicted, left]) {
+        await expect(executor.canConfirm(action.id)).resolves.toEqual({
+          enabled: false,
+          state: "disarmed",
+          replyKey: "Assistant.checkHistory",
+        })
+        await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+          kind: "notFound",
+        })
+      }
+      // One let go before anything was sent is simply gone.
+      await expect(executor.canConfirm(untouched.id)).resolves.toMatchObject({
+        state: "gone",
+      })
+    })
+
+    it("reports an action let go while its Confirm ran, to an outcome that may have moved money, as disarmed", async () => {
+      const { executor } = setupExecutor()
+      let answer: (outcome: ExecutionOutcome) => void = () => undefined
+      const action = makeAction({
+        execute: jest.fn(
+          () =>
+            new Promise<ExecutionOutcome>((resolve) => {
+              answer = resolve
+            }),
+        ),
+      })
+      executor.addPrepared(action, "text")
+      const confirming = executor.executePreparedAction(action.id)
+      await new Promise((resolve) => {
+        setImmediate(resolve)
+      })
+
+      executor.leaveThread(action.threadId)
+      answer({
+        status: "unknown",
+        replyKey: "Assistant.checkHistory",
+        next: "checkHistory",
+      })
+      await confirming
+
+      await expect(executor.canConfirm(action.id)).resolves.toEqual({
+        enabled: false,
+        state: "disarmed",
+        replyKey: "Assistant.checkHistory",
+      })
+    })
+
+    it(`remembers the newest ${RETIRED_ACTIONS_REMEMBERED} sent actions only`, async () => {
+      const { executor } = setupExecutor()
+      const actions = Array.from({ length: RETIRED_ACTIONS_REMEMBERED + 1 }, () =>
+        makeAction(),
+      )
+      for (const action of actions) {
+        executor.addPrepared(action, "text")
+        await executor.executePreparedAction(action.id)
+      }
+
+      await expect(executor.canConfirm(actions[0].id)).resolves.toMatchObject({
+        state: "gone",
+      })
+      await expect(executor.canConfirm(actions[1].id)).resolves.toMatchObject({
+        state: "sent",
+      })
+    })
+  })
+
+  describe("an outcome whose rest needs a new action", () => {
+    it("retires an action whose rest needs a new one, keeping its record (prepareRest)", async () => {
+      const { executor, journal } = setupExecutor()
+      const action = makeAction({
+        execute: jest.fn(async ({ journalDispatch }: ExecuteContext) => {
+          await journalDispatch("k1")
+          return {
+            status: "unknown",
+            replyKey: "Assistant.groupSendRestExpired",
+            next: "prepareRest",
+          } as const
+        }),
+      })
+      executor.addPrepared(action, "text")
+
+      await executor.executePreparedAction(action.id)
+
+      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+        kind: "notFound",
+      })
+      expect(action.execute).toHaveBeenCalledTimes(1)
+      // What went keeps its record: the same payment from another card is
+      // reconciled against it before it can go.
+      await expect(journal.pending()).resolves.toEqual([
+        expect.objectContaining({ preparedActionId: action.id }),
+      ])
     })
   })
 })

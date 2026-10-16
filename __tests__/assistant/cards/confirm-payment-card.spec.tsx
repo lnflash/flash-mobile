@@ -6,9 +6,12 @@ jest.mock("@app/i18n/i18n-react", () => {
   return { useI18nContext: () => ({ LL: i18n("en") }) }
 })
 
+import type { CardActions } from "@app/assistant/cards/card-actions"
 import { ConfirmPaymentCard } from "@app/assistant/cards/ConfirmPaymentCard"
 import { confirmPaymentFixture } from "@app/assistant/cards/fixtures"
-import type { CanConfirm, ConfirmResult } from "@app/assistant/engine/executor"
+import type { CanConfirm, ConfirmResult, Executor } from "@app/assistant/engine/executor"
+import type { ExecutionOutcome } from "@app/assistant/registry/types"
+import { makeAction, setupExecutor } from "../executor-harness"
 import { en, fakeActions, flush, renderCard } from "./render-card"
 
 const ID = confirmPaymentFixture.preparedActionId
@@ -105,7 +108,7 @@ describe("ConfirmPaymentCard", () => {
     fireEvent.press(confirmButton(screen))
     expect(actions.executePreparedAction).not.toHaveBeenCalled()
 
-    await act(async () => answer({ enabled: true }))
+    await act(async () => answer({ enabled: true, state: "armed" }))
     expect(confirmButton(screen)).not.toBeDisabled()
     await flush()
   })
@@ -113,7 +116,9 @@ describe("ConfirmPaymentCard", () => {
   it("disables Confirm, saying why, without an auth method", async () => {
     const { screen, actions } = show(
       confirmPaymentFixture,
-      fakeActions({ can: { enabled: false, replyKey: "Assistant.authUnavailable" } }),
+      fakeActions({
+        can: { enabled: false, state: "armed", replyKey: "Assistant.authUnavailable" },
+      }),
     )
 
     expect(await screen.findByText(en.Assistant.authUnavailable())).toBeTruthy()
@@ -241,6 +246,22 @@ describe("ConfirmPaymentCard", () => {
     await flush()
   })
 
+  it("shows what reaches the other wallet on its own labeled line, for a conversion", async () => {
+    const { screen } = show({
+      ...confirmPaymentFixture,
+      payeeLabel: "BTC",
+      payeeUsername: undefined,
+      toWallet: "BTC",
+      receiveText: "$4.99 (7,917 sats)",
+    })
+    await flush()
+
+    expect(screen.getByTestId("assistant-card-receive").props.accessibilityLabel).toBe(
+      `${en.AssistantCards.youReceive()}, $4.99 (7,917 sats)`,
+    )
+    await flush()
+  })
+
   it("names the user's own wallet for a conversion, with no username", async () => {
     const { screen } = show({
       ...confirmPaymentFixture,
@@ -271,6 +292,137 @@ describe("ConfirmPaymentCard", () => {
       expect(screen.getByText(en.AssistantCards.cardUnavailable())).toBeTruthy()
       expect(screen.queryByTestId("assistant-card-confirm-button")).toBeNull()
       expect(actions.canConfirm).not.toHaveBeenCalled()
+      screen.unmount()
+    }
+    await flush()
+  })
+})
+
+describe("ConfirmPaymentCard after a remount: the executor is the source of truth", () => {
+  // A thread row that is virtualized away and back, or a thread re-render,
+  // mounts the card again with nothing remembered. What the card offers then
+  // comes from the executor (canConfirm), never from the card's own state.
+
+  /** The card's two executor calls, wired to a real executor. */
+  const executorActions = (executor: Executor) => {
+    const actions = {
+      canConfirm: (id: string) => executor.canConfirm(id),
+      executePreparedAction: (id: string) => executor.executePreparedAction(id),
+      reprepare: jest.fn(),
+      onResult: jest.fn(),
+    }
+    return actions as typeof actions & CardActions
+  }
+
+  const showOver = (payload: unknown, actions: CardActions) => ({
+    screen: renderCard(<ConfirmPaymentCard payload={payload} actions={actions} />),
+  })
+
+  /** A confirm card for `outcomes`, held by a real executor, confirmed once. */
+  const confirmedOnce = async (...outcomes: ExecutionOutcome[]) => {
+    const run = setupExecutor()
+    const execute = jest.fn(
+      async (): Promise<ExecutionOutcome> => ({ status: "succeeded" }),
+    )
+    outcomes.forEach((outcome) => execute.mockResolvedValueOnce(outcome))
+    const action = makeAction({ execute })
+    run.executor.addPrepared(action, "text")
+    const actions = executorActions(run.executor)
+    const payload = {
+      ...confirmPaymentFixture,
+      preparedActionId: action.id,
+      expiresAt: Date.now() + 60_000,
+    }
+    const first = showOver(payload, actions)
+    await waitFor(() => expect(confirmButton(first.screen)).not.toBeDisabled())
+    fireEvent.press(confirmButton(first.screen))
+    await waitFor(() => expect(actions.onResult).toHaveBeenCalled())
+    first.screen.unmount()
+    // Back past the card's expiry, and past the action's in the executor.
+    run.advance(5 * 60_000)
+    return { ...run, action, actions, stale: { ...payload, expiresAt: Date.now() - 1 } }
+  }
+
+  it("keeps a disarmed action's history notice, past expiresAt: no Refresh, no re-prepare", async () => {
+    const { action, actions, stale } = await confirmedOnce({
+      status: "unknown",
+      replyKey: "Assistant.checkHistory",
+      next: "checkHistory",
+    })
+
+    const { screen } = showOver(stale, actions)
+
+    expect(await screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
+    expect(screen.queryByTestId("assistant-card-reprepare")).toBeNull()
+    expect(confirmButton(screen)).toBeDisabled()
+    fireEvent.press(confirmButton(screen))
+    expect(action.execute).toHaveBeenCalledTimes(1)
+    expect(action.refresh).not.toHaveBeenCalled()
+    expect(actions.reprepare).not.toHaveBeenCalled()
+    await flush()
+  })
+
+  it("keeps a lost answer's retry, past expiresAt: Confirm retries the same attempt, no Refresh", async () => {
+    const { action, actions, stale } = await confirmedOnce({
+      status: "unknown",
+      replyKey: "Assistant.checkHistory",
+      next: "retrySameAttempt",
+    })
+
+    const { screen } = showOver(stale, actions)
+
+    expect(await screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    await waitFor(() => expect(confirmButton(screen)).not.toBeDisabled())
+    fireEvent.press(confirmButton(screen))
+
+    expect(await screen.findByText(en.AssistantCards.legSent())).toBeTruthy()
+    expect(action.execute).toHaveBeenCalledTimes(2)
+    // The retry ran with the action's own attempt: its key, not a new one.
+    expect(action.execute.mock.calls[1][0].attempt).toBe(
+      action.execute.mock.calls[0][0].attempt,
+    )
+    expect(action.refresh).not.toHaveBeenCalled()
+    expect(actions.reprepare).not.toHaveBeenCalled()
+    await flush()
+  })
+
+  it("says a payment that went did, past expiresAt: no Refresh, no Confirm", async () => {
+    const { actions, stale } = await confirmedOnce({ status: "succeeded" })
+
+    const { screen } = showOver(stale, actions)
+
+    expect(await screen.findByText(en.AssistantCards.legSent())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    expect(screen.queryByTestId("assistant-card-confirm-button")).toBeNull()
+    await flush()
+  })
+
+  it("offers Refresh only once the executor says the action is armed, or gone", async () => {
+    for (const state of ["armed", "gone"] as const) {
+      let answer: (value: CanConfirm) => void = () => undefined
+      const actions = fakeActions()
+      actions.canConfirm.mockImplementation(
+        () =>
+          new Promise<CanConfirm>((resolve) => {
+            answer = resolve
+          }),
+      )
+      const { screen } = show(
+        { ...confirmPaymentFixture, expiresAt: Date.now() - 1 },
+        actions,
+      )
+      await flush()
+
+      // Not knowing where the action stands, it offers no Refresh: it fails
+      // closed, as Confirm does.
+      expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
+      expect(confirmButton(screen)).toBeDisabled()
+
+      await act(async () => answer({ enabled: state === "armed", state }))
+      expect(screen.getByTestId("assistant-card-refresh")).toBeTruthy()
       screen.unmount()
     }
     await flush()

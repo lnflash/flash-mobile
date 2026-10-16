@@ -71,7 +71,9 @@ describe("GroupSendSummaryCard", () => {
   it("shows a leg to check in the history, and offers nothing once the executor disarms the card", async () => {
     const { screen } = show(
       withStatuses("success", "unknown", "not_attempted"),
-      fakeActions({ can: { enabled: false, replyKey: "Assistant.checkHistory" } }),
+      fakeActions({
+        can: { enabled: false, state: "disarmed", replyKey: "Assistant.checkHistory" },
+      }),
     )
     await flush()
 
@@ -106,6 +108,44 @@ describe("GroupSendSummaryCard", () => {
 
     expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
     expect(screen.getByText(en.AssistantCards.retryFailed())).toBeTruthy()
+    await flush()
+  })
+
+  it("after a remount with its first payload, past expiresAt, stays the group card while the executor holds the run unresolved", async () => {
+    // The thread re-rendered the card it first showed, every leg ready; the
+    // executor knows a leg went and another lost its answer.
+    const { screen } = show(
+      { ...groupSendFixture, expiresAt: Date.now() - 1 },
+      fakeActions({
+        can: {
+          enabled: true,
+          state: "unresolved",
+          replyKey: "Assistant.groupSendPartial",
+        },
+      }),
+    )
+
+    expect(await screen.findByText(en.Assistant.groupSendPartial())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
+    expect(screen.getByText(en.AssistantCards.retryFailed())).toBeTruthy()
+    await waitFor(() =>
+      expect(screen.getByTestId("assistant-card-confirm-button")).not.toBeDisabled(),
+    )
+    await flush()
+  })
+
+  it("after a remount, past expiresAt, offers no Refresh for a disarmed run", async () => {
+    const { screen } = show(
+      { ...groupSendFixture, expiresAt: Date.now() - 1 },
+      fakeActions({
+        can: { enabled: false, state: "disarmed", replyKey: "Assistant.checkHistory" },
+      }),
+    )
+
+    expect(await screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
+    expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
+    expect(screen.getByTestId("assistant-card-confirm-button")).toBeDisabled()
     await flush()
   })
 

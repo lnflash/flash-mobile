@@ -2352,7 +2352,9 @@ const en: BaseTranslation = {
     groupShareTooSmall: "That amount is too small to split between this many people.",
     cashoutUnavailable: "Settling to a bank isn't available on this account yet.",
     noBankAccount: "Add a bank account in Settings to settle to it.",
-    cashoutFailed: "The settlement didn't go through. Ask again for a new offer."
+    cashoutFailed: "The settlement didn't go through. Ask again for a new offer.",
+    btcOnchainBelowMinimum: "On-chain sends from your BTC wallet need at least 5,500 sats.",
+    groupSendRestExpired: "Some payments didn't go through, and their numbers are out of date. Try again to get new numbers for them."
   },
   AssistantCards: {
     confirmTitle: "Review payment",
@@ -2371,7 +2373,8 @@ const en: BaseTranslation = {
     retryFailed: "Retry failed payments",
     txListTitle: "Payments",
     settleTitle: "Settlement offer",
-    cardUnavailable: "This card can't be shown. Ask again."
+    cardUnavailable: "This card can't be shown. Ask again.",
+    youReceive: "You receive"
   }
 }
 

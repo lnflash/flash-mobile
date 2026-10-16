@@ -5,6 +5,7 @@ import { last4Of } from "@app/components/topup-cashout-flow/use-cashout-accounts
 import { pickDefaultBankAccount } from "@app/screens/topup-cashout-flow/cashout-estimate"
 import { toUsdMoneyAmount } from "@app/types/amounts"
 import type { CardSummary, CashoutOfferCard } from "../../cards/types"
+import { hashCashout } from "../../engine/attempt-journal"
 import { createAttemptState } from "../../engine/executor"
 import {
   AMOUNT_CURRENCIES,
@@ -37,9 +38,20 @@ import { readWallet } from "./shared/wallets"
 // Neither input carries an idempotency key, so the card treats an offer as
 // single use: the first Confirm is the only one, whatever its outcome
 // (decision 5), and a failure means a fresh offer. Since ENG-695 the server
-// refuses a second execution too (OFFER_ALREADY_EXECUTED). The transaction
-// list shows nothing the client could match a settlement to, so a
-// settlement has no dispatch record; ENG-716 owns reconciling one.
+// refuses a second execution of one offer too (OFFER_ALREADY_EXECUTED).
+//
+// Neither guard stops a second offer for the same request, so a settlement
+// takes the per-payment rules of spec §5.1 as a send does. Its identity is
+// the request, not the offer (hashCashout): Confirms of two cards for the
+// same settlement run one after the other, and the second is answered
+// "already sent" once the first went. Every Confirm writes the settlement to
+// the dispatch journal before initiateCashout, so a settlement whose answer
+// was lost blocks the same request afterwards, from a new card too, until
+// it is accounted for. The transaction list shows nothing that says which
+// settlement a row was, so its record reconciles to unknown (match kind
+// `cashout`, as a BTC-rail payment's does): it clears on the user's word
+// after the 24-hour history check, until ENG-716 gives the client a way to
+// match one.
 
 export type PrepareCashoutArgs = {
   /** In display units; with no `currency`, in the account's display currency. */
@@ -149,7 +161,15 @@ export const prepareCashoutRun = (
       expiresAt: timestampToMs(offer.expiresAt),
       summary,
       attempt: createAttemptState(),
-      execute: async () => {
+      dispatch: {
+        paymentDetailHash: hashCashout({
+          walletId: cash.id,
+          bankAccountId: bankAccount.id,
+          amount,
+        }),
+        match: { kind: "cashout" },
+      },
+      execute: async ({ journalDispatch }) => {
         // Single use, whatever the first Confirm's outcome.
         if (confirmed) {
           return {
@@ -159,6 +179,17 @@ export const prepareCashoutRun = (
           }
         }
         confirmed = true
+        // Written down before it goes (spec §5.1, "Process death"). A write
+        // that fails sends nothing, so nothing moved.
+        try {
+          await journalDispatch(null)
+        } catch {
+          return {
+            status: "failed",
+            replyKey: "Assistant.cashoutFailed",
+            next: "reprepare",
+          }
+        }
         try {
           return outcomeOf(
             await ctx.graphqlActions.initiateCashout({

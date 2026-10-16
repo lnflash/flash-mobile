@@ -119,6 +119,44 @@ describe("an earlier dispatch of the same payment, with the real journal and rec
   })
 })
 
+describe("an earlier dispatch, over the rows lnflash/flash lists", () => {
+  // Account.transactions on lnflash/flash main comes from IBEX with every
+  // identifier blank: a Flash-to-Flash send is a Lightning row with
+  // paymentHash "" and no counterparty (get-transactions-for-wallet.ts).
+  const ibexSendSince = (nowMs: number) =>
+    graphqlTx({
+      id: "ibex-send",
+      createdAt: Math.floor(nowMs / 1000) - 60,
+      settlementAmount: -500,
+      initiationVia: { __typename: "InitiationViaLn", paymentHash: "" },
+      settlementVia: { __typename: "SettlementViaLn", paymentSecret: null },
+    })
+
+  it("never calls a lost send absent while the list shows a send since it that names nothing", async () => {
+    const run = setupSendingExecutor()
+    run.intraLedgerUsdPaymentSend.mockImplementation(lostResponse)
+    const a = run.prepare("thread-a")
+    run.executor.addPrepared(a, "text")
+    await run.executor.executePreparedAction(a.id)
+    run.executor.leaveThread("thread-a")
+    run.advance(RECONCILE_MIN_AGE_MS + 60_000)
+    run.graphql.transactions.mockResolvedValue(page([ibexSendSince(run.now())]))
+    run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
+
+    const b = run.prepare("thread-b")
+    run.executor.addPrepared(b, "text")
+
+    await expect(run.executor.executePreparedAction(b.id)).resolves.toEqual({
+      kind: "pendingDispatch",
+      actionId: b.id,
+      replyKey: "Assistant.checkHistory",
+      historyCheckable: false,
+    })
+    expect(run.keysSent()).toHaveLength(1)
+    await expect(run.reconcile.mock.results[0].value).resolves.toBe("unknown")
+  })
+})
+
 describe("an earlier dispatch whose action is still held (spec §5, Idempotency)", () => {
   // A's send lost its answer: A is unresolved, and its own card retries it
   // under its key. B is a new card for the same payment. Five minutes on,

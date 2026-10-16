@@ -38,6 +38,7 @@ const getStories = () => {
     "./app/assistant/cards/ExpiredCard.stories.tsx": require("../app/assistant/cards/ExpiredCard.stories.tsx"),
     "./app/assistant/cards/GroupSendSummaryCard.stories.tsx": require("../app/assistant/cards/GroupSendSummaryCard.stories.tsx"),
     "./app/assistant/cards/InvoiceCard.stories.tsx": require("../app/assistant/cards/InvoiceCard.stories.tsx"),
+    "./app/assistant/cards/PrepareRefusedCard.stories.tsx": require("../app/assistant/cards/PrepareRefusedCard.stories.tsx"),
     "./app/assistant/cards/TxListCard.stories.tsx": require("../app/assistant/cards/TxListCard.stories.tsx"),
     "./app/components/amount-input-screen/amount-input-screen.stories.tsx": require("../app/components/amount-input-screen/amount-input-screen.stories.tsx"),
     "./app/components/amount-input/amount-input.stories.tsx": require("../app/components/amount-input/amount-input.stories.tsx"),

@@ -1,21 +1,32 @@
 import { useCallback, useEffect, useState } from "react"
 
-import type { CanConfirm, ConfirmResult } from "../engine/executor"
+import type { ConfirmResult, ConfirmState } from "../engine/executor"
 import type { AssistantReplyKey } from "../registry/types"
 import { AfterConfirm, afterConfirm, CardActions } from "./card-actions"
 
+/** What the executor says about a card's action, once it has answered. */
+export type ConfirmView = {
+  /** Whether Confirm would run now. */
+  enabled: boolean
+  /** Where the executor has the action; undefined until it answers, or if asking failed. */
+  state?: ConfirmState
+  /** Why Confirm is off, or what an unresolved or disarmed action's last Confirm left the card saying. */
+  replyKey?: AssistantReplyKey
+}
+
 /**
- * Whether the executor would take a Confirm of this card now (canConfirm):
- * it says so, with the reason when it would not (no way to authenticate a
- * voice action, a disarmed card). Asked again after each Confirm. Until it
- * answers, and if it fails, Confirm stays disabled: it fails closed.
+ * Whether the executor would take a Confirm of this card now, and where it
+ * has the action (canConfirm): it says so, with the reason when it would not
+ * (no way to authenticate a voice action, a disarmed card). Asked again
+ * after each Confirm. Until it answers, and if it fails, Confirm stays
+ * disabled: it fails closed.
  */
 export const useCanConfirm = (
   actions: Pick<CardActions, "canConfirm">,
   preparedActionId: string,
   askAgain: unknown,
-): { enabled: boolean; replyKey?: AssistantReplyKey } => {
-  const [answer, setAnswer] = useState<CanConfirm | undefined>(undefined)
+): ConfirmView => {
+  const [answer, setAnswer] = useState<ConfirmView | undefined>(undefined)
 
   useEffect(() => {
     let live = true
@@ -33,10 +44,7 @@ export const useCanConfirm = (
     }
   }, [actions, preparedActionId, askAgain])
 
-  if (!answer) return { enabled: false }
-  return answer.enabled
-    ? { enabled: true }
-    : { enabled: false, replyKey: answer.replyKey }
+  return answer ?? { enabled: false }
 }
 
 /**
@@ -44,6 +52,9 @@ export const useCanConfirm = (
  * nothing else. One run at a time from the card (the executor runs one at a
  * time anyway). `singleUse`: after the first Confirm, whatever its outcome,
  * never again (a settlement offer, decision 5).
+ *
+ * What the card shows comes from the executor (canConfirm), not only from
+ * this card's own memory of its last Confirm, which a remount loses.
  */
 export const useConfirm = (
   actions: CardActions,
@@ -87,8 +98,27 @@ export const useConfirm = (
     submitting,
     /** Confirm is offered and may run now. */
     canPress: !blocked,
-    /** Why Confirm is not available, when the executor said why. */
-    blockedReply: can.enabled ? undefined : can.replyKey,
+    /** Where the executor has the action; undefined until it answers. */
+    state: can.state,
+    /**
+     * What the executor says about the action: why Confirm is not available,
+     * or what an unresolved or disarmed action's last Confirm left it saying.
+     */
+    stateReply: can.replyKey,
     after,
+    /** The action's payment went: after this card's Confirm, or before it remounted. */
+    done: after?.done === true || can.state === "sent",
+    /**
+     * Whether the card may turn into the expired card past expiresAt, with
+     * Refresh. Only for an action the executor holds armed, or holds no
+     * longer, once it has said which, and not while a Confirm runs or after
+     * one answered: an unresolved action retries its own attempt whatever
+     * the time, and a disarmed one offers no re-prepare (spec §5), so their
+     * cards keep the retry or the history notice.
+     */
+    mayExpire:
+      !submitting &&
+      after === undefined &&
+      (can.state === "armed" || can.state === "gone"),
   }
 }

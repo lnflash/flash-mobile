@@ -5,6 +5,7 @@ import {
   expiredFixture,
   groupSendFixture,
   invoiceFixture,
+  prepareRefusedFixture,
   txListFixture,
 } from "@app/assistant/cards/fixtures"
 import { cardOf, validateCard } from "@app/assistant/cards/types"
@@ -17,6 +18,7 @@ const FIXTURES: Record<string, Record<string, unknown>> = {
   clarification: clarificationFixture,
   cashoutOffer: cashoutOfferFixture,
   expired: expiredFixture,
+  prepareRefused: prepareRefusedFixture,
 }
 
 /** The fields a card cannot render without. */
@@ -51,6 +53,7 @@ const REQUIRED: Record<string, string[]> = {
     "preparedActionId",
   ],
   expired: ["preparedActionId"],
+  prepareRefused: ["reason"],
 }
 
 const without = (card: Record<string, unknown>, field: string) => {
@@ -115,6 +118,15 @@ describe("validateCard: every card payload is checked before it renders", () => 
     // A conversion's confirm card names the wallet it pays (ENG-688).
     expect(validateCard({ ...confirmPaymentFixture, toWallet: "BTC" }).valid).toBe(true)
     expect(validateCard({ ...confirmPaymentFixture, toWallet: "EUR" }).valid).toBe(false)
+    // And what reaches that wallet, when its fee for receiving comes off it.
+    expect(
+      validateCard({
+        ...confirmPaymentFixture,
+        toWallet: "BTC",
+        receiveText: "7,917 sats",
+      }).valid,
+    ).toBe(true)
+    expect(validateCard({ ...confirmPaymentFixture, receiveText: "" }).valid).toBe(false)
     // A clarification may name the words it is about (ENG-688).
     expect(validateCard({ ...clarificationFixture, about: "ali" }).valid).toBe(true)
     expect(validateCard({ ...clarificationFixture, about: "" }).valid).toBe(false)
@@ -142,6 +154,15 @@ describe("validateCard: every card payload is checked before it renders", () => 
         legs: [{ ...groupSendFixture.legs[0], status: "maybe" }],
       }),
     ).toMatchObject({ valid: false })
+  })
+
+  it("takes a refused prepare's card for every reason a prepare refuses with, and no other", () => {
+    for (const reason of ["insufficientBalance", "limitExceeded", "notAvailableYet"]) {
+      expect(validateCard({ type: "prepareRefused", reason }).valid).toBe(true)
+    }
+    expect(validateCard({ type: "prepareRefused", reason: "tooRich" })).toMatchObject({
+      valid: false,
+    })
   })
 
   it("refuses a clarification whose prompt is not an Assistant reply key", () => {

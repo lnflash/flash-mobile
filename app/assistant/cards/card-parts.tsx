@@ -167,22 +167,27 @@ export const CardNotice: React.FC<{
   )
 }
 
-/** The templated error card, for a payload that fails validation: never part of a card. */
-export const CardError: React.FC = () => {
-  const { LL } = useI18nContext()
+/** A card that only says what went wrong, read out as an alert. */
+export const CardAlert: React.FC<{ text: string; testID: string }> = ({
+  text,
+  testID,
+}) => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   return (
-    <View
-      style={styles.frame}
-      testID="assistant-card-error"
-      accessible
-      accessibilityRole="alert"
-    >
+    <View style={styles.frame} testID={testID} accessible accessibilityRole="alert">
       <Text type="p2" color={colors.error}>
-        {LL.AssistantCards.cardUnavailable()}
+        {text}
       </Text>
     </View>
+  )
+}
+
+/** The templated error card, for a payload that fails validation: never part of a card. */
+export const CardError: React.FC = () => {
+  const { LL } = useI18nContext()
+  return (
+    <CardAlert text={LL.AssistantCards.cardUnavailable()} testID="assistant-card-error" />
   )
 }
 

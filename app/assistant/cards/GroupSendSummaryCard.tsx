@@ -78,10 +78,15 @@ const GroupSendSummaryCardBody: React.FC<{
   const { LL } = useI18nContext()
   const expired = useExpired(card.expiresAt)
   const confirm = useConfirm(actions, card.preparedActionId)
-  const started = card.legs.some(({ status }) => status !== "pending")
+  // A run that went part way, by the legs this payload shows, or by the
+  // executor, which a remounted card with the first payload has to go by.
+  const started =
+    card.legs.some(({ status }) => status !== "pending") ||
+    confirm.state === "unresolved" ||
+    confirm.state === "disarmed"
   const allSent = card.legs.every(({ status }) => status === "success")
 
-  if (expired && !started && !confirm.submitting && !confirm.after) {
+  if (expired && !started && confirm.mayExpire) {
     return (
       <ExpiredCardView
         preparedActionId={card.preparedActionId}

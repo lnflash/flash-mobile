@@ -1,5 +1,6 @@
 import type { DispatchRecord } from "@app/assistant/engine/attempt-journal"
 import {
+  cannotRuleOut,
   createTransactionListReconciler,
   listCanShow,
   matchesTransaction,
@@ -30,6 +31,11 @@ const record = (
   dispatchedAt: DISPATCHED_AT_MS,
   lastDispatchedAt,
   match,
+})
+
+const onchainVia = (address: string): TransactionRow["initiationVia"] => ({
+  __typename: "InitiationViaOnChain",
+  address,
 })
 
 const lnSend = (overrides: Partial<TransactionRow>) =>
@@ -137,6 +143,116 @@ describe("listCanShow", () => {
     expect(
       listCanShow({ kind: "anyOf", matches: [intraledger, { kind: "btcRail" }] }),
     ).toBe(false)
+  })
+
+  it("is false for a settlement: no row says which settlement it was", () => {
+    expect(listCanShow({ kind: "cashout" })).toBe(false)
+  })
+})
+
+// The rows Account.transactions answers with on lnflash/flash main
+// (d1cca3767, src/app/wallets/get-transactions-for-wallet.ts): every row
+// comes from IBEX with its identifiers blank. A Lightning row has
+// paymentHash "" (:97), an on-chain row address "" (:115), and a type IBEX
+// does not name is an intraledger row with no counterparty (:129). A
+// Flash-to-Flash send is an IBEX Lightning payment
+// (intraledger-usd-payment-send.ts), so it is a Lightning row too. The cases
+// above use rows that carry identifiers, as the schema allows; these are the
+// rows the app actually gets.
+const apiLightningRow = (overrides: Partial<TransactionRow> = {}) =>
+  graphqlTx({
+    id: "ibex-ln",
+    createdAt: DISPATCHED_AT_S + 3,
+    settlementAmount: -500,
+    initiationVia: { __typename: "InitiationViaLn", paymentHash: "" },
+    settlementVia: { __typename: "SettlementViaLn", paymentSecret: null },
+    ...overrides,
+  })
+const apiOnchainRow = (overrides: Partial<TransactionRow> = {}) =>
+  graphqlTx({
+    id: "ibex-onchain",
+    createdAt: DISPATCHED_AT_S + 3,
+    settlementAmount: -500,
+    initiationVia: { __typename: "InitiationViaOnChain", address: "" },
+    settlementVia: { __typename: "SettlementViaOnChain", transactionHash: "" },
+    ...overrides,
+  })
+const apiUnnamedRow = (overrides: Partial<TransactionRow> = {}) =>
+  graphqlTx({
+    id: "ibex-unknown-type",
+    createdAt: DISPATCHED_AT_S + 3,
+    settlementAmount: -500,
+    initiationVia: {
+      __typename: "InitiationViaIntraLedger",
+      counterPartyWalletId: null,
+      counterPartyUsername: null,
+    },
+    settlementVia: {
+      __typename: "SettlementViaIntraLedger",
+      counterPartyWalletId: null,
+      counterPartyUsername: null,
+    },
+    ...overrides,
+  })
+
+const lightning = { kind: "lightning" as const, paymentHash: "hash-1" }
+const onchain = { kind: "onchain" as const, address: "bc1q-1" }
+
+describe("cannotRuleOut: a sent row that might be the payment under no name", () => {
+  it("cannot rule a Lightning row out for an intraledger send: it names no counterparty", () => {
+    expect(cannotRuleOut(intraledger, apiLightningRow())).toBe(true)
+    // Not even one with a hash: the intraledger record knows none to compare.
+    expect(
+      cannotRuleOut(
+        intraledger,
+        apiLightningRow({
+          initiationVia: { __typename: "InitiationViaLn", paymentHash: "some-hash" },
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it("cannot rule a Lightning row with no hash out for a Lightning payment", () => {
+    expect(cannotRuleOut(lightning, apiLightningRow())).toBe(true)
+  })
+
+  it("cannot rule an on-chain row with no address out for an on-chain send", () => {
+    expect(cannotRuleOut(onchain, apiOnchainRow())).toBe(true)
+  })
+
+  it("cannot rule out a row of a type the API could not name, for any kind", () => {
+    for (const match of [intraledger, lightning, onchain]) {
+      expect(cannotRuleOut(match, apiUnnamedRow())).toBe(true)
+    }
+  })
+
+  it("rules out a row that names another payment, or that the payment could never be", () => {
+    // A hash, an address or a counterparty that is not the payment's.
+    expect(cannotRuleOut(lightning, lnSend({}))).toBe(false)
+    expect(
+      cannotRuleOut(onchain, apiOnchainRow({ initiationVia: onchainVia("bc1q-2") })),
+    ).toBe(false)
+    expect(cannotRuleOut(intraledger, graphqlTx({ id: "carol", createdAt: 1 }))).toBe(
+      false,
+    )
+    // A Lightning payment is never an on-chain row, nor an on-chain send a
+    // Lightning one; an intraledger send is never an on-chain row.
+    expect(cannotRuleOut(lightning, apiOnchainRow())).toBe(false)
+    expect(cannotRuleOut(onchain, apiLightningRow())).toBe(false)
+    expect(cannotRuleOut(intraledger, apiOnchainRow())).toBe(false)
+  })
+
+  it("never counts a receive", () => {
+    const received = { direction: "RECEIVE" as const, settlementAmount: 500 }
+    expect(cannotRuleOut(intraledger, apiLightningRow(received))).toBe(false)
+    expect(cannotRuleOut(onchain, apiOnchainRow(received))).toBe(false)
+  })
+
+  it("cannot rule a row out for a group when it could be any one of its legs", () => {
+    const toCarol = { ...intraledger, counterPartyWalletId: "carol-wallet" }
+    const group = { kind: "anyOf" as const, matches: [toCarol, intraledger] }
+
+    expect(cannotRuleOut(group, apiLightningRow())).toBe(true)
   })
 })
 
@@ -316,5 +432,101 @@ describe("createTransactionListReconciler", () => {
     await expect(reconcilerOver([[send()]], old).reconcile(group)).resolves.toBe(
       "settled",
     )
+  })
+
+  it("is always unknown for a settlement, without reading the list (ENG-688)", async () => {
+    const { reconcile, graphql } = reconcilerOver([[]], old + 86_400_000)
+
+    await expect(reconcile(record({ kind: "cashout" }))).resolves.toBe("unknown")
+    expect(graphql.transactions).not.toHaveBeenCalled()
+  })
+
+  describe("over the rows lnflash/flash returns", () => {
+    // The dispatch landed: lnflash/flash lists it as an IBEX row with its
+    // identifiers blank. Calling it absent would let the same payment go
+    // again under a new key (ENG-533).
+    it("never calls an intraledger send absent while a Lightning row since the dispatch could be it", async () => {
+      await expect(
+        reconcilerOver([[apiLightningRow()]], old).reconcile(record()),
+      ).resolves.toBe("unknown")
+      // However long ago, while the row is in the window read.
+      await expect(
+        reconcilerOver([[apiLightningRow()]], old + 86_400_000).reconcile(record()),
+      ).resolves.toBe("unknown")
+    })
+
+    it("never calls a Lightning payment absent while a Lightning row with no hash could be it", async () => {
+      await expect(
+        reconcilerOver([[apiLightningRow()]], old).reconcile(record(lightning)),
+      ).resolves.toBe("unknown")
+    })
+
+    it("never calls an on-chain send absent while an on-chain row with no address could be it", async () => {
+      await expect(
+        reconcilerOver([[apiOnchainRow()]], old).reconcile(record(onchain)),
+      ).resolves.toBe("unknown")
+    })
+
+    it("never calls a group absent while a row could be one of its legs", async () => {
+      const toCarol = { ...intraledger, counterPartyWalletId: "carol-wallet" }
+      const group = record({ kind: "anyOf", matches: [toCarol, intraledger] })
+
+      await expect(
+        reconcilerOver([[apiLightningRow()]], old).reconcile(group),
+      ).resolves.toBe("unknown")
+    })
+
+    it("finds such a row on a later page too", async () => {
+      const receipts = Array.from({ length: 20 }, (_, i) =>
+        apiLightningRow({
+          id: `in-${i}`,
+          createdAt: DISPATCHED_AT_S + 500 - i,
+          direction: "RECEIVE",
+          settlementAmount: 100,
+        }),
+      )
+
+      await expect(
+        reconcilerOver([receipts, [apiLightningRow()]], old).reconcile(record()),
+      ).resolves.toBe("unknown")
+    })
+
+    it("still calls it absent when nothing was sent since the dispatch", async () => {
+      // Receipts, a send that failed, and sends from before the dispatch:
+      // none of them can be the dispatch landing.
+      const rows = [
+        apiLightningRow({ id: "in", direction: "RECEIVE", settlementAmount: 900 }),
+        apiLightningRow({ id: "failed", status: "FAILURE" }),
+        apiLightningRow({ id: "before", createdAt: DISPATCHED_AT_S - 3600 }),
+        apiOnchainRow({ id: "before-onchain", createdAt: DISPATCHED_AT_S - 3600 }),
+      ]
+
+      await expect(reconcilerOver([rows], old).reconcile(record())).resolves.toBe(
+        "absent",
+      )
+    })
+
+    it("rules out a row the payment could never be: an on-chain row for a Lightning payment", async () => {
+      await expect(
+        reconcilerOver([[apiOnchainRow()]], old).reconcile(record(lightning)),
+      ).resolves.toBe("absent")
+      await expect(
+        reconcilerOver([[apiLightningRow()]], old).reconcile(record(onchain)),
+      ).resolves.toBe("absent")
+    })
+
+    it("still settles a payment a row names, should the API name it", async () => {
+      await expect(
+        reconcilerOver(
+          [
+            [
+              apiLightningRow({ id: "other" }),
+              lnSend({ createdAt: DISPATCHED_AT_S + 5 }),
+            ],
+          ],
+          old,
+        ).reconcile(record(lightning)),
+      ).resolves.toBe("settled")
+    })
   })
 })

@@ -5,7 +5,12 @@ import {
   ObjectSchema,
   Validator,
 } from "../engine/schema-validator"
-import type { ClarificationCard, PreparedAction } from "../registry/types"
+import { PREPARE_REFUSAL_REPLY } from "../registry/refusals"
+import type {
+  ClarificationCard,
+  PrepareRefusalCard,
+  PreparedAction,
+} from "../registry/types"
 
 // The action cards (docs/ai-assistant-tool-registry.md §6): the boundary the
 // model's words never cross. Every number on a card is text the tool
@@ -41,6 +46,13 @@ export type ConfirmPaymentCard = {
    * that wallet's currency.
    */
   toWallet?: CardWallet
+  /**
+   * What reaches that wallet, when it is not the amount: a conversion to
+   * the BTC wallet arrives less the wallet's own fee for receiving. It is
+   * its own line, so amount and fee still add up to the total that leaves
+   * the source wallet.
+   */
+  receiveText?: string
   /** The memo the payment carries, when it carries one. */
   memo?: string
   expiresAt: number
@@ -115,6 +127,9 @@ export type ActionCard =
   | ClarificationCard
   | CashoutOfferCard
   | ExpiredCard
+  // The templated error card for a refused prepare (spec §5.1): what runTool
+  // answers a shortfall, a limit or a gated branch with (registry/refusals.ts).
+  | PrepareRefusalCard
 
 export type CardType = ActionCard["type"]
 
@@ -150,6 +165,7 @@ const SCHEMAS: Record<CardType, ObjectSchema> = {
       balanceAfterText: text,
       sourceWallet: wallet,
       toWallet: wallet,
+      receiveText: text,
       memo: text,
       expiresAt: expiry,
       preparedActionId: text,
@@ -258,6 +274,14 @@ const SCHEMAS: Record<CardType, ObjectSchema> = {
     "type",
     "preparedActionId",
   ]),
+  prepareRefused: closed(
+    {
+      type: { enum: ["prepareRefused"] },
+      // Every reason a prepare can refuse with, each with its own reply.
+      reason: { enum: Object.keys(PREPARE_REFUSAL_REPLY) },
+    },
+    ["type", "reason"],
+  ),
 }
 
 // Compiled once, when the module loads: a schema the validator cannot

@@ -6,7 +6,7 @@ import type { CardActions } from "./card-actions"
 // and after. Not used by the app.
 
 export const storyActions = ({
-  can = { enabled: true },
+  can = { enabled: true, state: "armed" },
   result,
 }: {
   can?: CanConfirm

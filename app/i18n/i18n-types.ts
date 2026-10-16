@@ -7807,6 +7807,14 @@ type RootTranslation = {
 		 * T​h​e​ ​s​e​t​t​l​e​m​e​n​t​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​.​ ​A​s​k​ ​a​g​a​i​n​ ​f​o​r​ ​a​ ​n​e​w​ ​o​f​f​e​r​.
 		 */
 		cashoutFailed: string
+		/**
+		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​5​,​5​0​0​ ​s​a​t​s​.
+		 */
+		btcOnchainBelowMinimum: string
+		/**
+		 * S​o​m​e​ ​p​a​y​m​e​n​t​s​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​,​ ​a​n​d​ ​t​h​e​i​r​ ​n​u​m​b​e​r​s​ ​a​r​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.​ ​T​r​y​ ​a​g​a​i​n​ ​t​o​ ​g​e​t​ ​n​e​w​ ​n​u​m​b​e​r​s​ ​f​o​r​ ​t​h​e​m​.
+		 */
+		groupSendRestExpired: string
 	}
 	AssistantCards: {
 		/**
@@ -7878,6 +7886,10 @@ type RootTranslation = {
 		 * T​h​i​s​ ​c​a​r​d​ ​c​a​n​'​t​ ​b​e​ ​s​h​o​w​n​.​ ​A​s​k​ ​a​g​a​i​n​.
 		 */
 		cardUnavailable: string
+		/**
+		 * Y​o​u​ ​r​e​c​e​i​v​e
+		 */
+		youReceive: string
 	}
 }
 
@@ -15495,6 +15507,14 @@ export type TranslationFunctions = {
 		 * The settlement didn't go through. Ask again for a new offer.
 		 */
 		cashoutFailed: () => LocalizedString
+		/**
+		 * On-chain sends from your BTC wallet need at least 5,500 sats.
+		 */
+		btcOnchainBelowMinimum: () => LocalizedString
+		/**
+		 * Some payments didn't go through, and their numbers are out of date. Try again to get new numbers for them.
+		 */
+		groupSendRestExpired: () => LocalizedString
 	}
 	AssistantCards: {
 		/**
@@ -15565,6 +15585,10 @@ export type TranslationFunctions = {
 		 * This card can't be shown. Ask again.
 		 */
 		cardUnavailable: () => LocalizedString
+		/**
+		 * You receive
+		 */
+		youReceive: () => LocalizedString
 	}
 }
 

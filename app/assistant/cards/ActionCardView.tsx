@@ -8,6 +8,7 @@ import { ConfirmPaymentCard } from "./ConfirmPaymentCard"
 import { ExpiredCard } from "./ExpiredCard"
 import { GroupSendSummaryCard } from "./GroupSendSummaryCard"
 import { InvoiceCard } from "./InvoiceCard"
+import { PrepareRefusedCard } from "./PrepareRefusedCard"
 import { TxListCard } from "./TxListCard"
 import { validateCard } from "./types"
 
@@ -58,5 +59,7 @@ export const ActionCardView: React.FC<ActionCardViewProps> = ({
       return <CashoutOfferCard payload={card} actions={actions} />
     case "expired":
       return <ExpiredCard payload={card} actions={actions} />
+    case "prepareRefused":
+      return <PrepareRefusedCard payload={card} />
   }
 }

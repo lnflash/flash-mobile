@@ -1,6 +1,7 @@
 import {
   journaledBtcRail,
   journaledSendDeps,
+  UNRECORDED_ONCHAIN_SEND,
 } from "@app/assistant/registry/actions/shared/journal"
 import type { BtcRail } from "@app/payments/btc-rail"
 import { fakeBtcRail, fakeSendTriggers } from "../fakes"
@@ -9,7 +10,8 @@ describe("journaledBtcRail", () => {
   const sends: [keyof BtcRail, unknown[]][] = [
     ["payInvoice", ["lnbc1", 2100]],
     ["payLnurl", ["alice@flashapp.me", 2100, ""]],
-    ["payOnchain", ["bc1q", 6000, "fast"]],
+    // The attempt's key (ENG-714) reaches the rail with the rest.
+    ["payOnchain", ["bc1q", 6000, "fast", "attempt-key"]],
   ]
 
   sends.forEach(([method, args]) => {
@@ -31,20 +33,46 @@ describe("journaledBtcRail", () => {
       expect(order).toEqual(["journal:null", "send"])
       expect((rail[method] as jest.Mock).mock.calls[0]).toEqual(args)
     })
+  })
 
-    it(`sends nothing through ${method} when the dispatch cannot be written down`, async () => {
-      const rail = fakeBtcRail()
-      const journal = jest.fn(async () => {
-        throw new Error("disk full")
-      })
+  // A write that fails sends nothing, and says so as the send's own wrapper
+  // reports a refusal before its dispatch, so sendPayment reads it as one.
+  sends
+    .filter(([method]) => method !== "payOnchain")
+    .forEach(([method, args]) =>
+      it(`sends nothing through ${method} when the dispatch cannot be written down`, async () => {
+        const rail = fakeBtcRail()
+        const journal = jest.fn(async () => {
+          throw new Error("disk full")
+        })
 
-      const call = journaledBtcRail(rail as unknown as BtcRail, journal)[method] as (
-        ...a: unknown[]
-      ) => Promise<unknown>
+        const call = journaledBtcRail(rail as unknown as BtcRail, journal)[method] as (
+          ...a: unknown[]
+        ) => Promise<unknown>
 
-      await expect(call(...args)).rejects.toThrow("disk full")
-      expect(rail[method]).not.toHaveBeenCalled()
+        await expect(call(...args)).rejects.toThrow("disk full")
+        expect(rail[method]).not.toHaveBeenCalled()
+      }),
+    )
+
+  it("sends nothing through payOnchain when the dispatch cannot be written down, and answers the refusal instead of rejecting", async () => {
+    // Since ENG-714 sendPayment keeps Confirm disarmed on any rejection out of
+    // payOnchain, as a withdrawal that may have left; payOnchainBreez answers
+    // every refusal before its dispatch with success: false (spec v0.2.10 §5).
+    const rail = fakeBtcRail()
+    const journal = jest.fn(async () => {
+      throw new Error("disk full")
     })
+
+    await expect(
+      journaledBtcRail(rail as unknown as BtcRail, journal).payOnchain(
+        "bc1q",
+        6000,
+        "medium",
+        "attempt-key",
+      ),
+    ).resolves.toEqual({ success: false, error: UNRECORDED_ONCHAIN_SEND })
+    expect(rail.payOnchain).not.toHaveBeenCalled()
   })
 
   it("passes the reads and the prepare members through untouched", async () => {

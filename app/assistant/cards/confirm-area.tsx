@@ -30,12 +30,15 @@ export const ConfirmArea: React.FC<{
   testID = "assistant-card-confirm-button",
 }) => {
   const { LL } = useI18nContext()
-  const { after, blockedReply, canPress, submitting } = confirm
+  const { after, stateReply, canPress, submitting, state, done } = confirm
 
-  if (after?.done) {
+  if (done) {
     return <CardNotice text={LL.AssistantCards.legSent()} testID="assistant-card-done" />
   }
-  const reply = after?.replyKey ?? blockedReply
+  // What this card's last Confirm did, or, with none to remember (before the
+  // first, or after a remount), what the executor says about the action.
+  const reply = after?.replyKey ?? stateReply
+  const mayHaveMoved = state === "unresolved" || state === "disarmed"
   const offerConfirm = !after || after.confirmAgain
   const offerReprepare = after?.reprepare === true && actions.reprepare !== undefined
   return (
@@ -43,7 +46,7 @@ export const ConfirmArea: React.FC<{
       {reply ? (
         <CardNotice
           text={replyText(LL, reply)}
-          tone={after ? "error" : "info"}
+          tone={after || mayHaveMoved ? "error" : "info"}
           testID="assistant-card-reply"
         />
       ) : null}

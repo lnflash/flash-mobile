@@ -92,7 +92,7 @@ export type ClarificationCard = {
  * - insufficientBalance, limitExceeded: the affordability check (spec §5.1).
  * - notAvailableYet: a payment the assistant may not dispatch yet because
  *   the branch it would take is gated on an open bug (ENG-688: BTC-wallet
- *   bolt11 sends until ENG-720, BTC-wallet on-chain sends until ENG-714).
+ *   bolt11 sends until ENG-720; actions/shared/gates.ts).
  */
 export type PrepareRefusalReason =
   | "insufficientBalance"
@@ -140,8 +140,14 @@ export type ActionSummary = { readonly [field: string]: SummaryValue }
  * How one dispatched payment shows up in the account's transaction list, so
  * a dispatch whose outcome was lost (the app was killed mid-send) can be
  * reconciled after a relaunch (spec §5.1, "Process death"). Each GraphQL
- * kind names an identifier the transaction rows carry. `amount` is in the
- * settlement currency's minor units, unsigned.
+ * kind names an identifier the transaction rows have a field for. `amount`
+ * is in the settlement currency's minor units, unsigned.
+ *
+ * On lnflash/flash main no row fills those fields yet (every
+ * Lightning row has paymentHash "", every on-chain row address "", and no
+ * row names an intraledger counterparty), so a sent row since the dispatch
+ * can never be ruled out, and the reconciler answers "unknown" while there
+ * is one (engine/reconcile.ts).
  *
  * `btcRail` is a payment the BTC wallet made through Breez (ENG-688). That
  * wallet is self-custodial, so its payments are not in the GraphQL list at
@@ -149,6 +155,10 @@ export type ActionSummary = { readonly [field: string]: SummaryValue }
  * reconciling one is always "unknown". A record of one whose outcome was
  * lost therefore blocks the same payment until its day-old record may be
  * cleared on the user's word (executor.ts, `historyChecked`).
+ *
+ * `cashout` is a settlement to a bank account (prepareCashout). Nothing in
+ * the list says which settlement a row was, so it reconciles to "unknown"
+ * the same way, until ENG-716 gives the client a way to match one.
  */
 export type SingleTransactionMatch =
   | { kind: "lightning"; paymentHash: string }
@@ -160,6 +170,7 @@ export type SingleTransactionMatch =
     }
   | { kind: "onchain"; address: string }
   | { kind: "btcRail" }
+  | { kind: "cashout" }
 
 /**
  * A dispatched action's payments as the transaction list shows them: one,
@@ -213,7 +224,12 @@ export type ExecuteContext = {
  *   armed and the same AttemptState (a GraphQL send whose response was lost
  *   retries under its key); `checkHistory` disarms the card and sends the
  *   user to their history, with no re-prepare (a keyless send that may have
- *   left, spec v0.2.6).
+ *   left, spec v0.2.6). `prepareRest` (ENG-688): part of what the action
+ *   owed went and the rest provably did not, but the rest's numbers are past
+ *   their expiry (a group send's legs). The action retires and its record
+ *   stays, so nothing that went can go again from another card for the same
+ *   payment; the card offers to prepare the rest, and the action's refresh()
+ *   prepares only what did not go, never what may have.
  */
 export type ExecutionOutcome =
   | { status: "succeeded"; summary?: ActionSummary }
@@ -226,7 +242,7 @@ export type ExecutionOutcome =
   | {
       status: "unknown"
       replyKey: AssistantReplyKey
-      next: "retrySameAttempt" | "checkHistory"
+      next: "retrySameAttempt" | "checkHistory" | "prepareRest"
       summary?: ActionSummary
     }
 

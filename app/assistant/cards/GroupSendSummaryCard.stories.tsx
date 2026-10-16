@@ -27,7 +27,7 @@ export const NoAuth = () => (
   <GroupSendSummaryCard
     payload={groupSendFixture}
     actions={storyActions({
-      can: { enabled: false, replyKey: "Assistant.authUnavailable" },
+      can: { enabled: false, state: "armed", replyKey: "Assistant.authUnavailable" },
     })}
   />
 )

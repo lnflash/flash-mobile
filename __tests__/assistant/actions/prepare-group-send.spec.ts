@@ -12,7 +12,10 @@ import {
   prepareGroupSendRun,
   PrepareGroupSendArgs,
 } from "@app/assistant/registry/actions/prepare-group-send"
-import { FIXED_CENT_INTRALEDGER_TTL_MS } from "@app/assistant/registry/actions/shared/expiry"
+import {
+  FIXED_CENT_INTRALEDGER_TTL_MS,
+  RATE_TTL_MS,
+} from "@app/assistant/registry/actions/shared/expiry"
 import type {
   ExecuteContext,
   ExecutionOutcome,
@@ -459,6 +462,270 @@ describe("prepareGroupSend", () => {
     expect(
       prepareGroupSend.validate({ payees: ["Alice", "Bob"], total: "10" }).valid,
     ).toBe(true)
+  })
+})
+
+describe("prepareGroupSend past its expiry (spec §5 Expiry, §8)", () => {
+  // J$2,355 between three, J$785 (5 dollars at J$157) each: a rate-bound
+  // group, whose numbers hold 60 s from the price read.
+  const THREE_JMD = { payees: ["Alice", "Bob", "Carol"], total: "2355" }
+
+  const setupWithClock = () => {
+    const fake = setup({ display: "JMD" })
+    let clock = NOW_MS
+    fake.ctx.now = () => clock
+    return {
+      fake,
+      advance: (ms: number) => {
+        clock += ms
+      },
+    }
+  }
+
+  it("replays only the leg whose answer was lost, under its key, and sends no leg that never went", async () => {
+    const { fake, advance } = setupWithClock()
+    fake.script("bob", "lost")
+    const action = prepared(await run(THREE_JMD, fake))
+    expect(action.expiresAt).toBe(NOW_MS + RATE_TTL_MS)
+    const first = await confirm(action)
+    expect(statuses(first)).toEqual(["success", "unknown", "not_attempted"])
+
+    advance(RATE_TTL_MS)
+    const second = await confirm(action)
+
+    // Bob's lost answer is replayed under its own key; Carol's leg, a new
+    // payment on a rate 60 s old, does not go.
+    const sent = dispatches(fake)
+    expect(sent.map(({ to }) => to)).toEqual(["alice-wallet", "bob-wallet", "bob-wallet"])
+    expect(sent[2].key).toBe(sent[1].key)
+    expect(statuses(second)).toEqual(["success", "success", "not_attempted"])
+    // The group is done; the rest is a new group's, with new numbers.
+    expect(second).toMatchObject({
+      status: "unknown",
+      replyKey: "Assistant.groupSendRestExpired",
+      next: "prepareRest",
+    })
+  })
+
+  it("prepares the legs that did not go as a new group: a fresh price, new keys, their own shares", async () => {
+    const { fake, advance } = setupWithClock()
+    fake.script("bob", "failed")
+    const action = prepared(await run(THREE_JMD, fake))
+    await confirm(action)
+    advance(RATE_TTL_MS)
+    // Past expiry nothing is sent; the rest needs new numbers.
+    const stale = await confirm(action)
+    expect(stale).toMatchObject({ status: "unknown", next: "prepareRest" })
+    expect(dispatches(fake).map(({ to }) => to)).toEqual(["alice-wallet", "bob-wallet"])
+
+    // The rate moved meanwhile: J$158 to the dollar.
+    fake.graphql.realtimePrice.mockResolvedValue({
+      ...JMD_PRICE,
+      usdCentPrice: { ...JMD_PRICE.usdCentPrice, base: 158_000_000 },
+    })
+    const pricesRead = fake.graphql.realtimePrice.mock.calls.length
+    const rest = prepared(await action.refresh())
+
+    expect(fake.graphql.realtimePrice).toHaveBeenCalledTimes(pricesRead + 1)
+    expect(rest.id).not.toBe(action.id)
+    expect(rest.dispatch?.paymentDetailHash).not.toBe(action.dispatch?.paymentDetailHash)
+    expect(
+      (rest.summary.legs as { payeeUsername: string; status: string }[]).map(
+        ({ payeeUsername, status }) => [payeeUsername, status],
+      ),
+    ).toEqual([
+      ["bob", "pending"],
+      ["carol", "pending"],
+    ])
+    // Each keeps its J$785 share, now at the new rate.
+    expect(
+      (rest.summary.legs as { amountText: string }[]).every(({ amountText }) =>
+        amountText.startsWith("JMD 78500 "),
+      ),
+    ).toBe(true)
+    expect(rest.summary.totalText).toMatch(/^JMD 157000 /)
+
+    await expect(confirm(rest)).resolves.toMatchObject({ status: "succeeded" })
+    const sent = dispatches(fake)
+    expect(sent.map(({ to }) => to)).toEqual([
+      "alice-wallet",
+      "bob-wallet",
+      "bob-wallet",
+      "carol-wallet",
+    ])
+    // New legs, new keys; the amounts at J$158, not J$157.
+    expect(new Set(sent.map(({ key }) => key)).size).toBe(4)
+    expect(sent[2].amount).not.toBe(sent[1].amount)
+  })
+
+  it("keeps each leg's share of the whole group's split when it prepares the rest", async () => {
+    const fake = setup()
+    let clock = NOW_MS
+    fake.ctx.now = () => clock
+    fake.script("bob", "failed")
+    // $10.01 between three: 334, 334, 333.
+    const action = prepared(
+      await run(
+        { payees: ["Alice", "Bob", "Carol"], total: "10.01", currency: "USD" },
+        fake,
+      ),
+    )
+    await confirm(action)
+    clock += FIXED_CENT_INTRALEDGER_TTL_MS
+    await confirm(action)
+
+    const rest = prepared(await action.refresh())
+
+    expect(
+      (rest.summary.legs as { amountText: string }[]).map(({ amountText }) => amountText),
+    ).toEqual(["USD 334", "USD 333"])
+    expect(rest.summary.totalText).toBe("USD 667")
+  })
+
+  it("still sends the legs that did not go when confirmed again before its expiry", async () => {
+    const { fake, advance } = setupWithClock()
+    fake.script("bob", "failed")
+    const action = prepared(await run(THREE_JMD, fake))
+    await confirm(action)
+
+    advance(RATE_TTL_MS - 1)
+    await expect(confirm(action)).resolves.toMatchObject({ status: "succeeded" })
+    expect(dispatches(fake).map(({ to }) => to)).toEqual([
+      "alice-wallet",
+      "bob-wallet",
+      "bob-wallet",
+      "carol-wallet",
+    ])
+  })
+
+  it("never prepares again a group with a leg whose answer is still lost, nor one that went in full", async () => {
+    const lost = setup()
+    lost.script("bob", "lost")
+    const unresolved = prepared(await run(FOUR, lost))
+    await confirm(unresolved)
+
+    await expect(unresolved.refresh()).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.checkHistory",
+    })
+
+    const done = setup()
+    const sentInFull = prepared(await run(FOUR, done))
+    await confirm(sentInFull)
+
+    await expect(sentInFull.refresh()).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.alreadySent",
+    })
+    expect(done.mutations.intraLedgerUsdPaymentSend).toHaveBeenCalledTimes(4)
+  })
+
+  describe("through the executor", () => {
+    const wireWithClock = () => {
+      const fake = setup({ display: "JMD" })
+      let clock = NOW_MS
+      const now = () => clock
+      fake.ctx.now = now
+      const journal = createAttemptJournal({ storage: memoryStorage() })
+      const executor = createExecutor({
+        auth: { availability: async () => "none", authenticate: async () => false },
+        journal,
+        reconcile: jest.fn(async () => "unknown" as const),
+        telemetry: recordingTelemetry().telemetry,
+        now,
+      })
+      return {
+        fake,
+        journal,
+        executor,
+        advance: (ms: number) => {
+          clock += ms
+        },
+      }
+    }
+
+    it("retires a partly sent group past its expiry, keeping its record for the legs that went", async () => {
+      const { fake, journal, executor, advance } = wireWithClock()
+      fake.script("bob", "failed")
+      const action = prepared(await run(THREE_JMD, fake))
+      executor.addPrepared(action, "text")
+      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+        outcome: { status: "unknown", next: "retrySameAttempt" },
+      })
+      // Alice's leg went: the group is unresolved, and the executor does not
+      // re-prepare it past its expiry. The group itself sends nothing stale.
+      await expect(executor.canConfirm(action.id)).resolves.toMatchObject({
+        enabled: true,
+        state: "unresolved",
+      })
+
+      advance(RATE_TTL_MS)
+      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+        kind: "executed",
+        outcome: {
+          status: "unknown",
+          replyKey: "Assistant.groupSendRestExpired",
+          next: "prepareRest",
+        },
+      })
+      expect(dispatches(fake).map(({ to }) => to)).toEqual(["alice-wallet", "bob-wallet"])
+      await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+        kind: "notFound",
+      })
+      await expect(journal.pending()).resolves.toEqual([
+        expect.objectContaining({ preparedActionId: action.id }),
+      ])
+    })
+
+    it("holds back another card for the same group, so a leg that went never goes again", async () => {
+      const { fake, executor, advance } = wireWithClock()
+      fake.script("bob", "failed")
+      const first = prepared(await run(THREE_JMD, fake))
+      executor.addPrepared(first, "text")
+      await executor.executePreparedAction(first.id)
+      advance(RATE_TTL_MS)
+      // A second card for the same group, with fresh numbers, confirmed
+      // while the first's stale Confirm retires it.
+      const second = prepared(await run(THREE_JMD, fake))
+      executor.addPrepared(second, "text")
+
+      const [retired, blocked] = await Promise.all([
+        executor.executePreparedAction(first.id),
+        executor.executePreparedAction(second.id),
+      ])
+
+      expect(retired).toMatchObject({ outcome: { next: "prepareRest" } })
+      expect(blocked).toMatchObject({ kind: "pendingDispatch" })
+      expect(dispatches(fake).map(({ to }) => to)).toEqual(["alice-wallet", "bob-wallet"])
+    })
+
+    it("lets the rest it prepares go: another payment, with its own record", async () => {
+      const { fake, journal, executor, advance } = wireWithClock()
+      fake.script("bob", "failed")
+      const first = prepared(await run(THREE_JMD, fake))
+      executor.addPrepared(first, "text")
+      await executor.executePreparedAction(first.id)
+      advance(RATE_TTL_MS)
+      await executor.executePreparedAction(first.id)
+
+      const rest = prepared(await first.refresh())
+      executor.addPrepared(rest, "text")
+
+      await expect(executor.executePreparedAction(rest.id)).resolves.toMatchObject({
+        kind: "executed",
+        outcome: { status: "succeeded" },
+      })
+      expect(dispatches(fake).map(({ to }) => to)).toEqual([
+        "alice-wallet",
+        "bob-wallet",
+        "bob-wallet",
+        "carol-wallet",
+      ])
+      // Only the first group's record is left, for Alice's leg.
+      await expect(journal.pending()).resolves.toEqual([
+        expect.objectContaining({ preparedActionId: first.id }),
+      ])
+    })
   })
 })
 

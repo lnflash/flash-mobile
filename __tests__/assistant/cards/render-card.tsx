@@ -19,7 +19,7 @@ export const renderCard = (ui: React.ReactElement) =>
 
 /** An executor's two card-facing calls, and the thread's two callbacks. */
 export const fakeActions = ({
-  can = { enabled: true },
+  can = { enabled: true, state: "armed" },
   result = {
     kind: "executed",
     actionId: "action",

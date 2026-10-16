@@ -7,6 +7,10 @@ jest.mock("@app/screens/send-bitcoin-screen/payment-destination", () => ({
 
 import { createAttemptJournal } from "@app/assistant/engine/attempt-journal"
 import { createExecutor } from "@app/assistant/engine/executor"
+import {
+  createTransactionListReconciler,
+  RECONCILE_MIN_AGE_MS,
+} from "@app/assistant/engine/reconcile"
 import { runTool } from "@app/assistant/engine/run-tool"
 import { assistantRegistry } from "@app/assistant/registry"
 import {
@@ -18,6 +22,8 @@ import {
   FIXED_CENT_INTRALEDGER_TTL_MS,
   RATE_TTL_MS,
 } from "@app/assistant/registry/actions/shared/expiry"
+import { BTC_ONCHAIN_FEE_SPEED } from "@app/assistant/registry/actions/shared/fee"
+import { UNRECORDED_ONCHAIN_SEND } from "@app/assistant/registry/actions/shared/journal"
 import type {
   ExecuteContext,
   PreparedAction,
@@ -36,8 +42,10 @@ import { memoryStorage } from "../executor-harness"
 import {
   bolt11,
   fakeActionCtx,
+  graphqlTx,
   JMD_PRICE,
   NOW_MS,
+  page,
   paymentHashOf,
   recordingTelemetry,
   USD_PRICE,
@@ -718,17 +726,138 @@ describe("prepareSend from the BTC wallet", () => {
     expect(fake.btcRail.probeFee).not.toHaveBeenCalled()
   })
 
-  it("refuses a BTC-wallet on-chain send with the not-available card until ENG-714", async () => {
-    const fake = setup()
-    parse.mockResolvedValue(onchainDestination())
+  describe("to an on-chain address (ENG-714 merged, spec v0.2.10 §5.1)", () => {
+    const ONCHAIN_BTC = {
+      payee: ADDRESS,
+      amount: "0.001",
+      currency: "BTC",
+      sourceWallet: "BTC",
+    } as const
 
-    await expect(
-      run(
-        { payee: ADDRESS, amount: "0.001", currency: "BTC", sourceWallet: "BTC" },
-        fake,
-      ),
-    ).rejects.toMatchObject({ reason: "notAvailableYet" })
-    expect(fake.btcRail.payOnchain).not.toHaveBeenCalled()
+    it("probes the fee at the one speed the withdrawal pays for, and shows that fee", async () => {
+      const fake = setup()
+      parse.mockResolvedValue(onchainDestination())
+      fake.btcRail.probeFee.mockResolvedValue({ fee: 450, err: null })
+
+      const action = prepared(await run(ONCHAIN_BTC, fake))
+
+      expect(fake.btcRail.probeFee).toHaveBeenCalledWith({
+        paymentType: "onchain",
+        paymentRequest: ADDRESS,
+        amountSats: 100_000,
+        selectedFeeType: BTC_ONCHAIN_FEE_SPEED,
+      })
+      expect(action.summary).toMatchObject({
+        sourceWallet: "BTC",
+        amountText: "BTC 100000 (USD 6300)",
+        feeText: "USD 28.35 (BTC 450)",
+        totalText: "USD 6328.35 (BTC 100450)",
+      })
+      expect(action.expiresAt).toBe(NOW_MS + FEE_PROBE_TTL_MS)
+      expect(action.dispatch?.match).toEqual({ kind: "btcRail" })
+    })
+
+    it("withdraws through the rail at that same speed, under the attempt's key, journaled first", async () => {
+      const fake = setup()
+      parse.mockResolvedValue(onchainDestination())
+      fake.btcRail.probeFee.mockResolvedValue({ fee: 450, err: null })
+      const order: string[] = []
+      fake.btcRail.payOnchain.mockImplementation(async () => {
+        order.push("withdraw")
+        return { success: true, payment: { payment: { status: 0 } } }
+      })
+      const action = prepared(await run(ONCHAIN_BTC, fake))
+      const { ctx, journalDispatch } = confirmCtx(action)
+      journalDispatch.mockImplementation(async (key) => {
+        order.push(`journal:${key}`)
+      })
+
+      await expect(action.execute(ctx)).resolves.toEqual({ status: "succeeded" })
+
+      expect(order).toEqual(["journal:null", "withdraw"])
+      expect(fake.btcRail.payOnchain).toHaveBeenCalledWith(
+        ADDRESS,
+        100_000,
+        BTC_ONCHAIN_FEE_SPEED,
+        expect.stringMatching(/^[0-9a-f-]{36}$/),
+      )
+      // The speed probed is the speed paid: the card's fee is the withdrawal's.
+      expect(fake.btcRail.probeFee.mock.calls[0][0].selectedFeeType).toBe(
+        fake.btcRail.payOnchain.mock.calls[0][2],
+      )
+    })
+
+    it("refuses a withdrawal under the send screen's 5,500-sat floor", async () => {
+      const fake = setup()
+      parse.mockResolvedValue(onchainDestination())
+      fake.btcRail.probeFee.mockResolvedValue({ fee: 450, err: null })
+
+      await expect(run({ ...ONCHAIN_BTC, amount: "0.00005499" }, fake)).resolves.toEqual({
+        kind: "error",
+        userMessage: "Assistant.btcOnchainBelowMinimum",
+      })
+      expect(fake.btcRail.probeFee).not.toHaveBeenCalled()
+
+      prepared(await run({ ...ONCHAIN_BTC, amount: "0.000055" }, fake))
+      expect(fake.btcRail.probeFee).toHaveBeenCalledWith(
+        expect.objectContaining({ amountSats: 5_500 }),
+      )
+    })
+
+    it("disarms the card when the withdrawal may have left (ENG-714), offering no re-prepare", async () => {
+      // payOnchainBreez answers a rejection from sdk.sendPayment itself with
+      // outcomeUnknown; a rejection from the rail itself is unknown too.
+      for (const answer of [
+        () => Promise.resolve({ success: false, error: "socket", outcomeUnknown: true }),
+        () => Promise.reject(new Error("bridge")),
+      ]) {
+        const fake = setup()
+        parse.mockResolvedValue(onchainDestination())
+        fake.btcRail.probeFee.mockResolvedValue({ fee: 450, err: null })
+        fake.btcRail.payOnchain.mockImplementation(answer)
+        const action = prepared(await run(ONCHAIN_BTC, fake))
+
+        await expect(action.execute(confirmCtx(action).ctx)).resolves.toEqual({
+          status: "unknown",
+          replyKey: "Assistant.checkHistory",
+          next: "checkHistory",
+        })
+      }
+    })
+
+    it("offers a fresh prepare after a refusal before the withdrawal: nothing left", async () => {
+      const fake = setup()
+      parse.mockResolvedValue(onchainDestination())
+      fake.btcRail.probeFee.mockResolvedValue({ fee: 450, err: null })
+      fake.btcRail.payOnchain.mockResolvedValue({
+        success: false,
+        error: "Failed to pay the invoice.",
+      })
+      const action = prepared(await run(ONCHAIN_BTC, fake))
+
+      await expect(action.execute(confirmCtx(action).ctx)).resolves.toEqual({
+        status: "failed",
+        replyKey: "Assistant.paymentFailed",
+        next: "reprepare",
+      })
+    })
+
+    it("sends nothing, and offers a fresh prepare, when the withdrawal cannot be written down", async () => {
+      const fake = setup()
+      parse.mockResolvedValue(onchainDestination())
+      fake.btcRail.probeFee.mockResolvedValue({ fee: 450, err: null })
+      const action = prepared(await run(ONCHAIN_BTC, fake))
+      const { ctx, journalDispatch } = confirmCtx(action)
+      journalDispatch.mockRejectedValue(new Error("disk full"))
+
+      await expect(action.execute(ctx)).resolves.toEqual({
+        status: "failed",
+        replyKey: "Assistant.paymentFailed",
+        next: "reprepare",
+      })
+      expect(fake.btcRail.payOnchain).not.toHaveBeenCalled()
+      expect(UNRECORDED_ONCHAIN_SEND).toMatch(/not sent/)
+    })
   })
 
   it("answers a BTC wallet that is off with its reply, never a zero balance", async () => {
@@ -860,5 +989,131 @@ describe("prepareSend through runTool and the executor", () => {
       kind: "pendingDispatch",
     })
     expect(fake.mutations.intraLedgerUsdPaymentSend).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("prepareSend after a lost answer, with the real reconciler", () => {
+  // The executor, the journal, the reconciler and prepareSend all real. The
+  // first send's answer is lost, the user leaves the thread, and three
+  // minutes later asks for the same $5 to Alice again. The transaction list
+  // answers the way lnflash/flash main does: an IBEX row whose identifiers
+  // are blank (paymentHash "", src/app/wallets/get-transactions-for-wallet.ts),
+  // the Flash-to-Flash send being an IBEX Lightning payment.
+  const wireOverTheList = () => {
+    const fake = setup()
+    let clock = NOW_MS
+    const now = () => clock
+    const journal = createAttemptJournal({ storage: memoryStorage() })
+    const executor = createExecutor({
+      auth: { availability: async () => "none", authenticate: async () => false },
+      journal,
+      reconcile: createTransactionListReconciler({
+        graphql: fake.graphql as never,
+        now,
+      }),
+      telemetry: recordingTelemetry().telemetry,
+      now,
+    })
+    const { graphql, displayCurrency, now: _fixed, ...actionDeps } = fake.ctx
+    const prepare = async (args: PrepareSendArgs) =>
+      prepared(
+        await runTool(
+          { intent: "prepareSend", args },
+          {
+            registry: assistantRegistry,
+            graphql,
+            btcRail: fake.btcRail,
+            displayCurrency,
+            now,
+            telemetry: recordingTelemetry().telemetry,
+            actionDeps,
+          },
+        ),
+      )
+    const keysSent = () =>
+      fake.mutations.intraLedgerUsdPaymentSend.mock.calls.map(
+        ([options]) => options.variables.input.idempotencyKey as string,
+      )
+    return {
+      fake,
+      executor,
+      journal,
+      prepare,
+      keysSent,
+      advance: (ms: number) => {
+        clock += ms
+      },
+    }
+  }
+
+  /** The first send, as lnflash/flash lists it once it landed. */
+  const landedAsIbexRow = () =>
+    graphqlTx({
+      id: "ibex-1",
+      createdAt: Math.floor(NOW_MS / 1000) + 1,
+      settlementAmount: -500,
+      initiationVia: { __typename: "InitiationViaLn", paymentHash: "" },
+      settlementVia: { __typename: "SettlementViaLn", paymentSecret: null },
+    })
+
+  const ALICE_5 = { payee: "Alice", amount: "5", currency: "USD" } as const
+
+  it("never sends the same payment again under a new key while the list shows a row that could be it", async () => {
+    const run = wireOverTheList()
+    run.fake.mutations.intraLedgerUsdPaymentSend.mockRejectedValueOnce(
+      new Error("Network request failed"),
+    )
+    const first = await run.prepare(ALICE_5)
+    run.executor.addPrepared(first, "text")
+    await expect(run.executor.executePreparedAction(first.id)).resolves.toMatchObject({
+      outcome: { status: "unknown", next: "retrySameAttempt" },
+    })
+    run.executor.leaveThread("thread-1")
+    // It landed: the list shows it, with no hash and no counterparty.
+    run.fake.graphql.transactions.mockResolvedValue(page([landedAsIbexRow()]))
+
+    run.advance(3 * 60_000)
+    const again = await run.prepare(ALICE_5)
+    run.executor.addPrepared(again, "text")
+
+    await expect(run.executor.executePreparedAction(again.id)).resolves.toEqual({
+      kind: "pendingDispatch",
+      actionId: again.id,
+      replyKey: "Assistant.checkHistory",
+      historyCheckable: false,
+    })
+    expect(run.keysSent()).toHaveLength(1)
+    await expect(run.journal.pending()).resolves.toEqual([
+      expect.objectContaining({ preparedActionId: first.id }),
+    ])
+  })
+
+  it("lets it go under a new key once the list shows nothing sent since the dispatch", async () => {
+    const run = wireOverTheList()
+    run.fake.mutations.intraLedgerUsdPaymentSend
+      .mockRejectedValueOnce(new Error("Network request failed"))
+      .mockResolvedValue(sentOk("intraLedgerUsdPaymentSend"))
+    const first = await run.prepare(ALICE_5)
+    run.executor.addPrepared(first, "text")
+    await run.executor.executePreparedAction(first.id)
+    run.executor.leaveThread("thread-1")
+    // Only a receipt since the dispatch: nothing that could be the send.
+    run.fake.graphql.transactions.mockResolvedValue(
+      page([
+        { ...landedAsIbexRow(), id: "in", direction: "RECEIVE", settlementAmount: 900 },
+      ]),
+    )
+
+    run.advance(RECONCILE_MIN_AGE_MS + 60_000)
+    const again = await run.prepare(ALICE_5)
+    run.executor.addPrepared(again, "text")
+
+    await expect(run.executor.executePreparedAction(again.id)).resolves.toMatchObject({
+      kind: "executed",
+      outcome: { status: "succeeded" },
+    })
+    const [firstKey, secondKey] = run.keysSent()
+    expect(secondKey).not.toBe(firstKey)
+    await expect(run.journal.pending()).resolves.toEqual([])
   })
 })

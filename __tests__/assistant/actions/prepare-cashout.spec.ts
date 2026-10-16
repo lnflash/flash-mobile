@@ -2,6 +2,10 @@ import { cardOf, validateCard } from "@app/assistant/cards/types"
 import { createAttemptJournal } from "@app/assistant/engine/attempt-journal"
 import { createExecutor } from "@app/assistant/engine/executor"
 import {
+  createTransactionListReconciler,
+  RECONCILE_STALE_AFTER_MS,
+} from "@app/assistant/engine/reconcile"
+import {
   OFFER_ALREADY_EXECUTED,
   prepareCashoutRun,
   PrepareCashoutArgs,
@@ -14,8 +18,10 @@ import type {
 import { memoryStorage } from "../executor-harness"
 import {
   fakeActionCtx,
+  graphqlTx,
   JMD_PRICE,
   NOW_MS,
+  page,
   recordingTelemetry,
   USD_PRICE,
   wallet,
@@ -292,5 +298,234 @@ describe("prepareCashout through the executor", () => {
     })
     expect(failing.actions.initiateCashout).toHaveBeenCalledTimes(1)
     expect(lost.actions.initiateCashout).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("prepareCashout's identity as a settlement (spec §5.1)", () => {
+  it("names the request, not the offer: two offers for the same request are one settlement", async () => {
+    const fake = setup()
+    fake.actions.requestCashout
+      .mockResolvedValueOnce(OFFER)
+      .mockResolvedValueOnce({ ...OFFER, offerId: "offer-2", flashFee: 250 })
+
+    const first = prepared(await run(HUNDRED, fake))
+    const second = prepared(await run(HUNDRED, fake))
+
+    expect(first.dispatch).toEqual({
+      paymentDetailHash: expect.stringMatching(/^[0-9a-f]{64}$/),
+      match: { kind: "cashout" },
+    })
+    expect(second.dispatch?.paymentDetailHash).toBe(first.dispatch?.paymentDetailHash)
+  })
+
+  it("is another settlement for another bank account or another amount", async () => {
+    const fake = setup()
+
+    const hundred = prepared(await run(HUNDRED, fake))
+    const toChase = prepared(await run({ ...HUNDRED, bankAccountId: "us-1" }, fake))
+    const fifty = prepared(await run({ amount: "50", currency: "USD" }, fake))
+
+    expect(toChase.dispatch?.paymentDetailHash).not.toBe(
+      hundred.dispatch?.paymentDetailHash,
+    )
+    expect(fifty.dispatch?.paymentDetailHash).not.toBe(
+      hundred.dispatch?.paymentDetailHash,
+    )
+  })
+
+  it("is the same settlement for a display-currency amount whatever the rate does", async () => {
+    // J$15,700 at J$157 and then at J$158 to the dollar: other cents, the
+    // same request.
+    const fake = setup({ display: "JMD" })
+    const first = prepared(await run({ amount: "15700" }, fake))
+    fake.graphql.realtimePrice.mockResolvedValue({
+      ...JMD_PRICE,
+      usdCentPrice: { ...JMD_PRICE.usdCentPrice, base: 158_000_000 },
+    })
+    const second = prepared(await run({ amount: "15700" }, fake))
+
+    expect(fake.actions.requestCashout.mock.calls.map(([input]) => input.amount)).toEqual(
+      [10_000, 9_936],
+    )
+    expect(second.dispatch?.paymentDetailHash).toBe(first.dispatch?.paymentDetailHash)
+  })
+
+  it("writes the settlement down before it goes, and sends nothing when it cannot", async () => {
+    const fake = setup()
+    const order: string[] = []
+    fake.actions.initiateCashout.mockImplementation(async () => {
+      order.push("settle")
+      return { id: "cashout-1", errors: [] }
+    })
+    const action = prepared(await run(HUNDRED, fake))
+    const journalDispatch = jest.fn(async (key: string | null) => {
+      order.push(`journal:${key}`)
+    })
+
+    await expect(
+      action.execute({ attempt: action.attempt, journalDispatch }),
+    ).resolves.toEqual({ status: "succeeded" })
+    expect(order).toEqual(["journal:null", "settle"])
+
+    const unrecorded = prepared(await run(HUNDRED, fake))
+    await expect(
+      unrecorded.execute({
+        attempt: unrecorded.attempt,
+        journalDispatch: jest.fn(async () => {
+          throw new Error("disk full")
+        }),
+      }),
+    ).resolves.toEqual({
+      status: "failed",
+      replyKey: "Assistant.cashoutFailed",
+      next: "reprepare",
+    })
+    expect(fake.actions.initiateCashout).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("prepareCashout's settlements through the executor, journal and reconciler", () => {
+  const wire = () => {
+    const fake = setup()
+    let clock = NOW_MS
+    const now = () => clock
+    const journal = createAttemptJournal({ storage: memoryStorage() })
+    const executor = createExecutor({
+      auth: { availability: async () => "none", authenticate: async () => false },
+      journal,
+      reconcile: createTransactionListReconciler({
+        graphql: fake.graphql as never,
+        now,
+      }),
+      telemetry: recordingTelemetry().telemetry,
+      now,
+    })
+    let offers = 0
+    fake.actions.requestCashout.mockImplementation(async () => {
+      offers += 1
+      return { ...OFFER, offerId: `offer-${offers}`, expiresAt: clock + 600_000 }
+    })
+    fake.ctx.now = now
+    const settledOffers = () =>
+      fake.actions.initiateCashout.mock.calls.map(([input]) => input.offerId)
+    const advance = (ms: number) => {
+      clock += ms
+    }
+    return { fake, executor, journal, settledOffers, advance }
+  }
+
+  /** An answer the test hands out when it chooses. */
+  const deferred = <T>() => {
+    let resolve: (value: T) => void = () => undefined
+    let reject: (reason: unknown) => void = () => undefined
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+
+  it("settles once when two cards for the same amount are confirmed together", async () => {
+    const { fake, executor, settledOffers } = wire()
+    const answer = deferred<{ id: string; errors: never[] }>()
+    fake.actions.initiateCashout.mockReturnValueOnce(answer.promise)
+    const a = prepared(await run(HUNDRED, fake))
+    const b = prepared(await run(HUNDRED, fake))
+    executor.addPrepared(a, "text")
+    executor.addPrepared(b, "text")
+
+    const confirmA = executor.executePreparedAction(a.id)
+    const confirmB = executor.executePreparedAction(b.id)
+    await new Promise((resolve) => {
+      setImmediate(resolve)
+    })
+    // B waits behind A: only A's offer has gone to the server.
+    expect(settledOffers()).toEqual(["offer-1"])
+    answer.resolve({ id: "cashout-1", errors: [] })
+
+    await expect(confirmA).resolves.toMatchObject({
+      kind: "executed",
+      outcome: { status: "succeeded" },
+    })
+    await expect(confirmB).resolves.toEqual({
+      kind: "alreadySent",
+      actionId: b.id,
+      replyKey: "Assistant.alreadySent",
+    })
+    expect(settledOffers()).toEqual(["offer-1"])
+  })
+
+  it("keeps the second card back while the first's answer is lost", async () => {
+    const { fake, executor, settledOffers } = wire()
+    fake.actions.initiateCashout.mockRejectedValueOnce(
+      new Error("Network request failed"),
+    )
+    const a = prepared(await run(HUNDRED, fake))
+    const b = prepared(await run(HUNDRED, fake))
+    executor.addPrepared(a, "text")
+    executor.addPrepared(b, "text")
+
+    const [resultA, resultB] = await Promise.all([
+      executor.executePreparedAction(a.id),
+      executor.executePreparedAction(b.id),
+    ])
+
+    expect(resultA).toMatchObject({
+      outcome: { status: "unknown", next: "checkHistory" },
+    })
+    expect(resultB).toMatchObject({ kind: "pendingDispatch", historyCheckable: false })
+    expect(settledOffers()).toEqual(["offer-1"])
+  })
+
+  it("blocks asking again after a lost answer until the user has checked their history", async () => {
+    const { fake, executor, journal, settledOffers, advance } = wire()
+    fake.actions.initiateCashout
+      .mockRejectedValueOnce(new Error("Network request failed"))
+      .mockResolvedValue({ id: "cashout-2", errors: [] })
+    const first = prepared(await run(HUNDRED, fake))
+    executor.addPrepared(first, "text")
+    await executor.executePreparedAction(first.id)
+    executor.leaveThread("thread-1")
+    // The settlement went out as an IBEX payment: a row that names nothing.
+    fake.graphql.transactions.mockResolvedValue(
+      page([
+        graphqlTx({
+          id: "ibex-settle",
+          createdAt: Math.floor(NOW_MS / 1000) + 1,
+          settlementAmount: -10_000,
+          initiationVia: { __typename: "InitiationViaLn", paymentHash: "" },
+          settlementVia: { __typename: "SettlementViaLn", paymentSecret: null },
+        }),
+      ]),
+    )
+
+    // Asked again at once, and three minutes on: a new offer each time, and
+    // neither goes while the first may have.
+    for (const wait of [0, 3 * 60_000]) {
+      advance(wait)
+      const again = prepared(await run(HUNDRED, fake))
+      executor.addPrepared(again, "text")
+      await expect(executor.executePreparedAction(again.id)).resolves.toEqual({
+        kind: "pendingDispatch",
+        actionId: again.id,
+        replyKey: "Assistant.checkHistory",
+        historyCheckable: false,
+      })
+    }
+    expect(settledOffers()).toEqual(["offer-1"])
+
+    // A day on, the user's word that the history does not show it clears it.
+    advance(RECONCILE_STALE_AFTER_MS)
+    const later = prepared(await run(HUNDRED, fake))
+    executor.addPrepared(later, "text")
+    await expect(executor.executePreparedAction(later.id)).resolves.toMatchObject({
+      kind: "pendingDispatch",
+      historyCheckable: true,
+    })
+    await expect(
+      executor.executePreparedAction(later.id, { historyChecked: true }),
+    ).resolves.toMatchObject({ kind: "executed", outcome: { status: "succeeded" } })
+    expect(settledOffers()).toEqual(["offer-1", "offer-4"])
+    await expect(journal.pending()).resolves.toEqual([])
   })
 })

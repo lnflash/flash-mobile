@@ -6,7 +6,12 @@ import type {
   PreparedAction,
   ToolResult,
 } from "../registry/types"
-import { createActionStore, MAX_PREPARED_PER_THREAD, StoredAction } from "./action-store"
+import {
+  ActionState,
+  createActionStore,
+  MAX_PREPARED_PER_THREAD,
+  StoredAction,
+} from "./action-store"
 import type { AttemptJournal, DispatchRecord } from "./attempt-journal"
 import type { AuthGate } from "./auth-gate"
 import {
@@ -115,9 +120,43 @@ export type ConfirmOptions = {
   historyChecked?: boolean
 }
 
-export type CanConfirm =
-  | { enabled: true }
-  | { enabled: false; replyKey: AssistantReplyKey }
+/**
+ * Where an action stands, as canConfirm reports it (ENG-688). A card renders
+ * from this rather than from what it remembers, since a card that remounts
+ * (a virtualized thread row, a thread re-render) remembers nothing.
+ *
+ * - armed, unresolved, disarmed: the executor holds the action in that state
+ *   (action-store.ts). Only an armed action's card turns into the expired
+ *   card past expiresAt, with Refresh. An unresolved action retries its own
+ *   attempt whatever the time, and a disarmed one is never prepared again
+ *   (spec §5): their cards keep the retry, or the history notice.
+ *   An action the executor dropped (dismissed, evicted, left with its
+ *   thread) while a dispatch of its may have gone stays disarmed: its
+ *   Confirm can no longer run, and its card offers only the history.
+ * - sent: its payment went, in this run of the app.
+ * - gone: the executor does not hold it, and nothing of it may have gone:
+ *   dismissed, evicted or left before any dispatch, or retired. Preparing
+ *   it again makes a new action, which the dispatch journal keeps from
+ *   repeating a payment of it that went.
+ */
+export type ConfirmState = ActionState | "sent" | "gone"
+
+export type CanConfirm = {
+  /** Whether Confirm would run now. */
+  enabled: boolean
+  state: ConfirmState
+  /**
+   * Why Confirm is off, or, for an unresolved or disarmed action, what its
+   * last Confirm left the card saying.
+   */
+  replyKey?: AssistantReplyKey
+}
+
+/**
+ * How many actions canConfirm remembers after they leave the store, as sent
+ * or as disarmed: the newest only.
+ */
+export const RETIRED_ACTIONS_REMEMBERED = 100
 
 export type Executor = {
   openThread: (threadId: string) => void
@@ -207,6 +246,35 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
   // many of its sends have gone through in this run of the app.
   const paymentQueues = new Map<string, Promise<void>>()
   const sendsThrough = new Map<string, number>()
+  // Actions that left the store after their payment went, or while a
+  // dispatch of theirs may have gone, oldest first, so a card that remounts
+  // still shows what became of its action (canConfirm).
+  const retired = new Map<string, "sent" | "disarmed">()
+
+  const remember = (actionId: string, as: "sent" | "disarmed") => {
+    retired.delete(actionId)
+    retired.set(actionId, as)
+    if (retired.size > RETIRED_ACTIONS_REMEMBERED) {
+      const [oldest] = retired.keys()
+      retired.delete(oldest)
+    }
+  }
+
+  /**
+   * Drop actions the user let go of (dismissed, evicted, left with their
+   * thread): one whose dispatch may have gone is remembered as disarmed,
+   * since its card must never offer to prepare it again (spec §5).
+   */
+  const letGo = (actionIds: readonly string[], drop: () => void) => {
+    const unresolved = actionIds.filter((id) => {
+      const state = store.stateOf(id)
+      return state === "unresolved" || state === "disarmed"
+    })
+    drop()
+    unresolved.forEach((id) => {
+      if (!store.get(id)) remember(id, "disarmed")
+    })
+  }
 
   const sendsThroughOf = (payment: string | undefined): number =>
     payment === undefined ? 0 : sendsThrough.get(payment) ?? 0
@@ -499,9 +567,22 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
         return
       case "unknown":
         // Something may have moved: the record stays for reconciliation.
+        if (outcome.next === "prepareRest") {
+          // What went is done and the rest is a new action's: this one
+          // retires, and its record keeps what went from going again.
+          store.remove(action.id)
+          return
+        }
+        // Let go while its Confirm ran (dismissed, evicted, left): its
+        // card can no longer retry it, and must not prepare it again.
+        if (!store.get(action.id)) {
+          remember(action.id, "disarmed")
+          return
+        }
         store.setState(
           action.id,
           outcome.next === "retrySameAttempt" ? "unresolved" : "disarmed",
+          outcome.replyKey,
         )
     }
   }
@@ -526,6 +607,12 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       outcome = UNREPORTED_OUTCOME
     }
     await settle(action, outcome)
+    // The card that was confirmed holds the id it was prepared under, which
+    // an identical refresh replaced: both went.
+    if (outcome.status === "succeeded") {
+      remember(requestedId, "sent")
+      remember(action.id, "sent")
+    }
     reportOutcome(action, TELEMETRY_OUTCOME[outcome.status], startedAt)
     return {
       kind: "executed",
@@ -596,7 +683,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
   return {
     openThread: (threadId) => metrics.open(threadId),
     leaveThread: (threadId) => {
-      store.removeThread(threadId)
+      letGo(store.idsOf(threadId), () => store.removeThread(threadId))
       metrics.leave(threadId)
     },
     noteToolResult: (threadId, result) => metrics.noteResult(threadId, result),
@@ -611,23 +698,46 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
           )}`,
         )
       }
-      return store.add({ action, origin })
+      let evicted: string[] = []
+      letGo(store.idsOf(action.threadId), () => {
+        evicted = store.add({ action, origin })
+      })
+      return evicted
     },
-    dismiss: (actionId) => store.remove(actionId),
+    dismiss: (actionId) => letGo([actionId], () => store.remove(actionId)),
 
     canConfirm: async (actionId) => {
       const held = store.get(actionId)
-      if (!held) return { enabled: false, replyKey: "Assistant.actionNotFound" }
-      if (store.stateOf(actionId) === "disarmed") {
-        return { enabled: false, replyKey: "Assistant.checkHistory" }
+      if (!held) {
+        switch (retired.get(actionId)) {
+          case "sent":
+            return { enabled: false, state: "sent" }
+          case "disarmed":
+            return {
+              enabled: false,
+              state: "disarmed",
+              replyKey: "Assistant.checkHistory",
+            }
+          default:
+            return { enabled: false, state: "gone", replyKey: "Assistant.actionNotFound" }
+        }
+      }
+      const state = store.stateOf(actionId) ?? "armed"
+      const reply = store.replyOf(actionId)
+      if (state === "disarmed") {
+        return { enabled: false, state, replyKey: reply ?? "Assistant.checkHistory" }
       }
       if (policy(held.action, held.origin) === "biometric") {
         const availability = await deps.auth.availability().catch(() => "none" as const)
         if (availability === "none") {
-          return { enabled: false, replyKey: "Assistant.authUnavailable" }
+          return { enabled: false, state, replyKey: "Assistant.authUnavailable" }
         }
       }
-      return { enabled: true }
+      // A lost answer: Confirm retries it, and the card says why.
+      if (state === "unresolved") {
+        return { enabled: true, state, replyKey: reply ?? "Assistant.checkHistory" }
+      }
+      return { enabled: true, state }
     },
 
     executePreparedAction: (actionId, options = {}) => {

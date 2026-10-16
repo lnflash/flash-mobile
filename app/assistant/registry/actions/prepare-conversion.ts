@@ -3,12 +3,7 @@ import { v4 as uuidv4 } from "uuid"
 import { WalletCurrency } from "@app/graphql/generated"
 import { btcRailUnavailableState } from "@app/payments/btc-rail"
 import { createLightningDestination } from "@app/screens/send-bitcoin-screen/payment-destination"
-import {
-  addMoneyAmounts,
-  toBtcMoneyAmount,
-  toSpendableBalance,
-  WalletAmount,
-} from "@app/types/amounts"
+import { toBtcMoneyAmount, toSpendableBalance } from "@app/types/amounts"
 import type { CardSummary, CardWallet, ConfirmPaymentCard } from "../../cards/types"
 import { createAttemptState } from "../../engine/executor"
 import {
@@ -105,7 +100,8 @@ export const prepareConversionRun = (
 
     // The counter-invoice on the receiving side, as useSwap makes it.
     let paymentRequest: string
-    let receiveFee: WalletAmount<WalletCurrency> | undefined
+    // The BTC wallet's own fee for receiving, in sats (cash -> BTC only).
+    let receiveFeeSats: number | undefined
     if (direction === "cashToBtc") {
       const sats = price.convert(amount, WalletCurrency.Btc).amount
       if (!(sats > 0)) throw new ToolReplyError("Assistant.amountTooSmall")
@@ -113,9 +109,10 @@ export const prepareConversionRun = (
         .createInvoice(sats, SWAP_MEMO.cashToBtc)
         .catch(btcRailReply)
       paymentRequest = invoice.paymentRequest
-      // The BTC wallet's own fee for receiving, which the conversion screen
-      // counts in its fee (useSwap.ts:187).
-      receiveFee = toBtcMoneyAmount(Number(invoice.fee ?? 0))
+      receiveFeeSats = Number(invoice.fee ?? 0)
+      if (!Number.isFinite(receiveFeeSats) || receiveFeeSats < 0) {
+        throw new ToolReplyError("Assistant.toolFailed")
+      }
     } else {
       const invoice = await ctx.graphqlActions.lnUsdInvoiceCreate({
         walletId: cash.id,
@@ -153,17 +150,29 @@ export const prepareConversionRun = (
     if (prepared.kind !== "leg") throw new ToolReplyError("Assistant.toolFailed")
     const { leg } = prepared
 
+    // What reaches the BTC wallet: the invoice's amount less the wallet's own
+    // fee for receiving. The conversion screen counts that fee in its one
+    // fee line (useSwap.ts:187), but it never leaves the cash wallet, so here
+    // it comes off what arrives instead: Fee is what the source wallet pays
+    // on top of the amount, and amount plus fee is the total (spec §6, a
+    // money card whose lines add up).
+    const arrives =
+      receiveFeeSats === undefined
+        ? undefined
+        : toBtcMoneyAmount((decoded.sats ?? 0) - receiveFeeSats)
+    if (arrives && !(arrives.amount > 0)) {
+      throw new ToolReplyError("Assistant.amountTooSmall")
+    }
+
     const format = { convert: price.convert, display: ctx.display }
-    const fee = receiveFee
-      ? addMoneyAmounts({ a: leg.fee, b: price.convert(receiveFee, source.currency) })
-      : leg.fee
     const summary: CardSummary<ConfirmPaymentCard> = {
       type: "confirmPayment",
       payeeLabel: target.currency,
       toWallet: target.currency as CardWallet,
       amountText: amountText(leg.detail.settlementAmount, format, amount),
-      feeText: amountText(fee, format),
+      feeText: amountText(leg.fee, format),
       totalText: amountText(leg.total, format),
+      ...(arrives ? { receiveText: amountText(arrives, format) } : {}),
       balanceAfterText: amountText(
         toSpendableBalance(balanceAfter(source, leg.total)),
         format,

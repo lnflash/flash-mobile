@@ -4,6 +4,7 @@ import { sha256 } from "js-sha256"
 import type { WalletCurrency } from "@app/graphql/generated"
 import type { GraphqlMutationFns } from "@app/payments/send-payment"
 import type { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
+import type { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 import type { SingleTransactionMatch, TransactionMatch } from "../registry/types"
 import { canonicalJson } from "./canonical-json"
 import { isPlainObject } from "./schema-validator"
@@ -63,6 +64,7 @@ const MATCH_FIELDS: Record<SingleTransactionMatch["kind"], readonly string[]> = 
   intraledger: ["counterPartyWalletId", "settlementCurrency", "amount"],
   onchain: ["address"],
   btcRail: [],
+  cashout: [],
 }
 
 const isSingleMatch = (value: unknown): value is SingleTransactionMatch => {
@@ -199,6 +201,35 @@ export const hashPaymentDetail = (
       amount: {
         amount: detail.unitOfAccountAmount.amount,
         currency: detail.unitOfAccountAmount.currency,
+      },
+    }),
+  )
+
+/**
+ * The identity of a settlement to a bank account (prepareCashout, ENG-688):
+ * the wallet it leaves, the bank account it reaches, and the amount the user
+ * denominated it in. Like hashPaymentDetail it leaves out what is
+ * re-derived for each new action: the offer, and the cents a display-currency
+ * amount converts to at the rate of the moment. Two cards for the same
+ * request are then one settlement to the executor, whichever offer each
+ * holds, and a settlement whose answer was lost blocks the next card for the
+ * same request.
+ */
+export const hashCashout = ({
+  walletId,
+  bankAccountId,
+  amount,
+}: {
+  walletId: string
+  bankAccountId: string
+  amount: MoneyAmount<WalletOrDisplayCurrency>
+}): string =>
+  sha256(
+    canonicalJson({
+      cashout: {
+        walletId,
+        bankAccountId,
+        amount: { amount: amount.amount, currency: amount.currency },
       },
     }),
   )

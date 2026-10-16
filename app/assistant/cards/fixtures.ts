@@ -6,7 +6,7 @@ import type {
   InvoiceCard,
   TxListCard,
 } from "./types"
-import type { ClarificationCard } from "../registry/types"
+import type { ClarificationCard, PrepareRefusalCard } from "../registry/types"
 
 // One valid payload per card type, for the card stories and specs. Not used
 // by the app: real cards come from the action tools.
@@ -93,4 +93,9 @@ export const cashoutOfferFixture: CashoutOfferCard = {
 export const expiredFixture: ExpiredCard = {
   type: "expired",
   preparedActionId: "action-expired",
+}
+
+export const prepareRefusedFixture: PrepareRefusalCard = {
+  type: "prepareRefused",
+  reason: "insufficientBalance",
 }

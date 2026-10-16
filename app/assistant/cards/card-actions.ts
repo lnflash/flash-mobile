@@ -51,12 +51,14 @@ export const afterConfirm = (result: ConfirmResult): AfterConfirm => {
         case "unknown":
           // A lost answer retries the same attempt from this card; anything
           // else stays disarmed and points to the history, with no way to
-          // prepare the payment again from here.
+          // prepare the payment again from here. The one exception is the
+          // rest of a group whose other legs went (prepareRest): the
+          // action's refresh prepares only the legs that did not go.
           return {
             replyKey: outcome.replyKey,
             done: false,
             confirmAgain: outcome.next === "retrySameAttempt",
-            reprepare: false,
+            reprepare: outcome.next === "prepareRest",
           }
       }
       break

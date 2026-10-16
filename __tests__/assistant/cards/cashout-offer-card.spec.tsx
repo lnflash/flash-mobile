@@ -114,6 +114,23 @@ describe("CashoutOfferCard", () => {
     await flush()
   })
 
+  it("after a remount past the offer's expiry, offers no Refresh for a settlement that may have gone", async () => {
+    const { screen, actions } = show(
+      { ...cashoutOfferFixture, expiresAt: Date.now() - 1 },
+      fakeActions({
+        can: { enabled: false, state: "disarmed", replyKey: "Assistant.checkHistory" },
+      }),
+    )
+
+    expect(await screen.findByText(en.Assistant.checkHistory())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.expiredTitle())).toBeNull()
+    expect(screen.queryByTestId("assistant-card-refresh")).toBeNull()
+    fireEvent.press(screen.getByTestId("assistant-card-confirm-button"))
+    expect(actions.executePreparedAction).not.toHaveBeenCalled()
+    expect(actions.reprepare).not.toHaveBeenCalled()
+    await flush()
+  })
+
   it("refuses a payload without its bank label", async () => {
     const { bankLabel: _bank, ...missing } = cashoutOfferFixture
     const { screen } = show(missing)

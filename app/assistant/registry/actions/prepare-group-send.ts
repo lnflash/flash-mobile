@@ -55,9 +55,14 @@ import { readWallet } from "./shared/wallets"
 // leg is a keyless send that a re-prepare could pay twice. Execution is
 // serial and stops at the first leg that fails or whose outcome is
 // unknown; every later leg is not attempted, and the card shows every
-// leg's real status. Once a leg has gone, the group is never prepared
-// again: a retry re-sends only the legs that did not go, with the states
-// they already have.
+// leg's real status. Once a leg has gone, the group as a whole is never
+// prepared again: before expiresAt a retry re-sends only the legs that did
+// not go, with the states they already have. Past it, only a leg whose
+// answer was lost goes again, under its own key (a replay of a dispatch the
+// server may hold); the legs that never went, or failed for certain, would
+// be new payments on numbers past their expiry (spec §5 "Expiry", §8), so
+// they are prepared again as a new group, from a fresh price read and with
+// new AttemptStates (refresh).
 
 /** The most legs a group send takes: each is a payment and a line on the card. */
 export const MAX_GROUP_LEGS = 10
@@ -89,23 +94,44 @@ const groupHash = (legs: readonly Leg[]): string =>
   sha256(canonicalJson({ group: legs.map(({ prepared }) => prepared.paymentDetailHash) }))
 
 /**
- * Dispatch the legs that have not gone, in order, stopping at the first that
- * fails or whose outcome is unknown. A leg that went is never sent again.
+ * Whether a leg's last dispatch lost its answer: a keyed send the server may
+ * hold, which a retry under the same key replays rather than repeats.
  */
-export const runLegs = async (
-  legs: readonly PreparedSendLeg[],
-  attempts: LegAttempt[],
+export const isLostAnswer = ({ status, last }: LegAttempt): boolean =>
+  status === "unknown" && last?.kind === "unknown" && last.retry === "sameAttempt"
+
+/**
+ * Dispatch the legs that have not gone, in order, stopping at the first that
+ * fails or whose outcome is unknown. A leg that went is never sent again,
+ * and a leg whose answer was lost goes again only as a replay of itself.
+ *
+ * `replayOnly`, for a group past its expiry: only a leg whose answer was
+ * lost goes again, under its own key. A leg that never went, or failed for
+ * certain, would be a new payment on stale numbers, so it is left as it is,
+ * for a new group prepared from fresh ones.
+ */
+export const runLegs = async ({
+  legs,
+  attempts,
+  dispatch,
+  replayOnly = false,
+}: {
+  legs: readonly PreparedSendLeg[]
+  attempts: LegAttempt[]
   dispatch: (
     leg: PreparedSendLeg,
     attempt: LegAttempt,
-  ) => ReturnType<typeof dispatchSendLeg>,
-): Promise<void> => {
+  ) => ReturnType<typeof dispatchSendLeg>
+  replayOnly?: boolean
+}): Promise<void> => {
   let stopped = false
   for (const [index, leg] of legs.entries()) {
     const attempt = attempts[index]
-    if (attempt.status !== "success") {
+    const lost = isLostAnswer(attempt)
+    if (attempt.status !== "success" && (lost || !replayOnly)) {
       if (stopped) {
-        attempt.status = "not_attempted"
+        // A lost answer keeps its status: it may have gone.
+        if (!lost) attempt.status = "not_attempted"
       } else {
         const result = await dispatch(leg, attempt)
         attempt.last = result
@@ -121,15 +147,20 @@ export const runLegs = async (
  * - every leg went: succeeded;
  * - a leg's outcome cannot be retried (a dispatch that went out keyless, a
  *   key reuse answer): the card disarms and points to the history;
- * - nothing went and a leg failed: nothing moved, so the group may be
- *   confirmed again, and prepared again if it expires;
- * - otherwise something may have moved (a leg went, or a leg's answer was
- *   lost): the group stays open for a retry of the legs that did not go,
- *   under their own states, and is never prepared again.
+ * - nothing went, and no leg's answer was lost: nothing moved, so the group
+ *   may be confirmed again, and prepared again if it expires;
+ * - a leg's answer was lost: the group stays open, and the next Confirm
+ *   replays that leg under its own key, expired or not;
+ * - otherwise some legs went and the rest provably did not. Before
+ *   `stale` (the group's expiresAt) the group stays open for a retry of the
+ *   rest under their own states. Past it their numbers are stale: the group
+ *   retires, its record kept for the legs that went, and the rest is
+ *   prepared again as a new group (refresh, through the card's Try again).
  */
 export const groupOutcome = (
   attempts: readonly LegAttempt[],
   summary: ExecutionOutcome["summary"],
+  { stale = false }: { stale?: boolean } = {},
 ): ExecutionOutcome => {
   if (attempts.every(({ status }) => status === "success")) {
     return { status: "succeeded", summary }
@@ -146,10 +177,9 @@ export const groupOutcome = (
       summary,
     }
   }
-  const anythingMayHaveMoved = attempts.some(
-    ({ status }) => status === "success" || status === "unknown",
-  )
-  if (!anythingMayHaveMoved) {
+  const sent = attempts.some(({ status }) => status === "success")
+  const lost = attempts.some(isLostAnswer)
+  if (!sent && !lost) {
     return {
       status: "failed",
       replyKey: "Assistant.paymentFailed",
@@ -157,16 +187,24 @@ export const groupOutcome = (
       summary,
     }
   }
+  if (lost || !stale) {
+    return {
+      status: "unknown",
+      replyKey: "Assistant.groupSendPartial",
+      next: "retrySameAttempt",
+      summary,
+    }
+  }
   return {
     status: "unknown",
-    replyKey: "Assistant.groupSendPartial",
-    next: "retrySameAttempt",
+    replyKey: "Assistant.groupSendRestExpired",
+    next: "prepareRest",
     summary,
   }
 }
 
 const resolveLegs = async (
-  args: PrepareGroupSendArgs,
+  rawPayees: readonly string[],
   ctx: ActionToolCtx,
   myWalletIds: readonly string[],
 ): Promise<
@@ -174,7 +212,7 @@ const resolveLegs = async (
   | Exclude<ToolResult<never>, { kind: "prepared" }>
 > => {
   const payees: ResolvedPayee[] = []
-  for (const raw of args.payees) {
+  for (const raw of rawPayees) {
     // Payees resolve one at a time: a question about one is the whole
     // answer, and no partial card is ever made.
     const resolution = await resolvePayee(raw, ctx, myWalletIds)
@@ -199,24 +237,39 @@ const resolveLegs = async (
   return { kind: "payees", payees }
 }
 
-export const prepareGroupSendRun = (
+/**
+ * Prepare the group of `args`, or only the legs at `only` (indexes into
+ * `args.payees`), for the rest of a group whose other legs went: each leg
+ * keeps the share the whole group's split gave it, and everything else is
+ * read afresh (payees, balance, price, limit), with new AttemptStates.
+ */
+const prepareGroupRun = (
   args: PrepareGroupSendArgs,
   ctx: ActionToolCtx,
+  only?: readonly number[],
 ): Promise<ToolResult<never>> =>
   replyingOnError(async (): Promise<ToolResult<never>> => {
     const total = requestedAmount({ amount: args.total, currency: args.currency }, ctx)
     if (!total) throw new ToolReplyError("Assistant.invalidArguments")
+    const legIndexes = only ?? args.payees.map((_, index) => index)
     const wallets = await ctx.graphql.wallets()
     const resolved = await resolveLegs(
-      args,
+      legIndexes.map((index) => args.payees[index]),
       ctx,
       wallets.map(({ id }) => id),
     )
     if (resolved.kind !== "payees") return resolved
 
-    const shares = splitMoneyAmount(total, resolved.payees.length)
-    if (shares.some(({ amount }) => amount <= 0)) {
+    const allShares = splitMoneyAmount(total, args.payees.length)
+    if (allShares.some(({ amount }) => amount <= 0)) {
       throw new ToolReplyError("Assistant.groupShareTooSmall")
+    }
+    const shares = legIndexes.map((index) => allShares[index])
+    // What this group shares, in the unit the user named: the total, or the
+    // part of it the legs prepared now carry.
+    const groupTotal: MoneyAmount<WalletOrDisplayCurrency> = {
+      ...total,
+      amount: shares.reduce((sum, { amount }) => sum + amount, 0),
     }
     const source = await readWallet(ctx, undefined, wallets)
     const price = await readPrice(ctx)
@@ -264,7 +317,7 @@ export const prepareGroupSendRun = (
         amountText: amountText(prepared.detail.settlementAmount, format, share),
         status: "pending" as const,
       })),
-      totalText: amountText(spent, format, total),
+      totalText: amountText(spent, format, groupTotal),
       balanceAfterText: amountText(
         toSpendableBalance(balanceAfter(source, spent)),
         format,
@@ -275,12 +328,13 @@ export const prepareGroupSendRun = (
 
     const attempts = createLegAttempts(legs.length)
     const preparedLegs = legs.map(({ prepared }) => prepared)
+    const expiresAt = minExpiry(preparedLegs.map(({ expiresAt: legExpiry }) => legExpiry))
     const preparedAction: PreparedAction = {
       id: uuidv4(),
       intent: "prepareGroupSend",
       threadId: ctx.threadId,
       createdAt: ctx.now(),
-      expiresAt: minExpiry(preparedLegs.map(({ expiresAt }) => expiresAt)),
+      expiresAt,
       summary,
       // The action's own state is unused: each leg dispatches under its own.
       attempt: createAttemptState(),
@@ -289,21 +343,49 @@ export const prepareGroupSendRun = (
         match: { kind: "anyOf", matches: preparedLegs.map(({ match }) => match) },
       },
       execute: async ({ journalDispatch }: ExecuteContext) => {
-        await runLegs(preparedLegs, attempts, (leg, { attempt }) =>
-          dispatchSendLeg({ leg, ctx, attempt, journalDispatch }),
-        )
-        return groupOutcome(attempts, {
-          ...summary,
-          legs: summary.legs.map((leg, index) => ({
-            ...leg,
-            status: attempts[index].status,
-          })),
+        // The executor re-prepares an armed action past its expiry, but a
+        // group that sent anything is unresolved, and comes here whenever it
+        // is confirmed: past expiresAt only its lost answers go again.
+        const stale = ctx.now() >= expiresAt
+        await runLegs({
+          legs: preparedLegs,
+          attempts,
+          dispatch: (leg, { attempt }) =>
+            dispatchSendLeg({ leg, ctx, attempt, journalDispatch }),
+          replayOnly: stale,
         })
+        return groupOutcome(
+          attempts,
+          {
+            ...summary,
+            legs: summary.legs.map((leg, index) => ({
+              ...leg,
+              status: attempts[index].status,
+            })),
+          },
+          { stale },
+        )
       },
-      refresh: () => prepareGroupSendRun(args, ctx),
+      // The same inputs again, for the legs that did not go: all of them
+      // until one goes. A leg whose dispatch may have gone is never prepared
+      // again, since a new group would pay it under a new key.
+      refresh: async () => {
+        if (attempts.some(({ status }) => status === "unknown")) {
+          return { kind: "error", userMessage: "Assistant.checkHistory" }
+        }
+        const rest = legIndexes.filter((_, index) => attempts[index].status !== "success")
+        if (rest.length === 0)
+          return { kind: "error", userMessage: "Assistant.alreadySent" }
+        return prepareGroupRun(args, ctx, rest)
+      },
     }
     return { kind: "prepared", preparedAction }
   })
+
+export const prepareGroupSendRun = (
+  args: PrepareGroupSendArgs,
+  ctx: ActionToolCtx,
+): Promise<ToolResult<never>> => prepareGroupRun(args, ctx)
 
 export const prepareGroupSend = defineAction<PrepareGroupSendArgs, never>({
   intent: "prepareGroupSend",

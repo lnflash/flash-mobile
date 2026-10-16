@@ -27,7 +27,7 @@ export const NoAuth = () => (
   <ConfirmPaymentCard
     payload={confirmPaymentFixture}
     actions={storyActions({
-      can: { enabled: false, replyKey: "Assistant.authUnavailable" },
+      can: { enabled: false, state: "armed", replyKey: "Assistant.authUnavailable" },
     })}
   />
 )
@@ -47,6 +47,7 @@ export const Conversion = () => (
       payeeUsername: undefined,
       memo: undefined,
       toWallet: "BTC",
+      receiveText: "J$782.00 (7,917 sats)",
     }}
     actions={storyActions()}
   />

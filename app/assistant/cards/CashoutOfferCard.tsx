@@ -22,7 +22,10 @@ const CashoutOfferCardBody: React.FC<{
   const expired = useExpired(card.expiresAt)
   const confirm = useConfirm(actions, card.preparedActionId, { singleUse: true })
 
-  if (expired && !confirm.submitting && !confirm.after) {
+  // Past expiresAt Refresh replaces Confirm, but only for an action the
+  // executor holds armed or no longer holds: never one whose payment may
+  // have gone, whatever this card remembers (a remount remembers nothing).
+  if (expired && confirm.mayExpire) {
     return (
       <ExpiredCardView
         preparedActionId={card.preparedActionId}

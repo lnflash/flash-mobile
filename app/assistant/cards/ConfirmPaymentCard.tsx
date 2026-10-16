@@ -24,7 +24,10 @@ const ConfirmPaymentCardBody: React.FC<{
   const expired = useExpired(card.expiresAt)
   const confirm = useConfirm(actions, card.preparedActionId)
 
-  if (expired && !confirm.submitting && !confirm.after) {
+  // Past expiresAt Refresh replaces Confirm, but only for an action the
+  // executor holds armed or no longer holds: never one whose payment may
+  // have gone, whatever this card remembers (a remount remembers nothing).
+  if (expired && confirm.mayExpire) {
     return (
       <ExpiredCardView
         preparedActionId={card.preparedActionId}
@@ -51,6 +54,13 @@ const ConfirmPaymentCardBody: React.FC<{
         value={card.totalText}
         testID="assistant-card-total"
       />
+      {card.receiveText ? (
+        <CardRow
+          label={LL.AssistantCards.youReceive()}
+          value={card.receiveText}
+          testID="assistant-card-receive"
+        />
+      ) : null}
       <CardRow
         label={LL.AssistantCards.balanceAfter()}
         value={card.balanceAfterText}

@@ -28,7 +28,7 @@ import {
   minExpiry,
   RATE_TTL_MS,
 } from "./expiry"
-import { probeSendFee } from "./fee"
+import { BTC_ONCHAIN_FEE_SPEED, probeSendFee } from "./fee"
 import { assertBreezSendOpen } from "./gates"
 import { journaledSendDeps } from "./journal"
 import { checkLimit, LimitBucket } from "./limits"
@@ -45,6 +45,9 @@ import type { SourceWallet } from "./wallets"
 
 /** The least an on-chain send from the cash wallet may move: the send screen's own floor (isValidAmount). */
 export const CASH_ONCHAIN_MIN_CENTS = 200
+
+/** The least an on-chain send from the BTC wallet may move, in sats: the send screen's own floor (isValidAmount). */
+export const BTC_ONCHAIN_MIN_SATS = 5_500
 
 export type SendLegInput = {
   payee: ResolvedPayee
@@ -246,6 +249,13 @@ export const prepareSendLeg = async (
   ) {
     throw new ToolReplyError("Assistant.onchainBelowMinimum")
   }
+  if (
+    fromBtc &&
+    detail.paymentType === "onchain" &&
+    settlement.amount < BTC_ONCHAIN_MIN_SATS
+  ) {
+    throw new ToolReplyError("Assistant.btcOnchainBelowMinimum")
+  }
 
   // A cash-wallet send to a Flash user costs nothing and asks no network
   // for its fee (payment-details/intraledger.ts); every other fee is probed.
@@ -293,7 +303,14 @@ export const prepareSendLeg = async (
       match: matchOf(detail, payee),
       expiresAt,
       memo: memoCarried({ detail, memo, comment, fromBtc }),
-      sendArgs: { sendPaymentMutation, paymentDetail: detail },
+      sendArgs: {
+        sendPaymentMutation,
+        paymentDetail: detail,
+        // A BTC-wallet withdrawal pays for the speed its fee was probed at.
+        ...(fromBtc && detail.paymentType === "onchain"
+          ? { selectedFeeType: BTC_ONCHAIN_FEE_SPEED }
+          : {}),
+      },
     },
   }
 }
