@@ -41,6 +41,14 @@ import {
 
 const parse = parseDestination as jest.Mock
 
+const BTC_ROW = wallet({
+  __typename: "BTCWallet",
+  id: "my-btc",
+  walletCurrency: "BTC",
+  balance: null as never,
+  isExternal: true,
+})
+
 const contact = (username: string, alias: string | null = null) => ({
   __typename: "UserContact",
   id: username,
@@ -216,6 +224,31 @@ describe("prepareGroupSend", () => {
         expect.objectContaining({ counterPartyWalletId: "carol-wallet", amount: 333 }),
       ],
     })
+  })
+
+  it("names the USDT cash wallet as the paying wallet once the account is cut over", async () => {
+    // The API shows this client the active settlement wallet, USDT after the
+    // cutover, and every leg leaves it: its rows, not the legacy USD
+    // wallet's, are the ones the list must show (reconcile.ts). A record
+    // naming the legacy wallet would let its old rows stand in for a USDT
+    // wallet the API could not read (ENG-725), and the group read absent.
+    const fake = setup()
+    fake.graphql.wallets.mockResolvedValue([
+      wallet({
+        __typename: "UsdtWallet",
+        id: "my-usdt",
+        walletCurrency: "USDT",
+        balance: 10_000,
+      }),
+      BTC_ROW,
+    ])
+
+    const action = prepared(
+      await run({ payees: ["Alice", "Bob"], total: "10", currency: "USD" }, fake),
+    )
+
+    expect(action.summary).toMatchObject({ sourceWallet: "USDT" })
+    expect(action.dispatch?.sourceWalletCurrency).toBe("USDT")
   })
 
   it("sends every leg once, in order, each under its own key, and succeeds", async () => {

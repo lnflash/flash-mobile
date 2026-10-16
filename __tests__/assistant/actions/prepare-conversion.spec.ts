@@ -140,6 +140,33 @@ describe("prepareConversion, cash -> BTC (useSwap's prepareUsdToBtc)", () => {
     expect(action.dispatch?.sourceWalletCurrency).toBe("USD")
   })
 
+  it("names the USDT cash wallet as the paying wallet once the account is cut over", async () => {
+    // "USD" names the cash wallet, which after the cutover is the USDT one:
+    // the API shows this client the active settlement wallet, and the
+    // conversion pays from it. Its rows, not the legacy USD wallet's, are
+    // the ones the list must show (reconcile.ts); a record naming the legacy
+    // wallet would let its old rows stand in for a USDT wallet the API could
+    // not read (ENG-725), and the conversion read absent.
+    const fake = setup()
+    fake.graphql.wallets.mockResolvedValue([
+      wallet({
+        __typename: "UsdtWallet",
+        id: "my-usdt",
+        walletCurrency: "USDT",
+        balance: 10_000,
+      }),
+      BTC_ROW,
+    ])
+
+    const action = prepared(await run(CASH_TO_BTC, fake))
+
+    expect(fake.actions.feeProbes.lnUsdInvoiceFeeProbe.mock.calls[0][0]).toMatchObject({
+      variables: { input: { walletId: "my-usdt" } },
+    })
+    expect(action.summary).toMatchObject({ sourceWallet: "USDT", toWallet: "BTC" })
+    expect(action.dispatch?.sourceWalletCurrency).toBe("USDT")
+  })
+
   it("shows what leaves the cash wallet as amount + fee = total, and what reaches the BTC wallet on its own line", async () => {
     const fake = setup()
 
