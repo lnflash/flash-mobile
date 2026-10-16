@@ -27,7 +27,7 @@ import { PaymentSendResult } from "@app/graphql/generated"
 import { breezBtcRail } from "@app/payments/btc-rail"
 import { GraphqlMutationFns, sendPayment } from "@app/payments/send-payment"
 import type { SendPaymentMutation } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
-import { fakeGraphqlRail, recordingTelemetry } from "./fakes"
+import { fakeGraphqlRail, fundedBefore, page, recordingTelemetry } from "./fakes"
 
 export const T0 = 1_760_000_000_000
 
@@ -59,6 +59,8 @@ export const DISPATCH = {
     settlementCurrency: "USD" as const,
     amount: 500,
   },
+  /** Paid from the legacy USD cash wallet. */
+  sourceWalletCurrency: "USD" as const,
 }
 
 type ActionOverrides = Partial<Omit<PreparedAction, "execute" | "refresh">> & {
@@ -171,16 +173,24 @@ export const lostResponse = () => Promise.reject(new Error("Network request fail
 
 /**
  * An executor over the real dispatch journal and the real transaction-list
- * reconciler, whose actions pay alice $5 through the real sendPayment and
- * journaled triggers. A case scripts the one trigger they call,
- * `intraLedgerUsdPaymentSend`, and what the list shows, `graphql.transactions`
- * (empty and read in full unless it says otherwise). A trigger that rejects
- * is a lost response: execute() reports an unknown outcome to retry under
- * the same key, as prepareSend's will (ENG-688).
+ * reconciler, whose actions pay alice $5 from the USD cash wallet through
+ * the real sendPayment and journaled triggers. A case scripts the one
+ * trigger they call, `intraLedgerUsdPaymentSend`, and what the list shows,
+ * `graphql.transactions`. Unless the case says otherwise the list shows a
+ * funded history and nothing since: one page holding only the deposit that
+ * funded the cash wallet, a day before T0, which settled before any
+ * dispatch. A trigger that rejects is a lost response: execute() reports an
+ * unknown outcome to retry under the same key, as prepareSend's does. The
+ * phone's clock is the server's (each dispatch is journaled with a
+ * serverClockOffsetMs of 0) unless the case says otherwise.
  */
 export const setupSendingExecutor = ({
   storage = memoryStorage(),
-}: { storage?: JournalStorage } = {}) => {
+  serverClockOffsetMs = () => 0,
+}: {
+  storage?: JournalStorage
+  serverClockOffsetMs?: () => number | null
+} = {}) => {
   let clock = T0
   const now = () => clock
   const advance = (ms: number) => {
@@ -188,6 +198,7 @@ export const setupSendingExecutor = ({
   }
   const journal = createAttemptJournal({ storage })
   const graphql = fakeGraphqlRail()
+  graphql.transactions.mockResolvedValue(page([fundedBefore(T0, "USD")]))
   const reconcile = jest.fn(
     createTransactionListReconciler({
       graphql: graphql as unknown as GraphqlRail,
@@ -201,6 +212,7 @@ export const setupSendingExecutor = ({
     reconcile,
     telemetry: recordingTelemetry().telemetry,
     now,
+    serverClockOffsetMs,
   })
   const execute = async (ctx: ExecuteContext): Promise<ExecutionOutcome> => {
     try {

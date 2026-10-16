@@ -3,6 +3,11 @@
 // dependency. A schema is checked when a tool is defined, so a tool with a
 // keyword this file does not implement fails at load instead of accepting
 // input its author meant to refuse.
+//
+// ENG-688 grew the subset by arrays (`items`, `minItems`, `maxItems`): a
+// group send takes a list of payees, and the action cards, whose payloads
+// are validated at render time by this same validator (spec §6), carry lists
+// of legs, options and transaction ids.
 
 /** The keywords this validator implements. Any other keyword is refused. */
 export const SUPPORTED_KEYWORDS = [
@@ -13,9 +18,12 @@ export const SUPPORTED_KEYWORDS = [
   "enum",
   "pattern",
   "maximum",
+  "items",
+  "minItems",
+  "maxItems",
 ] as const
 
-export type SchemaType = "object" | "string" | "integer" | "number" | "boolean"
+export type SchemaType = "object" | "array" | "string" | "integer" | "number" | "boolean"
 
 export type EnumValue = string | number | boolean
 
@@ -28,6 +36,10 @@ export type JsonSchema = {
   enum?: readonly EnumValue[]
   pattern?: string
   maximum?: number
+  /** Must be set wherever `type` is "array": every item is checked against it. */
+  items?: JsonSchema
+  minItems?: number
+  maxItems?: number
 }
 
 /** The schema every tool input has: a closed object. */
@@ -51,9 +63,18 @@ export type ValidationResult =
 
 export type Validator = (value: unknown) => ValidationResult
 
-const TYPES: readonly SchemaType[] = ["object", "string", "integer", "number", "boolean"]
+const TYPES: readonly SchemaType[] = [
+  "object",
+  "array",
+  "string",
+  "integer",
+  "number",
+  "boolean",
+]
 
 const OBJECT_ONLY = ["properties", "required", "additionalProperties"] as const
+
+const ARRAY_ONLY = ["items", "minItems", "maxItems"] as const
 
 const hasOwn = (target: object, key: string): boolean =>
   Object.prototype.hasOwnProperty.call(target, key)
@@ -73,6 +94,8 @@ const matchesType = (value: unknown, type: SchemaType): boolean => {
   switch (type) {
     case "object":
       return isPlainObject(value)
+    case "array":
+      return Array.isArray(value)
     case "string":
       return typeof value === "string"
     case "integer":
@@ -205,6 +228,57 @@ const compileObject = (schema: JsonSchema, path: string): Validator | undefined 
   }
 }
 
+/** A count keyword (`minItems`, `maxItems`): a whole number of items, or absent. */
+const compileCount = (
+  schema: JsonSchema,
+  keyword: "minItems" | "maxItems",
+  path: string,
+): number | undefined => {
+  const count: unknown = schema[keyword]
+  if (count === undefined) return undefined
+  if (typeof count !== "number" || !Number.isInteger(count) || count < 0) {
+    throw new SchemaDefinitionError(path, `"${keyword}" must be a whole number`)
+  }
+  return count
+}
+
+const compileArray = (schema: JsonSchema, path: string): Validator | undefined => {
+  if (schema.type !== "array") {
+    ARRAY_ONLY.forEach((keyword) => {
+      if (schema[keyword] !== undefined) {
+        throw new SchemaDefinitionError(path, `"${keyword}" needs type "array"`)
+      }
+    })
+    return undefined
+  }
+  // An array of anything would be an open door, as an open object would be.
+  if (schema.items === undefined) {
+    throw new SchemaDefinitionError(path, `arrays must declare "items"`)
+  }
+  // compileNode and compileArray recurse into each other.
+  const validateItem = compileNode(schema.items, `${path}[]`)
+  const minItems = compileCount(schema, "minItems", path)
+  const maxItems = compileCount(schema, "maxItems", path)
+  if (minItems !== undefined && maxItems !== undefined && minItems > maxItems) {
+    throw new SchemaDefinitionError(path, `"minItems" is above "maxItems"`)
+  }
+
+  return (value) => {
+    const items = value as readonly unknown[]
+    if (minItems !== undefined && items.length < minItems) {
+      return invalid(path, "has too few items")
+    }
+    if (maxItems !== undefined && items.length > maxItems) {
+      return invalid(path, "has too many items")
+    }
+    for (const item of items) {
+      const result = validateItem(item)
+      if (!result.valid) return result
+    }
+    return VALID
+  }
+}
+
 const compileNode = (schema: JsonSchema, path: string): Validator => {
   if (!isPlainObject(schema)) {
     throw new SchemaDefinitionError(path, "is not a schema object")
@@ -214,6 +288,7 @@ const compileNode = (schema: JsonSchema, path: string): Validator => {
   const matchesPattern = compilePattern(schema, path)
   const underMaximum = compileMaximum(schema, path)
   const validateObject = compileObject(schema, path)
+  const validateArray = compileArray(schema, path)
   const { type } = schema
 
   return (value) => {
@@ -228,6 +303,7 @@ const compileNode = (schema: JsonSchema, path: string): Validator => {
       return invalid(path, "is above the maximum")
     }
     if (validateObject) return validateObject(value)
+    if (validateArray) return validateArray(value)
     return VALID
   }
 }
@@ -235,8 +311,9 @@ const compileNode = (schema: JsonSchema, path: string): Validator => {
 /**
  * Check a tool's input schema once, at definition time, and return its
  * validator. Throws SchemaDefinitionError for anything outside the subset:
- * an unknown keyword, an empty schema, an object that is not closed, a
- * keyword on a type it does not apply to, or a pattern that does not compile.
+ * an unknown keyword, an empty schema, an object that is not closed, an
+ * array with no `items`, a keyword on a type it does not apply to, or a
+ * pattern that does not compile.
  */
 export const compileSchema = (schema: ObjectSchema): Validator => {
   if (!isPlainObject(schema) || schema.type !== "object") {

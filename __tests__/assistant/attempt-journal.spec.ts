@@ -24,7 +24,9 @@ const record = (overrides: Partial<DispatchRecord> = {}): DispatchRecord => ({
   paymentDetailHash: DISPATCH.paymentDetailHash,
   dispatchedAt: T0,
   lastDispatchedAt: T0,
+  serverClockOffsetMs: 0,
   match: DISPATCH.match,
+  sourceWalletCurrency: DISPATCH.sourceWalletCurrency,
   ...overrides,
 })
 
@@ -91,6 +93,90 @@ describe("the dispatch journal", () => {
     ])
   })
 
+  it("reads a record stored without the paying wallet as one whose wallet is not known, never dropping it", async () => {
+    // Written before the journal kept sourceWalletCurrency. Dropping it would
+    // let its payment go again unreconciled; read with a null wallet, it is
+    // never called absent (reconcile.ts).
+    const storage = memoryStorage()
+    const { sourceWalletCurrency: _absent, ...older } = record({
+      preparedActionId: "older",
+    })
+    const garbled = {
+      ...record({ preparedActionId: "garbled" }),
+      sourceWalletCurrency: 7,
+    }
+    storage.data.set(ATTEMPT_JOURNAL_KEY, JSON.stringify([older, garbled]))
+    const journal = createAttemptJournal({ storage })
+
+    await expect(journal.pending()).resolves.toEqual([
+      record({ preparedActionId: "older", sourceWalletCurrency: null }),
+      record({ preparedActionId: "garbled", sourceWalletCurrency: null }),
+    ])
+
+    // A later write keeps it, as read.
+    await journal.record(record({ preparedActionId: "newer" }))
+    await expect(journal.pending()).resolves.toEqual([
+      record({ preparedActionId: "older", sourceWalletCurrency: null }),
+      record({ preparedActionId: "garbled", sourceWalletCurrency: null }),
+      record({ preparedActionId: "newer" }),
+    ])
+  })
+
+  it("keeps the first dispatch's clock offset on a retry", async () => {
+    // The list is read back to the first dispatch, which is placed on the
+    // server's clock by the offset measured when it went (reconcile.ts).
+    const journal = createAttemptJournal({ storage: memoryStorage() })
+
+    await journal.record(record({ serverClockOffsetMs: 300_000 }))
+    await journal.record(
+      record({
+        dispatchedAt: T0 + 150_000,
+        lastDispatchedAt: T0 + 150_000,
+        serverClockOffsetMs: 0,
+      }),
+    )
+
+    await expect(journal.pending()).resolves.toEqual([
+      record({ lastDispatchedAt: T0 + 150_000, serverClockOffsetMs: 300_000 }),
+    ])
+  })
+
+  it("reads a record stored without the clock offset as one whose offset is not known, never dropping it", async () => {
+    // Written before the journal kept serverClockOffsetMs, or with one it
+    // cannot use. Dropping it would let its payment go again unreconciled;
+    // read with a null offset, it is never called absent (reconcile.ts).
+    const storage = memoryStorage()
+    const { serverClockOffsetMs: _absent, ...older } = record({
+      preparedActionId: "older",
+    })
+    const garbled = {
+      ...record({ preparedActionId: "garbled" }),
+      serverClockOffsetMs: "300000",
+    }
+    // JSON.stringify writes no such number; a stored 1e400 reads as Infinity.
+    const infinite = JSON.stringify(record({ preparedActionId: "infinite" })).replace(
+      '"serverClockOffsetMs":0',
+      '"serverClockOffsetMs":1e400',
+    )
+    storage.data.set(
+      ATTEMPT_JOURNAL_KEY,
+      `[${JSON.stringify(older)},${JSON.stringify(garbled)},${infinite}]`,
+    )
+    const journal = createAttemptJournal({ storage })
+    const unplaced = ["older", "garbled", "infinite"].map((preparedActionId) =>
+      record({ preparedActionId, serverClockOffsetMs: null }),
+    )
+
+    await expect(journal.pending()).resolves.toEqual(unplaced)
+
+    // A later write keeps them, as read.
+    await journal.record(record({ preparedActionId: "newer" }))
+    await expect(journal.pending()).resolves.toEqual([
+      ...unplaced,
+      record({ preparedActionId: "newer" }),
+    ])
+  })
+
   it("loses no record when dispatches are written at once", async () => {
     const journal = createAttemptJournal({ storage: memoryStorage() })
 
@@ -131,6 +217,52 @@ describe("the dispatch journal", () => {
     )
     await expect(journal.pending()).resolves.toEqual([record()])
     warn.mockRestore()
+  })
+
+  it("keeps a group send's anyOf record and a BTC-rail record (ENG-688)", async () => {
+    const journal = createAttemptJournal({ storage: memoryStorage() })
+    const group = record({
+      preparedActionId: "group-1",
+      match: {
+        kind: "anyOf",
+        matches: [
+          DISPATCH.match,
+          { ...DISPATCH.match, counterPartyWalletId: "carol-wallet" },
+        ],
+      },
+    })
+    const btc = record({
+      preparedActionId: "btc-1",
+      idempotencyKey: null,
+      match: { kind: "btcRail" },
+    })
+
+    await journal.record(group)
+    await journal.record(btc)
+
+    await expect(journal.pending()).resolves.toEqual([group, btc])
+  })
+
+  it("drops an anyOf record it could never reconcile", async () => {
+    // An empty group could never be settled and would read as absent; a
+    // nested or malformed leg is not one the reconciler knows.
+    const storage = memoryStorage()
+    const journal = createAttemptJournal({ storage })
+    const anyOf = (matches: unknown) =>
+      record({ match: { kind: "anyOf", matches } as never })
+
+    storage.data.set(
+      ATTEMPT_JOURNAL_KEY,
+      JSON.stringify([
+        anyOf([]),
+        anyOf("not-a-list"),
+        anyOf([{ kind: "anyOf", matches: [DISPATCH.match] }]),
+        anyOf([DISPATCH.match, { kind: "lightning" }]),
+        record(),
+      ]),
+    )
+
+    await expect(journal.pending()).resolves.toEqual([record()])
   })
 })
 
@@ -340,7 +472,12 @@ describe("a dispatch that outlives the app", () => {
         paymentDetailHash: DISPATCH.paymentDetailHash,
         dispatchedAt: T0,
         lastDispatchedAt: T0,
+        // No GraphQL answer has shown the server's clock in this run of the
+        // app (no Apollo client runs here), so the record says it is not
+        // known, and the relaunched app never calls the payment absent.
+        serverClockOffsetMs: null,
         match: DISPATCH.match,
+        sourceWalletCurrency: "USD",
       },
     ])
     expect(key).toMatch(/^[0-9a-f-]{36}$/)
@@ -365,7 +502,7 @@ describe("a dispatch that outlives the app", () => {
     expect(relaunched.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
   })
 
-  it("says a payment of this amount to this recipient was already sent when the list shows it", async () => {
+  it("says a payment of this amount to this person was already sent when the list shows it", async () => {
     await dieMidSend()
     const relaunched = launch("settled", T0 + 30_000)
     const again = relaunched.prepare()

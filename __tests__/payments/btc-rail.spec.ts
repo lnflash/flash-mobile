@@ -13,11 +13,14 @@ jest.mock("@app/utils/breez-sdk", () => ({
   // Advance mode's switch (ENG-687): a no-op is a wallet switched on. A case
   // that switches it off makes it throw, as spark.ts does.
   assertBreezSDKSwitchedOn: jest.fn(),
+  fetchBreezFee: jest.fn(),
   getInfo: jest.fn(),
   listPaymentsBreezSDK: jest.fn(),
   payLightningBreez: jest.fn(),
   payLnurlBreez: jest.fn(),
   payOnchainBreez: jest.fn(),
+  receiveOnchainBreez: jest.fn(),
+  receivePaymentBreez: jest.fn(),
 }))
 
 import * as breezSdk from "@app/utils/breez-sdk"
@@ -32,11 +35,14 @@ import {
 
 const wrappers = breezSdk as unknown as Record<string, jest.Mock>
 const WRAPPERS = [
+  "fetchBreezFee",
   "getInfo",
   "listPaymentsBreezSDK",
   "payLightningBreez",
   "payLnurlBreez",
   "payOnchainBreez",
+  "receiveOnchainBreez",
+  "receivePaymentBreez",
 ]
 
 // rail method → the wrapper it must delegate to, and the arguments a caller
@@ -57,6 +63,16 @@ const delegates: [keyof BtcRail, string, unknown[]][] = [
     "payOnchain",
     "payOnchainBreez",
     ["bc1qdestination", 2100, "slow", "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed"],
+  ],
+  // ENG-688: amount in sats and a description, as payment-request.ts asks.
+  ["createInvoice", "receivePaymentBreez", [2100, "Pay to Flash Wallet User"]],
+  // The receive screen's on-chain request takes no arguments.
+  ["getOnchainAddress", "receiveOnchainBreez", []],
+  // What prepareSend and the BTC -> USD conversion probe.
+  [
+    "probeFee",
+    "fetchBreezFee",
+    [{ paymentType: "lnurl", paymentRequest: "alice@flashapp.me", amountSats: 2100 }],
   ],
 ]
 
@@ -101,6 +117,16 @@ describe("breezBtcRail", () => {
     wrappers.payLnurlBreez.mockRejectedValue(refusal)
 
     await expect(breezBtcRail.payLnurl("not-an-lnurl", 2100, "")).rejects.toBe(refusal)
+  })
+
+  it("passes a receive wrapper's rejection through unchanged", async () => {
+    // receivePaymentBreez throws the typed not-running error while the SDK
+    // is not up (getSDKInstance). prepareReceive reports it, so the rail
+    // must hand it over as it is.
+    const notRunning = new BreezSdkNotInitializedError({ reason: "starting" })
+    wrappers.receivePaymentBreez.mockRejectedValue(notRunning)
+
+    await expect(breezBtcRail.createInvoice(2100, "memo")).rejects.toBe(notRunning)
   })
 })
 

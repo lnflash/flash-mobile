@@ -1,5 +1,6 @@
 import { decodeInvoiceString, Network as NetworkLibGaloy } from "@galoymoney/client"
 import { Network } from "@app/graphql/generated"
+import type { TranslationFunctions } from "@app/i18n/i18n-types"
 import { Invoice, GetFullUriInput } from "./index.types"
 import { toBtcMoneyAmount, toUsdMoneyAmount } from "@app/types/amounts"
 
@@ -77,6 +78,35 @@ export const generateFutureLocalTime = (secondsToAdd: number): string => {
   const period = date.getHours() >= 12 ? "PM" : "AM" // Get AM/PM
 
   return `${hours}:${minutes}${period}`
+}
+
+/**
+ * How long a Lightning invoice stays payable, as the receive screen says it
+ * (use-receive-bitcoin.ts): a day, the next few hours, a time of day, a
+ * countdown, then "now". The assistant's invoice card says it the same way.
+ */
+export const lightningInvoiceValidity = (
+  LL: TranslationFunctions,
+  expiresInSeconds: number,
+): string => {
+  if (expiresInSeconds > 60 * 60 * 23)
+    return LL.ReceiveScreen.invoiceValidity.validFor1Day()
+  if (expiresInSeconds > 60 * 60 * 6) {
+    return LL.ReceiveScreen.invoiceValidity.validForNext({
+      duration: secondsToH(expiresInSeconds),
+    })
+  }
+  if (expiresInSeconds > 60 * 2) {
+    return LL.ReceiveScreen.invoiceValidity.validBefore({
+      time: generateFutureLocalTime(expiresInSeconds),
+    })
+  }
+  if (expiresInSeconds > 0) {
+    return LL.ReceiveScreen.invoiceValidity.expiresIn({
+      duration: secondsToHMS(expiresInSeconds),
+    })
+  }
+  return LL.ReceiveScreen.invoiceValidity.expiresNow()
 }
 
 export const prToDateString = (paymentRequest: string, network: Network) => {

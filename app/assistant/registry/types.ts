@@ -1,8 +1,11 @@
 import type { WalletCurrency } from "@app/graphql/generated"
+import type { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
 import type { BtcRail } from "@app/payments/btc-rail"
-import type { AttemptState } from "@app/payments/send-payment"
+import type { AttemptState, SendPaymentDeps } from "@app/payments/send-payment"
+import type { GraphqlActionRail } from "../rails/graphql-action-rail"
 import type { GraphqlRail } from "../rails/graphql-rail"
+import type { LnurlInvoiceRequest } from "../rails/lnurl-invoice"
 
 // The assistant's core contracts (docs/ai-assistant-tool-registry.md §3).
 
@@ -76,9 +79,25 @@ export type ClarificationCard = {
   type: "clarification"
   prompt: AssistantReplyKey
   options: ClarificationOption[]
+  /**
+   * The words of the call the question is about, when it is about one
+   * argument (ENG-688): the payee a send named. A pick re-issues the call
+   * with that argument (in a group send, that one payee) replaced by the
+   * option's id.
+   */
+  about?: string
 }
 
-export type PrepareRefusalReason = "insufficientBalance" | "limitExceeded"
+/**
+ * - insufficientBalance, limitExceeded: the affordability check (spec §5.1).
+ * - notAvailableYet: a payment the assistant may not dispatch yet because
+ *   the branch it would take is gated on an open bug (actions/shared/gates.ts;
+ *   no branch is gated since ENG-720 opened BTC-wallet bolt11 sends).
+ */
+export type PrepareRefusalReason =
+  | "insufficientBalance"
+  | "limitExceeded"
+  | "notAvailableYet"
 
 /**
  * The templated error card for an action its `prepare` refused (spec §5.1,
@@ -118,13 +137,30 @@ export type SummaryValue =
 export type ActionSummary = { readonly [field: string]: SummaryValue }
 
 /**
- * How a dispatched payment shows up in the account's transaction list, so a
- * dispatch whose outcome was lost (the app was killed mid-send) can be
- * reconciled after a relaunch (spec §5.1, "Process death"). Each kind names
- * an identifier the transaction rows carry. `amount` is in the settlement
- * currency's minor units, unsigned.
+ * How one dispatched payment shows up in the account's transaction list, so
+ * a dispatch whose outcome was lost (the app was killed mid-send) can be
+ * reconciled after a relaunch (spec §5.1, "Process death"). Each GraphQL
+ * kind names an identifier the transaction rows have a field for. `amount`
+ * is in the settlement currency's minor units, unsigned.
+ *
+ * On lnflash/flash main no row fills those fields yet (every
+ * Lightning row has paymentHash "", every on-chain row address "", and no
+ * row names an intraledger counterparty), so a sent row since the dispatch
+ * can never be ruled out, and the reconciler answers "unknown" while there
+ * is one (engine/reconcile.ts).
+ *
+ * `btcRail` is a payment the BTC wallet made through Breez (ENG-688). That
+ * wallet is self-custodial, so its payments are not in the GraphQL list at
+ * all: the list can never show one went, and its absence proves nothing, so
+ * reconciling one is always "unknown". A record of one whose outcome was
+ * lost therefore blocks the same payment until its day-old record may be
+ * cleared on the user's word (executor.ts, `historyChecked`).
+ *
+ * `cashout` is a settlement to a bank account (prepareCashout). Nothing in
+ * the list says which settlement a row was, so it reconciles to "unknown"
+ * the same way, until ENG-716 gives the client a way to match one.
  */
-export type TransactionMatch =
+export type SingleTransactionMatch =
   | { kind: "lightning"; paymentHash: string }
   | {
       kind: "intraledger"
@@ -133,15 +169,35 @@ export type TransactionMatch =
       amount: number
     }
   | { kind: "onchain"; address: string }
+  | { kind: "btcRail" }
+  | { kind: "cashout" }
+
+/**
+ * A dispatched action's payments as the transaction list shows them: one,
+ * or, for a group send (ENG-688), every leg it may dispatch, `anyOf`. An
+ * action whose list shows any of its legs went is one that sent money.
+ */
+export type TransactionMatch =
+  | SingleTransactionMatch
+  | { kind: "anyOf"; matches: readonly SingleTransactionMatch[] }
 
 /**
  * What the dispatch journal needs to know about an action that moves money:
- * a hash of the payment it makes (hashPaymentDetail) and how to find it in
- * the transaction list.
+ * a hash of the payment it makes (hashPaymentDetail), how to find it in the
+ * transaction list, and which wallet it leaves.
  */
 export type DispatchIdentity = {
   paymentDetailHash: string
   match: TransactionMatch
+  /**
+   * The currency of the wallet the payment leaves (ENG-688): the cash
+   * wallet's (USD, or USDT once the account is cut over) or BTC. Rows in the
+   * transaction list carry no wallet id, and an account holds one cash
+   * wallet per currency, so this names the paying wallet's rows there by
+   * their settlement currency. The list can prove the payment absent only
+   * when it shows that wallet's rows (engine/reconcile.ts).
+   */
+  sourceWalletCurrency: WalletCurrency
 }
 
 /**
@@ -165,6 +221,10 @@ export type ExecuteContext = {
  * What one Confirm did. The executor follows `next` and keeps no other
  * knowledge of payment rails.
  *
+ * `summary`, when present, is what the card shows after this Confirm: a
+ * group send's legs with the status each one reached (ENG-688). The executor
+ * passes it through to the card and reads nothing in it.
+ *
  * - succeeded: the action did what it was for.
  * - failed: nothing moved, by proof (a resolved Failure status, or a refusal
  *   before dispatch). `confirmAgain` keeps the card armed for a new attempt;
@@ -173,15 +233,26 @@ export type ExecuteContext = {
  *   armed and the same AttemptState (a GraphQL send whose response was lost
  *   retries under its key); `checkHistory` disarms the card and sends the
  *   user to their history, with no re-prepare (a keyless send that may have
- *   left, spec v0.2.6).
+ *   left, spec v0.2.6). `prepareRest` (ENG-688): part of what the action
+ *   owed went and the rest provably did not, but the rest's numbers are past
+ *   their expiry (a group send's legs). The action retires and its record
+ *   stays, so nothing that went can go again from another card for the same
+ *   payment; the card offers to prepare the rest, and the action's refresh()
+ *   prepares only what did not go, never what may have.
  */
 export type ExecutionOutcome =
-  | { status: "succeeded" }
-  | { status: "failed"; replyKey: AssistantReplyKey; next: "confirmAgain" | "reprepare" }
+  | { status: "succeeded"; summary?: ActionSummary }
+  | {
+      status: "failed"
+      replyKey: AssistantReplyKey
+      next: "confirmAgain" | "reprepare"
+      summary?: ActionSummary
+    }
   | {
       status: "unknown"
       replyKey: AssistantReplyKey
-      next: "retrySameAttempt" | "checkHistory"
+      next: "retrySameAttempt" | "checkHistory" | "prepareRest"
+      summary?: ActionSummary
     }
 
 export type PreparedAction = {
@@ -219,6 +290,43 @@ export type ReadToolCtx = {
   btcRail: BtcReadRail
   /** The account's display currency, as `realtimePrice` takes it ("USD", "JMD"). */
   displayCurrency: string
+  /** Epoch milliseconds. */
+  now: () => number
+}
+
+/**
+ * The app's display-currency formatter (useDisplayCurrency), as the action
+ * tools fill every card's *Text field with it: a card never formats (spec
+ * §6). Whoever builds the context inside React hands the hook's own
+ * functions in. `fractionDigits` is the display currency's places, which a
+ * bare amount (no unit) is read in (spec v0.2.5 §5.1).
+ */
+export type DisplayFormatter = Pick<
+  ReturnType<typeof useDisplayCurrency>,
+  "formatMoneyAmount" | "formatDisplayAndWalletAmount" | "fractionDigits"
+>
+
+/**
+ * What an action tool is handed: the read rails, plus what preparing and
+ * executing a payment takes (ENG-688). The send triggers and the BTC rail's
+ * sends are reached only from inside a prepared action's execute(), which
+ * only the executor calls, after a Confirm.
+ */
+export type ActionToolCtx = {
+  /** The thread the prepared action belongs to. */
+  threadId: string
+  graphql: GraphqlRail
+  /** The custodial rail's fee probes, invoices, addresses and settlement calls. */
+  graphqlActions: GraphqlActionRail
+  /** The whole BTC rail: its reads, its prepare members and its sends. */
+  btcRail: BtcRail
+  /** The nine GraphQL send triggers and the instance's endpoint and host. */
+  send: Omit<SendPaymentDeps, "btcRail">
+  /** An invoice from an LNURL-pay service, as the send screen asks for one. */
+  requestLnurlInvoice: LnurlInvoiceRequest
+  /** The account's display currency, as `realtimePrice` takes it ("USD", "JMD"). */
+  displayCurrency: string
+  display: DisplayFormatter
   /** Epoch milliseconds. */
   now: () => number
 }

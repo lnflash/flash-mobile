@@ -1,10 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { sha256 } from "js-sha256"
 
-import type { WalletCurrency } from "@app/graphql/generated"
+import { WalletCurrency } from "@app/graphql/generated"
 import type { GraphqlMutationFns } from "@app/payments/send-payment"
 import type { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
-import type { TransactionMatch } from "../registry/types"
+import type { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
+import type { SingleTransactionMatch, TransactionMatch } from "../registry/types"
 import { canonicalJson } from "./canonical-json"
 import { isPlainObject } from "./schema-validator"
 
@@ -23,18 +24,38 @@ export type DispatchRecord = {
   /** hashPaymentDetail of the payment, which a new action for it shares. */
   paymentDetailHash: string
   /**
-   * Epoch milliseconds of the action's first dispatch: the earliest the
-   * payment can have reached the server, so the list is read back to it.
+   * Epoch milliseconds of the action's first dispatch, on the phone's clock.
+   * Less serverClockOffsetMs, it is the earliest the payment can have
+   * reached the server, on the server's clock, which stamps the list's rows:
+   * the list is read back to that moment.
    */
   dispatchedAt: number
   /**
    * Epoch milliseconds of the action's latest dispatch, a retry under the
-   * same key included: the latest the payment can have set off, so its
-   * absence from the list proves nothing until this one is old enough.
+   * same key included, on the phone's clock: the latest the payment can have
+   * set off, so its absence from the list proves nothing until this one is
+   * old enough by the same clock.
    */
   lastDispatchedAt: number
+  /**
+   * The phone's clock less the server's, in milliseconds, when the action
+   * first dispatched, from the Date header of the latest GraphQL answer
+   * before it (app/graphql/server-clock.ts). It places dispatchedAt among
+   * the list's rows, which the server's clock stamps. Null when no answer
+   * had shown it, or for a record written before the journal kept it: the
+   * reconciler cannot place the dispatch, so it never calls its payment
+   * absent.
+   */
+  serverClockOffsetMs: number | null
   /** How to find the payment in the transaction list (reconcile.ts). */
   match: TransactionMatch
+  /**
+   * The currency of the wallet the payment left (DispatchIdentity), which
+   * names that wallet's rows in the transaction list. Null for a record
+   * written before the journal kept it: the reconciler cannot tell which
+   * rows are that wallet's, so it never calls its payment absent.
+   */
+  sourceWalletCurrency: WalletCurrency | null
 }
 
 export type AttemptJournal = {
@@ -58,18 +79,44 @@ export type JournalStorage = {
 
 export const ATTEMPT_JOURNAL_KEY = "assistant.pendingDispatches.v1"
 
-const MATCH_FIELDS: Record<TransactionMatch["kind"], readonly string[]> = {
+const MATCH_FIELDS: Record<SingleTransactionMatch["kind"], readonly string[]> = {
   lightning: ["paymentHash"],
   intraledger: ["counterPartyWalletId", "settlementCurrency", "amount"],
   onchain: ["address"],
+  btcRail: [],
+  cashout: [],
 }
 
-const isMatch = (value: unknown): value is TransactionMatch => {
+const isSingleMatch = (value: unknown): value is SingleTransactionMatch => {
   if (!isPlainObject(value) || typeof value.kind !== "string") return false
   const fields: readonly string[] | undefined =
-    MATCH_FIELDS[value.kind as TransactionMatch["kind"]]
+    MATCH_FIELDS[value.kind as SingleTransactionMatch["kind"]]
   return fields !== undefined && fields.every((field) => value[field] !== undefined)
 }
+
+/**
+ * A stored match the reconciler can use. A group's `anyOf` must name at
+ * least one leg, each of them a single match: an empty one could never be
+ * settled, and would read as absent.
+ */
+const isMatch = (value: unknown): value is TransactionMatch => {
+  if (isPlainObject(value) && value.kind === "anyOf") {
+    return (
+      Array.isArray(value.matches) &&
+      value.matches.length > 0 &&
+      value.matches.every(isSingleMatch)
+    )
+  }
+  return isSingleMatch(value)
+}
+
+const WALLET_CURRENCIES: readonly unknown[] = Object.values(WalletCurrency)
+
+const isWalletCurrency = (value: unknown): value is WalletCurrency =>
+  WALLET_CURRENCIES.includes(value)
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value)
 
 const isRecord = (value: unknown): value is DispatchRecord =>
   isPlainObject(value) &&
@@ -78,19 +125,31 @@ const isRecord = (value: unknown): value is DispatchRecord =>
   typeof value.paymentDetailHash === "string" &&
   typeof value.dispatchedAt === "number" &&
   typeof value.lastDispatchedAt === "number" &&
-  isMatch(value.match)
+  (isFiniteNumber(value.serverClockOffsetMs) || value.serverClockOffsetMs === null) &&
+  isMatch(value.match) &&
+  (isWalletCurrency(value.sourceWalletCurrency) || value.sourceWalletCurrency === null)
 
 /**
- * A stored record, or undefined for one the journal cannot use. A record
- * written before lastDispatchedAt existed is read as one with a single
- * dispatch: dropping it would let its payment go again unreconciled.
+ * A stored record, or undefined for one the journal cannot use. Dropping a
+ * record would let its payment go again unreconciled, so a field a record
+ * was written without is read as its absence means: no lastDispatchedAt as
+ * a single dispatch, and no readable serverClockOffsetMs or
+ * sourceWalletCurrency as an offset or a paying wallet not known (null),
+ * either of which the reconciler never calls absent.
  */
 const parseRecord = (value: unknown): DispatchRecord | undefined => {
   if (!isPlainObject(value)) return undefined
-  const record =
-    value.lastDispatchedAt === undefined
-      ? { ...value, lastDispatchedAt: value.dispatchedAt }
-      : value
+  const record = {
+    ...value,
+    lastDispatchedAt:
+      value.lastDispatchedAt === undefined ? value.dispatchedAt : value.lastDispatchedAt,
+    serverClockOffsetMs: isFiniteNumber(value.serverClockOffsetMs)
+      ? value.serverClockOffsetMs
+      : null,
+    sourceWalletCurrency: isWalletCurrency(value.sourceWalletCurrency)
+      ? value.sourceWalletCurrency
+      : null,
+  }
   return isRecord(record) ? record : undefined
 }
 
@@ -140,7 +199,8 @@ export const createAttemptJournal = ({
         }
         // A retry: the payment can set off again from now, so the window in
         // which it may still land starts over. The first dispatch stays, as
-        // the earliest it can have landed.
+        // the earliest it can have landed, with the clock offset that places
+        // it on the server's clock.
         const retried: DispatchRecord = {
           ...held,
           lastDispatchedAt: Math.max(held.lastDispatchedAt, record.lastDispatchedAt),
@@ -164,6 +224,8 @@ export const createAttemptJournal = ({
  * same, whatever was re-derived meanwhile: a settlement amount that moved
  * with the rate, or a freshly minted LNURL invoice, is not in it. The memo
  * is not in it either, so a payment cannot slip past the check by a new memo.
+ * A payment whose destination is itself minted for each action, a
+ * conversion's invoice, is not one this can name: see hashConversion.
  */
 export const hashPaymentDetail = (
   detail: Pick<
@@ -182,6 +244,72 @@ export const hashPaymentDetail = (
       amount: {
         amount: detail.unitOfAccountAmount.amount,
         currency: detail.unitOfAccountAmount.currency,
+      },
+    }),
+  )
+
+/**
+ * The identity of a settlement to a bank account (prepareCashout, ENG-688):
+ * the wallet it leaves, the bank account it reaches, and the amount the user
+ * denominated it in. Like hashPaymentDetail it leaves out what is
+ * re-derived for each new action: the offer, and the cents a display-currency
+ * amount converts to at the rate of the moment. Two cards for the same
+ * request are then one settlement to the executor, whichever offer each
+ * holds, and a settlement whose answer was lost blocks the next card for the
+ * same request.
+ */
+export const hashCashout = ({
+  walletId,
+  bankAccountId,
+  amount,
+}: {
+  walletId: string
+  bankAccountId: string
+  amount: MoneyAmount<WalletOrDisplayCurrency>
+}): string =>
+  sha256(
+    canonicalJson({
+      cashout: {
+        walletId,
+        bankAccountId,
+        amount: { amount: amount.amount, currency: amount.currency },
+      },
+    }),
+  )
+
+/**
+ * The identity of a conversion between the user's own wallets
+ * (prepareConversion, ENG-688): its direction, the wallet it leaves, the
+ * wallet it reaches, and the amount the user asked for, in the unit they
+ * named. A conversion pays an invoice its own prepare just minted on the
+ * receiving wallet, and that invoice is the payment detail's destination, so
+ * hashPaymentDetail would make every conversion a payment of its own and
+ * neither the per-payment queue nor the journal gate (spec §5.1) would ever
+ * apply to one. Like hashCashout, this leaves out what is minted for each new
+ * action: the invoice, and the settlement amount a display-currency amount
+ * converts to at the rate of the moment. Two cards for the same request are
+ * then one conversion to the executor, whichever invoice each pays, and a
+ * conversion whose answer was lost blocks the next card for the same
+ * request. Its record's match stays the invoice's own.
+ */
+export const hashConversion = ({
+  direction,
+  sourceWalletId,
+  targetWalletId,
+  amount,
+}: {
+  direction: "cashToBtc" | "btcToCash"
+  sourceWalletId: string
+  targetWalletId: string
+  amount: MoneyAmount<WalletOrDisplayCurrency>
+}): string =>
+  sha256(
+    canonicalJson({
+      conversion: {
+        direction,
+        sourceWalletId,
+        targetWalletId,
+        amount: { amount: amount.amount, currency: amount.currency },
       },
     }),
   )

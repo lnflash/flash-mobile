@@ -1,7 +1,9 @@
 import { WalletCurrency } from "@app/graphql/generated"
 import {
+  DisplayAmount,
   MoneyAmount,
   toBtcMoneyAmount,
+  toDisplayAmount,
   toUsdMoneyAmount,
   toWalletAmount,
 } from "@app/types/amounts"
@@ -54,6 +56,25 @@ const toMoneyAmount = (
   }
 }
 
+/** A decimal amount string as a count of minor units with `places` places. */
+const toMinorUnits = (
+  value: unknown,
+  places: number,
+): { ok: true; minorUnits: number } | { ok: false; reason: AmountRefusal } => {
+  if (typeof value !== "string" || !AMOUNT_RE.test(value)) {
+    return { ok: false, reason: "format" }
+  }
+  const [whole, fraction = ""] = value.split(".")
+  if (/[^0]/.test(fraction.slice(places))) {
+    return { ok: false, reason: "precision" }
+  }
+  const minorUnits = BigInt(whole + fraction.slice(0, places).padEnd(places, "0"))
+  if (minorUnits > BigInt(Number.MAX_SAFE_INTEGER)) {
+    return { ok: false, reason: "range" }
+  }
+  return { ok: true, minorUnits: Number(minorUnits) }
+}
+
 /**
  * Parse a decimal amount string into minor units of `currency`.
  *
@@ -65,17 +86,34 @@ const toMoneyAmount = (
  *   refused, as is an amount too large to count in minor units exactly.
  */
 export const parseAmount = (value: unknown, currency: AmountCurrency): ParsedAmount => {
-  if (typeof value !== "string" || !AMOUNT_RE.test(value)) {
-    return { ok: false, reason: "format" }
-  }
-  const [whole, fraction = ""] = value.split(".")
-  const places = DISPLAY_PLACES[currency]
-  if (/[^0]/.test(fraction.slice(places))) {
+  const parsed = toMinorUnits(value, DISPLAY_PLACES[currency])
+  if (!parsed.ok) return parsed
+  return { ok: true, amount: toMoneyAmount(parsed.minorUnits, currency) }
+}
+
+export type ParsedDisplayAmount =
+  | { ok: true; amount: DisplayAmount }
+  | { ok: false; reason: AmountRefusal }
+
+/**
+ * Parse a decimal amount string in the account's display currency (ENG-688,
+ * the bare-amount rule: a number with no unit is the display currency).
+ * `places` is that currency's fraction digits (useDisplayCurrency's
+ * fractionDigits: 2 for JMD, 0 for a currency without minor units). The
+ * same string arithmetic as parseAmount: nothing is rounded.
+ */
+export const parseDisplayAmount = (
+  value: unknown,
+  places: number,
+  currencyCode: string,
+): ParsedDisplayAmount => {
+  if (!Number.isInteger(places) || places < 0 || places > 8) {
     return { ok: false, reason: "precision" }
   }
-  const minorUnits = BigInt(whole + fraction.slice(0, places).padEnd(places, "0"))
-  if (minorUnits > BigInt(Number.MAX_SAFE_INTEGER)) {
-    return { ok: false, reason: "range" }
+  const parsed = toMinorUnits(value, places)
+  if (!parsed.ok) return parsed
+  return {
+    ok: true,
+    amount: toDisplayAmount({ amount: parsed.minorUnits, currencyCode }),
   }
-  return { ok: true, amount: toMoneyAmount(Number(minorUnits), currency) }
 }

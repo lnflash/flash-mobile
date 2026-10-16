@@ -44,6 +44,7 @@ import { LevelContainer } from "./level-component"
 import { getAppCheckToken } from "@app/screens/get-started-screen/use-device-token"
 import { WidgetPriceSync } from "@app/components/widget-price-sync"
 import { noRetryOperations } from "./no-retry-operations"
+import { serverClock } from "./server-clock"
 
 const getAuthorizationHeader = (token: string): string => {
   return `Bearer ${token}`
@@ -277,6 +278,9 @@ const GaloyClient: React.FC<PropsWithChildren> = ({ children }) => {
           authLink,
           retry401ErrorLink,
           persistedQueryLink,
+          // Afterware: takes the server's clock from each answer's Date
+          // header, for the assistant's dispatch journal (server-clock.ts).
+          serverClock.link,
           httpLink,
         ]),
       )

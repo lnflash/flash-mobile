@@ -1,10 +1,22 @@
-import { runTool, RunToolDeps } from "@app/assistant/engine/run-tool"
-import { createRegistry, defineRead } from "@app/assistant/registry/define"
-import { assistantRegistry } from "@app/assistant/registry"
+import { ActionDeps, runTool, RunToolDeps } from "@app/assistant/engine/run-tool"
+import { SchemaDefinitionError } from "@app/assistant/engine/schema-validator"
+import {
+  createRegistry,
+  defineAction,
+  defineRead,
+  RegisteredTool,
+} from "@app/assistant/registry/define"
+import { assistantRegistry, READ_TOOLS } from "@app/assistant/registry"
 import { PrepareRefusedError } from "@app/assistant/registry/refusals"
-import type { ReadToolCtx } from "@app/assistant/registry/types"
+import {
+  ActionToolCtx,
+  INTENTS,
+  ReadToolCtx,
+  tierOf,
+} from "@app/assistant/registry/types"
 import { toUsdMoneyAmount } from "@app/types/amounts"
 import {
+  fakeActionCtx,
   fakeBtcRail,
   fakeGraphqlRail,
   graphqlTx,
@@ -97,9 +109,22 @@ describe("runTool", () => {
       kind: "error",
       userMessage: "Assistant.unknownIntent",
     })
-    await expect(runTool({ intent: "prepareSend", args: {} }, deps)).resolves.toEqual({
+    // A known intent with no tool registered. Since ENG-688 every intent
+    // has one in the assistant's registry, so a registry of the read tools
+    // alone stands in.
+    await expect(
+      runTool(
+        { intent: "prepareSend", args: {} },
+        setup(createRegistry(READ_TOOLS)).deps,
+      ),
+    ).resolves.toEqual({
       kind: "error",
       userMessage: "Assistant.notYetAvailable",
+    })
+    // With the tool registered, its schema refuses the call first.
+    await expect(runTool({ intent: "prepareSend", args: {} }, deps)).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.invalidArguments",
     })
     await expect(
       runTool({ intent: "getTransactions", args: { first: "ten" } }, deps),
@@ -238,5 +263,177 @@ describe("runTool", () => {
       expect(events).toHaveLength(3)
       expect(JSON.stringify(events)).not.toMatch(/SECRET|987654|9876\.54/)
     })
+  })
+})
+
+describe("runTool with action tools (ENG-688)", () => {
+  /** The action deps runTool adds to the shared ones, from the fake action context. */
+  const fakeActionDeps = (): ActionDeps => {
+    const { ctx } = fakeActionCtx()
+    const {
+      graphql: _graphql,
+      displayCurrency: _currency,
+      now: _now,
+      ...actionDeps
+    } = ctx
+    return actionDeps
+  }
+
+  const answeringAction = (payload: unknown, spy?: (ctx: ActionToolCtx) => void) =>
+    defineAction({
+      intent: "prepareReceive",
+      description: "test",
+      input: emptyInput,
+      run: async (_args, ctx) => {
+        spy?.(ctx)
+        return { kind: "answer", payload }
+      },
+    })
+
+  it("hands an action tool the action context: its thread, the whole BTC rail, the action rails", async () => {
+    let seen: ActionToolCtx | undefined
+    const { deps, graphql } = setup(
+      createRegistry([answeringAction(null, (ctx) => (seen = ctx))]),
+    )
+    const actionDeps = fakeActionDeps()
+
+    await runTool({ intent: "prepareReceive" }, { ...deps, actionDeps })
+
+    expect(seen?.threadId).toBe("thread-1")
+    expect(seen?.graphqlActions).toBe(actionDeps.graphqlActions)
+    expect(seen?.send).toBe(actionDeps.send)
+    expect(seen?.display).toBe(actionDeps.display)
+    expect(seen?.requestLnurlInvoice).toBe(actionDeps.requestLnurlInvoice)
+    // The action context's BTC rail is the whole rail, sends and prepare
+    // members included; the shared deps supply the rest.
+    expect(seen?.btcRail).toBe(actionDeps.btcRail)
+    expect(Object.keys(seen?.btcRail ?? {})).toEqual(
+      expect.arrayContaining(["payInvoice", "probeFee", "createInvoice"]),
+    )
+    expect(seen?.graphql).toBe(graphql)
+    expect(seen?.displayCurrency).toBe("USD")
+  })
+
+  it("answers an action intent notYetAvailable, and runs nothing, without action deps", async () => {
+    const run = jest.fn()
+    const tool = answeringAction(null, run)
+    const { deps, toolEvents } = setup(createRegistry([tool]))
+
+    await expect(runTool({ intent: "prepareReceive" }, deps)).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.notYetAvailable",
+    })
+    expect(run).not.toHaveBeenCalled()
+    expect(toolEvents()).toEqual([expect.objectContaining({ tier: "action" })])
+  })
+
+  it("lets an action tool's answer out as it is when it has no projection", async () => {
+    const invoice = { type: "invoice", paymentRequest: "lnbc1...", shareText: "lnbc1..." }
+    const { deps } = setup(createRegistry([answeringAction(invoice)]))
+
+    await expect(
+      runTool({ intent: "prepareReceive" }, { ...deps, actionDeps: fakeActionDeps() }),
+    ).resolves.toEqual({ kind: "answer", payload: invoice })
+  })
+
+  it("still hands a read tool only the read context when action deps are there", async () => {
+    let seen: ReadToolCtx | undefined
+    const spying = defineRead({
+      intent: "getPrice",
+      description: "test",
+      input: emptyInput,
+      run: async (_args, ctx) => {
+        seen = ctx
+        return { kind: "answer", payload: null }
+      },
+      project: (payload) => payload,
+    })
+    const { deps } = setup(createRegistry([spying]))
+
+    await runTool({ intent: "getPrice" }, { ...deps, actionDeps: fakeActionDeps() })
+
+    expect(Object.keys(seen ?? {}).sort()).toEqual([
+      "btcRail",
+      "displayCurrency",
+      "graphql",
+      "now",
+    ])
+    expect(Object.keys(seen?.btcRail ?? {}).sort()).toEqual([
+      "getBalanceSats",
+      "listPayments",
+    ])
+  })
+
+  it("turns a gated branch's refusal into the error card with the not-available reply", async () => {
+    const gated = defineAction({
+      intent: "prepareSend",
+      description: "test",
+      input: emptyInput,
+      run: async () => {
+        throw new PrepareRefusedError("notAvailableYet")
+      },
+    })
+    const { deps } = setup(createRegistry([gated]))
+
+    await expect(
+      runTool({ intent: "prepareSend" }, { ...deps, actionDeps: fakeActionDeps() }),
+    ).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.notYetAvailable",
+      card: { type: "prepareRefused", reason: "notAvailableYet" },
+    })
+  })
+})
+
+describe("the assistant's registry (ENG-688)", () => {
+  it("registers a tool for every intent, each in its own tier", () => {
+    expect([...assistantRegistry.keys()].sort()).toEqual([...INTENTS].sort())
+    assistantRegistry.forEach((tool, intent) => expect(tool.tier).toBe(tierOf(intent)))
+  })
+
+  it("answers a valid prepare call notYetAvailable, preparing nothing, without action deps", async () => {
+    const { deps, graphql } = setup()
+
+    await expect(
+      runTool(
+        { intent: "prepareSend", args: { payee: "Alice", amount: "5", currency: "USD" } },
+        deps,
+      ),
+    ).resolves.toEqual({ kind: "error", userMessage: "Assistant.notYetAvailable" })
+    expect(graphql.contacts).not.toHaveBeenCalled()
+  })
+})
+
+describe("defineAction and createRegistry (ENG-688)", () => {
+  it("checks an action tool's schema when it is defined", () => {
+    expect(() =>
+      defineAction({
+        intent: "prepareSend",
+        description: "test",
+        input: { type: "object", properties: {} } as never,
+        run: async () => ({ kind: "error", userMessage: "Assistant.toolFailed" }),
+      }),
+    ).toThrow(SchemaDefinitionError)
+  })
+
+  it("refuses a tool registered in the other tier", () => {
+    const readAsAction = defineAction({
+      intent: "getPrice" as never,
+      description: "test",
+      input: emptyInput,
+      run: async () => ({ kind: "answer", payload: null }),
+    })
+    const actionAsRead = {
+      ...readAsAction,
+      intent: "prepareSend",
+      tier: "read",
+    } as unknown as RegisteredTool
+
+    expect(() => createRegistry([readAsAction])).toThrow(
+      "getPrice belongs to the read tier",
+    )
+    expect(() => createRegistry([actionAsRead])).toThrow(
+      "prepareSend belongs to the action tier",
+    )
   })
 })

@@ -1,3 +1,4 @@
+import { serverClock } from "@app/graphql/server-clock"
 import type { AttemptState } from "@app/payments/send-payment"
 import { prepareRefusalResult, PrepareRefusedError } from "../registry/refusals"
 import type {
@@ -6,7 +7,12 @@ import type {
   PreparedAction,
   ToolResult,
 } from "../registry/types"
-import { createActionStore, MAX_PREPARED_PER_THREAD, StoredAction } from "./action-store"
+import {
+  ActionState,
+  createActionStore,
+  MAX_PREPARED_PER_THREAD,
+  StoredAction,
+} from "./action-store"
 import type { AttemptJournal, DispatchRecord } from "./attempt-journal"
 import type { AuthGate } from "./auth-gate"
 import {
@@ -24,7 +30,14 @@ import { createThreadMetrics } from "./thread-metrics"
 // (docs/ai-assistant-tool-registry.md §3, §5, §5.1). For one Confirm, in
 // order:
 //
-//   1. The action must still be held, and armed.
+//   1. The action must still be held, and armed. A card holds the id it was
+//      prepared under; an identical refresh (step 4) runs a new action in
+//      that id's place, and the card's Confirms, and canConfirm, follow the
+//      link to it, so a retry of its dispatch runs under its own
+//      AttemptState. An action the executor no longer holds is answered
+//      from what became of it (sent, disarmed, already sent, the rest of a
+//      group to prepare), never with an offer to prepare again a payment
+//      that may have gone.
 //   2. Confirms of one payment run one at a time, from here to the outcome.
 //      Two actions are one payment when their paymentDetailHash matches,
 //      which leaves the memo out (attempt-journal.ts). A Confirm that waited
@@ -104,6 +117,25 @@ export type ConfirmResult =
       actionId: string
       replyKey: "Assistant.alreadySent"
     }
+  | {
+      /**
+       * The action's payment went before this Confirm (a second tap, or a
+       * card that remounted): nothing ran, and there is nothing to offer.
+       */
+      kind: "sent"
+      actionId: string
+    }
+  | {
+      /**
+       * The action retired with part of what it owed sent and the rest a new
+       * action's (an outcome whose `next` was prepareRest): nothing ran. The
+       * card may prepare the rest, which the action's refresh() limits to
+       * what did not go.
+       */
+      kind: "prepareRest"
+      actionId: string
+      replyKey: AssistantReplyKey
+    }
 
 export type ConfirmOptions = {
   /**
@@ -115,9 +147,84 @@ export type ConfirmOptions = {
   historyChecked?: boolean
 }
 
-export type CanConfirm =
-  | { enabled: true }
-  | { enabled: false; replyKey: AssistantReplyKey }
+/**
+ * What the executor remembers of an action after it leaves the store, so
+ * that its card, remounted or still on screen, offers what became of it.
+ *
+ * - sent: its payment went, in this run of the app.
+ * - disarmed: it was let go (dismissed, evicted, left with its thread)
+ *   while a dispatch of its may have gone. Its Confirm can no longer run,
+ *   and its card offers only the history (spec §5).
+ * - alreadySent: it was retired because a payment of this amount to this
+ *   recipient went, from another card or as the list shows (spec §5.1). Its
+ *   card keeps that reply, and offers no Refresh.
+ * - prepareRest: part of what it owed went and the rest is a new action's
+ *   (ExecutionOutcome `prepareRest`). Its card offers to prepare the rest.
+ */
+type Retirement =
+  | { state: "sent" }
+  | { state: "disarmed"; replyKey: "Assistant.checkHistory" }
+  | { state: "alreadySent"; replyKey: "Assistant.alreadySent" }
+  | { state: "prepareRest"; replyKey: AssistantReplyKey }
+
+/**
+ * Where an action stands, as canConfirm reports it (ENG-688). A card renders
+ * from this rather than from what it remembers, since a card that remounts
+ * (a virtualized thread row, a thread re-render) remembers nothing.
+ *
+ * - armed, unresolved, disarmed: the executor holds the action in that state
+ *   (action-store.ts). Only an armed action's card turns into the expired
+ *   card past expiresAt, with Refresh. An unresolved action retries its own
+ *   attempt whatever the time, and a disarmed one is never prepared again
+ *   (spec §5): their cards keep the retry, or the history notice.
+ * - sent, disarmed, alreadySent, prepareRest: the executor no longer holds
+ *   the action, and remembers what became of it (Retirement).
+ * - gone: the executor does not hold it, and nothing of it may have gone:
+ *   dismissed, evicted or left before any dispatch, or retired after a
+ *   failure that moved nothing. Preparing it again makes a new action, which
+ *   the dispatch journal keeps from repeating a payment of it that went.
+ *
+ * An id that an identical refresh replaced reports the state of the action
+ * that runs in its place.
+ */
+export type ConfirmState = ActionState | Retirement["state"] | "gone"
+
+export type CanConfirm = {
+  /** Whether Confirm would run now. */
+  enabled: boolean
+  state: ConfirmState
+  /**
+   * Why Confirm is off, or, for an unresolved or disarmed action, what its
+   * last Confirm left the card saying.
+   */
+  replyKey?: AssistantReplyKey
+}
+
+/**
+ * How many actions canConfirm remembers after they leave the store (a
+ * Retirement), and how many ids an identical refresh replaced it links to
+ * the action that runs in their place: the newest only, of each.
+ */
+export const RETIRED_ACTIONS_REMEMBERED = 100
+
+/** Hold `key` as the newest entry of a map kept to its RETIRED_ACTIONS_REMEMBERED newest. */
+const keepNewest = <V>(map: Map<string, V>, key: string, value: V) => {
+  map.delete(key)
+  map.set(key, value)
+  if (map.size > RETIRED_ACTIONS_REMEMBERED) {
+    const [oldest] = map.keys()
+    map.delete(oldest)
+  }
+}
+
+/** One Confirm, as the steps after the queue need it. */
+type Confirming = {
+  /** The id the card holds, which its result carries. */
+  requestedId: string
+  startedAt: number
+  /** Mark another action as in flight under this Confirm. */
+  claim: (actionId: string) => void
+}
 
 export type Executor = {
   openThread: (threadId: string) => void
@@ -153,6 +260,14 @@ export type ExecutorDeps = {
   authPolicy?: AuthPolicy
   /** Epoch milliseconds. */
   now?: () => number
+  /**
+   * The phone's clock less the server's, in milliseconds, or null while no
+   * GraphQL answer has shown it. Each dispatch's record keeps it, so the
+   * reconciler reads the list back to the dispatch on the server's clock,
+   * and never calls absent a record that has none. The app's
+   * (app/graphql/server-clock.ts) unless given another.
+   */
+  serverClockOffsetMs?: () => number | null
   maxPreparedPerThread?: number
 }
 
@@ -199,6 +314,7 @@ const paymentOf = (action: PreparedAction): string | undefined =>
 
 export const createExecutor = (deps: ExecutorDeps): Executor => {
   const now = deps.now ?? Date.now
+  const serverClockOffsetMs = deps.serverClockOffsetMs ?? serverClock.offsetMs
   const policy = deps.authPolicy ?? defaultAuthPolicy
   const store = createActionStore(deps.maxPreparedPerThread ?? MAX_PREPARED_PER_THREAD)
   const metrics = createThreadMetrics({ now, telemetry: deps.telemetry })
@@ -207,6 +323,49 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
   // many of its sends have gone through in this run of the app.
   const paymentQueues = new Map<string, Promise<void>>()
   const sendsThrough = new Map<string, number>()
+  // Actions that left the store with something to say about them, oldest
+  // first, so a card, remounted or not, still shows what became of its
+  // action (canConfirm), and its Confirm answers with it.
+  const retired = new Map<string, Retirement>()
+  // Ids an identical refresh replaced, each with the id of the action that
+  // runs in its place (refreshExpired), oldest first.
+  const replacedBy = new Map<string, string>()
+
+  const remember = (actionId: string, retirement: Retirement) =>
+    keepNewest(retired, actionId, retirement)
+
+  /**
+   * The action that answers for an id now: the id itself, or the action an
+   * identical refresh ran in its place, followed to the newest. Each link
+   * points to a newer action, so the walk ends; the bound only caps it.
+   */
+  const current = (actionId: string): string => {
+    let id = actionId
+    for (let hops = 0; hops < RETIRED_ACTIONS_REMEMBERED; hops += 1) {
+      const next = replacedBy.get(id)
+      if (next === undefined) return id
+      id = next
+    }
+    return id
+  }
+
+  /**
+   * Drop actions the user let go of (dismissed, evicted, left with their
+   * thread): one whose dispatch may have gone is remembered as disarmed,
+   * since its card must never offer to prepare it again (spec §5).
+   */
+  const letGo = (actionIds: readonly string[], drop: () => void) => {
+    const unresolved = actionIds.filter((id) => {
+      const state = store.stateOf(id)
+      return state === "unresolved" || state === "disarmed"
+    })
+    drop()
+    unresolved.forEach((id) => {
+      if (!store.get(id)) {
+        remember(id, { state: "disarmed", replyKey: "Assistant.checkHistory" })
+      }
+    })
+  }
 
   const sendsThroughOf = (payment: string | undefined): number =>
     payment === undefined ? 0 : sendsThrough.get(payment) ?? 0
@@ -246,11 +405,52 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
    * The same payment already went: the action is retired, and its card says
    * a payment of this amount to this recipient was sent. It does not say this
    * card's payment was: the memo is not part of a payment's identity, so the
-   * executor cannot tell.
+   * executor cannot tell. Its card keeps that reply, remounted or not, and
+   * offers no Refresh: the payment it would prepare again went.
    */
-  const alreadySent = (actionId: string): ConfirmResult => {
+  const alreadySent = (actionId: string, requestedId: string): ConfirmResult => {
     store.remove(actionId)
-    return { kind: "alreadySent", actionId, replyKey: "Assistant.alreadySent" }
+    const retirement = {
+      state: "alreadySent",
+      replyKey: "Assistant.alreadySent",
+    } as const
+    remember(actionId, retirement)
+    remember(requestedId, retirement)
+    return {
+      kind: "alreadySent",
+      actionId: requestedId,
+      replyKey: "Assistant.alreadySent",
+    }
+  }
+
+  /**
+   * A Confirm of an action the store no longer holds: what became of it, as
+   * canConfirm reports it. Only an action that left with nothing that may
+   * have moved is notFound, which a card answers with an offer to prepare it
+   * again.
+   */
+  const answerRetired = (actionId: string, requestedId: string): ConfirmResult => {
+    const retirement = retired.get(actionId) ?? retired.get(requestedId)
+    switch (retirement?.state) {
+      case "sent":
+        return { kind: "sent", actionId: requestedId }
+      case "disarmed":
+        return { kind: "disarmed", actionId: requestedId, replyKey: retirement.replyKey }
+      case "alreadySent":
+        return {
+          kind: "alreadySent",
+          actionId: requestedId,
+          replyKey: retirement.replyKey,
+        }
+      case "prepareRest":
+        return {
+          kind: "prepareRest",
+          actionId: requestedId,
+          replyKey: retirement.replyKey,
+        }
+      default:
+        return notFound(requestedId)
+    }
   }
 
   const isExpired = (action: PreparedAction) => now() >= action.expiresAt
@@ -270,12 +470,17 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
    * together would otherwise both read a journal without the other's
    * dispatch, and both send. An action that moves no money has no payment
    * and does not queue.
+   *
+   * Either way `confirm` starts on a later microtask, never inside this
+   * call: it may claim an action as in flight (Confirming.claim) before its
+   * first await, and a claim needs the run it belongs to, which
+   * executePreparedAction has only once this call has returned.
    */
   const onePerPayment = <T>(
     payment: string | undefined,
     confirm: () => Promise<T>,
   ): Promise<T> => {
-    if (payment === undefined) return confirm()
+    if (payment === undefined) return Promise.resolve().then(confirm)
     const ahead = paymentQueues.get(payment) ?? Promise.resolve()
     const result = ahead.then(confirm)
     const settled = result.then(
@@ -310,6 +515,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
   // Step 3: earlier dispatches of the same payment, unaccounted for.
   const reconcileGate = async (
     action: PreparedAction,
+    requestedId: string,
     historyChecked: boolean,
   ): Promise<ConfirmResult | undefined> => {
     const payment = paymentOf(action)
@@ -319,7 +525,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       pending = await deps.journal.pending()
     } catch {
       // Without the journal there is no telling what was sent: fail closed.
-      return pendingDispatch(action.id, false)
+      return pendingDispatch(requestedId, false)
     }
     const earlier = pending.filter(
       (record) =>
@@ -331,27 +537,28 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
     // a retry of it can land after any read of the list, and the payment
     // would then go twice.
     if (earlier.some(({ preparedActionId }) => isLive(preparedActionId))) {
-      return pendingDispatch(action.id, false)
+      return pendingDispatch(requestedId, false)
     }
     const unsettled: DispatchRecord[] = []
     for (const record of earlier) {
       const verdict = await reconcileSafely(record)
       if (verdict === "settled") {
         await clearRecord(record.preparedActionId)
-        return alreadySent(action.id)
+        return alreadySent(action.id, requestedId)
       }
       if (verdict === "absent") await clearRecord(record.preparedActionId)
       else unsettled.push(record)
     }
     if (unsettled.length === 0) return undefined
-    // The list reads back only so far (RECONCILE_MAX_PAGES), so a dispatch
-    // older than the newest hundred payments is never settled by it. Once
-    // nothing about it can still be on its way, the user's word that their
-    // history does not show the payment clears it. Without that, every later
-    // identical payment (rent, payroll) would be refused for good.
+    // The list shows one page (each wallet's newest RECONCILE_PAGE_SIZE
+    // rows, reconcile.ts), so a dispatch further back than that is never
+    // settled by it, nor shown absent. Once nothing about it can still be on
+    // its way, the user's word that their history does not show the payment
+    // clears it. Without that, every later identical payment (rent, payroll)
+    // would be refused for good.
     const historyCheckable = unsettled.every(isStale)
     if (!historyCheckable || !historyChecked) {
-      return pendingDispatch(action.id, historyCheckable)
+      return pendingDispatch(requestedId, historyCheckable)
     }
     for (const record of unsettled) await clearRecord(record.preparedActionId)
     return undefined
@@ -360,8 +567,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
   // Step 4: prepare again past expiry.
   const refreshExpired = async (
     stored: StoredAction,
-    startedAt: number,
-    claim: (actionId: string) => void,
+    { requestedId, startedAt, claim }: Confirming,
   ): Promise<StoredAction | ConfirmResult> => {
     const { action } = stored
     // The expired rate per prepared action counts each action once.
@@ -384,7 +590,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       if (refused || refresh.kind === "clarification") store.remove(action.id)
       return {
         kind: "expired",
-        actionId: action.id,
+        actionId: requestedId,
         replyKey:
           refused && refresh.kind === "error" ? refresh.userMessage : "Assistant.expired",
         refresh,
@@ -392,7 +598,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
     }
 
     const fresh: StoredAction = { action: refresh.preparedAction, origin: stored.origin }
-    if (!store.replace(action.id, fresh)) return notFound(action.id)
+    if (!store.replace(action.id, fresh)) return notFound(requestedId)
     if (
       isExpired(fresh.action) ||
       !sameNumbers(action.summary, fresh.action.summary) ||
@@ -404,21 +610,24 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       return {
         kind: "refreshed",
         actionId: fresh.action.id,
-        replacedActionId: action.id,
+        replacedActionId: requestedId,
         preparedAction: fresh.action,
         replyKey: "Assistant.refreshed",
       }
     }
     // The same numbers the user approved: run the fresh action, which is now
-    // in flight under its own id too.
+    // in flight under its own id too. It runs in the old one's place from
+    // here on: the card still holds the old id, and its next Confirm, and
+    // canConfirm, follow this link to the fresh action, so a retry of the
+    // fresh one's dispatch runs under its AttemptState and its key.
+    keepNewest(replacedBy, action.id, fresh.action.id)
     claim(fresh.action.id)
     return fresh
   }
 
   const freshIfExpired = (
     stored: StoredAction,
-    startedAt: number,
-    claim: (actionId: string) => void,
+    confirming: Confirming,
   ): Promise<StoredAction | ConfirmResult> | StoredAction => {
     // An unresolved dispatch is retried with its own attempt and key, never
     // re-prepared: a new action would mint a new key for a payment that may
@@ -426,16 +635,16 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
     if (!isExpired(stored.action) || store.stateOf(stored.action.id) !== "armed") {
       return stored
     }
-    return refreshExpired(stored, startedAt, claim)
+    return refreshExpired(stored, confirming)
   }
 
   // Step 5: the auth policy, and the gate when it asks for it.
   const authorize = async (
     stored: StoredAction,
-    startedAt: number,
-    claim: (actionId: string) => void,
+    confirming: Confirming,
   ): Promise<StoredAction | ConfirmResult> => {
     const { action } = stored
+    const { requestedId, startedAt } = confirming
     if (policy(action, stored.origin) !== "biometric") return stored
     let verdict: "unavailable" | "denied" | "allowed"
     try {
@@ -448,7 +657,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       reportOutcome(action, "denied", startedAt)
       return {
         kind: "denied",
-        actionId: action.id,
+        actionId: requestedId,
         replyKey:
           verdict === "unavailable"
             ? "Assistant.authUnavailable"
@@ -457,7 +666,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
     }
     // Identical refreshed numbers run without a second prompt: the user just
     // proved it is them for these numbers.
-    return freshIfExpired(stored, startedAt, claim)
+    return freshIfExpired(stored, confirming)
   }
 
   const journalDispatch = async (
@@ -468,15 +677,20 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       throw new Error(`${action.intent} dispatched a payment with no dispatch identity`)
     }
     const dispatchedAt = now()
-    // A retry's write keeps the record's first dispatch and moves its
-    // lastDispatchedAt to now (attempt-journal.ts).
+    // Read with dispatchedAt, it places the dispatch on the server's clock.
+    const offsetMs = serverClockOffsetMs()
+    // A retry's write keeps the record's first dispatch, and its offset, and
+    // moves its lastDispatchedAt to now (attempt-journal.ts).
     await deps.journal.record({
       preparedActionId: action.id,
       idempotencyKey,
       paymentDetailHash: action.dispatch.paymentDetailHash,
       dispatchedAt,
       lastDispatchedAt: dispatchedAt,
+      serverClockOffsetMs:
+        typeof offsetMs === "number" && Number.isFinite(offsetMs) ? offsetMs : null,
       match: action.dispatch.match,
+      sourceWalletCurrency: action.dispatch.sourceWalletCurrency,
     })
   }
 
@@ -499,9 +713,24 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
         return
       case "unknown":
         // Something may have moved: the record stays for reconciliation.
+        if (outcome.next === "prepareRest") {
+          // What went is done and the rest is a new action's: this one
+          // retires, and its record keeps what went from going again. Its
+          // card, remounted or not, still offers to prepare the rest.
+          store.remove(action.id)
+          remember(action.id, { state: "prepareRest", replyKey: outcome.replyKey })
+          return
+        }
+        // Let go while its Confirm ran (dismissed, evicted, left): its
+        // card can no longer retry it, and must not prepare it again.
+        if (!store.get(action.id)) {
+          remember(action.id, { state: "disarmed", replyKey: "Assistant.checkHistory" })
+          return
+        }
         store.setState(
           action.id,
           outcome.next === "retrySameAttempt" ? "unresolved" : "disarmed",
+          outcome.replyKey,
         )
     }
   }
@@ -526,6 +755,16 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       outcome = UNREPORTED_OUTCOME
     }
     await settle(action, outcome)
+    // The card that was confirmed holds the id it was prepared under, which
+    // an identical refresh replaced: what became of the action that ran is
+    // remembered under both.
+    if (outcome.status === "succeeded") {
+      remember(requestedId, { state: "sent" })
+      remember(action.id, { state: "sent" })
+    } else {
+      const retirement = retired.get(action.id)
+      if (retirement && !store.get(action.id)) remember(requestedId, retirement)
+    }
     reportOutcome(action, TELEMETRY_OUTCOME[outcome.status], startedAt)
     return {
       kind: "executed",
@@ -536,8 +775,10 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
   }
 
   // Steps 1 and 3 to 7, with this payment's earlier Confirms settled.
+  // `requestedId` is the id the card holds; the action that answers for it
+  // may be a newer one (current).
   const confirmQueued = async (
-    actionId: string,
+    requestedId: string,
     {
       startedAt,
       sentBefore,
@@ -551,52 +792,63 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
       claim: (id: string) => void
     },
   ): Promise<ConfirmResult> => {
-    // Looked up again: a Confirm this one waited behind may have changed it.
+    // Looked up again: a Confirm this one waited behind may have changed it,
+    // replaced it by an identical refresh, or retired it.
+    const actionId = current(requestedId)
     const held = store.get(actionId)
-    if (!held) return notFound(actionId)
+    if (!held) return answerRetired(actionId, requestedId)
+    if (actionId !== requestedId) claim(actionId)
     if (store.stateOf(actionId) === "disarmed") {
-      return { kind: "disarmed", actionId, replyKey: "Assistant.checkHistory" }
+      return {
+        kind: "disarmed",
+        actionId: requestedId,
+        replyKey: "Assistant.checkHistory",
+      }
     }
     // A send of the same payment went through while this Confirm waited. It
     // was tapped before that outcome was known, so it does not send again;
     // the reply tells the user to ask again if they meant another payment.
-    if (sendsThroughOf(paymentOf(held.action)) > sentBefore) return alreadySent(actionId)
+    if (sendsThroughOf(paymentOf(held.action)) > sentBefore) {
+      return alreadySent(actionId, requestedId)
+    }
 
-    const blocked = await reconcileGate(held.action, historyChecked)
+    const blocked = await reconcileGate(held.action, requestedId, historyChecked)
     if (blocked) return blocked
 
-    const current = await freshIfExpired(held, startedAt, claim)
-    if (isResult(current)) return current
+    const confirming: Confirming = { requestedId, startedAt, claim }
+    const fresh = await freshIfExpired(held, confirming)
+    if (isResult(fresh)) return fresh
 
-    const allowed = await authorize(current, startedAt, claim)
+    const allowed = await authorize(fresh, confirming)
     if (isResult(allowed)) return allowed
 
     // Dismissed, evicted or left while the prompt was up: nothing runs.
     if (store.get(allowed.action.id)?.action !== allowed.action) {
-      return notFound(allowed.action.id)
+      return answerRetired(allowed.action.id, requestedId)
     }
-    return execute(allowed, actionId, startedAt)
+    return execute(allowed, requestedId, startedAt)
   }
 
   const confirm = async (
-    actionId: string,
+    requestedId: string,
     claim: (id: string) => void,
     { historyChecked = false }: ConfirmOptions,
   ): Promise<ConfirmResult> => {
     const startedAt = now()
+    const actionId = current(requestedId)
     const held = store.get(actionId)
-    if (!held) return notFound(actionId)
+    if (!held) return answerRetired(actionId, requestedId)
     const payment = paymentOf(held.action)
     const sentBefore = sendsThroughOf(payment)
     return onePerPayment(payment, () =>
-      confirmQueued(actionId, { startedAt, sentBefore, historyChecked, claim }),
+      confirmQueued(requestedId, { startedAt, sentBefore, historyChecked, claim }),
     )
   }
 
   return {
     openThread: (threadId) => metrics.open(threadId),
     leaveThread: (threadId) => {
-      store.removeThread(threadId)
+      letGo(store.idsOf(threadId), () => store.removeThread(threadId))
       metrics.leave(threadId)
     },
     noteToolResult: (threadId, result) => metrics.noteResult(threadId, result),
@@ -611,31 +863,55 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
           )}`,
         )
       }
-      return store.add({ action, origin })
+      let evicted: string[] = []
+      letGo(store.idsOf(action.threadId), () => {
+        evicted = store.add({ action, origin })
+      })
+      return evicted
     },
-    dismiss: (actionId) => store.remove(actionId),
+    dismiss: (cardId) => {
+      // The card's id, or the action an identical refresh ran in its place.
+      const actionId = current(cardId)
+      letGo([actionId], () => store.remove(actionId))
+    },
 
-    canConfirm: async (actionId) => {
+    canConfirm: async (cardId) => {
+      // The action that answers for the card now (an identical refresh may
+      // have replaced the one it was prepared under).
+      const actionId = current(cardId)
       const held = store.get(actionId)
-      if (!held) return { enabled: false, replyKey: "Assistant.actionNotFound" }
-      if (store.stateOf(actionId) === "disarmed") {
-        return { enabled: false, replyKey: "Assistant.checkHistory" }
+      if (!held) {
+        const retirement = retired.get(actionId) ?? retired.get(cardId)
+        if (retirement) return { enabled: false, ...retirement }
+        return { enabled: false, state: "gone", replyKey: "Assistant.actionNotFound" }
+      }
+      const state = store.stateOf(actionId) ?? "armed"
+      const reply = store.replyOf(actionId)
+      if (state === "disarmed") {
+        return { enabled: false, state, replyKey: reply ?? "Assistant.checkHistory" }
       }
       if (policy(held.action, held.origin) === "biometric") {
         const availability = await deps.auth.availability().catch(() => "none" as const)
         if (availability === "none") {
-          return { enabled: false, replyKey: "Assistant.authUnavailable" }
+          return { enabled: false, state, replyKey: "Assistant.authUnavailable" }
         }
       }
-      return { enabled: true }
+      // A lost answer: Confirm retries it, and the card says why.
+      if (state === "unresolved") {
+        return { enabled: true, state, replyKey: reply ?? "Assistant.checkHistory" }
+      }
+      return { enabled: true, state }
     },
 
     executePreparedAction: (actionId, options = {}) => {
       // One run per action at a time: a second Confirm while the first is in
-      // flight gets the first's promise, and execute() runs once.
-      const running = inFlight.get(actionId)
+      // flight gets the first's promise, and execute() runs once. A card
+      // whose id an identical refresh replaced joins a run of the action
+      // that runs in its place.
+      const target = current(actionId)
+      const running = inFlight.get(actionId) ?? inFlight.get(target)
       if (running) return running
-      const claimed = [actionId]
+      const claimed = target === actionId ? [actionId] : [actionId, target]
       const run: Promise<ConfirmResult> = confirm(
         actionId,
         (id) => {
@@ -652,7 +928,7 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
           return { kind: "disarmed", actionId, replyKey: "Assistant.checkHistory" }
         })
         .finally(() => claimed.forEach((id) => inFlight.delete(id)))
-      inFlight.set(actionId, run)
+      claimed.forEach((id) => inFlight.set(id, run))
       return run
     },
   }

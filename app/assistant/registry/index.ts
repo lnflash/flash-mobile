@@ -1,3 +1,4 @@
+import { ACTION_TOOLS } from "./actions"
 import { createRegistry, RegisteredTool } from "./define"
 import { decodePaymentRequest } from "./read/decode-payment-request"
 import { getAccountLimits } from "./read/get-account-limits"
@@ -8,11 +9,9 @@ import { getTransactions } from "./read/get-transactions"
 import { resolveContact } from "./read/resolve-contact"
 import { searchMerchants } from "./read/search-merchants"
 
-// The registered tools. A new intent is a new file under read/ (or, from
-// ENG-688, actions/) and one entry here; the router, the executor and
-// runTool are generic over this list and are not edited (spec §7.2). The
-// five prepare intents have no tool yet, so the router answers them with
-// "not yet available".
+// The registered tools. A new intent is a new file under read/ or actions/
+// and one entry here; the router, the executor and runTool are generic over
+// this list and are not edited (spec §7.2).
 
 export const READ_TOOLS: readonly RegisteredTool[] = [
   getBalances,
@@ -25,4 +24,4 @@ export const READ_TOOLS: readonly RegisteredTool[] = [
   decodePaymentRequest,
 ]
 
-export const assistantRegistry = createRegistry(READ_TOOLS)
+export const assistantRegistry = createRegistry([...READ_TOOLS, ...ACTION_TOOLS])

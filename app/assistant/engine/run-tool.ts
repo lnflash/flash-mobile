@@ -1,7 +1,8 @@
 import type { GraphqlRail } from "../rails/graphql-rail"
-import type { Registry } from "../registry/define"
+import type { RegisteredTool, Registry } from "../registry/define"
 import { prepareRefusalResult, PrepareRefusedError } from "../registry/refusals"
 import {
+  ActionToolCtx,
   BtcReadRail,
   Intent,
   ReadToolCtx,
@@ -17,15 +18,27 @@ import { AssistantOutcome, AssistantTelemetry, report } from "./telemetry"
 // project, report. It never rejects: whatever goes wrong becomes a templated
 // error reply.
 
+/**
+ * What only action tools get, on top of what every tool gets (ENG-688): the
+ * thread, the rails that can prepare and send, and the display formatter.
+ */
+export type ActionDeps = Omit<ActionToolCtx, "graphql" | "displayCurrency" | "now">
+
 export type RunToolDeps = {
   registry: Registry
   graphql: GraphqlRail
-  /** The BTC rail, or just its reads. Only the reads reach a tool. */
+  /** The BTC rail, or just its reads. Only the reads reach a read tool. */
   btcRail: BtcReadRail
   displayCurrency: string
   /** Epoch milliseconds. */
   now: () => number
   telemetry: AssistantTelemetry
+  /**
+   * For action tools. Without it an action intent is answered "not yet
+   * available" and no action tool runs: a caller that only reads cannot
+   * prepare a payment by accident.
+   */
+  actionDeps?: ActionDeps
 }
 
 /**
@@ -38,7 +51,10 @@ export const createReadToolCtx = ({
   btcRail,
   displayCurrency,
   now,
-}: Omit<RunToolDeps, "registry" | "telemetry">): ReadToolCtx => ({
+}: Pick<
+  RunToolDeps,
+  "graphql" | "btcRail" | "displayCurrency" | "now"
+>): ReadToolCtx => ({
   graphql,
   btcRail: {
     getBalanceSats: () => btcRail.getBalanceSats(),
@@ -47,6 +63,29 @@ export const createReadToolCtx = ({
   displayCurrency,
   now,
 })
+
+/** The context an action tool gets: the action deps over the shared ones. */
+export const createActionToolCtx = (
+  {
+    graphql,
+    displayCurrency,
+    now,
+  }: Pick<RunToolDeps, "graphql" | "displayCurrency" | "now">,
+  actionDeps: ActionDeps,
+): ActionToolCtx => ({ ...actionDeps, graphql, displayCurrency, now })
+
+/** Run a routed tool with its own tier's context, and nothing more. */
+const runRouted = (
+  tool: RegisteredTool,
+  args: Record<string, unknown>,
+  deps: RunToolDeps,
+): Promise<ToolResult<unknown>> => {
+  if (tool.tier === "read") return tool.run(args, createReadToolCtx(deps))
+  if (!deps.actionDeps) {
+    return Promise.resolve({ kind: "error", userMessage: "Assistant.notYetAvailable" })
+  }
+  return tool.run(args, createActionToolCtx(deps, deps.actionDeps))
+}
 
 const OUTCOME: Record<ToolResult<unknown>["kind"], AssistantOutcome> = {
   answer: "answered",
@@ -76,7 +115,7 @@ export const runTool = async (
     intent = route.intent
     tier = route.intent === "unknown" ? "none" : tierOf(route.intent)
     if (route.ok) {
-      const ran = await route.tool.run(route.args, createReadToolCtx(deps))
+      const ran = await runRouted(route.tool, route.args, deps)
       // Only the compact projection of an answer leaves runTool (spec §4).
       result =
         ran.kind === "answer"

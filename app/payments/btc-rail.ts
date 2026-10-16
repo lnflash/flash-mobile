@@ -1,10 +1,13 @@
 import {
   assertBreezSDKSwitchedOn,
+  fetchBreezFee,
   getInfo,
   listPaymentsBreezSDK,
   payLightningBreez,
   payLnurlBreez,
   payOnchainBreez,
+  receiveOnchainBreez,
+  receivePaymentBreez,
 } from "@app/utils/breez-sdk"
 import {
   BreezSdkNotInitializedError,
@@ -69,6 +72,12 @@ export type BtcRail = {
   payInvoice: SameAs<typeof payLightningBreez>
   payLnurl: SameAs<typeof payLnurlBreez>
   payOnchain: SameAs<typeof payOnchainBreez>
+  /** A bolt11 on the BTC wallet: the receive screen's BTC Lightning request. */
+  createInvoice: SameAs<typeof receivePaymentBreez>
+  /** The BTC wallet's on-chain address: the receive screen's BTC on-chain request. */
+  getOnchainAddress: SameAs<typeof receiveOnchainBreez>
+  /** What a BTC-wallet send will pay in fees, as the send and swap screens probe it. */
+  probeFee: SameAs<typeof fetchBreezFee>
 }
 
 const UNAVAILABLE_STATE: Record<BreezSdkNotRunningReason, BtcUnavailableState> = {
@@ -169,4 +178,11 @@ export const breezBtcRail: BtcRail = {
   payInvoice: (...args) => payLightningBreez(...args),
   payLnurl: (...args) => payLnurlBreez(...args),
   payOnchain: (...args) => payOnchainBreez(...args),
+  // ENG-688's three, one-line delegates too. Neither receive checks advance
+  // mode itself: the assistant reads getBalanceSats first and refuses a BTC
+  // request while the wallet is not `ok`, as the receive and send screens
+  // hide the BTC wallet then.
+  createInvoice: (...args) => receivePaymentBreez(...args),
+  getOnchainAddress: (...args) => receiveOnchainBreez(...args),
+  probeFee: (...args) => fetchBreezFee(...args),
 }

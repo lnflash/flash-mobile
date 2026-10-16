@@ -7679,7 +7679,7 @@ type RootTranslation = {
 		 */
 		checkHistory: string
 		/**
-		 * A​ ​p​a​y​m​e​n​t​ ​o​f​ ​t​h​i​s​ ​a​m​o​u​n​t​ ​t​o​ ​t​h​i​s​ ​r​e​c​i​p​i​e​n​t​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​s​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​,​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​ ​i​f​ ​y​o​u​ ​m​e​a​n​t​ ​t​o​ ​s​e​n​d​ ​a​n​o​t​h​e​r​.
+		 * A​ ​p​a​y​m​e​n​t​ ​o​f​ ​t​h​i​s​ ​a​m​o​u​n​t​ ​t​o​ ​t​h​i​s​ ​p​e​r​s​o​n​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​s​e​n​t​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​,​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​ ​i​f​ ​y​o​u​ ​m​e​a​n​t​ ​t​o​ ​s​e​n​d​ ​a​n​o​t​h​e​r​.
 		 */
 		alreadySent: string
 		/**
@@ -7691,15 +7691,15 @@ type RootTranslation = {
 		 */
 		limitExceeded: string
 		/**
-		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​i​s​ ​s​t​i​l​l​ ​s​y​n​c​i​n​g​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​i​s​ ​s​t​i​l​l​ ​s​y​n​c​i​n​g​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
 		 */
 		btcSyncing: string
 		/**
-		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​i​s​ ​o​f​f​.​ ​T​u​r​n​ ​o​n​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​u​s​e​ ​i​t​.
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​i​s​ ​o​f​f​.​ ​T​u​r​n​ ​o​n​ ​A​d​v​a​n​c​e​d​ ​M​o​d​e​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​u​s​e​ ​i​t​.
 		 */
 		btcDisabled: string
 		/**
-		 * Y​o​u​r​ ​B​T​C​ ​w​a​l​l​e​t​ ​c​o​u​l​d​n​'​t​ ​s​t​a​r​t​.​ ​C​l​o​s​e​ ​a​n​d​ ​r​e​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​t​o​ ​t​r​y​ ​a​g​a​i​n​.
+		 * Y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​c​o​u​l​d​n​'​t​ ​s​t​a​r​t​.​ ​C​l​o​s​e​ ​a​n​d​ ​r​e​o​p​e​n​ ​t​h​e​ ​a​p​p​ ​t​o​ ​t​r​y​ ​a​g​a​i​n​.
 		 */
 		btcFailed: string
 		/**
@@ -7723,6 +7723,173 @@ type RootTranslation = {
 		 * D​e​t​a​i​l​s​ ​a​r​e​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​t​h​i​s​ ​p​a​y​m​e​n​t​.
 		 */
 		detailsUnavailable: string
+		/**
+		 * T​h​e​ ​p​a​y​m​e​n​t​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​.​ ​N​o​t​h​i​n​g​ ​w​a​s​ ​s​e​n​t​.
+		 */
+		paymentFailed: string
+		/**
+		 * T​h​i​s​ ​i​n​v​o​i​c​e​ ​w​a​s​ ​a​l​r​e​a​d​y​ ​p​a​i​d​.​ ​N​o​t​h​i​n​g​ ​w​a​s​ ​s​e​n​t​.
+		 */
+		invoiceAlreadyPaid: string
+		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​g​e​t​ ​t​h​e​ ​f​e​e​ ​f​o​r​ ​t​h​i​s​ ​p​a​y​m​e​n​t​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
+		 */
+		feeUnavailable: string
+		/**
+		 * I​ ​c​a​n​'​t​ ​p​a​y​ ​t​h​a​t​.​ ​C​h​e​c​k​ ​t​h​e​ ​c​o​n​t​a​c​t​,​ ​i​n​v​o​i​c​e​ ​o​r​ ​a​d​d​r​e​s​s​.
+		 */
+		invalidDestination: string
+		/**
+		 * T​h​i​s​ ​i​n​v​o​i​c​e​ ​h​a​s​ ​e​x​p​i​r​e​d​.​ ​A​s​k​ ​t​h​e​ ​p​e​r​s​o​n​ ​f​o​r​ ​a​ ​n​e​w​ ​o​n​e​.
+		 */
+		invoiceExpired: string
+		/**
+		 * T​h​a​t​'​s​ ​y​o​u​r​ ​o​w​n​ ​w​a​l​l​e​t​.​ ​C​h​o​o​s​e​ ​s​o​m​e​o​n​e​ ​e​l​s​e​ ​t​o​ ​p​a​y​.
+		 */
+		selfPayment: string
+		/**
+		 * H​o​w​ ​m​u​c​h​ ​d​o​ ​y​o​u​ ​w​a​n​t​ ​t​o​ ​s​e​n​d​?
+		 */
+		amountRequired: string
+		/**
+		 * T​h​e​ ​a​m​o​u​n​t​ ​h​a​s​ ​t​o​ ​b​e​ ​m​o​r​e​ ​t​h​a​n​ ​z​e​r​o​.
+		 */
+		amountTooSmall: string
+		/**
+		 * T​h​i​s​ ​r​e​q​u​e​s​t​ ​a​l​r​e​a​d​y​ ​s​e​t​s​ ​i​t​s​ ​a​m​o​u​n​t​.​ ​A​s​k​ ​a​g​a​i​n​ ​w​i​t​h​o​u​t​ ​o​n​e​.
+		 */
+		amountFixedByRequest: string
+		/**
+		 * T​h​e​ ​p​e​r​s​o​n​ ​c​a​n​'​t​ ​a​c​c​e​p​t​ ​t​h​a​t​ ​a​m​o​u​n​t​.
+		 */
+		amountOutsideRecipientLimits: string
+		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​g​e​t​ ​a​n​ ​i​n​v​o​i​c​e​ ​f​r​o​m​ ​t​h​e​ ​p​e​r​s​o​n​.​ ​T​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​m​o​m​e​n​t​.
+		 */
+		recipientInvoiceFailed: string
+		/**
+		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​$​2​.
+		 */
+		onchainBelowMinimum: string
+		/**
+		 * Y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​c​a​n​'​t​ ​p​a​y​ ​a​n​ ​o​n​-​c​h​a​i​n​ ​r​e​q​u​e​s​t​ ​t​h​a​t​ ​s​e​t​s​ ​a​ ​b​i​t​c​o​i​n​ ​a​m​o​u​n​t​.
+		 */
+		onchainAmountUnsupported: string
+		/**
+		 * T​h​a​t​ ​w​a​l​l​e​t​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​a​c​c​o​u​n​t​.
+		 */
+		walletUnavailable: string
+		/**
+		 * S​o​m​e​ ​p​a​y​m​e​n​t​s​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​.​ ​C​h​e​c​k​ ​e​a​c​h​ ​o​n​e​ ​b​e​l​o​w​,​ ​t​h​e​n​ ​c​o​n​f​i​r​m​ ​a​g​a​i​n​ ​t​o​ ​s​e​n​d​ ​t​h​e​ ​r​e​s​t​.
+		 */
+		groupSendPartial: string
+		/**
+		 * G​r​o​u​p​ ​s​e​n​d​s​ ​g​o​ ​t​o​ ​F​l​a​s​h​ ​u​s​e​r​s​ ​o​n​l​y​.
+		 */
+		groupSendPayeesUnsupported: string
+		/**
+		 * E​a​c​h​ ​p​e​r​s​o​n​ ​c​a​n​ ​a​p​p​e​a​r​ ​o​n​l​y​ ​o​n​c​e​ ​i​n​ ​a​ ​g​r​o​u​p​ ​s​e​n​d​.
+		 */
+		groupSendDuplicatePayee: string
+		/**
+		 * T​h​a​t​ ​a​m​o​u​n​t​ ​i​s​ ​t​o​o​ ​s​m​a​l​l​ ​t​o​ ​s​p​l​i​t​ ​b​e​t​w​e​e​n​ ​t​h​i​s​ ​m​a​n​y​ ​p​e​o​p​l​e​.
+		 */
+		groupShareTooSmall: string
+		/**
+		 * S​e​t​t​l​i​n​g​ ​t​o​ ​a​ ​b​a​n​k​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​a​c​c​o​u​n​t​ ​y​e​t​.
+		 */
+		cashoutUnavailable: string
+		/**
+		 * A​d​d​ ​a​ ​b​a​n​k​ ​a​c​c​o​u​n​t​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​s​e​t​t​l​e​ ​t​o​ ​i​t​.
+		 */
+		noBankAccount: string
+		/**
+		 * T​h​e​ ​s​e​t​t​l​e​m​e​n​t​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​.​ ​A​s​k​ ​a​g​a​i​n​ ​f​o​r​ ​a​ ​n​e​w​ ​o​f​f​e​r​.
+		 */
+		cashoutFailed: string
+		/**
+		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​5​,​5​0​0​ ​s​a​t​s​.
+		 */
+		btcOnchainBelowMinimum: string
+		/**
+		 * S​o​m​e​ ​p​a​y​m​e​n​t​s​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​,​ ​a​n​d​ ​t​h​e​i​r​ ​n​u​m​b​e​r​s​ ​a​r​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.​ ​T​r​y​ ​a​g​a​i​n​ ​t​o​ ​g​e​t​ ​n​e​w​ ​n​u​m​b​e​r​s​ ​f​o​r​ ​t​h​e​m​.
+		 */
+		groupSendRestExpired: string
+	}
+	AssistantCards: {
+		/**
+		 * R​e​v​i​e​w​ ​p​a​y​m​e​n​t
+		 */
+		confirmTitle: string
+		/**
+		 * B​a​l​a​n​c​e​ ​a​f​t​e​r
+		 */
+		balanceAfter: string
+		/**
+		 * C​o​n​f​i​r​m​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		confirmWithAmount: RequiredParams<'amount'>
+		/**
+		 * R​e​f​r​e​s​h
+		 */
+		refresh: string
+		/**
+		 * T​h​i​s​ ​r​e​q​u​e​s​t​ ​e​x​p​i​r​e​d
+		 */
+		expiredTitle: string
+		/**
+		 * T​h​e​ ​n​u​m​b​e​r​s​ ​a​r​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.​ ​R​e​f​r​e​s​h​ ​t​o​ ​g​e​t​ ​n​e​w​ ​o​n​e​s​ ​b​e​f​o​r​e​ ​y​o​u​ ​c​o​n​f​i​r​m​.
+		 */
+		expiredBody: string
+		/**
+		 * P​a​y​m​e​n​t​ ​r​e​q​u​e​s​t
+		 */
+		invoiceTitle: string
+		/**
+		 * G​r​o​u​p​ ​s​e​n​d
+		 */
+		groupTitle: string
+		/**
+		 * R​e​a​d​y
+		 */
+		legReady: string
+		/**
+		 * S​e​n​t
+		 */
+		legSent: string
+		/**
+		 * D​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h
+		 */
+		legFailed: string
+		/**
+		 * N​o​t​ ​s​e​n​t
+		 */
+		legNotSent: string
+		/**
+		 * C​h​e​c​k​ ​y​o​u​r​ ​h​i​s​t​o​r​y
+		 */
+		legCheckHistory: string
+		/**
+		 * R​e​t​r​y​ ​f​a​i​l​e​d​ ​p​a​y​m​e​n​t​s
+		 */
+		retryFailed: string
+		/**
+		 * P​a​y​m​e​n​t​s
+		 */
+		txListTitle: string
+		/**
+		 * S​e​t​t​l​e​m​e​n​t​ ​o​f​f​e​r
+		 */
+		settleTitle: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​c​a​n​'​t​ ​b​e​ ​s​h​o​w​n​.​ ​A​s​k​ ​a​g​a​i​n​.
+		 */
+		cardUnavailable: string
+		/**
+		 * Y​o​u​ ​r​e​c​e​i​v​e
+		 */
+		youReceive: string
 	}
 }
 
@@ -15213,7 +15380,7 @@ export type TranslationFunctions = {
 		 */
 		checkHistory: () => LocalizedString
 		/**
-		 * A payment of this amount to this recipient was already sent. Check your transaction history, and ask again if you meant to send another.
+		 * A payment of this amount to this person was already sent. Check your transaction history, and ask again if you meant to send another.
 		 */
 		alreadySent: () => LocalizedString
 		/**
@@ -15225,15 +15392,15 @@ export type TranslationFunctions = {
 		 */
 		limitExceeded: () => LocalizedString
 		/**
-		 * Your BTC wallet is still syncing. Try again in a moment.
+		 * Your Bitcoin wallet is still syncing. Try again in a moment.
 		 */
 		btcSyncing: () => LocalizedString
 		/**
-		 * Your BTC wallet is off. Turn on Advanced Mode in Settings to use it.
+		 * Your Bitcoin wallet is off. Turn on Advanced Mode in Settings to use it.
 		 */
 		btcDisabled: () => LocalizedString
 		/**
-		 * Your BTC wallet couldn't start. Close and reopen the app to try again.
+		 * Your Bitcoin wallet couldn't start. Close and reopen the app to try again.
 		 */
 		btcFailed: () => LocalizedString
 		/**
@@ -15256,6 +15423,172 @@ export type TranslationFunctions = {
 		 * Details aren't available for this payment.
 		 */
 		detailsUnavailable: () => LocalizedString
+		/**
+		 * The payment didn't go through. Nothing was sent.
+		 */
+		paymentFailed: () => LocalizedString
+		/**
+		 * This invoice was already paid. Nothing was sent.
+		 */
+		invoiceAlreadyPaid: () => LocalizedString
+		/**
+		 * I couldn't get the fee for this payment. Try again in a moment.
+		 */
+		feeUnavailable: () => LocalizedString
+		/**
+		 * I can't pay that. Check the contact, invoice or address.
+		 */
+		invalidDestination: () => LocalizedString
+		/**
+		 * This invoice has expired. Ask the person for a new one.
+		 */
+		invoiceExpired: () => LocalizedString
+		/**
+		 * That's your own wallet. Choose someone else to pay.
+		 */
+		selfPayment: () => LocalizedString
+		/**
+		 * How much do you want to send?
+		 */
+		amountRequired: () => LocalizedString
+		/**
+		 * The amount has to be more than zero.
+		 */
+		amountTooSmall: () => LocalizedString
+		/**
+		 * This request already sets its amount. Ask again without one.
+		 */
+		amountFixedByRequest: () => LocalizedString
+		/**
+		 * The person can't accept that amount.
+		 */
+		amountOutsideRecipientLimits: () => LocalizedString
+		/**
+		 * I couldn't get an invoice from the person. Try again in a moment.
+		 */
+		recipientInvoiceFailed: () => LocalizedString
+		/**
+		 * On-chain sends from your cash wallet need at least $2.
+		 */
+		onchainBelowMinimum: () => LocalizedString
+		/**
+		 * Your cash wallet can't pay an on-chain request that sets a bitcoin amount.
+		 */
+		onchainAmountUnsupported: () => LocalizedString
+		/**
+		 * That wallet isn't available on this account.
+		 */
+		walletUnavailable: () => LocalizedString
+		/**
+		 * Some payments didn't go through. Check each one below, then confirm again to send the rest.
+		 */
+		groupSendPartial: () => LocalizedString
+		/**
+		 * Group sends go to Flash users only.
+		 */
+		groupSendPayeesUnsupported: () => LocalizedString
+		/**
+		 * Each person can appear only once in a group send.
+		 */
+		groupSendDuplicatePayee: () => LocalizedString
+		/**
+		 * That amount is too small to split between this many people.
+		 */
+		groupShareTooSmall: () => LocalizedString
+		/**
+		 * Settling to a bank isn't available on this account yet.
+		 */
+		cashoutUnavailable: () => LocalizedString
+		/**
+		 * Add a bank account in Settings to settle to it.
+		 */
+		noBankAccount: () => LocalizedString
+		/**
+		 * The settlement didn't go through. Ask again for a new offer.
+		 */
+		cashoutFailed: () => LocalizedString
+		/**
+		 * On-chain sends from your Bitcoin wallet need at least 5,500 sats.
+		 */
+		btcOnchainBelowMinimum: () => LocalizedString
+		/**
+		 * Some payments didn't go through, and their numbers are out of date. Try again to get new numbers for them.
+		 */
+		groupSendRestExpired: () => LocalizedString
+	}
+	AssistantCards: {
+		/**
+		 * Review payment
+		 */
+		confirmTitle: () => LocalizedString
+		/**
+		 * Balance after
+		 */
+		balanceAfter: () => LocalizedString
+		/**
+		 * Confirm {amount}
+		 */
+		confirmWithAmount: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Refresh
+		 */
+		refresh: () => LocalizedString
+		/**
+		 * This request expired
+		 */
+		expiredTitle: () => LocalizedString
+		/**
+		 * The numbers are out of date. Refresh to get new ones before you confirm.
+		 */
+		expiredBody: () => LocalizedString
+		/**
+		 * Payment request
+		 */
+		invoiceTitle: () => LocalizedString
+		/**
+		 * Group send
+		 */
+		groupTitle: () => LocalizedString
+		/**
+		 * Ready
+		 */
+		legReady: () => LocalizedString
+		/**
+		 * Sent
+		 */
+		legSent: () => LocalizedString
+		/**
+		 * Didn't go through
+		 */
+		legFailed: () => LocalizedString
+		/**
+		 * Not sent
+		 */
+		legNotSent: () => LocalizedString
+		/**
+		 * Check your history
+		 */
+		legCheckHistory: () => LocalizedString
+		/**
+		 * Retry failed payments
+		 */
+		retryFailed: () => LocalizedString
+		/**
+		 * Payments
+		 */
+		txListTitle: () => LocalizedString
+		/**
+		 * Settlement offer
+		 */
+		settleTitle: () => LocalizedString
+		/**
+		 * This card can't be shown. Ask again.
+		 */
+		cardUnavailable: () => LocalizedString
+		/**
+		 * You receive
+		 */
+		youReceive: () => LocalizedString
 	}
 }
 

@@ -28,7 +28,7 @@ import { getCashWallet } from "@app/graphql/wallets-utils"
 import { createPaymentRequest } from "./payment/payment-request"
 import { MoneyAmount, WalletOrDisplayCurrency } from "@app/types/amounts"
 import { useLnUpdateHashPaid } from "@app/graphql/ln-update-context"
-import { generateFutureLocalTime, secondsToH, secondsToHMS } from "./payment/helpers"
+import { lightningInvoiceValidity } from "./payment/helpers"
 import { toastShow } from "@app/utils/toast"
 import { useI18nContext } from "@app/i18n/i18n-react"
 
@@ -475,23 +475,12 @@ export const useReceiveBitcoin = (initPRParams = {}) => {
     typeof expiresInSeconds === "number" &&
     pr?.state !== PaymentRequestState.Paid
   ) {
-    if (expiresInSeconds > 60 * 60 * 23)
-      extraDetails = `${LL.ReceiveScreen.singleUse()} | ${LL.ReceiveScreen.invoiceValidity.validFor1Day()}`
-    else if (expiresInSeconds > 60 * 60 * 6)
-      extraDetails = `${LL.ReceiveScreen.singleUse()} | ${LL.ReceiveScreen.invoiceValidity.validForNext(
-        { duration: secondsToH(expiresInSeconds) },
-      )}`
-    else if (expiresInSeconds > 60 * 2)
-      extraDetails = `${LL.ReceiveScreen.singleUse()} | ${LL.ReceiveScreen.invoiceValidity.validBefore(
-        {
-          time: generateFutureLocalTime(expiresInSeconds),
-        },
-      )}`
-    else if (expiresInSeconds > 0)
-      extraDetails = `${LL.ReceiveScreen.singleUse()} | ${LL.ReceiveScreen.invoiceValidity.expiresIn(
-        {
-          duration: secondsToHMS(expiresInSeconds),
-        },
+    // The validity text is shared with the assistant's invoice card
+    // (payment/helpers.ts).
+    if (expiresInSeconds > 0)
+      extraDetails = `${LL.ReceiveScreen.singleUse()} | ${lightningInvoiceValidity(
+        LL,
+        expiresInSeconds,
       )}`
     else if (pr?.state === PaymentRequestState.Expired)
       extraDetails = LL.ReceiveScreen.invoiceExpired()

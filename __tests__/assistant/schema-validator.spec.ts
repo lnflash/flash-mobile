@@ -18,7 +18,10 @@ describe("compileSchema at definition time", () => {
       [
         "additionalProperties",
         "enum",
+        "items",
+        "maxItems",
         "maximum",
+        "minItems",
         "pattern",
         "properties",
         "required",
@@ -27,12 +30,15 @@ describe("compileSchema at definition time", () => {
     )
   })
 
+  // `items` left this list when ENG-688 made arrays part of the subset; the
+  // array keywords the validator still does not implement took its place.
   const unsupported = [
     "maxLength",
     "minimum",
     "oneOf",
     "format",
-    "items",
+    "uniqueItems",
+    "contains",
     "default",
     "const",
   ]
@@ -85,6 +91,21 @@ describe("compileSchema at definition time", () => {
 
   it("refuses keywords on types they do not apply to", () => {
     expect(() =>
+      compileSchema(closed({ s: loose({ type: "string", items: { type: "string" } }) })),
+    ).toThrow(`"items" needs type "array"`)
+    expect(() =>
+      compileSchema(
+        closed({
+          o: loose({
+            type: "object",
+            properties: {},
+            additionalProperties: false,
+            maxItems: 2,
+          }),
+        }),
+      ),
+    ).toThrow(`"maxItems" needs type "array"`)
+    expect(() =>
       compileSchema(closed({ n: loose({ type: "integer", pattern: "^1$" }) })),
     ).toThrow(SchemaDefinitionError)
     expect(() =>
@@ -96,6 +117,9 @@ describe("compileSchema at definition time", () => {
   })
 
   it("refuses an unknown type, a pattern that does not compile and a bad enum", () => {
+    expect(() => compileSchema(closed({ a: loose({ type: "tuple" }) }))).toThrow(
+      `unsupported type "tuple"`,
+    )
     expect(() => compileSchema(closed({ a: loose({ type: "array" }) }))).toThrow(
       SchemaDefinitionError,
     )
@@ -117,6 +141,40 @@ describe("compileSchema at definition time", () => {
     expect(() => compileSchema(closed({ a: { type: "string" } }, ["b"]))).toThrow(
       `"required" names "b"`,
     )
+  })
+
+  it("refuses an array that does not say what its items are", () => {
+    // An array of anything is as open as an object that is not closed.
+    expect(() => compileSchema(closed({ a: loose({ type: "array" }) }))).toThrow(
+      `arrays must declare "items"`,
+    )
+    expect(() =>
+      compileSchema(closed({ a: loose({ type: "array", items: {} }) })),
+    ).toThrow(`needs "type" or "enum"`)
+    expect(() =>
+      compileSchema(
+        closed({
+          a: loose({ type: "array", items: { type: "object", properties: {} } }),
+        }),
+      ),
+    ).toThrow(`"additionalProperties": false`)
+  })
+
+  it("refuses item counts that are not whole numbers or cannot both hold", () => {
+    const array = (counts: Record<string, unknown>) =>
+      closed({ a: loose({ type: "array", items: { type: "string" }, ...counts }) })
+
+    expect(() => compileSchema(array({ minItems: -1 }))).toThrow(
+      `"minItems" must be a whole number`,
+    )
+    expect(() => compileSchema(array({ maxItems: 1.5 }))).toThrow(
+      `"maxItems" must be a whole number`,
+    )
+    expect(() => compileSchema(array({ maxItems: "3" }))).toThrow(SchemaDefinitionError)
+    expect(() => compileSchema(array({ minItems: 3, maxItems: 2 }))).toThrow(
+      `"minItems" is above "maxItems"`,
+    )
+    expect(() => compileSchema(array({ minItems: 2, maxItems: 2 }))).not.toThrow()
   })
 })
 
@@ -178,5 +236,79 @@ describe("a compiled schema", () => {
     expect(validate(null).valid).toBe(false)
     expect(validate([]).valid).toBe(false)
     expect(validate("SEND").valid).toBe(false)
+  })
+})
+
+describe("a compiled schema with arrays", () => {
+  const validate = compileSchema(
+    closed(
+      {
+        payees: loose({
+          type: "array",
+          items: { type: "string", pattern: "^[a-z]{1,8}$" },
+          minItems: 2,
+          maxItems: 3,
+        }),
+        legs: loose({
+          type: "array",
+          items: loose({
+            type: "object",
+            properties: { label: { type: "string" }, status: { enum: ["ok", "no"] } },
+            required: ["label"],
+            additionalProperties: false,
+          }),
+        }),
+      },
+      ["payees"],
+    ),
+  )
+
+  it("accepts arrays inside their bounds, empty ones where nothing bounds them", () => {
+    expect(validate({ payees: ["alice", "bob"] })).toEqual({ valid: true })
+    expect(validate({ payees: ["alice", "bob", "carol"], legs: [] })).toEqual({
+      valid: true,
+    })
+    expect(
+      validate({
+        payees: ["alice", "bob"],
+        legs: [{ label: "A" }, { label: "B", status: "ok" }],
+      }),
+    ).toEqual({ valid: true })
+  })
+
+  const refusals: [string, unknown, string][] = [
+    ["a string where an array goes", { payees: "alice,bob" }, "$.payees"],
+    ["an object where an array goes", { payees: { 0: "alice" } }, "$.payees"],
+    ["too few items", { payees: ["alice"] }, "$.payees"],
+    ["too many items", { payees: ["a", "b", "c", "d"] }, "$.payees"],
+    ["an item outside its pattern", { payees: ["alice", "Bob"] }, "$.payees[]"],
+    ["an item of the wrong type", { payees: ["alice", 7] }, "$.payees[]"],
+    [
+      "an item object with an extra property",
+      { payees: ["a", "b"], legs: [{ label: "A", amount: 5 }] },
+      "$.legs[].amount",
+    ],
+    [
+      "an item object missing a required property",
+      { payees: ["a", "b"], legs: [{ status: "ok" }] },
+      "$.legs[].label",
+    ],
+    [
+      "an item object with an enum miss",
+      { payees: ["a", "b"], legs: [{ label: "A", status: "maybe" }] },
+      "$.legs[].status",
+    ],
+  ]
+  refusals.forEach(([name, value, path]) =>
+    it(`refuses ${name}`, () => {
+      expect(validate(value)).toMatchObject({ valid: false, path })
+    }),
+  )
+
+  it("checks every item, not only the first", () => {
+    expect(validate({ payees: ["alice", "bob", "BAD"] })).toMatchObject({
+      valid: false,
+      path: "$.payees[]",
+    })
   })
 })

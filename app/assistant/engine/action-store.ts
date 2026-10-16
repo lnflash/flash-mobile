@@ -1,4 +1,4 @@
-import type { PreparedAction } from "../registry/types"
+import type { AssistantReplyKey, PreparedAction } from "../registry/types"
 import type { AuthOrigin } from "./auth-policy"
 
 // The prepared actions a conversation holds (docs/ai-assistant-tool-registry.md
@@ -26,7 +26,9 @@ export type StoredAction = {
 export type ActionStore = {
   get: (actionId: string) => StoredAction | undefined
   stateOf: (actionId: string) => ActionState | undefined
-  setState: (actionId: string, state: ActionState) => void
+  /** The reply the action's state came with: what its last Confirm left its card saying. */
+  replyOf: (actionId: string) => AssistantReplyKey | undefined
+  setState: (actionId: string, state: ActionState, reply?: AssistantReplyKey) => void
   /** True the first time it is called for an action, so its expiry is counted once. */
   firstExpiry: (actionId: string) => boolean
   /** Hold a new action, armed. Returns the ids it evicted, oldest first. */
@@ -36,9 +38,15 @@ export type ActionStore = {
   remove: (actionId: string) => void
   /** Drop a thread's actions. Returns their ids. */
   removeThread: (threadId: string) => string[]
+  /** The ids of a thread's actions, oldest first. */
+  idsOf: (threadId: string) => string[]
 }
 
-type Slot = StoredAction & { state: ActionState; expiryCounted: boolean }
+type Slot = StoredAction & {
+  state: ActionState
+  reply?: AssistantReplyKey
+  expiryCounted: boolean
+}
 
 /**
  * Every method is synchronous: no await can fall between reading a thread's
@@ -73,9 +81,13 @@ export const createActionStore = (
       return held && { action: held.action, origin: held.origin }
     },
     stateOf: (actionId) => slot(actionId)?.state,
-    setState: (actionId, state) => {
+    replyOf: (actionId) => slot(actionId)?.reply,
+    setState: (actionId, state, reply) => {
       const held = slot(actionId)
-      if (held) held.state = state
+      if (held) {
+        held.state = state
+        held.reply = reply
+      }
     },
     firstExpiry: (actionId) => {
       const held = slot(actionId)
@@ -115,5 +127,6 @@ export const createActionStore = (
       ids.forEach(remove)
       return ids
     },
+    idsOf: (threadId) => (threads.get(threadId) ?? []).map(({ action }) => action.id),
   }
 }
