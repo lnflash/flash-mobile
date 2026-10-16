@@ -1,6 +1,9 @@
+import { i18nObject } from "@app/i18n/i18n-util"
+import { loadLocale } from "@app/i18n/i18n-util.sync"
 import { Invoice } from "@app/screens/receive-bitcoin-screen/payment/index.types"
 import {
   getPaymentRequestFullUri,
+  lightningInvoiceValidity,
   satsToBTC,
 } from "../../app/screens/receive-bitcoin-screen/payment/helpers"
 
@@ -84,5 +87,33 @@ describe("satsToBTC", () => {
     expect(satsToBTC(1000)).toBe(0.00001)
     expect(satsToBTC(0)).toBe(0)
     expect(satsToBTC(-1000)).toBe(-0.00001)
+  })
+})
+
+describe("lightningInvoiceValidity (shared by the receive screen and the assistant's invoice card)", () => {
+  loadLocale("en")
+  const LL = i18nObject("en")
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it("says a day for a day-long invoice", () => {
+    expect(lightningInvoiceValidity(LL, 24 * 60 * 60)).toBe("Valid for 1 day")
+  })
+
+  it("says the next hours for one that has hours left", () => {
+    expect(lightningInvoiceValidity(LL, 7 * 60 * 60)).toBe("Valid for next 7h")
+  })
+
+  it("says a time of day for one that has minutes left", () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 15, 9, 0, 0))
+
+    expect(lightningInvoiceValidity(LL, 5 * 60)).toBe("Valid before 9:05AM")
+  })
+
+  it("counts down the last two minutes, then says now", () => {
+    expect(lightningInvoiceValidity(LL, 90)).toBe("Expires in 1m30s")
+    expect(lightningInvoiceValidity(LL, 0)).toBe("Expires now")
   })
 })
