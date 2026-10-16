@@ -323,9 +323,8 @@ export const sendPayment = async (
   // outcomeUnknown, and the on-chain branch answers that, and any rejection
   // from payOnchain itself, without calling finish (ENG-714).
   // payLightningBreez answers the bolt11 sdk.sendPayment's the same way, and
-  // the lightning branch answers that without calling finish (ENG-720). A
-  // rejection from payInvoice itself still reaches the shared catch below,
-  // which re-arms. A keyed retry is ENG-715.
+  // the lightning branch answers that, and any rejection from payInvoice
+  // itself, without calling finish (ENG-720). A keyed retry is ENG-715.
   const finish = (result: { status: PaymentSendResult; errorsMessage?: string }) => {
     if (result.status === PaymentSendResult.Failure) {
       inFlightRef.current = false
@@ -340,10 +339,23 @@ export const sendPayment = async (
     try {
       if (paymentType === "lightning") {
         console.log("Starting payLightningBreez")
-        const response = await deps.btcRail.payInvoice(
-          destination,
-          settlementAmount.amount,
-        )
+        // ENG-720: a rejection from the rail is an unknown outcome too.
+        // payLightningBreez answers every refusal before sdk.sendPayment, and
+        // sdk.sendPayment's own rejection, instead of rejecting. So a
+        // rejection here comes from past the dispatch or from a broken rail,
+        // whatever its message says, and cannot prove that nothing went out.
+        // Left to the Breez branch's shared catch, it would re-arm Confirm,
+        // and the next tap could pay again. So it gets outcomeUnknown's
+        // answer: no finish(), and the history message.
+        let response: InvoicePayAnswer
+        try {
+          response = await deps.btcRail.payInvoice(destination, settlementAmount.amount)
+        } catch {
+          return {
+            status: PaymentSendResult.Failure,
+            errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+          }
+        }
         console.log("Response payLightningBreez: ", response)
         // ENG-720: sdk.sendPayment itself rejected, so the payment may have
         // left, and the next tap could pay again. No finish(): inFlightRef

@@ -972,7 +972,16 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
     expectRearmed(ctx.state)
   })
 
-  it("a rail that throws is a Failure with the thrown message, and re-arms", async () => {
+  // ENG-720. This case pinned the re-arm on a rejection out of payInvoice, and
+  // is flipped on purpose: that re-arm was the double pay. payLightningBreez
+  // answers its refusals before sdk.sendPayment, this message among them, and
+  // sdk.sendPayment's own rejection, instead of rejecting. So a rejection from
+  // the rail comes from past the dispatch or from a broken rail, whatever its
+  // message says, and the next tap could pay again. The re-arm on a rail's
+  // plain rejection is still pinned for the lnurl rail below, where
+  // payLnurlBreez lets its refusals before the dispatch through as
+  // rejections.
+  it("lightning: a payInvoice that rejects is a Failure with the history message, and stays disarmed (ENG-720)", async () => {
     const ctx = setup()
     ctx.rail.payInvoice.mockRejectedValue(new Error("Breez SDK not initialized"))
 
@@ -984,9 +993,20 @@ describe("sendPayment: the BTC wallet goes through the BtcRail", () => {
 
     expect(outcome).toEqual({
       status: PaymentSendResult.Failure,
-      errorsMessage: "Breez SDK not initialized",
+      errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
     })
-    expectRearmed(ctx.state)
+    // Not re-armed: the inverse of expectRearmed.
+    expect(ctx.state.inFlightRef.current).toBe(true)
+    expect(ctx.state.setHasAttemptedSend.mock.calls).toEqual([[true]])
+    // The re-tap that used to pay a second time is ignored.
+    await expect(
+      sendPayment(
+        { sendPaymentMutation: jest.fn(), paymentDetail: lightning() },
+        ctx.deps,
+        ctx.state,
+      ),
+    ).resolves.toEqual({ status: undefined, errorsMessage: undefined, ignored: true })
+    expect(ctx.rail.payInvoice).toHaveBeenCalledTimes(1)
   })
 
   // ENG-694. The first two cases here pinned the always-Success answer that
