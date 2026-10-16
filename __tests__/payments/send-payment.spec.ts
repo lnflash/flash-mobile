@@ -1219,6 +1219,40 @@ describe("sendPayment: a BTC-wallet bolt11 send whose outcome is unknown (ENG-72
     expect(outcome.errorsMessage).not.toContain("SdkError")
     await expectDisarmedAfterOneSend(ctx)
   })
+
+  // A rejection out of payInvoice gets the same answer: payLightningBreez
+  // answers its refusals instead of rejecting, so a rejection comes from past
+  // the dispatch or from a broken rail. Here an SDK error, and a delegate that
+  // throws before any promise exists, which pins the try around the call
+  // itself. The flipped case in the BtcRail describe covers a rejection that
+  // reads like a refusal before the dispatch. The on-chain branch has the
+  // same pair for payOnchain (ENG-714).
+  const railFailures: [string, (rail: ReturnType<typeof mockRail>) => void][] = [
+    [
+      "rejects with an SDK error",
+      (rail) => rail.payInvoice.mockRejectedValueOnce(new Error("SdkError.SparkError")),
+    ],
+    [
+      // A broken delegate.
+      "throws before any promise exists",
+      (rail) =>
+        rail.payInvoice.mockImplementationOnce(() => {
+          throw new TypeError("payLightningBreez is not a function")
+        }),
+    ],
+  ]
+  railFailures.forEach(([label, fail]) => {
+    it(`a payInvoice that ${label} is a Failure with the history message, and stays disarmed`, async () => {
+      const ctx = bolt11Sender()
+      fail(ctx.rail)
+
+      await expect(ctx.send()).resolves.toEqual({
+        status: PaymentSendResult.Failure,
+        errorsMessage: CHECK_TRANSACTION_HISTORY_MESSAGE,
+      })
+      await expectDisarmedAfterOneSend(ctx)
+    })
+  })
 })
 
 describe("sendPayment: the ENG-533 attempt lifecycle", () => {
