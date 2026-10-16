@@ -2,6 +2,7 @@ import React, { useState, createContext, useContext, useEffect, useRef } from "r
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import { useAppConfig } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
+import { useAssistantDevOverride } from "./assistant-dev-override"
 
 const DeviceAccountEnabledKey = "deviceAccountEnabledRestAuth"
 const BridgeTopupEnabledKey = "bridgeTopupEnabled"
@@ -112,6 +113,9 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
   } = useAppConfig()
 
   const mounted = useRef(true)
+  // A debug or e2e build's switch for the assistant (ENG-689); always off
+  // in a release build.
+  const assistantDevOverride = useAssistantDevOverride()
 
   useEffect(() => {
     mounted.current = true
@@ -153,8 +157,10 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
       remoteConfig.deviceAccountEnabledRestAuth || galoyInstance.id === "Local",
     bridgeTopupEnabled: remoteConfig.bridgeTopupEnabled || galoyInstance.id === "Local",
     cashuCardUsdEnabled: remoteConfig.cashuCardUsdEnabled || galoyInstance.id === "Local",
-    // No Local override for the assistant flags (spec §1, rule 7).
-    assistantEnabled: remoteConfig.assistantEnabled,
+    // No Local override for the assistant flags (spec §1, rule 7). A debug
+    // or e2e build may turn the assistant itself on with a dev link
+    // (assistant-dev-override.ts, ENG-689 decision 3); a release build never.
+    assistantEnabled: remoteConfig.assistantEnabled || assistantDevOverride,
     assistantVoice: remoteConfig.assistantVoice,
     assistantVoiceReplies: remoteConfig.assistantVoiceReplies,
     assistantServerFallback: remoteConfig.assistantServerFallback,
