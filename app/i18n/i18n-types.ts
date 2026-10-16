@@ -3039,6 +3039,10 @@ type RootTranslation = {
 		 */
 		transfer: string
 		/**
+		 * A​s​k​ ​F​l​a​s​h
+		 */
+		askFlash: string
+		/**
 		 * S​w​e​e​p​ ​t​o​ ​W​a​l​l​e​t
 		 */
 		sweep: string
@@ -7815,6 +7819,14 @@ type RootTranslation = {
 		 * S​o​m​e​ ​p​a​y​m​e​n​t​s​ ​d​i​d​n​'​t​ ​g​o​ ​t​h​r​o​u​g​h​,​ ​a​n​d​ ​t​h​e​i​r​ ​n​u​m​b​e​r​s​ ​a​r​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.​ ​T​r​y​ ​a​g​a​i​n​ ​t​o​ ​g​e​t​ ​n​e​w​ ​n​u​m​b​e​r​s​ ​f​o​r​ ​t​h​e​m​.
 		 */
 		groupSendRestExpired: string
+		/**
+		 * Y​o​u​'​r​e​ ​o​f​f​l​i​n​e​.​ ​S​e​n​d​i​n​g​,​ ​r​e​q​u​e​s​t​i​n​g​ ​a​n​d​ ​t​h​e​ ​l​i​v​e​ ​p​r​i​c​e​ ​n​e​e​d​ ​a​ ​c​o​n​n​e​c​t​i​o​n​.​ ​T​r​y​ ​a​g​a​i​n​ ​w​h​e​n​ ​y​o​u​'​r​e​ ​b​a​c​k​ ​o​n​l​i​n​e​.
+		 */
+		actionsOffline: string
+		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​t​e​l​l​ ​t​h​e​ ​a​m​o​u​n​t​.​ ​S​a​y​ ​i​t​ ​a​g​a​i​n​ ​w​i​t​h​ ​t​h​e​ ​n​u​m​b​e​r​ ​a​n​d​ ​i​t​s​ ​c​u​r​r​e​n​c​y​,​ ​l​i​k​e​ ​5​ ​U​S​D​ ​o​r​ ​5​0​0​ ​J​M​D​.
+		 */
+		amountUnclear: string
 	}
 	AssistantCards: {
 		/**
@@ -7890,6 +7902,48 @@ type RootTranslation = {
 		 * Y​o​u​ ​r​e​c​e​i​v​e
 		 */
 		youReceive: string
+		/**
+		 * I​ ​c​h​e​c​k​e​d​ ​m​y​ ​h​i​s​t​o​r​y
+		 */
+		historyChecked: string
+		/**
+		 * I​f​ ​y​o​u​r​ ​t​r​a​n​s​a​c​t​i​o​n​ ​h​i​s​t​o​r​y​ ​d​o​e​s​n​'​t​ ​s​h​o​w​ ​t​h​i​s​ ​p​a​y​m​e​n​t​,​ ​y​o​u​ ​c​a​n​ ​s​e​n​d​ ​i​t​ ​n​o​w​.​ ​T​a​p​p​i​n​g​ ​s​e​n​d​s​ ​i​t​.
+		 */
+		historyCheckedHint: string
+	}
+	AskFlash: {
+		/**
+		 * A​s​k​ ​F​l​a​s​h
+		 */
+		title: string
+		/**
+		 * A​s​k​ ​a​b​o​u​t​ ​y​o​u​r​ ​b​a​l​a​n​c​e​,​ ​p​a​y​m​e​n​t​s​ ​o​r​ ​t​h​e​ ​p​r​i​c​e
+		 */
+		placeholder: string
+		/**
+		 * A​s​k
+		 */
+		send: string
+		/**
+		 * W​o​r​k​i​n​g​ ​o​n​ ​i​t​.​.​.
+		 */
+		typing: string
+		/**
+		 * Y​o​u​'​r​e​ ​o​f​f​l​i​n​e​.​ ​B​a​l​a​n​c​e​s​ ​a​n​d​ ​p​a​y​m​e​n​t​s​ ​s​h​o​w​ ​y​o​u​r​ ​l​a​s​t​ ​s​a​v​e​d​ ​c​o​p​y​.
+		 */
+		offlineBanner: string
+		/**
+		 * L​a​s​t​ ​s​a​v​e​d​ ​c​o​p​y​.​ ​I​t​ ​m​a​y​ ​b​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.
+		 */
+		staleBadge: string
+		/**
+		 * Y​o​u​r​ ​b​a​l​a​n​c​e​s
+		 */
+		balancesTitle: string
+		/**
+		 * T​r​y​ ​“​w​h​a​t​'​s​ ​m​y​ ​b​a​l​a​n​c​e​”​,​ ​“​s​h​o​w​ ​m​y​ ​p​a​y​m​e​n​t​s​”​,​ ​“​b​i​t​c​o​i​n​ ​p​r​i​c​e​”​,​ ​“​s​e​n​d​ ​5​0​0​ ​t​o​ ​M​o​m​”​ ​o​r​ ​“​m​a​k​e​ ​a​n​ ​i​n​v​o​i​c​e​”​.
+		 */
+		emptyHint: string
 	}
 }
 
@@ -10842,6 +10896,10 @@ export type TranslationFunctions = {
 		 * Transfer
 		 */
 		transfer: () => LocalizedString
+		/**
+		 * Ask Flash
+		 */
+		askFlash: () => LocalizedString
 		/**
 		 * Sweep to Wallet
 		 */
@@ -15515,6 +15573,14 @@ export type TranslationFunctions = {
 		 * Some payments didn't go through, and their numbers are out of date. Try again to get new numbers for them.
 		 */
 		groupSendRestExpired: () => LocalizedString
+		/**
+		 * You're offline. Sending, requesting and the live price need a connection. Try again when you're back online.
+		 */
+		actionsOffline: () => LocalizedString
+		/**
+		 * I couldn't tell the amount. Say it again with the number and its currency, like 5 USD or 500 JMD.
+		 */
+		amountUnclear: () => LocalizedString
 	}
 	AssistantCards: {
 		/**
@@ -15589,6 +15655,48 @@ export type TranslationFunctions = {
 		 * You receive
 		 */
 		youReceive: () => LocalizedString
+		/**
+		 * I checked my history
+		 */
+		historyChecked: () => LocalizedString
+		/**
+		 * If your transaction history doesn't show this payment, you can send it now. Tapping sends it.
+		 */
+		historyCheckedHint: () => LocalizedString
+	}
+	AskFlash: {
+		/**
+		 * Ask Flash
+		 */
+		title: () => LocalizedString
+		/**
+		 * Ask about your balance, payments or the price
+		 */
+		placeholder: () => LocalizedString
+		/**
+		 * Ask
+		 */
+		send: () => LocalizedString
+		/**
+		 * Working on it...
+		 */
+		typing: () => LocalizedString
+		/**
+		 * You're offline. Balances and payments show your last saved copy.
+		 */
+		offlineBanner: () => LocalizedString
+		/**
+		 * Last saved copy. It may be out of date.
+		 */
+		staleBadge: () => LocalizedString
+		/**
+		 * Your balances
+		 */
+		balancesTitle: () => LocalizedString
+		/**
+		 * Try “what's my balance”, “show my payments”, “bitcoin price”, “send 500 to Mom” or “make an invoice”.
+		 */
+		emptyHint: () => LocalizedString
 	}
 }
 

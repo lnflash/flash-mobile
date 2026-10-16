@@ -936,6 +936,7 @@ const en: BaseTranslation = {
     showQrCode: "Topup via QR",
     send: "Send",
     transfer: "Transfer",
+    askFlash: "Ask Flash",
     sweep: "Sweep to Wallet",
     pay: "Pay",
     title: "Home",
@@ -2354,7 +2355,9 @@ const en: BaseTranslation = {
     noBankAccount: "Add a bank account in Settings to settle to it.",
     cashoutFailed: "The settlement didn't go through. Ask again for a new offer.",
     btcOnchainBelowMinimum: "On-chain sends from your Bitcoin wallet need at least 5,500 sats.",
-    groupSendRestExpired: "Some payments didn't go through, and their numbers are out of date. Try again to get new numbers for them."
+    groupSendRestExpired: "Some payments didn't go through, and their numbers are out of date. Try again to get new numbers for them.",
+    actionsOffline: "You're offline. Sending, requesting and the live price need a connection. Try again when you're back online.",
+    amountUnclear: "I couldn't tell the amount. Say it again with the number and its currency, like 5 USD or 500 JMD."
   },
   AssistantCards: {
     confirmTitle: "Review payment",
@@ -2374,7 +2377,19 @@ const en: BaseTranslation = {
     txListTitle: "Payments",
     settleTitle: "Settlement offer",
     cardUnavailable: "This card can't be shown. Ask again.",
-    youReceive: "You receive"
+    youReceive: "You receive",
+    historyChecked: "I checked my history",
+    historyCheckedHint: "If your transaction history doesn't show this payment, you can send it now. Tapping sends it."
+  },
+  AskFlash: {
+    title: "Ask Flash",
+    placeholder: "Ask about your balance, payments or the price",
+    send: "Ask",
+    typing: "Working on it...",
+    offlineBanner: "You're offline. Balances and payments show your last saved copy.",
+    staleBadge: "Last saved copy. It may be out of date.",
+    balancesTitle: "Your balances",
+    emptyHint: "Try “what's my balance”, “show my payments”, “bitcoin price”, “send 500 to Mom” or “make an invoice”."
   }
 }
 
