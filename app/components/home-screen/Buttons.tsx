@@ -14,6 +14,7 @@ import { useNavigation } from "@react-navigation/native"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useTransferFlags } from "@app/hooks"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 
 // components
 import { IconBtn } from "../buttons"
@@ -32,6 +33,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
   const { persistentState } = usePersistentStateContext()
   const { data } = useHasPromptedSetDefaultAccountQuery()
   const { transferEnabled } = useTransferFlags()
+  const { assistantEnabled } = useFeatureFlags()
 
   const onMenuClick = (target: string) => {
     if (!isAuthed) {
@@ -49,7 +51,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     }
   }
 
-  const buttons = [
+  const buttons: { title: string; target: string; icon: string; testID?: string }[] = [
     {
       title: LL.HomeScreen.send(),
       target: "sendBitcoinDestination",
@@ -78,6 +80,16 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
     })
   }
 
+  // The assistant's thread (ENG-689), only while Remote Config turns it on.
+  if (assistantEnabled) {
+    buttons.push({
+      title: LL.HomeScreen.askFlash(),
+      target: "askFlash",
+      icon: "askFlash",
+      testID: "home-ask-flash",
+    })
+  }
+
   return (
     <Wrapper>
       {buttons.map((item) => (
@@ -87,6 +99,7 @@ const Buttons: React.FC<Props> = ({ setModalVisible, setDefaultAccountModalVisib
           icon={item.icon as any}
           label={item.title}
           onPress={() => onMenuClick(item.target)}
+          testID={item.testID}
         />
       ))}
     </Wrapper>
