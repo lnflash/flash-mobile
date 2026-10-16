@@ -118,13 +118,20 @@ export type SummaryValue =
 export type ActionSummary = { readonly [field: string]: SummaryValue }
 
 /**
- * How a dispatched payment shows up in the account's transaction list, so a
- * dispatch whose outcome was lost (the app was killed mid-send) can be
- * reconciled after a relaunch (spec §5.1, "Process death"). Each kind names
- * an identifier the transaction rows carry. `amount` is in the settlement
- * currency's minor units, unsigned.
+ * How one dispatched payment shows up in the account's transaction list, so
+ * a dispatch whose outcome was lost (the app was killed mid-send) can be
+ * reconciled after a relaunch (spec §5.1, "Process death"). Each GraphQL
+ * kind names an identifier the transaction rows carry. `amount` is in the
+ * settlement currency's minor units, unsigned.
+ *
+ * `btcRail` is a payment the BTC wallet made through Breez (ENG-688). That
+ * wallet is self-custodial, so its payments are not in the GraphQL list at
+ * all: the list can never show one went, and its absence proves nothing, so
+ * reconciling one is always "unknown". A record of one whose outcome was
+ * lost therefore blocks the same payment until its day-old record may be
+ * cleared on the user's word (executor.ts, `historyChecked`).
  */
-export type TransactionMatch =
+export type SingleTransactionMatch =
   | { kind: "lightning"; paymentHash: string }
   | {
       kind: "intraledger"
@@ -133,6 +140,16 @@ export type TransactionMatch =
       amount: number
     }
   | { kind: "onchain"; address: string }
+  | { kind: "btcRail" }
+
+/**
+ * A dispatched action's payments as the transaction list shows them: one,
+ * or, for a group send (ENG-688), every leg it may dispatch, `anyOf`. An
+ * action whose list shows any of its legs went is one that sent money.
+ */
+export type TransactionMatch =
+  | SingleTransactionMatch
+  | { kind: "anyOf"; matches: readonly SingleTransactionMatch[] }
 
 /**
  * What the dispatch journal needs to know about an action that moves money:

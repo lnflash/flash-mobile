@@ -132,6 +132,52 @@ describe("the dispatch journal", () => {
     await expect(journal.pending()).resolves.toEqual([record()])
     warn.mockRestore()
   })
+
+  it("keeps a group send's anyOf record and a BTC-rail record (ENG-688)", async () => {
+    const journal = createAttemptJournal({ storage: memoryStorage() })
+    const group = record({
+      preparedActionId: "group-1",
+      match: {
+        kind: "anyOf",
+        matches: [
+          DISPATCH.match,
+          { ...DISPATCH.match, counterPartyWalletId: "carol-wallet" },
+        ],
+      },
+    })
+    const btc = record({
+      preparedActionId: "btc-1",
+      idempotencyKey: null,
+      match: { kind: "btcRail" },
+    })
+
+    await journal.record(group)
+    await journal.record(btc)
+
+    await expect(journal.pending()).resolves.toEqual([group, btc])
+  })
+
+  it("drops an anyOf record it could never reconcile", async () => {
+    // An empty group could never be settled and would read as absent; a
+    // nested or malformed leg is not one the reconciler knows.
+    const storage = memoryStorage()
+    const journal = createAttemptJournal({ storage })
+    const anyOf = (matches: unknown) =>
+      record({ match: { kind: "anyOf", matches } as never })
+
+    storage.data.set(
+      ATTEMPT_JOURNAL_KEY,
+      JSON.stringify([
+        anyOf([]),
+        anyOf("not-a-list"),
+        anyOf([{ kind: "anyOf", matches: [DISPATCH.match] }]),
+        anyOf([DISPATCH.match, { kind: "lightning" }]),
+        record(),
+      ]),
+    )
+
+    await expect(journal.pending()).resolves.toEqual([record()])
+  })
 })
 
 describe("hashPaymentDetail", () => {

@@ -71,6 +71,27 @@ export const matchesTransaction = (
         tx.initiationVia.__typename === "InitiationViaOnChain" &&
         tx.initiationVia.address === match.address
       )
+    case "btcRail":
+      // The BTC wallet's payments are not in this list.
+      return false
+    case "anyOf":
+      return match.matches.some((leg) => matchesTransaction(leg, tx))
+  }
+}
+
+/**
+ * Whether the GraphQL list could show every payment a match names, so that
+ * not finding them there can mean they never went. A BTC-rail payment is
+ * never in it (ENG-688).
+ */
+export const listCanShow = (match: TransactionMatch): boolean => {
+  switch (match.kind) {
+    case "btcRail":
+      return false
+    case "anyOf":
+      return match.matches.every(listCanShow)
+    default:
+      return true
   }
 }
 
@@ -84,6 +105,9 @@ export const createTransactionListReconciler = ({
   minAgeMs?: number
 }): Reconcile => {
   return async (record) => {
+    // Nothing the list holds can settle a BTC-rail payment or prove it never
+    // went: there is nothing to read.
+    if (record.match.kind === "btcRail") return "unknown"
     // Back to the first dispatch: a retry can only have landed after it.
     const since = Math.floor(record.dispatchedAt / 1000) - RECONCILE_CLOCK_SKEW_SECONDS
     let after: string | undefined
@@ -108,6 +132,9 @@ export const createTransactionListReconciler = ({
       return "unknown"
     }
     if (!readSinceDispatch) return "unknown"
+    // Part of it is a payment the list cannot show: not seeing the rest says
+    // nothing about that part.
+    if (!listCanShow(record.match)) return "unknown"
     // Measured from the latest dispatch: a retry can still land for as long
     // after it as the first could after the first.
     return now() - record.lastDispatchedAt >= minAgeMs ? "absent" : "unknown"

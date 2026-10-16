@@ -1,6 +1,7 @@
 import type { DispatchRecord } from "@app/assistant/engine/attempt-journal"
 import {
   createTransactionListReconciler,
+  listCanShow,
   matchesTransaction,
   RECONCILE_CLOCK_SKEW_SECONDS,
   RECONCILE_MAX_PAGES,
@@ -91,6 +92,51 @@ describe("matchesTransaction", () => {
     })
 
     expect(matchesTransaction(intraledger, received)).toBe(false)
+  })
+
+  it("never finds a BTC-rail payment: the BTC wallet's payments are not in the list", () => {
+    expect(matchesTransaction({ kind: "btcRail" }, lnSend({}))).toBe(false)
+    expect(
+      matchesTransaction(
+        { kind: "btcRail" },
+        graphqlTx({ id: "t", createdAt: 1, settlementAmount: -500 }),
+      ),
+    ).toBe(false)
+  })
+
+  it("finds a group send when any one of its legs is the row", () => {
+    const toCarol = { ...intraledger, counterPartyWalletId: "carol-wallet" }
+    const group = { kind: "anyOf" as const, matches: [toCarol, intraledger] }
+    const toBob = graphqlTx({ id: "t", createdAt: 1, settlementAmount: -500 })
+    const toDave = graphqlTx({
+      id: "d",
+      createdAt: 1,
+      settlementAmount: -500,
+      settlementVia: {
+        __typename: "SettlementViaIntraLedger",
+        counterPartyWalletId: "dave-wallet",
+        counterPartyUsername: "dave",
+      },
+      initiationVia: {
+        __typename: "InitiationViaIntraLedger",
+        counterPartyWalletId: "dave-wallet",
+        counterPartyUsername: "dave",
+      },
+    })
+
+    expect(matchesTransaction(group, toBob)).toBe(true)
+    expect(matchesTransaction(group, toDave)).toBe(false)
+  })
+})
+
+describe("listCanShow", () => {
+  it("is false for a BTC-rail payment, and for a group with one among its legs", () => {
+    expect(listCanShow(intraledger)).toBe(true)
+    expect(listCanShow({ kind: "btcRail" })).toBe(false)
+    expect(listCanShow({ kind: "anyOf", matches: [intraledger, intraledger] })).toBe(true)
+    expect(
+      listCanShow({ kind: "anyOf", matches: [intraledger, { kind: "btcRail" }] }),
+    ).toBe(false)
   })
 })
 
@@ -231,5 +277,44 @@ describe("createTransactionListReconciler", () => {
     graphql.transactions.mockRejectedValue(new Error("offline"))
 
     await expect(reconcile(record())).resolves.toBe("unknown")
+  })
+
+  it("is always unknown for a BTC-rail payment, without reading the list (ENG-688)", async () => {
+    // The list cannot settle it, and not seeing it there proves nothing: an
+    // old record of one may only be cleared on the user's word (executor.ts).
+    const { reconcile, graphql } = reconcilerOver([[]], old + 86_400_000)
+
+    await expect(reconcile(record({ kind: "btcRail" }))).resolves.toBe("unknown")
+    expect(graphql.transactions).not.toHaveBeenCalled()
+  })
+
+  it("settles a group send when the list shows any one of its legs", async () => {
+    const toCarol = { ...intraledger, counterPartyWalletId: "carol-wallet" }
+    const group = record({ kind: "anyOf", matches: [toCarol, intraledger] })
+
+    await expect(reconcilerOver([[send()]], old).reconcile(group)).resolves.toBe(
+      "settled",
+    )
+  })
+
+  it("calls a group send absent only when the list since the dispatch shows none of its legs", async () => {
+    const toCarol = { ...intraledger, counterPartyWalletId: "carol-wallet" }
+    const group = record({ kind: "anyOf", matches: [toCarol, intraledger] })
+
+    await expect(
+      reconcilerOver([[unrelated("other", DISPATCHED_AT_S + 9)]], old).reconcile(group),
+    ).resolves.toBe("absent")
+    await expect(
+      reconcilerOver([[]], DISPATCHED_AT_MS + RECONCILE_MIN_AGE_MS - 1).reconcile(group),
+    ).resolves.toBe("unknown")
+  })
+
+  it("is unknown, never absent, for a group with a leg the list cannot show", async () => {
+    const group = record({ kind: "anyOf", matches: [intraledger, { kind: "btcRail" }] })
+
+    await expect(reconcilerOver([[]], old).reconcile(group)).resolves.toBe("unknown")
+    await expect(reconcilerOver([[send()]], old).reconcile(group)).resolves.toBe(
+      "settled",
+    )
   })
 })

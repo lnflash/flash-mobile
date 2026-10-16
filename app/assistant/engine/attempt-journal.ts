@@ -4,7 +4,7 @@ import { sha256 } from "js-sha256"
 import type { WalletCurrency } from "@app/graphql/generated"
 import type { GraphqlMutationFns } from "@app/payments/send-payment"
 import type { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
-import type { TransactionMatch } from "../registry/types"
+import type { SingleTransactionMatch, TransactionMatch } from "../registry/types"
 import { canonicalJson } from "./canonical-json"
 import { isPlainObject } from "./schema-validator"
 
@@ -58,17 +58,34 @@ export type JournalStorage = {
 
 export const ATTEMPT_JOURNAL_KEY = "assistant.pendingDispatches.v1"
 
-const MATCH_FIELDS: Record<TransactionMatch["kind"], readonly string[]> = {
+const MATCH_FIELDS: Record<SingleTransactionMatch["kind"], readonly string[]> = {
   lightning: ["paymentHash"],
   intraledger: ["counterPartyWalletId", "settlementCurrency", "amount"],
   onchain: ["address"],
+  btcRail: [],
 }
 
-const isMatch = (value: unknown): value is TransactionMatch => {
+const isSingleMatch = (value: unknown): value is SingleTransactionMatch => {
   if (!isPlainObject(value) || typeof value.kind !== "string") return false
   const fields: readonly string[] | undefined =
-    MATCH_FIELDS[value.kind as TransactionMatch["kind"]]
+    MATCH_FIELDS[value.kind as SingleTransactionMatch["kind"]]
   return fields !== undefined && fields.every((field) => value[field] !== undefined)
+}
+
+/**
+ * A stored match the reconciler can use. A group's `anyOf` must name at
+ * least one leg, each of them a single match: an empty one could never be
+ * settled, and would read as absent.
+ */
+const isMatch = (value: unknown): value is TransactionMatch => {
+  if (isPlainObject(value) && value.kind === "anyOf") {
+    return (
+      Array.isArray(value.matches) &&
+      value.matches.length > 0 &&
+      value.matches.every(isSingleMatch)
+    )
+  }
+  return isSingleMatch(value)
 }
 
 const isRecord = (value: unknown): value is DispatchRecord =>
