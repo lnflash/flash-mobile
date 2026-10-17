@@ -1,5 +1,5 @@
 import * as React from "react"
-import { StyleSheet, ViewStyle } from "react-native"
+import { StyleSheet, TouchableOpacity, ViewStyle } from "react-native"
 import type { ReactTestInstance } from "react-test-renderer"
 import { fireEvent, render } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
@@ -41,6 +41,7 @@ jest.mock("@app/i18n/i18n-react", () => {
 })
 
 import Buttons from "@app/components/home-screen/Buttons"
+import IconBtn from "@app/components/buttons/IconBtn"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import theme from "@app/rne-theme/theme"
@@ -48,9 +49,9 @@ import theme from "@app/rne-theme/theme"
 loadLocale("en")
 const en = i18nObject("en")
 
-// The home screen's entry to Ask Flash (ENG-689): one more button in the
-// row, only while Remote Config's assistantEnabled is on, opening the
-// thread the way the other buttons open their screens.
+// The home screen's row: Send and Receive, Convert in advanced mode, and
+// Transfer where it is on. Ask Flash is not one of them: it sits in the
+// header, right beside the price icon (ENG-733, home-header.spec.tsx).
 
 const show = () => {
   const setModalVisible = jest.fn()
@@ -95,50 +96,40 @@ const minimumWidth = (style: ViewStyle) =>
   Math.max(64, Number(style.minWidth ?? 0)) +
   2 * (Number(style.paddingHorizontal ?? 0) + Number(style.marginHorizontal ?? 0))
 
+/** Taps the circle of the button with this label (the label itself takes no tap). */
+const tap = (screen: ReturnType<typeof show>["screen"], label: string) => {
+  const button = screen
+    .UNSAFE_getAllByType(IconBtn)
+    .find((node) => node.props.label === label)
+  if (!button) throw new Error(`no button labelled ${label}`)
+  fireEvent.press(button.findByType(TouchableOpacity))
+}
+
 describe("the home screen's buttons", () => {
-  it("leave Ask Flash out while the assistant flag is off", () => {
-    const { screen } = show()
+  // A plain loop rather than it.each, which the wdio/mocha globals in this
+  // repo's tsconfig leave untyped.
+  const flagStates = [false, true]
+  flagStates.forEach((flag) => {
+    const state = flag ? "on" : "off"
+    it(`leave Ask Flash out with the assistant flag ${state}: four buttons at most`, () => {
+      // Advanced mode and transfer make four. Before ENG-733 the flag made
+      // Ask Flash a fifth here.
+      mockAssistantEnabled = flag
+      mockAdvanceMode = true
+      mockTransferEnabled = true
+      const { screen } = show()
+      const labels = [
+        en.HomeScreen.send(),
+        en.HomeScreen.receive(),
+        en.ConversionDetailsScreen.title(),
+        en.HomeScreen.transfer(),
+      ]
 
-    expect(screen.getByText(en.HomeScreen.send())).toBeTruthy()
-    expect(screen.queryByText(en.HomeScreen.askFlash())).toBeNull()
-    expect(screen.queryByTestId("home-ask-flash")).toBeNull()
-  })
-
-  it("show Ask Flash once the flag is on, and open the thread", () => {
-    mockAssistantEnabled = true
-    const { screen } = show()
-
-    expect(screen.getByText(en.HomeScreen.askFlash())).toBeTruthy()
-    fireEvent.press(screen.getByTestId("home-ask-flash"))
-
-    expect(mockNavigate).toHaveBeenCalledWith("askFlash")
-  })
-
-  it("fit five buttons on a phone's row: past four, each takes an equal share, and the row wraps", () => {
-    // Advanced mode and transfer make four; Ask Flash a fifth. At IconBtn's
-    // own spacing that is at least 480pt, wider than any phone.
-    mockAdvanceMode = true
-    mockTransferEnabled = true
-    mockAssistantEnabled = true
-    const { screen } = show()
-    const labels = [
-      en.HomeScreen.send(),
-      en.HomeScreen.receive(),
-      en.ConversionDetailsScreen.title(),
-      en.HomeScreen.transfer(),
-      en.HomeScreen.askFlash(),
-    ]
-
-    labels.forEach((label) => expect(screen.getByText(label)).toBeTruthy())
-    const row: ViewStyle = StyleSheet.flatten(
-      screen.getByTestId("home-buttons").props.style,
-    )
-    expect(row.flexWrap).toBe("wrap")
-    const boxes = labels.map((label) => buttonBox(screen, label))
-    boxes.forEach((box) => expect(box).toEqual(expect.objectContaining({ flex: 1 })))
-    // All five fit a 360pt phone's row, with the row's own padding.
-    const fixed = boxes.reduce((sum, box) => sum + minimumWidth(box), 0)
-    expect(fixed + 2 * Number(row.paddingHorizontal ?? 0)).toBeLessThanOrEqual(360)
+      labels.forEach((label) => expect(screen.getByText(label)).toBeTruthy())
+      expect(screen.UNSAFE_getAllByType(IconBtn)).toHaveLength(labels.length)
+      expect(screen.queryByText(en.HomeScreen.askFlash())).toBeNull()
+      expect(screen.queryByTestId("home-ask-flash")).toBeNull()
+    })
   })
 
   it("keep IconBtn's own spacing for four buttons, in a row that does not wrap", () => {
@@ -156,12 +147,11 @@ describe("the home screen's buttons", () => {
     expect(minimumWidth(box)).toBe(96)
   })
 
-  it("ask a signed-out user to make an account first, as the other buttons do", () => {
-    mockAssistantEnabled = true
+  it("ask a signed-out user to make an account first", () => {
     mockAuthed = false
     const { screen, setModalVisible } = show()
 
-    fireEvent.press(screen.getByTestId("home-ask-flash"))
+    tap(screen, en.HomeScreen.send())
 
     expect(setModalVisible).toHaveBeenCalledWith(true)
     expect(mockNavigate).not.toHaveBeenCalled()
