@@ -11,7 +11,9 @@ take the same env: `E2E_TOKEN`, `BRIDGE_URL`, `MINT_URL`.
 `assistantEnabled` follows Remote Config and is off. A development build
 (`__DEV__`, which the e2e job's Debug build is) honours
 `flash://dev/assistant?on=1`, which turns the assistant on for that run of the
-app (`app/config/assistant-dev-override.ts`); a release build ignores it.
+app (`app/config/assistant-dev-override.ts`); a store build ignores it. A
+local phone build can opt in with `ASSISTANT_DEV_LINK=true` in `.env`
+(ENG-734).
 `subflows/open-ask-flash.yaml` opens it after signing in, then taps the home
 screen's Ask Flash button (`home-ask-flash`). Like the card bridge's link, it
 also hides LogBox: the sign-in subflow relaunches the app, which brings LogBox
