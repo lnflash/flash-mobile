@@ -3,7 +3,13 @@
  * on with a dev link, so the Maestro flows can open Ask Flash; a release
  * build never does. Only assistantEnabled follows it: voice, spoken replies
  * and the server fallback stay Remote Config's alone.
+ *
+ * ENG-734: the test phones carry a production-mode bundle, so __DEV__ is
+ * false there; ASSISTANT_DEV_LINK=true in the .env they were bundled with
+ * honours the link too. Nothing else does.
  */
+import * as fs from "fs"
+import * as path from "path"
 import * as React from "react"
 import { Linking, LogBox, Text } from "react-native"
 import { act, render, renderHook } from "@testing-library/react-native"
@@ -21,6 +27,14 @@ import {
   useFeatureFlags,
 } from "@app/config/feature-flags-context"
 
+// react-native-dotenv inlines ASSISTANT_DEV_LINK from .env when the app is
+// bundled. Here a getter reads it, so each test picks its own value.
+let mockAssistantDevLink: string | undefined
+jest.mock("@env", () => ({
+  get ASSISTANT_DEV_LINK() {
+    return mockAssistantDevLink
+  },
+}))
 jest.mock("@app/hooks", () => ({
   useAppConfig: () => ({ appConfig: { galoyInstance: { id: "Test" } } }),
 }))
@@ -32,6 +46,9 @@ jest.mock("@app/graphql/level-context", () => ({
 type Dev = { __DEV__: boolean }
 const setDev = (value: boolean) => {
   ;(globalThis as unknown as Dev).__DEV__ = value
+}
+const setDevLink = (value: string | undefined) => {
+  mockAssistantDevLink = value
 }
 
 const remoteConfig = getRemoteConfig() as unknown as {
@@ -71,6 +88,7 @@ const remove = jest.fn()
 
 beforeEach(() => {
   jest.clearAllMocks()
+  setDevLink(undefined)
   setDev(true)
   setAssistantDevOverride(false)
   urlListener = undefined
@@ -96,6 +114,7 @@ beforeEach(() => {
 afterEach(() => {
   setDev(true)
   setAssistantDevOverride(false)
+  setDevLink(undefined)
   jest.restoreAllMocks()
 })
 
@@ -214,5 +233,105 @@ describe("useDevAssistantLink", () => {
     expect(Linking.addEventListener).not.toHaveBeenCalled()
     expect(Linking.getInitialURL).not.toHaveBeenCalled()
     expect(LogBox.ignoreAllLogs).not.toHaveBeenCalled()
+  })
+})
+
+describe("a production-mode build with ASSISTANT_DEV_LINK (ENG-734)", () => {
+  beforeEach(() => {
+    setDev(false)
+  })
+
+  it('honours the link when it is "true"', () => {
+    setDevLink("true")
+
+    expect(parseAssistantDevLink("flash://dev/assistant?on=1")).toBe(true)
+    expect(parseAssistantDevLink("flash://dev/assistant?off=1")).toBe(false)
+    expect(parseAssistantDevLink("flash://dev/card-tap")).toBeUndefined()
+    expect(parseAssistantDevLink("flash://assistant?on=1")).toBeUndefined()
+
+    setAssistantDevOverride(true)
+    expect(assistantDevOverride()).toBe(true)
+  })
+
+  // Plain loops rather than it.each: this repo's tsconfig pulls in the
+  // wdio/mocha globals, whose `it` has no `.each`.
+  for (const value of [undefined, "false", "", "1", "TRUE"]) {
+    it(`ignores the link when it is ${JSON.stringify(value)}`, () => {
+      setDevLink(value)
+
+      expect(parseAssistantDevLink("flash://dev/assistant?on=1")).toBeUndefined()
+      setAssistantDevOverride(true)
+      expect(assistantDevOverride()).toBe(false)
+    })
+  }
+
+  it("is off again without it, whatever set it", () => {
+    setDevLink("true")
+    setAssistantDevOverride(true)
+
+    setDevLink(undefined)
+    expect(assistantDevOverride()).toBe(false)
+  })
+
+  it('turns on assistantEnabled alone when it is "true"', async () => {
+    setDevLink("true")
+    const { flags } = await renderFlags()
+    expect(flags().assistantEnabled).toBe(false)
+
+    act(() => setAssistantDevOverride(true))
+
+    expect(flags()).toEqual({
+      assistantEnabled: true,
+      assistantVoice: false,
+      assistantVoiceReplies: false,
+      assistantServerFallback: false,
+    })
+  })
+
+  it('leaves assistantEnabled to Remote Config when it is "false"', async () => {
+    setDevLink("false")
+    const { flags } = await renderFlags()
+
+    act(() => setAssistantDevOverride(true))
+
+    expect(flags().assistantEnabled).toBe(false)
+  })
+
+  it('acts on the link at launch and while the app runs when it is "true"', async () => {
+    setDevLink("true")
+    ;(Linking.getInitialURL as jest.Mock).mockResolvedValue("flash://dev/assistant?on=1")
+
+    render(<DevAssistantLink />)
+    await act(async () => {})
+
+    expect(assistantDevOverride()).toBe(true)
+    expect(LogBox.ignoreAllLogs).toHaveBeenCalledWith(true)
+
+    act(() => urlListener?.({ url: "flash://dev/assistant?off=1" }))
+    expect(assistantDevOverride()).toBe(false)
+  })
+
+  for (const value of [undefined, "false"]) {
+    it(`does not listen when it is ${JSON.stringify(value)}`, async () => {
+      setDevLink(value)
+
+      render(<DevAssistantLink />)
+      await act(async () => {})
+
+      expect(Linking.addEventListener).not.toHaveBeenCalled()
+      expect(Linking.getInitialURL).not.toHaveBeenCalled()
+      expect(LogBox.ignoreAllLogs).not.toHaveBeenCalled()
+    })
+  }
+})
+
+describe("App", () => {
+  // The link's own gate is the only one: a __DEV__ guard where App mounts it
+  // would leave the link dead on the test phones again (ENG-734).
+  it("mounts DevAssistantLink in every build", () => {
+    const app = fs.readFileSync(path.join(__dirname, "../../app/app.tsx"), "utf8")
+
+    expect(app).toMatch(/<DevAssistantLink \/>/)
+    expect(app).not.toMatch(/__DEV__\s*&&\s*<DevAssistantLink/)
   })
 })

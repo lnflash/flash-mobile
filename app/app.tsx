@@ -151,10 +151,14 @@ export const App = () => {
                                               FlashcardContext read re-renders
                                               nothing else. */}
                                           {__DEV__ && <DevCardLinks />}
-                                          {/* Development builds only: the
-                                              e2e flows' switch for the
-                                              assistant (ENG-689). */}
-                                          {__DEV__ && <DevAssistantLink />}
+                                          {/* The e2e flows' and the test
+                                              phones' switch for the
+                                              assistant (ENG-689, ENG-734).
+                                              In every build: it listens only
+                                              in one that honours the link
+                                              (__DEV__ or ASSISTANT_DEV_LINK,
+                                              assistant-dev-override.ts). */}
+                                          <DevAssistantLink />
                                           <InviteDeepLinkHandler>
                                             <RootStack />
                                           </InviteDeepLinkHandler>
