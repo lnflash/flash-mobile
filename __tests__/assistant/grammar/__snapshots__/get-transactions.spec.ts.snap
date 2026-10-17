@@ -59,5 +59,6 @@ jm/JMD "show mi di last 10 transaction" -> getTransactions {"first":10}
 jm/JMD "mi payment history" -> getTransactions {}
 jm/JMD "wah come in" -> getTransactions {"direction":"RECEIVE"}
 jm/JMD "payments fi tanya" -> getTransactions {"direction":"SEND","query":"tanya"}
-jm/JMD "payments from mi madda" -> getTransactions {"direction":"RECEIVE","query":"madda"}"
+jm/JMD "payments from mi madda" -> getTransactions {"direction":"RECEIVE","query":"madda"}
+jm/JMD "payments fi Kerry-Ann" -> getTransactions {"direction":"SEND","query":"kerry-ann"}"
 `;

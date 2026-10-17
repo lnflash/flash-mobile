@@ -35,7 +35,8 @@ import {
 // (ENG-689, spec §7.2): it reads balances and history through a copy of
 // the rail made with `fetchPolicy: "cache-only"`, and labels what that copy
 // answers as stale. What the cache does not hold is a failed read there,
-// never an empty answer.
+// never an empty answer. That copy reads the transaction list where the
+// app's screens put it in the cache (CACHED_TRANSACTION_PAGES).
 
 export type WalletRow = NonNullable<
   WalletOverviewScreenQuery["me"]
@@ -118,6 +119,30 @@ const missedCache = (result: { data?: unknown; partial?: boolean }): boolean =>
   result.partial === true || result.data === undefined || result.data === null
 
 /**
+ * Where the app's screens put the account's transaction list in the cache,
+ * by the variables they ask with. The account's `transactions` field has
+ * no keyArgs policy (app/graphql/cache.ts), so the cache keeps each set of
+ * arguments apart, and a cache-only read finds only a list asked for with
+ * the very same ones:
+ *
+ * - the history screen's first page: USDTransactionHistory asks with no
+ *   variables at all;
+ * - the home screen's three rows: homeAuthed asks for `first: 3`
+ *   (app/graphql/front-end-queries.ts);
+ * - and the assistant's own page, as an online read of it left it.
+ *
+ * A page after the first is cached only where the history screen's
+ * fetchMore put it, under `after` alone, or where an online read of this
+ * rail did.
+ */
+export const CACHED_TRANSACTION_PAGES: Readonly<
+  Record<"historyScreen" | "homeScreen", TransactionListForDefaultAccountQueryVariables>
+> = {
+  historyScreen: {},
+  homeScreen: { first: 3 },
+}
+
+/**
  * The rail over the app's Apollo client. The client is built inside a React
  * effect (app/graphql/client.tsx), so there is no static one to import: the
  * caller passes it in.
@@ -139,6 +164,41 @@ export const createGraphqlRail = (
     return result.data
   }
 
+  const readTransactions = (variables: TransactionListForDefaultAccountQueryVariables) =>
+    read<
+      TransactionListForDefaultAccountQuery,
+      TransactionListForDefaultAccountQueryVariables
+    >(TransactionListForDefaultAccountDocument, variables)
+
+  /**
+   * Of these lists, the cache's latest copy: of those it holds whole, the
+   * one with the newest row, and of two as new, the longer (a list read
+   * later holds every row since; one with no newer row is as fresh). A list
+   * it does not hold is a failed read; when it holds none, so is this.
+   */
+  const latestCached = async (
+    candidates: readonly TransactionListForDefaultAccountQueryVariables[],
+  ): Promise<TransactionListForDefaultAccountQuery> => {
+    const held: {
+      data: TransactionListForDefaultAccountQuery
+      newest: number
+      rows: number
+    }[] = []
+    for (const variables of candidates) {
+      try {
+        const data = await readTransactions(variables)
+        const edges = data.me?.defaultAccount.transactions?.edges ?? []
+        const newest = Math.max(-Infinity, ...edges.map(({ node }) => node.createdAt))
+        held.push({ data, newest, rows: edges.length })
+      } catch (err) {
+        if (!(err instanceof GraphqlRailError)) throw err
+      }
+    }
+    const [latest] = [...held].sort((a, b) => b.newest - a.newest || b.rows - a.rows)
+    if (!latest) throw new GraphqlRailError("No answer in the cache")
+    return latest.data
+  }
+
   return {
     wallets: async () => {
       const data = await read<WalletOverviewScreenQuery>(WalletOverviewScreenDocument)
@@ -146,10 +206,22 @@ export const createGraphqlRail = (
     },
 
     transactions: async ({ first, after }) => {
-      const data = await read<
-        TransactionListForDefaultAccountQuery,
-        TransactionListForDefaultAccountQueryVariables
-      >(TransactionListForDefaultAccountDocument, { first, after })
+      // From the network, the page asked for. From the cache, the latest
+      // copy of it the screens left there (CACHED_TRANSACTION_PAGES). A
+      // page the cache does not hold is a failed read: the search ends at
+      // the page before it (getTransactions).
+      let data: TransactionListForDefaultAccountQuery
+      if (fetchPolicy === "network-only") {
+        data = await readTransactions({ first, after })
+      } else if (after === undefined) {
+        data = await latestCached([
+          CACHED_TRANSACTION_PAGES.historyScreen,
+          CACHED_TRANSACTION_PAGES.homeScreen,
+          { first },
+        ])
+      } else {
+        data = await latestCached([{ after }, { first, after }])
+      }
       const connection = signedInUser(data.me).defaultAccount.transactions
       return {
         rows: (connection?.edges ?? []).map((edge) => edge.node),

@@ -308,8 +308,32 @@ describe("createGraphqlRail's fetch policy (ENG-689)", () => {
 
     await readAll(createGraphqlRail(client, { fetchPolicy: "cache-only" }))
 
-    expect(policiesAsked(query)).toEqual(Array(8).fill("cache-only"))
+    // Eight reads, the transaction list's three times over: offline it
+    // looks for the list in each place the app's screens put one
+    // (CACHED_TRANSACTION_PAGES, graphql-rail-cache.spec.tsx).
+    expect(policiesAsked(query)).toEqual(Array(10).fill("cache-only"))
+    expect(
+      query.mock.calls
+        .filter(([options]) => options.query === TransactionListForDefaultAccountDocument)
+        .map(([options]) => options.variables),
+    ).toEqual([{}, { first: 3 }, { first: 20 }])
     expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it("reads a later page from the cache where the history screen's fetchMore put it", async () => {
+    const { query, client } = fakeClient()
+    query.mockResolvedValue({ data: {}, partial: true })
+
+    await expect(
+      createGraphqlRail(client, { fetchPolicy: "cache-only" }).transactions({
+        first: 20,
+        after: "cursor-1",
+      }),
+    ).rejects.toThrow(new GraphqlRailError("No answer in the cache"))
+    expect(query.mock.calls.map(([options]) => options.variables)).toEqual([
+      { after: "cursor-1" },
+      { first: 20, after: "cursor-1" },
+    ])
   })
 
   it("answers from the cache what the cache holds", async () => {

@@ -1,6 +1,6 @@
 import React from "react"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
-import { TouchableOpacity, View } from "react-native"
+import { StyleProp, TouchableOpacity, View, ViewStyle } from "react-native"
 
 // assets
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
@@ -37,15 +37,24 @@ type Props = {
   onPress: () => void
   /** A plain testID on the button, for e2e flows; the label stays what a screen reader says. */
   testID?: string
+  /** Over the button's own spacing, for a row that has to fit more of them. */
+  style?: StyleProp<ViewStyle>
 }
 
-const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress, testID }) => {
+const IconBtn: React.FC<Props> = ({
+  type = "solid",
+  icon,
+  label,
+  onPress,
+  testID,
+  style,
+}) => {
   const { colors } = useTheme().theme
   const styles = useStyles()
   const Icon = icons[icon]
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <TouchableOpacity
         style={[styles.base, styles[type]]}
         onPress={onPress}

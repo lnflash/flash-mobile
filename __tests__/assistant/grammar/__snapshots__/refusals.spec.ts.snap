@@ -26,6 +26,11 @@ jm/JMD "sen tanya 3k" -> clarifyAmount
 jm/JMD "gi mom 10 dollars" -> clarifyAmount
 jm/JMD "sen money to mom" -> clarifyAmount
 jm/JMD "sen five hundred to bob" -> clarifyAmount
+en/JMD "send bob 5-10" -> clarifyAmount
+en/JMD "request 20-25" -> clarifyAmount
+en/USD "send -5 to bob" -> clarifyAmount
+jm/JMD "sen bob 500-1000" -> clarifyAmount
+jm/JMD "sen -500 to tanya" -> clarifyAmount
 en/USD "send her $5" -> miss
 en/USD "send them 10" -> miss
 en/USD "pay him" -> miss
@@ -84,5 +89,11 @@ en/USD "do i have enough to send bob $50" -> miss
 jm/JMD "wah yuh can do" -> miss
 jm/JMD "bless up" -> miss
 jm/JMD "mi wan top up mi card" -> miss
-jm/JMD "how mi fi sen money" -> miss"
+jm/JMD "how mi fi sen money" -> miss
+jm/JMD "sen 2000 fi di light bill" -> miss
+jm/JMD "pay di water 1500" -> miss
+en/JMD "pay school fees 5000" -> miss
+en/USD "pay bill 20" -> miss
+en/USD "send 10 to alice + bob" -> miss
+en/USD "send $15 to bob, tanya" -> miss"
 `;

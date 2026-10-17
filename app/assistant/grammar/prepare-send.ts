@@ -7,6 +7,8 @@ import {
   FOLLOW_UP_WORDS,
   hasWord,
   nameOf,
+  PURPOSE_NAMES,
+  PURPOSE_WORDS,
   readAmount,
   Run,
   splitAroundRuns,
@@ -21,7 +23,9 @@ import {
 //   contact, or ask (registry/actions/shared/payee.ts). A pronoun or a
 //   follow-up ("him", "same again"), two payees, a time, or an invoice or an
 //   address (words.ts) are no call at all: v1 sends to a contact the user
-//   names, now;
+//   names, now. So is what a payment is for ("sen 500 fi di rent", "pay my
+//   bill 500"): resolveContact would find a contact whose name holds the
+//   word (brent, billy) and answer with them;
 // - the amount's words go to readAmountPhrase, which reads them or makes
 //   them a question (a k or m suffix, a "$" on a J$ account, words for a
 //   number). An ask with no amount is a question too.
@@ -59,12 +63,26 @@ const sourceWalletOf = (words: readonly Token[]): "BTC" | "cash" | "refuse" => {
 }
 
 /**
+ * Whether the payee's words say what the payment is for rather than who
+ * gets it (words.ts, PURPOSE_WORDS): "the rent", "my bill", "fi lunch".
+ * Patois "fi" is "for" as often as "to", so only a typed "to" before a
+ * purpose word that is also a name, with no "my" or "the", leaves it a
+ * name: "send $5 to bill" pays a contact called Bill.
+ */
+const namesPurpose = (payeeWords: readonly Token[], typedTo: boolean): boolean => {
+  const purposes = payeeWords.filter(({ word }) => PURPOSE_WORDS.has(word))
+  if (purposes.length === 0) return false
+  const owned = payeeWords[0]?.word === "my" || payeeWords[0]?.word === "the"
+  return !typedTo || owned || purposes.some(({ word }) => !PURPOSE_NAMES.has(word))
+}
+
+/**
  * The payee and the amount in what follows the verb: "$5 to bob", "bob $5",
  * "to bob $5". Undefined when the words do not make one payee and one
  * amount (or no amount) in one of those shapes.
  */
-const partsOf = (words: readonly Token[]): Parts | undefined => {
-  const runs = amountRuns(words)
+const partsOf = (words: readonly Token[], ctx: GrammarContext): Parts | undefined => {
+  const runs = amountRuns(words, ctx)
   const { before, between, after } = splitAroundRuns(words, runs)
   // Two amounts are one ask only when nothing but "and" or "or" is between
   // them; "$10 to bob and $5 to alice" is two payments.
@@ -89,6 +107,9 @@ const partsOf = (words: readonly Token[]): Parts | undefined => {
     payeeWords = named.slice(to + 1)
     if (payeeWords.some(({ word }) => word === "to")) return undefined
   }
+  // "to" as typed, not patois "fi" folded into it.
+  const typedTo = to >= 0 && named[to].raw.toLowerCase() === "to"
+  if (namesPurpose(payeeWords, typedTo)) return undefined
   const payee = nameOf(payeeWords)
   if (payee === "none" || payee === "refuse") return undefined
   return { payee, run: runs[0], mixed: runs.length > 1 }
@@ -114,17 +135,17 @@ const match = (tokens: readonly Token[], ctx: GrammarContext): RuleResult => {
 
   // A memo is what follows the last "for", when what precedes it is a
   // payee and an amount on their own: "send $5 to bob for lunch".
-  let parts = partsOf(core)
+  let parts = partsOf(core, ctx)
   let memo: string | undefined
   const lastFor = core.map(({ word }) => word).lastIndexOf("for")
   if (lastFor > 0) {
     const memoWords = core.slice(lastFor + 1)
-    const head = partsOf(core.slice(0, lastFor))
+    const head = partsOf(core.slice(0, lastFor), ctx)
     if (
       head?.run !== undefined &&
       memoWords.length > 0 &&
       memoWords.length <= MAX_MEMO_WORDS &&
-      amountRuns(memoWords).length === 0
+      amountRuns(memoWords, ctx).length === 0
     ) {
       parts = head
       memo = memoWords.map(({ raw }) => raw).join(" ")

@@ -4,7 +4,11 @@ import { GRAMMAR_RULES, matchGrammar } from "@app/assistant/grammar"
 import { normalize, textOf, WORD_FOLDS } from "@app/assistant/grammar/normalize"
 import type { GrammarRule } from "@app/assistant/grammar/types"
 import { assistantRegistry } from "@app/assistant/registry"
+import { i18nObject } from "@app/i18n/i18n-util"
+import { loadLocale } from "@app/i18n/i18n-util.sync"
 import { TUNING } from "./corpus/tuning"
+
+loadLocale("en")
 
 // The grammar tier's own mechanics (app/assistant/grammar): how it reads
 // words, what it never takes, and that what it emits is a call runTool
@@ -41,6 +45,42 @@ describe("normalize", () => {
       { word: "send", raw: "Sen" },
       { word: "to", raw: "Fi" },
       { word: "$5", raw: "$5" },
+    ])
+  })
+
+  it("keeps the hyphens and apostrophes of a word with a digit, for readAmountPhrase", () => {
+    // An amount is read only by readAmountPhrase, from what was typed:
+    // "5-10" is two numbers there, never "510".
+    expect(textOf(normalize("send bob 5-10").tokens)).toBe("send bob 5-10")
+    expect(textOf(normalize("send -5 to bob").tokens)).toBe("send -5 to bob")
+    expect(textOf(normalize("send 5'000 to bob").tokens)).toBe("send 5'000 to bob")
+    // A word with no digit still loses them.
+    expect(textOf(normalize("D'Andre on-chain").tokens)).toBe("dandre onchain")
+  })
+
+  it("reads & and + standing alone as and", () => {
+    expect(textOf(normalize("send 20 to mom & dad").tokens)).toBe(
+      "send 20 to mom and dad",
+    )
+    expect(textOf(normalize("send 20 to mom + dad").tokens)).toBe(
+      "send 20 to mom and dad",
+    )
+    // Inside a word, either is part of it.
+    expect(textOf(normalize("send 5+5 to bob").tokens)).toBe("send 5+5 to bob")
+  })
+
+  it("marks a word a comma ended, whether the comma touches it or stands apart", () => {
+    expect(normalize("mom, dad").tokens).toEqual([
+      { word: "mom", raw: "mom", comma: true },
+      { word: "dad", raw: "dad" },
+    ])
+    expect(normalize("mom , dad").tokens).toEqual([
+      { word: "mom", raw: "mom", comma: true },
+      { word: "dad", raw: "dad" },
+    ])
+    // A number's own commas are not one.
+    expect(normalize("$1,250.75").tokens).toEqual([
+      { word: "$1,250.75", raw: "$1,250.75" },
     ])
   })
 })
@@ -96,6 +136,134 @@ describe("matchGrammar", () => {
       reason: "unit",
     })
     expect(read).toHaveBeenLastCalledWith("500", JMD)
+  })
+
+  it("hands readAmountPhrase a range or a sign as typed, so it is a question, never one number", () => {
+    const read = jest.spyOn(amountPhrase, "readAmountPhrase")
+    const question = (reason: string) => ({ kind: "clarifyAmount", reason })
+
+    expect(matchGrammar("send bob 5-10", JMD)).toEqual(question("mixed"))
+    expect(read).toHaveBeenLastCalledWith("5-10", JMD)
+    expect(matchGrammar("send 20-25 to bob", JMD)).toEqual(question("mixed"))
+    expect(read).toHaveBeenLastCalledWith("20-25", JMD)
+    expect(matchGrammar("send 1-2 bitcoin to bob", USD)).toEqual(question("mixed"))
+    expect(read).toHaveBeenLastCalledWith("1-2 bitcoin", USD)
+    expect(matchGrammar("request 20-25", JMD)).toEqual(question("mixed"))
+    expect(read).toHaveBeenLastCalledWith("20-25", JMD)
+    expect(matchGrammar("send -5 to bob", JMD)).toEqual(question("unit"))
+    expect(read).toHaveBeenLastCalledWith("-5", JMD)
+  })
+
+  it("never takes what a payment is for as the payee", () => {
+    // resolveContact would answer brent for "rent" and billy for "bill".
+    ;[
+      "sen 500 fi di rent",
+      "sen 500 fi rent",
+      "pay my bill 500",
+      "pay bill 500",
+      "sen 500 fi bill",
+      "send 500 to the bill",
+      "pay di light bill 3000",
+      "send 1000 to the school fees",
+      "pay rent 20000",
+    ].forEach((utterance) =>
+      expect([utterance, matchGrammar(utterance, JMD)]).toEqual([utterance, undefined]),
+    )
+    // A memo can say what it is for.
+    expect(matchGrammar("send $5 to bob for rent", USD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "prepareSend",
+        args: { payee: "bob", amount: "5", currency: "USD", memo: "rent" },
+      },
+    })
+    // "bill" is a name too: after a typed "to", it names a contact called Bill.
+    expect(matchGrammar("send $5 to bill", USD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "prepareSend",
+        args: { payee: "bill", amount: "5", currency: "USD" },
+      },
+    })
+  })
+
+  it("never makes two payees joined by &, + or a comma into one", () => {
+    ;[
+      "send 20 to mom & dad",
+      "send 20 to mom + dad",
+      "send 20 to mom, dad",
+      "send 20 to mom , dad",
+      "send mom, dad 20",
+      "payments to mom, dad",
+    ].forEach((utterance) =>
+      expect([utterance, matchGrammar(utterance, USD)]).toEqual([utterance, undefined]),
+    )
+    // A comma after the one payee ends the sentence.
+    expect(matchGrammar("send $5 to bob, please", USD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "prepareSend",
+        args: { payee: "bob", amount: "5", currency: "USD" },
+      },
+    })
+  })
+
+  it("takes a name with a hyphen or an apostrophe inside it, as typed", () => {
+    const sendTo = (payee: string, amount: string) => ({
+      kind: "call",
+      call: { intent: "prepareSend", args: { payee, amount } },
+    })
+    expect(matchGrammar("sen 500 to Kerry-Ann", JMD)).toEqual(sendTo("kerry-ann", "500"))
+    expect(matchGrammar("gi Sherry-Ann 1000", JMD)).toEqual(sendTo("sherry-ann", "1000"))
+    expect(matchGrammar("send 500 to D'Andre", JMD)).toEqual(sendTo("d'andre", "500"))
+    // As a phone's keyboard types the apostrophe.
+    expect(matchGrammar("send 500 to D’Andre", JMD)).toEqual(sendTo("d’andre", "500"))
+    expect(matchGrammar("payments to Kerry-Ann", JMD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "getTransactions",
+        args: { direction: "SEND", query: "kerry-ann" },
+      },
+    })
+    // Not at either end.
+    expect(matchGrammar("send 500 to -bob", JMD)).toBeUndefined()
+  })
+
+  it("reads the account's own currency code beside a number as its money", () => {
+    const TTD = { displayCurrency: "TTD", displaySymbol: "TT$" }
+    expect(matchGrammar("send 100 ttd to bob", TTD)).toEqual({
+      kind: "call",
+      call: { intent: "prepareSend", args: { payee: "bob", amount: "100" } },
+    })
+    expect(matchGrammar("request 100 TTD", TTD)).toEqual({
+      kind: "call",
+      call: { intent: "prepareReceive", args: { amount: "100" } },
+    })
+    // On any other account it names no unit the grammar reads.
+    expect(matchGrammar("send 100 ttd to bob", USD)).toBeUndefined()
+  })
+
+  it("gives, in its amount question, an example the grammar reads on that account", () => {
+    // Assistant.amountUnclear names the account's display currency code; a
+    // user who types the example back gets a call, not the question again.
+    const en = i18nObject("en")
+    ;[USD, JMD, { displayCurrency: "TTD", displaySymbol: "TT$" }].forEach((account) => {
+      const reply = en.Assistant.amountUnclear({ currency: account.displayCurrency })
+      const example = /like (.+)\.$/.exec(reply)?.[1]
+      expect(example).toBeDefined()
+      expect(matchGrammar(`send ${example} to bob`, account)).toEqual({
+        kind: "call",
+        call: expect.objectContaining({
+          intent: "prepareSend",
+          args: expect.objectContaining({ payee: "bob", amount: "100" }),
+        }),
+      })
+    })
+    // The example it gave before, "500 JMD", is a question on a USD account.
+    expect(matchGrammar("send 500 JMD to bob", USD)).toEqual({
+      kind: "clarifyAmount",
+      reason: "unit",
+    })
   })
 
   it("asks about an amount it was not given, rather than send without one", () => {

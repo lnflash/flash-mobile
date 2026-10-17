@@ -6,14 +6,24 @@
 // change the tuning corpus and the grammar, never this file, to move the
 // numbers.
 //
-// Status: drafted by the implementer (ENG-689) before the grammar's rules
-// were written, and frozen for the owner's review. The owner, or a native
-// speaker the owner names, reviews the patois entries and freezes the set
-// before the PR merges (architect decision 5).
+// Status: drafted by the implementer (ENG-689) for the owner's review. It
+// landed in the same commit as the grammar's rules (77e32b912), so history
+// cannot show that it was written first. From here on its entries are
+// pinned by hash in accuracy-gate.spec.ts, so no later change to them can go
+// unseen. The owner, or a native speaker the owner names, reviews the patois
+// entries and freezes the set before the PR merges (architect decision 5);
+// the freeze pins the hash again.
 //
 // Negatives on purpose: pronoun follow-ups, invoices and addresses, "$" on
 // a J$ account, words for a number, suffixes, and asks outside the five
 // intents.
+//
+// The last block was added in the first review round, at the reviewer's
+// request, after the grammar was fixed for the forms it holds: an amount
+// with a hyphen or a sign, a word for what a payment is for in place of a
+// payee, two payees joined by "&" or a comma, and a name with a hyphen. It
+// guards those fixes; it does not measure how they generalize. The tuning
+// corpus holds other phrasings of each.
 import {
   balances,
   CorpusEntry,
@@ -269,4 +279,20 @@ export const HELD_OUT: readonly CorpusEntry[] = [
   en("USD", "how much did I spend this month", "miss"),
   jm("wah gwaan", "miss"),
   jm("yuh can help mi", "miss"),
+
+  // ------------------------------------------- added in the first review round
+  // An amount with a hyphen or a sign: readAmountPhrase's question.
+  en("JMD", "send 20-25 to bob", "clarifyAmount"),
+  en("USD", "send 1-2 bitcoin to bob", "clarifyAmount"),
+  jm("sen 1000-2000 to kemar", "clarifyAmount"),
+  jm("mek a invoice fi 500-1000", "clarifyAmount"),
+  jm("gi tanya -300", "clarifyAmount"),
+  // What a payment is for, in place of a payee.
+  jm("sen 500 fi di rent", "miss"),
+  en("USD", "pay my bill 500", "miss"),
+  // Two payees, joined by "&" or a comma.
+  en("USD", "send 20 to mom & dad", "miss"),
+  en("USD", "send 20 to mom, dad", "miss"),
+  // A name with a hyphen.
+  jm("sen Sherry-Ann 2000", send("sherry-ann", "2000")),
 ]

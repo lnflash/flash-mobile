@@ -6,16 +6,18 @@ import { makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { Screen } from "@app/components/screen"
-import { outputRelativeDate } from "@app/components/transaction-date"
+import { TxItem } from "@app/components/transaction-item"
 import { WalletCurrency } from "@app/graphql/generated"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
-import { SATS_PER_BTC } from "@app/hooks/use-price-conversion"
+import { SATS_PER_BTC, usePriceConversion } from "@app/hooks/use-price-conversion"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { toDisplayAmount, toUsdMoneyAmount } from "@app/types/amounts"
+import type { UnifiedTransaction } from "@app/types/transactions"
 import { priceOfCurrencyInCurrencyFor } from "@app/utils/price-conversion"
+import { formatBreezPayment } from "@app/utils/transactions"
 import { ActionCardView } from "../cards/ActionCardView"
 import type { CardActions } from "../cards/card-actions"
 import { replyText } from "../cards/card-parts"
@@ -23,10 +25,9 @@ import type {
   BalancesProjection,
   PricePayload,
   TransactionsProjection,
-  TxRowProjection,
 } from "../registry/projections"
 import { getAssistantRuntime } from "./assistant-runtime"
-import type { ThreadEntry } from "./thread-store"
+import { ListedTransaction, listedKey, ThreadEntry } from "./thread-store"
 import type { TurnEnv } from "./turn"
 import { useThread } from "./use-thread"
 
@@ -143,40 +144,44 @@ const BalancesAnswer: React.FC<{ payload: BalancesProjection; stale: boolean }> 
   )
 }
 
-const TxRow: React.FC<{ row: TxRowProjection; index: number }> = ({ row, index }) => {
-  const { LL, locale } = useI18nContext()
-  const { formatMoneyAmount } = useDisplayCurrency()
-  const direction =
-    row.direction === "SEND"
-      ? LL.TransactionDetailScreen.spent()
-      : LL.TransactionDetailScreen.received()
-  const when =
-    row.status === "PENDING"
-      ? LL.common.pending()
-      : row.status === "FAILURE"
-      ? LL.AssistantCards.legFailed()
-      : outputRelativeDate(row.timestamp, locale)
-  const label = row.counterparty ? `${direction}, ${row.counterparty}` : direction
+/**
+ * The app's own transaction row (TxItem, as home and the history screens
+ * draw it) for a payment a history answer lists, from the payment as its
+ * rail handed it to the tool: the memo, the pending state, the fee, the
+ * amount in the display currency, the hidden balance, and a tap through to
+ * the payment's details (spec §6: the txList card "renders existing tx
+ * rows"). A BTC-wallet payment's display figures are the home list's own;
+ * TxItem does not read them, so they are blank while there is no price yet.
+ */
+const AppTxRow: React.FC<{ listed: ListedTransaction; testID: string }> = ({
+  listed,
+  testID,
+}) => {
+  const { convertMoneyAmount } = usePriceConversion()
+  const tx: UnifiedTransaction =
+    listed.rail === "graphql"
+      ? { source: "ibex", transaction: listed.transaction }
+      : convertMoneyAmount
+      ? formatBreezPayment({ payment: listed.payment, convertMoneyAmount })
+      : { source: "breez", payment: listed.payment, displayAmount: "", displayFee: "" }
   return (
-    <AnswerRow
-      label={`${label} · ${when}`}
-      value={formatMoneyAmount({ moneyAmount: row.amount })}
-      testID={`ask-flash-tx-${index}`}
-    />
+    <View testID={testID}>
+      <TxItem tx={tx} />
+    </View>
   )
 }
 
 const TransactionsAnswer: React.FC<{
   payload: TransactionsProjection
+  listed: Readonly<Record<string, ListedTransaction>>
   stale: boolean
   actions: CardActions
-}> = ({ payload, stale, actions }) => {
+}> = ({ payload, listed, stale, actions }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const { colors } = useTheme().theme
   // One id per row across both rails, for the card's list.
-  const rows = new Map(payload.transactions.map((row) => [`${row.rail}:${row.id}`, row]))
-  const ids = [...rows.keys()]
+  const ids = payload.transactions.map(({ rail, id }) => listedKey(rail, id))
   return (
     <View testID="ask-flash-transactions">
       {stale ? <StaleBadge /> : null}
@@ -190,8 +195,10 @@ const TransactionsAnswer: React.FC<{
         }}
         actions={actions}
         renderTransaction={(id) => {
-          const row = rows.get(id)
-          return row ? <TxRow row={row} index={ids.indexOf(id)} /> : null
+          const row = listed[id]
+          return row ? (
+            <AppTxRow listed={row} testID={`ask-flash-tx-${ids.indexOf(id)}`} />
+          ) : null
         }}
       />
       {payload.btc.state === "ok" ? null : (
@@ -253,6 +260,7 @@ const EntryView: React.FC<{
   onPick: (entryId: string, optionId: string) => void
 }> = ({ entry, actions, onPick }) => {
   const { LL } = useI18nContext()
+  const { displayCurrency } = useDisplayCurrency()
   switch (entry.kind) {
     case "user":
       return <Bubble from="user" text={entry.text} testID="ask-flash-user-bubble" />
@@ -260,7 +268,14 @@ const EntryView: React.FC<{
       return (
         <Bubble
           from="assistant"
-          text={replyText(LL, entry.replyKey)}
+          text={
+            // The amount question's example is a code this account reads.
+            entry.replyKey === "Assistant.amountUnclear"
+              ? LL.Assistant.amountUnclear({
+                  currency: entry.params?.currency ?? displayCurrency,
+                })
+              : replyText(LL, entry.replyKey)
+          }
           testID="ask-flash-reply"
         />
       )
@@ -270,6 +285,7 @@ const EntryView: React.FC<{
       return (
         <TransactionsAnswer
           payload={entry.payload}
+          listed={entry.listed ?? {}}
           stale={entry.stale}
           actions={actions}
         />

@@ -193,8 +193,12 @@ export const namesPaymentRequest = (tokens: readonly Token[]): boolean =>
 // Amounts
 // ---------------------------------------------------------------------------
 
-/** A word that starts a number: "5", "$5", "j$500", "500jmd", ".5", "usd5". */
-const NUMBER_START = /^(?:us\$|j\$|\$|₿|usd|usdt|jmd|btc)?(?:\d|\.\d)/
+/**
+ * A word that starts a number: "5", "$5", "j$500", "500jmd", ".5", "usd5",
+ * and one with a sign, "-5" or "+5", which readAmountPhrase makes a
+ * question rather than the grammar dropping the sign.
+ */
+const NUMBER_START = /^[-+]?(?:us\$|j\$|\$|₿|usd|usdt|jmd|btc)?(?:\d|\.\d)/
 
 /** Words that name a unit, a symbol or a multiplier beside a number. */
 const UNIT_WORDS = set(
@@ -218,12 +222,21 @@ export const AMOUNT_PLACEHOLDERS = set(
 
 type Kind = "number" | "unit" | "numberWord" | "other"
 
-const kindOf = (token: Token, next: Token | undefined): Kind => {
+/**
+ * Whether a word names a unit beside a number: one of UNIT_WORDS, or the
+ * account's own display currency code ("100 ttd" on a TT$ account), which
+ * readAmountPhrase reads as the display currency. Assistant.amountUnclear
+ * gives that code as its example, so the example is always one this reads.
+ */
+const isUnit = (word: string, ctx: GrammarContext): boolean =>
+  UNIT_WORDS.has(word) || word === ctx.displayCurrency.toLowerCase()
+
+const kindOf = (token: Token, next: Token | undefined, ctx: GrammarContext): Kind => {
   if (NUMBER_START.test(token.word)) return "number"
-  if (UNIT_WORDS.has(token.word)) return "unit"
+  if (isUnit(token.word, ctx)) return "unit"
   if (NUMBER_WORDS.has(token.word)) return "numberWord"
   // "a dollar", "an amount" is not: an article counts only before a unit.
-  if (ARTICLES.has(token.word) && next && UNIT_WORDS.has(next.word)) return "numberWord"
+  if (ARTICLES.has(token.word) && next && isUnit(next.word, ctx)) return "numberWord"
   return "other"
 }
 
@@ -235,8 +248,8 @@ export type Run = { start: number; end: number }
  * and multipliers that holds at least one number or word for one. A unit
  * on its own ("my bitcoin wallet") is no amount.
  */
-export const amountRuns = (tokens: readonly Token[]): Run[] => {
-  const kinds = tokens.map((token, i) => kindOf(token, tokens[i + 1]))
+export const amountRuns = (tokens: readonly Token[], ctx: GrammarContext): Run[] => {
+  const kinds = tokens.map((token, i) => kindOf(token, tokens[i + 1], ctx))
   const runs: Run[] = []
   let i = 0
   while (i < tokens.length) {
@@ -286,8 +299,11 @@ export const splitAroundRuns = (
 // Names
 // ---------------------------------------------------------------------------
 
-/** Words that can join two amounts: "$5 and $10" is one ask with two amounts. */
-export const CONNECTORS = set("and or plus &")
+/**
+ * Words that can join two amounts: "$5 and $10" is one ask with two
+ * amounts. "&" and "+" reach the rules as "and" (normalize.ts).
+ */
+export const CONNECTORS = set("and or plus")
 
 /**
  * Words that never name a contact: people the ask points at rather than
@@ -300,8 +316,8 @@ const NOT_A_NAME = set(
     "our she he yall unu im " +
     // Follow-ups.
     "same again more another back too also else extra rest " +
-    // More than one payee.
-    "and or plus & with between split each everyone everybody all someone somebody " +
+    // More than one payee ("&" and "+" reach here as "and", normalize.ts).
+    "and or plus with between split each everyone everybody all someone somebody " +
     "anyone anybody people " +
     // The user's own wallets and accounts.
     "wallet wallets account accounts bank card flashcard savings saving btc bitcoin usd " +
@@ -314,8 +330,12 @@ const NOT_A_NAME = set(
     "what which who how to for from on in at of",
 )
 
-/** A word a username or a contact's name can hold. */
-const NAME_WORD = /^[\p{L}\p{N}_.]+$/u
+/**
+ * A word a username or a contact's name can hold: letters, digits, "_" and
+ * ".", with a hyphen or an apostrophe inside it, as in Kerry-Ann, Sherry-Ann
+ * and D'Andre (or D’Andre, as a phone's keyboard types it).
+ */
+const NAME_WORD = /^[\p{L}\p{N}_.]+(?:['’-][\p{L}\p{N}_.]+)*$/u
 
 /** The most words a contact's name is taken to be. */
 export const MAX_NAME_WORDS = 4
@@ -323,8 +343,9 @@ export const MAX_NAME_WORDS = 4
 /**
  * The words that name a contact, as typed and lower-cased, or why they do
  * not: "none" when there are none, "refuse" when they point at someone
- * rather than name them, or name more than one. A leading "my" or "the"
- * is not part of the name ("my mom" is "mom").
+ * rather than name them, or name more than one ("mom and dad", "mom & dad",
+ * "mom, dad"). A leading "my" or "the" is not part of the name ("my mom" is
+ * "mom").
  */
 export const nameOf = (tokens: readonly Token[]): string | "none" | "refuse" => {
   let words = [...tokens]
@@ -336,8 +357,26 @@ export const nameOf = (tokens: readonly Token[]): string | "none" | "refuse" => 
   if (words.some(({ word, raw }) => NOT_A_NAME.has(word) || !NAME_WORD.test(raw))) {
     return "refuse"
   }
+  // A comma inside the words is a list of names; one after the last ends
+  // the sentence ("send $5 to bob, please").
+  if (words.slice(0, -1).some(({ comma }) => comma)) return "refuse"
   return words.map(({ raw }) => raw.toLowerCase()).join(" ")
 }
+
+/**
+ * Words for what a payment is for, which never name who gets it: "sen 500
+ * fi di rent" pays the rent, and "pay my bill" a bill, not a contact whose
+ * name holds "rent" or "bill" (brent, billy). "bill" is a name too, so a
+ * send takes it as one only after a typed "to" (prepare-send.ts).
+ */
+export const PURPOSE_WORDS = set(
+  "rent bill bills light lights electricity water school tuition fee fees lunch dinner " +
+    "breakfast food groceries grocery taxi fare bus data credit internet cable phone " +
+    "insurance mortgage loan",
+)
+
+/** Purpose words that are also names: a send takes one only after a typed "to". */
+export const PURPOSE_NAMES = set("bill")
 
 /** Words of a time, which make an ask one v1 does not serve ("next week", "every month"). */
 export const TIME_WORDS = set(

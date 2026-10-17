@@ -32,6 +32,7 @@ import { useThread } from "@app/assistant/ui/use-thread"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import { toastShow } from "@app/utils/toast"
 import { makeAction } from "../executor-harness"
+import { btcPayment, graphqlTx, page } from "../fakes"
 import { CASH_WALLETS, env, fakeRuntime } from "./thread-harness"
 
 loadLocale("en")
@@ -95,9 +96,11 @@ describe("useThread", () => {
     await submit(hook, "send $500 to bob")
 
     expect(runTool).not.toHaveBeenCalled()
+    // Its example names the account's own currency code, which this
+    // account reads: "500 JMD" here, never a code it would ask about again.
     expect(lines(hook).filter(({ kind }) => kind === "reply")).toEqual([
-      { kind: "reply", replyKey: "Assistant.amountUnclear" },
-      { kind: "reply", replyKey: "Assistant.amountUnclear" },
+      { kind: "reply", replyKey: "Assistant.amountUnclear", params: { currency: "JMD" } },
+      { kind: "reply", replyKey: "Assistant.amountUnclear", params: { currency: "JMD" } },
     ])
   })
 
@@ -270,6 +273,128 @@ describe("useThread", () => {
         },
       },
     ])
+  })
+
+  it("re-issues a pick with the payee replaced, never a memo of the same words", async () => {
+    // "send 5 to bob for bob": the memo is "bob" too.
+    const { runtime } = fakeRuntime()
+    const question: ToolResult<unknown> = {
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickContact",
+        options: [{ id: "contact:bob_jones", label: "Bob Jones", sublabel: "bob_jones" }],
+        about: "bob",
+      },
+    }
+    const results = [question, { kind: "prepared", preparedAction: makeAction() }]
+    const runTool = jest.fn(async () => results.shift() as ToolResult<unknown>)
+    runtime.runTool = runTool as unknown as AssistantRuntime["runTool"]
+    const hook = render(runtime)
+    await submit(hook, "send 5 to bob for bob")
+    expect((runTool.mock.calls as unknown[][])[0][0]).toEqual({
+      intent: "prepareSend",
+      args: { payee: "bob", amount: "5", memo: "bob" },
+    })
+
+    await act(() =>
+      hook.result.current.pick(hook.result.current.entries[1].id, "contact:bob_jones"),
+    )
+
+    expect((runTool.mock.calls as unknown[][])[1][0]).toEqual({
+      intent: "prepareSend",
+      args: { payee: "contact:bob_jones", amount: "5", memo: "bob" },
+    })
+  })
+
+  it("refuses a question's pick offline with the offline reply, and runs nothing", async () => {
+    const { runtime } = fakeRuntime()
+    const question: ToolResult<unknown> = {
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickContact",
+        options: [{ id: "contact:alice_w", label: "Alice", sublabel: "alice_w" }],
+        about: "alice",
+      },
+    }
+    const runTool = jest.fn(async () => question)
+    runtime.runTool = runTool as unknown as AssistantRuntime["runTool"]
+    const hook = render(runtime)
+    await submit(hook, "send $5 to alice")
+    const asked = hook.result.current.entries[1]
+
+    // The connection drops before the pick.
+    hook.rerender({ e: env({ isOffline: true }) })
+    await act(() => hook.result.current.pick(asked.id, "contact:alice_w"))
+
+    expect(runTool).toHaveBeenCalledTimes(1)
+    // The question stays where it was, and the thread says why nothing ran.
+    expect(lines(hook)).toEqual([
+      { kind: "user", text: "send $5 to alice" },
+      expect.objectContaining({ kind: "card", card: question.card }),
+      { kind: "reply", replyKey: "Assistant.actionsOffline" },
+    ])
+    expect(hook.result.current.busy).toBe(false)
+  })
+
+  it("refuses a card's Try again or Refresh offline with the offline reply, and runs nothing", async () => {
+    const { runtime } = fakeRuntime()
+    const first = makeAction({ threadId: runtime.threadId })
+    const runTool = jest.fn(
+      async (): Promise<ToolResult<unknown>> => ({
+        kind: "prepared",
+        preparedAction: first,
+      }),
+    )
+    runtime.runTool = runTool as unknown as AssistantRuntime["runTool"]
+    const dismiss = jest.spyOn(runtime.executor, "dismiss")
+    const hook = render(runtime)
+    await submit(hook, "send $5 to alice")
+
+    hook.rerender({ e: env({ isOffline: true }) })
+    await act(async () => {
+      await hook.result.current.cardActions.reprepare?.(first.id)
+    })
+
+    expect(runTool).toHaveBeenCalledTimes(1)
+    // The card and its action are kept: nothing was prepared in their place.
+    expect(dismiss).not.toHaveBeenCalled()
+    expect(lines(hook)).toEqual([
+      { kind: "user", text: "send $5 to alice" },
+      expect.objectContaining({ kind: "card", card: cardOf(first) }),
+      { kind: "reply", replyKey: "Assistant.actionsOffline" },
+    ])
+  })
+
+  it("keeps the payments a history answer lists as their rails gave them, for the app's row", async () => {
+    // The projection drops the memo and the payee of an ask that searched
+    // neither; the thread keeps the rows themselves for TxItem.
+    const { runtime, graphql, btcRail } = fakeRuntime()
+    const rent = graphqlTx({ id: "tx-rent", createdAt: 1_759_999_000, memo: "Rent" })
+    const coffee = btcPayment({ id: "pay-coffee", timestamp: 1_759_998_000 })
+    graphql.transactions.mockResolvedValue(page([rent]))
+    btcRail.getBalanceSats.mockResolvedValue({ state: "ok", sats: 2_100 })
+    btcRail.listPayments.mockResolvedValue([coffee])
+    const hook = render(runtime)
+
+    await submit(hook, "show my transactions")
+
+    const answer = lines(hook)[1]
+    expect(answer).toEqual(
+      expect.objectContaining({
+        kind: "transactions",
+        stale: false,
+        listed: {
+          "graphql:tx-rent": { rail: "graphql", transaction: rent },
+          "btc:pay-coffee": { rail: "btc", payment: coffee },
+        },
+      }),
+    )
+    // What runTool answered is still only the projection.
+    expect(
+      answer.kind === "transactions" && answer.payload.transactions[0],
+    ).not.toHaveProperty("memo")
   })
 
   it("prepares a card's Try again or Refresh in the card's place, letting the old action go", async () => {

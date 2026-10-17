@@ -9,7 +9,12 @@ import { createExecutor } from "@app/assistant/engine/executor"
 import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
 import type { ExecuteContext, ExecutionOutcome } from "@app/assistant/registry/types"
 import { PaymentSendResult } from "@app/graphql/generated"
-import { createServerClock, ServerClock, serverClock } from "@app/graphql/server-clock"
+import {
+  CLOCK_STEP_TOLERANCE_MS,
+  createServerClock,
+  ServerClock,
+  serverClock,
+} from "@app/graphql/server-clock"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import {
@@ -887,7 +892,11 @@ describe("the clock offset a dispatch is journaled with", () => {
      * kind of clock, over this case's wall and monotonic clocks, unless the
      * case hands it `offset` instead.
      */
-    const lostAfterStep = async (stepMs: number, offset?: () => number | null) => {
+    const lostAfterStep = async (
+      stepMs: number,
+      offset?: () => number | null,
+      landedRow: TransactionRow = landed,
+    ) => {
       let monotonic = 0
       // The server clock reads the phone's wall clock, which is the executor's.
       const phone = { now: (): number => T0 }
@@ -911,7 +920,9 @@ describe("the clock offset a dispatch is journaled with", () => {
       // Time passes: both clocks move.
       run.advance(RECONCILE_MIN_AGE_MS + 60_000)
       monotonic += RECONCILE_MIN_AGE_MS + 60_000
-      run.graphql.transactions.mockResolvedValue(page([landed, fundedBefore(T0, "USD")]))
+      run.graphql.transactions.mockResolvedValue(
+        page([landedRow, fundedBefore(T0, "USD")]),
+      )
       run.intraLedgerUsdPaymentSend.mockResolvedValue(SENT)
 
       const b = run.prepare("thread-b")
@@ -952,6 +963,53 @@ describe("the clock offset a dispatch is journaled with", () => {
       expect(result).toMatchObject({ kind: "executed", outcome: { status: "succeeded" } })
       await expect(run.reconcile.mock.results[0].value).resolves.toBe("absent")
       expect(run.keysSent()).toHaveLength(2)
+    })
+
+    describe("a step under the reconciler's 120 s, with IBEX's clock behind the API's", () => {
+      // The ENG-726 review's case: the clock steps forward 115 s, and IBEX,
+      // which stamps the row, runs 10 s behind the API, whose Date header
+      // measured the offset. The payment's row is two seconds after the
+      // dispatch on IBEX's clock: T0 - 8 s on the API's.
+      const STEP_MS = 115_000
+      const landedBehind = graphqlTx({
+        ...landed,
+        createdAt: Math.floor(T0 / 1000) + 2 - 10,
+      })
+
+      it("journals no offset, since a step that size is past the tolerance", async () => {
+        expect(STEP_MS).toBeGreaterThan(CLOCK_STEP_TOLERANCE_MS)
+
+        const { run, a, b, result } = await lostAfterStep(
+          STEP_MS,
+          undefined,
+          landedBehind,
+        )
+
+        expect(result).toEqual({
+          kind: "pendingDispatch",
+          actionId: b.id,
+          replyKey: "Assistant.checkHistory",
+          historyCheckable: false,
+        })
+        expect(run.keysSent()).toHaveLength(1)
+        await expect(run.journal.pending()).resolves.toEqual([
+          expect.objectContaining({ preparedActionId: a.id, serverClockOffsetMs: null }),
+        ])
+      })
+
+      it("would send twice on the offset a 120 s tolerance kept: the case the 30 s closes", async () => {
+        // The window is read back to the dispatch less 120 s: from T0 - 5 s
+        // on the stepped clock. The row at T0 - 8 s counts as one from
+        // before the dispatch, and the list calls the payment absent.
+        const { run, result } = await lostAfterStep(STEP_MS, () => 0, landedBehind)
+
+        expect(result).toMatchObject({
+          kind: "executed",
+          outcome: { status: "succeeded" },
+        })
+        await expect(run.reconcile.mock.results[0].value).resolves.toBe("absent")
+        expect(run.keysSent()).toHaveLength(2)
+      })
     })
 
     it("keeps the measured offset when the clock did not step", async () => {

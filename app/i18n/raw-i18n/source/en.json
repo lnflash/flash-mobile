@@ -2130,7 +2130,7 @@
         "btcOnchainBelowMinimum": "On-chain sends from your Bitcoin wallet need at least 5,500 sats.",
         "groupSendRestExpired": "Some payments didn't go through, and their numbers are out of date. Try again to get new numbers for them.",
         "actionsOffline": "You're offline. Sending, requesting and the live price need a connection. Try again when you're back online.",
-        "amountUnclear": "I couldn't tell the amount. Say it again with the number and its currency, like 5 USD or 500 JMD."
+        "amountUnclear": "I couldn't tell the amount. Say it again with the number and its currency, like 100 {currency:string}."
     },
     "AssistantCards": {
         "confirmTitle": "Review payment",

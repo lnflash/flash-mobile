@@ -13,12 +13,15 @@ jest.mock("react-native-secure-key-store", () => ({
   default: { get: jest.fn(), set: jest.fn(), remove: jest.fn() },
   ACCESSIBLE: {},
 }))
+const mockNavigate = jest.fn()
 jest.mock("@react-navigation/native", () => {
   const actual = jest.requireActual("@react-navigation/native")
   const { useEffect } = jest.requireActual("react")
   return {
     ...actual,
     useFocusEffect: (effect: () => void | (() => void)) => useEffect(effect, [effect]),
+    // The app's transaction row opens a payment's details.
+    useNavigation: () => ({ navigate: mockNavigate }),
   }
 })
 jest.mock("@app/i18n/i18n-react", () => {
@@ -43,7 +46,10 @@ jest.mock("@app/hooks/use-app-config", () => ({
     },
   }),
 }))
-// The app's formatter, written so a spec can predict it: "USD 1234".
+// The app's formatter, written so a spec can predict it: "USD 1234", and
+// "~ USD 1234" for a converted amount. The account's display currency is
+// USD unless a case says otherwise.
+let mockDisplay = { displayCurrency: "USD", fiatSymbol: "$" }
 jest.mock("@app/hooks/use-display-currency", () => {
   const fmt = ({
     moneyAmount,
@@ -52,10 +58,15 @@ jest.mock("@app/hooks/use-display-currency", () => {
   }) => `${moneyAmount.currencyCode} ${moneyAmount.amount}`
   return {
     useDisplayCurrency: () => ({
-      displayCurrency: "USD",
-      fiatSymbol: "$",
+      displayCurrency: mockDisplay.displayCurrency,
+      fiatSymbol: mockDisplay.fiatSymbol,
       fractionDigits: 2,
       formatMoneyAmount: fmt,
+      moneyAmountToDisplayCurrencyString: ({
+        moneyAmount,
+      }: {
+        moneyAmount: { currencyCode: string; amount: number }
+      }) => `~ ${fmt({ moneyAmount })}`,
       formatDisplayAndWalletAmount: ({ displayAmount }: { displayAmount: never }) =>
         fmt({ moneyAmount: displayAmount }),
       formatCurrency: ({
@@ -85,14 +96,17 @@ jest.mock("@app/assistant/ui/assistant-runtime", () => ({
   getAssistantRuntime: () => mockRuntime,
 }))
 
+import { MockedProvider } from "@apollo/client/testing"
+
 import { confirmPaymentFixture } from "@app/assistant/cards/fixtures"
 import type { ToolResult } from "@app/assistant/registry/types"
 import { AskFlashScreen } from "@app/assistant/ui"
+import { createCache } from "@app/graphql/cache"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import theme from "@app/rne-theme/theme"
 import { makeAction } from "../executor-harness"
-import { graphqlTx, page, USD_PRICE } from "../fakes"
+import { btcPayment, graphqlTx, JMD_PRICE, page, USD_PRICE } from "../fakes"
 import { CASH_WALLETS, fakeRuntime } from "./thread-harness"
 
 loadLocale("en")
@@ -107,10 +121,14 @@ jest.setTimeout(30000)
 const show = () => {
   const harness = fakeRuntime()
   mockRuntime = harness.runtime
+  // The app's transaction row reads the hidden-balance flag and the price
+  // from the Apollo cache, as it does on the home screen.
   const screen = render(
-    <ThemeProvider theme={theme}>
-      <AskFlashScreen />
-    </ThemeProvider>,
+    <MockedProvider mocks={[]} cache={createCache()}>
+      <ThemeProvider theme={theme}>
+        <AskFlashScreen />
+      </ThemeProvider>
+    </MockedProvider>,
   )
   return { ...harness, screen }
 }
@@ -124,6 +142,8 @@ const ask = async (screen: ReturnType<typeof render>, text: string) => {
 
 afterEach(() => {
   mockOffline = false
+  mockDisplay = { displayCurrency: "USD", fiatSymbol: "$" }
+  jest.clearAllMocks()
 })
 
 describe("AskFlashScreen", () => {
@@ -259,5 +279,92 @@ describe("AskFlashScreen", () => {
     expect(screen.getByText(en.Assistant.searchedWindow({ count: 1 }))).toBeTruthy()
     expect(screen.getByTestId("ask-flash-tx-0")).toBeTruthy()
     expect(screen.getByText("USD 500")).toBeTruthy()
+  })
+
+  it("draws each payment with the app's own row, from the payment itself, memo and all", async () => {
+    // "show my payments" searched nothing, so the tool's answer carries no
+    // memo or payee (spec §4). The thread draws each row from the payment
+    // its rail handed the tool, with TxItem, as home and the history
+    // screens do (spec §6).
+    const { screen, graphql, btcRail } = show()
+    const now = Math.floor(Date.now() / 1000)
+    graphql.transactions.mockResolvedValue(
+      page([graphqlTx({ id: "tx-rent", createdAt: now - 60, memo: "Rent for October" })]),
+    )
+    btcRail.listPayments.mockResolvedValue([
+      btcPayment({ id: "pay-1", timestamp: now - 120, paymentType: 1, sats: 2_100 }),
+    ])
+
+    await ask(screen, "show my payments")
+
+    await waitFor(() => expect(screen.getByTestId("ask-flash-tx-1")).toBeTruthy())
+    // The memo the answer itself does not carry, on the app's row.
+    expect(screen.getByText("Rent for October")).toBeTruthy()
+    // The app's row says which way and which wallet, and converts the amount.
+    expect(screen.getByText("Sent USD")).toBeTruthy()
+    expect(screen.getByText("~ USD 500")).toBeTruthy()
+    expect(screen.getByText("Received BTC")).toBeTruthy()
+
+    // A tap opens the payment, as anywhere else in the app.
+    fireEvent.press(screen.getByText("Rent for October"))
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "transactionDetail",
+      expect.objectContaining({ tx: expect.objectContaining({ id: "tx-rent" }) }),
+    )
+  })
+
+  it("draws the price in US dollars on a J$ account by the screens' own conversion", async () => {
+    mockDisplay = { displayCurrency: "JMD", fiatSymbol: "J$" }
+    const { screen, graphql } = show()
+    graphql.realtimePrice.mockResolvedValue(USD_PRICE)
+
+    await ask(screen, "bitcoin price in usd")
+
+    await waitFor(() => expect(screen.getByTestId("ask-flash-price")).toBeTruthy())
+    expect(graphql.realtimePrice).toHaveBeenCalledWith("USD")
+    // 0.063 US cents a sat: 6,300,000 cents a bitcoin, as a US dollar
+    // amount (toUsdMoneyAmount), never as J$.
+    expect(screen.getByText("USD 6300000")).toBeTruthy()
+  })
+
+  it("draws the price in a currency that is neither the account's nor US dollars", async () => {
+    const { screen, graphql } = show()
+    graphql.realtimePrice.mockResolvedValue({
+      ...USD_PRICE,
+      denominatorCurrency: "EUR",
+      btcSatPrice: { ...USD_PRICE.btcSatPrice, base: 54_000, offset: 6 },
+    })
+
+    await ask(screen, "bitcoin price in eur")
+
+    await waitFor(() => expect(screen.getByTestId("ask-flash-price")).toBeTruthy())
+    expect(graphql.realtimePrice).toHaveBeenCalledWith("EUR")
+    // 0.054 euro cents a sat: 5,400,000 cents, so 54,000 euros a bitcoin,
+    // handed to the app's formatter in euros.
+    expect(screen.getByText("EUR 54000")).toBeTruthy()
+  })
+
+  it("draws the price in the account's own currency on a J$ account", async () => {
+    mockDisplay = { displayCurrency: "JMD", fiatSymbol: "J$" }
+    const { screen, graphql } = show()
+    graphql.realtimePrice.mockResolvedValue(JMD_PRICE)
+
+    await ask(screen, "bitcoin price")
+
+    await waitFor(() => expect(screen.getByTestId("ask-flash-price")).toBeTruthy())
+    expect(graphql.realtimePrice).toHaveBeenCalledWith("JMD")
+    // 9.891 J$ cents a sat: 989,100,000 cents a bitcoin, as a display amount.
+    expect(screen.getByText("JMD 989100000")).toBeTruthy()
+  })
+
+  it("asks about an amount with an example in the account's own currency", async () => {
+    mockDisplay = { displayCurrency: "JMD", fiatSymbol: "J$" }
+    const { screen, runtime } = show()
+    runtime.runTool = jest.fn()
+
+    await ask(screen, "send $500 to tanya")
+
+    expect(runtime.runTool).not.toHaveBeenCalled()
+    expect(screen.getByText(en.Assistant.amountUnclear({ currency: "JMD" }))).toBeTruthy()
   })
 })

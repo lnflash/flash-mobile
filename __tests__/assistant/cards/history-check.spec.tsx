@@ -8,6 +8,7 @@ jest.mock("@app/i18n/i18n-react", () => {
 
 import { CashoutOfferCard } from "@app/assistant/cards/CashoutOfferCard"
 import { ConfirmPaymentCard } from "@app/assistant/cards/ConfirmPaymentCard"
+import { HistoryCheckable } from "@app/assistant/cards/ConfirmPaymentCard.stories"
 import { cashoutOfferFixture, confirmPaymentFixture } from "@app/assistant/cards/fixtures"
 import type { ConfirmResult } from "@app/assistant/engine/executor"
 import { RECONCILE_STALE_AFTER_MS } from "@app/assistant/engine/reconcile"
@@ -198,5 +199,21 @@ describe("the history check, through the executor, journal and reconciler", () =
     expect(screen.queryByTestId("assistant-card-history-checked")).toBeNull()
     // Only the new card's own record is left to clear, and it was, on Success.
     await expect(run.journal.pending()).resolves.toEqual([])
+  })
+})
+
+describe("the history check's story", () => {
+  // Spec §6: every card state has a story, as ENG-688's do (UnknownOutcome).
+  it("shows a blocked Confirm turn into the history check", async () => {
+    const screen = renderCard(<HistoryCheckable />)
+
+    await pressConfirm(screen)
+    // The story's stand-in executor answers after a moment.
+    await waitFor(
+      () => expect(screen.getByTestId("assistant-card-history-checked")).toBeTruthy(),
+      { timeout: 3000 },
+    )
+    expect(screen.getByText(en.Assistant.checkHistory())).toBeTruthy()
+    expect(screen.getByText(en.AssistantCards.historyChecked())).toBeTruthy()
   })
 })

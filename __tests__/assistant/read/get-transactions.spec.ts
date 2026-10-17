@@ -8,7 +8,15 @@ import type { TransactionsPayload } from "@app/assistant/registry/projections"
 import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
 import { BreezSdkNotInitializedError } from "@app/utils/breez-sdk/sdk-errors"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
-import { btcPayment, BtcPayment, fakeCtx, graphqlTx, page } from "../fakes"
+import {
+  btcPayment,
+  BtcPayment,
+  fakeCtx,
+  flashTransactions,
+  FLASH_CURSOR_REFUSED,
+  graphqlTx,
+  page,
+} from "../fakes"
 
 /** GraphQL pages served by cursor, newest first; "cursor-N" is page N. */
 const serve = (pages: TransactionRow[][]) => {
@@ -95,6 +103,52 @@ describe("getTransactions", () => {
       expect(setup.graphql.transactions).toHaveBeenCalledTimes(1)
       expect(payload.transactions).toHaveLength(10)
       expect(payload.transactions[0].id).toBe("p0-10000")
+    })
+
+    it("answers with the first page and its window when lnflash/flash refuses the next page", async () => {
+      // An account whose list runs past one page (spec §5.1): flash serves
+      // page one with hasNextPage and refuses the cursor for page two. A
+      // filtered ask ("what did I receive") wants more matches than page
+      // one holds, so it asks for page two, and must still answer.
+      const setup = fakeCtx()
+      const [first, second] = pagesOf(2)
+      const received = graphqlTx({
+        id: "in-1",
+        createdAt: first[5].createdAt,
+        direction: "RECEIVE",
+      })
+      first[5] = received
+      setup.graphql.transactions.mockImplementation(flashTransactions([first, second]))
+      enableBtc(setup, [])
+
+      const payload = await answer(setup, { direction: "RECEIVE" })
+
+      // Page two was asked for, refused, and the search ended there.
+      expect(setup.graphql.transactions).toHaveBeenCalledTimes(2)
+      await expect(setup.graphql.transactions.mock.results[1].value).rejects.toThrow(
+        FLASH_CURSOR_REFUSED,
+      )
+      expect(payload.transactions.map(({ id }) => id)).toEqual(["in-1"])
+      // The window says how far it reached: page one, and not past it.
+      expect(payload.window).toEqual({
+        searchedCount: TX_PAGE_SIZE,
+        oldestTimestamp: first[first.length - 1].createdAt,
+        rails: ["graphql", "btc"],
+        replyKey: "Assistant.searchedWindow",
+      })
+      // The BTC side lists no further back than page one reached.
+      expect(setup.btcRail.listPayments).toHaveBeenCalledWith(0, BTC_PAYMENTS_LIMIT, {
+        fromTimestamp: first[first.length - 1].createdAt,
+        assets: "bitcoin",
+      })
+    })
+
+    it("still fails when the first page cannot be read", async () => {
+      const setup = fakeCtx()
+      const failure = new Error("Network request failed")
+      setup.graphql.transactions.mockRejectedValue(failure)
+
+      await expect(getTransactions.run({}, setup.ctx)).rejects.toBe(failure)
     })
 
     it("refuses to answer zero rows", async () => {

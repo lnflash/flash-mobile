@@ -7824,9 +7824,10 @@ type RootTranslation = {
 		 */
 		actionsOffline: string
 		/**
-		 * I​ ​c​o​u​l​d​n​'​t​ ​t​e​l​l​ ​t​h​e​ ​a​m​o​u​n​t​.​ ​S​a​y​ ​i​t​ ​a​g​a​i​n​ ​w​i​t​h​ ​t​h​e​ ​n​u​m​b​e​r​ ​a​n​d​ ​i​t​s​ ​c​u​r​r​e​n​c​y​,​ ​l​i​k​e​ ​5​ ​U​S​D​ ​o​r​ ​5​0​0​ ​J​M​D​.
+		 * I​ ​c​o​u​l​d​n​'​t​ ​t​e​l​l​ ​t​h​e​ ​a​m​o​u​n​t​.​ ​S​a​y​ ​i​t​ ​a​g​a​i​n​ ​w​i​t​h​ ​t​h​e​ ​n​u​m​b​e​r​ ​a​n​d​ ​i​t​s​ ​c​u​r​r​e​n​c​y​,​ ​l​i​k​e​ ​1​0​0​ ​{​c​u​r​r​e​n​c​y​}​.
+		 * @param {string} currency
 		 */
-		amountUnclear: string
+		amountUnclear: RequiredParams<'currency'>
 	}
 	AssistantCards: {
 		/**
@@ -15578,9 +15579,9 @@ export type TranslationFunctions = {
 		 */
 		actionsOffline: () => LocalizedString
 		/**
-		 * I couldn't tell the amount. Say it again with the number and its currency, like 5 USD or 500 JMD.
+		 * I couldn't tell the amount. Say it again with the number and its currency, like 100 {currency}.
 		 */
-		amountUnclear: () => LocalizedString
+		amountUnclear: (arg: { currency: string }) => LocalizedString
 	}
 	AssistantCards: {
 		/**

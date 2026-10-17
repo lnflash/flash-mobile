@@ -160,6 +160,7 @@ export const TUNING: readonly CorpusEntry[] = [
   jm("wah come in", transactions({ direction: "RECEIVE" })),
   jm("payments fi tanya", transactions({ direction: "SEND", query: "tanya" })),
   jm("payments from mi madda", transactions({ direction: "RECEIVE", query: "madda" })),
+  jm("payments fi Kerry-Ann", transactions({ direction: "SEND", query: "kerry-ann" })),
 
   // ------------------------------------------------------------------- price
   en("USD", "price", price()),
@@ -296,6 +297,13 @@ export const TUNING: readonly CorpusEntry[] = [
   jm("sen 10 usd to tanya", send("tanya", "10", { currency: "USD" })),
   jm("yuh can sen 500 to bob", send("bob", "500")),
   jm("sen 700 to bob fi lunch", "miss"),
+  // Names with a hyphen or an apostrophe inside them.
+  jm("sen 500 to Kerry-Ann", send("kerry-ann", "500")),
+  jm("gi D'Andre 1000", send("d'andre", "1000")),
+  // "bill" names a contact called Bill only after a typed "to".
+  en("USD", "send $5 to bill", send("bill", "5", { currency: "USD" })),
+  // A comma after the payee ends the sentence; it is not a second name.
+  en("USD", "send $5 to bob, please", send("bob", "5", { currency: "USD" })),
 
   // ----------------------------------------------------------------- receive
   en("USD", "receive $20", receive({ amount: "20", currency: "USD" })),
@@ -383,6 +391,12 @@ export const TUNING: readonly CorpusEntry[] = [
   jm("gi mom 10 dollars", "clarifyAmount"),
   jm("sen money to mom", "clarifyAmount"),
   jm("sen five hundred to bob", "clarifyAmount"),
+  // A range or a sign is two numbers or no amount, never one run together.
+  en("JMD", "send bob 5-10", "clarifyAmount"),
+  en("JMD", "request 20-25", "clarifyAmount"),
+  en("USD", "send -5 to bob", "clarifyAmount"),
+  jm("sen bob 500-1000", "clarifyAmount"),
+  jm("sen -500 to tanya", "clarifyAmount"),
 
   // ------------------------------------------------------------------ misses
   en("USD", "send her $5", "miss"),
@@ -448,4 +462,12 @@ export const TUNING: readonly CorpusEntry[] = [
   jm("bless up", "miss"),
   jm("mi wan top up mi card", "miss"),
   jm("how mi fi sen money", "miss"),
+  // What a payment is for is not who gets it.
+  jm("sen 2000 fi di light bill", "miss"),
+  jm("pay di water 1500", "miss"),
+  en("JMD", "pay school fees 5000", "miss"),
+  en("USD", "pay bill 20", "miss"),
+  // Two payees, joined by a sign or a comma.
+  en("USD", "send 10 to alice + bob", "miss"),
+  en("USD", "send $15 to bob, tanya", "miss"),
 ]

@@ -1,5 +1,7 @@
+import type { BtcRail } from "@app/payments/btc-rail"
 import type { ToolCall } from "../engine/intent-router"
 import { isPlainObject } from "../engine/schema-validator"
+import type { TransactionRow } from "../rails/graphql-rail"
 import type {
   BalancesProjection,
   PricePayload,
@@ -13,23 +15,57 @@ import type { AssistantReplyKey } from "../registry/types"
 // a logout or an account switch starts a new one. Nothing here is written
 // to disk: the dispatch journal already covers process death.
 
+/** A BTC-wallet payment, as the BTC rail lists it. */
+export type BtcPaymentRow = Awaited<ReturnType<BtcRail["listPayments"]>>[number]
+
+/**
+ * A payment as its rail handed it to getTransactions, before the tool's
+ * projection dropped its memo and its counterparty. The thread draws each
+ * payment a history answer lists with the app's own transaction row from
+ * this (spec §6: the txList card "renders existing tx rows"). It stays on
+ * the device, in the thread: runTool never answers with it.
+ */
+export type ListedTransaction =
+  | { rail: "graphql"; transaction: TransactionRow }
+  | { rail: "btc"; payment: BtcPaymentRow }
+
+/**
+ * What a templated reply fills in. Only Assistant.amountUnclear takes a
+ * value: the display currency code its example names, as the account had
+ * it when the turn ran.
+ */
+export type ReplyParams = { currency: string }
+
+/** The key a listed payment goes by: the txList card's id, `${rail}:${id}`. */
+export const listedKey = (rail: "graphql" | "btc", id: string): string => `${rail}:${id}`
+
 /**
  * One line of the thread.
  *
  * - user: what the user typed.
- * - reply: a templated reply, a key of the Assistant namespace.
+ * - reply: a templated reply, a key of the Assistant namespace. The amount
+ *   question's example names the account's own display currency code
+ *   (`params`), which readAmountPhrase reads on that account: "500 JMD" is
+ *   itself a question on any account that is not in JMD.
  * - balances, transactions, price: a read tool's answer, drawn from its
  *   payload by the thread's own components; `stale` when it came from the
- *   cache, offline.
+ *   cache, offline. A history answer also holds the payments it lists as
+ *   their rails gave them (`listed`), for the app's transaction row.
  * - card: an action card's payload (a confirm card, an invoice, a question),
  *   drawn by ActionCardView, and the call that made it: a pick of a
  *   question, and a card's Try again or Refresh, issue that call again.
  */
 export type ThreadEntry =
   | { id: string; kind: "user"; text: string }
-  | { id: string; kind: "reply"; replyKey: AssistantReplyKey }
+  | { id: string; kind: "reply"; replyKey: AssistantReplyKey; params?: ReplyParams }
   | { id: string; kind: "balances"; payload: BalancesProjection; stale: boolean }
-  | { id: string; kind: "transactions"; payload: TransactionsProjection; stale: boolean }
+  | {
+      id: string
+      kind: "transactions"
+      payload: TransactionsProjection
+      stale: boolean
+      listed?: Readonly<Record<string, ListedTransaction>>
+    }
   | { id: string; kind: "price"; payload: PricePayload }
   | { id: string; kind: "card"; card: unknown; call?: ToolCall }
 

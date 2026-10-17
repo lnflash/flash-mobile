@@ -4,13 +4,14 @@
 # (ENG-710's blocker record), and the workflow skips it until they exist.
 #
 # Env: CONTACT, the payee as the sender's contact list names it (a sure
-# match, so the grammar's call meets no picker); AMOUNT, in US dollars,
+# match, so the grammar's call meets no picker), as a Flash username can
+# be spelled: letters, digits and underscores; AMOUNT, in US dollars,
 # named in the ask so the sender's display currency does not matter.
 appId: com.lnflash
 name: Ask Flash send to a contact
 tags: [assistant, funded]
 env:
-  CONTACT: ${CONTACT || "e2e-payee"}
+  CONTACT: ${CONTACT || "e2e_payee"}
   AMOUNT: ${AMOUNT || "0.02"}
 ---
 - runFlow: subflows/open-ask-flash.yaml

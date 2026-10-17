@@ -1,4 +1,8 @@
+import { createHash } from "crypto"
+
+import { canonicalJson } from "@app/assistant/engine/canonical-json"
 import { HELD_OUT } from "./corpus/held-out"
+import { TUNING } from "./corpus/tuning"
 import { describeScore, score } from "./score"
 
 // The grammar tier's launch gate (docs/ai-assistant-tool-registry.md §7.2,
@@ -13,6 +17,18 @@ import { describeScore, score } from "./score"
 
 const MIN_CORRECT_RATE = 0.95
 const MAX_WRONG_ACTION_RATE = 0.005
+
+/**
+ * The SHA-256 of the held-out entries as canonical JSON. Any change to an
+ * entry, added, removed or edited, fails the spec below: a corpus changed
+ * to move the numbers measures nothing (spec §7.2). Pinned at the
+ * implementer's draft plus the first review round's additions; the owner's
+ * freeze (architect decision 5) pins it again, and so must anyone who
+ * changes the set after that, saying why in the commit.
+ */
+const HELD_OUT_SHA256 = "142527900386d81cecfd428ac394221e0c21593a05efb7436efe7cffd44c8149"
+
+const sha256 = (text: string): string => createHash("sha256").update(text).digest("hex")
 
 describe("the grammar tier's launch gate, on the held-out corpus", () => {
   const all = score(HELD_OUT)
@@ -50,5 +66,26 @@ describe("the grammar tier's launch gate, on the held-out corpus", () => {
 
   it("resolves at most 0.5% to a confident wrong call", () => {
     expect(all.wrongActionRate).toBeLessThanOrEqual(MAX_WRONG_ACTION_RATE)
+  })
+})
+
+describe("the held-out corpus itself", () => {
+  it("is the set its hash pins: a change to any entry fails here", () => {
+    const pinned = sha256(canonicalJson(HELD_OUT))
+    if (pinned !== HELD_OUT_SHA256) {
+      // Said out loud, so the failure is read rather than re-pinned in passing.
+      console.error(
+        "The held-out corpus changed. It is frozen: change the tuning corpus " +
+          "and the grammar to move the numbers, never this set.",
+      )
+    }
+    expect(pinned).toBe(HELD_OUT_SHA256)
+  })
+
+  it("shares no utterance with the tuning corpus", () => {
+    const tuned = new Set(TUNING.map(({ utterance }) => utterance.trim().toLowerCase()))
+    expect(
+      HELD_OUT.filter(({ utterance }) => tuned.has(utterance.trim().toLowerCase())),
+    ).toEqual([])
   })
 })

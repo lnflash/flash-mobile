@@ -18,6 +18,13 @@ import type { BtcReadRail, ReadToolCtx, ToolResult } from "../types"
 // TX_PAGE_SIZE on GraphQL, then lists the BTC wallet's payments over the
 // same stretch of time, so neither rail's window is wider than the other's.
 // The answer always states the window, so a miss is never silent.
+//
+// A page past the first that cannot be read ends the search there, with
+// what was read: lnflash/flash refuses the next page's cursor (spec §5.1,
+// ENG-724), so wherever the list says it has a next page that read fails,
+// and offline the cache holds a later page only if the history screen
+// fetched it. The window then says how far the search reached. Only a
+// failed first page fails the answer.
 
 export const TX_PAGE_SIZE = 20
 export const TX_MAX_PAGES = 5
@@ -142,7 +149,11 @@ const oldest = (rows: readonly TxRow[]): number =>
 const oldestPayment = (payments: readonly BtcPayment[]): number =>
   payments.reduce((min, payment) => Math.min(min, Number(payment.timestamp)), Infinity)
 
-/** The GraphQL pages a search reads: up to TX_MAX_PAGES, stopping on enough matches. */
+/**
+ * The GraphQL pages a search reads: up to TX_MAX_PAGES, stopping on enough
+ * matches, or at a page past the first that cannot be read (the note at
+ * the top). `exhausted` only when the list said it had no more.
+ */
 const readGraphql = async (
   graphql: GraphqlRail,
   { want, matches }: { want: number; matches: (row: TxRow) => boolean },
@@ -150,7 +161,13 @@ const readGraphql = async (
   const rows: TxRow[] = []
   let after: string | undefined
   for (let page = 0; page < TX_MAX_PAGES; page += 1) {
-    const result = await graphql.transactions({ first: TX_PAGE_SIZE, after })
+    let result: Awaited<ReturnType<GraphqlRail["transactions"]>>
+    try {
+      result = await graphql.transactions({ first: TX_PAGE_SIZE, after })
+    } catch (err) {
+      if (page === 0) throw err
+      break
+    }
     rows.push(...result.rows.map(graphqlTxRow))
     if (!result.hasNextPage || !result.endCursor) return { rows, exhausted: true }
     after = result.endCursor

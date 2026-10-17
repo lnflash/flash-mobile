@@ -290,8 +290,25 @@ describe("a step of the phone's clock (ENG-726)", () => {
     expect(clock.offsetMs()).toBeNull()
   })
 
-  it("allows the step the reconciler allows for the phone's drift", () => {
-    expect(CLOCK_STEP_TOLERANCE_MS).toBe(RECONCILE_CLOCK_SKEW_SECONDS * 1000)
+  it("lets a step spend at most a quarter of the reconciler's skew, which covers more than steps", () => {
+    // RECONCILE_CLOCK_SKEW_SECONDS also covers IBEX's clock against the
+    // API's, whole seconds and the phone's drift (spec §5.1). A tolerance
+    // equal to it, as ENG-726 first had, left none of that for a step it
+    // let through.
+    expect(CLOCK_STEP_TOLERANCE_MS).toBe(30_000)
+    expect(CLOCK_STEP_TOLERANCE_MS * 4).toBeLessThanOrEqual(
+      RECONCILE_CLOCK_SKEW_SECONDS * 1000,
+    )
+  })
+
+  it("reads no offset after a step of 115 s, which a tolerance of 120 s let through", async () => {
+    const { clock, wait, step } = phone()
+    await answer(clock.link, http(responseWith({ date: SERVER_DATE })))
+
+    wait(5_000)
+    step(115_000)
+
+    expect(clock.offsetMs()).toBeNull()
   })
 
   it("tells steps by the runtime's monotonic clock", () => {

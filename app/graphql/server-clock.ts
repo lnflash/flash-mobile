@@ -39,13 +39,20 @@ import { ApolloLink } from "@apollo/client"
 
 /**
  * How far the wall clock may move against the monotonic clock between the
- * answer that measured the offset and a read of it, in milliseconds: the
- * reconciler's RECONCILE_CLOCK_SKEW_SECONDS (app/assistant/engine/
- * reconcile.ts), which this module may not import. Further than that, the
- * phone's clock stepped and the offset no longer places a dispatch on the
- * server's clock.
+ * answer that measured the offset and a read of it, in milliseconds.
+ * Further than that, the phone's clock stepped and the offset no longer
+ * places a dispatch on the server's clock.
+ *
+ * A step within it goes uncorrected, so it spends part of the reconciler's
+ * RECONCILE_CLOCK_SKEW_SECONDS (120 s, app/assistant/engine/reconcile.ts,
+ * which this module may not import). That margin also covers IBEX's clock
+ * against the API's, the whole seconds of the Date header and of a row's
+ * createdAt, and the phone's drift (spec §5.1), so a step may take only a
+ * quarter of it. At 120 s, a step forward of 115 s with IBEX 10 s behind
+ * put the payment's own row before the window, and the list called it
+ * absent: the double payment ENG-726 closes.
  */
-export const CLOCK_STEP_TOLERANCE_MS = 120_000
+export const CLOCK_STEP_TOLERANCE_MS = 30_000
 
 /**
  * Milliseconds on a clock that only runs forward, at a steady rate, whatever

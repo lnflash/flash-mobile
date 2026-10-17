@@ -50,7 +50,7 @@ const match = (tokens: readonly Token[], ctx: GrammarContext): RuleResult => {
   const asked =
     from >= 0 && tokens.length - from - 1 <= 3 ? tokens.slice(0, from) : tokens
 
-  const runs = amountRuns(asked)
+  const runs = amountRuns(asked, ctx)
   const { before, between, after } = splitAroundRuns(asked, runs)
   const words = [...before, ...between.flat(), ...after]
   if (words.some(({ word }) => !VOCABULARY.has(word))) return undefined

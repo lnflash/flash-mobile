@@ -24,7 +24,11 @@ const contact = (username: string, alias: string | null = null): ContactRow =>
     transactionsCount: 1,
   } as ContactRow)
 
-/** An address book: two Alices, three Bobs, family by what the user calls them. */
+/**
+ * An address book: two Alices, three Bobs, family by what the user calls
+ * them, and names with a hyphen or an apostrophe, as Jamaican names often
+ * have.
+ */
 const BOOK = [
   contact("alice_w", "Alice"),
   contact("alicesmith", "Alice Smith"),
@@ -41,6 +45,9 @@ const BOOK = [
   contact("landlord_k", "Landlord"),
   contact("bredda_t", "Bredda"),
   contact("sista_m", "Sista"),
+  contact("kerryann_b", "Kerry-Ann"),
+  contact("dandre_w", "D'Andre"),
+  contact("bill_m", "Bill"),
 ]
 
 /** The contact each payee in the corpus means. */
@@ -60,6 +67,9 @@ const MEANT: Readonly<Record<string, string>> = {
   "landlord": "landlord_k",
   "bredda": "bredda_t",
   "sista": "sista_m",
+  "kerry-ann": "kerryann_b",
+  "d'andre": "dandre_w",
+  "bill": "bill_m",
 }
 
 /** Every payee the tuning corpus's sends name, once each. */
