@@ -7,7 +7,10 @@ jest.mock("@app/i18n/i18n-react", () => {
 })
 
 import { ClarificationCard } from "@app/assistant/cards/ClarificationCard"
-import { clarificationFixture } from "@app/assistant/cards/fixtures"
+import {
+  clarificationFixture,
+  flashUserClarificationFixture,
+} from "@app/assistant/cards/fixtures"
 import { en, renderCard } from "./render-card"
 
 describe("ClarificationCard", () => {
@@ -34,18 +37,39 @@ describe("ClarificationCard", () => {
     expect(onPick).toHaveBeenCalledWith("contact:alice")
   })
 
-  it("asks to say it another way when there is nothing to pick", () => {
+  it("asks for typed input when there is nothing to pick", () => {
+    // The amount question is the one clarification with no options: a payee
+    // question always has one (ENG-730).
     const screen = renderCard(
       <ClarificationCard
         payload={{
           type: "clarification",
-          prompt: "Assistant.noContactMatch",
+          prompt: "Assistant.amountRequired",
           options: [],
         }}
       />,
     )
 
-    expect(screen.getByText(en.Assistant.noContactMatch())).toBeTruthy()
+    expect(screen.getByText(en.Assistant.amountRequired())).toBeTruthy()
+    expect(screen.queryByTestId("assistant-card-option-0")).toBeNull()
+  })
+
+  it("offers a Flash user who is not a contact as the one option, saying so (ENG-730)", () => {
+    const onPick = jest.fn()
+    const screen = renderCard(
+      <ClarificationCard payload={flashUserClarificationFixture} onPick={onPick} />,
+    )
+
+    expect(screen.getByText(en.Assistant.pickFlashUser())).toBeTruthy()
+    // The full username, as every option shows it.
+    expect(screen.getByTestId("assistant-card-option-0").props.accessibilityLabel).toBe(
+      "dreadmax, dreadmax",
+    )
+    expect(screen.queryByTestId("assistant-card-option-1")).toBeNull()
+
+    fireEvent.press(screen.getByTestId("assistant-card-option-0"))
+
+    expect(onPick).toHaveBeenCalledWith("contact:dreadmax")
   })
 
   it("refuses a prompt the dictionary does not have", () => {

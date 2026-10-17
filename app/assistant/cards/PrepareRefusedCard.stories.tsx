@@ -21,6 +21,10 @@ export const NotAvailableYet = () => (
   <PrepareRefusedCard payload={{ ...prepareRefusedFixture, reason: "notAvailableYet" }} />
 )
 
+export const PayeeNotFound = () => (
+  <PrepareRefusedCard payload={{ ...prepareRefusedFixture, reason: "payeeNotFound" }} />
+)
+
 export const BadPayload = () => (
   <PrepareRefusedCard payload={{ ...prepareRefusedFixture, reason: "tooRich" }} />
 )
