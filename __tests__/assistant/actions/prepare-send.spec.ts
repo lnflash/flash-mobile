@@ -467,6 +467,60 @@ describe("prepareSend to someone who is not a contact (ENG-730)", () => {
     )
   })
 
+  it("ends a picked Flash user's expired card with the not-found reply when they are gone by the refresh, sending nothing", async () => {
+    const fake = setup()
+    let clock = NOW_MS
+    const now = () => clock
+    const executor = createExecutor({
+      auth: { availability: async () => "none", authenticate: async () => false },
+      journal: createAttemptJournal({ storage: memoryStorage() }),
+      reconcile: jest.fn(async () => "unknown" as const),
+      telemetry: recordingTelemetry().telemetry,
+      now,
+    })
+    const { graphql, displayCurrency, now: _fixed, ...actionDeps } = fake.ctx
+    const action = prepared(
+      await runTool(
+        {
+          intent: "prepareSend",
+          args: { payee: "contact:dreadmax", amount: "5", currency: "USD" },
+        },
+        {
+          registry: assistantRegistry,
+          graphql,
+          btcRail: fake.btcRail,
+          displayCurrency,
+          lnAddressHostname: actionDeps.send.lnAddressHostname,
+          now,
+          telemetry: recordingTelemetry().telemetry,
+          actionDeps,
+        },
+      ),
+    )
+    executor.addPrepared(action, "text")
+    // The card expires, and dreadmax's account is gone by the Confirm that
+    // prepares it again: the refresh looks the pick up again and refuses.
+    clock += FIXED_CENT_INTRALEDGER_TTL_MS + 1_000
+    fake.graphql.accountDefaultWallet.mockImplementation(accountsOf(["alice", "jane"]))
+
+    await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+      kind: "expired",
+      actionId: action.id,
+      replyKey: "Assistant.payeeNotFound",
+      refresh: {
+        kind: "error",
+        userMessage: "Assistant.payeeNotFound",
+        card: { type: "prepareRefused", reason: "payeeNotFound" },
+      },
+    })
+    expect(fake.mutations.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
+    // A refusal ends the action, as a shortfall's does; it is not left
+    // expired for another try.
+    await expect(executor.canConfirm(action.id)).resolves.toMatchObject({
+      enabled: false,
+    })
+  })
+
   it("refuses a pick whose Flash user is gone by the tap with the not-found card", async () => {
     const fake = setup()
     fake.graphql.accountDefaultWallet.mockImplementation(accountsOf(["alice", "jane"]))
