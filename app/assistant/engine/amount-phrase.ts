@@ -215,7 +215,10 @@ const dollarCurrency = (
   return undefined
 }
 
-/** The unit words around a number: "$", "us$", "sats", "jmd". A symbol written against the number ("$5", "5$") is its own word. */
+/**
+ * The unit words on one side of a number: "$", "us$", "sats", "jmd". A
+ * symbol written against the number ("$5", "5$") is its own word.
+ */
 const unitWords = (text: string): string[] =>
   text
     .replace(/(us\$|j\$|\$|₿)/g, " $1 ")
