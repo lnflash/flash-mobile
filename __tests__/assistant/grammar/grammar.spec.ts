@@ -188,8 +188,10 @@ describe("matchGrammar", () => {
     )
     expect(matchGrammar("send 5 c to bob", USD)).toEqual(sendTo("bob", "0.05"))
     expect(matchGrammar("send bob 50c", JMD)).toEqual(sendTo("bob", "0.50"))
-    // "c" anywhere else is a word: here, the payee's initial.
+    // "c" anywhere else is a word: here, the payee's initial, after "to" or
+    // before the number.
     expect(matchGrammar("send 5 to c", USD)).toEqual(sendTo("c", "5"))
+    expect(matchGrammar("pay c 5", USD)).toEqual(sendTo("c", "5"))
     // A request reads them the same.
     expect(matchGrammar("request two dollars", USD)).toEqual({
       kind: "call",
