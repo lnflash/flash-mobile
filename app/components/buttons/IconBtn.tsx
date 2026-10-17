@@ -12,7 +12,7 @@ import CardRemove from "@app/assets/icons/card-remove.svg"
 import Dollar from "@app/assets/icons/dollar-new.svg"
 import ArrowUpDown from "@app/assets/icons/arrow-up-down.svg"
 import LockOpen from "@app/assets/icons/lock-open.svg"
-import Lightning from "@app/assets/icons-redesign/lightning.svg"
+import AskFlash from "@app/assets/icons-redesign/ask-flash.svg"
 
 const icons = {
   up: ArrowUp,
@@ -25,7 +25,7 @@ const icons = {
   upDown: ArrowUpDown,
   lockOpen: LockOpen,
   // Ask Flash (ENG-689): an existing glyph, the bolt, until design picks one.
-  askFlash: Lightning,
+  askFlash: AskFlash,
 }
 
 type IconNamesType = keyof typeof icons
