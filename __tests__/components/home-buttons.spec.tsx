@@ -32,6 +32,8 @@ jest.mock("@app/graphql/generated", () => ({
   ...jest.requireActual("@app/graphql/generated"),
   useHasPromptedSetDefaultAccountQuery: () => ({ data: undefined }),
 }))
+// The row reads no flag since ENG-733. The mock lets a case turn the assistant
+// on and show that the row stays the same.
 jest.mock("@app/config/feature-flags-context", () => ({
   useFeatureFlags: () => ({ assistantEnabled: mockAssistantEnabled }),
 }))
