@@ -1,4 +1,4 @@
-import { AmountPhrase, readAmountPhrase } from "../engine/amount-phrase"
+import { AmountPhrase, isNumberWord, readAmountPhrase } from "../engine/amount-phrase"
 import type { Token } from "./normalize"
 import type { GrammarContext } from "./types"
 
@@ -206,7 +206,11 @@ const UNIT_WORDS = set(
     "k m mm mn b bn thousand million billion grand cent cents euro euros eur pound pounds gbp",
 )
 
-/** Words for a number: an amount written so is a question, never a guess. */
+/**
+ * Words for a number, part of the amount whatever they say: readAmountPhrase
+ * reads one up to ninety-nine and makes the rest a question ("five
+ * hundred", "half").
+ */
 const NUMBER_WORDS = set(
   "one two three four five six seven eight nine ten eleven twelve thirteen fourteen " +
     "fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy " +
@@ -231,10 +235,24 @@ type Kind = "number" | "unit" | "numberWord" | "other"
 const isUnit = (word: string, ctx: GrammarContext): boolean =>
   UNIT_WORDS.has(word) || word === ctx.displayCurrency.toLowerCase()
 
-const kindOf = (token: Token, next: Token | undefined, ctx: GrammarContext): Kind => {
+/** What a word's kind depends on around it: the kind before it, and the word after it. */
+type Neighbours = { previous: Kind | undefined; next: Token | undefined }
+
+const kindOf = (
+  token: Token,
+  { previous, next }: Neighbours,
+  ctx: GrammarContext,
+): Kind => {
   if (NUMBER_START.test(token.word)) return "number"
   if (isUnit(token.word, ctx)) return "unit"
-  if (NUMBER_WORDS.has(token.word)) return "numberWord"
+  // "c" is cents only right after a number ("5 c"), as readAmountPhrase
+  // reads it; anywhere else it is a word, an initial perhaps.
+  if (token.word === "c" && (previous === "number" || previous === "numberWord")) {
+    return "unit"
+  }
+  // "ninety-nine" reaches here as "ninetynine" (normalize.ts drops the
+  // hyphen of a word with no digit), a word only readAmountPhrase knows.
+  if (NUMBER_WORDS.has(token.word) || isNumberWord(token.word)) return "numberWord"
   // "a dollar", "an amount" is not: an article counts only before a unit.
   if (ARTICLES.has(token.word) && next && isUnit(next.word, ctx)) return "numberWord"
   return "other"
@@ -249,7 +267,10 @@ export type Run = { start: number; end: number }
  * on its own ("my bitcoin wallet") is no amount.
  */
 export const amountRuns = (tokens: readonly Token[], ctx: GrammarContext): Run[] => {
-  const kinds = tokens.map((token, i) => kindOf(token, tokens[i + 1], ctx))
+  const kinds: Kind[] = []
+  tokens.forEach((token, i) =>
+    kinds.push(kindOf(token, { previous: kinds[i - 1], next: tokens[i + 1] }, ctx)),
+  )
   const runs: Run[] = []
   let i = 0
   while (i < tokens.length) {

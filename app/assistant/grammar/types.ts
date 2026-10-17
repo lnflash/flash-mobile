@@ -22,9 +22,10 @@ export type AmountClarifyReason =
  *
  * - call: a tool call, for runTool;
  * - clarifyAmount: an ask whose amount is a question (a k or m suffix,
- *   mixed units, a "$" on a J$ account, words for a number, no amount). It
- *   is answered with a templated question and never becomes a call: the
- *   grammar never picks an amount or a currency itself (spec §5.1).
+ *   mixed units, a "$" on a J$ account, a number in words past ninety-nine,
+ *   no amount). It is answered with a templated question and never becomes
+ *   a call: the grammar never picks an amount or a currency itself (spec
+ *   §5.1).
  *
  * No match at all is undefined: "I can't help with that yet".
  */
