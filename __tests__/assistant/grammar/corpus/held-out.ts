@@ -6,13 +6,12 @@
 // change the tuning corpus and the grammar, never this file, to move the
 // numbers.
 //
-// Status: drafted by the implementer (ENG-689) for the owner's review. It
-// landed in the same commit as the grammar's rules (77e32b912), so history
-// cannot show that it was written first. From here on its entries are
-// pinned by hash in accuracy-gate.spec.ts, so no later change to them can go
-// unseen. The owner, or a native speaker the owner names, reviews the patois
-// entries and freezes the set before the PR merges (architect decision 5);
-// the freeze pins the hash again.
+// Status: FROZEN. Drafted by the implementer (ENG-689) in the same commit
+// as the grammar's rules (77e32b912), so history cannot show it was written
+// first; reviewed and approved by the owner on 2026-10-17 (PR #790,
+// architect decision 5) and frozen as it stood. Its entries are pinned by
+// hash in accuracy-gate.spec.ts, so a change to any of them fails there and
+// needs a new review, never a quiet re-pin.
 //
 // Negatives on purpose: pronoun follow-ups, invoices and addresses, "$" on
 // a J$ account, words for a number, suffixes, and asks outside the five
