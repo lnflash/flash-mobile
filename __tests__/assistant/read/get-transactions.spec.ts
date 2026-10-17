@@ -513,6 +513,57 @@ describe("getTransactions", () => {
       ])
     })
 
+    it("finds the BTC payments to the contact the query names, which name them by Lightning address", async () => {
+      // A BTC-wallet send to a Flash user pays username@host over LNURL
+      // (sendPayment), and the SDK records that address as the payee.
+      const setup = history(["carol", "bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("carol", "Mom")])
+      enableBtc(setup, [
+        btcPayment({ id: "btc-flashapp", timestamp: 98, lnAddress: "carol@flashapp.me" }),
+        btcPayment({ id: "btc-getflash", timestamp: 97, lnAddress: "Carol@GetFlash.io" }),
+        btcPayment({ id: "btc-pay", timestamp: 96, lnAddress: "carol@pay.flashapp.me" }),
+        // Another wallet's address is not the contact's, whatever its handle.
+        btcPayment({
+          id: "btc-elsewhere",
+          timestamp: 95,
+          lnAddress: "carol@walletofsatoshi.com",
+        }),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "mom" })).toEqual([
+        "to-carol",
+        "btc-flashapp",
+        "btc-getflash",
+        "btc-pay",
+      ])
+    })
+
+    it("reads the instance's own Lightning-address host as Flash's, which the LNURL domains may lack", async () => {
+      // Test's host, test.flashapp.me, is not one of LNURL_DOMAINS.
+      const setup = history(["bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("carol", "Mom")])
+      enableBtc(setup, [
+        btcPayment({
+          id: "btc-test",
+          timestamp: 98,
+          lnAddress: "carol@test.flashapp.me",
+        }),
+      ])
+      const onInstance = async (lnAddressHostname: string) => {
+        const result = await getTransactions.run(
+          { query: "mom" },
+          { ...setup.ctx, lnAddressHostname },
+        )
+        if (result.kind !== "answer")
+          throw new Error(`expected an answer, got ${result.kind}`)
+        return (result.payload as TransactionsPayload).transactions.map((row) => row.id)
+      }
+
+      expect(await onInstance("test.flashapp.me")).toEqual(["btc-test"])
+      // On Main, an address at Test's host is no Main user's.
+      expect(await onInstance("flashapp.me")).toEqual([])
+    })
+
     it("never takes a contact whose name only looks like the query for the one it names", async () => {
       // As resolveContact reads a name: "gas" is not Vargas, "andrea" not Andre.
       const setup = history(["vargas_j", "andre_k", "bob"])

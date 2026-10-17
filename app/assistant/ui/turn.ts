@@ -162,6 +162,7 @@ export const runCall = async (
     graphql: listing?.graphql ?? graphql,
     btcRail: listing?.btcRail ?? runtime.btcRail,
     displayCurrency: env.displayCurrency,
+    lnAddressHostname: env.lnAddressHostname,
     now: runtime.now,
     telemetry: runtime.telemetry,
     ...(offline

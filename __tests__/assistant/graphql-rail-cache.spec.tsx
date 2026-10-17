@@ -176,6 +176,7 @@ const askOffline = async (cache: InMemoryCache, args: Record<string, unknown> = 
     graphql: createGraphqlRail(offlineClient(cache), { fetchPolicy: "cache-only" }),
     btcRail: fakeBtcRail(),
     displayCurrency: "USD",
+    lnAddressHostname: "flashapp.me",
     now: () => NOW_MS,
   })
 

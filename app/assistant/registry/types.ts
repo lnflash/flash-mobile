@@ -290,6 +290,12 @@ export type ReadToolCtx = {
   btcRail: BtcReadRail
   /** The account's display currency, as `realtimePrice` takes it ("USD", "JMD"). */
   displayCurrency: string
+  /**
+   * The instance's Lightning-address host (`galoyInstance.lnAddressHostname`:
+   * flashapp.me, or test.flashapp.me on Test). A BTC-wallet payment to a Flash
+   * user names them by their address there (getTransactions).
+   */
+  lnAddressHostname: string
   /** Epoch milliseconds. */
   now: () => number
 }

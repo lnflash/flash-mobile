@@ -1,3 +1,4 @@
+import { LNURL_DOMAINS } from "@app/config/appinfo"
 import { btcRailUnavailableState } from "@app/payments/btc-rail"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 import { isPlainObject } from "../../engine/schema-validator"
@@ -29,7 +30,8 @@ import { namesContact } from "./resolve-contact"
 //
 // A query finds a payment by its memo, by its payee (a Flash username, or
 // a Lightning address on the BTC rail), or by the contact the query names
-// (rowMatcher). A search that misses a payment it should find tells the
+// (rowMatcher), whose BTC payments name them by Lightning address
+// (flashUsername). A search that misses a payment it should find tells the
 // user they never paid that person, and they may pay twice.
 
 export const TX_PAGE_SIZE = 20
@@ -172,25 +174,53 @@ const finder = (typed: string, fold: (text: string) => string) => {
 }
 
 /**
+ * The hosts of Flash's own Lightning addresses, lower case: the app's
+ * LNURL domains and the instance's own host, which they may lack
+ * (test.flashapp.me on Test).
+ */
+const flashHosts = (lnAddressHostname: string): ReadonlySet<string> =>
+  new Set([...LNURL_DOMAINS, lnAddressHostname].map((host) => host.toLowerCase()))
+
+/**
+ * The Flash username a payee names, lower case, or null when it names none.
+ * The GraphQL rail names a Flash user by username. The BTC rail names one by
+ * Lightning address: a BTC-wallet send to a Flash user pays username@host
+ * over LNURL (sendPayment), and the SDK records that address as the payee
+ * (btcTxRow). An address at one of Flash's hosts names its handle; one at
+ * any other host is not a Flash user's, whatever its handle.
+ */
+const flashUsername = (
+  counterparty: string,
+  hosts: ReadonlySet<string>,
+): string | null => {
+  const payee = counterparty.toLowerCase()
+  if (!payee.includes("@")) return payee
+  const address = /^([^@]+)@([^@]+)$/.exec(payee)
+  return address !== null && hosts.has(address[2]) ? address[1] : null
+}
+
+/**
  * Which rows a call asks for: its direction, and a query found in the
  * memo, in the payee, or naming the payee's contact (`contactUsernames`,
- * contactsNamed).
+ * contactsNamed), whose username a payee at one of `hosts` names too.
  */
 const rowMatcher = (
   { direction, query }: Args,
   contactUsernames: ReadonlySet<string>,
+  hosts: ReadonlySet<string>,
 ) => {
   const typed = query?.trim().toLowerCase() ?? ""
   const inMemo = finder(typed, asText)
   const inPayee = finder(typed, asHandle)
+  const paysContact = (counterparty: string | null): boolean => {
+    if (counterparty === null) return false
+    const username = flashUsername(counterparty, hosts)
+    return username !== null && contactUsernames.has(username)
+  }
   return (row: TxRow): boolean => {
     if (direction && row.direction !== direction) return false
     if (!typed) return true
-    return (
-      inMemo(row.memo) ||
-      inPayee(row.counterparty) ||
-      (row.counterparty !== null && contactUsernames.has(row.counterparty.toLowerCase()))
-    )
+    return inMemo(row.memo) || inPayee(row.counterparty) || paysContact(row.counterparty)
   }
 }
 
@@ -293,7 +323,11 @@ const run = async (
   const want = args.first ?? TX_DEFAULT_RESULTS
   // The schema caps `first` at 20; it cannot say "at least 1".
   if (want < 1) return { kind: "error", userMessage: "Assistant.invalidArguments" }
-  const matches = rowMatcher(args, await contactsNamed(ctx.graphql, args.query))
+  const matches = rowMatcher(
+    args,
+    await contactsNamed(ctx.graphql, args.query),
+    flashHosts(ctx.lnAddressHostname),
+  )
 
   const graphql = await readGraphql(ctx.graphql, { want, matches })
   // Every GraphQL payment newer than this was read; undefined when all were.

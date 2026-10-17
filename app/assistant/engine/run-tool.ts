@@ -30,6 +30,8 @@ export type RunToolDeps = {
   /** The BTC rail, or just its reads. Only the reads reach a read tool. */
   btcRail: BtcReadRail
   displayCurrency: string
+  /** The instance's Lightning-address host, for the read tools (ReadToolCtx). */
+  lnAddressHostname: string
   /** Epoch milliseconds. */
   now: () => number
   telemetry: AssistantTelemetry
@@ -50,10 +52,11 @@ export const createReadToolCtx = ({
   graphql,
   btcRail,
   displayCurrency,
+  lnAddressHostname,
   now,
 }: Pick<
   RunToolDeps,
-  "graphql" | "btcRail" | "displayCurrency" | "now"
+  "graphql" | "btcRail" | "displayCurrency" | "lnAddressHostname" | "now"
 >): ReadToolCtx => ({
   graphql,
   btcRail: {
@@ -61,6 +64,7 @@ export const createReadToolCtx = ({
     listPayments: (...args) => btcRail.listPayments(...args),
   },
   displayCurrency,
+  lnAddressHostname,
   now,
 })
 

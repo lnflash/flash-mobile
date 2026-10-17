@@ -397,6 +397,46 @@ describe("useThread", () => {
     ).not.toHaveProperty("memo")
   })
 
+  it("hands a history search the instance's Lightning-address host, online and offline", async () => {
+    // On Test, a BTC send to a Flash user is recorded at test.flashapp.me,
+    // which only the instance names: "payments to mom" must find it there.
+    const { runtime, runTool, graphql, cachedGraphql, btcRail } = fakeRuntime()
+    for (const rail of [graphql, cachedGraphql]) {
+      rail.transactions.mockResolvedValue(page([]))
+      rail.contacts.mockResolvedValue([
+        {
+          __typename: "UserContact",
+          id: "carol",
+          username: "carol",
+          alias: "Mom",
+          transactionsCount: 1,
+        },
+      ])
+    }
+    btcRail.listPayments.mockResolvedValue([
+      btcPayment({
+        id: "pay-mom",
+        timestamp: 1_759_998_000,
+        lnAddress: "carol@test.flashapp.me",
+      }),
+    ])
+    const onTest = env({ lnAddressHostname: "test.flashapp.me" })
+    const hook = render(runtime, onTest)
+
+    await submit(hook, "payments to mom")
+    hook.rerender({ e: { ...onTest, isOffline: true } })
+    await submit(hook, "payments to mom")
+
+    expect(runTool.mock.calls.map(([, deps]) => deps.lnAddressHostname)).toEqual([
+      "test.flashapp.me",
+      "test.flashapp.me",
+    ])
+    const found = lines(hook).flatMap((line) =>
+      line.kind === "transactions" ? [line.payload.transactions.map(({ id }) => id)] : [],
+    )
+    expect(found).toEqual([["pay-mom"], ["pay-mom"]])
+  })
+
   it("prepares a card's Try again or Refresh in the card's place, letting the old action go", async () => {
     const { runtime } = fakeRuntime()
     const first = makeAction({ threadId: runtime.threadId })
