@@ -7,13 +7,17 @@ import type { AssistantReplyKey, PrepareRefusalReason, ToolResult } from "./type
 // re-prepare is refused, turn it into a templated error card. No confirm
 // card is ever built for a payment that would fail after the tap. ENG-688
 // supplies the checks, and refuses a payment whose branch is gated on an
-// open bug the same way.
+// open bug the same way. A payee that names no contact and no Flash user
+// (ENG-730) gets the same card, returned by the payee lookup
+// (prepareRefusalResult) rather than thrown.
 
 export const PREPARE_REFUSAL_REPLY: Record<PrepareRefusalReason, AssistantReplyKey> = {
   insufficientBalance: "Assistant.insufficientBalance",
   limitExceeded: "Assistant.limitExceeded",
   // A gated branch (ENG-688): the same reply as an intent with no tool.
   notAvailableYet: "Assistant.notYetAvailable",
+  // No contact and no Flash user by the payee's words (ENG-730).
+  payeeNotFound: "Assistant.payeeNotFound",
 }
 
 export class PrepareRefusedError extends Error {

@@ -93,11 +93,15 @@ export type ClarificationCard = {
  * - notAvailableYet: a payment the assistant may not dispatch yet because
  *   the branch it would take is gated on an open bug (actions/shared/gates.ts;
  *   no branch is gated since ENG-720 opened BTC-wallet bolt11 sends).
+ * - payeeNotFound: the payee's words name neither a contact nor a Flash
+ *   user (resolveContact, or a pick looked up again at the tap; ENG-730),
+ *   refused before any amount, fee or balance is read.
  */
 export type PrepareRefusalReason =
   | "insufficientBalance"
   | "limitExceeded"
   | "notAvailableYet"
+  | "payeeNotFound"
 
 /**
  * The templated error card for an action its `prepare` refused (spec §5.1,
