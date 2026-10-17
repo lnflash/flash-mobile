@@ -29,13 +29,13 @@ const existing = (files: Record<string, number>) => {
 beforeEach(() => {
   jest.useFakeTimers()
   jest.resetModules()
-  rnfs = require("react-native-fs") as Rnfs
+  rnfs = jest.requireMock("react-native-fs") as Rnfs
   rnfs.appendFile.mockResolvedValue(undefined)
   rnfs.writeFile.mockResolvedValue(undefined)
   rnfs.moveFile.mockResolvedValue(undefined)
   rnfs.unlink.mockResolvedValue(undefined)
   existing({})
-  buffer = require("@app/utils/breez-sdk/log-buffer") as Buffer
+  buffer = jest.requireActual("@app/utils/breez-sdk/log-buffer") as Buffer
 })
 
 afterEach(() => {
