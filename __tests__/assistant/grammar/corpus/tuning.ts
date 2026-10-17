@@ -277,6 +277,10 @@ export const TUNING: readonly CorpusEntry[] = [
   en("JMD", "transfer 2,000 to bob", send("bob", "2000")),
   en("JMD", "give jason 400", send("jason", "400")),
   en("JMD", "send 10000 sats to alice", send("alice", "0.00010000", { currency: "BTC" })),
+  // A number in words up to ninety-nine is that number, and "a" before a
+  // dollar is one (ENG-731). Both were amount questions before.
+  en("USD", "send a dollar to bob", send("bob", "1", { currency: "USD" })),
+  en("USD", "send twenty dollars to alice", send("alice", "20", { currency: "USD" })),
   jm("sen 1500 to alice", send("alice", "1500")),
   jm("sen alice 1500", send("alice", "1500")),
   jm("sen 600 fi tanya", send("tanya", "600")),
@@ -389,8 +393,6 @@ export const TUNING: readonly CorpusEntry[] = [
   en("USD", "send bob 10k", "clarifyAmount"),
   en("USD", "send 2m sats to bob", "clarifyAmount"),
   en("USD", "send alice 5 thousand", "clarifyAmount"),
-  en("USD", "send a dollar to bob", "clarifyAmount"),
-  en("USD", "send twenty dollars to alice", "clarifyAmount"),
   en("USD", "send bob money", "clarifyAmount"),
   en("USD", "pay alice", "clarifyAmount"),
   en("USD", "send something to mom", "clarifyAmount"),
