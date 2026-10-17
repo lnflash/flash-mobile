@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Platform } from "react-native"
 import Share from "react-native-share"
-import RNFS from "react-native-fs"
 import { getCrashlytics } from "@react-native-firebase/crashlytics"
 import { getLogFilePaths } from "@app/utils/breez-sdk/log-buffer"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -15,9 +14,10 @@ export const ExportSparkLogsSetting: React.FC = () => {
   const exportLogs = async () => {
     setSpinner(true)
     try {
-      // The current file and, after a rotation, the previous generation too.
+      // The log files that exist: the current one and, after a rotation, the
+      // previous generation (alone, if a rotation failed to start a fresh file).
       const paths = await getLogFilePaths()
-      if (!(await RNFS.exists(paths[0]))) {
+      if (paths.length === 0) {
         console.warn("No log file found")
         return
       }

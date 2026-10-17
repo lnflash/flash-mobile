@@ -96,13 +96,18 @@ const rotateFile = async (): Promise<void> => {
     await RNFS.unlink(PREVIOUS_LOG_FILE)
   }
   await RNFS.moveFile(LOG_FILE, PREVIOUS_LOG_FILE)
+  // The full file is the previous generation now, so the count starts over
+  // before the header write: were that write to fail with the count still past
+  // the cap, the next flush would rotate again and unlink the generation just
+  // preserved. A failed move leaves the count alone, so the next flush retries.
+  fileBytes = 0
   await startFreshFile()
 }
 
 /**
  * Flush pending entries to the log file on disk, rotating it once it is past
- * MAX_BYTES. Guarded against concurrent execution. Exported for the
- * AppState listener and for tests; the interval calls it too.
+ * MAX_BYTES. The interval and the AppState listener in initLogBuffer call it,
+ * and `flushing` keeps their calls from overlapping. Exported for the spec.
  */
 export const flushLogBuffer = async (): Promise<void> => {
   if (flushing || pendingEntries.length === 0) return
@@ -113,7 +118,7 @@ export const flushLogBuffer = async (): Promise<void> => {
     const chunk = entries.join("\n") + "\n"
     await RNFS.appendFile(LOG_FILE, chunk, "utf8")
     // `flushing` serializes flushes, so this is the only writer of fileBytes
-    // between the append and here; startFreshFile resets it under the same lock.
+    // between the append and here; a rotation resets it under the same lock.
     // eslint-disable-next-line require-atomic-updates
     fileBytes += utf8ByteLength(chunk)
     if (fileBytes > MAX_BYTES) {
@@ -128,12 +133,14 @@ export const flushLogBuffer = async (): Promise<void> => {
   }
 }
 
-export const getLogFilePath = (): string => LOG_FILE
-export const getPreviousLogFilePath = (): string => PREVIOUS_LOG_FILE
-
-/** The current file, and the previous generation when one exists. */
+/**
+ * The log files that exist, the current one first. After a rotation the
+ * previous generation is there too; if a rotation's header write failed, it is
+ * there alone until the next flush recreates the current file.
+ */
 export const getLogFilePaths = async (): Promise<string[]> => {
-  const paths = [LOG_FILE]
+  const paths: string[] = []
+  if (await RNFS.exists(LOG_FILE)) paths.push(LOG_FILE)
   if (await RNFS.exists(PREVIOUS_LOG_FILE)) paths.push(PREVIOUS_LOG_FILE)
   return paths
 }
