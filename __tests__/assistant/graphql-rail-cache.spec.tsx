@@ -1,9 +1,15 @@
 import * as React from "react"
-import { ApolloClient, ApolloLink, InMemoryCache, Observable } from "@apollo/client"
+import {
+  ApolloClient,
+  ApolloError,
+  ApolloLink,
+  InMemoryCache,
+  Observable,
+} from "@apollo/client"
 import { MockedProvider } from "@apollo/client/testing"
 import { render, waitFor } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
-import type { FieldNode, OperationDefinitionNode, SelectionNode } from "graphql"
+import { FieldNode, GraphQLError, OperationDefinitionNode, SelectionNode } from "graphql"
 
 jest.mock("@react-navigation/native", () => ({
   ...jest.requireActual("@react-navigation/native"),
@@ -21,16 +27,20 @@ jest.mock("react-native-safe-area-context", () => {
   }
 })
 
+import { runTool } from "@app/assistant/engine/run-tool"
 import {
   CACHED_TRANSACTION_PAGES,
   createGraphqlRail,
+  GraphqlRail,
   GraphqlRailError,
   TransactionRow,
 } from "@app/assistant/rails/graphql-rail"
+import { assistantRegistry } from "@app/assistant/registry"
 import { getTransactions } from "@app/assistant/registry/read/get-transactions"
 import type { TransactionsPayload } from "@app/assistant/registry/projections"
 import { createCache } from "@app/graphql/cache"
 import {
+  ContactsDocument,
   HomeAuthedDocument,
   TransactionListForDefaultAccountDocument,
 } from "@app/graphql/generated"
@@ -39,7 +49,7 @@ import appMocks from "@app/graphql/mocks"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import theme from "@app/rne-theme/theme"
 import { USDTransactionHistory } from "@app/screens/transaction-history/USDTransactionHistory"
-import { fakeBtcRail, graphqlTx, NOW_MS } from "./fakes"
+import { fakeBtcRail, graphqlTx, NOW_MS, recordingTelemetry } from "./fakes"
 
 loadLocale("en")
 
@@ -170,15 +180,19 @@ const showHistoryScreen = (
     </MockedProvider>,
   )
 
-/** getTransactions over the cache-only rail on `cache`, with a BTC wallet that has no payments. */
-const askOffline = async (cache: InMemoryCache, args: Record<string, unknown> = {}) =>
+/** getTransactions over `graphql`, with a BTC wallet that has no payments. */
+const ask = async (graphql: GraphqlRail, args: Record<string, unknown> = {}) =>
   getTransactions.run(args, {
-    graphql: createGraphqlRail(offlineClient(cache), { fetchPolicy: "cache-only" }),
+    graphql,
     btcRail: fakeBtcRail(),
     displayCurrency: "USD",
     lnAddressHostname: "flashapp.me",
     now: () => NOW_MS,
   })
+
+/** getTransactions over the cache-only rail on `cache`, with a BTC wallet that has no payments. */
+const askOffline = async (cache: InMemoryCache, args: Record<string, unknown> = {}) =>
+  ask(createGraphqlRail(offlineClient(cache), { fetchPolicy: "cache-only" }), args)
 
 const payloadOf = (
   result: Awaited<ReturnType<typeof askOffline>>,
@@ -188,6 +202,48 @@ const payloadOf = (
 }
 
 const NEWEST = Math.floor(NOW_MS / 1000) - 3_600
+
+/** A send to carol, whom the user calls Mom (contactsAnswer). */
+const TO_CAROL = graphqlTx({
+  id: "to-carol",
+  createdAt: NEWEST,
+  initiationVia: {
+    __typename: "InitiationViaIntraLedger",
+    counterPartyWalletId: "carol-wallet",
+    counterPartyUsername: "carol",
+  },
+  settlementVia: {
+    __typename: "SettlementViaIntraLedger",
+    counterPartyWalletId: "carol-wallet",
+    counterPartyUsername: "carol",
+  },
+})
+/** A payment whose memo names mom. */
+const FLOWERS = graphqlTx({
+  id: "flowers",
+  createdAt: NEWEST - 60,
+  memo: "flowers for mom",
+})
+
+/** `contacts`' answer, as the contacts screen gets it: carol, whom the user calls Mom. */
+const contactsAnswer = {
+  me: {
+    __typename: "User",
+    id: ME_ID,
+    contacts: [
+      {
+        __typename: "UserContact",
+        id: "carol",
+        username: "carol",
+        alias: "Mom",
+        transactionsCount: 1,
+      },
+    ],
+  },
+}
+
+const ids = (result: Awaited<ReturnType<typeof ask>>): string[] =>
+  payloadOf(result).transactions.map(({ id }) => id)
 
 describe("the offline rail over the app's own cache", () => {
   it("reads the history list where the history screen put it", async () => {
@@ -353,6 +409,35 @@ describe("the offline rail over the app's own cache", () => {
     expect(payload.window.searchedCount).toBe(20)
   })
 
+  it("searches memo and payee offline when the cache holds no contact list", async () => {
+    // The contacts screen never ran, so the cache-only rail refuses the
+    // contacts, and "mom" still finds the memo that names her.
+    const cache = createCache()
+    cache.writeQuery({
+      query: TransactionListForDefaultAccountDocument,
+      data: historyAnswer([TO_CAROL, FLOWERS]),
+    })
+    const rail = createGraphqlRail(offlineClient(cache), { fetchPolicy: "cache-only" })
+    await expect(rail.contacts()).rejects.toBeInstanceOf(GraphqlRailError)
+
+    expect(ids(await askOffline(cache, { query: "mom" }))).toEqual(["flowers"])
+    expect(ids(await askOffline(cache, { query: "carol" }))).toEqual(["to-carol"])
+  })
+
+  it("finds a contact's payments offline by the alias the contacts screen left in the cache", async () => {
+    const cache = createCache()
+    cache.writeQuery({
+      query: TransactionListForDefaultAccountDocument,
+      data: historyAnswer([TO_CAROL, FLOWERS]),
+    })
+    cache.writeQuery({ query: ContactsDocument, data: contactsAnswer })
+
+    expect(ids(await askOffline(cache, { query: "mom" }))).toEqual([
+      "to-carol",
+      "flowers",
+    ])
+  })
+
   it("still fails a read the cache holds no list for", async () => {
     const rail = createGraphqlRail(offlineClient(createCache()), {
       fetchPolicy: "cache-only",
@@ -389,5 +474,67 @@ describe("the offline rail over the app's own cache", () => {
     )
 
     expect(args).toEqual(CACHED_TRANSACTION_PAGES.homeScreen)
+  })
+})
+
+describe("the online rail over a real client", () => {
+  /**
+   * A client whose network answers the history list with TO_CAROL and
+   * FLOWERS, and the contacts query with `contacts`: what a 502 or a
+   * GraphQL error on the deprecated User.contacts field hands Apollo.
+   */
+  const onlineClient = (contacts: { networkError: Error } | { error: GraphQLError }) =>
+    new ApolloClient({
+      cache: createCache(),
+      link: new ApolloLink(
+        (operation) =>
+          new Observable((observer) => {
+            if (operation.operationName !== "contacts") {
+              observer.next({ data: historyAnswer([TO_CAROL, FLOWERS]) })
+              observer.complete()
+            } else if ("networkError" in contacts) {
+              observer.error(contacts.networkError)
+            } else {
+              observer.next({ errors: [contacts.error] })
+              observer.complete()
+            }
+          }),
+      ),
+    })
+
+  /** What a search for mom answers when the contacts read fails so, alone and through runTool. */
+  const searchForMom = async (contacts: Parameters<typeof onlineClient>[0]) => {
+    const graphql = createGraphqlRail(onlineClient(contacts))
+    // The list itself reads: an ask with no query answers.
+    expect(ids(await ask(graphql))).toEqual(["to-carol", "flowers"])
+    await expect(ask(graphql, { query: "mom" })).rejects.toBeInstanceOf(ApolloError)
+    return runTool(
+      { intent: "getTransactions", args: { query: "mom" } },
+      {
+        registry: assistantRegistry,
+        graphql,
+        btcRail: fakeBtcRail(),
+        displayCurrency: "USD",
+        lnAddressHostname: "flashapp.me",
+        now: () => NOW_MS,
+        telemetry: recordingTelemetry().telemetry,
+      },
+    )
+  }
+
+  it("fails a search, never an empty card, when the network fails the contacts read", async () => {
+    const result = await searchForMom({
+      networkError: new Error("Response not successful: Received status code 502"),
+    })
+
+    expect(result).toEqual({ kind: "error", userMessage: "Assistant.toolFailed" })
+  })
+
+  it("fails a search, never an empty card, when the contacts field answers a GraphQL error", async () => {
+    const result = await searchForMom({
+      error: new GraphQLError("Internal server error"),
+    })
+
+    expect(result).toEqual({ kind: "error", userMessage: "Assistant.toolFailed" })
   })
 })

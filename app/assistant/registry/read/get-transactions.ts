@@ -2,7 +2,12 @@ import { LNURL_DOMAINS } from "@app/config/appinfo"
 import { btcRailUnavailableState } from "@app/payments/btc-rail"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 import { isPlainObject } from "../../engine/schema-validator"
-import type { ContactRow, GraphqlRail, TransactionRow } from "../../rails/graphql-rail"
+import {
+  ContactRow,
+  GraphqlRail,
+  GraphqlRailError,
+  TransactionRow,
+} from "../../rails/graphql-rail"
 import { defineRead } from "../define"
 import {
   BtcRailState,
@@ -236,9 +241,11 @@ const rowMatcher = (
  * name more loosely than resolveContact does (namesContact), which a payee
  * needs: in a search, a contact taken wrongly is a row the user sees, and a
  * payment missed is one they are told they never made. A username needs no
- * contact, since the payee holds it. A contact list the rail cannot read
- * (offline, when the cache holds none) names no one; the memo and the payee
- * are still searched.
+ * contact, since the payee holds it. A contact list the cache does not hold
+ * (offline, the rail's GraphqlRailError) names no one, and the memo and the
+ * payee are still searched. Any other failed read fails the search, as a
+ * failed first page does: online, an empty card would tell the user they
+ * never paid the contact they named.
  */
 const contactsNamed = async (
   graphql: GraphqlRail,
@@ -249,8 +256,9 @@ const contactsNamed = async (
   let contacts: readonly ContactRow[]
   try {
     contacts = await graphql.contacts()
-  } catch {
-    return new Set()
+  } catch (err) {
+    if (err instanceof GraphqlRailError) return new Set()
+    throw err
   }
   const inAlias = finder(typed, asHandle)
   return new Set(

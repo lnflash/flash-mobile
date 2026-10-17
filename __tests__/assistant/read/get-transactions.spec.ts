@@ -1,4 +1,8 @@
+import { ApolloError } from "@apollo/client"
+import { GraphQLError } from "graphql"
+import { runTool } from "@app/assistant/engine/run-tool"
 import { matchGrammar } from "@app/assistant/grammar"
+import { assistantRegistry } from "@app/assistant/registry"
 import {
   BTC_PAYMENTS_LIMIT,
   getTransactions,
@@ -6,7 +10,11 @@ import {
   TX_PAGE_SIZE,
 } from "@app/assistant/registry/read/get-transactions"
 import type { TransactionsPayload } from "@app/assistant/registry/projections"
-import type { ContactRow, TransactionRow } from "@app/assistant/rails/graphql-rail"
+import {
+  ContactRow,
+  GraphqlRailError,
+  TransactionRow,
+} from "@app/assistant/rails/graphql-rail"
 import { BreezSdkNotInitializedError } from "@app/utils/breez-sdk/sdk-errors"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 import {
@@ -17,6 +25,7 @@ import {
   FLASH_CURSOR_REFUSED,
   graphqlTx,
   page,
+  recordingTelemetry,
 } from "../fakes"
 
 /** GraphQL pages served by cursor, newest first; "cursor-N" is page N. */
@@ -626,13 +635,58 @@ describe("getTransactions", () => {
       ])
     })
 
-    it("still searches memo and payee when the contacts cannot be read", async () => {
-      // Offline, the cache may hold no contact list.
+    it("still searches memo and payee when the cache holds no contact list", async () => {
+      // Offline, the cache-only rail refuses what the cache does not hold.
       const setup = history(["carol", "bob"])
-      setup.graphql.contacts.mockRejectedValue(new Error("No answer in the cache"))
+      setup.graphql.contacts.mockRejectedValue(
+        new GraphqlRailError("No answer in the cache"),
+      )
 
       expect(await ids(setup, { query: "bob" })).toEqual(["to-bob"])
       expect(await ids(setup, { query: "mom" })).toEqual([])
+    })
+
+    it("fails the search when the contacts read fails any other way, never an empty answer", async () => {
+      // Online, the network-only rail rejects with Apollo's error (a dropped
+      // connection, a 502, a GraphQL error on the deprecated User.contacts);
+      // a TypeError is a bug. An empty card would say mom was never paid.
+      const setup = history(["carol", "bob"])
+      const failsWith = async (failure: Error) => {
+        setup.graphql.contacts.mockRejectedValueOnce(failure)
+        await expect(getTransactions.run({ query: "mom" }, setup.ctx)).rejects.toBe(
+          failure,
+        )
+      }
+
+      await failsWith(
+        new ApolloError({ networkError: new Error("Network request failed") }),
+      )
+      await failsWith(
+        new ApolloError({ graphQLErrors: [new GraphQLError("Internal server error")] }),
+      )
+      await failsWith(new TypeError("Cannot read properties of undefined (reading 'me')"))
+    })
+
+    it("answers a failed contacts read through runTool with the failure reply", async () => {
+      const setup = history(["carol", "bob"])
+      setup.graphql.contacts.mockRejectedValue(
+        new ApolloError({ networkError: new Error("Network request failed") }),
+      )
+
+      await expect(
+        runTool(
+          { intent: "getTransactions", args: { direction: "SEND", query: "mom" } },
+          {
+            registry: assistantRegistry,
+            graphql: setup.ctx.graphql,
+            btcRail: setup.btcRail,
+            displayCurrency: setup.ctx.displayCurrency,
+            lnAddressHostname: setup.ctx.lnAddressHostname,
+            now: setup.ctx.now,
+            telemetry: recordingTelemetry().telemetry,
+          },
+        ),
+      ).resolves.toEqual({ kind: "error", userMessage: "Assistant.toolFailed" })
     })
 
     it("reads the contacts only for a query", async () => {
