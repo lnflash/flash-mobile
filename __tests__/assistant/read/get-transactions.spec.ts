@@ -55,7 +55,17 @@ const enableBtc = (setup: ReturnType<typeof fakeCtx>, payments: BtcPayment[]) =>
 }
 
 /** An intraledger send to a Flash user, as the API names them: by username. */
-const sentTo = (id: string, createdAt: number, username: string, memo?: string) =>
+const sentTo = ({
+  id,
+  createdAt,
+  username,
+  memo,
+}: {
+  id: string
+  createdAt: number
+  username: string
+  memo?: string
+}) =>
   graphqlTx({
     id,
     createdAt,
@@ -435,12 +445,13 @@ describe("getTransactions", () => {
   })
 
   describe("a query that names someone", () => {
-    /** A history with one send to each of these usernames, newest first. */
-    const history = (usernames: string[], memos: Record<string, string> = {}) =>
+    /** A history with one send to each user, newest first, with its memo if it has one. */
+    const history = (sends: (string | { username: string; memo: string })[]) =>
       serve([
-        usernames.map((username, i) =>
-          sentTo(`to-${username}`, 100 - i, username, memos[username]),
-        ),
+        sends.map((send, i) => {
+          const user = typeof send === "string" ? { username: send } : send
+          return sentTo({ id: `to-${user.username}`, createdAt: 100 - i, ...user })
+        }),
       ])
 
     const ids = async (
@@ -516,10 +527,10 @@ describe("getTransactions", () => {
     })
 
     it("keeps a memo's words apart: a name is not found across two of them", async () => {
-      const setup = history(["omar_x", "kerryann_b"], {
-        omar_x: "from omar",
-        kerryann_b: "lunch for Kerry-Ann",
-      })
+      const setup = history([
+        { username: "omar_x", memo: "from omar" },
+        { username: "kerryann_b", memo: "lunch for Kerry-Ann" },
+      ])
 
       expect(await ids(setup, { query: "mom" })).toEqual([])
       expect(await ids(setup, { query: "lunch for kerry-ann" })).toEqual([
