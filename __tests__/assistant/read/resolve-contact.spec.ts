@@ -1,6 +1,6 @@
 import {
-  CONTACT_MATCH_THRESHOLD,
   CONTACT_PICKER_LIMIT,
+  namesContact,
   resolveContact,
 } from "@app/assistant/registry/read/resolve-contact"
 import type { ContactRow } from "@app/assistant/rails/graphql-rail"
@@ -61,10 +61,10 @@ describe("resolveContact", () => {
   })
 
   it("offers a single weak match as a picker of one, never straight through", async () => {
-    // "carl" is close to "carol" but under CONTACT_MATCH_THRESHOLD.
+    // "carl" is close to "carol", but it is not her username, her alias or
+    // a word of it.
     const { result, graphql } = await resolve("carl")
 
-    expect(CONTACT_MATCH_THRESHOLD).toBe(0.8)
     expect(result).toEqual({
       kind: "clarification",
       card: {
@@ -74,6 +74,74 @@ describe("resolveContact", () => {
       },
     })
     expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
+  })
+
+  it("offers a single match the hint only looks like as a picker of one, however Fuse scores it", async () => {
+    // Fuse matches anywhere in a name: "gas" in Vargas, "rent" in Brent,
+    // "market" in Marketa and "wayne" in Dwayne score as high as "mom" does
+    // for Mom, and "books", "andrea", "barber" and "bill jones" all score
+    // above 0.8. None of them names the contact.
+    const nearMisses: [string, string, string][] = [
+      ["gas", "vargas_j", "Vargas"],
+      ["rent", "brent_c", "Brent"],
+      ["market", "marketa_l", "Marketa"],
+      ["wayne", "dwayne_r", "Dwayne"],
+      ["books", "brooks_t", "Brooks"],
+      ["andrea", "andre_k", "Andre"],
+      ["barber", "barbara_w", "Barbara"],
+      ["bill jones", "bob_jones", "Bob Jones"],
+    ]
+
+    for (const [hint, username, alias] of nearMisses) {
+      const { result, graphql } = await resolve(hint, [contact(username, alias)])
+
+      expect([hint, result]).toEqual([
+        hint,
+        {
+          kind: "clarification",
+          card: {
+            type: "clarification",
+            prompt: "Assistant.pickContact",
+            options: [{ id: username, label: alias, sublabel: username }],
+          },
+        },
+      ])
+      expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
+    }
+  })
+
+  it("answers a hint that is the contact's username, alias or one word of the alias, however it is cased or punctuated", async () => {
+    const answered: [string, ContactRow][] = [
+      ["MOM", contact("carol", "Mom")],
+      ["carol", contact("carol", "Mom")],
+      ["Kerry-Ann", contact("kerryann_b", "Kerry-Ann")],
+      ["kerryann", contact("kerryann_b", "Kerry-Ann")],
+      ["kerry_ann", contact("kerryann_b", "Kerry-Ann")],
+      ["D’Andre", contact("dandre_w", "D'Andre")],
+      ["uncle joe", contact("unclejoe", "Uncle Joe")],
+      ["joe", contact("unclejoe", "Uncle Joe")],
+      ["Bob_Jones", contact("bob_jones")],
+      ["bobjones", contact("bob_jones")],
+    ]
+
+    for (const [hint, only] of answered) {
+      const { result } = await resolve(hint, [only])
+
+      expect([hint, result.kind === "answer" && result.payload]).toEqual([
+        hint,
+        expect.objectContaining({ username: only.username }),
+      ])
+    }
+  })
+
+  it("reads a name whole: never part of a word, or a word the alias does not hold", () => {
+    const uncleJoe = contact("unclejoe", "Uncle Joe")
+    expect(namesContact("jo", uncleJoe)).toBe(false)
+    expect(namesContact("uncle", uncleJoe)).toBe(true)
+    expect(namesContact("joe smith", uncleJoe)).toBe(false)
+    expect(namesContact("unclejoe", uncleJoe)).toBe(true)
+    expect(namesContact("kerry", contact("kerryann_b", "Kerry-Ann"))).toBe(false)
+    expect(namesContact("  ", contact("bob"))).toBe(false)
   })
 
   it("offers two or more matches as a picker, best first, each with its full username", async () => {

@@ -331,6 +331,7 @@ describe("the BTC wallet switched off (advance mode off)", () => {
         graphql: graphql as unknown as GraphqlRail,
         btcRail: rail.breezBtcRail,
         displayCurrency: "USD",
+        lnAddressHostname: "flashapp.me",
         now: () => NOW_MS,
       },
     )

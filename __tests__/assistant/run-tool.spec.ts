@@ -35,6 +35,7 @@ const setup = (registry = assistantRegistry) => {
     graphql: graphql as unknown as RunToolDeps["graphql"],
     btcRail,
     displayCurrency: "USD",
+    lnAddressHostname: "flashapp.me",
     now: () => clock,
     telemetry,
   }
@@ -356,8 +357,11 @@ describe("runTool with action tools (ENG-688)", () => {
       "btcRail",
       "displayCurrency",
       "graphql",
+      "lnAddressHostname",
       "now",
     ])
+    // The instance's Lightning-address host, which a history search reads.
+    expect(seen?.lnAddressHostname).toBe("flashapp.me")
     expect(Object.keys(seen?.btcRail ?? {}).sort()).toEqual([
       "getBalanceSats",
       "listPayments",

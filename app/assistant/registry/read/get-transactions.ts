@@ -1,7 +1,13 @@
+import { LNURL_DOMAINS } from "@app/config/appinfo"
 import { btcRailUnavailableState } from "@app/payments/btc-rail"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 import { isPlainObject } from "../../engine/schema-validator"
-import type { GraphqlRail, TransactionRow } from "../../rails/graphql-rail"
+import {
+  ContactRow,
+  GraphqlRail,
+  GraphqlRailError,
+  TransactionRow,
+} from "../../rails/graphql-rail"
 import { defineRead } from "../define"
 import {
   BtcRailState,
@@ -18,6 +24,19 @@ import type { BtcReadRail, ReadToolCtx, ToolResult } from "../types"
 // TX_PAGE_SIZE on GraphQL, then lists the BTC wallet's payments over the
 // same stretch of time, so neither rail's window is wider than the other's.
 // The answer always states the window, so a miss is never silent.
+//
+// A page past the first that cannot be read ends the search there, with
+// what was read: lnflash/flash refuses the next page's cursor (spec §5.1,
+// ENG-724), so wherever the list says it has a next page that read fails,
+// and offline the cache holds a later page only if the history screen
+// fetched it. The window then says how far the search reached. Only a
+// failed first page fails the answer.
+//
+// A query finds a payment by its memo, by its payee (a Flash username, or
+// a Lightning address on the BTC rail), or by a contact whose alias holds it
+// (rowMatcher), whose BTC payments name them by Lightning address
+// (flashUsername). A search that misses a payment it should find tells the
+// user they never paid that person, and they may pay twice.
 
 export const TX_PAGE_SIZE = 20
 export const TX_MAX_PAGES = 5
@@ -125,15 +144,128 @@ const btcTxRow = (payment: BtcPayment): TxRow => {
 const newestFirst = (a: TxRow, b: TxRow): number =>
   b.timestamp - a.timestamp || a.rail.localeCompare(b.rail) || a.id.localeCompare(b.id)
 
-const rowMatcher = ({ direction, query }: Args) => {
-  const needle = query?.trim().toLowerCase()
+/**
+ * A payee as a search compares it: lower case, letters and digits only. A
+ * Flash username holds no hyphen, apostrophe or space, so "Kerry-Ann",
+ * "D'Andre" and "uncle joe" must lose theirs to find kerryann_b, dandre_w
+ * and unclejoe.
+ */
+const asHandle = (text: string): string =>
+  text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "")
+
+/**
+ * A memo as a search compares it: lower case, letters, digits and single
+ * spaces. Its words keep their edges, so "mom" is not found in "from omar",
+ * while "kerry-ann" is found in "lunch for Kerry-Ann".
+ */
+const asText = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+
+/** The query as a search reads it: trimmed and lower case; "" for none. */
+const typedQuery = (query: string | undefined): string =>
+  query?.trim().toLowerCase() ?? ""
+
+/**
+ * A test for whether a field holds the query, as typed or as `fold`
+ * compares them, with the query folded once for the whole search.
+ */
+const finder = (typed: string, fold: (text: string) => string) => {
+  const needle = fold(typed)
+  return (field: string | null): boolean =>
+    field !== null &&
+    (field.toLowerCase().includes(typed) ||
+      (needle !== "" && fold(field).includes(needle)))
+}
+
+/**
+ * The hosts of Flash's own Lightning addresses, lower case: the app's
+ * LNURL domains and the instance's own host, which they may lack
+ * (test.flashapp.me on Test).
+ */
+const flashHosts = (lnAddressHostname: string): ReadonlySet<string> =>
+  new Set([...LNURL_DOMAINS, lnAddressHostname].map((host) => host.toLowerCase()))
+
+/**
+ * The Flash username a payee names, lower case, or null when it names none.
+ * The GraphQL rail names a Flash user by username. The BTC rail names one by
+ * Lightning address: a BTC-wallet send to a Flash user pays username@host
+ * over LNURL (sendPayment), and the SDK records that address as the payee
+ * (btcTxRow). An address at one of Flash's hosts names its handle; one at
+ * any other host is not a Flash user's, whatever its handle.
+ */
+const flashUsername = (
+  counterparty: string,
+  hosts: ReadonlySet<string>,
+): string | null => {
+  const payee = counterparty.toLowerCase()
+  if (!payee.includes("@")) return payee
+  const address = /^([^@]+)@([^@]+)$/.exec(payee)
+  return address !== null && hosts.has(address[2]) ? address[1] : null
+}
+
+/**
+ * Which rows a call asks for: its direction, and a query found in the
+ * memo, in the payee, or in the alias of the payee's contact
+ * (`contactUsernames`, contactsNamed), whose username a payee at one of
+ * `hosts` names too.
+ */
+const rowMatcher = (
+  { direction, query }: Args,
+  contactUsernames: ReadonlySet<string>,
+  hosts: ReadonlySet<string>,
+) => {
+  const typed = typedQuery(query)
+  const inMemo = finder(typed, asText)
+  const inPayee = finder(typed, asHandle)
+  const paysContact = (counterparty: string | null): boolean => {
+    if (counterparty === null) return false
+    const username = flashUsername(counterparty, hosts)
+    return username !== null && contactUsernames.has(username)
+  }
   return (row: TxRow): boolean => {
     if (direction && row.direction !== direction) return false
-    if (!needle) return true
-    return [row.memo, row.counterparty].some((field) =>
-      field?.toLowerCase().includes(needle),
-    )
+    if (!typed) return true
+    return inMemo(row.memo) || inPayee(row.counterparty) || paysContact(row.counterparty)
   }
+}
+
+/**
+ * The usernames of the contacts whose alias holds the query, as inPayee
+ * finds it in a username (as typed, or on letters and digits alone):
+ * "payments to mom" finds the payments to the contact the user calls Mom,
+ * whatever her username, and "kerry ann" those to Kerry-Ann. This reads a
+ * name more loosely than resolveContact does (namesContact), which a payee
+ * needs: in a search, a contact taken wrongly is a row the user sees, and a
+ * payment missed is one they are told they never made. A username needs no
+ * contact, since the payee holds it. A contact list the cache does not hold
+ * (offline, the rail's GraphqlRailError) names no one, and the memo and the
+ * payee are still searched. Any other failed read fails the search, as a
+ * failed first page does: online, an empty card would tell the user they
+ * never paid the contact they named.
+ */
+const contactsNamed = async (
+  graphql: GraphqlRail,
+  query: string | undefined,
+): Promise<ReadonlySet<string>> => {
+  const typed = typedQuery(query)
+  if (!typed) return new Set()
+  let contacts: readonly ContactRow[]
+  try {
+    contacts = await graphql.contacts()
+  } catch (err) {
+    if (err instanceof GraphqlRailError) return new Set()
+    throw err
+  }
+  const inAlias = finder(typed, asHandle)
+  return new Set(
+    contacts
+      .filter(({ alias }) => inAlias(alias ?? null))
+      .map(({ username }) => username.toLowerCase()),
+  )
 }
 
 const oldest = (rows: readonly TxRow[]): number =>
@@ -142,7 +274,11 @@ const oldest = (rows: readonly TxRow[]): number =>
 const oldestPayment = (payments: readonly BtcPayment[]): number =>
   payments.reduce((min, payment) => Math.min(min, Number(payment.timestamp)), Infinity)
 
-/** The GraphQL pages a search reads: up to TX_MAX_PAGES, stopping on enough matches. */
+/**
+ * The GraphQL pages a search reads: up to TX_MAX_PAGES, stopping on enough
+ * matches, or at a page past the first that cannot be read (the note at
+ * the top). `exhausted` only when the list said it had no more.
+ */
 const readGraphql = async (
   graphql: GraphqlRail,
   { want, matches }: { want: number; matches: (row: TxRow) => boolean },
@@ -150,7 +286,13 @@ const readGraphql = async (
   const rows: TxRow[] = []
   let after: string | undefined
   for (let page = 0; page < TX_MAX_PAGES; page += 1) {
-    const result = await graphql.transactions({ first: TX_PAGE_SIZE, after })
+    let result: Awaited<ReturnType<GraphqlRail["transactions"]>>
+    try {
+      result = await graphql.transactions({ first: TX_PAGE_SIZE, after })
+    } catch (err) {
+      if (page === 0) throw err
+      break
+    }
     rows.push(...result.rows.map(graphqlTxRow))
     if (!result.hasNextPage || !result.endCursor) return { rows, exhausted: true }
     after = result.endCursor
@@ -198,7 +340,11 @@ const run = async (
   const want = args.first ?? TX_DEFAULT_RESULTS
   // The schema caps `first` at 20; it cannot say "at least 1".
   if (want < 1) return { kind: "error", userMessage: "Assistant.invalidArguments" }
-  const matches = rowMatcher(args)
+  const matches = rowMatcher(
+    args,
+    await contactsNamed(ctx.graphql, args.query),
+    flashHosts(ctx.lnAddressHostname),
+  )
 
   const graphql = await readGraphql(ctx.graphql, { want, matches })
   // Every GraphQL payment newer than this was read; undefined when all were.
@@ -235,13 +381,13 @@ const run = async (
 export const getTransactions = defineRead({
   intent: "getTransactions",
   description:
-    "List the user's recent payments, newest first, optionally only sends or receives, or those whose memo or payee matches a query.",
+    "List the user's recent payments, newest first, optionally only sends or receives, or those whose memo, payee or contact name matches a query.",
   input: {
     type: "object",
     properties: {
       first: { type: "integer", maximum: TX_PAGE_SIZE },
       direction: { enum: ["SEND", "RECEIVE"] }, // TxDirection
-      // A memo or payee search, 1 to 80 characters (the subset has no maxLength).
+      // What to search for, 1 to 80 characters (the subset has no maxLength).
       query: { type: "string", pattern: "^[\\s\\S]{1,80}$" },
     },
     additionalProperties: false,

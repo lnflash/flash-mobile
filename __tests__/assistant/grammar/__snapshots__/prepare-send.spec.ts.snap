@@ -1,0 +1,83 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the grammar on prepareSend, over the tuning corpus resolves the corpus as the snapshot records 1`] = `
+"en/USD "send $10 to alice" -> prepareSend {"amount":"10","currency":"USD","payee":"alice"}
+en/USD "send alice $10" -> prepareSend {"amount":"10","currency":"USD","payee":"alice"}
+en/USD "pay alice $10" -> prepareSend {"amount":"10","currency":"USD","payee":"alice"}
+en/USD "Pay Kemar $3.25" -> prepareSend {"amount":"3.25","currency":"USD","payee":"kemar"}
+en/USD "send 20 to tanya" -> prepareSend {"amount":"20","payee":"tanya"}
+en/USD "send tanya 20" -> prepareSend {"amount":"20","payee":"tanya"}
+en/USD "give mom $50" -> prepareSend {"amount":"50","currency":"USD","payee":"mom"}
+en/USD "give $50 to mom" -> prepareSend {"amount":"50","currency":"USD","payee":"mom"}
+en/USD "transfer 15 dollars to dad" -> prepareSend {"amount":"15","currency":"USD","payee":"dad"}
+en/USD "transfer dad 15 dollars" -> prepareSend {"amount":"15","currency":"USD","payee":"dad"}
+en/USD "send 2 bucks to jason" -> prepareSend {"amount":"2","currency":"USD","payee":"jason"}
+en/USD "pay jason 7 usd" -> prepareSend {"amount":"7","currency":"USD","payee":"jason"}
+en/USD "send $0.50 to bob" -> prepareSend {"amount":"0.50","currency":"USD","payee":"bob"}
+en/USD "send bob $.50" -> prepareSend {"amount":"0.50","currency":"USD","payee":"bob"}
+en/USD "send 500 sats to alice" -> prepareSend {"amount":"0.00000500","currency":"BTC","payee":"alice"}
+en/USD "send alice 21000 sats" -> prepareSend {"amount":"0.00021000","currency":"BTC","payee":"alice"}
+en/USD "send 0.001 bitcoin to dad" -> prepareSend {"amount":"0.001","currency":"BTC","payee":"dad"}
+en/USD "send kemar 10 usdt" -> prepareSend {"amount":"10","currency":"USDT","payee":"kemar"}
+en/USD "send $5 to alice smith" -> prepareSend {"amount":"5","currency":"USD","payee":"alice smith"}
+en/USD "send $5 to Uncle Joe" -> prepareSend {"amount":"5","currency":"USD","payee":"uncle joe"}
+en/USD "send my sister $20" -> prepareSend {"amount":"20","currency":"USD","payee":"sister"}
+en/USD "send $20 to my sister" -> prepareSend {"amount":"20","currency":"USD","payee":"sister"}
+en/USD "please send $4 to bob" -> prepareSend {"amount":"4","currency":"USD","payee":"bob"}
+en/USD "could you pay tanya $6" -> prepareSend {"amount":"6","currency":"USD","payee":"tanya"}
+en/USD "i want to pay alice $30" -> prepareSend {"amount":"30","currency":"USD","payee":"alice"}
+en/USD "i'd like to send $8 to mom" -> prepareSend {"amount":"8","currency":"USD","payee":"mom"}
+en/USD "i need to send $100 to kemar" -> prepareSend {"amount":"100","currency":"USD","payee":"kemar"}
+en/USD "let me send $2 to bob" -> prepareSend {"amount":"2","currency":"USD","payee":"bob"}
+en/USD "send $12 to dad please" -> prepareSend {"amount":"12","currency":"USD","payee":"dad"}
+en/USD "send $1,250.75 to the landlord" -> prepareSend {"amount":"1250.75","currency":"USD","payee":"landlord"}
+en/USD "Send $6 to Bob." -> prepareSend {"amount":"6","currency":"USD","payee":"bob"}
+en/USD "send to bob $5" -> prepareSend {"amount":"5","currency":"USD","payee":"bob"}
+en/USD "send $3 to bob123" -> prepareSend {"amount":"3","currency":"USD","payee":"bob123"}
+en/USD "send $3 to bob_jones" -> prepareSend {"amount":"3","currency":"USD","payee":"bob_jones"}
+en/USD "send $15 to tanya for dinner" -> prepareSend {"amount":"15","currency":"USD","memo":"dinner","payee":"tanya"}
+en/USD "pay mom $60 for groceries" -> prepareSend {"amount":"60","currency":"USD","memo":"groceries","payee":"mom"}
+en/USD "send kemar $9 for the taxi" -> prepareSend {"amount":"9","currency":"USD","memo":"the taxi","payee":"kemar"}
+en/USD "send alice $5 from bitcoin wallet" -> prepareSend {"amount":"5","currency":"USD","payee":"alice","sourceWallet":"BTC"}
+en/USD "pay bob 2000 sats from my btc wallet" -> prepareSend {"amount":"0.00002000","currency":"BTC","payee":"bob","sourceWallet":"BTC"}
+en/USD "send $5 to bob from my cash wallet" -> prepareSend {"amount":"5","currency":"USD","payee":"bob"}
+en/JMD "send 1000 to alice" -> prepareSend {"amount":"1000","payee":"alice"}
+en/JMD "send alice 1000" -> prepareSend {"amount":"1000","payee":"alice"}
+en/JMD "pay kemar 750" -> prepareSend {"amount":"750","payee":"kemar"}
+en/JMD "send J$2500 to dad" -> prepareSend {"amount":"2500","payee":"dad"}
+en/JMD "send dad j$2500" -> prepareSend {"amount":"2500","payee":"dad"}
+en/JMD "send 3000 jmd to mom" -> prepareSend {"amount":"3000","payee":"mom"}
+en/JMD "send mom jmd 3000" -> prepareSend {"amount":"3000","payee":"mom"}
+en/JMD "send 5 usd to tanya" -> prepareSend {"amount":"5","currency":"USD","payee":"tanya"}
+en/JMD "send tanya us$5" -> prepareSend {"amount":"5","currency":"USD","payee":"tanya"}
+en/JMD "transfer 2,000 to bob" -> prepareSend {"amount":"2000","payee":"bob"}
+en/JMD "give jason 400" -> prepareSend {"amount":"400","payee":"jason"}
+en/JMD "send 10000 sats to alice" -> prepareSend {"amount":"0.00010000","currency":"BTC","payee":"alice"}
+jm/JMD "sen 1500 to alice" -> prepareSend {"amount":"1500","payee":"alice"}
+jm/JMD "sen alice 1500" -> prepareSend {"amount":"1500","payee":"alice"}
+jm/JMD "sen 600 fi tanya" -> prepareSend {"amount":"600","payee":"tanya"}
+jm/JMD "sen tanya 600" -> prepareSend {"amount":"600","payee":"tanya"}
+jm/JMD "gi kemar 1000" -> prepareSend {"amount":"1000","payee":"kemar"}
+jm/JMD "gi 1000 to kemar" -> prepareSend {"amount":"1000","payee":"kemar"}
+jm/JMD "pay jason 2000" -> prepareSend {"amount":"2000","payee":"jason"}
+jm/JMD "mi wan sen 500 fi mom" -> prepareSend {"amount":"500","payee":"mom"}
+jm/JMD "mi waan sen 500 to mom" -> prepareSend {"amount":"500","payee":"mom"}
+jm/JMD "mek mi sen 1000 to bob" -> prepareSend {"amount":"1000","payee":"bob"}
+jm/JMD "mek mi pay alice 800" -> prepareSend {"amount":"800","payee":"alice"}
+jm/JMD "sen mi bredda 1200" -> prepareSend {"amount":"1200","payee":"bredda"}
+jm/JMD "sen 1200 to mi bredda" -> prepareSend {"amount":"1200","payee":"bredda"}
+jm/JMD "sen mi sista 900" -> prepareSend {"amount":"900","payee":"sista"}
+jm/JMD "sen J$1000 to dad" -> prepareSend {"amount":"1000","payee":"dad"}
+jm/JMD "sen 2500 jmd to kemar" -> prepareSend {"amount":"2500","payee":"kemar"}
+jm/JMD "sen bob 5000 sats" -> prepareSend {"amount":"0.00005000","currency":"BTC","payee":"bob"}
+jm/JMD "sen 10 usd to tanya" -> prepareSend {"amount":"10","currency":"USD","payee":"tanya"}
+jm/JMD "yuh can sen 500 to bob" -> prepareSend {"amount":"500","payee":"bob"}
+jm/JMD "sen 500 to Kerry-Ann" -> prepareSend {"amount":"500","payee":"kerry-ann"}
+jm/JMD "gi D'Andre 1000" -> prepareSend {"amount":"1000","payee":"d'andre"}
+en/USD "send $5 to bill" -> prepareSend {"amount":"5","currency":"USD","payee":"bill"}
+en/USD "send $5 to bob, please" -> prepareSend {"amount":"5","currency":"USD","payee":"bob"}
+en/JMD "send 1000 to wayne" -> prepareSend {"amount":"1000","payee":"wayne"}
+en/USD "pay Andrea $8" -> prepareSend {"amount":"8","currency":"USD","payee":"andrea"}
+en/USD "send 12 dollars to Bill Jones" -> prepareSend {"amount":"12","currency":"USD","payee":"bill jones"}
+jm/JMD "pay di barber 1500" -> prepareSend {"amount":"1500","payee":"barber"}"
+`;

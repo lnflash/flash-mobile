@@ -51,8 +51,19 @@ export type BtcBalanceEntry =
 
 export type BalancesPayload = { balances: (CashBalance | BtcBalanceEntry)[] }
 
+/**
+ * A cash balance without its wallet id. Distributive, so each state keeps
+ * its own fields (`balance` when ok, `replyKey` when unavailable) for the
+ * thread that draws them (ENG-689).
+ */
+export type CashBalanceProjection = CashBalance extends infer Entry
+  ? Entry extends CashBalance
+    ? Omit<Entry, "walletId">
+    : never
+  : never
+
 export type BalancesProjection = {
-  balances: (Omit<CashBalance, "walletId"> | BtcBalanceEntry)[]
+  balances: (CashBalanceProjection | BtcBalanceEntry)[]
 }
 
 export const projectBalances = (payload: BalancesPayload): BalancesProjection => ({

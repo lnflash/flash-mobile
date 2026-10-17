@@ -31,7 +31,13 @@ import {
 //
 // Every read uses an existing generated document and asks the network, not
 // the cache: a balance, a price or a limit the assistant reports has to be
-// the server's current answer.
+// the server's current answer. The one exception is the thread offline
+// (ENG-689, spec §7.2): it reads balances and history through a copy of
+// the rail made with `fetchPolicy: "cache-only"`, and labels what that copy
+// answers as stale. What the cache does not hold is a failed read there,
+// never an empty answer. That copy reads the transaction list where the
+// app's screens put it in the cache (CACHED_TRANSACTION_PAGES), joining
+// two copies where they overlap.
 
 export type WalletRow = NonNullable<
   WalletOverviewScreenQuery["me"]
@@ -98,21 +104,136 @@ const signedInUser = <T>(me: T | null | undefined): T => {
 }
 
 /**
+ * Where a rail's reads come from: the network (the default, and the only
+ * source a tool that prepares a payment ever reads), or the cache alone,
+ * for the thread's reads while it is offline (ENG-689).
+ */
+export type GraphqlRailFetchPolicy = "network-only" | "cache-only"
+
+export type GraphqlRailOptions = { fetchPolicy?: GraphqlRailFetchPolicy }
+
+/**
+ * An answer the cache could not give in full: Apollo hands a cache-only
+ * read it does not hold back as partial, with no data, rather than failing.
+ */
+const missedCache = (result: { data?: unknown; partial?: boolean }): boolean =>
+  result.partial === true || result.data === undefined || result.data === null
+
+/**
+ * Where the app's screens put the account's transaction list in the cache,
+ * by the variables they ask with. The account's `transactions` field has
+ * no keyArgs policy (app/graphql/cache.ts), so the cache keeps each set of
+ * arguments apart, and a cache-only read finds only a list asked for with
+ * the very same ones:
+ *
+ * - the history screen's first page: USDTransactionHistory asks with no
+ *   variables at all;
+ * - the home screen's three rows: homeAuthed asks for `first: 3`
+ *   (app/graphql/front-end-queries.ts);
+ * - and the assistant's own page, as an online read of it left it.
+ *
+ * A page after the first is cached only where the history screen's
+ * fetchMore put it, under `after` alone, or where an online read of this
+ * rail did.
+ *
+ * Each is the start of the account's list as it stood when it was read, so
+ * a newer copy whose oldest row is in an older one continues into it: home
+ * refreshed after a payment holds that payment and two rows the history
+ * screen's twenty hold too. The two are then one list (cachedPage).
+ */
+export const CACHED_TRANSACTION_PAGES: Readonly<
+  Record<"historyScreen" | "homeScreen", TransactionListForDefaultAccountQueryVariables>
+> = {
+  historyScreen: {},
+  homeScreen: { first: 3 },
+}
+
+/** The newest row's time in a page, or -Infinity for an empty one. */
+const newestOf = ({ rows }: TransactionPage): number =>
+  Math.max(-Infinity, ...rows.map(({ createdAt }) => createdAt))
+
+/**
+ * `page` continued by `older`, when `older` holds `page`'s oldest row: the
+ * rows of both, by id, newest first, and `older`'s page info, since it
+ * reaches further back. When it does not, there may be payments between
+ * the two that neither holds, so `page` stands alone and the window never
+ * spans that gap.
+ */
+const continuedBy = (page: TransactionPage, older: TransactionPage): TransactionPage => {
+  const last = page.rows[page.rows.length - 1]
+  if (!last || !older.rows.some(({ id }) => id === last.id)) return page
+  const ids = new Set(page.rows.map(({ id }) => id))
+  return {
+    rows: [...page.rows, ...older.rows.filter(({ id }) => !ids.has(id))].sort(
+      (a, b) => b.createdAt - a.createdAt,
+    ),
+    hasNextPage: older.hasNextPage,
+    endCursor: older.endCursor,
+  }
+}
+
+/**
  * The rail over the app's Apollo client. The client is built inside a React
  * effect (app/graphql/client.tsx), so there is no static one to import: the
  * caller passes it in.
  */
-export const createGraphqlRail = (client: ApolloClient<unknown>): GraphqlRail => {
+export const createGraphqlRail = (
+  client: ApolloClient<unknown>,
+  { fetchPolicy = "network-only" }: GraphqlRailOptions = {},
+): GraphqlRail => {
   const read = async <TData, TVariables extends OperationVariables = OperationVariables>(
     query: DocumentNode,
     variables?: TVariables,
   ): Promise<TData> => {
-    const { data } = await client.query<TData, TVariables>({
+    const result = await client.query<TData, TVariables>({
       query,
       variables,
-      fetchPolicy: "network-only",
+      fetchPolicy,
     })
-    return data
+    if (missedCache(result)) throw new GraphqlRailError("No answer in the cache")
+    return result.data
+  }
+
+  /** One page of the account's transactions, from the network or the cache. */
+  const readTransactions = async (
+    variables: TransactionListForDefaultAccountQueryVariables,
+  ): Promise<TransactionPage> => {
+    const data = await read<
+      TransactionListForDefaultAccountQuery,
+      TransactionListForDefaultAccountQueryVariables
+    >(TransactionListForDefaultAccountDocument, variables)
+    const connection = signedInUser(data.me).defaultAccount.transactions
+    return {
+      rows: (connection?.edges ?? []).map((edge) => edge.node),
+      hasNextPage: connection?.pageInfo.hasNextPage ?? false,
+      endCursor: connection?.pageInfo.endCursor ?? null,
+    }
+  }
+
+  /**
+   * Of these lists, the cache's latest copy: of those it holds whole, the
+   * one with the newest row, and of two as new, the longer (a list read
+   * later holds every row since; one with no newer row is as fresh). Each
+   * older copy that holds the latest one's oldest row continues it
+   * (continuedBy). A list it does not hold is a failed read; when it holds
+   * none, so is this.
+   */
+  const cachedPage = async (
+    candidates: readonly TransactionListForDefaultAccountQueryVariables[],
+  ): Promise<TransactionPage> => {
+    const held: TransactionPage[] = []
+    for (const variables of candidates) {
+      try {
+        held.push(await readTransactions(variables))
+      } catch (err) {
+        if (!(err instanceof GraphqlRailError)) throw err
+      }
+    }
+    const [latest, ...older] = [...held].sort(
+      (a, b) => newestOf(b) - newestOf(a) || b.rows.length - a.rows.length,
+    )
+    if (!latest) throw new GraphqlRailError("No answer in the cache")
+    return older.reduce(continuedBy, latest)
   }
 
   return {
@@ -122,16 +243,20 @@ export const createGraphqlRail = (client: ApolloClient<unknown>): GraphqlRail =>
     },
 
     transactions: async ({ first, after }) => {
-      const data = await read<
-        TransactionListForDefaultAccountQuery,
-        TransactionListForDefaultAccountQueryVariables
-      >(TransactionListForDefaultAccountDocument, { first, after })
-      const connection = signedInUser(data.me).defaultAccount.transactions
-      return {
-        rows: (connection?.edges ?? []).map((edge) => edge.node),
-        hasNextPage: connection?.pageInfo.hasNextPage ?? false,
-        endCursor: connection?.pageInfo.endCursor ?? null,
+      // From the network, the page asked for. From the cache, the latest
+      // copy of it the screens left there, with any older copy it runs
+      // into (CACHED_TRANSACTION_PAGES). A page the cache does not hold is
+      // a failed read: the search ends at the page before it
+      // (getTransactions).
+      if (fetchPolicy === "network-only") return readTransactions({ first, after })
+      if (after === undefined) {
+        return cachedPage([
+          CACHED_TRANSACTION_PAGES.historyScreen,
+          CACHED_TRANSACTION_PAGES.homeScreen,
+          { first },
+        ])
       }
+      return cachedPage([{ after }, { first, after }])
     },
 
     transactionDetails: async (transactionId) => {
@@ -154,17 +279,20 @@ export const createGraphqlRail = (client: ApolloClient<unknown>): GraphqlRail =>
     accountDefaultWallet: async (username) => {
       // As the send screens' lazy query does: a username with no account is
       // a GraphQL error and means "no wallet", not a failed read. Network
-      // failures still reject.
-      const { data } = await client.query<
+      // failures still reject, and so does a cache that does not hold it.
+      const result = await client.query<
         AccountDefaultWalletQuery,
         AccountDefaultWalletQueryVariables
       >({
         query: AccountDefaultWalletDocument,
         variables: { username },
-        fetchPolicy: "network-only",
+        fetchPolicy,
         errorPolicy: "all",
       })
-      return data?.accountDefaultWallet ?? null
+      if (fetchPolicy === "cache-only" && missedCache(result)) {
+        throw new GraphqlRailError("No answer in the cache")
+      }
+      return result.data?.accountDefaultWallet ?? null
     },
 
     realtimePrice: async (currency) => {

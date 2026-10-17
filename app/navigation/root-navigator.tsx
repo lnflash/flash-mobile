@@ -28,6 +28,9 @@ import { GetStartedScreen } from "../screens/get-started-screen"
 import { HomeScreen } from "../screens/home-screen"
 import { MapScreen } from "../screens/map-screen/map-screen"
 import { PriceHistoryScreen } from "../screens/price/price-history-screen"
+// The one import the app makes from app/assistant (ENG-689): the module
+// boundary spec allows this file this specifier, and nothing else.
+import { AskFlashScreen } from "@app/assistant/ui"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -476,6 +479,14 @@ export const RootStack = () => {
         options={{
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
           title: LL.common.bitcoinPrice(),
+        }}
+      />
+      <RootNavigator.Screen
+        name="askFlash"
+        component={AskFlashScreen}
+        options={{
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+          title: LL.AskFlash.title(),
         }}
       />
       <RootNavigator.Screen

@@ -98,6 +98,9 @@ export type RootStackParamList = {
   lnurl: { username: string }
   sectionCompleted: { amount: number; sectionTitle: string }
   priceHistory: undefined
+  // The assistant's thread (ENG-689): registered always, opened from the
+  // home screen only while assistantEnabled is on.
+  askFlash: undefined
   receiveBitcoin: undefined
   flashcardTopup: { flashcardLnurl: string }
   redeemBitcoinDetail: {

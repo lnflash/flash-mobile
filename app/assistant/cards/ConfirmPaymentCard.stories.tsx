@@ -69,3 +69,20 @@ export const UnknownOutcome = () => (
     })}
   />
 )
+
+// A Confirm blocked by a day-old dispatch the transaction list could not
+// settle (spec §5.1, the 24-hour history check): the card says to check the
+// history and offers "I checked my history", whose tap sends.
+export const HistoryCheckable = () => (
+  <ConfirmPaymentCard
+    payload={confirmPaymentFixture}
+    actions={storyActions({
+      result: (actionId) => ({
+        kind: "pendingDispatch",
+        actionId,
+        replyKey: "Assistant.checkHistory",
+        historyCheckable: true,
+      }),
+    })}
+  />
+)

@@ -30,16 +30,20 @@ on:
       - "app/components/amount-input-screen/**"
       - "app/components/currency-keyboard/**"
       - "app/utils/testProps.ts"
+      # The Ask Flash flows (ENG-689): the home screen's button, and the
+      # dev link and flag provider that turn the assistant on for them.
+      - "app/components/home-screen/Buttons.tsx"
+      - "app/config/assistant-dev-override.ts"
+      - "app/config/feature-flags-context.tsx"
       # The dev-link wiring (useDevCardLinks mount, the linking guard) and the
       # sign-in path (logo taps, developer screen token field).
       - "app/navigation/**"
       - "app/screens/developer-screen/**"
       - "app/screens/get-started-screen/**"
-      # The send seam (ENG-686) and the assistant that will call it (ENG-684).
-      # No flow sends a payment yet, so for a change there the suite is a
-      # smoke test: the app builds, starts, signs in on Test, and the card
-      # flows pass. A send golden path needs a funded Test account first
-      # (ENG-710, ENG-689).
+      # The send seam (ENG-686) and the assistant that calls it (ENG-684).
+      # The Ask Flash flows run with the card flows (ENG-689): "check
+      # balance" does; the send golden path is tagged `funded` and skipped
+      # until a funded Test sender exists (ENG-710's blocker record).
       - "app/payments/**"
       - "app/assistant/**"
       - ".maestro/**"
@@ -313,7 +317,7 @@ jobs:
       # The XCTest driver Maestro installs can take minutes to come up on a
       # hosted runner; its default startup timeout ended one run before any
       # flow started.
-      - name: Run the Flashcard flows
+      - name: Run the Flashcard and Ask Flash flows
         timeout-minutes: 60
         env:
           MAESTRO_DRIVER_STARTUP_TIMEOUT: "300000"
@@ -335,24 +339,36 @@ jobs:
           # Maestro's XCTest driver sometimes never comes up on the hosted Mac
           # ("iOS driver not ready in time" after the full 5 min, before any
           # flow runs). That is the runner, not the app: start again once.
+          # $1 is the log, $2 the JUnit report, the rest what to run.
           run_flows() {
+            log="$1"
+            report="$2"
+            shift 2
             maestro test \
-              --format junit --output .e2e/maestro-junit.xml \
+              --format junit --output "$report" \
               --env BRIDGE_URL="$BRIDGE_URL" \
               --env MINT_URL="$MINT_URL" \
               --env FIXTURES_URL="$FIXTURES_URL" \
               --env E2E_TOKEN="$E2E_TOKEN" \
-              .maestro/flashcard/ 2>&1 | tee "$1"
+              "$@" 2>&1 | tee "$log"
           }
           set +e -o pipefail
-          run_flows .e2e/maestro-1.log
+          run_flows .e2e/maestro-1.log .e2e/maestro-junit.xml .maestro/flashcard/
           status=$?
           if [ $status -ne 0 ] && grep -q "iOS driver not ready in time" .e2e/maestro-1.log; then
             echo "::warning::Maestro's iOS driver did not start; restarting it once"
             xcrun simctl terminate booted dev.mobile.maestro-driver-iosUITests.xctrunner > /dev/null 2>&1 || true
-            run_flows .e2e/maestro-2.log
+            run_flows .e2e/maestro-2.log .e2e/maestro-junit.xml .maestro/flashcard/
             status=$?
           fi
+          # Ask Flash (ENG-689), on the same simulator and sign-in, whatever
+          # the card flows did. The send golden path is tagged `funded`: it
+          # needs a funded Test sender, which does not exist yet (ENG-710's
+          # blocker record), so it is skipped and "check balance" runs.
+          run_flows .e2e/maestro-assistant.log .e2e/maestro-assistant-junit.xml \
+            --exclude-tags funded .maestro/assistant/
+          assistant=$?
+          if [ $status -eq 0 ]; then status=$assistant; fi
           exit $status
 
       - name: Stop the log stream and the sampler
@@ -375,12 +391,12 @@ jobs:
           [ -n "$E2E_TOKEN" ] || exit 0
           # Any Kratos session token, not just this one: a token typed with a
           # character dropped is still most of the real one.
-          for f in .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log; do
+          for f in .e2e/*.log .e2e/maestro-junit.xml .e2e/maestro-assistant-junit.xml build/xcodebuild-e2e.log; do
             if [ -f "$f" ]; then
               perl -pi -e 's/\Q$ENV{E2E_TOKEN}\E/***/g; s/ory_st_[A-Za-z0-9]+/ory_st_***/g' "$f"
             fi
           done
-          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml build/xcodebuild-e2e.log 2>/dev/null; then
+          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml .e2e/maestro-assistant-junit.xml build/xcodebuild-e2e.log 2>/dev/null; then
             echo "::error::The session token is still in the results"
             exit 1
           fi
@@ -393,6 +409,7 @@ jobs:
           path: |
             .e2e/*.log
             .e2e/maestro-junit.xml
+            .e2e/maestro-assistant-junit.xml
             .e2e/samples/*.txt
             ~/.maestro/tests/**/*.png
           # .e2e is a dot directory: without this the logs and the JUnit

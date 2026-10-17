@@ -1,6 +1,6 @@
 import React from "react"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
-import { TouchableOpacity, View } from "react-native"
+import { StyleProp, TouchableOpacity, View, ViewStyle } from "react-native"
 
 // assets
 import ArrowUp from "@app/assets/icons/arrow-up.svg"
@@ -12,6 +12,7 @@ import CardRemove from "@app/assets/icons/card-remove.svg"
 import Dollar from "@app/assets/icons/dollar-new.svg"
 import ArrowUpDown from "@app/assets/icons/arrow-up-down.svg"
 import LockOpen from "@app/assets/icons/lock-open.svg"
+import AskFlash from "@app/assets/icons-redesign/ask-flash.svg"
 
 const icons = {
   up: ArrowUp,
@@ -23,6 +24,8 @@ const icons = {
   dollar: Dollar,
   upDown: ArrowUpDown,
   lockOpen: LockOpen,
+  // Ask Flash (ENG-689): an existing glyph, the bolt, until design picks one.
+  askFlash: AskFlash,
 }
 
 type IconNamesType = keyof typeof icons
@@ -34,15 +37,24 @@ type Props = {
   onPress: () => void
   /** A plain testID on the button, for e2e flows; the label stays what a screen reader says. */
   testID?: string
+  /** Over the button's own spacing, for a row that has to fit more of them. */
+  style?: StyleProp<ViewStyle>
 }
 
-const IconBtn: React.FC<Props> = ({ type = "solid", icon, label, onPress, testID }) => {
+const IconBtn: React.FC<Props> = ({
+  type = "solid",
+  icon,
+  label,
+  onPress,
+  testID,
+  style,
+}) => {
   const { colors } = useTheme().theme
   const styles = useStyles()
   const Icon = icons[icon]
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <TouchableOpacity
         style={[styles.base, styles[type]]}
         onPress={onPress}

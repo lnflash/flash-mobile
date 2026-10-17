@@ -1,0 +1,62 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the grammar on getBalances, over the tuning corpus resolves the corpus as the snapshot records 1`] = `
+"en/USD "my balance" -> getBalances {}
+en/JMD "balances" -> getBalances {}
+en/USD "what is my current balance" -> getBalances {}
+en/JMD "whats the balance?" -> getBalances {}
+en/USD "What's my balance today?" -> getBalances {}
+en/JMD "show my balance" -> getBalances {}
+en/USD "check balance" -> getBalances {}
+en/JMD "check my balances" -> getBalances {}
+en/USD "show me my balances" -> getBalances {}
+en/JMD "what are my balances" -> getBalances {}
+en/USD "how much money have i got" -> getBalances {}
+en/JMD "how much money do i have left" -> getBalances {}
+en/USD "how much do i have left" -> getBalances {}
+en/JMD "how much have i got left" -> getBalances {}
+en/USD "how much is in my wallet" -> getBalances {}
+en/JMD "how much money is in my account" -> getBalances {}
+en/USD "whats in my account" -> getBalances {}
+en/JMD "what's in my account?" -> getBalances {}
+en/USD "what do i have in my wallet" -> getBalances {}
+en/JMD "wallet balance" -> getBalances {}
+en/USD "my account balance" -> getBalances {}
+en/JMD "my wallet balance please" -> getBalances {}
+en/USD "please show my balance" -> getBalances {}
+en/JMD "could you tell me my balance" -> getBalances {}
+en/USD "can i see my balance" -> getBalances {}
+en/JMD "i want to see my balance" -> getBalances {}
+en/USD "i want to check my balance" -> getBalances {}
+en/JMD "let me see my balance" -> getBalances {}
+en/USD "give me my balance" -> getBalances {}
+en/JMD "bal" -> getBalances {}
+en/USD "what's my cash balance" -> getBalances {}
+en/JMD "what is my btc balance" -> getBalances {}
+en/USD "bitcoin balance" -> getBalances {}
+en/JMD "how much bitcoin do i have" -> getBalances {}
+en/USD "how many sats do i have" -> getBalances {}
+en/JMD "how much cash have i got" -> getBalances {}
+en/USD "How much money do I have now?" -> getBalances {}
+en/JMD "how much i have" -> getBalances {}
+en/USD "hey whats my balance" -> getBalances {}
+en/JMD "hi, what's my balance please" -> getBalances {}
+en/USD "funds" -> getBalances {}
+en/JMD "how much money i have" -> getBalances {}
+jm/JMD "wah mi balance deh" -> getBalances {}
+jm/JMD "wah mi have inna mi account" -> getBalances {}
+jm/JMD "how much mi have" -> getBalances {}
+jm/JMD "how much money mi have lef" -> getBalances {}
+jm/JMD "check mi account balance" -> getBalances {}
+jm/JMD "mi account balance" -> getBalances {}
+jm/JMD "show mi mi balance deh" -> getBalances {}
+jm/JMD "tell mi mi balance" -> getBalances {}
+jm/JMD "how much mi have inna mi wallet" -> getBalances {}
+jm/JMD "how much money deh inna mi account" -> getBalances {}
+jm/JMD "wah di balance" -> getBalances {}
+jm/JMD "mi waan see mi balance" -> getBalances {}
+jm/JMD "mi wan check mi balance" -> getBalances {}
+jm/JMD "how much bitcoin mi have" -> getBalances {}
+jm/JMD "how much cash mi have" -> getBalances {}
+jm/JMD "wah mi balance seh" -> getBalances {}"
+`;

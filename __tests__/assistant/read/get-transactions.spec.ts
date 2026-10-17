@@ -1,3 +1,8 @@
+import { ApolloError } from "@apollo/client"
+import { GraphQLError } from "graphql"
+import { runTool } from "@app/assistant/engine/run-tool"
+import { matchGrammar } from "@app/assistant/grammar"
+import { assistantRegistry } from "@app/assistant/registry"
 import {
   BTC_PAYMENTS_LIMIT,
   getTransactions,
@@ -5,10 +10,23 @@ import {
   TX_PAGE_SIZE,
 } from "@app/assistant/registry/read/get-transactions"
 import type { TransactionsPayload } from "@app/assistant/registry/projections"
-import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
+import {
+  ContactRow,
+  GraphqlRailError,
+  TransactionRow,
+} from "@app/assistant/rails/graphql-rail"
 import { BreezSdkNotInitializedError } from "@app/utils/breez-sdk/sdk-errors"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
-import { btcPayment, BtcPayment, fakeCtx, graphqlTx, page } from "../fakes"
+import {
+  btcPayment,
+  BtcPayment,
+  fakeCtx,
+  flashTransactions,
+  FLASH_CURSOR_REFUSED,
+  graphqlTx,
+  page,
+  recordingTelemetry,
+} from "../fakes"
 
 /** GraphQL pages served by cursor, newest first; "cursor-N" is page N. */
 const serve = (pages: TransactionRow[][]) => {
@@ -44,6 +62,43 @@ const answer = async (
 const enableBtc = (setup: ReturnType<typeof fakeCtx>, payments: BtcPayment[]) => {
   setup.btcRail.listPayments.mockResolvedValue(payments)
 }
+
+/** An intraledger send to a Flash user, as the API names them: by username. */
+const sentTo = ({
+  id,
+  createdAt,
+  username,
+  memo,
+}: {
+  id: string
+  createdAt: number
+  username: string
+  memo?: string
+}) =>
+  graphqlTx({
+    id,
+    createdAt,
+    memo: memo ?? null,
+    initiationVia: {
+      __typename: "InitiationViaIntraLedger",
+      counterPartyWalletId: `${username}-wallet`,
+      counterPartyUsername: username,
+    },
+    settlementVia: {
+      __typename: "SettlementViaIntraLedger",
+      counterPartyWalletId: `${username}-wallet`,
+      counterPartyUsername: username,
+    },
+  })
+
+const contact = (username: string, alias: string | null = null): ContactRow =>
+  ({
+    __typename: "UserContact",
+    id: username,
+    username,
+    alias,
+    transactionsCount: 1,
+  } as ContactRow)
 
 describe("getTransactions", () => {
   describe("paging", () => {
@@ -95,6 +150,52 @@ describe("getTransactions", () => {
       expect(setup.graphql.transactions).toHaveBeenCalledTimes(1)
       expect(payload.transactions).toHaveLength(10)
       expect(payload.transactions[0].id).toBe("p0-10000")
+    })
+
+    it("answers with the first page and its window when lnflash/flash refuses the next page", async () => {
+      // An account whose list runs past one page (spec §5.1): flash serves
+      // page one with hasNextPage and refuses the cursor for page two. A
+      // filtered ask ("what did I receive") wants more matches than page
+      // one holds, so it asks for page two, and must still answer.
+      const setup = fakeCtx()
+      const [first, second] = pagesOf(2)
+      const received = graphqlTx({
+        id: "in-1",
+        createdAt: first[5].createdAt,
+        direction: "RECEIVE",
+      })
+      first[5] = received
+      setup.graphql.transactions.mockImplementation(flashTransactions([first, second]))
+      enableBtc(setup, [])
+
+      const payload = await answer(setup, { direction: "RECEIVE" })
+
+      // Page two was asked for, refused, and the search ended there.
+      expect(setup.graphql.transactions).toHaveBeenCalledTimes(2)
+      await expect(setup.graphql.transactions.mock.results[1].value).rejects.toThrow(
+        FLASH_CURSOR_REFUSED,
+      )
+      expect(payload.transactions.map(({ id }) => id)).toEqual(["in-1"])
+      // The window says how far it reached: page one, and not past it.
+      expect(payload.window).toEqual({
+        searchedCount: TX_PAGE_SIZE,
+        oldestTimestamp: first[first.length - 1].createdAt,
+        rails: ["graphql", "btc"],
+        replyKey: "Assistant.searchedWindow",
+      })
+      // The BTC side lists no further back than page one reached.
+      expect(setup.btcRail.listPayments).toHaveBeenCalledWith(0, BTC_PAYMENTS_LIMIT, {
+        fromTimestamp: first[first.length - 1].createdAt,
+        assets: "bitcoin",
+      })
+    })
+
+    it("still fails when the first page cannot be read", async () => {
+      const setup = fakeCtx()
+      const failure = new Error("Network request failed")
+      setup.graphql.transactions.mockRejectedValue(failure)
+
+      await expect(getTransactions.run({}, setup.ctx)).rejects.toBe(failure)
     })
 
     it("refuses to answer zero rows", async () => {
@@ -349,6 +450,251 @@ describe("getTransactions", () => {
       expect(await ids("bob")).toEqual(["to-bob"])
       expect(await ids("coffee")).toEqual(["coffee"])
       expect(await ids("shop@")).toEqual(["shop"])
+    })
+  })
+
+  describe("a query that names someone", () => {
+    /** A history with one send to each user, newest first, with its memo if it has one. */
+    const history = (sends: (string | { username: string; memo: string })[]) =>
+      serve([
+        sends.map((send, i) => {
+          const user = typeof send === "string" ? { username: send } : send
+          return sentTo({ id: `to-${user.username}`, createdAt: 100 - i, ...user })
+        }),
+      ])
+
+    const ids = async (
+      setup: ReturnType<typeof fakeCtx>,
+      args: Record<string, unknown>,
+    ) => (await answer(setup, args)).transactions.map((row) => row.id)
+
+    it("finds a username that holds none of the hyphen, apostrophe or space the name is typed with", async () => {
+      // A Flash username has only letters, digits and "_".
+      const setup = history(["kerryann_b", "dandre_w", "unclejoe", "bob"])
+
+      expect(await ids(setup, { direction: "SEND", query: "kerry-ann" })).toEqual([
+        "to-kerryann_b",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "d'andre" })).toEqual([
+        "to-dandre_w",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "D’Andre" })).toEqual([
+        "to-dandre_w",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "uncle joe" })).toEqual([
+        "to-unclejoe",
+      ])
+    })
+
+    it("finds them as the grammar asks for them, in English and in patois", async () => {
+      const setup = history(["kerryann_b", "dandre_w", "unclejoe", "bob"])
+      const JMD = { displayCurrency: "JMD", displaySymbol: "J$" }
+      const asked = async (utterance: string) => {
+        const match = matchGrammar(utterance, JMD)
+        if (match?.kind !== "call") throw new Error(`no call for ${utterance}`)
+        expect(match.call.intent).toBe("getTransactions")
+        return ids(setup, match.call.args ?? {})
+      }
+
+      expect(await asked("payments fi Kerry-Ann")).toEqual(["to-kerryann_b"])
+      expect(await asked("payments to D'Andre")).toEqual(["to-dandre_w"])
+      expect(await asked("show my payments to Uncle Joe")).toEqual(["to-unclejoe"])
+    })
+
+    it("finds the payments to the contact the query names by alias, whatever their username", async () => {
+      // Two-word aliases, and an alias that shares nothing with the username.
+      const setup = history(["carol", "gloria_b", "tj_brown", "bob"])
+      setup.graphql.contacts.mockResolvedValue([
+        contact("carol", "Mom"),
+        contact("gloria_b", "Grandma"),
+        contact("tj_brown", "Uncle Tony"),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "mom" })).toEqual(["to-carol"])
+      expect(await ids(setup, { direction: "SEND", query: "grandma" })).toEqual([
+        "to-gloria_b",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "uncle tony" })).toEqual([
+        "to-tj_brown",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "Tony" })).toEqual([
+        "to-tj_brown",
+      ])
+    })
+
+    it("finds the BTC payments to the contact the query names, which name them by Lightning address", async () => {
+      // A BTC-wallet send to a Flash user pays username@host over LNURL
+      // (sendPayment), and the SDK records that address as the payee.
+      const setup = history(["carol", "bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("carol", "Mom")])
+      enableBtc(setup, [
+        btcPayment({ id: "btc-flashapp", timestamp: 98, lnAddress: "carol@flashapp.me" }),
+        btcPayment({ id: "btc-getflash", timestamp: 97, lnAddress: "Carol@GetFlash.io" }),
+        btcPayment({ id: "btc-pay", timestamp: 96, lnAddress: "carol@pay.flashapp.me" }),
+        // Another wallet's address is not the contact's, whatever its handle.
+        btcPayment({
+          id: "btc-elsewhere",
+          timestamp: 95,
+          lnAddress: "carol@walletofsatoshi.com",
+        }),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "mom" })).toEqual([
+        "to-carol",
+        "btc-flashapp",
+        "btc-getflash",
+        "btc-pay",
+      ])
+    })
+
+    it("reads the instance's own Lightning-address host as Flash's, which the LNURL domains may lack", async () => {
+      // Test's host, test.flashapp.me, is not one of LNURL_DOMAINS.
+      const setup = history(["bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("carol", "Mom")])
+      enableBtc(setup, [
+        btcPayment({
+          id: "btc-test",
+          timestamp: 98,
+          lnAddress: "carol@test.flashapp.me",
+        }),
+      ])
+      const onInstance = async (lnAddressHostname: string) => {
+        const result = await getTransactions.run(
+          { query: "mom" },
+          { ...setup.ctx, lnAddressHostname },
+        )
+        if (result.kind !== "answer")
+          throw new Error(`expected an answer, got ${result.kind}`)
+        return (result.payload as TransactionsPayload).transactions.map((row) => row.id)
+      }
+
+      expect(await onInstance("test.flashapp.me")).toEqual(["btc-test"])
+      // On Main, an address at Test's host is no Main user's.
+      expect(await onInstance("flashapp.me")).toEqual([])
+    })
+
+    it("finds a contact by an alias that holds the query, compared on its letters and digits", async () => {
+      // A near miss of resolveContact's (namesContact): "kerry ann" is not
+      // the alias Kerry-Ann there, nor "mom" the alias "Mom.". A search that
+      // read names so would answer "payments to mom" with an empty card.
+      const setup = history(["kaybee876", "carol", "bob"])
+      setup.graphql.contacts.mockResolvedValue([
+        contact("kaybee876", "Kerry-Ann"),
+        contact("carol", "Mom."),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "kerry ann" })).toEqual([
+        "to-kaybee876",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "Kerry" })).toEqual([
+        "to-kaybee876",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "mom" })).toEqual(["to-carol"])
+    })
+
+    it("lists a contact whose alias only holds the query: a row the user sees, never a payment hidden", async () => {
+      // Looser than a payee, on purpose: "gas" is Vargas here, whose
+      // username holds no "gas", and the card shows whom each row paid.
+      const setup = history(["vj_876", "bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("vj_876", "Vargas")])
+
+      expect(await ids(setup, { direction: "SEND", query: "gas" })).toEqual(["to-vj_876"])
+    })
+
+    it("never takes every contact for a query with no letter or digit in it", async () => {
+      // The schema takes any 1 to 80 characters. On its letters and digits
+      // alone "!" is "", which every alias holds.
+      const setup = history(["kaybee876", "bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("kaybee876", "Kerry-Ann")])
+
+      expect(await ids(setup, { query: "!" })).toEqual([])
+    })
+
+    it("never takes a contact whose alias does not hold the query", async () => {
+      // "andrea" is in neither Andre nor andre_k.
+      const setup = history(["vargas_j", "andre_k", "bob"])
+      setup.graphql.contacts.mockResolvedValue([
+        contact("vargas_j", "Vargas"),
+        contact("andre_k", "Andre"),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "andrea" })).toEqual([])
+      // "gas" is in the username itself, which a search reads as typed.
+      expect(await ids(setup, { query: "gas" })).toEqual(["to-vargas_j"])
+    })
+
+    it("keeps a memo's words apart: a name is not found across two of them", async () => {
+      const setup = history([
+        { username: "omar_x", memo: "from omar" },
+        { username: "kerryann_b", memo: "lunch for Kerry-Ann" },
+      ])
+
+      expect(await ids(setup, { query: "mom" })).toEqual([])
+      expect(await ids(setup, { query: "lunch for kerry-ann" })).toEqual([
+        "to-kerryann_b",
+      ])
+    })
+
+    it("still searches memo and payee when the cache holds no contact list", async () => {
+      // Offline, the cache-only rail refuses what the cache does not hold.
+      const setup = history(["carol", "bob"])
+      setup.graphql.contacts.mockRejectedValue(
+        new GraphqlRailError("No answer in the cache"),
+      )
+
+      expect(await ids(setup, { query: "bob" })).toEqual(["to-bob"])
+      expect(await ids(setup, { query: "mom" })).toEqual([])
+    })
+
+    it("fails the search when the contacts read fails any other way, never an empty answer", async () => {
+      // Online, the network-only rail rejects with Apollo's error (a dropped
+      // connection, a 502, a GraphQL error on the deprecated User.contacts);
+      // a TypeError is a bug. An empty card would say mom was never paid.
+      const setup = history(["carol", "bob"])
+      const failsWith = async (failure: Error) => {
+        setup.graphql.contacts.mockRejectedValueOnce(failure)
+        await expect(getTransactions.run({ query: "mom" }, setup.ctx)).rejects.toBe(
+          failure,
+        )
+      }
+
+      await failsWith(
+        new ApolloError({ networkError: new Error("Network request failed") }),
+      )
+      await failsWith(
+        new ApolloError({ graphQLErrors: [new GraphQLError("Internal server error")] }),
+      )
+      await failsWith(new TypeError("Cannot read properties of undefined (reading 'me')"))
+    })
+
+    it("answers a failed contacts read through runTool with the failure reply", async () => {
+      const setup = history(["carol", "bob"])
+      setup.graphql.contacts.mockRejectedValue(
+        new ApolloError({ networkError: new Error("Network request failed") }),
+      )
+
+      await expect(
+        runTool(
+          { intent: "getTransactions", args: { direction: "SEND", query: "mom" } },
+          {
+            registry: assistantRegistry,
+            graphql: setup.ctx.graphql,
+            btcRail: setup.btcRail,
+            displayCurrency: setup.ctx.displayCurrency,
+            lnAddressHostname: setup.ctx.lnAddressHostname,
+            now: setup.ctx.now,
+            telemetry: recordingTelemetry().telemetry,
+          },
+        ),
+      ).resolves.toEqual({ kind: "error", userMessage: "Assistant.toolFailed" })
+    })
+
+    it("reads the contacts only for a query", async () => {
+      const setup = history(["bob"])
+
+      await answer(setup, {})
+      await answer(setup, { query: "  " })
+      expect(setup.graphql.contacts).not.toHaveBeenCalled()
     })
   })
 

@@ -1,0 +1,313 @@
+// The HELD-OUT corpus for the grammar tier's launch gate (docs/ai-assistant-
+// tool-registry.md §7.2): English and Jamaican patois, never used to tune
+// the grammar. Only accuracy-gate.spec.ts may import it; held-out-
+// isolation.spec.ts proves nothing else does (not the app, not the tuning
+// specs). A rule changed to pass an entry here makes the gate meaningless:
+// change the tuning corpus and the grammar, never this file, to move the
+// numbers.
+//
+// Status: FROZEN. Drafted by the implementer (ENG-689) in the same commit
+// as the grammar's rules (77e32b912), so history cannot show it was written
+// first; reviewed and approved by the owner on 2026-10-17 (PR #790,
+// architect decision 5) and frozen as it stood. Its entries are pinned by
+// hash in accuracy-gate.spec.ts, so a change to any of them fails there and
+// needs a new review, never a quiet re-pin.
+//
+// Negatives on purpose: pronoun follow-ups, invoices and addresses, "$" on
+// a J$ account, words for a number, suffixes, and asks outside the five
+// intents.
+//
+// The last two blocks were added in review, at the reviewer's request,
+// after the grammar was fixed for the forms they hold. The first round's:
+// an amount with a hyphen or a sign, a word for what a payment is for in
+// place of a payee, two payees joined by "&" or a comma, and a name with a
+// hyphen. The second round's, the reviewer's own reproductions: purpose
+// words the grammar first lacked ("fi gas", "fi mi books"), one in part of a
+// hyphenated word ("light-bill"), and names that only look like a contact's
+// (Andrea for Andre), which stay the payee's words for resolveContact to ask
+// about. They guard those fixes; they do not measure how they generalize.
+// The tuning corpus holds other phrasings of each.
+import {
+  balances,
+  CorpusEntry,
+  entry,
+  price,
+  receive,
+  send,
+  transactions,
+} from "./entries"
+
+const en = (
+  displayCurrency: "USD" | "JMD",
+  utterance: string,
+  expected: CorpusEntry["expected"],
+) => entry({ dialect: "en", displayCurrency }, utterance, expected)
+
+const jm = (utterance: string, expected: CorpusEntry["expected"]) =>
+  entry({ dialect: "jm", displayCurrency: "JMD" }, utterance, expected)
+
+export const HELD_OUT: readonly CorpusEntry[] = [
+  // ---------------------------------------------------------------- balances
+  en("USD", "what's my balance", balances()),
+  en("JMD", "What is my balance?", balances()),
+  en("USD", "balance", balances()),
+  en("JMD", "check my balance", balances()),
+  en("USD", "how much money do I have", balances()),
+  en("JMD", "How much do I have?", balances()),
+  en("USD", "show me my balance", balances()),
+  en("JMD", "what's in my wallet", balances()),
+  en("USD", "my balance please", balances()),
+  en("JMD", "how much is in my account", balances()),
+  en("USD", "account balance", balances()),
+  en("JMD", "can you check my balance", balances()),
+  en("USD", "tell me my balance", balances()),
+  en("JMD", "how much money is in my wallet?", balances()),
+  en("USD", "what's my bitcoin balance", balances()),
+  en("JMD", "cash balance", balances()),
+  en("USD", "show balances", balances()),
+  en("JMD", "how much have I got", balances()),
+  en("USD", "Balance?", balances()),
+  en("JMD", "what do I have in my account", balances()),
+  en("USD", "how much cash do i have", balances()),
+  jm("wah mi balance", balances()),
+  jm("how much money mi have", balances()),
+  jm("check mi balance", balances()),
+  jm("mi balance", balances()),
+  jm("how much mi have inna mi account", balances()),
+  jm("show mi mi balance", balances()),
+  jm("how much money inna mi wallet", balances()),
+  jm("mi waan know mi balance", balances()),
+  jm("tell mi how much mi have", balances()),
+  jm("how much mi have lef", balances()),
+  jm("wah mi balance deh pon", balances()),
+
+  // ------------------------------------------------------------ transactions
+  en("USD", "show my transactions", transactions()),
+  en("JMD", "recent transactions", transactions()),
+  en("USD", "transaction history", transactions()),
+  en("JMD", "what did I send recently", transactions({ direction: "SEND" })),
+  en("USD", "show my last 5 transactions", transactions({ first: 5 })),
+  en("JMD", "who paid me", transactions({ direction: "RECEIVE" })),
+  en("USD", "payments I received", transactions({ direction: "RECEIVE" })),
+  en("JMD", "show me what I sent", transactions({ direction: "SEND" })),
+  en("USD", "my last payment", transactions({ first: 1 })),
+  en("JMD", "list my payments", transactions()),
+  en(
+    "USD",
+    "show payments from bob",
+    transactions({ direction: "RECEIVE", query: "bob" }),
+  ),
+  en("JMD", "payments to mom", transactions({ direction: "SEND", query: "mom" })),
+  en("USD", "last 10 transactions", transactions({ first: 10 })),
+  en("JMD", "show my history", transactions()),
+  en("USD", "incoming payments", transactions({ direction: "RECEIVE" })),
+  en("JMD", "show sent payments", transactions({ direction: "SEND" })),
+  en("USD", "show received payments", transactions({ direction: "RECEIVE" })),
+  en("JMD", "my activity", transactions()),
+  en("USD", "what have I received lately", transactions({ direction: "RECEIVE" })),
+  en("JMD", "show my recent payments", transactions()),
+  jm("show mi mi transactions", transactions()),
+  jm("mi last payments", transactions()),
+  jm("who sen mi money", transactions({ direction: "RECEIVE" })),
+  jm("wah mi sen out", transactions({ direction: "SEND" })),
+  jm("show mi wah come in", transactions({ direction: "RECEIVE" })),
+  jm("mi transaction history", transactions()),
+  jm("show mi di last 3 payment", transactions({ first: 3 })),
+  jm("wah mi receive", transactions({ direction: "RECEIVE" })),
+  jm("show mi di money weh mi sen", transactions({ direction: "SEND" })),
+
+  // ------------------------------------------------------------------- price
+  en("USD", "what's the bitcoin price", price()),
+  en("JMD", "bitcoin price", price()),
+  en("USD", "btc price", price()),
+  en("JMD", "how much is bitcoin", price()),
+  en("USD", "price of bitcoin", price()),
+  en("JMD", "what is BTC worth", price()),
+  en("JMD", "bitcoin price in usd", price({ currency: "USD" })),
+  en("USD", "how much is 1 bitcoin", price()),
+  en("JMD", "current btc price", price()),
+  en("USD", "exchange rate", price()),
+  en("JMD", "how much does a bitcoin cost", price()),
+  en("USD", "what's bitcoin at today", price()),
+  en("JMD", "What's the price of BTC right now?", price()),
+  en("USD", "bitcoin price in jmd", price({ currency: "JMD" })),
+  jm("wah di bitcoin price", price()),
+  jm("how much bitcoin a sell fa", price()),
+  jm("wah bitcoin a go fa now", price()),
+  jm("how much fi one bitcoin", price()),
+  jm("wah di rate fi bitcoin", price()),
+  jm("bitcoin price deh", price()),
+
+  // -------------------------------------------------------------------- send
+  en("USD", "send $5 to bob", send("bob", "5", { currency: "USD" })),
+  en("USD", "send bob $5", send("bob", "5", { currency: "USD" })),
+  en("USD", "pay bob 5", send("bob", "5")),
+  en("USD", "send 10 dollars to mom", send("mom", "10", { currency: "USD" })),
+  en("USD", "transfer $20 to alice", send("alice", "20", { currency: "USD" })),
+  en("USD", "give tanya $2.50", send("tanya", "2.50", { currency: "USD" })),
+  en("USD", "can you send $15 to kemar", send("kemar", "15", { currency: "USD" })),
+  en("USD", "please pay mom $25", send("mom", "25", { currency: "USD" })),
+  en("USD", "send 1000 sats to bob", send("bob", "0.00001000", { currency: "BTC" })),
+  en("USD", "send bob 5 usdt", send("bob", "5", { currency: "USDT" })),
+  en("USD", "send $5 to Aunt May", send("aunt may", "5", { currency: "USD" })),
+  en("USD", "I want to send $3 to jason", send("jason", "3", { currency: "USD" })),
+  en(
+    "USD",
+    "send $5 to bob for lunch",
+    send("bob", "5", { currency: "USD", memo: "lunch" }),
+  ),
+  en(
+    "USD",
+    "pay alice $40 for rent",
+    send("alice", "40", { currency: "USD", memo: "rent" }),
+  ),
+  en("USD", "send 0.0001 btc to dad", send("dad", "0.0001", { currency: "BTC" })),
+  en("USD", "send bob $1,000", send("bob", "1000", { currency: "USD" })),
+  en(
+    "USD",
+    "send $5 to bob from my bitcoin wallet",
+    send("bob", "5", { currency: "USD", sourceWallet: "BTC" }),
+  ),
+  en("USD", "Send $7 to my mom", send("mom", "7", { currency: "USD" })),
+  en("USD", "pay my brother 12 dollars", send("brother", "12", { currency: "USD" })),
+  en("JMD", "send 500 to bob", send("bob", "500")),
+  en("JMD", "send J$1000 to mom", send("mom", "1000")),
+  en("JMD", "pay tanya 2500 jmd", send("tanya", "2500")),
+  en("JMD", "send bob 5 usd", send("bob", "5", { currency: "USD" })),
+  en("JMD", "send US$10 to alice", send("alice", "10", { currency: "USD" })),
+  en("JMD", "transfer 1500 to kemar", send("kemar", "1500")),
+  en("JMD", "send 1,500 to Mr Brown", send("mr brown", "1500")),
+  jm("sen 500 to bob", send("bob", "500")),
+  jm("sen bob 1000", send("bob", "1000")),
+  jm("sen 2000 fi mom", send("mom", "2000")),
+  jm("gi tanya 500", send("tanya", "500")),
+  jm("mi wan sen 1000 to kemar", send("kemar", "1000")),
+  jm("sen mi madda 3000", send("madda", "3000")),
+  jm("mek mi sen 500 to jason", send("jason", "500")),
+  jm("sen 1000 jmd to tanya", send("tanya", "1000")),
+  jm("pay mi bredda 2500", send("bredda", "2500")),
+  jm("sen J$800 to auntie", send("auntie", "800")),
+
+  // ----------------------------------------------------------------- receive
+  en("USD", "receive $5", receive({ amount: "5", currency: "USD" })),
+  en("USD", "request 10 dollars", receive({ amount: "10", currency: "USD" })),
+  en("USD", "create an invoice for $20", receive({ amount: "20", currency: "USD" })),
+  en("JMD", "make an invoice", receive()),
+  en("USD", "generate a payment request", receive()),
+  en("JMD", "I want to receive money", receive()),
+  en("USD", "show my qr code", receive()),
+  en("USD", "receive 5000 sats", receive({ amount: "0.00005000", currency: "BTC" })),
+  en("USD", "get paid $15", receive({ amount: "15", currency: "USD" })),
+  en("JMD", "invoice for 500", receive({ amount: "500" })),
+  en("JMD", "request J$2000", receive({ amount: "2000" })),
+  en("USD", "my bitcoin address", receive({ method: "onchain" })),
+  en("JMD", "on-chain address", receive({ method: "onchain" })),
+  en("USD", "receive to my bitcoin wallet", receive({ wallet: "BTC" })),
+  en("USD", "lightning invoice for $3", receive({ amount: "3", currency: "USD" })),
+  en("JMD", "I need an invoice for 1000 jmd", receive({ amount: "1000" })),
+  en("USD", "receive", receive()),
+  en("USD", "qr code for $10", receive({ amount: "10", currency: "USD" })),
+  jm("mi wan receive 1000", receive({ amount: "1000" })),
+  jm("mek a invoice fi 2000", receive({ amount: "2000" })),
+  jm("mek a request fi 500", receive({ amount: "500" })),
+  jm("gi mi a qr code", receive()),
+  jm("mi wan get pay", receive()),
+  jm("show mi mi qr", receive()),
+  jm("receive 500 jmd", receive({ amount: "500" })),
+
+  // ------------------------------------------------------- amount questions
+  en("JMD", "send $500 to tanya", "clarifyAmount"),
+  en("JMD", "pay bob $20", "clarifyAmount"),
+  jm("sen $1000 to mom", "clarifyAmount"),
+  en("JMD", "request $50", "clarifyAmount"),
+  en("USD", "send bob 5k", "clarifyAmount"),
+  jm("sen 2k to jason", "clarifyAmount"),
+  en("USD", "send bob five dollars", "clarifyAmount"),
+  en("USD", "send money to mom", "clarifyAmount"),
+  en("USD", "pay bob", "clarifyAmount"),
+  en("USD", "send 5 to bob 10", "clarifyAmount"),
+  en("JMD", "send 10 dollars to mom", "clarifyAmount"),
+  en("USD", "send bob some money", "clarifyAmount"),
+  jm("sen bob 1.5k", "clarifyAmount"),
+
+  // ------------------------------------------------------------------ misses
+  // Follow-ups and pronouns: every utterance stands alone in v1.
+  en("USD", "send him $10 more", "miss"),
+  en("USD", "same again", "miss"),
+  en("USD", "send it again", "miss"),
+  en("USD", "pay her back", "miss"),
+  jm("sen dem 500", "miss"),
+  en("JMD", "give him 1000", "miss"),
+  en("USD", "send bob $5 again", "miss"),
+  en("USD", "send the same amount to bob", "miss"),
+  jm("sen it back", "miss"),
+  // Invoices, addresses and Lightning addresses: contacts only in v1.
+  en(
+    "USD",
+    "pay lnbc10u1p3pj257pp5yztkwjcz5ftl5laxkav23zmzekaw37zk6kmv80pk4xaev5qhtz7qdpdwd3xger9wd5kwm36yprx7u3qd36kucmgyp282etnv3shjcqzpgxqyz5vqsp5usyc4lk9chsfp53kvcnvq456ganh60d89reykdngsmtj6yw3nhvq9qyyssqjcewm5cjwz4a6rfjx77c490yced6pemk0upkxhy89cmm7sct66k8gneanwykzgdrwrfje69h9u5u0w57rrcsysas7gadwmzxc8c6t0spjazup6",
+    "miss",
+  ),
+  en("USD", "send 5000 sats to bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", "miss"),
+  en("USD", "send $5 to bob@flashapp.me", "miss"),
+  en(
+    "USD",
+    "pay lnurl1dp68gurn8ghj7um9wfmxjcm99e3k7mf0v9cxj0m385ekvcenxc6r2c35xvukxefcv5mkvv34x5ekzd3ev56nyd3hxqurzepexejxxepnxscrvwfnv9nxzcn9xq6xyefhvgcxxcmyxymnserxfq5fns",
+    "miss",
+  ),
+  jm("sen 1000 to tanya@flashapp.me", "miss"),
+  // Two payees, or a split: a group send is not one of the five intents.
+  en("USD", "send $5 to bob and alice", "miss"),
+  en("USD", "split $20 between bob and alice", "miss"),
+  // Other features.
+  en("USD", "convert $10 to bitcoin", "miss"),
+  en("JMD", "cash out 5000", "miss"),
+  en("USD", "withdraw 100 to my bank", "miss"),
+  en("USD", "top up my card", "miss"),
+  en("USD", "send $5 to my bitcoin wallet", "miss"),
+  en("USD", "send bob $5 tomorrow", "miss"),
+  en("JMD", "change my pin", "miss"),
+  jm("mi wan cash out", "miss"),
+  // A send with no payee.
+  en("USD", "send 5", "miss"),
+  en("JMD", "pay 1000", "miss"),
+  // Questions and chat.
+  en("USD", "how do I send money", "miss"),
+  en("USD", "what is bitcoin", "miss"),
+  en("USD", "hello", "miss"),
+  en("JMD", "thanks", "miss"),
+  en("USD", "who are you", "miss"),
+  en("USD", "help", "miss"),
+  en("JMD", "how do I back up my wallet", "miss"),
+  en("USD", "is bitcoin going up", "miss"),
+  en("USD", "how much did I spend this month", "miss"),
+  jm("wah gwaan", "miss"),
+  jm("yuh can help mi", "miss"),
+
+  // ------------------------------------------- added in the first review round
+  // An amount with a hyphen or a sign: readAmountPhrase's question.
+  en("JMD", "send 20-25 to bob", "clarifyAmount"),
+  en("USD", "send 1-2 bitcoin to bob", "clarifyAmount"),
+  jm("sen 1000-2000 to kemar", "clarifyAmount"),
+  jm("mek a invoice fi 500-1000", "clarifyAmount"),
+  jm("gi tanya -300", "clarifyAmount"),
+  // What a payment is for, in place of a payee.
+  jm("sen 500 fi di rent", "miss"),
+  en("USD", "pay my bill 500", "miss"),
+  // Two payees, joined by "&" or a comma.
+  en("USD", "send 20 to mom & dad", "miss"),
+  en("USD", "send 20 to mom, dad", "miss"),
+  // A name with a hyphen.
+  jm("sen Sherry-Ann 2000", send("sherry-ann", "2000")),
+
+  // ------------------------------------------ added in the second review round
+  // What a payment is for, in place of a payee: a word the grammar first
+  // lacked, and one in part of a hyphenated word.
+  jm("sen 2000 fi gas", "miss"),
+  jm("sen 1000 fi mi books", "miss"),
+  jm("sen 1500 fi di market", "miss"),
+  jm("pay di light-bill 3000", "miss"),
+  // A name that only looks like a contact's stays the payee's words.
+  jm("sen 2000 fi di barber", send("barber", "2000")),
+  en("JMD", "send 500 to andrea", send("andrea", "500")),
+  en("USD", "send $5 to Bill Jones", send("bill jones", "5", { currency: "USD" })),
+]

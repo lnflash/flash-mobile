@@ -64,7 +64,12 @@ export const fakeBtcRail = () => ({
 export const NOW_MS = 1_760_000_000_000
 
 export const fakeCtx = (
-  overrides: { graphql?: FakeGraphqlRail; btcRail?: ReturnType<typeof fakeBtcRail> } = {},
+  overrides: {
+    graphql?: FakeGraphqlRail
+    btcRail?: ReturnType<typeof fakeBtcRail>
+    /** The instance's Lightning-address host: Main's, unless a case names another. */
+    lnAddressHostname?: string
+  } = {},
 ) => {
   const graphql = overrides.graphql ?? fakeGraphqlRail()
   const btcRail = overrides.btcRail ?? fakeBtcRail()
@@ -72,6 +77,7 @@ export const fakeCtx = (
     graphql: graphql as unknown as GraphqlRail,
     btcRail,
     displayCurrency: "JMD",
+    lnAddressHostname: overrides.lnAddressHostname ?? "flashapp.me",
     now: () => NOW_MS,
   }
   return { ctx, graphql, btcRail }

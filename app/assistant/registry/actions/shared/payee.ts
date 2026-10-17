@@ -155,7 +155,10 @@ const fromContactName = async (
   myWalletIds: readonly string[],
 ): Promise<PayeeResolution> => {
   if (hint.length > CONTACT_HINT_MAX) return error("Assistant.invalidDestination")
-  const result = await resolveContact.run({ hint }, createReadToolCtx(ctx))
+  const result = await resolveContact.run(
+    { hint },
+    createReadToolCtx({ ...ctx, lnAddressHostname: ctx.send.lnAddressHostname }),
+  )
   switch (result.kind) {
     case "clarification":
       // Each option re-issues the call with its pick in place of the name

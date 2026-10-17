@@ -1,0 +1,22 @@
+# Signs in on the Test instance, turns the assistant on for this run (a
+# development build's dev link: Remote Config holds assistantEnabled off),
+# and opens Ask Flash from the home screen.
+appId: com.lnflash
+---
+- runFlow: ../../flashcard/subflows/login.yaml
+- runFlow:
+    file: ../../flashcard/subflows/open-link.yaml
+    env:
+      LINK: flash://dev/assistant?on=1
+# The home screen's button row grows the Ask Flash button once the flag
+# reads on.
+- extendedWaitUntil:
+    visible:
+      id: home-ask-flash
+    timeout: 20000
+- tapOn:
+    id: home-ask-flash
+- extendedWaitUntil:
+    visible:
+      id: ask-flash-input
+    timeout: 20000
