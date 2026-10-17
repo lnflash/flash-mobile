@@ -4,7 +4,7 @@ import {
   resolveContact,
 } from "@app/assistant/registry/read/resolve-contact"
 import { matchGrammar } from "@app/assistant/grammar"
-import { fakeCtx } from "../fakes"
+import { accountsOf, fakeCtx } from "../fakes"
 import { TUNING } from "./corpus/tuning"
 
 // Contact resolution against the phrasing corpus (docs/ai-assistant-tool-
@@ -14,9 +14,11 @@ import { TUNING } from "./corpus/tuning"
 // meant contact's own names; anything else is a question that offers that
 // contact. Words that name no one in the book, the corpus's and the
 // review's near misses ("gas" beside Vargas, "andrea" beside Andre), are
-// never answered: each is a picker offering the contact it looks like. The
-// counts go to the log for the PR. A change to the threshold changes
-// read/resolve-contact.spec.ts in the same PR.
+// never answered: each is a picker offering the contact it looks like. A
+// payee the book holds under no name and nothing like one is a Flash user
+// the user has not added (NOT_IN_BOOK, ENG-730): a picker of one offering
+// that user, never a contact. The counts go to the log for the PR. A change
+// to the threshold changes read/resolve-contact.spec.ts in the same PR.
 
 const contact = (username: string, alias: string | null = null): ContactRow =>
   ({
@@ -102,6 +104,16 @@ const NEAR_MISSES: Readonly<Record<string, string>> = {
   "bill jones": "bob_jones",
 }
 
+/**
+ * Payees the book holds under no name and nothing like one, each with the
+ * Flash user whose username it is: someone the user has not added
+ * (ENG-730). resolveContact looks the words up as a username only when no
+ * contact looks like them, and offers that user as a picker of one.
+ */
+const NOT_IN_BOOK: Readonly<Record<string, string>> = {
+  dreadmax: "dreadmax",
+}
+
 /** Every payee the tuning corpus's sends name, once each. */
 const PAYEES = [
   ...new Set(
@@ -113,25 +125,30 @@ const PAYEES = [
   ),
 ].sort()
 
+/** A contact picker, or (flashUser) the picker of a Flash user who is no contact. */
 type Resolution =
   | { kind: "match"; username: string }
   | { kind: "picker"; usernames: string[] }
+  | { kind: "flashUser"; usernames: string[] }
   | { kind: "none" }
 
 const resolvePayee = async (hint: string): Promise<Resolution> => {
   const { ctx, graphql } = fakeCtx()
   graphql.contacts.mockResolvedValue(BOOK)
-  graphql.accountDefaultWallet.mockImplementation(async (username: string) => ({
-    __typename: "PublicWallet",
-    id: `${username}-wallet`,
-    walletCurrency: "USD",
-  }))
+  // Every contact in the book has an account, and so does every Flash user
+  // the book does not hold; any other word is no one's username.
+  graphql.accountDefaultWallet.mockImplementation(
+    accountsOf([...BOOK.map(({ username }) => username), ...Object.values(NOT_IN_BOOK)]),
+  )
   const result = await resolveContact.run({ hint }, ctx)
   if (result.kind === "answer") {
     return { kind: "match", username: (result.payload as { username: string }).username }
   }
   if (result.kind === "clarification" && result.card.options.length > 0) {
-    return { kind: "picker", usernames: result.card.options.map(({ id }) => id) }
+    const usernames = result.card.options.map(({ id }) => id)
+    return result.card.prompt === "Assistant.pickFlashUser"
+      ? { kind: "flashUser", usernames }
+      : { kind: "picker", usernames }
   }
   return { kind: "none" }
 }
@@ -150,17 +167,33 @@ describe("contact resolution over the tuning corpus's payees", () => {
     expect(CONTACT_CANDIDATE_THRESHOLD).toBe(0.6)
   })
 
-  it("knows what every payee in the corpus means: a contact in the book, or a near miss", () => {
+  it("knows what every payee in the corpus means: a contact in the book, a near miss, or a Flash user the book does not hold", () => {
     expect(PAYEES.length).toBeGreaterThan(10)
     expect(
       PAYEES.filter(
-        (payee) => MEANT[payee] === undefined && NEAR_MISSES[payee] === undefined,
+        (payee) =>
+          MEANT[payee] === undefined &&
+          NEAR_MISSES[payee] === undefined &&
+          NOT_IN_BOOK[payee] === undefined,
       ),
     ).toEqual([])
     // A near miss is in the book under another name, never its own.
     expect(Object.keys(NEAR_MISSES).filter((hint) => MEANT[hint] !== undefined)).toEqual(
       [],
     )
+    // A payee not in the book is in it under no name: no contact's
+    // username or alias, and no meant contact or near miss.
+    expect(
+      Object.keys(NOT_IN_BOOK).filter(
+        (hint) =>
+          MEANT[hint] !== undefined ||
+          NEAR_MISSES[hint] !== undefined ||
+          BOOK.some(
+            ({ username, alias }) =>
+              username.toLowerCase() === hint || alias?.toLowerCase() === hint,
+          ),
+      ),
+    ).toEqual([])
   })
 
   it("answers only the contact meant, and otherwise asks with it among the options", async () => {
@@ -214,6 +247,28 @@ describe("contact resolution over the tuning corpus's payees", () => {
         { kind: "picker", usernames: expect.arrayContaining([NEAR_MISSES[payee]]) },
       ])
     })
+  })
+
+  it("offers a payee the book does not hold as the Flash user of that username, a picker of one (ENG-730)", async () => {
+    const notInBook = PAYEES.filter((payee) => NOT_IN_BOOK[payee] !== undefined)
+    const resolutions = await Promise.all(
+      notInBook.map(async (payee) => ({ payee, resolution: await resolvePayee(payee) })),
+    )
+    console.log(
+      `not in the book, ${notInBook.length} corpus payees that are Flash users:\n` +
+        describeResolutions(resolutions),
+    )
+
+    expect(notInBook.length).toBeGreaterThan(0)
+    resolutions.forEach(({ payee, resolution }) => {
+      expect([payee, resolution]).toEqual([
+        payee,
+        { kind: "flashUser", usernames: [NOT_IN_BOOK[payee]] },
+      ])
+    })
+    // Words that are no contact's and no Flash user's are refused: nothing
+    // to pick, so no question at all.
+    await expect(resolvePayee("zzzz")).resolves.toEqual({ kind: "none" })
   })
 
   it("pays no one the user did not name, for each ask the review found paying someone else", async () => {
