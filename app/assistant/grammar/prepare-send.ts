@@ -19,13 +19,15 @@ import {
 // "sen 1000 fi tanya". The grammar takes the payee's words and the amount's
 // words, and nothing else decides here:
 //
-// - the payee's words go to resolvePayee and resolveContact, which find the
-//   contact, or ask (registry/actions/shared/payee.ts). A pronoun or a
-//   follow-up ("him", "same again"), two payees, a time, or an invoice or an
-//   address (words.ts) are no call at all: v1 sends to a contact the user
-//   names, now. So is what a payment is for ("sen 500 fi di rent", "pay my
-//   bill 500"): resolveContact would find a contact whose name holds the
-//   word (brent, billy) and answer with them;
+// - the payee's words go to resolvePayee and resolveContact, which answer
+//   only a contact those words name exactly, and otherwise ask
+//   (registry/actions/shared/payee.ts). A pronoun or a follow-up ("him",
+//   "same again"), two payees, a time, or an invoice or an address
+//   (words.ts) are no call at all: v1 sends to a contact the user names,
+//   now. So is what a payment is for ("sen 500 fi di rent", "pay my bill
+//   500", "pay di light-bill 3000"), when the word is on PURPOSE_WORDS: it
+//   names no one, so resolveContact could only ask about a contact whose
+//   name holds it (Brent, Billy). A word the list lacks gets that question;
 // - the amount's words go to readAmountPhrase, which reads them or makes
 //   them a question (a k or m suffix, a "$" on a J$ account, words for a
 //   number). An ask with no amount is a question too.
@@ -63,17 +65,31 @@ const sourceWalletOf = (words: readonly Token[]): "BTC" | "cash" | "refuse" => {
 }
 
 /**
+ * The words one payee word holds, for the purpose check: the word as the
+ * rules match it, and each part of it between hyphens, as typed. A name may
+ * hold a hyphen (Kerry-Ann), so "light-bill" reaches here as one word, which
+ * folds to "lightbill", a word on no list; its parts are "light" and "bill".
+ */
+const piecesOf = ({ word, raw }: Token): string[] => [
+  word,
+  ...raw
+    .toLowerCase()
+    .split("-")
+    .map((part) => part.replace(/['’‘]/g, "")),
+]
+
+/**
  * Whether the payee's words say what the payment is for rather than who
- * gets it (words.ts, PURPOSE_WORDS): "the rent", "my bill", "fi lunch".
- * Patois "fi" is "for" as often as "to", so only a typed "to" before a
- * purpose word that is also a name, with no "my" or "the", leaves it a
- * name: "send $5 to bill" pays a contact called Bill.
+ * gets it (words.ts, PURPOSE_WORDS): "the rent", "my bill", "fi lunch",
+ * "di light-bill". Patois "fi" is "for" as often as "to", so only a typed
+ * "to" before a purpose word that is also a name, with no "my" or "the",
+ * leaves it a name: "send $5 to bill" pays a contact called Bill.
  */
 const namesPurpose = (payeeWords: readonly Token[], typedTo: boolean): boolean => {
-  const purposes = payeeWords.filter(({ word }) => PURPOSE_WORDS.has(word))
+  const purposes = payeeWords.flatMap(piecesOf).filter((part) => PURPOSE_WORDS.has(part))
   if (purposes.length === 0) return false
   const owned = payeeWords[0]?.word === "my" || payeeWords[0]?.word === "the"
-  return !typedTo || owned || purposes.some(({ word }) => !PURPOSE_NAMES.has(word))
+  return !typedTo || owned || purposes.some((part) => !PURPOSE_NAMES.has(part))
 }
 
 /**

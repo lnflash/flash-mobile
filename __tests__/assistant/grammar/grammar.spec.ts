@@ -155,7 +155,8 @@ describe("matchGrammar", () => {
   })
 
   it("never takes what a payment is for as the payee", () => {
-    // resolveContact would answer brent for "rent" and billy for "bill".
+    // It names no one: resolveContact could only ask about Brent for "rent",
+    // Billy for "bill" or Vargas for "gas".
     ;[
       "sen 500 fi di rent",
       "sen 500 fi rent",
@@ -166,6 +167,11 @@ describe("matchGrammar", () => {
       "pay di light bill 3000",
       "send 1000 to the school fees",
       "pay rent 20000",
+      "sen 2000 fi gas",
+      "sen 1000 fi mi books",
+      "sen 1500 fi di market",
+      "gi 3000 fi petrol",
+      "pay di uniform 4000",
     ].forEach((utterance) =>
       expect([utterance, matchGrammar(utterance, JMD)]).toEqual([utterance, undefined]),
     )
@@ -184,6 +190,43 @@ describe("matchGrammar", () => {
         intent: "prepareSend",
         args: { payee: "bill", amount: "5", currency: "USD" },
       },
+    })
+  })
+
+  it("finds a purpose word in each part of a hyphenated word", () => {
+    // "light-bill" folds to "lightbill", a word on no list; its parts are not.
+    ;[
+      "pay di light-bill 3000",
+      "pay light-bill 3000",
+      "send 2000 to the phone-bill",
+      "sen 800 fi taxi-fare",
+      "send 500 to my school-fees",
+    ].forEach((utterance) =>
+      expect([utterance, matchGrammar(utterance, JMD)]).toEqual([utterance, undefined]),
+    )
+    // A hyphenated name holds no purpose word, and "bill" in one is a name
+    // after a typed "to", as on its own.
+    expect(matchGrammar("send 500 to Kerry-Ann", JMD)).toEqual({
+      kind: "call",
+      call: { intent: "prepareSend", args: { payee: "kerry-ann", amount: "500" } },
+    })
+    expect(matchGrammar("send $5 to Bill-Jones", USD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "prepareSend",
+        args: { payee: "bill-jones", amount: "5", currency: "USD" },
+      },
+    })
+  })
+
+  it("passes a word on no list to resolveContact, which asks unless it is a contact's own name", () => {
+    // No list holds every word for what a payment is for, or every role a
+    // contact may be saved under, so the grammar passes the word on: "the
+    // barber" may be a contact called Barber, and resolveContact never
+    // answers Barbara for it (read/resolve-contact.spec.ts).
+    expect(matchGrammar("sen 2000 fi di barber", JMD)).toEqual({
+      kind: "call",
+      call: { intent: "prepareSend", args: { payee: "barber", amount: "2000" } },
     })
   })
 

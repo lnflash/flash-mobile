@@ -1,3 +1,4 @@
+import { matchGrammar } from "@app/assistant/grammar"
 import {
   BTC_PAYMENTS_LIMIT,
   getTransactions,
@@ -5,7 +6,7 @@ import {
   TX_PAGE_SIZE,
 } from "@app/assistant/registry/read/get-transactions"
 import type { TransactionsPayload } from "@app/assistant/registry/projections"
-import type { TransactionRow } from "@app/assistant/rails/graphql-rail"
+import type { ContactRow, TransactionRow } from "@app/assistant/rails/graphql-rail"
 import { BreezSdkNotInitializedError } from "@app/utils/breez-sdk/sdk-errors"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 import {
@@ -52,6 +53,33 @@ const answer = async (
 const enableBtc = (setup: ReturnType<typeof fakeCtx>, payments: BtcPayment[]) => {
   setup.btcRail.listPayments.mockResolvedValue(payments)
 }
+
+/** An intraledger send to a Flash user, as the API names them: by username. */
+const sentTo = (id: string, createdAt: number, username: string, memo?: string) =>
+  graphqlTx({
+    id,
+    createdAt,
+    memo: memo ?? null,
+    initiationVia: {
+      __typename: "InitiationViaIntraLedger",
+      counterPartyWalletId: `${username}-wallet`,
+      counterPartyUsername: username,
+    },
+    settlementVia: {
+      __typename: "SettlementViaIntraLedger",
+      counterPartyWalletId: `${username}-wallet`,
+      counterPartyUsername: username,
+    },
+  })
+
+const contact = (username: string, alias: string | null = null): ContactRow =>
+  ({
+    __typename: "UserContact",
+    id: username,
+    username,
+    alias,
+    transactionsCount: 1,
+  } as ContactRow)
 
 describe("getTransactions", () => {
   describe("paging", () => {
@@ -403,6 +431,117 @@ describe("getTransactions", () => {
       expect(await ids("bob")).toEqual(["to-bob"])
       expect(await ids("coffee")).toEqual(["coffee"])
       expect(await ids("shop@")).toEqual(["shop"])
+    })
+  })
+
+  describe("a query that names someone", () => {
+    /** A history with one send to each of these usernames, newest first. */
+    const history = (usernames: string[], memos: Record<string, string> = {}) =>
+      serve([
+        usernames.map((username, i) =>
+          sentTo(`to-${username}`, 100 - i, username, memos[username]),
+        ),
+      ])
+
+    const ids = async (
+      setup: ReturnType<typeof fakeCtx>,
+      args: Record<string, unknown>,
+    ) => (await answer(setup, args)).transactions.map((row) => row.id)
+
+    it("finds a username that holds none of the hyphen, apostrophe or space the name is typed with", async () => {
+      // A Flash username has only letters, digits and "_".
+      const setup = history(["kerryann_b", "dandre_w", "unclejoe", "bob"])
+
+      expect(await ids(setup, { direction: "SEND", query: "kerry-ann" })).toEqual([
+        "to-kerryann_b",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "d'andre" })).toEqual([
+        "to-dandre_w",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "D’Andre" })).toEqual([
+        "to-dandre_w",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "uncle joe" })).toEqual([
+        "to-unclejoe",
+      ])
+    })
+
+    it("finds them as the grammar asks for them, in English and in patois", async () => {
+      const setup = history(["kerryann_b", "dandre_w", "unclejoe", "bob"])
+      const JMD = { displayCurrency: "JMD", displaySymbol: "J$" }
+      const asked = async (utterance: string) => {
+        const match = matchGrammar(utterance, JMD)
+        if (match?.kind !== "call") throw new Error(`no call for ${utterance}`)
+        expect(match.call.intent).toBe("getTransactions")
+        return ids(setup, match.call.args ?? {})
+      }
+
+      expect(await asked("payments fi Kerry-Ann")).toEqual(["to-kerryann_b"])
+      expect(await asked("payments to D'Andre")).toEqual(["to-dandre_w"])
+      expect(await asked("show my payments to Uncle Joe")).toEqual(["to-unclejoe"])
+    })
+
+    it("finds the payments to the contact the query names by alias, whatever their username", async () => {
+      // Two-word aliases, and an alias that shares nothing with the username.
+      const setup = history(["carol", "gloria_b", "tj_brown", "bob"])
+      setup.graphql.contacts.mockResolvedValue([
+        contact("carol", "Mom"),
+        contact("gloria_b", "Grandma"),
+        contact("tj_brown", "Uncle Tony"),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "mom" })).toEqual(["to-carol"])
+      expect(await ids(setup, { direction: "SEND", query: "grandma" })).toEqual([
+        "to-gloria_b",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "uncle tony" })).toEqual([
+        "to-tj_brown",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "Tony" })).toEqual([
+        "to-tj_brown",
+      ])
+    })
+
+    it("never takes a contact whose name only looks like the query for the one it names", async () => {
+      // As resolveContact reads a name: "gas" is not Vargas, "andrea" not Andre.
+      const setup = history(["vargas_j", "andre_k", "bob"])
+      setup.graphql.contacts.mockResolvedValue([
+        contact("vargas_j", "Vargas"),
+        contact("andre_k", "Andre"),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "andrea" })).toEqual([])
+      // "gas" is in the username itself, which a search reads as typed.
+      expect(await ids(setup, { query: "gas" })).toEqual(["to-vargas_j"])
+    })
+
+    it("keeps a memo's words apart: a name is not found across two of them", async () => {
+      const setup = history(["omar_x", "kerryann_b"], {
+        omar_x: "from omar",
+        kerryann_b: "lunch for Kerry-Ann",
+      })
+
+      expect(await ids(setup, { query: "mom" })).toEqual([])
+      expect(await ids(setup, { query: "lunch for kerry-ann" })).toEqual([
+        "to-kerryann_b",
+      ])
+    })
+
+    it("still searches memo and payee when the contacts cannot be read", async () => {
+      // Offline, the cache may hold no contact list.
+      const setup = history(["carol", "bob"])
+      setup.graphql.contacts.mockRejectedValue(new Error("No answer in the cache"))
+
+      expect(await ids(setup, { query: "bob" })).toEqual(["to-bob"])
+      expect(await ids(setup, { query: "mom" })).toEqual([])
+    })
+
+    it("reads the contacts only for a query", async () => {
+      const setup = history(["bob"])
+
+      await answer(setup, {})
+      await answer(setup, { query: "  " })
+      expect(setup.graphql.contacts).not.toHaveBeenCalled()
     })
   })
 

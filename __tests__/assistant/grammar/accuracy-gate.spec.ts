@@ -22,11 +22,12 @@ const MAX_WRONG_ACTION_RATE = 0.005
  * The SHA-256 of the held-out entries as canonical JSON. Any change to an
  * entry, added, removed or edited, fails the spec below: a corpus changed
  * to move the numbers measures nothing (spec §7.2). Pinned at the
- * implementer's draft plus the first review round's additions; the owner's
- * freeze (architect decision 5) pins it again, and so must anyone who
- * changes the set after that, saying why in the commit.
+ * implementer's draft plus the first and second review rounds' additions
+ * (the marked blocks at its end); the owner's freeze (architect decision 5)
+ * pins it again, and so must anyone who changes the set after that, saying
+ * why in the commit.
  */
-const HELD_OUT_SHA256 = "142527900386d81cecfd428ac394221e0c21593a05efb7436efe7cffd44c8149"
+const HELD_OUT_SHA256 = "06ff5c28e00f7f54d7f75ac5fc87e7d87108158372434a574f4c2dde89d22d02"
 
 const sha256 = (text: string): string => createHash("sha256").update(text).digest("hex")
 

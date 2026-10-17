@@ -1,7 +1,7 @@
 import { btcRailUnavailableState } from "@app/payments/btc-rail"
 import { toBtcMoneyAmount, toWalletAmount } from "@app/types/amounts"
 import { isPlainObject } from "../../engine/schema-validator"
-import type { GraphqlRail, TransactionRow } from "../../rails/graphql-rail"
+import type { ContactRow, GraphqlRail, TransactionRow } from "../../rails/graphql-rail"
 import { defineRead } from "../define"
 import {
   BtcRailState,
@@ -12,6 +12,7 @@ import {
   TxRow,
 } from "../projections"
 import type { BtcReadRail, ReadToolCtx, ToolResult } from "../types"
+import { namesContact } from "./resolve-contact"
 
 // getTransactions (docs/ai-assistant-tool-registry.md §4). Both rails, one
 // newest-first list. A search pages through at most TX_MAX_PAGES pages of
@@ -25,6 +26,11 @@ import type { BtcReadRail, ReadToolCtx, ToolResult } from "../types"
 // and offline the cache holds a later page only if the history screen
 // fetched it. The window then says how far the search reached. Only a
 // failed first page fails the answer.
+//
+// A query finds a payment by its memo, by its payee (a Flash username, or
+// a Lightning address on the BTC rail), or by the contact the query names
+// (rowMatcher). A search that misses a payment it should find tells the
+// user they never paid that person, and they may pay twice.
 
 export const TX_PAGE_SIZE = 20
 export const TX_MAX_PAGES = 5
@@ -132,15 +138,87 @@ const btcTxRow = (payment: BtcPayment): TxRow => {
 const newestFirst = (a: TxRow, b: TxRow): number =>
   b.timestamp - a.timestamp || a.rail.localeCompare(b.rail) || a.id.localeCompare(b.id)
 
-const rowMatcher = ({ direction, query }: Args) => {
-  const needle = query?.trim().toLowerCase()
+/**
+ * A payee as a search compares it: lower case, letters and digits only. A
+ * Flash username holds no hyphen, apostrophe or space, so "Kerry-Ann",
+ * "D'Andre" and "uncle joe" must lose theirs to find kerryann_b, dandre_w
+ * and unclejoe.
+ */
+const asHandle = (text: string): string =>
+  text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "")
+
+/**
+ * A memo as a search compares it: lower case, letters, digits and single
+ * spaces. Its words keep their edges, so "mom" is not found in "from omar",
+ * while "kerry-ann" is found in "lunch for Kerry-Ann".
+ */
+const asText = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+
+/**
+ * A test for whether a field holds the query, as typed or as `fold`
+ * compares them, with the query folded once for the whole search.
+ */
+const finder = (typed: string, fold: (text: string) => string) => {
+  const needle = fold(typed)
+  return (field: string | null): boolean =>
+    field !== null &&
+    (field.toLowerCase().includes(typed) ||
+      (needle !== "" && fold(field).includes(needle)))
+}
+
+/**
+ * Which rows a call asks for: its direction, and a query found in the
+ * memo, in the payee, or naming the payee's contact (`contactUsernames`,
+ * contactsNamed).
+ */
+const rowMatcher = (
+  { direction, query }: Args,
+  contactUsernames: ReadonlySet<string>,
+) => {
+  const typed = query?.trim().toLowerCase() ?? ""
+  const inMemo = finder(typed, asText)
+  const inPayee = finder(typed, asHandle)
   return (row: TxRow): boolean => {
     if (direction && row.direction !== direction) return false
-    if (!needle) return true
-    return [row.memo, row.counterparty].some((field) =>
-      field?.toLowerCase().includes(needle),
+    if (!typed) return true
+    return (
+      inMemo(row.memo) ||
+      inPayee(row.counterparty) ||
+      (row.counterparty !== null && contactUsernames.has(row.counterparty.toLowerCase()))
     )
   }
+}
+
+/**
+ * The usernames of the contacts a query names, as resolveContact reads a
+ * name (their username, their alias, or one whole word of it): "payments
+ * to mom" finds the payments to the contact the user calls Mom, whatever
+ * her username. A contact list the rail cannot read (offline, when the
+ * cache holds none) names no one; the memo and the payee are still
+ * searched.
+ */
+const contactsNamed = async (
+  graphql: GraphqlRail,
+  query: string | undefined,
+): Promise<ReadonlySet<string>> => {
+  const hint = query?.trim()
+  if (!hint) return new Set()
+  let contacts: readonly ContactRow[]
+  try {
+    contacts = await graphql.contacts()
+  } catch {
+    return new Set()
+  }
+  return new Set(
+    contacts
+      .filter((contact) => namesContact(hint, contact))
+      .map(({ username }) => username.toLowerCase()),
+  )
 }
 
 const oldest = (rows: readonly TxRow[]): number =>
@@ -215,7 +293,7 @@ const run = async (
   const want = args.first ?? TX_DEFAULT_RESULTS
   // The schema caps `first` at 20; it cannot say "at least 1".
   if (want < 1) return { kind: "error", userMessage: "Assistant.invalidArguments" }
-  const matches = rowMatcher(args)
+  const matches = rowMatcher(args, await contactsNamed(ctx.graphql, args.query))
 
   const graphql = await readGraphql(ctx.graphql, { want, matches })
   // Every GraphQL payment newer than this was read; undefined when all were.
@@ -252,13 +330,13 @@ const run = async (
 export const getTransactions = defineRead({
   intent: "getTransactions",
   description:
-    "List the user's recent payments, newest first, optionally only sends or receives, or those whose memo or payee matches a query.",
+    "List the user's recent payments, newest first, optionally only sends or receives, or those whose memo, payee or contact name matches a query.",
   input: {
     type: "object",
     properties: {
       first: { type: "integer", maximum: TX_PAGE_SIZE },
       direction: { enum: ["SEND", "RECEIVE"] }, // TxDirection
-      // A memo or payee search, 1 to 80 characters (the subset has no maxLength).
+      // What to search for, 1 to 80 characters (the subset has no maxLength).
       query: { type: "string", pattern: "^[\\s\\S]{1,80}$" },
     },
     additionalProperties: false,

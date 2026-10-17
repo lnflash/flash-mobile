@@ -75,5 +75,9 @@ jm/JMD "yuh can sen 500 to bob" -> prepareSend {"amount":"500","payee":"bob"}
 jm/JMD "sen 500 to Kerry-Ann" -> prepareSend {"amount":"500","payee":"kerry-ann"}
 jm/JMD "gi D'Andre 1000" -> prepareSend {"amount":"1000","payee":"d'andre"}
 en/USD "send $5 to bill" -> prepareSend {"amount":"5","currency":"USD","payee":"bill"}
-en/USD "send $5 to bob, please" -> prepareSend {"amount":"5","currency":"USD","payee":"bob"}"
+en/USD "send $5 to bob, please" -> prepareSend {"amount":"5","currency":"USD","payee":"bob"}
+en/JMD "send 1000 to wayne" -> prepareSend {"amount":"1000","payee":"wayne"}
+en/USD "pay Andrea $8" -> prepareSend {"amount":"8","currency":"USD","payee":"andrea"}
+en/USD "send 12 dollars to Bill Jones" -> prepareSend {"amount":"12","currency":"USD","payee":"bill jones"}
+jm/JMD "pay di barber 1500" -> prepareSend {"amount":"1500","payee":"barber"}"
 `;

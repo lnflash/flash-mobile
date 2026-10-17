@@ -94,6 +94,11 @@ jm/JMD "sen 2000 fi di light bill" -> miss
 jm/JMD "pay di water 1500" -> miss
 en/JMD "pay school fees 5000" -> miss
 en/USD "pay bill 20" -> miss
+jm/JMD "pay fi di gas 2500" -> miss
+jm/JMD "sen 800 fi di book" -> miss
+jm/JMD "sen 5000 fi market" -> miss
+en/JMD "pay the phone-bill 2000" -> miss
+jm/JMD "gi 1000 fi taxi-fare" -> miss
 en/USD "send 10 to alice + bob" -> miss
 en/USD "send $15 to bob, tanya" -> miss"
 `;

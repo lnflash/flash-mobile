@@ -36,7 +36,8 @@ import {
 // the rail made with `fetchPolicy: "cache-only"`, and labels what that copy
 // answers as stale. What the cache does not hold is a failed read there,
 // never an empty answer. That copy reads the transaction list where the
-// app's screens put it in the cache (CACHED_TRANSACTION_PAGES).
+// app's screens put it in the cache (CACHED_TRANSACTION_PAGES), joining
+// two copies where they overlap.
 
 export type WalletRow = NonNullable<
   WalletOverviewScreenQuery["me"]
@@ -134,12 +135,41 @@ const missedCache = (result: { data?: unknown; partial?: boolean }): boolean =>
  * A page after the first is cached only where the history screen's
  * fetchMore put it, under `after` alone, or where an online read of this
  * rail did.
+ *
+ * Each is the start of the account's list as it stood when it was read, so
+ * a newer copy whose oldest row is in an older one continues into it: home
+ * refreshed after a payment holds that payment and two rows the history
+ * screen's twenty hold too. The two are then one list (cachedPage).
  */
 export const CACHED_TRANSACTION_PAGES: Readonly<
   Record<"historyScreen" | "homeScreen", TransactionListForDefaultAccountQueryVariables>
 > = {
   historyScreen: {},
   homeScreen: { first: 3 },
+}
+
+/** The newest row's time in a page, or -Infinity for an empty one. */
+const newestOf = ({ rows }: TransactionPage): number =>
+  Math.max(-Infinity, ...rows.map(({ createdAt }) => createdAt))
+
+/**
+ * `page` continued by `older`, when `older` holds `page`'s oldest row: the
+ * rows of both, by id, newest first, and `older`'s page info, since it
+ * reaches further back. When it does not, there may be payments between
+ * the two that neither holds, so `page` stands alone and the window never
+ * spans that gap.
+ */
+const continuedBy = (page: TransactionPage, older: TransactionPage): TransactionPage => {
+  const last = page.rows[page.rows.length - 1]
+  if (!last || !older.rows.some(({ id }) => id === last.id)) return page
+  const ids = new Set(page.rows.map(({ id }) => id))
+  return {
+    rows: [...page.rows, ...older.rows.filter(({ id }) => !ids.has(id))].sort(
+      (a, b) => b.createdAt - a.createdAt,
+    ),
+    hasNextPage: older.hasNextPage,
+    endCursor: older.endCursor,
+  }
 }
 
 /**
@@ -164,39 +194,46 @@ export const createGraphqlRail = (
     return result.data
   }
 
-  const readTransactions = (variables: TransactionListForDefaultAccountQueryVariables) =>
-    read<
+  /** One page of the account's transactions, from the network or the cache. */
+  const readTransactions = async (
+    variables: TransactionListForDefaultAccountQueryVariables,
+  ): Promise<TransactionPage> => {
+    const data = await read<
       TransactionListForDefaultAccountQuery,
       TransactionListForDefaultAccountQueryVariables
     >(TransactionListForDefaultAccountDocument, variables)
+    const connection = signedInUser(data.me).defaultAccount.transactions
+    return {
+      rows: (connection?.edges ?? []).map((edge) => edge.node),
+      hasNextPage: connection?.pageInfo.hasNextPage ?? false,
+      endCursor: connection?.pageInfo.endCursor ?? null,
+    }
+  }
 
   /**
    * Of these lists, the cache's latest copy: of those it holds whole, the
    * one with the newest row, and of two as new, the longer (a list read
-   * later holds every row since; one with no newer row is as fresh). A list
-   * it does not hold is a failed read; when it holds none, so is this.
+   * later holds every row since; one with no newer row is as fresh). Each
+   * older copy that holds the latest one's oldest row continues it
+   * (continuedBy). A list it does not hold is a failed read; when it holds
+   * none, so is this.
    */
-  const latestCached = async (
+  const cachedPage = async (
     candidates: readonly TransactionListForDefaultAccountQueryVariables[],
-  ): Promise<TransactionListForDefaultAccountQuery> => {
-    const held: {
-      data: TransactionListForDefaultAccountQuery
-      newest: number
-      rows: number
-    }[] = []
+  ): Promise<TransactionPage> => {
+    const held: TransactionPage[] = []
     for (const variables of candidates) {
       try {
-        const data = await readTransactions(variables)
-        const edges = data.me?.defaultAccount.transactions?.edges ?? []
-        const newest = Math.max(-Infinity, ...edges.map(({ node }) => node.createdAt))
-        held.push({ data, newest, rows: edges.length })
+        held.push(await readTransactions(variables))
       } catch (err) {
         if (!(err instanceof GraphqlRailError)) throw err
       }
     }
-    const [latest] = [...held].sort((a, b) => b.newest - a.newest || b.rows - a.rows)
+    const [latest, ...older] = [...held].sort(
+      (a, b) => newestOf(b) - newestOf(a) || b.rows.length - a.rows.length,
+    )
     if (!latest) throw new GraphqlRailError("No answer in the cache")
-    return latest.data
+    return older.reduce(continuedBy, latest)
   }
 
   return {
@@ -207,27 +244,19 @@ export const createGraphqlRail = (
 
     transactions: async ({ first, after }) => {
       // From the network, the page asked for. From the cache, the latest
-      // copy of it the screens left there (CACHED_TRANSACTION_PAGES). A
-      // page the cache does not hold is a failed read: the search ends at
-      // the page before it (getTransactions).
-      let data: TransactionListForDefaultAccountQuery
-      if (fetchPolicy === "network-only") {
-        data = await readTransactions({ first, after })
-      } else if (after === undefined) {
-        data = await latestCached([
+      // copy of it the screens left there, with any older copy it runs
+      // into (CACHED_TRANSACTION_PAGES). A page the cache does not hold is
+      // a failed read: the search ends at the page before it
+      // (getTransactions).
+      if (fetchPolicy === "network-only") return readTransactions({ first, after })
+      if (after === undefined) {
+        return cachedPage([
           CACHED_TRANSACTION_PAGES.historyScreen,
           CACHED_TRANSACTION_PAGES.homeScreen,
           { first },
         ])
-      } else {
-        data = await latestCached([{ after }, { first, after }])
       }
-      const connection = signedInUser(data.me).defaultAccount.transactions
-      return {
-        rows: (connection?.edges ?? []).map((edge) => edge.node),
-        hasNextPage: connection?.pageInfo.hasNextPage ?? false,
-        endCursor: connection?.pageInfo.endCursor ?? null,
-      }
+      return cachedPage([{ after }, { first, after }])
     },
 
     transactionDetails: async (transactionId) => {

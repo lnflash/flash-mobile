@@ -1,19 +1,22 @@
 import type { ContactRow } from "@app/assistant/rails/graphql-rail"
 import {
   CONTACT_CANDIDATE_THRESHOLD,
-  CONTACT_MATCH_THRESHOLD,
   resolveContact,
 } from "@app/assistant/registry/read/resolve-contact"
+import { matchGrammar } from "@app/assistant/grammar"
 import { fakeCtx } from "../fakes"
 import { TUNING } from "./corpus/tuning"
 
-// The contact-confidence threshold against the phrasing corpus (docs/ai-
-// assistant-tool-registry.md §4, §9): every payee the tuning corpus names,
-// through resolveContact over an address book holding them all, at the two
-// thresholds resolve-contact.ts sets. A payee is answered only when it names
-// the contact meant; anything less sure is a question that offers that
-// contact. The counts go to the log for the PR. A change to either threshold
-// changes read/resolve-contact.spec.ts in the same PR.
+// Contact resolution against the phrasing corpus (docs/ai-assistant-tool-
+// registry.md §4, §9): every payee the tuning corpus names, through
+// resolveContact over an address book, at the candidate threshold
+// resolve-contact.ts sets. A payee is answered only when it is one of the
+// meant contact's own names; anything else is a question that offers that
+// contact. Words that name no one in the book, the corpus's and the
+// review's near misses ("gas" beside Vargas, "andrea" beside Andre), are
+// never answered: each is a picker offering the contact it looks like. The
+// counts go to the log for the PR. A change to the threshold changes
+// read/resolve-contact.spec.ts in the same PR.
 
 const contact = (username: string, alias: string | null = null): ContactRow =>
   ({
@@ -26,8 +29,9 @@ const contact = (username: string, alias: string | null = null): ContactRow =>
 
 /**
  * An address book: two Alices, three Bobs, family by what the user calls
- * them, and names with a hyphen or an apostrophe, as Jamaican names often
- * have.
+ * them, names with a hyphen or an apostrophe, as Jamaican names often have,
+ * and names that hold, or nearly are, words a user types for someone or
+ * something else (NEAR_MISSES).
  */
 const BOOK = [
   contact("alice_w", "Alice"),
@@ -48,6 +52,13 @@ const BOOK = [
   contact("kerryann_b", "Kerry-Ann"),
   contact("dandre_w", "D'Andre"),
   contact("bill_m", "Bill"),
+  contact("vargas_j", "Vargas"),
+  contact("brent_c", "Brent"),
+  contact("marketa_l", "Marketa"),
+  contact("dwayne_r", "Dwayne"),
+  contact("brooks_t", "Brooks"),
+  contact("andre_k", "Andre"),
+  contact("barbara_w", "Barbara"),
 ]
 
 /** The contact each payee in the corpus means. */
@@ -70,6 +81,25 @@ const MEANT: Readonly<Record<string, string>> = {
   "kerry-ann": "kerryann_b",
   "d'andre": "dandre_w",
   "bill": "bill_m",
+}
+
+/**
+ * Words that name no one in the book, each with the contact it only looks
+ * like. Fuse gives "gas", "rent", "market" and "wayne" a similarity of 1
+ * to that contact, as high as "mom" to Mom, and the rest more than 0.8.
+ * The purpose words never reach resolveContact from the grammar, which
+ * refuses them, but a model may send them, and a purpose word the
+ * grammar's list lacks reaches it the same way.
+ */
+const NEAR_MISSES: Readonly<Record<string, string>> = {
+  "gas": "vargas_j",
+  "rent": "brent_c",
+  "market": "marketa_l",
+  "wayne": "dwayne_r",
+  "books": "brooks_t",
+  "andrea": "andre_k",
+  "barber": "barbara_w",
+  "bill jones": "bob_jones",
 }
 
 /** Every payee the tuning corpus's sends name, once each. */
@@ -106,35 +136,45 @@ const resolvePayee = async (hint: string): Promise<Resolution> => {
   return { kind: "none" }
 }
 
-describe("the contact threshold over the tuning corpus's payees", () => {
-  it("is checked at the thresholds resolve-contact.ts sets", () => {
-    // The counts below were taken at these values; a change to either one
-    // changes read/resolve-contact.spec.ts and this spec in the same PR.
-    expect(CONTACT_MATCH_THRESHOLD).toBe(0.8)
+const describeResolutions = (
+  resolutions: readonly { payee: string; resolution: Resolution }[],
+): string =>
+  resolutions
+    .map(({ payee, resolution }) => `  ${payee}: ${JSON.stringify(resolution)}`)
+    .join("\n")
+
+describe("contact resolution over the tuning corpus's payees", () => {
+  it("is checked at the candidate threshold resolve-contact.ts sets", () => {
+    // The counts below were taken at this value; a change to it changes
+    // read/resolve-contact.spec.ts and this spec in the same PR.
     expect(CONTACT_CANDIDATE_THRESHOLD).toBe(0.6)
   })
 
-  it("knows which contact every payee in the corpus means", () => {
+  it("knows what every payee in the corpus means: a contact in the book, or a near miss", () => {
     expect(PAYEES.length).toBeGreaterThan(10)
-    expect(PAYEES.filter((payee) => MEANT[payee] === undefined)).toEqual([])
+    expect(
+      PAYEES.filter(
+        (payee) => MEANT[payee] === undefined && NEAR_MISSES[payee] === undefined,
+      ),
+    ).toEqual([])
+    // A near miss is in the book under another name, never its own.
+    expect(Object.keys(NEAR_MISSES).filter((hint) => MEANT[hint] !== undefined)).toEqual(
+      [],
+    )
   })
 
   it("answers only the contact meant, and otherwise asks with it among the options", async () => {
+    const inBook = PAYEES.filter((payee) => MEANT[payee] !== undefined)
     const resolutions = await Promise.all(
-      PAYEES.map(async (payee) => ({ payee, resolution: await resolvePayee(payee) })),
+      inBook.map(async (payee) => ({ payee, resolution: await resolvePayee(payee) })),
     )
     const count = (kind: Resolution["kind"]) =>
       resolutions.filter(({ resolution }) => resolution.kind === kind).length
     console.log(
-      `contact threshold ${CONTACT_MATCH_THRESHOLD} (candidates from ` +
-        `${CONTACT_CANDIDATE_THRESHOLD}), ${PAYEES.length} corpus payees over ` +
-        `${BOOK.length} contacts: ${count("match")} answered, ${count(
-          "picker",
-        )} asked, ` +
-        `${count("none")} not found\n` +
-        resolutions
-          .map(({ payee, resolution }) => `  ${payee}: ${JSON.stringify(resolution)}`)
-          .join("\n"),
+      `contact resolution (candidates from ${CONTACT_CANDIDATE_THRESHOLD}), ` +
+        `${inBook.length} corpus payees in a ${BOOK.length}-contact book: ` +
+        `${count("match")} answered, ${count("picker")} asked, ` +
+        `${count("none")} not found\n${describeResolutions(resolutions)}`,
     )
 
     resolutions.forEach(({ payee, resolution }) => {
@@ -151,5 +191,60 @@ describe("the contact threshold over the tuning corpus's payees", () => {
         expect([payee, resolution]).toEqual([payee, { kind: "match", username: meant }])
       }
     })
+  })
+
+  it("never answers a word that only looks like a contact's name: it asks, offering that contact", async () => {
+    const hints = [
+      ...new Set([
+        ...Object.keys(NEAR_MISSES),
+        ...PAYEES.filter((payee) => NEAR_MISSES[payee]),
+      ]),
+    ]
+    const resolutions = await Promise.all(
+      hints.map(async (payee) => ({ payee, resolution: await resolvePayee(payee) })),
+    )
+    console.log(
+      `near misses, ${hints.length} words that name no one in the book:\n` +
+        describeResolutions(resolutions),
+    )
+
+    resolutions.forEach(({ payee, resolution }) => {
+      expect([payee, resolution]).toEqual([
+        payee,
+        { kind: "picker", usernames: expect.arrayContaining([NEAR_MISSES[payee]]) },
+      ])
+    })
+  })
+
+  it("pays no one the user did not name, for each ask the review found paying someone else", async () => {
+    // Through the grammar, then resolveContact over the book: no call, or
+    // a question offering the contact the words look like. Before, each was
+    // a confirm card for that contact.
+    const USD = { displayCurrency: "USD", displaySymbol: "$" }
+    const JMD = { displayCurrency: "JMD", displaySymbol: "J$" }
+    const asks: [string, typeof USD, "no call" | string][] = [
+      ["sen 2000 fi gas", JMD, "no call"],
+      ["sen 1000 fi mi books", JMD, "no call"],
+      ["sen 1500 fi di market", JMD, "no call"],
+      ["pay di light-bill 3000", JMD, "no call"],
+      ["sen 500 fi di rent", JMD, "no call"],
+      ["sen 2000 fi di barber", JMD, "barbara_w"],
+      ["send 500 to andrea", JMD, "andre_k"],
+      ["send 500 to wayne", JMD, "dwayne_r"],
+      ["send $5 to Bill Jones", USD, "bob_jones"],
+    ]
+
+    for (const [utterance, account, lookalike] of asks) {
+      const match = matchGrammar(utterance, account)
+      const payee = match?.kind === "call" ? match.call.args?.payee : undefined
+      const outcome = payee === undefined ? "no call" : await resolvePayee(String(payee))
+
+      expect([utterance, outcome]).toEqual([
+        utterance,
+        lookalike === "no call"
+          ? "no call"
+          : { kind: "picker", usernames: expect.arrayContaining([lookalike]) },
+      ])
+    }
   })
 })

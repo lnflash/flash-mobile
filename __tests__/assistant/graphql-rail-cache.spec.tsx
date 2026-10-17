@@ -252,9 +252,10 @@ describe("the offline rail over the app's own cache", () => {
     expect(payload.window.searchedCount).toBe(3)
   })
 
-  it("reads the latest copy: home's newer rows over an older history list", async () => {
+  it("reads the latest copy, continued by an older one it overlaps: home's newer rows, then the history list", async () => {
     const cache = createCache()
-    // The history screen ran a week ago; home refreshed since, with a newer payment.
+    // The history screen ran a week ago; home refreshed since, with a newer
+    // payment and two rows the history list holds too.
     const old = rows(20, NEWEST - 7 * 86_400, "history")
     cache.writeQuery({
       query: TransactionListForDefaultAccountDocument,
@@ -266,10 +267,72 @@ describe("the offline rail over the app's own cache", () => {
     ]
     cache.writeQuery({ query: HomeAuthedDocument, data: homeAnswer(homeRows) })
 
-    const payload = payloadOf(await askOffline(cache))
+    const payload = payloadOf(await askOffline(cache, { first: 20 }))
 
     expect(payload.transactions[0].id).toBe("new-1")
+    // One list: home's new row and the history screen's twenty, each once.
+    expect(payload.window).toEqual({
+      searchedCount: 21,
+      oldestTimestamp: old[19].createdAt,
+      rails: ["graphql", "btc"],
+      replyKey: "Assistant.searchedWindow",
+    })
+    expect(payload.transactions.map(({ id }) => id)).toEqual(
+      ["new-1", ...old.map(({ id }) => id)].slice(0, 20),
+    )
+    // A search reaches the history list's rows: last week's payment to mom.
+    const rail = createGraphqlRail(offlineClient(cache), { fetchPolicy: "cache-only" })
+    const page = await rail.transactions({ first: 20 })
+    expect(page.rows.map(({ id }) => id)).toEqual(["new-1", ...old.map(({ id }) => id)])
+    // The page info is the history list's, which reaches further back.
+    expect(page).toMatchObject({ hasNextPage: false, endCursor: old[19].id })
+  })
+
+  it("never joins two copies with a gap between them: the latest stands alone", async () => {
+    const cache = createCache()
+    // Home refreshed after three new payments, none of which the week-old
+    // history list holds: there may be others between the two.
+    const old = rows(20, NEWEST - 7 * 86_400, "history")
+    cache.writeQuery({
+      query: TransactionListForDefaultAccountDocument,
+      data: historyAnswer(old),
+    })
+    const homeRows = rows(3, NEWEST, "new")
+    cache.writeQuery({ query: HomeAuthedDocument, data: homeAnswer(homeRows) })
+
+    const payload = payloadOf(await askOffline(cache, { first: 20 }))
+
+    expect(payload.transactions.map(({ id }) => id)).toEqual(homeRows.map(({ id }) => id))
     expect(payload.window.searchedCount).toBe(3)
+  })
+
+  it("keeps the older copy's next page, and ends the search where the cache does", async () => {
+    // The history list says more follow; the cache holds no page after it.
+    const cache = createCache()
+    const old = rows(20, NEWEST - 86_400, "history")
+    cache.writeQuery({
+      query: TransactionListForDefaultAccountDocument,
+      data: historyAnswer(old, true),
+    })
+    const homeRows = [graphqlTx({ id: "new-1", createdAt: NEWEST }), ...old.slice(0, 2)]
+    cache.writeQuery({ query: HomeAuthedDocument, data: homeAnswer(homeRows) })
+    const rail = createGraphqlRail(offlineClient(cache), { fetchPolicy: "cache-only" })
+
+    await expect(rail.transactions({ first: 20 })).resolves.toMatchObject({
+      hasNextPage: true,
+      endCursor: old[19].id,
+    })
+    await expect(
+      rail.transactions({ first: 20, after: old[19].id }),
+    ).rejects.toBeInstanceOf(GraphqlRailError)
+
+    // A search that wants more than the joined list holds reads it whole
+    // and says how far it reached.
+    const payload = payloadOf(await askOffline(cache, { direction: "RECEIVE" }))
+    expect(payload.window).toMatchObject({
+      searchedCount: 21,
+      oldestTimestamp: old[19].createdAt,
+    })
   })
 
   it("reads the longer of two copies as new as each other", async () => {

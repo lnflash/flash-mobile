@@ -6,9 +6,10 @@ import { indexOfWords, nameOf, startsWith, TIME_WORDS } from "./words"
 // getTransactions (spec §7.2): "show my transactions", "what did I send",
 // "who paid me", "payments to mom", "last 5 payments", "wah mi sen". The
 // tool's three arguments, when the ask names them: a direction, a name to
-// look for in the memo or payee ("to"/"from"/"with" a name), and how many
-// ("last 5"). Nothing else: an aggregate ("how much did I spend") is not a
-// list, and is no match.
+// look for ("to"/"from"/"with" a name), which the tool finds in the memo,
+// the payee or the contact it names, and how many ("last 5"). Nothing
+// else: an aggregate ("how much did I spend") is not a list, and is no
+// match.
 
 /** Nouns for a list of payments. */
 const LIST_NOUNS = new Set(

@@ -18,12 +18,16 @@
 // a J$ account, words for a number, suffixes, and asks outside the five
 // intents.
 //
-// The last block was added in the first review round, at the reviewer's
-// request, after the grammar was fixed for the forms it holds: an amount
-// with a hyphen or a sign, a word for what a payment is for in place of a
-// payee, two payees joined by "&" or a comma, and a name with a hyphen. It
-// guards those fixes; it does not measure how they generalize. The tuning
-// corpus holds other phrasings of each.
+// The last two blocks were added in review, at the reviewer's request,
+// after the grammar was fixed for the forms they hold. The first round's:
+// an amount with a hyphen or a sign, a word for what a payment is for in
+// place of a payee, two payees joined by "&" or a comma, and a name with a
+// hyphen. The second round's, the reviewer's own reproductions: purpose
+// words the grammar first lacked ("fi gas", "fi mi books"), one in part of a
+// hyphenated word ("light-bill"), and names that only look like a contact's
+// (Andrea for Andre), which stay the payee's words for resolveContact to ask
+// about. They guard those fixes; they do not measure how they generalize.
+// The tuning corpus holds other phrasings of each.
 import {
   balances,
   CorpusEntry,
@@ -295,4 +299,16 @@ export const HELD_OUT: readonly CorpusEntry[] = [
   en("USD", "send 20 to mom, dad", "miss"),
   // A name with a hyphen.
   jm("sen Sherry-Ann 2000", send("sherry-ann", "2000")),
+
+  // ------------------------------------------ added in the second review round
+  // What a payment is for, in place of a payee: a word the grammar first
+  // lacked, and one in part of a hyphenated word.
+  jm("sen 2000 fi gas", "miss"),
+  jm("sen 1000 fi mi books", "miss"),
+  jm("sen 1500 fi di market", "miss"),
+  jm("pay di light-bill 3000", "miss"),
+  // A name that only looks like a contact's stays the payee's words.
+  jm("sen 2000 fi di barber", send("barber", "2000")),
+  en("JMD", "send 500 to andrea", send("andrea", "500")),
+  en("USD", "send $5 to Bill Jones", send("bill jones", "5", { currency: "USD" })),
 ]

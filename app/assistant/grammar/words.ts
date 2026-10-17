@@ -365,14 +365,21 @@ export const nameOf = (tokens: readonly Token[]): string | "none" | "refuse" => 
 
 /**
  * Words for what a payment is for, which never name who gets it: "sen 500
- * fi di rent" pays the rent, and "pay my bill" a bill, not a contact whose
- * name holds "rent" or "bill" (brent, billy). "bill" is a name too, so a
- * send takes it as one only after a typed "to" (prepare-send.ts).
+ * fi di rent" pays the rent, "pay my bill" a bill and "sen 2000 fi gas" the
+ * gas, not a contact whose name holds the word (Brent, Billy, Vargas). "bill"
+ * is a name too, so a send takes it as one only after a typed "to"
+ * (prepare-send.ts).
+ *
+ * No list holds every such word, so this one is not the guard: a word it
+ * lacks reaches resolveContact as a name, and resolveContact answers only a
+ * contact the words name exactly, and asks about any other (spec §4). The
+ * list spares the user that question for the common ones.
  */
 export const PURPOSE_WORDS = set(
   "rent bill bills light lights electricity water school tuition fee fees lunch dinner " +
     "breakfast food groceries grocery taxi fare bus data credit internet cable phone " +
-    "insurance mortgage loan",
+    "insurance mortgage loan gas petrol fuel book books market supermarket shopping " +
+    "uniform uniforms medicine ticket tickets parking toll",
 )
 
 /** Purpose words that are also names: a send takes one only after a typed "to". */

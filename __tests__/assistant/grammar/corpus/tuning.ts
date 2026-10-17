@@ -1,6 +1,6 @@
 // The TUNING corpus for the grammar tier (docs/ai-assistant-tool-registry.md
 // §7.2, §9): English and Jamaican patois phrasings the rules are written
-// against, and the contact-confidence threshold is checked against
+// against, and contact resolution is checked against
 // (contact-threshold.spec.ts). The per-intent specs snapshot what the
 // grammar makes of every entry. The launch gate measures the separate
 // held-out corpus, which nothing here or in the app may import
@@ -304,6 +304,17 @@ export const TUNING: readonly CorpusEntry[] = [
   en("USD", "send $5 to bill", send("bill", "5", { currency: "USD" })),
   // A comma after the payee ends the sentence; it is not a second name.
   en("USD", "send $5 to bob, please", send("bob", "5", { currency: "USD" })),
+  // A name that only looks like a contact's (Wayne and Dwayne, Andrea and
+  // Andre, the barber and Barbara) is still the payee's words; resolveContact
+  // asks about it (contact-threshold.spec.ts).
+  en("JMD", "send 1000 to wayne", send("wayne", "1000")),
+  en("USD", "pay Andrea $8", send("andrea", "8", { currency: "USD" })),
+  en(
+    "USD",
+    "send 12 dollars to Bill Jones",
+    send("bill jones", "12", { currency: "USD" }),
+  ),
+  jm("pay di barber 1500", send("barber", "1500")),
 
   // ----------------------------------------------------------------- receive
   en("USD", "receive $20", receive({ amount: "20", currency: "USD" })),
@@ -462,11 +473,17 @@ export const TUNING: readonly CorpusEntry[] = [
   jm("bless up", "miss"),
   jm("mi wan top up mi card", "miss"),
   jm("how mi fi sen money", "miss"),
-  // What a payment is for is not who gets it.
+  // What a payment is for is not who gets it, in one word or in each part
+  // of a hyphenated one.
   jm("sen 2000 fi di light bill", "miss"),
   jm("pay di water 1500", "miss"),
   en("JMD", "pay school fees 5000", "miss"),
   en("USD", "pay bill 20", "miss"),
+  jm("pay fi di gas 2500", "miss"),
+  jm("sen 800 fi di book", "miss"),
+  jm("sen 5000 fi market", "miss"),
+  en("JMD", "pay the phone-bill 2000", "miss"),
+  jm("gi 1000 fi taxi-fare", "miss"),
   // Two payees, joined by a sign or a comma.
   en("USD", "send 10 to alice + bob", "miss"),
   en("USD", "send $15 to bob, tanya", "miss"),
