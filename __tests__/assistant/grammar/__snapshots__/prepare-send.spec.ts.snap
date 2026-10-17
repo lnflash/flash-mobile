@@ -53,8 +53,15 @@ en/JMD "send tanya us$5" -> prepareSend {"amount":"5","currency":"USD","payee":"
 en/JMD "transfer 2,000 to bob" -> prepareSend {"amount":"2000","payee":"bob"}
 en/JMD "give jason 400" -> prepareSend {"amount":"400","payee":"jason"}
 en/JMD "send 10000 sats to alice" -> prepareSend {"amount":"0.00010000","currency":"BTC","payee":"alice"}
+en/USD "Send 5 cent to bob" -> prepareSend {"amount":"0.05","payee":"bob"}
+en/USD "send bob five cents" -> prepareSend {"amount":"0.05","payee":"bob"}
+en/USD "pay alice twenty five cents" -> prepareSend {"amount":"0.25","payee":"alice"}
+en/USD "send ninety-nine cents to tanya" -> prepareSend {"amount":"0.99","payee":"tanya"}
+en/JMD "give kemar 50c" -> prepareSend {"amount":"0.50","payee":"kemar"}
 en/USD "send a dollar to bob" -> prepareSend {"amount":"1","currency":"USD","payee":"bob"}
 en/USD "send twenty dollars to alice" -> prepareSend {"amount":"20","currency":"USD","payee":"alice"}
+jm/JMD "sen fifty cent fi tanya" -> prepareSend {"amount":"0.50","payee":"tanya"}
+jm/JMD "sen mi bredda twenty jmd" -> prepareSend {"amount":"20","payee":"bredda"}
 jm/JMD "sen 1500 to alice" -> prepareSend {"amount":"1500","payee":"alice"}
 jm/JMD "sen alice 1500" -> prepareSend {"amount":"1500","payee":"alice"}
 jm/JMD "sen 600 fi tanya" -> prepareSend {"amount":"600","payee":"tanya"}

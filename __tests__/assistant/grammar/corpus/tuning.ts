@@ -277,10 +277,22 @@ export const TUNING: readonly CorpusEntry[] = [
   en("JMD", "transfer 2,000 to bob", send("bob", "2000")),
   en("JMD", "give jason 400", send("jason", "400")),
   en("JMD", "send 10000 sats to alice", send("alice", "0.00010000", { currency: "BTC" })),
-  // A number in words up to ninety-nine is that number, and "a" before a
-  // dollar is one (ENG-731). Both were amount questions before.
+  // An amount in cents or in words up to ninety-nine (ENG-731). Cents are
+  // the display currency's, so the call carries no currency, and "a" before
+  // a dollar is one. The first is the owner's ask from the dogfood, to a
+  // contact in the book: its payee, dreadmax, is no contact, and a payee
+  // outside the contacts is ENG-730's (grammar.spec.ts reads the ask as
+  // typed). "send a dollar" and "send twenty dollars" were amount questions
+  // before.
+  en("USD", "Send 5 cent to bob", send("bob", "0.05")),
+  en("USD", "send bob five cents", send("bob", "0.05")),
+  en("USD", "pay alice twenty five cents", send("alice", "0.25")),
+  en("USD", "send ninety-nine cents to tanya", send("tanya", "0.99")),
+  en("JMD", "give kemar 50c", send("kemar", "0.50")),
   en("USD", "send a dollar to bob", send("bob", "1", { currency: "USD" })),
   en("USD", "send twenty dollars to alice", send("alice", "20", { currency: "USD" })),
+  jm("sen fifty cent fi tanya", send("tanya", "0.50")),
+  jm("sen mi bredda twenty jmd", send("bredda", "20")),
   jm("sen 1500 to alice", send("alice", "1500")),
   jm("sen alice 1500", send("alice", "1500")),
   jm("sen 600 fi tanya", send("tanya", "600")),

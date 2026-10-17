@@ -14,7 +14,8 @@ export type DisplayCurrency = "USD" | "JMD"
  *   outside the five shipped intents, a payee v1 does not take (an invoice,
  *   an address, a pronoun) or a follow-up;
  * - "clarifyAmount": the amount is a question, never a guess (a k or m
- *   suffix, a "$" on a J$ account, words for a number, no amount at all).
+ *   suffix, a "$" on a J$ account, a number in words past ninety-nine, no
+ *   amount at all).
  */
 export type Expected = ToolCall | "miss" | "clarifyAmount"
 
