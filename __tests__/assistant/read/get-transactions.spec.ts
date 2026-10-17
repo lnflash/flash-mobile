@@ -564,8 +564,45 @@ describe("getTransactions", () => {
       expect(await onInstance("flashapp.me")).toEqual([])
     })
 
-    it("never takes a contact whose name only looks like the query for the one it names", async () => {
-      // As resolveContact reads a name: "gas" is not Vargas, "andrea" not Andre.
+    it("finds a contact by an alias that holds the query, compared on its letters and digits", async () => {
+      // A near miss of resolveContact's (namesContact): "kerry ann" is not
+      // the alias Kerry-Ann there, nor "mom" the alias "Mom.". A search that
+      // read names so would answer "payments to mom" with an empty card.
+      const setup = history(["kaybee876", "carol", "bob"])
+      setup.graphql.contacts.mockResolvedValue([
+        contact("kaybee876", "Kerry-Ann"),
+        contact("carol", "Mom."),
+      ])
+
+      expect(await ids(setup, { direction: "SEND", query: "kerry ann" })).toEqual([
+        "to-kaybee876",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "Kerry" })).toEqual([
+        "to-kaybee876",
+      ])
+      expect(await ids(setup, { direction: "SEND", query: "mom" })).toEqual(["to-carol"])
+    })
+
+    it("lists a contact whose alias only holds the query: a row the user sees, never a payment hidden", async () => {
+      // Looser than a payee, on purpose: "gas" is Vargas here, whose
+      // username holds no "gas", and the card shows whom each row paid.
+      const setup = history(["vj_876", "bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("vj_876", "Vargas")])
+
+      expect(await ids(setup, { direction: "SEND", query: "gas" })).toEqual(["to-vj_876"])
+    })
+
+    it("never takes every contact for a query with no letter or digit in it", async () => {
+      // The schema takes any 1 to 80 characters. On its letters and digits
+      // alone "!" is "", which every alias holds.
+      const setup = history(["kaybee876", "bob"])
+      setup.graphql.contacts.mockResolvedValue([contact("kaybee876", "Kerry-Ann")])
+
+      expect(await ids(setup, { query: "!" })).toEqual([])
+    })
+
+    it("never takes a contact whose alias does not hold the query", async () => {
+      // "andrea" is in neither Andre nor andre_k.
       const setup = history(["vargas_j", "andre_k", "bob"])
       setup.graphql.contacts.mockResolvedValue([
         contact("vargas_j", "Vargas"),

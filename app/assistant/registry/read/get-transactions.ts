@@ -13,7 +13,6 @@ import {
   TxRow,
 } from "../projections"
 import type { BtcReadRail, ReadToolCtx, ToolResult } from "../types"
-import { namesContact } from "./resolve-contact"
 
 // getTransactions (docs/ai-assistant-tool-registry.md §4). Both rails, one
 // newest-first list. A search pages through at most TX_MAX_PAGES pages of
@@ -29,7 +28,7 @@ import { namesContact } from "./resolve-contact"
 // failed first page fails the answer.
 //
 // A query finds a payment by its memo, by its payee (a Flash username, or
-// a Lightning address on the BTC rail), or by the contact the query names
+// a Lightning address on the BTC rail), or by a contact whose alias holds it
 // (rowMatcher), whose BTC payments name them by Lightning address
 // (flashUsername). A search that misses a payment it should find tells the
 // user they never paid that person, and they may pay twice.
@@ -161,6 +160,10 @@ const asText = (text: string): string =>
     .replace(/\s+/g, " ")
     .trim()
 
+/** The query as a search reads it: trimmed and lower case; "" for none. */
+const typedQuery = (query: string | undefined): string =>
+  query?.trim().toLowerCase() ?? ""
+
 /**
  * A test for whether a field holds the query, as typed or as `fold`
  * compares them, with the query folded once for the whole search.
@@ -201,15 +204,16 @@ const flashUsername = (
 
 /**
  * Which rows a call asks for: its direction, and a query found in the
- * memo, in the payee, or naming the payee's contact (`contactUsernames`,
- * contactsNamed), whose username a payee at one of `hosts` names too.
+ * memo, in the payee, or in the alias of the payee's contact
+ * (`contactUsernames`, contactsNamed), whose username a payee at one of
+ * `hosts` names too.
  */
 const rowMatcher = (
   { direction, query }: Args,
   contactUsernames: ReadonlySet<string>,
   hosts: ReadonlySet<string>,
 ) => {
-  const typed = query?.trim().toLowerCase() ?? ""
+  const typed = typedQuery(query)
   const inMemo = finder(typed, asText)
   const inPayee = finder(typed, asHandle)
   const paysContact = (counterparty: string | null): boolean => {
@@ -225,28 +229,33 @@ const rowMatcher = (
 }
 
 /**
- * The usernames of the contacts a query names, as resolveContact reads a
- * name (their username, their alias, or one whole word of it): "payments
- * to mom" finds the payments to the contact the user calls Mom, whatever
- * her username. A contact list the rail cannot read (offline, when the
- * cache holds none) names no one; the memo and the payee are still
- * searched.
+ * The usernames of the contacts whose alias holds the query, as inPayee
+ * finds it in a username (as typed, or on letters and digits alone):
+ * "payments to mom" finds the payments to the contact the user calls Mom,
+ * whatever her username, and "kerry ann" those to Kerry-Ann. This reads a
+ * name more loosely than resolveContact does (namesContact), which a payee
+ * needs: in a search, a contact taken wrongly is a row the user sees, and a
+ * payment missed is one they are told they never made. A username needs no
+ * contact, since the payee holds it. A contact list the rail cannot read
+ * (offline, when the cache holds none) names no one; the memo and the payee
+ * are still searched.
  */
 const contactsNamed = async (
   graphql: GraphqlRail,
   query: string | undefined,
 ): Promise<ReadonlySet<string>> => {
-  const hint = query?.trim()
-  if (!hint) return new Set()
+  const typed = typedQuery(query)
+  if (!typed) return new Set()
   let contacts: readonly ContactRow[]
   try {
     contacts = await graphql.contacts()
   } catch {
     return new Set()
   }
+  const inAlias = finder(typed, asHandle)
   return new Set(
     contacts
-      .filter((contact) => namesContact(hint, contact))
+      .filter(({ alias }) => inAlias(alias ?? null))
       .map(({ username }) => username.toLowerCase()),
   )
 }

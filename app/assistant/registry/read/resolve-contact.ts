@@ -48,7 +48,8 @@ const comparable = (name: string): string =>
  * alias, or one whole word of the alias ("joe" for Uncle Joe). Only a
  * contact the hint names so is answered without a question; "gas" for
  * Vargas, "andrea" for Andre or "bill jones" for Bob Jones is a picker.
- * getTransactions reads the names in a search the same way.
+ * A search reads a name more loosely (getTransactions, contactsNamed): a
+ * contact it takes wrongly is a row the user sees, and here a payment.
  */
 export const namesContact = (hint: string, { username, alias }: ContactRow): boolean => {
   const name = comparable(hint)
