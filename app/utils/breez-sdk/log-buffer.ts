@@ -63,6 +63,9 @@ export const initLogBuffer = async (): Promise<void> => {
   const exists = await RNFS.exists(LOG_FILE)
   if (exists) {
     const { size } = await RNFS.stat(LOG_FILE)
+    // initLogBuffer runs once (the initialized guard above), so nothing else
+    // writes fileBytes across this await.
+    // eslint-disable-next-line require-atomic-updates
     fileBytes = Number(size) || 0
   } else {
     await startFreshFile()
@@ -109,6 +112,9 @@ export const flushLogBuffer = async (): Promise<void> => {
   try {
     const chunk = entries.join("\n") + "\n"
     await RNFS.appendFile(LOG_FILE, chunk, "utf8")
+    // `flushing` serializes flushes, so this is the only writer of fileBytes
+    // between the append and here; startFreshFile resets it under the same lock.
+    // eslint-disable-next-line require-atomic-updates
     fileBytes += utf8ByteLength(chunk)
     if (fileBytes > MAX_BYTES) {
       await rotateFile()
@@ -116,6 +122,8 @@ export const flushLogBuffer = async (): Promise<void> => {
   } catch (err) {
     console.error("[log-buffer] flush error:", err)
   } finally {
+    // `flushing` is the lock itself; releasing it after the awaits is the point.
+    // eslint-disable-next-line require-atomic-updates
     flushing = false
   }
 }
