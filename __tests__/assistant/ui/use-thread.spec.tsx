@@ -32,7 +32,7 @@ import { useThread } from "@app/assistant/ui/use-thread"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import { toastShow } from "@app/utils/toast"
 import { makeAction } from "../executor-harness"
-import { btcPayment, graphqlTx, page } from "../fakes"
+import { accountsOf, btcPayment, graphqlTx, page, USD_PRICE } from "../fakes"
 import { CASH_WALLETS, env, fakeRuntime } from "./thread-harness"
 
 loadLocale("en")
@@ -305,6 +305,73 @@ describe("useThread", () => {
       intent: "prepareSend",
       args: { payee: "contact:bob_jones", amount: "5", memo: "bob" },
     })
+  })
+
+  it("asks about a Flash user who is not a contact, and the tap on them prepares their card (ENG-730)", async () => {
+    // The dogfood ask, through the real grammar, router, tool and executor.
+    const { runtime, graphql, runTool } = fakeRuntime()
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+    graphql.contacts.mockResolvedValue([])
+    graphql.accountDefaultWallet.mockImplementation(accountsOf(["dreadmax"]))
+    graphql.realtimePrice.mockResolvedValue(USD_PRICE)
+    const hook = render(runtime)
+    const call = {
+      intent: "prepareSend",
+      args: { payee: "dreadmax", amount: "0.05", currency: "USD" },
+    }
+
+    await submit(hook, "Send 0.05 usd to dreadmax")
+
+    expect(lines(hook)).toEqual([
+      { kind: "user", text: "Send 0.05 usd to dreadmax" },
+      {
+        kind: "card",
+        card: {
+          type: "clarification",
+          prompt: "Assistant.pickFlashUser",
+          options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+          about: "dreadmax",
+        },
+        call,
+      },
+    ])
+
+    await act(() =>
+      hook.result.current.pick(hook.result.current.entries[1].id, "contact:dreadmax"),
+    )
+
+    const picked = { ...call, args: { ...call.args, payee: "contact:dreadmax" } }
+    expect(runTool.mock.calls.map(([sent]) => sent)).toEqual([call, picked])
+    // The confirm card takes the question's place, naming the full username.
+    expect(lines(hook)).toEqual([
+      { kind: "user", text: "Send 0.05 usd to dreadmax" },
+      {
+        kind: "card",
+        card: expect.objectContaining({
+          type: "confirmPayment",
+          payeeLabel: "dreadmax",
+          payeeUsername: "dreadmax",
+          amountText: "USD 5",
+        }),
+        call: picked,
+      },
+    ])
+  })
+
+  it("shows a payee that names no contact and no Flash user as the refusal card (ENG-730)", async () => {
+    const { runtime, graphql } = fakeRuntime()
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+    graphql.contacts.mockResolvedValue([])
+    graphql.accountDefaultWallet.mockImplementation(accountsOf(["dreadmax"]))
+    const hook = render(runtime)
+
+    await submit(hook, "send 5 usd to mallory")
+
+    expect(lines(hook)).toEqual([
+      { kind: "user", text: "send 5 usd to mallory" },
+      { kind: "card", card: { type: "prepareRefused", reason: "payeeNotFound" } },
+    ])
+    expect(graphql.realtimePrice).not.toHaveBeenCalled()
   })
 
   it("refuses a question's pick offline with the offline reply, and runs nothing", async () => {

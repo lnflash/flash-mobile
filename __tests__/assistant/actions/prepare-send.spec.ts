@@ -43,6 +43,7 @@ import { createLnurlPaymentDestination } from "@app/screens/send-bitcoin-screen/
 import { resetIdempotencyKeySupport } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 import { memoryStorage } from "../executor-harness"
 import {
+  accountsOf,
   bolt11,
   fakeActionCtx,
   fundedBefore,
@@ -74,6 +75,9 @@ const contact = (username: string, alias: string | null = null) => ({
   transactionsCount: 0,
 })
 
+/** A Flash user the user has not added (ENG-730). */
+const NOT_A_CONTACT = "dreadmax"
+
 /** $100 in the cash wallet, 1,000,000 sats in the BTC wallet, no limits reached. */
 const setup = ({
   display = "USD",
@@ -90,11 +94,11 @@ const setup = ({
     contact("alice", "Alice"),
     contact("jane", "mom"),
   ])
-  fake.graphql.accountDefaultWallet.mockImplementation(async (username: string) => ({
-    __typename: "PublicWallet",
-    id: `${username}-wallet`,
-    walletCurrency: "USD",
-  }))
+  // Every contact a case names has an account, and so does dreadmax, who is
+  // no contact; any other word is no one's username.
+  fake.graphql.accountDefaultWallet.mockImplementation(
+    accountsOf(["alice", "jane", "alina", NOT_A_CONTACT]),
+  )
   fake.btcRail.getBalanceSats.mockResolvedValue({ state: "ok", sats })
   return fake
 }
@@ -378,6 +382,103 @@ describe("prepareSend to a contact from the cash wallet", () => {
       kind: "clarification",
       card: { type: "clarification", prompt: "Assistant.amountRequired", options: [] },
     })
+  })
+})
+
+describe("prepareSend to someone who is not a contact (ENG-730)", () => {
+  it("asks with a picker of one for a Flash user, then prepares the pick's card for that user", async () => {
+    // The dogfood ask: "Send 0.05 usd to dreadmax", dreadmax being a Flash
+    // user the user has not added.
+    const fake = setup()
+    const args: PrepareSendArgs = { payee: "dreadmax", amount: "0.05", currency: "USD" }
+
+    const asked = await run(args, fake)
+
+    expect(asked).toEqual({
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickFlashUser",
+        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+        about: "dreadmax",
+      },
+    })
+    // A question prices nothing and probes nothing.
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+    if (asked.kind !== "clarification") throw new Error("expected a question")
+
+    // The tap re-issues the call with the pick in place of the name.
+    const action = prepared(await run({ ...args, payee: asked.card.options[0].id }, fake))
+
+    expect(action.summary).toEqual({
+      type: "confirmPayment",
+      payeeLabel: "dreadmax",
+      payeeUsername: "dreadmax",
+      amountText: "USD 5",
+      feeText: "USD 0",
+      totalText: "USD 5",
+      balanceAfterText: "USD 9995",
+      sourceWallet: "USD",
+    })
+    expect(action.dispatch?.match).toEqual({
+      kind: "intraledger",
+      counterPartyWalletId: "dreadmax-wallet",
+      settlementCurrency: "USD",
+      amount: 5,
+    })
+
+    // Confirmed, it pays that Flash user's wallet, as the send screen would.
+    fake.mutations.intraLedgerUsdPaymentSend.mockResolvedValue(
+      sentOk("intraLedgerUsdPaymentSend"),
+    )
+    await expect(action.execute(confirmCtx(action).ctx)).resolves.toEqual({
+      status: "succeeded",
+    })
+    expect(
+      fake.mutations.intraLedgerUsdPaymentSend.mock.calls[0][0].variables.input,
+    ).toMatchObject({
+      walletId: "my-usd",
+      recipientWalletId: "dreadmax-wallet",
+      amount: 5,
+    })
+  })
+
+  it("refuses with the not-found card a name that is no contact's and no Flash user's, before reading a balance, price, limit or fee", async () => {
+    // From the BTC wallet, whose balance would be read past the payee.
+    const fake = setup()
+
+    await expect(
+      run({ payee: "mallory", amount: "5", currency: "USD", sourceWallet: "BTC" }, fake),
+    ).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+    expect(fake.graphql.accountDefaultWallet.mock.calls).toEqual([["mallory"]])
+    // The wallet list is read once, for the account's own wallet ids; nothing
+    // past the payee runs.
+    expect(fake.graphql.wallets).toHaveBeenCalledTimes(1)
+    expect(fake.btcRail.getBalanceSats).not.toHaveBeenCalled()
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+    expect(fake.graphql.accountLimits).not.toHaveBeenCalled()
+    expect(fake.btcRail.probeFee).not.toHaveBeenCalled()
+    Object.values(fake.actions.feeProbes).forEach((probe) =>
+      expect(probe).not.toHaveBeenCalled(),
+    )
+  })
+
+  it("refuses a pick whose Flash user is gone by the tap with the not-found card", async () => {
+    const fake = setup()
+    fake.graphql.accountDefaultWallet.mockImplementation(accountsOf(["alice", "jane"]))
+
+    await expect(
+      run({ payee: "contact:dreadmax", amount: "5", currency: "USD" }, fake),
+    ).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
   })
 })
 
@@ -1053,6 +1154,31 @@ describe("prepareSend through runTool and the executor", () => {
       )
     return { fake, executor, journal, prepare }
   }
+
+  it("hands back a payee that names no one as the refusal card, never a bare reply (ENG-730)", async () => {
+    const fake = setup()
+    const { graphql, displayCurrency, now, ...actionDeps } = fake.ctx
+
+    const result = await runTool(
+      { intent: "prepareSend", args: { payee: "mallory", amount: "5", currency: "USD" } },
+      {
+        registry: assistantRegistry,
+        graphql,
+        btcRail: fake.btcRail,
+        displayCurrency,
+        lnAddressHostname: actionDeps.send.lnAddressHostname,
+        now,
+        telemetry: recordingTelemetry().telemetry,
+        actionDeps,
+      },
+    )
+
+    expect(result).toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+  })
 
   it("confirms a contact send end to end: one dispatch, under one key, journaled and crossed off", async () => {
     const { fake, executor, journal, prepare } = wire()

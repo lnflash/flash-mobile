@@ -72,8 +72,10 @@ export type ClarificationOption = {
 }
 
 /**
- * Ambiguous input: a picker, never a guess (spec §3). With no options it
- * asks the user to say it another way.
+ * Ambiguous input: a picker, never a guess (spec §3). A question about a
+ * payee always offers at least one option (ENG-730): a payee that names no
+ * one is a refusal card instead. Only a question that asks for typed input
+ * has none (Assistant.amountRequired).
  */
 export type ClarificationCard = {
   type: "clarification"

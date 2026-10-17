@@ -1,15 +1,20 @@
 import Fuse from "fuse.js"
 
-import type { ContactRow } from "../../rails/graphql-rail"
+import type { ContactRow, GraphqlRail, PublicWalletRow } from "../../rails/graphql-rail"
 import { defineRead } from "../define"
 import { ContactPayload, projectContact } from "../projections"
+import { prepareRefusalResult } from "../refusals"
 import type { ClarificationOption, ReadToolCtx, ToolResult } from "../types"
 
 // resolveContact (docs/ai-assistant-tool-registry.md §4): turn what the user
 // called someone ("mom", "bob") into one Flash contact, or ask. It never
-// guesses: no match, several matches, or one match the hint does not name
-// exactly all come back as a clarification, so a payee is only ever named by
-// the user's own words for them or by the user's own pick.
+// guesses: several matches, or one match the hint does not name exactly,
+// come back as a picker, so a payee is only ever named by the user's own
+// words for them or by the user's own pick. Only when no contact looks like
+// the hint at all is it looked up as a Flash username (ENG-730): a Flash
+// user of that name is a picker of one, whose prompt says the person is not
+// in the contacts, and no one of that name is the payeeNotFound refusal
+// card. So a question from here always offers at least one option.
 // It never prepares anything either.
 
 /**
@@ -77,18 +82,50 @@ const option = (contact: ContactRow): ClarificationOption => ({
   sublabel: contact.username,
 })
 
+/**
+ * The default wallet of the Flash user with this username, as the send
+ * screen looks up a typed one (payment-destination/intraledger.ts), or null
+ * when no account has it. A username is one word: words with a space in
+ * them ("the guy from work"), or none at all, are no one's and cost no
+ * query. A failed read still rejects.
+ */
+export const flashUserWallet = async (
+  username: string,
+  graphql: Pick<GraphqlRail, "accountDefaultWallet">,
+): Promise<PublicWalletRow | null> =>
+  username === "" || /\s/.test(username) ? null : graphql.accountDefaultWallet(username)
+
+/**
+ * No contact looks like the hint: the Flash user it names, as a picker of
+ * one, or the refusal card (ENG-730). The option is data only, the username
+ * as the user typed it; the prompt is the copy. A pick of it is looked up
+ * again at the tap (payee.ts, fromPick), never taken from this answer.
+ */
+const flashUserOrRefusal = async (
+  hint: string,
+  ctx: ReadToolCtx,
+): Promise<ToolResult<ContactPayload>> => {
+  const username = hint.trim()
+  if (!(await flashUserWallet(username, ctx.graphql))) {
+    return prepareRefusalResult("payeeNotFound")
+  }
+  return {
+    kind: "clarification",
+    card: {
+      type: "clarification",
+      prompt: "Assistant.pickFlashUser",
+      options: [{ id: username, label: username, sublabel: username }],
+    },
+  }
+}
+
 const run = async (
   { hint }: Args,
   ctx: ReadToolCtx,
 ): Promise<ToolResult<ContactPayload>> => {
   const candidates = findCandidates(await ctx.graphql.contacts(), hint)
 
-  if (candidates.length === 0) {
-    return {
-      kind: "clarification",
-      card: { type: "clarification", prompt: "Assistant.noContactMatch", options: [] },
-    }
-  }
+  if (candidates.length === 0) return flashUserOrRefusal(hint, ctx)
   const [only] = candidates
   if (candidates.length > 1 || !namesContact(hint, only)) {
     // Several matches, or one the hint does not name, however close it
@@ -119,7 +156,7 @@ const run = async (
 export const resolveContact = defineRead({
   intent: "resolveContact",
   description:
-    "Find one of the user's contacts by what the user called them; asks when unsure.",
+    "Find one of the user's contacts by what the user called them; asks when unsure, and offers the Flash user of that username when no contact matches.",
   input: {
     type: "object",
     properties: {

@@ -219,8 +219,14 @@ const resolveLegs = async (
     if (resolution.kind === "clarification") {
       return { kind: "clarification", card: resolution.card }
     }
-    if (resolution.kind === "error")
-      return { kind: "error", userMessage: resolution.replyKey }
+    // A payee that names no one refuses the whole group, with its card.
+    if (resolution.kind === "error") {
+      return {
+        kind: "error",
+        userMessage: resolution.replyKey,
+        ...(resolution.card ? { card: resolution.card } : {}),
+      }
+    }
     const { payee } = resolution
     if (payee.kind !== "contact" && payee.kind !== "flashUser") {
       throw new ToolReplyError("Assistant.groupSendPayeesUnsupported")

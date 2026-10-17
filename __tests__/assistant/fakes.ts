@@ -8,6 +8,7 @@ import type {
 } from "@app/assistant/engine/telemetry"
 import type {
   GraphqlRail,
+  PublicWalletRow,
   TransactionPage,
   TransactionRow,
   WalletRow,
@@ -48,6 +49,20 @@ export const fakeGraphqlRail = (): FakeGraphqlRail => ({
   businessMapMarkers: jest.fn(async () => []),
   accountLimits: jest.fn(async () => ({ withdrawal: [], internalSend: [], convert: [] })),
 })
+
+/**
+ * An accountDefaultWallet that knows only these usernames, compared as the
+ * server compares them, case ignored: each has the default USD wallet
+ * `<username>-wallet`, and any other username has no account (null). A fake
+ * that finds every username would turn a not-found case into a found one
+ * (ENG-730), so a spec names the Flash users it means.
+ */
+export const accountsOf =
+  (usernames: readonly string[]) =>
+  async (username: string): Promise<PublicWalletRow | null> =>
+    usernames.some((known) => known.toLowerCase() === username.toLowerCase())
+      ? { __typename: "PublicWallet", id: `${username}-wallet`, walletCurrency: "USD" }
+      : null
 
 /** The whole BTC rail, sends included, so a spec can show they are never called. */
 export const fakeBtcRail = () => ({
