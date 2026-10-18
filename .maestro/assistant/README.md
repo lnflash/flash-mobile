@@ -13,9 +13,10 @@ take the same env: `E2E_TOKEN`, `BRIDGE_URL`, `MINT_URL`.
 `flash://dev/assistant?on=1`, which turns the assistant on for that run of the
 app (`app/config/assistant-dev-override.ts`); a release build ignores it.
 `subflows/open-ask-flash.yaml` opens it after signing in, then taps the home
-screen's Ask Flash button (`home-ask-flash`). Like the card bridge's link, it
-also hides LogBox: the sign-in subflow relaunches the app, which brings LogBox
-back, and its toasts sit over the thread's input and Ask button.
+screen's Ask Flash button, in its header beside the price icon
+(`home-ask-flash`). Like the card bridge's link, it also hides LogBox: the
+sign-in subflow relaunches the app, which brings LogBox back, and its toasts
+sit over the thread's input and Ask button.
 
 ## Flows
 
