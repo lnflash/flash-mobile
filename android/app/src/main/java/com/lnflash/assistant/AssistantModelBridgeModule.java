@@ -99,9 +99,11 @@ public final class AssistantModelBridgeModule extends ReactContextBaseJavaModule
 
   /**
    * One tool call for the prompt, as {"intent": "...", "argsJson": "..."}.
-   * {@code promptJson} holds the prompt's two parts, {@code instructions} and
-   * {@code prompt} (app/assistant/engine/model-prompt.ts). The model gets
-   * {@code timeoutMs}; past it the call is cancelled and rejects "timeout".
+   * {@code promptJson} is a ModelPrompt (app/assistant/engine/model-prompt.ts):
+   * Gemini Nano reads its {@code instructions} and {@code prompt}; its
+   * {@code tools} shape iOS's guided answer and are not needed here. The
+   * model gets {@code timeoutMs}; past it the call is cancelled and rejects
+   * "timeout".
    */
   @ReactMethod
   public void complete(String promptJson, double timeoutMs, Promise promise) {

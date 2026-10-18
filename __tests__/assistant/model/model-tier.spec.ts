@@ -455,6 +455,14 @@ describe("isGrounded", () => {
     expect(conversion("turn 20 bucks into ₿", USD)).toBe(true)
     // On a J$ account "bucks" and "dollars" are a question, never USD.
     expect(conversion("turn 20 bucks into bitcoin", JMD)).toBe(false)
+    // A sign against the number names its currency on any account.
+    expect(
+      isGrounded(
+        send,
+        { payee: "bob", amount: "5", currency: "USD", sourceWallet: "USD" },
+        { ...JMD, utterance: "send bob us$5" },
+      ),
+    ).toBe(true)
   })
 
   it("asks of a read only its free text and numbers", () => {

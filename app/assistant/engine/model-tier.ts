@@ -126,7 +126,9 @@ const valuesNamed = (text: string, { displayCurrency }: Said): Set<string> => {
       VALUE_WORDS[value].some((word) => holdsWords(text, word)),
     ),
   )
+  // Signs that stand against a number: "₿0.001", "us$5".
   if (text.includes("₿")) named.add("BTC")
+  if (text.includes("us$")) named.add("USD")
   // A bare "$", not part of J$ or TT$: USD only on a USD account.
   const bareDollar = /(^|[^a-z])\$/.test(text)
   if (
@@ -226,19 +228,19 @@ const valueTyped = (
 /** An action tool's amount fields, each with the field that holds its currency, if it has one. */
 const amountFieldsOf = (tool: RegisteredTool): Map<string, string | undefined> => {
   const { properties } = tool.input
+  const has = (name: string) => Object.prototype.hasOwnProperty.call(properties, name)
   const amounts = new Map<string, string | undefined>()
   Object.keys(properties).forEach((name) => {
     const declared = Object.prototype.hasOwnProperty.call(tool.amounts, name)
     const field = properties[name]
-    if (!declared && !(field.type === "string" && field.pattern === AMOUNT_PATTERN))
-      return
-    // No tool declares its amounts yet (define.ts): each names its amount's
-    // currency `currency`.
-    const currency = declared ? tool.amounts[name] : "currency"
-    amounts.set(
-      name,
-      Object.prototype.hasOwnProperty.call(properties, currency) ? currency : undefined,
-    )
+    const isAmount =
+      declared || (field.type === "string" && field.pattern === AMOUNT_PATTERN)
+    if (isAmount) {
+      // No tool declares its amounts yet (define.ts): each names its
+      // amount's currency `currency`.
+      const currency = declared ? tool.amounts[name] : "currency"
+      amounts.set(name, has(currency) ? currency : undefined)
+    }
   })
   return amounts
 }

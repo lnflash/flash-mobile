@@ -4,7 +4,8 @@ import type { ThreadEntry } from "../ui/thread-store"
 import { isPlainObject, JsonSchema } from "./schema-validator"
 
 // What the on-device model reads (ENG-690, spec §7, §8), in two parts, as
-// Foundation Models takes them (instructions, then a prompt):
+// Foundation Models takes them (instructions, then a prompt), and the tools
+// the answer is shaped by (ModelTool):
 //
 // - instructions, the developer's part: the tool list (every registered
 //   tool's intent, description and input schema, define.ts) and the rules.

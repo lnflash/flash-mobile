@@ -28,14 +28,14 @@ import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 // (TurnEnv.onDeviceModel), then the server (Phase 5), which does not exist
 // yet. A grammar hit, an amount question or a refusal (an ask v1 does not
 // serve: a pronoun, a follow-up, a time, two payees, an invoice) never
-// waits on the model. The
-// model's call goes through runTool as the grammar's does, held as text, so
-// the person taps to confirm whatever it prepared; nothing it said reaches
-// execute(). No answer from it, or an answer the model tier refuses, is the
-// templated miss reply, as before. Each utterance reports one
-// `assistant_event`: runTool's for a call, else a rejected one whose
-// onDeviceModelAvailable says whether the model answered with a call that
-// was refused (its rejection rate) or did not answer with one at all.
+// waits on the model. The model's call goes through runTool as the
+// grammar's does, held as text, so the person taps to confirm whatever it
+// prepared; nothing it said reaches execute(). No answer from it, or an
+// answer the model tier refuses, is the templated miss reply, as before.
+// Each utterance reports one `assistant_event`: runTool's for a call, else
+// a rejected one whose onDeviceModelAvailable says whether the model
+// answered with a call that was refused (its rejection rate) or did not
+// answer with one at all.
 
 /** What a turn needs from the screen: the connection, and the account's display currency. */
 export type TurnEnv = {
@@ -170,7 +170,8 @@ const listingRails = (graphql: GraphqlRail, btcRail: BtcRail) => {
  * action context then, so nothing can be prepared), the network otherwise.
  * What it prepared is held as text-initiated; the result is noted. A
  * history call's rails note the rows they hand the tool, so the answer can
- * draw them with the app's own transaction row.
+ * draw them with the app's own transaction row. A call the on-device model
+ * emitted says so in its event (CallOrigin).
  */
 export const runCall = async (
   runtime: AssistantRuntime,
