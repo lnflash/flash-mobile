@@ -105,9 +105,9 @@ describe("the iOS bridge", () => {
   })
 
   it("holds the model to the tools the prompt carries, or none, with no list of its own", () => {
-    // The answer's shape is built from ModelPrompt.tools, which lists every
-    // registered intent (model-prompt.spec.ts): no intent is written here,
-    // so the registry stays the one list.
+    // The answer's shape is built from ModelPrompt.tools, which lists the
+    // model tier's five intents (MODEL_TIER_INTENTS, model-prompt.spec.ts):
+    // no intent is written here, so that list stays the one list.
     expect(swift).toContain('let tools = parts["tools"] as? [[String: Any]]')
     expect(swift).toContain("AssistantAnswerSchema.of(tools)")
     expect(swift).toContain('intentProperty("none")')
@@ -116,7 +116,7 @@ describe("the iOS bridge", () => {
     INTENTS.forEach((intent) => expect(swift).not.toContain(`"${intent}"`))
   })
 
-  it("exports the two methods JS calls, by the names native-model-bridge.ts uses", () => {
+  it("exports the three methods JS calls, by the names native-model-bridge.ts uses", () => {
     expect(objc).toContain("RCT_EXTERN_MODULE(AssistantModelBridge, NSObject)")
     expect(objc).toMatch(
       /RCT_EXTERN_METHOD\(isAvailable:\(RCTPromiseResolveBlock\)resolve/,
@@ -124,9 +124,47 @@ describe("the iOS bridge", () => {
     expect(objc).toMatch(
       /RCT_EXTERN_METHOD\(complete:\(NSString \*\)promptJson\s+timeoutMs:/,
     )
+    // ENG-749: the warm-up Ask Flash asks for when it opens, and the model
+    // tier after each ask the model reads.
+    expect(objc).toMatch(
+      /RCT_EXTERN_METHOD\(prewarm:\(NSString \*\)warmupJson\s+resolver:\(RCTPromiseResolveBlock\)resolve\s+rejecter:/,
+    )
     expect(swift).toContain("@objc(AssistantModelBridge)")
     expect(swift).toContain("@objc(isAvailable:rejecter:)")
     expect(swift).toContain("@objc(complete:timeoutMs:resolver:rejecter:)")
+    expect(swift).toContain("@objc(prewarm:resolver:rejecter:)")
+  })
+
+  it("warms one session, which the next request with the same instructions takes once (ENG-749)", () => {
+    // The warm-up makes a session for the instructions and warms it,
+    // sending no prompt; a request takes it only when it was made for the
+    // same instructions, and only once, so no turn carries into another.
+    expect(swift).toContain(
+      "let session = LanguageModelSession(instructions: instructions)",
+    )
+    expect(swift).toContain("session.prewarm()")
+    expect(swift).toContain("let session = takeSession(instructions: instructions)")
+    const take =
+      /func take\(for instructions: String\) -> LanguageModelSession\? \{([\s\S]*?)\n {4}\}/.exec(
+        swift,
+      )?.[1]
+    expect(take).toContain("current.instructions == instructions")
+    expect(take).toContain("held = nil")
+    // Warmed again after each request: a session already held for the
+    // same instructions is kept, never replaced by another.
+    const prepare = /func prepare\(for instructions: String\) \{([\s\S]*?)\n {4}\}/.exec(
+      swift,
+    )?.[1]
+    expect(prepare).toContain(
+      "if let current = held, current.instructions == instructions { return }",
+    )
+    expect(prepare).toContain("session.prewarm()")
+    // The bridge method answers whatever happens: it never rejects.
+    const prewarm = /func prewarm\(\n\s+_ warmupJson: String,[\s\S]*?\n {2}\}/.exec(
+      swift,
+    )?.[0]
+    expect(prewarm).toContain("resolve(nil)")
+    expect(prewarm).not.toContain("reject(")
   })
 
   it("is compiled into the app target, which weak-links the framework and stays on iOS 15.1", () => {
@@ -193,11 +231,14 @@ describe("the Android bridge", () => {
   )
   const gradle = read("android", "app", "build.gradle")
 
-  it("is registered under the name JS reaches, with the same two methods", () => {
+  it("is registered under the name JS reaches, with the same three methods", () => {
     expect(java).toContain('static final String NAME = "AssistantModelBridge"')
     expect(java).toMatch(/@ReactMethod\s+public void isAvailable\(Promise promise\)/)
     expect(java).toMatch(
       /@ReactMethod\s+public void complete\(String promptJson, double timeoutMs, Promise promise\)/,
+    )
+    expect(java).toMatch(
+      /@ReactMethod\s+public void prewarm\(String warmupJson, Promise promise\)/,
     )
     expect(application).toContain(
       "import com.lnflash.assistant.AssistantModelBridgePackage",
@@ -208,6 +249,21 @@ describe("the Android bridge", () => {
   it("counts only a model AICore reports AVAILABLE, and never starts a download", () => {
     expect(java).toContain("status == FeatureStatus.AVAILABLE")
     expect(java).not.toMatch(/\.download\(/)
+  })
+
+  it("warms only a model AICore reports AVAILABLE, and answers the warm-up at once (ENG-749)", () => {
+    // readyModel() is the AVAILABLE check above; ML Kit's warmup() runs only
+    // on what it returns, on the worker, and the promise never waits on it.
+    expect(java).toMatch(
+      /private void warmUp\(\) \{\s+GenerativeModelFutures ready = readyModel\(\);\s+if \(ready == null\) return;\s+try \{\s+ready\.warmup\(\);/,
+    )
+    const prewarm =
+      /public void prewarm\(String warmupJson, Promise promise\) \{([\s\S]*?)\n {2}\}/.exec(
+        java,
+      )?.[1]
+    expect(prewarm).toContain("worker.execute(this::warmUp)")
+    expect(prewarm).toContain("promise.resolve(null)")
+    expect(prewarm).not.toContain("reject(")
   })
 
   it("pins the GenAI Prompt API to one exact version", () => {

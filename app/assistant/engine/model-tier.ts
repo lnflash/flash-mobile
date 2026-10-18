@@ -1,5 +1,5 @@
 import { normalize } from "../grammar/normalize"
-import { amountRuns, readAmount } from "../grammar/words"
+import { amountRuns, readAmount, refersToThreadOnly, stripFrame } from "../grammar/words"
 import { CONTACT_PICK_PREFIX } from "../registry/actions/shared/payee"
 import type { Registry, RegisteredTool } from "../registry/define"
 import type { Intent } from "../registry/types"
@@ -7,7 +7,7 @@ import type { ThreadEntry, ThreadStore } from "../ui/thread-store"
 import type { AmountPhraseContext } from "./amount-phrase"
 import { routeIntent, ToolCall } from "./intent-router"
 import { MODEL_RESPONSE_TIMEOUT_MS, ModelAdapter } from "./model-adapter"
-import { buildModelPrompt } from "./model-prompt"
+import { buildModelPrompt, buildModelWarmup, modelTierRegistry } from "./model-prompt"
 import { AMOUNT_PATTERN } from "./parse-amount"
 import { isPlainObject, JsonSchema } from "./schema-validator"
 
@@ -15,13 +15,22 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 // order reserves for it, after the grammar has missed. It asks the model for
 // at most one call and trusts none of it:
 //
+// 0. A reference to the thread with nothing new in it ("same ting again",
+//    "do that again", "again") is no call, and the model is not asked
+//    (ENG-749): only the thread knows what it points at, and the thread's
+//    own controls issue a call again (refersToThreadOnly, grammar/words.ts).
 // 1. The native availability check, every turn. It is the authority, not the
 //    coverage heuristic (app/utils/on-device-model-coverage.ts).
 // 2. The prompt (model-prompt.ts) and the model's decision, within the
-//    timeout. No answer, or none, is no call.
-// 3. The router, unmodified, as a pre-check: a non-object, an intent outside
-//    the closed set or with no tool, an extra envelope key, arguments the
-//    schema refuses and an amount that does not parse are all refused here.
+//    timeout. No answer, or none, is no call. The next ask's session is
+//    warmed as soon as this one is decided (prewarmOnDeviceModel, ENG-749).
+// 3. The router, unmodified, as a pre-check, over the model tier's tools
+//    only (modelTierRegistry: the five shipped intents, ENG-749): a
+//    non-object, an intent outside the closed set, outside the model tier's
+//    five or with no tool, an extra envelope key, arguments the schema
+//    refuses and an amount that does not parse are all refused here. So
+//    "convert 20 dollars to btc" is never a conversion, whatever the model
+//    answers on a platform that does not hold it to its tool list.
 // 4. Grounding (architect decision 4): an action's free-text arguments
 //    (payees, memos, ids), its amounts with their units, and its other
 //    closed-set values (a wallet, a way to be paid) must be in what the
@@ -54,12 +63,14 @@ export type ModelTierRuntime = {
  * - rejected: the model answered with a call they refused, and the intent
  *   it named ("unknown" when it named none of the closed set); the turn
  *   reports it with the model's flag set (the model's rejection rate).
- * - none: no model, no answer in time, a failure, or no call in the answer.
+ * - none: no model, no answer in time, a failure, or no call in the
+ *   answer; or a reference to the thread alone, which the model is never
+ *   asked about ("thread").
  */
 export type ModelTierResult =
   | { kind: "call"; call: ToolCall }
   | { kind: "rejected"; reason: "precheck" | "ungrounded"; intent: Intent | "unknown" }
-  | { kind: "none"; reason: "unavailable" | "miss" }
+  | { kind: "none"; reason: "unavailable" | "miss" | "thread" }
 
 // ---------------------------------------------------------------------------
 // Grounding
@@ -320,6 +331,32 @@ const threadBefore = (
 const NO_MODEL: ModelTierResult = { kind: "none", reason: "unavailable" }
 
 /**
+ * Warm the on-device model's next session (ENG-749): when the model can
+ * answer now, hand the native side the instructions every request carries,
+ * sending nothing. iOS makes a session for them and processes them in
+ * advance, so the next request, once that warm-up has finished, pays only
+ * for its own words. Android's warm-up loads the model only (ML Kit's
+ * warmup() takes no instructions), and each request still reads the
+ * instructions within its own time; ML Kit's CachedContext is the
+ * follow-up. Ask Flash calls it when it opens, and tryOnDeviceModel after
+ * each request the model was asked, so each ask in the thread finds one
+ * started before it: a session is never reused across asks, since one that
+ * answered holds that turn's words. The caller asks only while both flags
+ * are on. It never throws, reports no event of its own, and does nothing
+ * without a model.
+ */
+export const prewarmOnDeviceModel = async (
+  runtime: Pick<ModelTierRuntime, "registry" | "modelAdapter">,
+): Promise<void> => {
+  try {
+    if (!(await runtime.modelAdapter.isAvailable())) return
+    await runtime.modelAdapter.prewarm(buildModelWarmup(runtime.registry))
+  } catch {
+    // Best effort: a request that finds no warm session starts its own.
+  }
+}
+
+/**
  * The on-device model's call for an utterance the grammar missed, checked,
  * on the account `account` names (its display currency and symbol), which
  * grounding reads amounts in.
@@ -330,18 +367,25 @@ export const tryOnDeviceModel = async (
   account: AmountPhraseContext,
 ): Promise<ModelTierResult> => {
   try {
+    if (refersToThreadOnly(stripFrame(normalize(utterance).tokens))) {
+      return { kind: "none", reason: "thread" }
+    }
     if (!(await runtime.modelAdapter.isAvailable())) return NO_MODEL
+    const registry = modelTierRegistry(runtime.registry)
     const prompt = buildModelPrompt(
-      runtime.registry,
+      registry,
       threadBefore(runtime.transcript.get().entries, utterance),
       utterance,
     )
     const decision = await runtime.modelAdapter.decide(prompt, {
       timeoutMs: MODEL_RESPONSE_TIMEOUT_MS,
     })
+    // This request used the warmed session, or started its own: warm the
+    // next one now, after it, never awaited (ENG-749).
+    prewarmOnDeviceModel(runtime)
     if (decision.kind !== "call") return { kind: "none", reason: decision.kind }
 
-    const route = routeIntent(decision.raw, runtime.registry)
+    const route = routeIntent(decision.raw, registry)
     // A routed call is a plain object with an intent and, at most, args.
     if (!route.ok || !isPlainObject(decision.raw)) {
       return { kind: "rejected", reason: "precheck", intent: route.intent }

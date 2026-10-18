@@ -168,6 +168,22 @@ const QUESTIONS: readonly (readonly string[])[] = [
 export const isQuestionAboutHow = (tokens: readonly Token[]): boolean =>
   QUESTIONS.some((words) => startsWith(tokens, words))
 
+/**
+ * Asks what something is (ENG-749): "what is lightning", "what's a sat",
+ * "whats an invoice", "what are fees". "What's" and "whats" both reach the
+ * rules as "what" (normalize.ts, folds.ts), so the word as typed tells
+ * them from a plain "what"; a patois "wah is" folds to "what is" and is one
+ * too. Unlike the openers above, a rule reads first: "what is my balance"
+ * and "what's the price" are reads, and only an ask no rule reads is a
+ * question about what something is (readGrammar).
+ */
+export const isQuestionAboutWhat = (tokens: readonly Token[]): boolean => {
+  const [first, second] = tokens
+  if (first?.word !== "what") return false
+  const typed = first.raw.toLowerCase().replace(/['’‘]/g, "")
+  return typed === "whats" || second?.word === "is" || second?.word === "are"
+}
+
 // ---------------------------------------------------------------------------
 // Payment requests and addresses, which v1 does not take
 // ---------------------------------------------------------------------------
@@ -430,6 +446,32 @@ export const TIME_WORDS = set(
 
 /** Follow-ups: v1 parses every utterance on its own (spec §7.2). */
 export const FOLLOW_UP_WORDS = set("again more another same back extra rest also too")
+
+/** Words that point back at the thread: "again", "same", "repeat". */
+const THREAD_POINTERS = set("again same repeat redo another more")
+
+/**
+ * Words that name nothing new beside a pointer: "do that again", "same ting
+ * again", "one more time", "same as before", patois "dweet again" (do it
+ * again). "Ting" reaches here as "thing" (folds.ts).
+ */
+const THREAD_FILLERS = set(
+  "do did does it that this the one thing time as before last over dweet dat now please",
+)
+
+/**
+ * A reference to the thread with nothing new in it (ENG-749): "same ting
+ * again", "do that again", "again", "one more time", once its frame is
+ * stripped. Only the thread knows what it points at, and the thread's own
+ * controls issue a call again (a card's Try again or Refresh, a question's
+ * pick), so the on-device model is never asked about one: a model reads it
+ * as whatever call it likes ("same ting again" was a balance read to the
+ * macOS model). Anything else in the words ("same again for bob") is not
+ * one.
+ */
+export const refersToThreadOnly = (tokens: readonly Token[]): boolean =>
+  tokens.some(({ word }) => THREAD_POINTERS.has(word)) &&
+  tokens.every(({ word }) => THREAD_POINTERS.has(word) || THREAD_FILLERS.has(word))
 
 /** Pronouns that stand for a person. */
 export const PERSON_PRONOUNS = set("him her them they it she he us im yall unu")

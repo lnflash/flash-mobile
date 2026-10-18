@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { FlatList, TextInput, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useApolloClient } from "@apollo/client"
@@ -23,6 +23,7 @@ import { ActionCardView } from "../cards/ActionCardView"
 import type { CardActions } from "../cards/card-actions"
 import { replyText } from "../cards/card-parts"
 import { registerModelEvalHook } from "../engine/model-eval-hook"
+import { prewarmOnDeviceModel } from "../engine/model-tier"
 import type {
   BalancesProjection,
   PricePayload,
@@ -42,7 +43,9 @@ import { useThread } from "./use-thread"
 // render through ActionCardView, unchanged. Offline, a banner says so, and
 // answers from the cache carry the stale label at their top. The on-device
 // model reads what the grammar misses only while assistantEnabled and
-// assistantOnDeviceModel are both on (ENG-690, architect decision 2).
+// assistantOnDeviceModel are both on (ENG-690, architect decision 2), and
+// the screen warms its session as it opens, under the same two flags
+// (ENG-749), never at app launch.
 
 // A development build's hook for the on-device model's device eval
 // (engine/model-eval-hook.ts); a no-op in a release build.
@@ -334,6 +337,7 @@ export const AskFlashScreen: React.FC = () => {
   const runtime = getAssistantRuntime(client, {
     authDescription: LL.AuthenticationScreen.authenticationDescription(),
   })
+  const onDeviceModel = assistantEnabled && assistantOnDeviceModel
   const env: TurnEnv = {
     isOffline,
     displayCurrency,
@@ -341,8 +345,16 @@ export const AskFlashScreen: React.FC = () => {
     display: { formatMoneyAmount, formatDisplayAndWalletAmount, fractionDigits },
     graphqlUri: appConfig.galoyInstance.graphqlUri,
     lnAddressHostname: appConfig.galoyInstance.lnAddressHostname,
-    onDeviceModel: assistantEnabled && assistantOnDeviceModel,
+    onDeviceModel,
   }
+
+  // Warm the on-device model's session as the screen opens (ENG-749), so
+  // the first request does not wait for it to start: only while both flags
+  // are on and the model is there, never awaited, with no event of its own.
+  useEffect(() => {
+    if (onDeviceModel) prewarmOnDeviceModel(runtime)
+  }, [runtime, onDeviceModel])
+
   const thread = useThread(runtime, env)
   const canSend = !thread.busy && text.trim().length > 0
 

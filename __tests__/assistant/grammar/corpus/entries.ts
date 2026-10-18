@@ -9,7 +9,8 @@ export type Dialect = "en" | "jm"
 export type DisplayCurrency = "USD" | "JMD"
 
 /**
- * - a call: the grammar must emit exactly this call, intent and arguments;
+ * - a call: the grammar must emit exactly this call, intent and arguments,
+ *   unless the entry says the grammar misses it (CorpusEntry.grammar);
  * - "miss": no call at all ("I can't help with that yet"), as for anything
  *   outside the five shipped intents, a payee v1 does not take (an invoice,
  *   an address, a pronoun) or a follow-up;
@@ -23,8 +24,20 @@ export type CorpusEntry = {
   utterance: string
   dialect: Dialect
   displayCurrency: DisplayCurrency
+  /** What a reader of the utterance should make of it: every score counts against this. */
   expected: Expected
+  /**
+   * A call meant here that the grammar misses (ENG-749): a read its rules do
+   * not cover, which a later tier (the on-device model) may serve. The
+   * grammar's own specs hold it to the miss (grammarExpected), and every
+   * score, the grammar's included, counts the miss against `expected`.
+   */
+  grammar?: "miss"
 }
+
+/** What the grammar should make of an entry: what it means, or the miss the entry says. */
+export const grammarExpected = (entry: CorpusEntry): Expected =>
+  entry.grammar ?? entry.expected
 
 /** The symbol each display currency shows, as useDisplayCurrency's fiatSymbol gives it. */
 export const DISPLAY_SYMBOL: Record<DisplayCurrency, string> = {

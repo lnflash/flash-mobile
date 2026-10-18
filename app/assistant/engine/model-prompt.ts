@@ -1,5 +1,6 @@
 import type { Registry } from "../registry/define"
 import type { BalancesProjection, TransactionsProjection } from "../registry/projections"
+import { MODEL_TIER_INTENTS } from "../registry/types"
 import type { ThreadEntry } from "../ui/thread-store"
 import { isPlainObject, JsonSchema } from "./schema-validator"
 
@@ -7,8 +8,11 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 // Foundation Models takes them (instructions, then a prompt), and the tools
 // the answer is shaped by (ModelTool):
 //
-// - instructions, the developer's part: the tool list (every registered
-//   tool's intent, description and input schema, define.ts) and the rules.
+// - instructions, the developer's part: the tool list and the rules. The
+//   list holds the model tier's tools only (ENG-749): the five shipped
+//   intents of MODEL_TIER_INTENTS (registry/types.ts), each with its intent,
+//   description and input schema (define.ts). Every other intent stays
+//   registered, and the model never sees it.
 // - prompt: the current thread, quoted, then the person's request. The
 //   request is the only instruction text in it. The thread is data: the
 //   last ten lines at most, every piece of text in them cut to 200
@@ -38,9 +42,16 @@ export type ModelPrompt = {
   instructions: string
   /** The quoted thread, then the request. */
   prompt: string
-  /** Every registered tool, for the answer's shape. */
+  /** The model tier's tools (modelTierRegistry), for the answer's shape. */
   tools: ModelTool[]
 }
+
+/**
+ * What the model's session is warmed with when Ask Flash opens, and after
+ * each ask the model reads (tryOnDeviceModel, ENG-749): the instructions
+ * every request carries, and nothing from the thread or the person.
+ */
+export type ModelWarmup = Pick<ModelPrompt, "instructions">
 
 /** At most this many of the thread's latest lines are quoted. */
 export const MAX_THREAD_ENTRIES = 10
@@ -53,9 +64,10 @@ export const MAX_QUOTED_ROWS = 5
 
 /**
  * The quoted thread's budget, in characters: the oldest lines go first when
- * it runs over, so the tool list and the rules (about 5,500 characters), the
- * request and the answer always fit the model's context (Foundation Models
- * holds 4,096 tokens, the answer included).
+ * it runs over, so the tool list and the rules (about 3,000 characters for
+ * the five tools of MODEL_TIER_INTENTS), the request and the answer always
+ * fit the model's context (Foundation Models holds 4,096 tokens, the answer
+ * included).
  */
 export const MAX_THREAD_CHARS = 2000
 
@@ -230,7 +242,17 @@ export const threadLines = (entries: readonly ThreadEntry[]): string[] => {
   return lines
 }
 
-/** Every registered tool, its arguments in its schema's order. */
+/**
+ * The registry as the on-device model sees it (ENG-749): the tools of
+ * MODEL_TIER_INTENTS that it holds, in its own order. The prompt's tool list
+ * and the tools iOS shapes the answer from are built from it, and the model
+ * tier routes the model's call against it, so a call of any other intent is
+ * refused before it runs, whatever the model or the platform did.
+ */
+export const modelTierRegistry = (registry: Registry): Registry =>
+  new Map([...registry].filter(([intent]) => MODEL_TIER_INTENTS.includes(intent)))
+
+/** Every tool of `registry`, its arguments in its schema's order. */
 export const toolsOf = (registry: Registry): ModelTool[] =>
   [...registry.values()].map(({ intent, description, input }) => ({
     intent,
@@ -249,25 +271,40 @@ const catalogOf = (registry: Registry): string =>
     )
     .join("\n")
 
+/** The instructions every request carries: the model tier's tools, then the rules. */
+const instructionsOf = (tools: Registry): string =>
+  [INTRO, CATALOG_INTRO, catalogOf(tools), RULES].join("\n\n")
+
 /**
- * The prompt for one request: the registry's tools and the rules, then the
- * current thread's entries before the request (the caller leaves the
- * request's own line out), quoted, then the request.
+ * What warms the model's session when Ask Flash opens, and after each ask
+ * the model reads (tryOnDeviceModel, ENG-749): the instructions of every
+ * request's prompt (buildModelPrompt), so the native side can hand the
+ * warmed session to the next request that carries them.
+ */
+export const buildModelWarmup = (registry: Registry): ModelWarmup => ({
+  instructions: instructionsOf(modelTierRegistry(registry)),
+})
+
+/**
+ * The prompt for one request: the model tier's tools (modelTierRegistry)
+ * and the rules, then the current thread's entries before the request (the
+ * caller leaves the request's own line out), quoted, then the request.
  */
 export const buildModelPrompt = (
   registry: Registry,
   entries: readonly ThreadEntry[],
   utterance: string,
 ): ModelPrompt => {
+  const tools = modelTierRegistry(registry)
   const lines = threadLines(entries)
   return {
-    instructions: [INTRO, CATALOG_INTRO, catalogOf(registry), RULES].join("\n\n"),
+    instructions: instructionsOf(tools),
     prompt: [
       ...(lines.length > 0
         ? [[THREAD_INTRO, THREAD_OPEN, ...lines, THREAD_CLOSE].join("\n")]
         : []),
       `Request: ${utterance.trim()}`,
     ].join("\n\n"),
-    tools: toolsOf(registry),
+    tools: toolsOf(tools),
   }
 }

@@ -5,9 +5,10 @@ import {
   decisionOf,
   MODEL_AVAILABILITY_TIMEOUT_MS,
   MODEL_BACKSTOP_GRACE_MS,
+  MODEL_PREWARM_TIMEOUT_MS,
   MODEL_RESPONSE_TIMEOUT_MS,
 } from "@app/assistant/engine/model-adapter"
-import type { ModelPrompt } from "@app/assistant/engine/model-prompt"
+import type { ModelPrompt, ModelWarmup } from "@app/assistant/engine/model-prompt"
 import {
   AssistantModelBridge,
   nativeModelBridge,
@@ -23,11 +24,13 @@ const PROMPT: ModelPrompt = {
   tools: [{ intent: "getBalances", description: "Balances.", arguments: [] }],
 }
 const OPTIONS = { timeoutMs: MODEL_RESPONSE_TIMEOUT_MS }
+const WARMUP: ModelWarmup = { instructions: "the tools and the rules" }
 
 const bridge = (overrides: Partial<AssistantModelBridge> = {}) => {
   const native = {
     isAvailable: jest.fn(async () => true),
     complete: jest.fn(async (_prompt: string, _timeoutMs: number) => '{"intent":"none"}'),
+    prewarm: jest.fn(async (_warmup: string): Promise<unknown> => null),
     ...overrides,
   }
   return { native, adapter: createNativeModelAdapter(() => native) }
@@ -59,6 +62,19 @@ describe("the native module", () => {
     await expect(adapter.decide(PROMPT, OPTIONS)).resolves.toEqual({
       kind: "unavailable",
     })
+    // Nothing to warm (ENG-749).
+    await expect(adapter.prewarm(WARMUP)).resolves.toBeUndefined()
+  })
+
+  it("is there without prewarm, as in a build made before it (ENG-749)", async () => {
+    const native = {
+      isAvailable: jest.fn(async () => true),
+      complete: jest.fn(async () => '{"intent":"none"}'),
+    }
+    modules.AssistantModelBridge = native
+
+    expect(nativeModelBridge()).toBe(native)
+    await expect(createNativeModelAdapter().prewarm(WARMUP)).resolves.toBeUndefined()
   })
 
   it("is absent when it lacks either method", () => {
@@ -227,5 +243,44 @@ describe("decide", () => {
   it("is a miss for an answer that is not text at all", () => {
     expect(decisionOf(undefined)).toEqual({ kind: "miss" })
     expect(decisionOf({ intent: "getBalances" })).toEqual({ kind: "miss" })
+  })
+})
+
+describe("prewarm (ENG-749)", () => {
+  it("hands the module the warm-up as JSON, once, and resolves with nothing", async () => {
+    const { native, adapter } = bridge()
+
+    await expect(adapter.prewarm(WARMUP)).resolves.toBeUndefined()
+
+    expect(native.prewarm).toHaveBeenCalledTimes(1)
+    expect(native.prewarm).toHaveBeenCalledWith(JSON.stringify(WARMUP))
+    // It asks the model nothing.
+    expect(native.complete).not.toHaveBeenCalled()
+  })
+
+  it("never rejects: a module that throws, rejects or is not a function is nothing", async () => {
+    const throws = bridge({
+      prewarm: jest.fn(() => {
+        throw new Error("native crash")
+      }),
+    })
+    const rejects = bridge({
+      prewarm: jest.fn(async () => Promise.reject(new Error("no model"))),
+    })
+    const odd = bridge({ prewarm: "yes" as unknown as AssistantModelBridge["prewarm"] })
+
+    await expect(throws.adapter.prewarm(WARMUP)).resolves.toBeUndefined()
+    await expect(rejects.adapter.prewarm(WARMUP)).resolves.toBeUndefined()
+    await expect(odd.adapter.prewarm(WARMUP)).resolves.toBeUndefined()
+  })
+
+  it("stops waiting on a module that never answers", async () => {
+    jest.useFakeTimers()
+    const { adapter } = bridge({ prewarm: jest.fn(() => never<unknown>()) })
+
+    const warming = adapter.prewarm(WARMUP)
+    jest.advanceTimersByTime(MODEL_PREWARM_TIMEOUT_MS)
+
+    await expect(warming).resolves.toBeUndefined()
   })
 })

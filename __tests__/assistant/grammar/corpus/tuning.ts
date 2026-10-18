@@ -482,7 +482,16 @@ export const TUNING: readonly CorpusEntry[] = [
   en("USD", "what is lightning", "miss"),
   en("USD", "how do i receive money", "miss"),
   en("USD", "how much did i spend", "miss"),
-  en("USD", "how much did bob send me", "miss"),
+  // A history read from bob (ENG-749, relabelled from a miss): what the
+  // macOS model answered, which the grammar's rules do not read.
+  {
+    ...en(
+      "USD",
+      "how much did bob send me",
+      transactions({ direction: "RECEIVE", query: "bob" }),
+    ),
+    grammar: "miss",
+  },
   en("USD", "can i get a loan", "miss"),
   en("USD", "set up my pin", "miss"),
   en("USD", "log out", "miss"),

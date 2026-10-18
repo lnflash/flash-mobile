@@ -2,26 +2,49 @@ import {
   createNativeModelAdapter,
   ModelDecision,
 } from "@app/assistant/engine/model-adapter"
+import type { ToolCall } from "@app/assistant/engine/intent-router"
 import {
   evalEntriesOf,
+  evalSessionsOf,
+  MODEL_EVAL_WARM_IDLE_MS,
   ModelEvalDeps,
+  ModelEvalEntry,
+  ModelEvalModelResult,
+  ModelEvalOutcome,
+  ModelEvalRow,
+  ModelEvalRun,
   registerModelEvalHook,
   runModelEval,
+  WARM_SESSIONS,
 } from "@app/assistant/engine/model-eval-hook"
 import type { ModelPrompt } from "@app/assistant/engine/model-prompt"
 import { readGrammar } from "@app/assistant/grammar"
+import { normalize } from "@app/assistant/grammar/normalize"
+import { refersToThreadOnly, stripFrame } from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
-import { CorpusEntry, DISPLAY_SYMBOL } from "../grammar/corpus/entries"
+import { splitMoneyAmount } from "@app/assistant/registry/actions/shared/split"
+import { toUsdMoneyAmount } from "@app/types/amounts"
+import {
+  CorpusEntry,
+  DISPLAY_SYMBOL,
+  Expected,
+  grammarExpected,
+} from "../grammar/corpus/entries"
 import { TUNING } from "../grammar/corpus/tuning"
 import { score } from "../grammar/score"
+import { fakeModelAdapter, unavailableModelAdapter } from "../fakes"
 import {
   describeDeviceRun,
   deviceEntries,
+  isWrongPreparedAction,
+  meetsModelTierBar,
+  MODEL_TIER_BAR,
   parseDeviceRun,
   percentile,
   pipelineOutcome,
   sameNumbersAs,
   scoreDeviceRun,
+  WrongCalls,
 } from "./eval-run"
 
 // The on-device model's eval (ENG-690): the dev hook runs the grammar and
@@ -47,10 +70,17 @@ const scriptedModel = (answers: Answers) => {
       async (prompt: ModelPrompt): Promise<ModelDecision> =>
         byRequest.get(requestOf(prompt)) ?? { kind: "miss" },
     ),
+    prewarm: jest.fn(async () => undefined),
   }
 }
 
-const depsOf = (modelAdapter: ModelEvalDeps["modelAdapter"]): ModelEvalDeps => {
+/**
+ * The hook's dependencies on a fake clock: each reading is 10 ms past the
+ * last, and a warm run's wait moves the clock by its whole length, at once.
+ */
+const depsOf = (
+  modelAdapter: ModelEvalDeps["modelAdapter"],
+): ModelEvalDeps & { sleep: jest.Mock } => {
   let clock = 0
   return {
     registry: assistantRegistry,
@@ -59,6 +89,9 @@ const depsOf = (modelAdapter: ModelEvalDeps["modelAdapter"]): ModelEvalDeps => {
       clock += 10
       return clock
     },
+    sleep: jest.fn(async (ms: number) => {
+      clock += ms
+    }),
   }
 }
 
@@ -73,6 +106,10 @@ const runOver = async (
 
 const grammar = score(TUNING)
 
+/** What the model tier records beside a model outcome it answered: a call, or the model's none. */
+const answeredAs = (model: ModelEvalOutcome): ModelEvalModelResult =>
+  typeof model === "string" ? { kind: "none", reason: "miss" } : { kind: "call" }
+
 describe("the eval over the tuning corpus, with a fake model", () => {
   it("scores a model that answers what each entry meant: no wrong action, and never below the grammar", async () => {
     const answers: Answers = new Map(
@@ -86,6 +123,8 @@ describe("the eval over the tuning corpus, with a fake model", () => {
     const scores = await runOver(TUNING, scriptedModel(answers))
 
     expect(scores.available).toBe(true)
+    // Each ask warmed as the app leaves it, the run's default (ENG-749).
+    expect(scores.sessions).toEqual(WARM_SESSIONS)
     expect(scores.model.all.total).toBe(TUNING.length)
     // A meant call is never a wrong one; grounding turns the ones the
     // model would have to rewrite (sats as bitcoin) into misses.
@@ -117,14 +156,17 @@ describe("the eval over the tuning corpus, with a fake model", () => {
   it("scores a model call on an entry meant as a miss as a wrong action, alone and in the shipped order", async () => {
     // An entry no call was meant for, which the grammar misses too.
     // An entry no call was meant for, which the grammar misses without
-    // refusing it, so the shipped order asks the model about it.
+    // refusing it, so the shipped order asks the model about it: not a
+    // reference to the thread alone, which the model is never asked about
+    // (ENG-749).
     const target = TUNING.find(
       (entry) =>
         entry.expected === "miss" &&
         readGrammar(entry.utterance, {
           displayCurrency: entry.displayCurrency,
           displaySymbol: DISPLAY_SYMBOL[entry.displayCurrency],
-        }) === undefined,
+        }) === undefined &&
+        !refersToThreadOnly(stripFrame(normalize(entry.utterance).tokens)),
     )
     if (!target) throw new Error("the tuning corpus has no entry the grammar only misses")
     const answers: Answers = new Map([
@@ -139,6 +181,32 @@ describe("the eval over the tuning corpus, with a fake model", () => {
       entry: target,
       got: { intent: "getBalances", args: {} },
     })
+    // A read, where none was meant: a wrong read, not a wrong prepared
+    // action (ENG-749).
+    expect(scores.wrongCalls.model.all).toMatchObject({ preparedAction: 0, read: 1 })
+  })
+
+  it('counts a history read from bob as what "how much did bob send me" means, though the grammar misses it (ENG-749)', async () => {
+    const entry = TUNING.find(({ utterance }) => utterance === "how much did bob send me")
+    if (!entry) throw new Error("the tuning corpus has no bob entry")
+    const read = {
+      intent: "getTransactions",
+      args: { direction: "RECEIVE", query: "bob" },
+    }
+    expect(entry.expected).toEqual(read)
+    // The grammar's own specs hold it to the miss its rules make of it.
+    expect(grammarExpected(entry)).toBe("miss")
+    expect(score([entry])).toMatchObject({ correct: 0, missed: 1, wrongAction: 0 })
+
+    // What the macOS model answered (ENG-690 proxy run): a wrong call
+    // against the old label, the meant read now.
+    const scores = await runOver(
+      [entry],
+      scriptedModel(new Map([[entry.utterance, { kind: "call", raw: read }]])),
+    )
+
+    expect(scores.model.all).toMatchObject({ correct: 1, wrongAction: 0 })
+    expect(scores.pipeline.all).toMatchObject({ correct: 1, wrongAction: 0 })
   })
 
   it("scores no model at all as the grammar alone, and says the model was not there", async () => {
@@ -148,7 +216,7 @@ describe("the eval over the tuning corpus, with a fake model", () => {
 
     expect(scores.available).toBe(false)
     expect(scores.pipeline.all).toEqual(grammar)
-    expect(describeDeviceRun("tuning", scores)).toContain(
+    expect(describeDeviceRun("tuning", scores, "tuning")).toContain(
       "NO, so every model row is a miss",
     )
   })
@@ -205,23 +273,42 @@ describe("runModelEval", () => {
     const run = await runModelEval(entries, depsOf(model))
 
     const miss = { grammar: "miss", refused: false }
+    const none = { kind: "none", reason: "miss" }
     expect(run.rows).toEqual([
       {
         grammar: { intent: "getBalances", args: {} },
         refused: false,
         model: "miss",
+        modelResult: none,
         modelMs: 10,
       },
-      { grammar: "clarifyAmount", refused: false, model: "miss", modelMs: 10 },
-      // A call the router refuses is no call.
-      { ...miss, model: "miss", modelMs: 10 },
-      { ...miss, model: { intent: "getBalances", args: {} }, modelMs: 10 },
+      {
+        grammar: "clarifyAmount",
+        refused: false,
+        model: "miss",
+        modelResult: none,
+        modelMs: 10,
+      },
+      // A call the router refuses is no call, and the row says it was refused.
+      {
+        ...miss,
+        model: "miss",
+        modelResult: { kind: "rejected", reason: "precheck" },
+        modelMs: 10,
+      },
+      {
+        ...miss,
+        model: { intent: "getBalances", args: {} },
+        modelResult: { kind: "call" },
+        modelMs: 10,
+      },
       // A pronoun for a payee: the grammar refuses it, and the model's call
       // for it counts only for the model alone.
       {
         grammar: "miss",
         refused: true,
         model: { intent: "prepareSend", args: { payee: "her", amount: "5" } },
+        modelResult: { kind: "call" },
         modelMs: 10,
       },
     ])
@@ -246,6 +333,152 @@ describe("runModelEval", () => {
       "utterance",
     ])
   })
+
+  it("records what the model tier made of each entry, by kind and reason (ENG-749)", async () => {
+    const usd = (utterance: string): ModelEvalEntry => ({
+      utterance,
+      displayCurrency: "USD",
+      displaySymbol: "$",
+    })
+    const model = scriptedModel(
+      new Map<string, ModelDecision>([
+        [
+          "pay the rent",
+          {
+            kind: "call",
+            raw: { intent: "prepareSend", args: { payee: "landlord", amount: "500" } },
+          },
+        ],
+        // The time ran out, or the model failed.
+        ["how loaded am i right now", { kind: "unavailable" }],
+      ]),
+    )
+
+    const run = await runModelEval(
+      [usd("same ting again"), usd("pay the rent"), usd("how loaded am i right now")],
+      depsOf(model),
+    )
+
+    expect(
+      run.rows.map(({ model: outcome, modelResult }) => [outcome, modelResult]),
+    ).toEqual([
+      // A reference to the thread alone: the model was not asked.
+      ["miss", { kind: "none", reason: "thread" }],
+      // A payee and an amount the person never typed.
+      ["miss", { kind: "rejected", reason: "ungrounded" }],
+      ["miss", { kind: "none", reason: "unavailable" }],
+    ])
+    expect(model.decide).toHaveBeenCalledTimes(2)
+  })
+
+  describe("each ask's session (ENG-749)", () => {
+    /** Two asks the model is asked about: the run asks it about every entry but a reference to the thread. */
+    const asks: ModelEvalEntry[] = [
+      { utterance: "tell me a joke", displayCurrency: "USD", displaySymbol: "$" },
+      {
+        utterance: "how loaded am i right now",
+        displayCurrency: "USD",
+        displaySymbol: "$",
+      },
+    ]
+
+    /** A model there for every ask, and its warm-ups, the asks and the hook's waits, in order. */
+    const logged = () => {
+      const log: string[] = []
+      const model = scriptedModel(new Map())
+      model.prewarm.mockImplementation(async () => {
+        log.push("prewarm")
+        return undefined
+      })
+      model.decide.mockImplementation(async (prompt: ModelPrompt) => {
+        log.push(`ask ${requestOf(prompt)}`)
+        return { kind: "miss" }
+      })
+      const deps = depsOf(model)
+      const { sleep } = deps
+      const waits = jest.fn(async (ms: number) => {
+        log.push(`wait ${ms}`)
+        await sleep(ms)
+      })
+      return { log, model, deps: { ...deps, sleep: waits } }
+    }
+
+    it("warms the session before each ask and waits as a person typing would, outside the ask's time, by default", async () => {
+      const { log, model, deps } = logged()
+
+      const run = await runModelEval(asks, deps)
+
+      expect(MODEL_EVAL_WARM_IDLE_MS).toBe(2000)
+      expect(run.sessions).toEqual({ mode: "warm", idleMs: MODEL_EVAL_WARM_IDLE_MS })
+      expect(log.filter((line) => line !== "prewarm")).toEqual([
+        "wait 2000",
+        "ask tell me a joke",
+        "wait 2000",
+        "ask how loaded am i right now",
+      ])
+      // Each wait follows a warm-up the hook waited for; nothing but the
+      // hook could have warmed the first ask's session.
+      expect(log[0]).toBe("prewarm")
+      expect(
+        log.flatMap((line, index) => (line.startsWith("wait") ? [log[index - 1]] : [])),
+      ).toEqual(["prewarm", "prewarm"])
+      // The hook's warm-up before each ask, and the model tier's after it.
+      expect(model.prewarm).toHaveBeenCalledTimes(2 * asks.length)
+      // The wait is not the model's time.
+      expect(run.rows.map(({ modelMs }) => modelMs)).toEqual([10, 10])
+    })
+
+    it("asks back to back when told cold: no warm-up of its own and no wait, and the run says so", async () => {
+      const { log, model, deps } = logged()
+
+      const run = await runModelEval(asks, deps, { mode: "cold" })
+
+      expect(run.sessions).toEqual({ mode: "cold" })
+      expect(deps.sleep).not.toHaveBeenCalled()
+      expect(log[0]).toBe("ask tell me a joke")
+      // Only the model tier's warm-up after each ask, which the next ask
+      // meets a moment later.
+      expect(model.prewarm).toHaveBeenCalledTimes(asks.length)
+      expect(run.rows.map(({ modelMs }) => modelMs)).toEqual([10, 10])
+    })
+
+    it("warms nothing and waits for nothing when the run began with no model", async () => {
+      const absent = unavailableModelAdapter()
+      const deps = depsOf(absent)
+
+      const run = await runModelEval(asks, deps)
+
+      expect(run).toMatchObject({ available: false, sessions: WARM_SESSIONS })
+      expect(deps.sleep).not.toHaveBeenCalled()
+      expect(absent.prewarm).not.toHaveBeenCalled()
+    })
+
+    it("warms and waits for an ask only when the native check finds a model then, not on how the run began", async () => {
+      const { log, model, deps } = logged()
+      let there = true
+      model.isAvailable.mockImplementation(async () => there)
+      // The model goes as soon as the first ask is decided, as AICore may
+      // take it back mid-run.
+      model.decide.mockImplementation(async (prompt: ModelPrompt) => {
+        log.push(`ask ${requestOf(prompt)}`)
+        there = false
+        return { kind: "miss" }
+      })
+
+      const run = await runModelEval(asks, deps)
+
+      expect(run.available).toBe(true)
+      // No warm-up and no idle for the second ask, which found no model.
+      expect(log.filter((line) => line !== "prewarm")).toEqual([
+        "wait 2000",
+        "ask tell me a joke",
+      ])
+      expect(run.rows.map(({ modelResult }) => modelResult)).toEqual([
+        { kind: "none", reason: "miss" },
+        { kind: "none", reason: "unavailable" },
+      ])
+    })
+  })
 })
 
 describe("the dev hook", () => {
@@ -266,11 +499,13 @@ describe("the dev hook", () => {
 
     expect(JSON.parse(answer ?? "")).toEqual({
       available: true,
+      sessions: { mode: "warm", idleMs: MODEL_EVAL_WARM_IDLE_MS },
       rows: [
         {
           grammar: { intent: "getBalances", args: {} },
           refused: false,
           model: "miss",
+          modelResult: { kind: "none", reason: "miss" },
           modelMs: 10,
         },
       ],
@@ -287,6 +522,39 @@ describe("the dev hook", () => {
     registerModelEvalHook(depsOf(scriptedModel(new Map())), host)
 
     expect(host.__flashModelEval).toBeUndefined()
+  })
+
+  it('takes { sessions: "cold" } after the entries, and refuses options it cannot read (ENG-749)', async () => {
+    const host: {
+      __flashModelEval?: (entries: unknown, options?: unknown) => Promise<string>
+    } = {}
+    const deps = depsOf(scriptedModel(new Map()))
+    registerModelEvalHook(deps, host)
+    const entries = [{ utterance: "my balance", displayCurrency: "USD" }]
+
+    const cold = JSON.parse(
+      (await host.__flashModelEval?.(entries, { sessions: "cold" })) ?? "",
+    )
+
+    expect(cold.sessions).toEqual({ mode: "cold" })
+    expect(deps.sleep).not.toHaveBeenCalled()
+    await expect(host.__flashModelEval?.(entries, { sessions: "hot" })).rejects.toThrow(
+      '{ sessions: "warm" | "cold" }',
+    )
+    await expect(host.__flashModelEval?.(entries, "cold")).rejects.toThrow(
+      "__flashModelEval takes",
+    )
+  })
+
+  it("reads the hook's options as warm sessions unless they say cold (ENG-749)", () => {
+    expect(evalSessionsOf(undefined)).toEqual(WARM_SESSIONS)
+    expect(evalSessionsOf({})).toEqual(WARM_SESSIONS)
+    expect(evalSessionsOf({ sessions: "warm" })).toEqual(WARM_SESSIONS)
+    expect(evalSessionsOf({ sessions: "cold" })).toEqual({ mode: "cold" })
+    expect(evalSessionsOf({ sessions: "hot" })).toBeUndefined()
+    expect(evalSessionsOf({ sessions: "cold", idleMs: 5 })).toBeUndefined()
+    expect(evalSessionsOf("cold")).toBeUndefined()
+    expect(evalSessionsOf(null)).toBeUndefined()
   })
 
   it("takes only a list of utterances with a display currency", () => {
@@ -346,9 +614,442 @@ describe("counting a device's answer", () => {
   })
 })
 
+describe("wrong calls by consequence, the model tier's bar (ENG-749)", () => {
+  const en = (
+    utterance: string,
+    expected: Expected,
+    displayCurrency: "USD" | "JMD" = "USD",
+  ): CorpusEntry => ({ utterance, dialect: "en", displayCurrency, expected })
+
+  /** A row the grammar missed without refusing, so the shipped order takes the model's. */
+  const row = (model: ModelEvalOutcome): ModelEvalRow => ({
+    grammar: "miss",
+    refused: false,
+    model,
+    modelResult: answeredAs(model),
+    modelMs: 1,
+  })
+
+  it("counts a run with one wrong prepared action and one wrong read as one of each, and says so", () => {
+    const entries = [
+      en("top up", "miss"),
+      en("payments to kemar", {
+        intent: "getTransactions",
+        args: { direction: "SEND", query: "kemar" },
+      }),
+      en("how loaded am i right now", { intent: "getBalances", args: {} }),
+    ]
+
+    const scores = scoreDeviceRun(entries, {
+      available: true,
+      sessions: WARM_SESSIONS,
+      rows: [
+        // A prepare where none was meant.
+        row({ intent: "prepareReceive", args: {} }),
+        // A read, but not the one meant.
+        row({ intent: "getBalances", args: {} }),
+        // The read meant.
+        row({ intent: "getBalances", args: {} }),
+      ],
+    })
+
+    const oneOfEach: WrongCalls = {
+      preparedAction: 1,
+      read: 1,
+      preparedActionRate: 1 / 3,
+      readRate: 1 / 3,
+    }
+    // The launch gate's count, split in two that add up to it.
+    expect(scores.pipeline.all.wrongAction).toBe(2)
+    expect(scores.wrongCalls.pipeline.all).toEqual(oneOfEach)
+    expect(scores.wrongCalls.model.all).toEqual(oneOfEach)
+    expect(scores.wrongCalls.pipeline.en).toEqual(oneOfEach)
+    expect(scores.wrongCalls.pipeline.jm).toEqual({
+      preparedAction: 0,
+      read: 0,
+      preparedActionRate: 0,
+      readRate: 0,
+    })
+    const report = describeDeviceRun("fake", scores, "held-out")
+    expect(report).toContain(
+      "fake, grammar then model: 1/3 correct (33.3%), 2 wrong action (66.67%), 0 missed, " +
+        "0 asked about the amount; 1 wrong prepared action (33.33%), 1 wrong read (33.33%)",
+    )
+    expect(report).toContain(
+      "fake, model alone, English: 1/3 correct (33.3%), 2 wrong action (66.67%), 0 missed, " +
+        "0 asked about the amount; 1 wrong prepared action (33.33%), 1 wrong read (33.33%)",
+    )
+    expect(report).toContain(
+      "fake: the model tier's bar (held-out set, real device, grammar then model): " +
+        "1 wrong prepared action (allowed 0), 33.33% wrong reads (allowed at most 0.50%): NOT met",
+    )
+    expect(report).toContain(
+      '  wrong prepared action: en/USD "top up": meant "miss", got {"intent":"prepareReceive","args":{}}',
+    )
+  })
+
+  it("calls a prepare wrong by its payee, amount, currency and wallet, read as the tool reads them", () => {
+    const send = (args: Record<string, unknown>): ToolCall => ({
+      intent: "prepareSend",
+      args,
+    })
+    const meant = send({ payee: "kemar", amount: "9", currency: "USD", memo: "the taxi" })
+    const entry = en("send kemar $9 for the taxi", meant)
+    const cases: [string, ToolCall, boolean][] = [
+      ["another amount", send({ ...meant.args, amount: "90" }), true],
+      ["another payee", send({ ...meant.args, payee: "eve" }), true],
+      ["another currency", send({ ...meant.args, currency: "BTC" }), true],
+      [
+        "a wallet the label does not name",
+        send({ ...meant.args, sourceWallet: "BTC" }),
+        true,
+      ],
+      [
+        "another action",
+        { intent: "prepareReceive", args: { amount: "9", currency: "USD" } },
+        true,
+      ],
+      ["another memo", send({ ...meant.args, memo: "taxi" }), false],
+      ["the payee in another case", send({ ...meant.args, payee: " Kemar " }), false],
+      ["the amount written another way", send({ ...meant.args, amount: "9.00" }), false],
+    ]
+    cases.forEach(([name, got, prepared]) =>
+      expect([name, isWrongPreparedAction(got, entry)]).toEqual([name, prepared]),
+    )
+
+    // No currency is the account's display currency.
+    const bare = en("send tanya 20", send({ payee: "tanya", amount: "20" }))
+    const inUsd = send({ payee: "tanya", amount: "20", currency: "USD" })
+    expect(isWrongPreparedAction(inUsd, bare)).toBe(false)
+    expect(isWrongPreparedAction(inUsd, { ...bare, displayCurrency: "JMD" })).toBe(true)
+    // A group's payees in their order: an indivisible total's leftover cent
+    // goes to the first payee (spec §5, prepareGroupSend), so the same names
+    // in another order pay another person another amount.
+    expect(
+      splitMoneyAmount(toUsdMoneyAmount(1000), 3).map(({ amount }) => amount),
+    ).toEqual([334, 333, 333])
+    const group = en("split 10 between bob, alice and eve", {
+      intent: "prepareGroupSend",
+      args: { payees: ["bob", "alice", "eve"], total: "10" },
+    })
+    const groupSend = (payees: string[], total = "10"): ToolCall => ({
+      intent: "prepareGroupSend",
+      args: { payees, total },
+    })
+    expect(
+      isWrongPreparedAction(groupSend(["Bob", " alice ", "EVE"], "10.00"), group),
+    ).toBe(false)
+    expect(isWrongPreparedAction(groupSend(["alice", "bob", "eve"]), group)).toBe(true)
+    expect(isWrongPreparedAction(groupSend(["bob", "alice", "kemar"]), group)).toBe(true)
+    // A cash-out's bank account is an id, compared as written, case and all.
+    const cashout = en("cash out 50 to my bank", {
+      intent: "prepareCashout",
+      args: { amount: "50", bankAccountId: "AcctB7" },
+    })
+    const toBank = (bankAccountId: string): ToolCall => ({
+      intent: "prepareCashout",
+      args: { amount: "50.00", bankAccountId },
+    })
+    expect(isWrongPreparedAction(toBank("AcctB7"), cashout)).toBe(false)
+    expect(isWrongPreparedAction(toBank("acctb7"), cashout)).toBe(true)
+    // A prepare where a read, a question or a miss was meant.
+    expect(
+      isWrongPreparedAction(inUsd, en("history", { intent: "getTransactions" })),
+    ).toBe(true)
+    expect(isWrongPreparedAction(inUsd, en("send tanya 5k", "clarifyAmount"))).toBe(true)
+    // A read is never a prepared action, whatever was meant; anything the
+    // scorer cannot show to be a read is one.
+    expect(isWrongPreparedAction({ intent: "getBalances", args: {} }, entry)).toBe(false)
+    expect(
+      isWrongPreparedAction({ intent: "launchRocket", args: {} }, en("hi", "miss")),
+    ).toBe(true)
+  })
+
+  it("holds the bar: no wrong prepared action, and at most 0.5% wrong reads", () => {
+    const wrong = (preparedAction: number, read: number, total: number): WrongCalls => ({
+      preparedAction,
+      read,
+      preparedActionRate: preparedAction / total,
+      readRate: read / total,
+    })
+
+    expect(MODEL_TIER_BAR).toEqual({
+      maxWrongPreparedActions: 0,
+      maxWrongReadRate: 0.005,
+    })
+    expect(meetsModelTierBar(wrong(0, 0, 200))).toBe(true)
+    expect(meetsModelTierBar(wrong(0, 1, 200))).toBe(true)
+    expect(meetsModelTierBar(wrong(0, 2, 200))).toBe(false)
+    expect(meetsModelTierBar(wrong(1, 0, 200))).toBe(false)
+
+    const scores = scoreDeviceRun([en("hi", "miss")], {
+      available: true,
+      sessions: WARM_SESSIONS,
+      rows: [row("miss")],
+    })
+    expect(describeDeviceRun("fake", scores, "held-out")).toContain(
+      "0 wrong prepared actions (allowed 0), 0.00% wrong reads (allowed at most 0.50%): met",
+    )
+  })
+})
+
+describe("the bar's verdict, for a held-out run in which the model answered (ENG-749)", () => {
+  const en = (utterance: string, expected: Expected): CorpusEntry => ({
+    utterance,
+    dialect: "en",
+    displayCurrency: "USD",
+    expected,
+  })
+  const row = (model: ModelEvalOutcome): ModelEvalRow => ({
+    grammar: "miss",
+    refused: false,
+    model,
+    modelResult: answeredAs(model),
+    modelMs: 1,
+  })
+  /** A run of this ticket's hook that began with a model: it records its sessions and each row's result. */
+  const runOf = (rows: ModelEvalRow[]): ModelEvalRun => ({
+    available: true,
+    sessions: WARM_SESSIONS,
+    rows,
+  })
+  const clean = scoreDeviceRun([en("hi", "miss")], runOf([row("miss")]))
+  const failing = scoreDeviceRun(
+    [en("top up", "miss")],
+    runOf([row({ intent: "prepareReceive", args: {} })]),
+  )
+
+  /**
+   * A balance read the grammar reads and a joke it misses without refusing,
+   * both as meant, so the grammar alone meets the bar; the shipped order
+   * asks the model about the joke alone.
+   */
+  const corpus = [
+    en("my balance", { intent: "getBalances", args: {} }),
+    en("tell me a joke", "miss"),
+  ]
+  /** The held-out report of a run of `corpus`, as the device eval scores one. */
+  const heldOutReport = async (modelAdapter: ModelEvalDeps["modelAdapter"]) =>
+    describeDeviceRun("held-out", await runOver(corpus, modelAdapter), "held-out")
+  const reportOf = (run: object): string =>
+    describeDeviceRun(
+      "held-out",
+      scoreDeviceRun(corpus, parseDeviceRun(JSON.stringify(run), corpus)),
+      "held-out",
+    )
+  const noModel =
+    "held-out: bar not judged: the shipped order asked the model 1 time and it never answered " +
+    "(no model, a failure or the time ran out each time), so this run measured the grammar alone"
+
+  it("judges the held-out set", () => {
+    expect(describeDeviceRun("held-out", clean, "held-out")).toMatch(
+      /^held-out: the model tier's bar \(held-out set, real device, grammar then model\): .*: met$/m,
+    )
+    expect(describeDeviceRun("held-out", failing, "held-out")).toMatch(/: NOT met$/m)
+  })
+
+  it("judges a held-out run whose model answered the shipped order's ask, and prints what the model tier made of each entry", async () => {
+    const report = await heldOutReport(fakeModelAdapter({ kind: "miss" }))
+
+    expect(report).toMatch(
+      /^held-out: the model tier's bar \(held-out set, real device, grammar then model\): .*: met$/m,
+    )
+    expect(report).toContain(
+      "held-out: model tier results, every entry (2): 0 calls, 0 refused calls, 2 answered none, " +
+        "0 unanswered (no model, a failure or the time ran out), 0 not asked (a reference to the thread alone)",
+    )
+    expect(report).toContain(
+      "held-out: model tier results, entries the shipped order asks the model about (1): 0 calls, " +
+        "0 refused calls, 1 answered none, 0 unanswered (no model, a failure or the time ran out), " +
+        "0 not asked (a reference to the thread alone)",
+    )
+  })
+
+  it("never judges a held-out run that began with no model: it measured the grammar alone", async () => {
+    const report = await heldOutReport(unavailableModelAdapter())
+
+    expect(report).toContain(
+      "held-out: bar not judged: no model when the run began, so this run measured the grammar alone",
+    )
+    expect(report).not.toMatch(/\bmet$/m)
+
+    // A model that came during the run, as a download forced by hand may
+    // finish: its answers count for the scores, and the rows before them
+    // measured the grammar alone, so the bar is still not judged.
+    const late = scoreDeviceRun(corpus, {
+      ...runOf([
+        { ...row("miss"), modelResult: { kind: "none", reason: "unavailable" } },
+        row("miss"),
+      ]),
+      available: false,
+    })
+    const lateReport = describeDeviceRun("held-out", late, "held-out")
+    expect(lateReport).toContain(
+      "held-out: model available when the run began: NO, though it answered later (1 of 2 entries)",
+    )
+    expect(lateReport).toContain(
+      "held-out: bar not judged: no model when the run began, so this run measured the grammar alone",
+    )
+  })
+
+  it("never judges a held-out run from a hook older than ENG-749's: it records no sessions, or no model tier results", async () => {
+    const judged = await runModelEval(
+      deviceEntries(corpus),
+      depsOf(fakeModelAdapter({ kind: "miss" })),
+    )
+    // Each row as a hook from before the per-row results answered it.
+    const rows = judged.rows.map(({ grammar: byGrammar, refused, model, modelMs }) => ({
+      grammar: byGrammar,
+      refused,
+      model,
+      modelMs,
+    }))
+
+    expect(reportOf(judged)).toMatch(/: met$/m)
+    // As main's hook answers: no sessions, and no result on any row.
+    const mainHook = reportOf({ available: true, rows })
+    expect(mainHook).toContain(
+      "held-out: bar not judged: no sessions recorded: a hook from before ENG-749 ran it, " +
+        "and the held-out run waits for ENG-749's prompt and session changes",
+    )
+    expect(mainHook).toContain(
+      "held-out: model tier results not recorded (a hook from before ENG-749's per-row results)",
+    )
+    expect(mainHook).not.toMatch(/\bmet$/m)
+    const noResults = reportOf({ available: true, sessions: judged.sessions, rows })
+    expect(noResults).toContain(
+      "held-out: bar not judged: no model tier results recorded: a hook from before ENG-749's " +
+        "per-row results ran it, so the run cannot show the model answered",
+    )
+    expect(noResults).not.toMatch(/\bmet$/m)
+  })
+
+  it("never judges a held-out run in which the model never answered an ask the shipped order made", async () => {
+    // Every ask timed out, as every one did on SuperMax with a session made
+    // per call (the ENG-749 plan's device facts).
+    const timedOut = await heldOutReport(fakeModelAdapter({ kind: "unavailable" }))
+    expect(timedOut).toContain(noModel)
+    expect(timedOut).not.toMatch(/\bmet$/m)
+
+    // A model there when the run began, gone before the shipped order's
+    // ask: the run's `available` says how it began, no more.
+    const leaving = fakeModelAdapter({ kind: "miss" })
+    let there = true
+    leaving.isAvailable.mockImplementation(async () => there)
+    leaving.decide.mockImplementation(async (): Promise<ModelDecision> => {
+      there = false
+      return { kind: "miss" }
+    })
+    const gone = await runOver(corpus, leaving)
+    expect(gone.available).toBe(true)
+    expect(describeDeviceRun("held-out", gone, "held-out")).toContain(noModel)
+  })
+
+  it("judges a held-out run in which the model answered some of the shipped order's asks, and counts the rest unanswered", () => {
+    const unanswered: ModelEvalRow = {
+      ...row("miss"),
+      modelResult: { kind: "none", reason: "unavailable" },
+    }
+    const report = describeDeviceRun(
+      "held-out",
+      scoreDeviceRun(
+        [en("hi", "miss"), en("tell me a joke", "miss")],
+        runOf([row("miss"), unanswered]),
+      ),
+      "held-out",
+    )
+
+    expect(report).toMatch(/: met$/m)
+    expect(report).toContain(
+      "held-out: model tier results, entries the shipped order asks the model about (2): 0 calls, " +
+        "0 refused calls, 1 answered none, 1 unanswered (no model, a failure or the time ran out), " +
+        "0 not asked (a reference to the thread alone)",
+    )
+  })
+
+  it("never judges any other set, whatever its numbers, and still lists its wrong prepared actions", () => {
+    ;[clean, failing].forEach((scores) => {
+      const report = describeDeviceRun("tuning", scores, "tuning")
+      expect(report).toContain(
+        "tuning: bar not judged: not the held-out set (the model tier's bar reads the held-out set, " +
+          "real device, grammar then model)",
+      )
+      expect(report).not.toMatch(/\bmet$/m)
+    })
+    expect(describeDeviceRun("tuning", failing, "tuning")).toContain(
+      '  wrong prepared action: en/USD "top up": meant "miss", got {"intent":"prepareReceive","args":{}}',
+    )
+  })
+})
+
+describe("how a run's asks found the model's session (ENG-749)", () => {
+  const entries = TUNING.slice(0, 1)
+  const rows = [{ grammar: "miss", refused: false, model: "miss", modelMs: 1 }]
+  const reportOf = (run: object): string =>
+    describeDeviceRun(
+      "tuning",
+      scoreDeviceRun(entries, parseDeviceRun(JSON.stringify(run), entries)),
+      "tuning",
+    )
+
+  it("prints the state the run says its times measured", () => {
+    expect(
+      reportOf({ available: true, sessions: { mode: "warm", idleMs: 2000 }, rows }),
+    ).toContain(
+      "tuning: sessions warm: each ask warmed, then 2000 ms idle, as the app leaves every ask",
+    )
+    expect(reportOf({ available: true, sessions: { mode: "cold" }, rows })).toContain(
+      "tuning: sessions cold: asks back to back, near-cold times, not the state the app leaves an ask in",
+    )
+    // A hook from before the warm mode said nothing: its asks ran back to back.
+    expect(reportOf({ available: true, rows })).toContain(
+      "tuning: sessions not recorded (a hook from before the warm mode): asks back to back, near-cold times",
+    )
+  })
+
+  it("refuses sessions it cannot read", () => {
+    const parse = (sessions: unknown) => () =>
+      parseDeviceRun(JSON.stringify({ available: true, sessions, rows }), entries)
+
+    expect(parse({ mode: "hot" })).toThrow("sessions are")
+    expect(parse({ mode: "warm" })).toThrow("sessions are")
+    expect(parse("warm")).toThrow("sessions are")
+  })
+})
+
 describe("reading a device's answer", () => {
   const entries = TUNING.slice(0, 2)
   const row = { grammar: "miss", refused: false, model: "miss", modelMs: 1 }
+
+  it("refuses a model tier result it cannot read, or one at odds with the row's model (ENG-749)", () => {
+    const parse = (rows: object[]) => () =>
+      parseDeviceRun(JSON.stringify({ available: true, rows }), entries)
+    const none = { ...row, modelResult: { kind: "none", reason: "miss" } }
+    const call = { intent: "getBalances", args: {} }
+
+    expect(parse([none, none])).not.toThrow()
+    expect(
+      parse([{ ...row, modelResult: { kind: "none", reason: "timeout" } }, none]),
+    ).toThrow("Row 0's modelResult is not")
+    expect(parse([none, { ...row, modelResult: { kind: "maybe" } }])).toThrow(
+      "Row 1's modelResult is not",
+    )
+    expect(
+      parse([
+        { ...row, model: call, modelResult: { kind: "call", reason: "miss" } },
+        none,
+      ]),
+    ).toThrow("Row 0's modelResult is not")
+    // A miss the row says was a call, and a call it says was none.
+    expect(parse([{ ...row, modelResult: { kind: "call" } }, none])).toThrow(
+      "Row 0's model and modelResult disagree",
+    )
+    expect(parse([none, { ...none, model: call }])).toThrow(
+      "Row 1's model and modelResult disagree",
+    )
+    // One hook wrote every row: all of them record a result, or none does.
+    expect(parse([none, row])).toThrow("1 of 2 rows record a modelResult")
+  })
 
   it("refuses an answer that is not a run of one row per entry", () => {
     expect(() => parseDeviceRun("{}", entries)).toThrow("{ available, rows }")

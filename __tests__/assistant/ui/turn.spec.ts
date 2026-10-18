@@ -391,6 +391,61 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     }
   })
 
+  it('never asks the model about a question about what something is: "what is lightning" (ENG-749)', async () => {
+    // What the macOS model answered for it (ENG-690 proxy run).
+    for (const utterance of ["what is lightning", "what's a sat", "whats an invoice"]) {
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+        modelCall({ intent: "getTransactions", args: { query: "lightning" } }),
+      )
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      // The refusal's reply, as "how does lightning work" gets.
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(runTool).not.toHaveBeenCalled()
+      expect(toolEvents()).toEqual([
+        expect.objectContaining({ outcome: "rejected", onDeviceModelAvailable: false }),
+      ])
+    }
+    const how = withModel(modelCall({ intent: "getBalances", args: {} }))
+    await expect(
+      answerUtterance(how.runtime, "how does lightning work", env(ON)),
+    ).resolves.toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    expect(how.modelAdapter.decide).not.toHaveBeenCalled()
+  })
+
+  it('answers a reference to the thread alone ("same ting again") with the miss reply, and never asks the model (ENG-749)', async () => {
+    for (const utterance of ["same ting again", "again", "one more time"]) {
+      const { runtime, modelAdapter, runTool, toolEvents, graphql } = withModel(
+        modelCall({ intent: "getBalances", args: {} }),
+      )
+      graphql.wallets.mockResolvedValue(CASH_WALLETS)
+      runtime.transcript.append([
+        { kind: "user", text: "how loaded am i right now" },
+        { kind: "reply", replyKey: "Assistant.toolFailed" },
+        { kind: "user", text: utterance },
+      ])
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(runTool).not.toHaveBeenCalled()
+      // No call from the model: today's miss event, without its flag.
+      expect(toolEvents()).toEqual([
+        {
+          intent: "unknown",
+          tier: "none",
+          outcome: "rejected",
+          latencyMs: 0,
+          onDeviceModelAvailable: false,
+        },
+      ])
+    }
+  })
+
   it("runs the model's checked call through runTool, served by the model, held as text", async () => {
     const call = {
       intent: "prepareSend",
@@ -534,6 +589,41 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
         onDeviceModelAvailable: true,
       },
     ])
+  })
+
+  it('answers "convert 20 dollars to btc" and "withdraw $50" as misses, whatever the model calls them (ENG-749)', async () => {
+    // What the macOS model answered for them (ENG-690 proxy run): intents
+    // outside the model tier's five, which the pre-check refuses.
+    const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
+      [
+        "convert 20 dollars to btc",
+        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
+      ],
+      ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
+    ]
+    for (const [utterance, call] of answers) {
+      // A plain miss, so the shipped order asks the model.
+      expect(
+        matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" }),
+      ).toBe(undefined)
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(modelCall(call))
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(runTool).not.toHaveBeenCalled()
+      // Refused by the checks: the model's rejection rate, its intent named.
+      expect(toolEvents()).toEqual([
+        {
+          intent: call.intent,
+          tier: "action",
+          outcome: "rejected",
+          latencyMs: 0,
+          onDeviceModelAvailable: true,
+        },
+      ])
+    }
   })
 
   it("is never asked while the flags keep it off", async () => {

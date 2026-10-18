@@ -1,10 +1,16 @@
 import { readAmountPhrase } from "@app/assistant/engine/amount-phrase"
+import { routeIntent } from "@app/assistant/engine/intent-router"
 import { MODEL_RESPONSE_TIMEOUT_MS } from "@app/assistant/engine/model-adapter"
-import { THREAD_CLOSE, THREAD_OPEN } from "@app/assistant/engine/model-prompt"
+import {
+  buildModelPrompt,
+  THREAD_CLOSE,
+  THREAD_OPEN,
+} from "@app/assistant/engine/model-prompt"
 import {
   canonicalNumber,
   isGrounded,
   ModelTierRuntime,
+  prewarmOnDeviceModel,
   tryOnDeviceModel,
 } from "@app/assistant/engine/model-tier"
 import { AMOUNT_CURRENCIES, AMOUNT_PATTERN } from "@app/assistant/engine/parse-amount"
@@ -15,6 +21,7 @@ import {
   Registry,
   RegisteredTool,
 } from "@app/assistant/registry/define"
+import { INTENTS, MODEL_TIER_INTENTS } from "@app/assistant/registry/types"
 import { createThreadStore, NewEntry } from "@app/assistant/ui/thread-store"
 import {
   fakeModelAdapter,
@@ -161,6 +168,73 @@ describe("the pre-check: the router, unmodified", () => {
   })
 })
 
+describe("the model tier's five intents (ENG-749)", () => {
+  it("are the shipped five, every one of them registered", () => {
+    expect(MODEL_TIER_INTENTS).toEqual([
+      "getBalances",
+      "getTransactions",
+      "getPrice",
+      "prepareSend",
+      "prepareReceive",
+    ])
+    MODEL_TIER_INTENTS.forEach((intent) =>
+      expect(assistantRegistry.has(intent)).toBe(true),
+    )
+  })
+
+  it("refuses a call of any other intent at the pre-check, naming it, though it is registered", async () => {
+    const others = INTENTS.filter((intent) => !MODEL_TIER_INTENTS.includes(intent))
+    expect(others).toHaveLength(8)
+    for (const intent of others) {
+      expect(assistantRegistry.has(intent)).toBe(true)
+      await expect(ask({ intent, args: {} }, "do it")).resolves.toEqual({
+        kind: "rejected",
+        reason: "precheck",
+        intent,
+      })
+    }
+  })
+
+  it('never makes "convert 20 dollars to btc" a conversion or "withdraw $50" a cash-out', async () => {
+    // What the macOS model answered for these (ENG-690 proxy run). Each
+    // would route through the whole registry and ground in the words: only
+    // the model tier's five keep them out.
+    const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
+      [
+        "convert 20 dollars to btc",
+        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
+      ],
+      ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
+    ]
+    for (const [utterance, raw] of answers) {
+      const route = routeIntent(raw, assistantRegistry)
+      expect(route.ok).toBe(true)
+      if (route.ok) {
+        expect(isGrounded(route.tool, raw.args, { ...USD, utterance })).toBe(true)
+      }
+      await expect(ask(raw, utterance)).resolves.toEqual({
+        kind: "rejected",
+        reason: "precheck",
+        intent: raw.intent,
+      })
+    }
+  })
+
+  it("asks the model with the five tools alone, in the prompt and in the answer's shape", async () => {
+    const modelAdapter = fakeModelAdapter()
+
+    await tryOnDeviceModel(runtimeOf(modelAdapter), "convert 20 dollars to btc", USD)
+
+    const [prompt] = modelAdapter.decide.mock.calls[0]
+    expect(prompt.tools.map(({ intent }: { intent: string }) => intent)).toEqual([
+      ...MODEL_TIER_INTENTS,
+    ])
+    ;["prepareConversion", "prepareCashout", "searchMerchants"].forEach((intent) =>
+      expect(prompt.instructions).not.toContain(`"intent":"${intent}"`),
+    )
+  })
+})
+
 describe("a call the checks pass", () => {
   it("is the model's own call, intent and raw arguments", async () => {
     const raw = {
@@ -244,35 +318,27 @@ describe("grounding", () => {
         "send bob 5",
       ),
     ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
-    await expect(
-      ask(
-        { intent: "prepareCashout", args: { amount: "20", bankAccountId: "bank-1" } },
-        "cash out 20",
+    // A cash-out is outside the model tier's five (ENG-749), so the
+    // pre-check refuses it first; grounding refuses its id all the same.
+    expect(
+      isGrounded(
+        tool("prepareCashout"),
+        { amount: "20", bankAccountId: "bank-1" },
+        { ...USD, utterance: "cash out 20" },
       ),
-    ).resolves.toEqual({
-      kind: "rejected",
-      reason: "ungrounded",
-      intent: "prepareCashout",
-    })
+    ).toBe(false)
   })
 
-  it("takes every payee of a group send only when each was typed", async () => {
-    await expect(
-      ask(
-        { intent: "prepareGroupSend", args: { payees: ["bob", "alice"], total: "10" } },
-        "split 10 between bob and alice",
-      ),
-    ).resolves.toMatchObject({ kind: "call" })
-    await expect(
-      ask(
-        { intent: "prepareGroupSend", args: { payees: ["bob", "eve"], total: "10" } },
-        "split 10 between bob and alice",
-      ),
-    ).resolves.toEqual({
-      kind: "rejected",
-      reason: "ungrounded",
-      intent: "prepareGroupSend",
-    })
+  it("takes every payee of a group send only when each was typed", () => {
+    // Outside the model tier's five (ENG-749): grounding, read alone.
+    const split = (payees: string[]) =>
+      isGrounded(
+        tool("prepareGroupSend"),
+        { payees, total: "10" },
+        { ...USD, utterance: "split 10 between bob and alice" },
+      )
+    expect(split(["bob", "alice"])).toBe(true)
+    expect(split(["bob", "eve"])).toBe(false)
   })
 
   describe("a picked person's id, which only the thread's re-issue of a pick makes (spec §8)", () => {
@@ -299,26 +365,16 @@ describe("grounding", () => {
       ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareSend" })
     })
 
-    it("refuses one among a group send's payees", async () => {
-      const utterance = "split 10 between bob and contact:dreadmax"
-      await expect(
-        ask(
-          {
-            intent: "prepareGroupSend",
-            args: { payees: ["bob", "dreadmax"], total: "10" },
-          },
-          utterance,
-        ),
-      ).resolves.toMatchObject({ kind: "call" })
-      await expect(
-        ask(
-          {
-            intent: "prepareGroupSend",
-            args: { payees: ["bob", "contact:dreadmax"], total: "10" },
-          },
-          utterance,
-        ),
-      ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareGroupSend" })
+    it("refuses one among a group send's payees", () => {
+      // Outside the model tier's five (ENG-749): grounding, read alone.
+      const split = (payees: string[]) =>
+        isGrounded(
+          tool("prepareGroupSend"),
+          { payees, total: "10" },
+          { ...USD, utterance: "split 10 between bob and contact:dreadmax" },
+        )
+      expect(split(["bob", "dreadmax"])).toBe(true)
+      expect(split(["bob", "contact:dreadmax"])).toBe(false)
     })
 
     it("refuses one in a read's free text too", async () => {
@@ -358,12 +414,15 @@ describe("grounding", () => {
   })
 
   it("takes a wallet or a way to be paid only when the words name it", async () => {
-    await expect(
-      ask(
-        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
-        "move 20 dollars into my bitcoin",
+    // A conversion is outside the model tier's five (ENG-749): grounding,
+    // read alone.
+    expect(
+      isGrounded(
+        tool("prepareConversion"),
+        { from: "USD", to: "BTC", amount: "20" },
+        { ...USD, utterance: "move 20 dollars into my bitcoin" },
       ),
-    ).resolves.toMatchObject({ kind: "call" })
+    ).toBe(true)
     await expect(
       ask(
         {
@@ -639,6 +698,64 @@ describe("no call", () => {
   })
 })
 
+describe("a reference to the thread with nothing new in it (ENG-749)", () => {
+  /** The thread a reference points back at: a balance read, and its answer. */
+  const thread: NewEntry[] = [
+    { kind: "user", text: "my balance" },
+    { kind: "reply", replyKey: "Assistant.toolFailed" },
+  ]
+
+  it("is no call, and the model is never asked", async () => {
+    // "same ting again" was a balance read to the macOS model (ENG-690
+    // proxy run); the thread's own controls issue a call again.
+    const references = [
+      "same ting again",
+      "do that again",
+      "again",
+      "Again!",
+      "same again please",
+      "ok, same thing",
+      "one more time",
+      "repeat that",
+      "di same ting",
+      "dweet again",
+      "same as before",
+    ]
+    for (const utterance of references) {
+      const modelAdapter = fakeModelAdapter(
+        modelCall({ intent: "getBalances", args: {} }),
+      )
+
+      await expect(
+        tryOnDeviceModel(runtimeOf(modelAdapter, { thread }), utterance, USD),
+      ).resolves.toEqual({ kind: "none", reason: "thread" })
+      expect([utterance, modelAdapter.isAvailable.mock.calls.length]).toEqual([
+        utterance,
+        0,
+      ])
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+    }
+  })
+
+  it("is only words that point back: anything new in them goes to the model", async () => {
+    const asks = [
+      "same again for bob",
+      "again 5",
+      "show my balance again",
+      "how loaded am i right now",
+      "that",
+    ]
+    for (const utterance of asks) {
+      const modelAdapter = fakeModelAdapter()
+
+      await expect(
+        tryOnDeviceModel(runtimeOf(modelAdapter, { thread }), utterance, USD),
+      ).resolves.toEqual({ kind: "none", reason: "miss" })
+      expect([utterance, modelAdapter.decide.mock.calls.length]).toEqual([utterance, 1])
+    }
+  })
+})
+
 describe("what the model is asked", () => {
   it("is the prompt for the thread before this turn, within the timeout", async () => {
     const modelAdapter = fakeModelAdapter()
@@ -662,5 +779,108 @@ describe("what the model is asked", () => {
     expect(data).toContain("earlier words")
     expect(data).not.toContain("the request itself")
     expect(prompt.prompt.endsWith("Request: the request itself")).toBe(true)
+  })
+})
+
+describe("prewarmOnDeviceModel (ENG-749)", () => {
+  it("warms a model that is there with the instructions every request carries, and asks it nothing", async () => {
+    const modelAdapter = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+
+    await prewarmOnDeviceModel(runtimeOf(modelAdapter))
+
+    expect(modelAdapter.isAvailable).toHaveBeenCalledTimes(1)
+    expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1)
+    // The same instructions as a request's prompt, the five tools and the
+    // rules, so the native side can hand the warmed session to it.
+    const [warmup] = modelAdapter.prewarm.mock.calls[0]
+    expect(warmup).toEqual({
+      instructions: buildModelPrompt(assistantRegistry, [], "hi").instructions,
+    })
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
+  })
+
+  it("warms nothing when the model is not there", async () => {
+    const modelAdapter = unavailableModelAdapter()
+
+    await prewarmOnDeviceModel(runtimeOf(modelAdapter))
+
+    expect(modelAdapter.isAvailable).toHaveBeenCalledTimes(1)
+    expect(modelAdapter.prewarm).not.toHaveBeenCalled()
+  })
+
+  it("never throws: an adapter that does is nothing", async () => {
+    const failing = fakeModelAdapter()
+    failing.isAvailable.mockRejectedValue(new Error("bridge gone"))
+    const failingWarmUp = fakeModelAdapter()
+    failingWarmUp.prewarm.mockRejectedValue(new Error("bridge gone"))
+
+    await expect(prewarmOnDeviceModel(runtimeOf(failing))).resolves.toBeUndefined()
+    await expect(prewarmOnDeviceModel(runtimeOf(failingWarmUp))).resolves.toBeUndefined()
+    expect(failing.prewarm).not.toHaveBeenCalled()
+  })
+})
+
+describe("the next ask's warm session (ENG-749)", () => {
+  /** Lets the warm-up that tryOnDeviceModel starts, and never awaits, run. */
+  const settle = () =>
+    new Promise((resolve) => {
+      setImmediate(resolve)
+    })
+
+  it("is warmed after each request the model was asked, whatever it answered, and after the answer", async () => {
+    const decisions = [
+      modelCall({ intent: "getBalances", args: {} }),
+      modelCall({ intent: "execute", args: {} }),
+      { kind: "miss" as const },
+      { kind: "unavailable" as const },
+    ]
+    for (const decision of decisions) {
+      const modelAdapter = fakeModelAdapter(decision)
+
+      await tryOnDeviceModel(runtimeOf(modelAdapter), "how loaded am i right now", USD)
+      await settle()
+
+      expect([decision, modelAdapter.prewarm.mock.calls.length]).toEqual([decision, 1])
+      expect(modelAdapter.prewarm).toHaveBeenCalledWith({
+        instructions: buildModelPrompt(assistantRegistry, [], "hi").instructions,
+      })
+      // The request ran first, on the session warmed before it.
+      expect(modelAdapter.decide.mock.invocationCallOrder[0]).toBeLessThan(
+        modelAdapter.prewarm.mock.invocationCallOrder[0],
+      )
+    }
+  })
+
+  it("is not warmed when the model was not asked: no model there, or a reference to the thread", async () => {
+    const absent = unavailableModelAdapter()
+    const thread = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+
+    await tryOnDeviceModel(runtimeOf(absent), "how loaded am i right now", USD)
+    await tryOnDeviceModel(runtimeOf(thread), "same ting again", USD)
+    await settle()
+
+    expect(absent.prewarm).not.toHaveBeenCalled()
+    expect(thread.prewarm).not.toHaveBeenCalled()
+  })
+
+  it("never holds up the answer, and a warm-up that fails changes nothing", async () => {
+    const hangs = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+    hangs.prewarm.mockImplementation(
+      () =>
+        new Promise<void>(() => {
+          // never settles
+        }),
+    )
+    const fails = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+    fails.prewarm.mockRejectedValue(new Error("bridge gone"))
+
+    await expect(
+      tryOnDeviceModel(runtimeOf(hangs), "how loaded am i right now", USD),
+    ).resolves.toEqual({ kind: "call", call: { intent: "getBalances", args: {} } })
+    await expect(
+      tryOnDeviceModel(runtimeOf(fails), "how loaded am i right now", USD),
+    ).resolves.toEqual({ kind: "call", call: { intent: "getBalances", args: {} } })
+    await settle()
+    expect(fails.prewarm).toHaveBeenCalledTimes(1)
   })
 })
