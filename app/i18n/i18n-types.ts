@@ -7724,6 +7724,14 @@ type RootTranslation = {
 		 */
 		pickContact: string
 		/**
+		 * T​h​i​s​ ​p​e​r​s​o​n​ ​u​s​e​s​ ​F​l​a​s​h​ ​b​u​t​ ​i​s​ ​n​o​t​ ​i​n​ ​y​o​u​r​ ​c​o​n​t​a​c​t​s​.
+		 */
+		pickFlashUser: string
+		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​f​i​n​d​ ​a​ ​c​o​n​t​a​c​t​ ​o​r​ ​a​ ​F​l​a​s​h​ ​u​s​e​r​ ​b​y​ ​t​h​a​t​ ​n​a​m​e​.
+		 */
+		payeeNotFound: string
+		/**
 		 * D​e​t​a​i​l​s​ ​a​r​e​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​t​h​i​s​ ​p​a​y​m​e​n​t​.
 		 */
 		detailsUnavailable: string
@@ -15478,6 +15486,14 @@ export type TranslationFunctions = {
 		 * Which contact do you mean?
 		 */
 		pickContact: () => LocalizedString
+		/**
+		 * This person uses Flash but is not in your contacts.
+		 */
+		pickFlashUser: () => LocalizedString
+		/**
+		 * I couldn't find a contact or a Flash user by that name.
+		 */
+		payeeNotFound: () => LocalizedString
 		/**
 		 * Details aren't available for this payment.
 		 */

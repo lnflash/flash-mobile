@@ -72,8 +72,10 @@ export type ClarificationOption = {
 }
 
 /**
- * Ambiguous input: a picker, never a guess (spec §3). With no options it
- * asks the user to say it another way.
+ * Ambiguous input: a picker, never a guess (spec §3). A question about a
+ * payee always offers at least one option (ENG-730): a payee that names no
+ * one is a refusal card instead. Only a question that asks for typed input
+ * has none (Assistant.amountRequired).
  */
 export type ClarificationCard = {
   type: "clarification"
@@ -93,11 +95,15 @@ export type ClarificationCard = {
  * - notAvailableYet: a payment the assistant may not dispatch yet because
  *   the branch it would take is gated on an open bug (actions/shared/gates.ts;
  *   no branch is gated since ENG-720 opened BTC-wallet bolt11 sends).
+ * - payeeNotFound: the payee's words name neither a contact nor a Flash
+ *   user (resolveContact, or a pick looked up again at the tap; ENG-730),
+ *   refused before any amount, fee or balance is read.
  */
 export type PrepareRefusalReason =
   | "insufficientBalance"
   | "limitExceeded"
   | "notAvailableYet"
+  | "payeeNotFound"
 
 /**
  * The templated error card for an action its `prepare` refused (spec §5.1,

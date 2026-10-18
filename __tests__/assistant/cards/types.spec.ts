@@ -157,7 +157,13 @@ describe("validateCard: every card payload is checked before it renders", () => 
   })
 
   it("takes a refused prepare's card for every reason a prepare refuses with, and no other", () => {
-    for (const reason of ["insufficientBalance", "limitExceeded", "notAvailableYet"]) {
+    for (const reason of [
+      "insufficientBalance",
+      "limitExceeded",
+      "notAvailableYet",
+      // ENG-730: the payee names neither a contact nor a Flash user.
+      "payeeNotFound",
+    ]) {
       expect(validateCard({ type: "prepareRefused", reason }).valid).toBe(true)
     }
     expect(validateCard({ type: "prepareRefused", reason: "tooRich" })).toMatchObject({

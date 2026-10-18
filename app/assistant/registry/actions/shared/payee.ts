@@ -5,7 +5,6 @@ import {
 } from "@flash/client"
 
 import { LNURL_DOMAINS } from "@app/config/appinfo"
-import { parseDestination } from "@app/screens/send-bitcoin-screen/payment-destination"
 import {
   DestinationDirection,
   InvalidDestinationReason,
@@ -14,20 +13,30 @@ import {
 import { createIntraLedgerDestination } from "@app/screens/send-bitcoin-screen/payment-destination/intraledger"
 import { createReadToolCtx } from "../../../engine/run-tool"
 import type { ContactPayload } from "../../projections"
-import { accountDefaultWalletQueryOver } from "../../read/decode-payment-request"
-import { resolveContact } from "../../read/resolve-contact"
-import type { ActionToolCtx, AssistantReplyKey, ClarificationCard } from "../../types"
+import { parseDestinationOver } from "../../read/decode-payment-request"
+import { flashUserWallet, resolveContact } from "../../read/resolve-contact"
+import type {
+  ActionToolCtx,
+  AssistantReplyKey,
+  ClarificationCard,
+  PrepareRefusalCard,
+} from "../../types"
 
 // Who a send pays (spec §4, §5, §8). A payee is one of three things:
 //
-// - A contact the user names ("mom", "Alice Smith"): resolveContact
-//   (ENG-687) finds them, and asks when it is not sure. A bare word is never
-//   looked up as a Flash username: "mom" may be someone's username, and that
-//   someone is a stranger (no exact-username fallback, ENG-688 decision 2).
-// - A contact the user picked from that question: `contact:<username>`, the
+// - A person the user names ("mom", "Alice Smith"): resolveContact
+//   (ENG-687) finds the contact, and asks when it is not sure. A bare word is
+//   looked up as a Flash username only once resolveContact finds no contact
+//   like it at all, and only as a question (ENG-730, narrowing ENG-688
+//   decision 2): "mom" may be a stranger's username, so that user is a
+//   picker of one whose prompt says they are not in the contacts, never a
+//   payee straight away. The user's own username is the self-payment reply,
+//   and no contact and no Flash user is a refusal card.
+// - A person the user picked from that question: `contact:<username>`, the
 //   id of every option such a question offers. A pick is re-issued in the
-//   same call, and resolves to exactly that contact, so a question is never
-//   asked twice for the same answer.
+//   same call, and resolves to exactly that contact, or else to the Flash
+//   user of that username, looked up again at the tap, so a question is
+//   never asked twice for the same answer.
 // - A payment request, address or link: a bolt11, an LNURL, a Lightning
 //   address (a Flash user's included), an on-chain address. The send flow's
 //   own parser resolves it (send-bitcoin-screen/payment-destination).
@@ -56,11 +65,16 @@ export type ResolvedPayee = {
 export type PayeeResolution =
   | { kind: "payee"; payee: ResolvedPayee }
   | { kind: "clarification"; card: ClarificationCard }
-  | { kind: "error"; replyKey: AssistantReplyKey }
+  /** A reply, and the refusal card that says it when there is one (payeeNotFound). */
+  | { kind: "error"; replyKey: AssistantReplyKey; card?: PrepareRefusalCard }
 
-const error = (replyKey: AssistantReplyKey): PayeeResolution => ({
+const error = (
+  replyKey: AssistantReplyKey,
+  card?: PrepareRefusalCard,
+): PayeeResolution => ({
   kind: "error",
   replyKey,
+  ...(card ? { card } : {}),
 })
 
 /** The longest contact name resolveContact takes (its own schema). */
@@ -129,7 +143,11 @@ const flashUser = (
   }
 }
 
-/** A picked contact: exactly that one, or nothing. */
+/**
+ * A pick: exactly that contact, or else the Flash user of that username
+ * (ENG-730), or nothing. A Flash user is looked up now, at the tap, and never
+ * taken from the question's own lookup: the account may be gone since.
+ */
 const fromPick = async (
   username: string,
   ctx: Pick<ActionToolCtx, "graphql">,
@@ -138,7 +156,21 @@ const fromPick = async (
   const contact = (await ctx.graphql.contacts()).find(
     (candidate) => candidate.username.toLowerCase() === username.toLowerCase(),
   )
-  if (!contact) return error("Assistant.noContactMatch")
+  if (!contact) {
+    const userWallet = await flashUserWallet(username, ctx.graphql)
+    if (!userWallet) {
+      return error("Assistant.payeeNotFound", {
+        type: "prepareRefused",
+        reason: "payeeNotFound",
+      })
+    }
+    // The self-payment check holds here as for a contact.
+    return flashUser(
+      "flashUser",
+      { username, alias: null, walletId: userWallet.id },
+      myWalletIds,
+    )
+  }
   const wallet = await ctx.graphql.accountDefaultWallet(contact.username)
   if (!wallet) return error("Assistant.noContactMatch")
   return flashUser(
@@ -162,7 +194,8 @@ const fromContactName = async (
   switch (result.kind) {
     case "clarification":
       // Each option re-issues the call with its pick in place of the name
-      // the question is about, and a pick resolves to exactly that contact.
+      // the question is about, and a pick resolves to exactly that contact,
+      // or to the Flash user of that username when it is no contact's.
       return {
         kind: "clarification",
         card: {
@@ -187,7 +220,8 @@ const fromContactName = async (
       )
     }
     case "error":
-      return error(result.userMessage)
+      // No contact and no Flash user: the refusal card comes along.
+      return error(result.userMessage, result.card)
     default:
       return error("Assistant.toolFailed")
   }
@@ -198,19 +232,18 @@ const DESTINATION_REPLY: Partial<Record<InvalidDestinationReason, AssistantReply
   [InvalidDestinationReason.SelfPayment]: "Assistant.selfPayment",
 }
 
-/** A destination, through the send flow's own parser. */
+/**
+ * A destination, through the send flow's own parser, as decodePaymentRequest
+ * reads it: a Flash user's LNURL whose username lookup fails still pays as
+ * LNURL-pay, and a Flash Lightning address whose lookup fails is a failed
+ * read, never "no such user" (parseDestinationOver).
+ */
 const fromDestination = async (
   raw: string,
   ctx: Pick<ActionToolCtx, "graphql">,
   myWalletIds: readonly string[],
 ): Promise<PayeeResolution> => {
-  const result = await parseDestination({
-    rawInput: raw,
-    myWalletIds: [...myWalletIds],
-    bitcoinNetwork: "mainnet", // parseDestination hard-codes mainnet too
-    lnurlDomains: LNURL_DOMAINS,
-    accountDefaultWalletQuery: accountDefaultWalletQueryOver(ctx.graphql),
-  })
+  const result = await parseDestinationOver(raw, ctx.graphql, myWalletIds)
   if (!result.valid) {
     return error(
       DESTINATION_REPLY[result.invalidReason] ?? "Assistant.invalidDestination",

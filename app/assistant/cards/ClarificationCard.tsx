@@ -8,7 +8,8 @@ import { CardError, CardFrame, replyText, validCardOf } from "./card-parts"
 // A question instead of a guess (spec §3, §4): the templated prompt, then
 // one choice per option, each showing the full username under the name.
 // A pick hands the option's id to the thread, which asks the tool again
-// with it; with no options the prompt asks the user to say it another way.
+// with it. A payee question always has an option (ENG-730); with none, the
+// prompt asks for typed input (Assistant.amountRequired).
 
 export const ClarificationCard: React.FC<{
   payload: unknown

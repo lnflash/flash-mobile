@@ -4,6 +4,18 @@ jest.mock("@app/screens/send-bitcoin-screen/payment-destination", () => ({
   // it answers.
   parseDestination: jest.fn(),
 }))
+// The cases that run the real parser on an LNURL say what its service answers.
+jest.mock("js-lnurl", () => ({
+  ...jest.requireActual("js-lnurl"),
+  getParams: jest.fn(),
+}))
+jest.mock("lnurl-pay", () => ({
+  ...jest.requireActual("lnurl-pay"),
+  requestPayServiceParams: jest.fn(),
+}))
+
+import { getParams } from "js-lnurl"
+import { requestPayServiceParams } from "lnurl-pay"
 
 import { createAttemptJournal } from "@app/assistant/engine/attempt-journal"
 import { createExecutor } from "@app/assistant/engine/executor"
@@ -43,7 +55,9 @@ import { createLnurlPaymentDestination } from "@app/screens/send-bitcoin-screen/
 import { resetIdempotencyKeySupport } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 import { memoryStorage } from "../executor-harness"
 import {
+  accountsOf,
   bolt11,
+  failingAccountLookup,
   fakeActionCtx,
   fundedBefore,
   graphqlTx,
@@ -74,6 +88,9 @@ const contact = (username: string, alias: string | null = null) => ({
   transactionsCount: 0,
 })
 
+/** A Flash user the user has not added (ENG-730). */
+const NOT_A_CONTACT = "dreadmax"
+
 /** $100 in the cash wallet, 1,000,000 sats in the BTC wallet, no limits reached. */
 const setup = ({
   display = "USD",
@@ -90,11 +107,11 @@ const setup = ({
     contact("alice", "Alice"),
     contact("jane", "mom"),
   ])
-  fake.graphql.accountDefaultWallet.mockImplementation(async (username: string) => ({
-    __typename: "PublicWallet",
-    id: `${username}-wallet`,
-    walletCurrency: "USD",
-  }))
+  // Every contact a case names has an account, and so does dreadmax, who is
+  // no contact; any other word is no one's username.
+  fake.graphql.accountDefaultWallet.mockImplementation(
+    accountsOf(["alice", "jane", "alina", NOT_A_CONTACT]),
+  )
   fake.btcRail.getBalanceSats.mockResolvedValue({ state: "ok", sats })
   return fake
 }
@@ -381,6 +398,282 @@ describe("prepareSend to a contact from the cash wallet", () => {
   })
 })
 
+describe("prepareSend to someone who is not a contact (ENG-730)", () => {
+  // Beside the amount question above: a payee is resolved before it (spec
+  // §5.1, "Payee resolution before a card"). The grammar never emits a send
+  // with no amount, so these guard the order against a refactor.
+  it("refuses a name that is no contact's and no Flash user's before asking for an amount", async () => {
+    const fake = setup()
+
+    await expect(run({ payee: "mallory" }, fake)).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+  })
+
+  it("asks which Flash user before asking for an amount, and asks for the amount once the user picks", async () => {
+    const fake = setup()
+
+    const asked = await run({ payee: NOT_A_CONTACT }, fake)
+
+    expect(asked).toEqual({
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickFlashUser",
+        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+        about: "dreadmax",
+      },
+    })
+    if (asked.kind !== "clarification") throw new Error("expected a question")
+
+    // The tap re-issues the call with the pick, still with no amount.
+    await expect(run({ payee: asked.card.options[0].id }, fake)).resolves.toEqual({
+      kind: "clarification",
+      card: { type: "clarification", prompt: "Assistant.amountRequired", options: [] },
+    })
+  })
+
+  it("answers the user's own username with the self-payment reply, never a picker, before reading a price", async () => {
+    // Signed in as dreadmax, the user names dreadmax: the send screen refuses
+    // that at lookup time (payment-destination/intraledger.ts:39-45), and the
+    // picker's one option would only be refused at the tap (ENG-730 review).
+    const fake = setup()
+    fake.graphql.wallets.mockResolvedValue([
+      wallet({ id: "dreadmax-wallet", walletCurrency: "USD", balance: 10_000 }),
+      BTC_ROW,
+    ])
+
+    await expect(
+      run({ payee: NOT_A_CONTACT, amount: "5", currency: "USD" }, fake),
+    ).resolves.toEqual({ kind: "error", userMessage: "Assistant.selfPayment" })
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+    Object.values(fake.actions.feeProbes).forEach((probe) =>
+      expect(probe).not.toHaveBeenCalled(),
+    )
+  })
+
+  it("asks with a picker of one for a Flash user, then prepares the pick's card for that user", async () => {
+    // The dogfood ask: "Send 0.05 usd to dreadmax", dreadmax being a Flash
+    // user the user has not added.
+    const fake = setup()
+    const args: PrepareSendArgs = { payee: "dreadmax", amount: "0.05", currency: "USD" }
+
+    const asked = await run(args, fake)
+
+    expect(asked).toEqual({
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickFlashUser",
+        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+        about: "dreadmax",
+      },
+    })
+    // A question prices nothing and probes nothing.
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+    if (asked.kind !== "clarification") throw new Error("expected a question")
+
+    // The tap re-issues the call with the pick in place of the name.
+    const action = prepared(await run({ ...args, payee: asked.card.options[0].id }, fake))
+
+    expect(action.summary).toEqual({
+      type: "confirmPayment",
+      payeeLabel: "dreadmax",
+      payeeUsername: "dreadmax",
+      amountText: "USD 5",
+      feeText: "USD 0",
+      totalText: "USD 5",
+      balanceAfterText: "USD 9995",
+      sourceWallet: "USD",
+    })
+    expect(action.dispatch?.match).toEqual({
+      kind: "intraledger",
+      counterPartyWalletId: "dreadmax-wallet",
+      settlementCurrency: "USD",
+      amount: 5,
+    })
+
+    // Confirmed, it pays that Flash user's wallet, as the send screen would.
+    fake.mutations.intraLedgerUsdPaymentSend.mockResolvedValue(
+      sentOk("intraLedgerUsdPaymentSend"),
+    )
+    await expect(action.execute(confirmCtx(action).ctx)).resolves.toEqual({
+      status: "succeeded",
+    })
+    expect(
+      fake.mutations.intraLedgerUsdPaymentSend.mock.calls[0][0].variables.input,
+    ).toMatchObject({
+      walletId: "my-usd",
+      recipientWalletId: "dreadmax-wallet",
+      amount: 5,
+    })
+  })
+
+  it("refuses with the not-found card a name that is no contact's and no Flash user's, before reading a balance, price, limit or fee", async () => {
+    // From the BTC wallet, whose balance would be read past the payee.
+    const fake = setup()
+
+    await expect(
+      run({ payee: "mallory", amount: "5", currency: "USD", sourceWallet: "BTC" }, fake),
+    ).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+    expect(fake.graphql.accountDefaultWallet.mock.calls).toEqual([["mallory"]])
+    // The wallet list is read once, for the account's own wallet ids; nothing
+    // past the payee runs.
+    expect(fake.graphql.wallets).toHaveBeenCalledTimes(1)
+    expect(fake.btcRail.getBalanceSats).not.toHaveBeenCalled()
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+    expect(fake.graphql.accountLimits).not.toHaveBeenCalled()
+    expect(fake.btcRail.probeFee).not.toHaveBeenCalled()
+    Object.values(fake.actions.feeProbes).forEach((probe) =>
+      expect(probe).not.toHaveBeenCalled(),
+    )
+  })
+
+  it("ends a picked Flash user's expired card with the not-found reply when they are gone by the refresh, sending nothing", async () => {
+    const fake = setup()
+    let clock = NOW_MS
+    const now = () => clock
+    const executor = createExecutor({
+      auth: { availability: async () => "none", authenticate: async () => false },
+      journal: createAttemptJournal({ storage: memoryStorage() }),
+      reconcile: jest.fn(async () => "unknown" as const),
+      telemetry: recordingTelemetry().telemetry,
+      now,
+    })
+    const { graphql, displayCurrency, now: _fixed, ...actionDeps } = fake.ctx
+    const action = prepared(
+      await runTool(
+        {
+          intent: "prepareSend",
+          args: { payee: "contact:dreadmax", amount: "5", currency: "USD" },
+        },
+        {
+          registry: assistantRegistry,
+          graphql,
+          btcRail: fake.btcRail,
+          displayCurrency,
+          lnAddressHostname: actionDeps.send.lnAddressHostname,
+          now,
+          telemetry: recordingTelemetry().telemetry,
+          actionDeps,
+        },
+      ),
+    )
+    executor.addPrepared(action, "text")
+    // The card expires, and dreadmax's account is gone by the Confirm that
+    // prepares it again: the refresh looks the pick up again and refuses.
+    clock += FIXED_CENT_INTRALEDGER_TTL_MS + 1_000
+    fake.graphql.accountDefaultWallet.mockImplementation(accountsOf(["alice", "jane"]))
+
+    await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+      kind: "expired",
+      actionId: action.id,
+      replyKey: "Assistant.payeeNotFound",
+      refresh: {
+        kind: "error",
+        userMessage: "Assistant.payeeNotFound",
+        card: { type: "prepareRefused", reason: "payeeNotFound" },
+      },
+    })
+    expect(fake.mutations.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
+    // A refusal ends the action, as a shortfall's does; it is not left
+    // expired for another try.
+    await expect(executor.canConfirm(action.id)).resolves.toMatchObject({
+      enabled: false,
+    })
+  })
+
+  it("leaves a picked Flash user's expired card expired, for another try, when the refresh's lookup fails", async () => {
+    // The server fails dreadmax's lookup at the Confirm that prepares the
+    // card again: a GraphQL error on an HTTP 200 (DB_ERROR), through the
+    // real rail (ENG-730 review). Read as no account, it was the not-found
+    // refusal, and the action ended for good. It is a failed read: the
+    // action stays, expired, and the next Confirm prepares it again.
+    const fake = setup()
+    let clock = NOW_MS
+    const now = () => clock
+    const executor = createExecutor({
+      auth: { availability: async () => "none", authenticate: async () => false },
+      journal: createAttemptJournal({ storage: memoryStorage() }),
+      reconcile: jest.fn(async () => "unknown" as const),
+      telemetry: recordingTelemetry().telemetry,
+      now,
+    })
+    const { graphql, displayCurrency, now: _fixed, ...actionDeps } = fake.ctx
+    const action = prepared(
+      await runTool(
+        {
+          intent: "prepareSend",
+          args: { payee: "contact:dreadmax", amount: "5", currency: "USD" },
+        },
+        {
+          registry: assistantRegistry,
+          graphql,
+          btcRail: fake.btcRail,
+          displayCurrency,
+          lnAddressHostname: actionDeps.send.lnAddressHostname,
+          now,
+          telemetry: recordingTelemetry().telemetry,
+          actionDeps,
+        },
+      ),
+    )
+    executor.addPrepared(action, "text")
+    clock += FIXED_CENT_INTRALEDGER_TTL_MS + 1_000
+    fake.graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+
+    await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+      kind: "expired",
+      actionId: action.id,
+      replyKey: "Assistant.expired",
+      refresh: { kind: "error", userMessage: "Assistant.toolFailed" },
+    })
+    expect(fake.mutations.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
+    await expect(executor.canConfirm(action.id)).resolves.toEqual({
+      enabled: true,
+      state: "armed",
+    })
+
+    // The lookup answers again: the next Confirm prepares the same card, and
+    // with the numbers unchanged it pays dreadmax.
+    fake.graphql.accountDefaultWallet.mockImplementation(
+      accountsOf(["alice", "jane", NOT_A_CONTACT]),
+    )
+    fake.mutations.intraLedgerUsdPaymentSend.mockResolvedValue(
+      sentOk("intraLedgerUsdPaymentSend"),
+    )
+
+    await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+      kind: "executed",
+      replacedActionId: action.id,
+      outcome: { status: "succeeded" },
+    })
+    expect(
+      fake.mutations.intraLedgerUsdPaymentSend.mock.calls[0][0].variables.input,
+    ).toMatchObject({ recipientWalletId: "dreadmax-wallet", amount: 500 })
+  })
+
+  it("refuses a pick whose Flash user is gone by the tap with the not-found card", async () => {
+    const fake = setup()
+    fake.graphql.accountDefaultWallet.mockImplementation(accountsOf(["alice", "jane"]))
+
+    await expect(
+      run({ payee: "contact:dreadmax", amount: "5", currency: "USD" }, fake),
+    ).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+  })
+})
+
 describe("prepareSend affordability and limits (spec §5.1)", () => {
   it("refuses with the shortfall card, before any card, when the amount is over the balance", async () => {
     const fake = setup({ cents: 499 })
@@ -590,6 +883,86 @@ describe("prepareSend to an LNURL payee from the cash wallet", () => {
     await expect(
       run({ payee: "carol@blink.sv", amount: "5", currency: "USD" }, fake),
     ).resolves.toEqual({ kind: "error", userMessage: "Assistant.recipientInvoiceFailed" })
+  })
+})
+
+describe("prepareSend to a Flash user's address when the username lookup fails (ENG-730 review)", () => {
+  // The send flow's real parser, over the real rail failing every lookup as
+  // lnflash/flash fails one for an account that may exist (failingAccountLookup).
+  const { parseDestination: realParse } = jest.requireActual(
+    "@app/screens/send-bitcoin-screen/payment-destination",
+  )
+
+  /** A Flash user's LNURL-pay link: https://flashapp.me/.well-known/lnurlp/dreadmax. */
+  const FLASH_LNURL =
+    "LNURL1DP68GURN8GHJ7ENVV9EKSCTSWQHX6EF09EMK2MRV944KUMMHDCHKCMN4WFK8QTMYWFJKZERDV9UQGM6W09"
+
+  const failingLookups = () => {
+    const fake = setup()
+    fake.graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+    parse.mockImplementation(realParse)
+    return fake
+  }
+
+  it("prepares a Flash user's LNURL as LNURL-pay, as the send screen does, never refusing it as unsupported", async () => {
+    // The send screen's lazy query resolves on an error, so its parser falls
+    // back from the Flash user to the LNURL-pay request, which still pays
+    // them (payment-destination/lnurl.ts:56-79).
+    const fake = failingLookups()
+    ;(getParams as jest.Mock).mockResolvedValue({ tag: "payRequest" })
+    ;(requestPayServiceParams as jest.Mock).mockResolvedValue({
+      ...LNURL_PARAMS,
+      identifier: "dreadmax@flashapp.me",
+      description: "Pay dreadmax",
+      callback: "https://flashapp.me/lnurlp/dreadmax/callback",
+      domain: "flashapp.me",
+    })
+    // $5.00 is 7,937 sats at $63,000 a bitcoin.
+    fake.requestLnurlInvoice.mockResolvedValue({
+      invoice: bolt11({ id: "dreadmax-7937", sats: 7_937, expirySeconds: 600 }),
+    })
+    fake.actions.feeProbes.lnUsdInvoiceFeeProbe.mockResolvedValue({
+      data: { lnUsdInvoiceFeeProbe: { amount: 2, errors: [] } },
+    })
+
+    const action = prepared(
+      await run({ payee: FLASH_LNURL, amount: "5", currency: "USD" }, fake),
+    )
+
+    expect(fake.graphql.accountDefaultWallet).toHaveBeenCalledWith("dreadmax")
+    expect(fake.requestLnurlInvoice).toHaveBeenCalledWith(
+      expect.objectContaining({ lnUrlOrAddress: FLASH_LNURL.toLowerCase(), sats: 7_937 }),
+    )
+    expect(action.summary).toMatchObject({ payeeLabel: "dreadmax@flashapp.me" })
+  })
+
+  it("answers a Flash Lightning address with a failed read, never calling a real user unknown", async () => {
+    // The parser takes the address as that username and reads the failed
+    // lookup as no account: UsernameDoesNotExist, which prepareSend would
+    // answer with invalidDestination about a user who exists.
+    const fake = failingLookups()
+    const { graphql, displayCurrency, now, ...actionDeps } = fake.ctx
+
+    const result = await runTool(
+      {
+        intent: "prepareSend",
+        args: { payee: "dreadmax@flashapp.me", amount: "5", currency: "USD" },
+      },
+      {
+        registry: assistantRegistry,
+        graphql,
+        btcRail: fake.btcRail,
+        displayCurrency,
+        lnAddressHostname: actionDeps.send.lnAddressHostname,
+        now,
+        telemetry: recordingTelemetry().telemetry,
+        actionDeps,
+      },
+    )
+
+    expect(result).toEqual({ kind: "error", userMessage: "Assistant.toolFailed" })
+    expect(fake.graphql.accountDefaultWallet).toHaveBeenCalledWith("dreadmax")
+    expect(fake.actions.feeProbes.lnUsdInvoiceFeeProbe).not.toHaveBeenCalled()
   })
 })
 
@@ -1053,6 +1426,31 @@ describe("prepareSend through runTool and the executor", () => {
       )
     return { fake, executor, journal, prepare }
   }
+
+  it("hands back a payee that names no one as the refusal card, never a bare reply (ENG-730)", async () => {
+    const fake = setup()
+    const { graphql, displayCurrency, now, ...actionDeps } = fake.ctx
+
+    const result = await runTool(
+      { intent: "prepareSend", args: { payee: "mallory", amount: "5", currency: "USD" } },
+      {
+        registry: assistantRegistry,
+        graphql,
+        btcRail: fake.btcRail,
+        displayCurrency,
+        lnAddressHostname: actionDeps.send.lnAddressHostname,
+        now,
+        telemetry: recordingTelemetry().telemetry,
+        actionDeps,
+      },
+    )
+
+    expect(result).toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+  })
 
   it("confirms a contact send end to end: one dispatch, under one key, journaled and crossed off", async () => {
     const { fake, executor, journal, prepare } = wire()

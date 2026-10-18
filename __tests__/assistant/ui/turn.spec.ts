@@ -206,6 +206,32 @@ describe("entriesFor", () => {
       ),
     ).toEqual([{ kind: "card", card }])
   })
+
+  it("shows a payee that names no one as its refusal card, never as a reply (ENG-730)", () => {
+    const card = { type: "prepareRefused" as const, reason: "payeeNotFound" as const }
+
+    expect(
+      entriesFor(
+        SEND,
+        { kind: "error", userMessage: "Assistant.payeeNotFound", card },
+        { stale: false },
+      ),
+    ).toEqual([{ kind: "card", card }])
+  })
+
+  it("keeps the call with a question about a Flash user who is not a contact, for the pick (ENG-730)", () => {
+    const call = { intent: "prepareSend", args: { payee: "dreadmax", amount: "0.05" } }
+    const card = {
+      type: "clarification" as const,
+      prompt: "Assistant.pickFlashUser" as const,
+      options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+      about: "dreadmax",
+    }
+
+    expect(entriesFor(call, { kind: "clarification", card }, { stale: false })).toEqual([
+      { kind: "card", card, call },
+    ])
+  })
 })
 
 describe("reissue", () => {
@@ -217,6 +243,22 @@ describe("reissue", () => {
         "contact:alice_w",
       ),
     ).toEqual({ intent: "prepareSend", args: { payee: "contact:alice_w", amount: "5" } })
+  })
+
+  it("re-issues a Flash user's pick as a contact's, the amount, currency and memo untouched (ENG-730)", () => {
+    expect(
+      reissue(
+        {
+          intent: "prepareSend",
+          args: { payee: "dreadmax", amount: "0.05", currency: "USD", memo: "lunch" },
+        },
+        "dreadmax",
+        "contact:dreadmax",
+      ),
+    ).toEqual({
+      intent: "prepareSend",
+      args: { payee: "contact:dreadmax", amount: "0.05", currency: "USD", memo: "lunch" },
+    })
   })
 
   it("re-issues nothing when no argument is what the question was about", () => {

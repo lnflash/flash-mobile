@@ -13,6 +13,7 @@ import {
   WalletOverviewScreenDocument,
 } from "@app/graphql/generated"
 import {
+  ACCOUNT_NOT_FOUND_SENTENCE,
   createGraphqlRail,
   GraphqlRail,
   GraphqlRailError,
@@ -198,15 +199,112 @@ describe("createGraphqlRail", () => {
     })
 
     it("answers null for a username with no account", async () => {
+      // What lnflash/flash answers a missing username with, through the
+      // gateway in front of it, as the Test API answered it: the sentence
+      // error-map.ts:165-167 builds, and no code (ENG-730 review).
       const { query, client } = fakeClient()
       query.mockResolvedValue({
-        data: undefined,
-        errors: [{ message: "Account not found" }],
+        data: null,
+        errors: [
+          {
+            message: `${ACCOUNT_NOT_FOUND_SENTENCE} nobody`,
+            path: ["accountDefaultWallet"],
+            extensions: { service: "public" },
+          },
+        ],
       })
 
       await expect(
         createGraphqlRail(client).accountDefaultWallet("nobody"),
       ).resolves.toBeNull()
+      expect(ACCOUNT_NOT_FOUND_SENTENCE).toBe("Account does not exist for username")
+    })
+
+    it("answers null for a NOT_FOUND code, wherever a server puts it", async () => {
+      // lnflash/flash gives this query NOT_FOUND for a missing account alone.
+      // Its formatError writes the code at the top level; a GraphQL server's
+      // default is extensions.code.
+      const { query, client } = fakeClient()
+      query
+        .mockResolvedValueOnce({
+          data: null,
+          errors: [{ message: "x", code: "NOT_FOUND" }],
+        })
+        .mockResolvedValueOnce({
+          data: null,
+          errors: [{ message: "x", extensions: { code: "NOT_FOUND" } }],
+        })
+      const rail = createGraphqlRail(client)
+
+      await expect(rail.accountDefaultWallet("nobody")).resolves.toBeNull()
+      await expect(rail.accountDefaultWallet("nobody")).resolves.toBeNull()
+    })
+
+    it("rejects a lookup the server failed for an account that may exist, never calling it no account", async () => {
+      // Each comes on an HTTP 200 with data null, as the missing account's
+      // answer does (ENG-730 review): the database down (DB_ERROR,
+      // error-map.ts:527-531), a cash wallet it could not present
+      // (CashWalletMissingUsdtWalletError when the ENG-544 self-heal fails,
+      // INVALID_INPUT), a word its Username scalar refuses, and errors with
+      // neither the code nor the sentence. Read as no account, each would
+      // refuse a payment to a real user.
+      const failures: [string, Record<string, unknown>[]][] = [
+        [
+          "DB_ERROR as the gateway forwards it",
+          [
+            {
+              message:
+                "Service offline, please try again in a few minutes. If the problem persists, please contact support.",
+              extensions: { service: "public" },
+            },
+          ],
+        ],
+        [
+          "DB_ERROR with its code",
+          [
+            {
+              message: "Unknown error occurred (code: UnknownRepositoryError)",
+              code: "DB_ERROR",
+            },
+          ],
+        ],
+        ["DB_ERROR with its code in extensions", [{ extensions: { code: "DB_ERROR" } }]],
+        [
+          "a cash wallet it could not present",
+          [
+            {
+              message: "USDT Cash Wallet is missing for this account.",
+              code: "INVALID_INPUT",
+            },
+          ],
+        ],
+        [
+          "a word the Username scalar refuses",
+          [{ message: "Invalid value for Username" }],
+        ],
+        ["an error with nothing in it", [{}]],
+        [
+          "no account beside a failure",
+          [
+            { message: `${ACCOUNT_NOT_FOUND_SENTENCE} alice` },
+            { message: "Service offline", code: "DB_ERROR" },
+          ],
+        ],
+      ]
+
+      for (const [label, errors] of failures) {
+        const { query, client } = fakeClient()
+        query.mockResolvedValue({ data: null, errors })
+
+        const outcome = await createGraphqlRail(client)
+          .accountDefaultWallet("alice")
+          .then(
+            (answer) => ({ answer }),
+            (err: unknown) => err,
+          )
+
+        expect([label, outcome]).toEqual([label, expect.any(GraphqlRailError)])
+      }
     })
   })
 

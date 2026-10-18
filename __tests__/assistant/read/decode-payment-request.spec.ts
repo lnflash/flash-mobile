@@ -10,9 +10,10 @@ jest.mock("lnurl-pay", () => ({
 import { getParams } from "js-lnurl"
 import { requestPayServiceParams } from "lnurl-pay"
 
+import { GraphqlRailError } from "@app/assistant/rails/graphql-rail"
 import { decodePaymentRequest } from "@app/assistant/registry/read/decode-payment-request"
 import { toBtcMoneyAmount } from "@app/types/amounts"
-import { fakeCtx, wallet } from "../fakes"
+import { failingAccountLookup, fakeCtx, wallet } from "../fakes"
 
 // Real mainnet invoices (see __tests__/screens/send-confirmation.spec.tsx).
 // The parser refuses an expired invoice, so each case pins the clock inside
@@ -33,6 +34,23 @@ const AMOUNT_INVOICE = {
 const ADDRESS = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"
 const LNURL =
   "LNURL1DP68GURN8GHJ7UM9WFMXJCM99E3K7MF0V9CXJ0M385EKVCENXC6R2C35XVUKXEFCV5MKVV34X5EKZD3EV56NYD3HXQURZEPEXEJXXEPNXSCRVWFNV9NXZCN9XQ6XYEFHVGCXXCMYXYMNSERXFQ5FNS"
+// A Flash user's LNURL-pay link: https://flashapp.me/.well-known/lnurlp/dreadmax.
+const FLASH_LNURL =
+  "LNURL1DP68GURN8GHJ7ENVV9EKSCTSWQHX6EF09EMK2MRV944KUMMHDCHKCMN4WFK8QTMYWFJKZERDV9UQGM6W09"
+const FLASH_LNURL_PARAMS = {
+  callback: "https://flashapp.me/lnurlp/dreadmax/callback",
+  fixed: false,
+  min: 1,
+  max: 1_000_000,
+  domain: "flashapp.me",
+  identifier: "dreadmax@flashapp.me",
+  metadata: [],
+  metadataHash: "",
+  description: "Pay dreadmax",
+  image: "",
+  commentAllowed: 0,
+  rawData: {},
+}
 
 const decode = async (raw: string) => {
   const setup = fakeCtx()
@@ -140,6 +158,75 @@ describe("decodePaymentRequest", () => {
     })
     await expect(decode("myself")).resolves.toMatchObject({
       result: { payload: { valid: false, reason: "SelfPayment" } },
+    })
+  })
+
+  it("reads a handle the server's Username pattern refuses as no one's, without asking the server", async () => {
+    // The parser passes "LNBC1abc" as a handle: @flash/client's reUsername
+    // minds the case of the lnbc1 start, and the server's UsernameRegex does
+    // not, so the server answers its lookup with an error, which the rail
+    // reads as a failed lookup, not as no account (ENG-730 review).
+    const { result, graphql } = await decode("LNBC1abc")
+
+    expect(result).toMatchObject({
+      payload: { valid: false, reason: "UsernameDoesNotExist" },
+    })
+    expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
+  })
+
+  it("fails when the server fails a username's lookup, never calling the username unknown", async () => {
+    // A GraphQL error on an HTTP 200 for an account that may exist
+    // (DB_ERROR), through the real rail: a failed read, which runTool
+    // answers with Assistant.toolFailed (ENG-730 review).
+    const { ctx, graphql } = fakeCtx()
+    graphql.wallets.mockResolvedValue([wallet({ id: "my-usd-wallet" })])
+    graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+
+    await expect(decodePaymentRequest.run({ raw: "alice" }, ctx)).rejects.toThrow(
+      GraphqlRailError,
+    )
+  })
+
+  it("fails when the server fails the lookup behind a Flash Lightning address, never calling it unknown", async () => {
+    // The parser takes an address at a Flash host as that username, and reads
+    // a lookup that failed as no account, which would answer
+    // UsernameDoesNotExist about a real user. An invalid answer after a
+    // failed lookup fails the read instead (ENG-730 review).
+    const { ctx, graphql } = fakeCtx()
+    graphql.wallets.mockResolvedValue([wallet({ id: "my-usd-wallet" })])
+    graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+
+    await expect(
+      decodePaymentRequest.run({ raw: "dreadmax@flashapp.me" }, ctx),
+    ).rejects.toThrow(GraphqlRailError)
+    expect(graphql.accountDefaultWallet).toHaveBeenCalledWith("dreadmax")
+  })
+
+  it("reads a Flash user's LNURL as LNURL-pay when the lookup of the username fails, as the send screen does", async () => {
+    // The send screen's lazy query resolves on an error and never rejects
+    // (Apollo 3.9), so its parser reads the failed lookup as no account and
+    // falls back to the LNURL-pay request (payment-destination/lnurl.ts:56-79),
+    // which still pays the user. A lookup that rejected inside the parser
+    // would have its catch call the LNURL unsupported (ENG-730 review).
+    ;(getParams as jest.Mock).mockResolvedValue({ tag: "payRequest" })
+    ;(requestPayServiceParams as jest.Mock).mockResolvedValue(FLASH_LNURL_PARAMS)
+    const { ctx, graphql } = fakeCtx()
+    graphql.wallets.mockResolvedValue([wallet({ id: "my-usd-wallet" })])
+    graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+
+    const result = await decodePaymentRequest.run({ raw: FLASH_LNURL }, ctx)
+
+    expect(graphql.accountDefaultWallet).toHaveBeenCalledWith("dreadmax")
+    expect(result).toEqual({
+      kind: "answer",
+      payload: {
+        valid: true,
+        direction: "send",
+        destinationType: "lnurl",
+        amount: null,
+        expiresAt: null,
+        payee: "dreadmax@flashapp.me",
+      },
     })
   })
 

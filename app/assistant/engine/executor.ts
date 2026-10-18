@@ -588,8 +588,8 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
 
     if (refresh.kind !== "prepared") {
       const refused = refresh.kind === "error" && refresh.card !== undefined
-      // A refusal (now short, or over a limit) or a question ends the action.
-      // A failed refresh leaves it, expired, for another try.
+      // A refusal (now short, over a limit, or the payee is gone (payeeNotFound))
+      // or a question ends the action. A failed refresh keeps it, expired, to retry.
       if (refused || refresh.kind === "clarification") store.remove(action.id)
       return {
         kind: "expired",

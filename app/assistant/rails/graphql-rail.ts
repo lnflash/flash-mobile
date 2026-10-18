@@ -81,7 +81,10 @@ export type GraphqlRail = {
    * this is the one line that changes.
    */
   contacts: () => Promise<readonly ContactRow[]>
-  /** The default wallet of a Flash username; null when there is none. */
+  /**
+   * The default wallet of a Flash username, or null when the server says no
+   * account has it. A lookup it fails for any other reason rejects.
+   */
   accountDefaultWallet: (username: string) => Promise<PublicWalletRow | null>
   /** The live price, in a display currency's minor units. */
   realtimePrice: (currency: string) => Promise<RealtimePriceRow>
@@ -118,6 +121,42 @@ export type GraphqlRailOptions = { fetchPolicy?: GraphqlRailFetchPolicy }
  */
 const missedCache = (result: { data?: unknown; partial?: boolean }): boolean =>
   result.partial === true || result.data === undefined || result.data === null
+
+/**
+ * The sentence lnflash/flash answers a username that no account has with:
+ * "Account does not exist for username <username>"
+ * (CouldNotFindAccountFromUsernameError, src/graphql/error-map.ts:165-167 on
+ * d1cca3767).
+ */
+export const ACCOUNT_NOT_FOUND_SENTENCE = "Account does not exist for username"
+
+/** A GraphQL error as it reaches the app, with its code wherever a server puts it. */
+type WireGraphqlError = {
+  message?: unknown
+  code?: unknown
+  extensions?: { code?: unknown } | null
+}
+
+/**
+ * Whether an accountDefaultWallet error is the server saying that no account
+ * has the username, and nothing else. lnflash/flash gives this query
+ * NOT_FOUND for that alone (account-default-wallet.ts:25-28). An account
+ * that exists can still fail it, with DB_ERROR (error-map.ts:527-531) or a
+ * cash-wallet presentation error such as CashWalletMissingUsdtWalletError
+ * when the ENG-544 self-heal fails (presentation-for-account.ts:91-99). Each
+ * is a GraphQL error on an HTTP 200 too, and none of them means no account.
+ *
+ * The code does not reach the app today. lnflash/flash's formatError moves
+ * it out of `extensions` to a top-level `code`
+ * (src/servers/graphql-server.ts:121-135), and the gateway in front of it
+ * forwards neither: the Test API answers a missing username with
+ * `extensions: { service: "public" }` alone. So the server's own sentence
+ * is what tells the two apart, and NOT_FOUND counts wherever a server puts it.
+ */
+const saysNoAccount = ({ message, code, extensions }: WireGraphqlError): boolean =>
+  code === "NOT_FOUND" ||
+  extensions?.code === "NOT_FOUND" ||
+  (typeof message === "string" && message.startsWith(ACCOUNT_NOT_FOUND_SENTENCE))
 
 /**
  * Where the app's screens put the account's transaction list in the cache,
@@ -277,9 +316,12 @@ export const createGraphqlRail = (
     },
 
     accountDefaultWallet: async (username) => {
-      // As the send screens' lazy query does: a username with no account is
-      // a GraphQL error and means "no wallet", not a failed read. Network
-      // failures still reject, and so does a cache that does not hold it.
+      // A GraphQL error comes back as data here (errorPolicy "all"), as it
+      // does for the send screens' lazy query. Only the server saying that
+      // no account has the username means "no wallet" (saysNoAccount). Any
+      // other error is about an account that may well exist, so it is a
+      // failed read, never "no such user" (ENG-730 review). Network failures
+      // reject too, and so does a cache that does not hold the answer.
       const result = await client.query<
         AccountDefaultWalletQuery,
         AccountDefaultWalletQueryVariables
@@ -291,6 +333,11 @@ export const createGraphqlRail = (
       })
       if (fetchPolicy === "cache-only" && missedCache(result)) {
         throw new GraphqlRailError("No answer in the cache")
+      }
+      const errors: readonly WireGraphqlError[] = result.errors ?? []
+      if (errors.length > 0) {
+        if (errors.every(saysNoAccount)) return null
+        throw new GraphqlRailError("The username lookup failed")
       }
       return result.data?.accountDefaultWallet ?? null
     },

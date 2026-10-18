@@ -2105,6 +2105,8 @@
         "searchedWindow": "Searched your last {count:number} payments.",
         "noContactMatch": "I couldn't find a contact by that name.",
         "pickContact": "Which contact do you mean?",
+        "pickFlashUser": "This person uses Flash but is not in your contacts.",
+        "payeeNotFound": "I couldn't find a contact or a Flash user by that name.",
         "detailsUnavailable": "Details aren't available for this payment.",
         "paymentFailed": "The payment didn't go through. Nothing was sent.",
         "invoiceAlreadyPaid": "This invoice was already paid. Nothing was sent.",

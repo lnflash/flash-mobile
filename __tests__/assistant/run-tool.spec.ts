@@ -16,6 +16,7 @@ import {
 } from "@app/assistant/registry/types"
 import { toUsdMoneyAmount } from "@app/types/amounts"
 import {
+  accountsOf,
   fakeActionCtx,
   fakeBtcRail,
   fakeGraphqlRail,
@@ -255,13 +256,18 @@ describe("runTool", () => {
     it("reports clarifications and failures as such", async () => {
       const { deps, graphql, toolEvents } = setup()
       graphql.contacts.mockResolvedValue([])
+      // No contact is called "mom", but a Flash user is: a question (ENG-730).
+      graphql.accountDefaultWallet.mockImplementation(accountsOf(["mom"]))
       graphql.accountLimits.mockRejectedValue(new Error("down"))
 
       await runTool({ intent: "resolveContact", args: { hint: "mom" } }, deps)
       await runTool({ intent: "getAccountLimits" }, deps)
+      // No contact and no Flash user: the refusal card, an error.
+      await runTool({ intent: "resolveContact", args: { hint: "mallory" } }, deps)
 
       expect(toolEvents().map(({ outcome }) => outcome)).toEqual([
         "clarification",
+        "error",
         "error",
       ])
     })

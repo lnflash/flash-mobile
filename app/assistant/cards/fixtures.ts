@@ -80,6 +80,14 @@ export const clarificationFixture: ClarificationCard = {
   ],
 }
 
+/** A Flash user who is not a contact, offered alone (ENG-730). */
+export const flashUserClarificationFixture: ClarificationCard = {
+  type: "clarification",
+  prompt: "Assistant.pickFlashUser",
+  options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+  about: "dreadmax",
+}
+
 export const cashoutOfferFixture: CashoutOfferCard = {
   type: "cashoutOffer",
   amountText: "$100.00",
