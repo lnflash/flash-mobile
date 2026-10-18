@@ -1,9 +1,11 @@
+import { isNumberWord } from "../engine/amount-phrase"
 import type { Token } from "./normalize"
 import type { GrammarContext, GrammarRule, RuleResult } from "./types"
 import {
   amountRuns,
   indexOfWords,
   readAmount,
+  Run,
   splitAroundRuns,
   startsWith,
 } from "./words"
@@ -11,9 +13,10 @@ import {
 // prepareReceive (spec §7.2): a payment request for one of the user's
 // wallets. "receive $5", "make an invoice for 2000", "my bitcoin address",
 // "gi mi a qr code". The amount is optional, and readAmountPhrase reads it
-// as for a send. The cash wallet receives unless the ask names the bitcoin
-// wallet; an address, or "on-chain", asks for an on-chain request. Nothing
-// here moves money: the answer is the invoice card.
+// as for a send; a number in words that counts the requests ("gi mi one
+// bitcoin address") is a question. The cash wallet receives unless the ask
+// names the bitcoin wallet; an address, or "on-chain", asks for an on-chain
+// request. Nothing here moves money: the answer is the invoice card.
 
 const RECEIVE_VERBS = new Set(["receive", "request", "collect"])
 
@@ -28,6 +31,65 @@ const VOCABULARY = new Set(
     "some money bitcoin btc wallet account cash usd usdt sats it link"
   ).split(" "),
 )
+
+/**
+ * A request's name after a count: its nouns, "payment" ("receive one
+ * payment", "one payment request") and "request".
+ */
+const REQUEST_NAMES = new Set([...REQUEST_NOUNS, "request", "payment"])
+
+/**
+ * Words that say which request, or which wallet it is for, between a count
+ * and the request's name: "one new address", "one bitcoin wallet address".
+ */
+const REQUEST_KINDS = new Set(["new", "lightning", "cash", "wallet", "account"])
+
+/** Currency names and codes, which say which wallet a request is for: "one bitcoin address". */
+const CURRENCY_NAMES = new Set(["bitcoin", "btc", "usd", "usdt"])
+
+const namesCurrency = (word: string, ctx: GrammarContext): boolean =>
+  CURRENCY_NAMES.has(word) || word === ctx.displayCurrency.toLowerCase()
+
+/**
+ * Whether an amount's words count the requests rather than give their
+ * amount: "make one invoice", "give me two invoices", "gi mi one bitcoin
+ * address", "receive one payment". "one" is Jamaican English's article, so
+ * "one" and a currency named after it say which request, as "a bitcoin
+ * address" does, and any number before "invoices" counts them. Words that
+ * say which request, or which wallet it is for, may come between ("one new
+ * bitcoin address", "one lightning invoice", "one bitcoin wallet address",
+ * "one btc account address"). "payment" is a request's name ("receive one
+ * bitcoin payment"), so "one payment request" ends at it unless another
+ * name follows ("two usd payment invoices" counts invoices). Such an ask's
+ * amount is a question, as every number in words was before ENG-731. A
+ * number in digits, one with a unit of its own ("a twenty dollar invoice",
+ * "a five usd invoice"), and one with no request named after it ("request
+ * one bitcoin", "an invoice for five") stay amounts.
+ */
+const countsRequests = (
+  asked: readonly Token[],
+  { start, end }: Run,
+  ctx: GrammarContext,
+): boolean => {
+  const [count, ...named] = asked.slice(start, end)
+  if (!isNumberWord(count.word)) return false
+  if (named.some(({ word }) => !namesCurrency(word, ctx))) return false
+  const between = (word: string): boolean =>
+    REQUEST_KINDS.has(word) || namesCurrency(word, ctx)
+  let next = end
+  while (next < asked.length && between(asked[next].word)) next += 1
+  let noun = asked[next]?.word
+  if (noun === undefined || !REQUEST_NAMES.has(noun)) return false
+  // Before another name, "payment" says which request: "two usd payment
+  // invoices" counts invoices.
+  if (noun === "payment") {
+    let past = next + 1
+    while (past < asked.length && between(asked[past].word)) past += 1
+    const name = asked[past]?.word
+    if (name !== undefined && REQUEST_NAMES.has(name)) noun = name
+  }
+  return named.length === 0 || count.word === "one" || noun === "invoices"
+}
 
 const isWalletBtc = (tokens: readonly Token[]): boolean =>
   ["bitcoin", "btc"].some(
@@ -58,6 +120,10 @@ const match = (tokens: readonly Token[], ctx: GrammarContext): RuleResult => {
 
   const args: Record<string, string> = {}
   if (runs.length === 1) {
+    // "one bitcoin address" asks for an address, as "a bitcoin address" does.
+    if (countsRequests(asked, runs[0], ctx)) {
+      return { kind: "clarifyAmount", reason: "format" }
+    }
     const amount = readAmount(asked, runs[0], ctx)
     if (amount.kind === "clarify") return { kind: "clarifyAmount", reason: amount.reason }
     args.amount = amount.amount
