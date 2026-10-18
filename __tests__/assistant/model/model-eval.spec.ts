@@ -13,7 +13,7 @@ import { readGrammar } from "@app/assistant/grammar"
 import { normalize } from "@app/assistant/grammar/normalize"
 import { refersToThreadOnly, stripFrame } from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
-import { CorpusEntry, DISPLAY_SYMBOL } from "../grammar/corpus/entries"
+import { CorpusEntry, DISPLAY_SYMBOL, grammarExpected } from "../grammar/corpus/entries"
 import { TUNING } from "../grammar/corpus/tuning"
 import { score } from "../grammar/score"
 import {
@@ -144,6 +144,29 @@ describe("the eval over the tuning corpus, with a fake model", () => {
       entry: target,
       got: { intent: "getBalances", args: {} },
     })
+  })
+
+  it('counts a history read from bob as what "how much did bob send me" means, though the grammar misses it (ENG-749)', async () => {
+    const entry = TUNING.find(({ utterance }) => utterance === "how much did bob send me")
+    if (!entry) throw new Error("the tuning corpus has no bob entry")
+    const read = {
+      intent: "getTransactions",
+      args: { direction: "RECEIVE", query: "bob" },
+    }
+    expect(entry.expected).toEqual(read)
+    // The grammar's own specs hold it to the miss its rules make of it.
+    expect(grammarExpected(entry)).toBe("miss")
+    expect(score([entry])).toMatchObject({ correct: 0, missed: 1, wrongAction: 0 })
+
+    // What the macOS model answered (ENG-690 proxy run): a wrong call
+    // against the old label, the meant read now.
+    const scores = await runOver(
+      [entry],
+      scriptedModel(new Map([[entry.utterance, { kind: "call", raw: read }]])),
+    )
+
+    expect(scores.model.all).toMatchObject({ correct: 1, wrongAction: 0 })
+    expect(scores.pipeline.all).toMatchObject({ correct: 1, wrongAction: 0 })
   })
 
   it("scores no model at all as the grammar alone, and says the model was not there", async () => {

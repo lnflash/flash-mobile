@@ -1,7 +1,9 @@
 // The per-intent grammar specs over the tuning corpus (docs/ai-assistant-
-// tool-registry.md §9): every entry resolves as meant, and a snapshot keeps
-// the whole table honest over time, both dialects. Not a spec itself.
-import { CorpusEntry, Expected, intentOf } from "./corpus/entries"
+// tool-registry.md §9): every entry resolves as the grammar should read it
+// (as meant, or the miss an entry says the grammar makes of a read its rules
+// do not cover), and a snapshot keeps the whole table honest over time, both
+// dialects. Not a spec itself.
+import { CorpusEntry, Expected, grammarExpected, intentOf } from "./corpus/entries"
 import { TUNING } from "./corpus/tuning"
 import { resolve } from "./score"
 
@@ -30,7 +32,7 @@ export const describeCorpus = (title: string, entries: readonly CorpusEntry[]): 
 
     entries.forEach((entry) => {
       it(label(entry), () => {
-        expect(resolve(entry)).toEqual(entry.expected)
+        expect(resolve(entry)).toEqual(grammarExpected(entry))
       })
     })
 
@@ -40,6 +42,6 @@ export const describeCorpus = (title: string, entries: readonly CorpusEntry[]): 
   })
 }
 
-/** The tuning entries meant as a call of `intent`. */
+/** The tuning entries the grammar should read as a call of `intent`. */
 export const tuningFor = (intent: string): readonly CorpusEntry[] =>
-  TUNING.filter(({ expected }) => intentOf(expected) === intent)
+  TUNING.filter((entry) => intentOf(grammarExpected(entry)) === intent)
