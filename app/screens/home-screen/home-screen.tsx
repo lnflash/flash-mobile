@@ -136,7 +136,7 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <Screen backgroundColor={colors.background}>
-      <Header />
+      <Header setModalVisible={setModalVisible} />
       <ScrollView refreshControl={renderRefreshControl()}>
         <Username />
         <WalletOverview

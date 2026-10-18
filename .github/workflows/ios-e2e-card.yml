@@ -30,9 +30,10 @@ on:
       - "app/components/amount-input-screen/**"
       - "app/components/currency-keyboard/**"
       - "app/utils/testProps.ts"
-      # The Ask Flash flows (ENG-689): the home screen's button, and the
-      # dev link and flag provider that turn the assistant on for them.
-      - "app/components/home-screen/Buttons.tsx"
+      # The Ask Flash flows (ENG-689): the home screen's header button
+      # (ENG-733), and the dev link and flag provider that turn the
+      # assistant on for them.
+      - "app/components/home-screen/Header.tsx"
       - "app/config/assistant-dev-override.ts"
       - "app/config/feature-flags-context.tsx"
       # The dev-link wiring (useDevCardLinks mount, the linking guard) and the

@@ -1,15 +1,28 @@
 import { useEffect, useSyncExternalStore } from "react"
 import { Linking, LogBox } from "react-native"
+import { ASSISTANT_DEV_LINK } from "@env"
 
 // The assistant's switch for development and e2e builds (ENG-689, architect
-// decision 3). assistantEnabled follows Remote Config, with no Local-instance
-// override (docs/ai-assistant-tool-registry.md §1, rule 7), so nothing turns
-// the assistant on in a test build that Maestro drives. This does, in a
-// build where __DEV__ holds (Debug, which the e2e job builds), and never in
-// a release build: the flows open
+// decision 3), and for the test phones (ENG-734). assistantEnabled follows
+// Remote Config, with no Local-instance override
+// (docs/ai-assistant-tool-registry.md §1, rule 7), so nothing turns the
+// assistant on in a test build that Maestro drives. This does, in a build
+// where __DEV__ holds (Debug, which the e2e job builds) or that was bundled
+// with ASSISTANT_DEV_LINK=true in its .env: the flows open
 //
 //   flash://dev/assistant?on=1    the assistant on, for this run of the app
 //   flash://dev/assistant?off=1   back to what Remote Config says
+//
+// ASSISTANT_DEV_LINK is for local phone builds only. The test phones carry a
+// production-mode bundle (--dev false), where __DEV__ is false, so without it
+// the link would do nothing there. react-native-dotenv inlines it when the
+// app is bundled, from .env, the other env files it reads, or the
+// environment. A store build must never carry it, and
+// scripts/ci/check-store-env.sh enforces that where it runs: the deploy
+// workflows, the Fastfile's store lanes and `yarn aab-android` /
+// `yarn apk-android` stop before building while the key is set. An archive
+// made by hand in Xcode, or a bare `./gradlew bundleRelease`, runs no check;
+// docs/release.md says to run it first.
 //
 // It turns on the assistant only, never voice, spoken replies or the server
 // fallback, and it lives in memory: a relaunch forgets it. The navigation
@@ -19,17 +32,23 @@ import { Linking, LogBox } from "react-native"
 // LogBox: its toasts sit over the bottom of the screen, where the thread's
 // input and Ask button are, and take the flows' taps.
 
-const isDev = (): boolean => typeof __DEV__ !== "undefined" && __DEV__ === true
+/**
+ * Whether this build honours the link: __DEV__, or ASSISTANT_DEV_LINK=true in
+ * the .env it was bundled with. The store build paths that run
+ * scripts/ci/check-store-env.sh (above) refuse to build with that key.
+ */
+const linkEnabled = (): boolean =>
+  (typeof __DEV__ !== "undefined" && __DEV__ === true) || ASSISTANT_DEV_LINK === "true"
 
 let on = false
 const listeners = new Set<() => void>()
 
-/** Whether the override is on. Always false in a release build. */
-export const assistantDevOverride = (): boolean => isDev() && on
+/** Whether the override is on. Always false in a build that ignores the link. */
+export const assistantDevOverride = (): boolean => linkEnabled() && on
 
-/** Turn the override on or off. A no-op in a release build. */
+/** Turn the override on or off. A no-op in a build that ignores the link. */
 export const setAssistantDevOverride = (value: boolean): void => {
-  if (!isDev() || value === on) return
+  if (!linkEnabled() || value === on) return
   on = value
   listeners.forEach((listener) => listener())
 }
@@ -48,10 +67,10 @@ export const useAssistantDevOverride = (): boolean =>
 /**
  * What a dev link asks of the override: true for flash://dev/assistant?on=1,
  * false for ?off=1, and undefined for any other link, and for every link in
- * a release build.
+ * a build that ignores the dev link.
  */
 export const parseAssistantDevLink = (url: string): boolean | undefined => {
-  if (!isDev() || !/^flash:\/\/dev\//i.test(url)) return undefined
+  if (!linkEnabled() || !/^flash:\/\/dev\//i.test(url)) return undefined
   let parsed: URL
   try {
     parsed = new URL(url)
@@ -65,13 +84,14 @@ export const parseAssistantDevLink = (url: string): boolean | undefined => {
 }
 
 /**
- * Acts on the assistant's dev link, at launch and while the app runs. App
- * mounts it beside DevCardLinks, in a development build only; in a release
- * build the parser answers undefined anyway.
+ * Acts on the assistant's dev link, at launch and while the app runs.
+ * DevLinks (app/components/dev-links.tsx) mounts it beside DevCardLinks, in
+ * every build: it listens only in a build that honours the link, and
+ * elsewhere the parser answers undefined anyway.
  */
 export const useDevAssistantLink = (): void => {
   useEffect(() => {
-    if (!isDev()) return undefined
+    if (!linkEnabled()) return undefined
     const handle = (url: string | null) => {
       const value = url ? parseAssistantDevLink(url) : undefined
       if (value === undefined) return

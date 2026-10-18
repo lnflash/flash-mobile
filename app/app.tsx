@@ -48,8 +48,7 @@ import { NotificationsProvider } from "./components/notification"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { FlashcardProvider } from "./contexts/Flashcard"
 import { useTopUpMinter } from "./hooks/use-card-top-up"
-import { DevCardLinks } from "./hooks/use-tap-flashcard"
-import { DevAssistantLink } from "./config/assistant-dev-override"
+import { DevLinks } from "./components/dev-links"
 import { PersistGate } from "redux-persist/integration/react"
 import { useEffect } from "react"
 import { nostrRuntime } from "./nostr/runtime/NostrRuntime"
@@ -145,16 +144,15 @@ export const App = () => {
                                           contexts/Flashcard.tsx. */}
                                       <FlashcardProvider>
                                         <>
-                                          {/* Development builds only: the e2e
-                                              flows' simulated card (ENG-634).
-                                              Its own component, so its
-                                              FlashcardContext read re-renders
-                                              nothing else. */}
-                                          {__DEV__ && <DevCardLinks />}
-                                          {/* Development builds only: the
-                                              e2e flows' switch for the
-                                              assistant (ENG-689). */}
-                                          {__DEV__ && <DevAssistantLink />}
+                                          {/* The dev links: the e2e flows'
+                                              simulated card (ENG-634) and
+                                              the assistant's switch
+                                              (ENG-689, ENG-734). In every
+                                              build, with no condition
+                                              around it: each link's gate is
+                                              inside
+                                              (components/dev-links.tsx). */}
+                                          <DevLinks />
                                           <InviteDeepLinkHandler>
                                             <RootStack />
                                           </InviteDeepLinkHandler>

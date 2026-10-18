@@ -32,4 +32,6 @@ declare module "@env" {
   export const GREENLIGHT_PARTNER_KEY: string
   export const GOOGLE_PLACE_API_KEY: string
   export const BREEZ_LNURL_DOMAIN: string
+  // Local phone builds only (ENG-734, app/config/assistant-dev-override.ts).
+  export const ASSISTANT_DEV_LINK: string | undefined
 }
