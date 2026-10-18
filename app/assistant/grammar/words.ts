@@ -238,6 +238,16 @@ const isUnit = (word: string, ctx: GrammarContext): boolean =>
 /** What a word's kind depends on around it: the kind before it, and the word after it. */
 type Neighbours = { previous: Kind | undefined; next: Token | undefined }
 
+/** Words that open what follows an amount: "5 c to bob", "5 c for lunch". */
+const AFTER_AMOUNT = set("to for from")
+
+/**
+ * Whether an amount can end before this word: it is the last, or it opens
+ * what follows the amount, or it joins a second amount ("5 c and 10 c").
+ */
+const endsAmount = (next: Token | undefined): boolean =>
+  next === undefined || AFTER_AMOUNT.has(next.word) || CONNECTORS.has(next.word)
+
 const kindOf = (
   token: Token,
   { previous, next }: Neighbours,
@@ -245,9 +255,15 @@ const kindOf = (
 ): Kind => {
   if (NUMBER_START.test(token.word)) return "number"
   if (isUnit(token.word, ctx)) return "unit"
-  // "c" is cents only right after a number ("5 c"), as readAmountPhrase
-  // reads it; anywhere else it is a word, an initial perhaps.
-  if (token.word === "c" && (previous === "number" || previous === "numberWord")) {
+  // "c" is cents only right after a number, as readAmountPhrase reads it,
+  // and where the amount ends: "send bob 5 c", "send 5 c to bob". Before a
+  // name it is the name's initial ("send 500 c brown" is 500 to C Brown,
+  // never 5.00 to Brown), and anywhere else it is a word too.
+  if (
+    token.word === "c" &&
+    (previous === "number" || previous === "numberWord") &&
+    endsAmount(next)
+  ) {
     return "unit"
   }
   // "ninety-nine" reaches here as "ninetynine" (normalize.ts drops the
