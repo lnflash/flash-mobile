@@ -22,7 +22,8 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 // 1. The native availability check, every turn. It is the authority, not the
 //    coverage heuristic (app/utils/on-device-model-coverage.ts).
 // 2. The prompt (model-prompt.ts) and the model's decision, within the
-//    timeout. No answer, or none, is no call.
+//    timeout. No answer, or none, is no call. The next ask's session is
+//    warmed as soon as this one is decided (prewarmOnDeviceModel, ENG-749).
 // 3. The router, unmodified, as a pre-check, over the model tier's tools
 //    only (modelTierRegistry: the five shipped intents, ENG-749): a
 //    non-object, an intent outside the closed set, outside the model tier's
@@ -330,6 +331,28 @@ const threadBefore = (
 const NO_MODEL: ModelTierResult = { kind: "none", reason: "unavailable" }
 
 /**
+ * Warm the on-device model's next session (ENG-749): when the model can
+ * answer now, have the native side start a session with the instructions
+ * every request carries and process them, sending nothing, so the next
+ * request pays only for its own words. Ask Flash calls it when it opens,
+ * and tryOnDeviceModel after each request the model was asked, so every
+ * ask in the thread finds one ready: a session is never reused across asks,
+ * since one that answered holds that turn's words. The caller asks only
+ * while both flags are on. It never throws, reports no event of its own,
+ * and does nothing without a model.
+ */
+export const prewarmOnDeviceModel = async (
+  runtime: Pick<ModelTierRuntime, "registry" | "modelAdapter">,
+): Promise<void> => {
+  try {
+    if (!(await runtime.modelAdapter.isAvailable())) return
+    await runtime.modelAdapter.prewarm(buildModelWarmup(runtime.registry))
+  } catch {
+    // Best effort: a request that finds no warm session starts its own.
+  }
+}
+
+/**
  * The on-device model's call for an utterance the grammar missed, checked,
  * on the account `account` names (its display currency and symbol), which
  * grounding reads amounts in.
@@ -353,6 +376,9 @@ export const tryOnDeviceModel = async (
     const decision = await runtime.modelAdapter.decide(prompt, {
       timeoutMs: MODEL_RESPONSE_TIMEOUT_MS,
     })
+    // This request used the warmed session, or started its own: warm the
+    // next one now, after it, never awaited (ENG-749).
+    prewarmOnDeviceModel(runtime)
     if (decision.kind !== "call") return { kind: "none", reason: decision.kind }
 
     const route = routeIntent(decision.raw, registry)
@@ -368,23 +394,5 @@ export const tryOnDeviceModel = async (
   } catch (err) {
     console.warn("[assistant] the on-device model tier failed", err)
     return NO_MODEL
-  }
-}
-
-/**
- * Warm the on-device model as Ask Flash opens (ENG-749), so the first
- * request does not wait for its session to start: when the model can answer
- * now, start a session with the instructions every request carries, and
- * send nothing. The caller asks only while both flags are on. It never
- * throws, reports no event of its own, and does nothing without a model.
- */
-export const prewarmOnDeviceModel = async (
-  runtime: Pick<ModelTierRuntime, "registry" | "modelAdapter">,
-): Promise<void> => {
-  try {
-    if (!(await runtime.modelAdapter.isAvailable())) return
-    await runtime.modelAdapter.prewarm(buildModelWarmup(runtime.registry))
-  } catch {
-    // Best effort: a request that finds no warm session starts its own.
   }
 }

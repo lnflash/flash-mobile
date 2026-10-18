@@ -228,11 +228,29 @@ describe("AskFlashScreen", () => {
     // Opening reports what it does without a model, and nothing more.
     expect(events.map(({ type }) => type)).toEqual(openedWithoutModel)
 
-    // Typing and a turn render the screen again; the warm-up stays at one.
+    // Typing and a grammar hit render the screen again: the model is not
+    // asked, and the warm-up stays at one.
     graphql.wallets.mockResolvedValue(CASH_WALLETS)
-    await ask(screen, "how loaded am i right now")
+    await ask(screen, "what's my balance")
     await waitFor(() => expect(screen.getByTestId("ask-flash-balances")).toBeTruthy())
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
     expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1)
+  })
+
+  it("warms the next session after each ask the on-device model reads, so every ask finds one (ENG-749)", async () => {
+    const { screen, graphql, modelAdapter } = show({
+      flags: BOTH_ON,
+      modelAdapter: fakeModelAdapter(modelCall({ intent: "getBalances", args: {} })),
+    })
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1))
+
+    await ask(screen, "how loaded am i right now")
+    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(2))
+    await ask(screen, "am i loaded or what")
+    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(3))
+
+    expect(modelAdapter.decide).toHaveBeenCalledTimes(2)
   })
 
   ONE_FLAG.forEach(([name, flags]) =>

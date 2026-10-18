@@ -149,6 +149,15 @@ describe("the iOS bridge", () => {
       )?.[1]
     expect(take).toContain("current.instructions == instructions")
     expect(take).toContain("held = nil")
+    // Warmed again after each request: a session already held for the
+    // same instructions is kept, never replaced by another.
+    const prepare = /func prepare\(for instructions: String\) \{([\s\S]*?)\n {4}\}/.exec(
+      swift,
+    )?.[1]
+    expect(prepare).toContain(
+      "if let current = held, current.instructions == instructions { return }",
+    )
+    expect(prepare).toContain("session.prewarm()")
     // The bridge method answers whatever happens: it never rejects.
     const prewarm = /func prewarm\(\n\s+_ warmupJson: String,[\s\S]*?\n {2}\}/.exec(
       swift,

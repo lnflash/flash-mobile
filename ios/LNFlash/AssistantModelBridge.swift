@@ -7,8 +7,8 @@
 //  (app/assistant/engine/native-model-bridge.ts) asks `isAvailable` on every
 //  turn the grammar tier cannot read, then `complete` for at most one tool
 //  call, which JS validates before anything runs. Ask Flash calls `prewarm`
-//  when it opens (ENG-749): a session for the instructions, warmed, which
-//  the first request that carries them takes.
+//  when it opens and after each request (ENG-749): a session for the
+//  instructions, warmed, which the next request that carries them takes.
 //
 //  The app still runs on iOS 15.1 (IPHONEOS_DEPLOYMENT_TARGET) and the
 //  framework exists only on iOS 26, so:
@@ -82,9 +82,10 @@ class AssistantModelBridge: NSObject {
   }
 
   /// Starts a session for the instructions `warmupJson` holds and warms it,
-  /// sending nothing (ENG-749): Ask Flash calls it when it opens, so the
-  /// first request does not wait for the model to load. Resolves at once,
-  /// with a model or without one, and on any iOS before 26; never rejects.
+  /// sending nothing (ENG-749): Ask Flash calls it when it opens and after
+  /// each request, so the next request does not pay for the instructions.
+  /// Resolves at once, with a model or without one, and on any iOS before
+  /// 26; never rejects.
   @objc(prewarm:resolver:rejecter:)
   func prewarm(
     _ warmupJson: String,
@@ -220,9 +221,10 @@ enum AssistantOnDeviceModel {
   /// payees and a memo, and cuts a runaway answer short.
   static let maximumResponseTokens = 160
 
-  /// The session Ask Flash warmed when it opened (ENG-749), held for the
-  /// next request with the same instructions, which takes it once. It holds
-  /// the instructions and nothing else: no turn carries into another.
+  /// The session Ask Flash warmed (ENG-749), when it opened or after the
+  /// last request, held for the next request with the same instructions,
+  /// which takes it once. It holds the instructions and nothing else: no
+  /// turn carries into another.
   private static let warm = WarmSession()
 
   /// At most one warmed session, with the instructions it was made for. The
@@ -231,9 +233,15 @@ enum AssistantOnDeviceModel {
     private let lock = NSLock()
     private var held: (instructions: String, session: LanguageModelSession)?
 
-    func put(_ session: LanguageModelSession, for instructions: String) {
+    /// Makes a session for the instructions and warms it, sending no
+    /// prompt, unless one for them is held already: Ask Flash asks when it
+    /// opens and again after each request, and one is enough.
+    func prepare(for instructions: String) {
       lock.lock()
       defer { lock.unlock() }
+      if let current = held, current.instructions == instructions { return }
+      let session = LanguageModelSession(instructions: instructions)
+      session.prewarm()
       held = (instructions, session)
     }
 
@@ -253,9 +261,10 @@ enum AssistantOnDeviceModel {
     return false
   }
 
-  /// Makes a session for the instructions and warms it, sending no prompt:
-  /// the system loads the model now rather than at the first request. No
-  /// model, or a warm-up it cannot read, does nothing.
+  /// Warms a session for the instructions, so the next request pays only
+  /// for its own words: the system loads the model and processes the
+  /// instructions now rather than inside the request's time. No model, or a
+  /// warm-up it cannot read, does nothing.
   static func prewarm(warmupJson: String) {
     guard
       isAvailable(),
@@ -265,9 +274,7 @@ enum AssistantOnDeviceModel {
     else {
       return
     }
-    let session = LanguageModelSession(instructions: instructions)
-    session.prewarm()
-    warm.put(session, for: instructions)
+    warm.prepare(for: instructions)
   }
 
   /// The session for one request: the warmed one when it was made for these

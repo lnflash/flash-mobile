@@ -31,7 +31,8 @@ import java.util.concurrent.TimeoutException;
  * The JS layer (app/assistant/engine/native-model-bridge.ts) asks
  * {@link #isAvailable} on every turn the grammar tier cannot read, then
  * {@link #complete} for at most one tool call, which JS validates before
- * anything runs. Ask Flash calls {@link #prewarm} when it opens (ENG-749).
+ * anything runs. Ask Flash calls {@link #prewarm} when it opens and after each
+ * request (ENG-749).
  *
  * <ul>
  *   <li>Only a model AICore reports AVAILABLE counts. DOWNLOADABLE and
@@ -116,9 +117,9 @@ public final class AssistantModelBridgeModule extends ReactContextBaseJavaModule
 
   /**
    * Warms Gemini Nano for the next request, sending nothing (ENG-749): Ask
-   * Flash calls it when it opens, so the first request does not wait for
-   * AICore to load the model. Only a model AICore reports AVAILABLE is
-   * warmed, and nothing here starts a download. {@code warmupJson} holds the
+   * Flash calls it when it opens and after each request, so a request does
+   * not wait for AICore to load the model. Only a model AICore reports
+   * AVAILABLE is warmed, and nothing here starts a download. {@code warmupJson} holds the
    * instructions iOS warms its session with; ML Kit's warm-up takes none.
    * Resolves at once, whatever happens on the worker; never rejects.
    */

@@ -819,3 +819,68 @@ describe("prewarmOnDeviceModel (ENG-749)", () => {
     expect(failing.prewarm).not.toHaveBeenCalled()
   })
 })
+
+describe("the next ask's warm session (ENG-749)", () => {
+  /** Lets the warm-up that tryOnDeviceModel starts, and never awaits, run. */
+  const settle = () =>
+    new Promise((resolve) => {
+      setImmediate(resolve)
+    })
+
+  it("is warmed after each request the model was asked, whatever it answered, and after the answer", async () => {
+    const decisions = [
+      modelCall({ intent: "getBalances", args: {} }),
+      modelCall({ intent: "execute", args: {} }),
+      { kind: "miss" as const },
+      { kind: "unavailable" as const },
+    ]
+    for (const decision of decisions) {
+      const modelAdapter = fakeModelAdapter(decision)
+
+      await tryOnDeviceModel(runtimeOf(modelAdapter), "how loaded am i right now", USD)
+      await settle()
+
+      expect([decision, modelAdapter.prewarm.mock.calls.length]).toEqual([decision, 1])
+      expect(modelAdapter.prewarm).toHaveBeenCalledWith({
+        instructions: buildModelPrompt(assistantRegistry, [], "hi").instructions,
+      })
+      // The request ran first, on the session warmed before it.
+      expect(modelAdapter.decide.mock.invocationCallOrder[0]).toBeLessThan(
+        modelAdapter.prewarm.mock.invocationCallOrder[0],
+      )
+    }
+  })
+
+  it("is not warmed when the model was not asked: no model there, or a reference to the thread", async () => {
+    const absent = unavailableModelAdapter()
+    const thread = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+
+    await tryOnDeviceModel(runtimeOf(absent), "how loaded am i right now", USD)
+    await tryOnDeviceModel(runtimeOf(thread), "same ting again", USD)
+    await settle()
+
+    expect(absent.prewarm).not.toHaveBeenCalled()
+    expect(thread.prewarm).not.toHaveBeenCalled()
+  })
+
+  it("never holds up the answer, and a warm-up that fails changes nothing", async () => {
+    const hangs = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+    hangs.prewarm.mockImplementation(
+      () =>
+        new Promise<void>(() => {
+          // never settles
+        }),
+    )
+    const fails = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+    fails.prewarm.mockRejectedValue(new Error("bridge gone"))
+
+    await expect(
+      tryOnDeviceModel(runtimeOf(hangs), "how loaded am i right now", USD),
+    ).resolves.toEqual({ kind: "call", call: { intent: "getBalances", args: {} } })
+    await expect(
+      tryOnDeviceModel(runtimeOf(fails), "how loaded am i right now", USD),
+    ).resolves.toEqual({ kind: "call", call: { intent: "getBalances", args: {} } })
+    await settle()
+    expect(fails.prewarm).toHaveBeenCalledTimes(1)
+  })
+})
