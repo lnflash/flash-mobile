@@ -10,6 +10,8 @@ import {
 } from "@app/assistant/engine/model-eval-hook"
 import type { ModelPrompt } from "@app/assistant/engine/model-prompt"
 import { readGrammar } from "@app/assistant/grammar"
+import { normalize } from "@app/assistant/grammar/normalize"
+import { refersToThreadOnly, stripFrame } from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
 import { CorpusEntry, DISPLAY_SYMBOL } from "../grammar/corpus/entries"
 import { TUNING } from "../grammar/corpus/tuning"
@@ -117,14 +119,17 @@ describe("the eval over the tuning corpus, with a fake model", () => {
   it("scores a model call on an entry meant as a miss as a wrong action, alone and in the shipped order", async () => {
     // An entry no call was meant for, which the grammar misses too.
     // An entry no call was meant for, which the grammar misses without
-    // refusing it, so the shipped order asks the model about it.
+    // refusing it, so the shipped order asks the model about it: not a
+    // reference to the thread alone, which the model is never asked about
+    // (ENG-749).
     const target = TUNING.find(
       (entry) =>
         entry.expected === "miss" &&
         readGrammar(entry.utterance, {
           displayCurrency: entry.displayCurrency,
           displaySymbol: DISPLAY_SYMBOL[entry.displayCurrency],
-        }) === undefined,
+        }) === undefined &&
+        !refersToThreadOnly(stripFrame(normalize(entry.utterance).tokens)),
     )
     if (!target) throw new Error("the tuning corpus has no entry the grammar only misses")
     const answers: Answers = new Map([

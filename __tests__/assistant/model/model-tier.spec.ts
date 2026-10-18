@@ -693,6 +693,64 @@ describe("no call", () => {
   })
 })
 
+describe("a reference to the thread with nothing new in it (ENG-749)", () => {
+  /** The thread a reference points back at: a balance read, and its answer. */
+  const thread: NewEntry[] = [
+    { kind: "user", text: "my balance" },
+    { kind: "reply", replyKey: "Assistant.toolFailed" },
+  ]
+
+  it("is no call, and the model is never asked", async () => {
+    // "same ting again" was a balance read to the macOS model (ENG-690
+    // proxy run); the thread's own controls issue a call again.
+    const references = [
+      "same ting again",
+      "do that again",
+      "again",
+      "Again!",
+      "same again please",
+      "ok, same thing",
+      "one more time",
+      "repeat that",
+      "di same ting",
+      "dweet again",
+      "same as before",
+    ]
+    for (const utterance of references) {
+      const modelAdapter = fakeModelAdapter(
+        modelCall({ intent: "getBalances", args: {} }),
+      )
+
+      await expect(
+        tryOnDeviceModel(runtimeOf(modelAdapter, { thread }), utterance, USD),
+      ).resolves.toEqual({ kind: "none", reason: "thread" })
+      expect([utterance, modelAdapter.isAvailable.mock.calls.length]).toEqual([
+        utterance,
+        0,
+      ])
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+    }
+  })
+
+  it("is only words that point back: anything new in them goes to the model", async () => {
+    const asks = [
+      "same again for bob",
+      "again 5",
+      "show my balance again",
+      "how loaded am i right now",
+      "that",
+    ]
+    for (const utterance of asks) {
+      const modelAdapter = fakeModelAdapter()
+
+      await expect(
+        tryOnDeviceModel(runtimeOf(modelAdapter, { thread }), utterance, USD),
+      ).resolves.toEqual({ kind: "none", reason: "miss" })
+      expect([utterance, modelAdapter.decide.mock.calls.length]).toEqual([utterance, 1])
+    }
+  })
+})
+
 describe("what the model is asked", () => {
   it("is the prompt for the thread before this turn, within the timeout", async () => {
     const modelAdapter = fakeModelAdapter()

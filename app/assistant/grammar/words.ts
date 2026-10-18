@@ -447,5 +447,31 @@ export const TIME_WORDS = set(
 /** Follow-ups: v1 parses every utterance on its own (spec §7.2). */
 export const FOLLOW_UP_WORDS = set("again more another same back extra rest also too")
 
+/** Words that point back at the thread: "again", "same", "repeat". */
+const THREAD_POINTERS = set("again same repeat redo another more")
+
+/**
+ * Words that name nothing new beside a pointer: "do that again", "same ting
+ * again", "one more time", "same as before", patois "dweet again" (do it
+ * again). "Ting" reaches here as "thing" (folds.ts).
+ */
+const THREAD_FILLERS = set(
+  "do did does it that this the one thing time as before last over dweet dat now please",
+)
+
+/**
+ * A reference to the thread with nothing new in it (ENG-749): "same ting
+ * again", "do that again", "again", "one more time", once its frame is
+ * stripped. Only the thread knows what it points at, and the thread's own
+ * controls issue a call again (a card's Try again or Refresh, a question's
+ * pick), so the on-device model is never asked about one: a model reads it
+ * as whatever call it likes ("same ting again" was a balance read to the
+ * macOS model). Anything else in the words ("same again for bob") is not
+ * one.
+ */
+export const refersToThreadOnly = (tokens: readonly Token[]): boolean =>
+  tokens.some(({ word }) => THREAD_POINTERS.has(word)) &&
+  tokens.every(({ word }) => THREAD_POINTERS.has(word) || THREAD_FILLERS.has(word))
+
 /** Pronouns that stand for a person. */
 export const PERSON_PRONOUNS = set("him her them they it she he us im yall unu")

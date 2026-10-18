@@ -1,5 +1,5 @@
 import { normalize } from "../grammar/normalize"
-import { amountRuns, readAmount } from "../grammar/words"
+import { amountRuns, readAmount, refersToThreadOnly, stripFrame } from "../grammar/words"
 import { CONTACT_PICK_PREFIX } from "../registry/actions/shared/payee"
 import type { Registry, RegisteredTool } from "../registry/define"
 import type { Intent } from "../registry/types"
@@ -15,6 +15,10 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 // order reserves for it, after the grammar has missed. It asks the model for
 // at most one call and trusts none of it:
 //
+// 0. A reference to the thread with nothing new in it ("same ting again",
+//    "do that again", "again") is no call, and the model is not asked
+//    (ENG-749): only the thread knows what it points at, and the thread's
+//    own controls issue a call again (refersToThreadOnly, grammar/words.ts).
 // 1. The native availability check, every turn. It is the authority, not the
 //    coverage heuristic (app/utils/on-device-model-coverage.ts).
 // 2. The prompt (model-prompt.ts) and the model's decision, within the
@@ -58,12 +62,14 @@ export type ModelTierRuntime = {
  * - rejected: the model answered with a call they refused, and the intent
  *   it named ("unknown" when it named none of the closed set); the turn
  *   reports it with the model's flag set (the model's rejection rate).
- * - none: no model, no answer in time, a failure, or no call in the answer.
+ * - none: no model, no answer in time, a failure, or no call in the
+ *   answer; or a reference to the thread alone, which the model is never
+ *   asked about ("thread").
  */
 export type ModelTierResult =
   | { kind: "call"; call: ToolCall }
   | { kind: "rejected"; reason: "precheck" | "ungrounded"; intent: Intent | "unknown" }
-  | { kind: "none"; reason: "unavailable" | "miss" }
+  | { kind: "none"; reason: "unavailable" | "miss" | "thread" }
 
 // ---------------------------------------------------------------------------
 // Grounding
@@ -334,6 +340,9 @@ export const tryOnDeviceModel = async (
   account: AmountPhraseContext,
 ): Promise<ModelTierResult> => {
   try {
+    if (refersToThreadOnly(stripFrame(normalize(utterance).tokens))) {
+      return { kind: "none", reason: "thread" }
+    }
     if (!(await runtime.modelAdapter.isAvailable())) return NO_MODEL
     const registry = modelTierRegistry(runtime.registry)
     const prompt = buildModelPrompt(

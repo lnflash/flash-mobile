@@ -416,6 +416,36 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     expect(how.modelAdapter.decide).not.toHaveBeenCalled()
   })
 
+  it('answers a reference to the thread alone ("same ting again") with the miss reply, and never asks the model (ENG-749)', async () => {
+    for (const utterance of ["same ting again", "again", "one more time"]) {
+      const { runtime, modelAdapter, runTool, toolEvents, graphql } = withModel(
+        modelCall({ intent: "getBalances", args: {} }),
+      )
+      graphql.wallets.mockResolvedValue(CASH_WALLETS)
+      runtime.transcript.append([
+        { kind: "user", text: "how loaded am i right now" },
+        { kind: "reply", replyKey: "Assistant.toolFailed" },
+        { kind: "user", text: utterance },
+      ])
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(runTool).not.toHaveBeenCalled()
+      // No call from the model: today's miss event, without its flag.
+      expect(toolEvents()).toEqual([
+        {
+          intent: "unknown",
+          tier: "none",
+          outcome: "rejected",
+          latencyMs: 0,
+          onDeviceModelAvailable: false,
+        },
+      ])
+    }
+  })
+
   it("runs the model's checked call through runTool, served by the model, held as text", async () => {
     const call = {
       intent: "prepareSend",
