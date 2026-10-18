@@ -4,6 +4,17 @@
 // Not a spec: jest's testRegex never picks it up, so CI never runs it, and
 // nothing in CI gates on a model's accuracy.
 //
+// The bar (ENG-749, the owner's decision of 2026-10-18), before the Remote
+// Config key assistantOnDeviceModel is created for a platform: on the
+// held-out set, on a real device of that platform, in the shipped order
+// (the grammar, then the model on a plain miss), zero wrong prepared actions
+// and at most 0.5% wrong reads (MODEL_TIER_BAR, eval-run.ts). A wrong
+// prepared action is a prepare* call the label does not expect, or one whose
+// payee, amount, currency or wallet differs from the label's; a wrong read
+// is any other wrong call. Step 3 prints both numbers on every line and the
+// bar's verdict last. The grammar tier's own launch gate
+// (accuracy-gate.spec.ts) is unchanged.
+//
 // It is the one importer of the held-out corpus besides the launch gate: a
 // named, reviewed exception (ENG-690, plan §7; held-out-isolation.spec.ts),
 // because a held-out run once per PR is what the device numbers are for.
@@ -23,7 +34,8 @@
 //      and save what it copied as /tmp/tuning.outcomes.json.
 //   3. The scores: the model alone and the shipped order (the grammar, then
 //      the model on what it missed), each overall, English and Jamaican
-//      patois, and the model's p50 and p95 time:
+//      patois, with its wrong prepared actions and wrong reads, the model's
+//      p50 and p95 time, and the bar's verdict:
 //        MODEL_EVAL=score MODEL_EVAL_SET=tuning MODEL_EVAL_FILE=/tmp/tuning.outcomes.json \
 //          yarn jest --testRegex '__tests__/assistant/model/device-eval\.ts$'
 //

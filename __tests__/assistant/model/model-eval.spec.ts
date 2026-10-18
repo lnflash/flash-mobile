@@ -2,9 +2,12 @@ import {
   createNativeModelAdapter,
   ModelDecision,
 } from "@app/assistant/engine/model-adapter"
+import type { ToolCall } from "@app/assistant/engine/intent-router"
 import {
   evalEntriesOf,
   ModelEvalDeps,
+  ModelEvalOutcome,
+  ModelEvalRow,
   registerModelEvalHook,
   runModelEval,
 } from "@app/assistant/engine/model-eval-hook"
@@ -13,17 +16,26 @@ import { readGrammar } from "@app/assistant/grammar"
 import { normalize } from "@app/assistant/grammar/normalize"
 import { refersToThreadOnly, stripFrame } from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
-import { CorpusEntry, DISPLAY_SYMBOL, grammarExpected } from "../grammar/corpus/entries"
+import {
+  CorpusEntry,
+  DISPLAY_SYMBOL,
+  Expected,
+  grammarExpected,
+} from "../grammar/corpus/entries"
 import { TUNING } from "../grammar/corpus/tuning"
 import { score } from "../grammar/score"
 import {
   describeDeviceRun,
   deviceEntries,
+  isWrongPreparedAction,
+  meetsModelTierBar,
+  MODEL_TIER_BAR,
   parseDeviceRun,
   percentile,
   pipelineOutcome,
   sameNumbersAs,
   scoreDeviceRun,
+  WrongCalls,
 } from "./eval-run"
 
 // The on-device model's eval (ENG-690): the dev hook runs the grammar and
@@ -144,6 +156,9 @@ describe("the eval over the tuning corpus, with a fake model", () => {
       entry: target,
       got: { intent: "getBalances", args: {} },
     })
+    // A read, where none was meant: a wrong read, not a wrong prepared
+    // action (ENG-749).
+    expect(scores.wrongCalls.model.all).toMatchObject({ preparedAction: 0, read: 1 })
   })
 
   it('counts a history read from bob as what "how much did bob send me" means, though the grammar misses it (ENG-749)', async () => {
@@ -371,6 +386,172 @@ describe("counting a device's answer", () => {
     })
     expect(scores.model.all.correct).toBe(1)
     expect(scores.pipeline.all.correct).toBe(1)
+  })
+})
+
+describe("wrong calls by consequence, the model tier's bar (ENG-749)", () => {
+  const en = (
+    utterance: string,
+    expected: Expected,
+    displayCurrency: "USD" | "JMD" = "USD",
+  ): CorpusEntry => ({ utterance, dialect: "en", displayCurrency, expected })
+
+  /** A row the grammar missed without refusing, so the shipped order takes the model's. */
+  const row = (model: ModelEvalOutcome): ModelEvalRow => ({
+    grammar: "miss",
+    refused: false,
+    model,
+    modelMs: 1,
+  })
+
+  it("counts a run with one wrong prepared action and one wrong read as one of each, and says so", () => {
+    const entries = [
+      en("top up", "miss"),
+      en("payments to kemar", {
+        intent: "getTransactions",
+        args: { direction: "SEND", query: "kemar" },
+      }),
+      en("how loaded am i right now", { intent: "getBalances", args: {} }),
+    ]
+
+    const scores = scoreDeviceRun(entries, {
+      available: true,
+      rows: [
+        // A prepare where none was meant.
+        row({ intent: "prepareReceive", args: {} }),
+        // A read, but not the one meant.
+        row({ intent: "getBalances", args: {} }),
+        // The read meant.
+        row({ intent: "getBalances", args: {} }),
+      ],
+    })
+
+    const oneOfEach: WrongCalls = {
+      preparedAction: 1,
+      read: 1,
+      preparedActionRate: 1 / 3,
+      readRate: 1 / 3,
+    }
+    // The launch gate's count, split in two that add up to it.
+    expect(scores.pipeline.all.wrongAction).toBe(2)
+    expect(scores.wrongCalls.pipeline.all).toEqual(oneOfEach)
+    expect(scores.wrongCalls.model.all).toEqual(oneOfEach)
+    expect(scores.wrongCalls.pipeline.en).toEqual(oneOfEach)
+    expect(scores.wrongCalls.pipeline.jm).toEqual({
+      preparedAction: 0,
+      read: 0,
+      preparedActionRate: 0,
+      readRate: 0,
+    })
+    const report = describeDeviceRun("fake", scores)
+    expect(report).toContain(
+      "fake, grammar then model: 1/3 correct (33.3%), 2 wrong action (66.67%), 0 missed, " +
+        "0 asked about the amount; 1 wrong prepared action (33.33%), 1 wrong read (33.33%)",
+    )
+    expect(report).toContain(
+      "fake, model alone, English: 1/3 correct (33.3%), 2 wrong action (66.67%), 0 missed, " +
+        "0 asked about the amount; 1 wrong prepared action (33.33%), 1 wrong read (33.33%)",
+    )
+    expect(report).toContain(
+      "fake: the model tier's bar (held-out set, real device, grammar then model): " +
+        "1 wrong prepared action (allowed 0), 33.33% wrong reads (allowed at most 0.50%): NOT met",
+    )
+    expect(report).toContain(
+      '  wrong prepared action: en/USD "top up": meant "miss", got {"intent":"prepareReceive","args":{}}',
+    )
+  })
+
+  it("calls a prepare wrong by its payee, amount, currency and wallet, read as the tool reads them", () => {
+    const send = (args: Record<string, unknown>): ToolCall => ({
+      intent: "prepareSend",
+      args,
+    })
+    const meant = send({ payee: "kemar", amount: "9", currency: "USD", memo: "the taxi" })
+    const entry = en("send kemar $9 for the taxi", meant)
+    const cases: [string, ToolCall, boolean][] = [
+      ["another amount", send({ ...meant.args, amount: "90" }), true],
+      ["another payee", send({ ...meant.args, payee: "eve" }), true],
+      ["another currency", send({ ...meant.args, currency: "BTC" }), true],
+      [
+        "a wallet the label does not name",
+        send({ ...meant.args, sourceWallet: "BTC" }),
+        true,
+      ],
+      [
+        "another action",
+        { intent: "prepareReceive", args: { amount: "9", currency: "USD" } },
+        true,
+      ],
+      ["another memo", send({ ...meant.args, memo: "taxi" }), false],
+      ["the payee in another case", send({ ...meant.args, payee: " Kemar " }), false],
+      ["the amount written another way", send({ ...meant.args, amount: "9.00" }), false],
+    ]
+    cases.forEach(([name, got, prepared]) =>
+      expect([name, isWrongPreparedAction(got, entry)]).toEqual([name, prepared]),
+    )
+
+    // No currency is the account's display currency.
+    const bare = en("send tanya 20", send({ payee: "tanya", amount: "20" }))
+    const inUsd = send({ payee: "tanya", amount: "20", currency: "USD" })
+    expect(isWrongPreparedAction(inUsd, bare)).toBe(false)
+    expect(isWrongPreparedAction(inUsd, { ...bare, displayCurrency: "JMD" })).toBe(true)
+    // A group's payees in another order pay the same people.
+    const group = en("split 10 between bob and alice", {
+      intent: "prepareGroupSend",
+      args: { payees: ["bob", "alice"], total: "10" },
+    })
+    expect(
+      isWrongPreparedAction(
+        {
+          intent: "prepareGroupSend",
+          args: { payees: ["Alice", "bob"], total: "10.00" },
+        },
+        group,
+      ),
+    ).toBe(false)
+    expect(
+      isWrongPreparedAction(
+        { intent: "prepareGroupSend", args: { payees: ["bob", "eve"], total: "10" } },
+        group,
+      ),
+    ).toBe(true)
+    // A prepare where a read, a question or a miss was meant.
+    expect(
+      isWrongPreparedAction(inUsd, en("history", { intent: "getTransactions" })),
+    ).toBe(true)
+    expect(isWrongPreparedAction(inUsd, en("send tanya 5k", "clarifyAmount"))).toBe(true)
+    // A read is never a prepared action, whatever was meant; anything the
+    // scorer cannot show to be a read is one.
+    expect(isWrongPreparedAction({ intent: "getBalances", args: {} }, entry)).toBe(false)
+    expect(
+      isWrongPreparedAction({ intent: "launchRocket", args: {} }, en("hi", "miss")),
+    ).toBe(true)
+  })
+
+  it("holds the bar: no wrong prepared action, and at most 0.5% wrong reads", () => {
+    const wrong = (preparedAction: number, read: number, total: number): WrongCalls => ({
+      preparedAction,
+      read,
+      preparedActionRate: preparedAction / total,
+      readRate: read / total,
+    })
+
+    expect(MODEL_TIER_BAR).toEqual({
+      maxWrongPreparedActions: 0,
+      maxWrongReadRate: 0.005,
+    })
+    expect(meetsModelTierBar(wrong(0, 0, 200))).toBe(true)
+    expect(meetsModelTierBar(wrong(0, 1, 200))).toBe(true)
+    expect(meetsModelTierBar(wrong(0, 2, 200))).toBe(false)
+    expect(meetsModelTierBar(wrong(1, 0, 200))).toBe(false)
+
+    const scores = scoreDeviceRun([en("hi", "miss")], {
+      available: true,
+      rows: [row("miss")],
+    })
+    expect(describeDeviceRun("fake", scores)).toContain(
+      "0 wrong prepared actions (allowed 0), 0.00% wrong reads (allowed at most 0.50%): met",
+    )
   })
 })
 
