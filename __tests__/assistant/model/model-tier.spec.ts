@@ -321,6 +321,19 @@ describe("grounding", () => {
       ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareGroupSend" })
     })
 
+    it("refuses one in a read's free text too", async () => {
+      const utterance = "what did i send contact:dreadmax"
+      await expect(
+        ask({ intent: "getTransactions", args: { query: "dreadmax" } }, utterance),
+      ).resolves.toMatchObject({ kind: "call" })
+      await expect(
+        ask(
+          { intent: "getTransactions", args: { query: "contact:dreadmax" } },
+          utterance,
+        ),
+      ).resolves.toEqual({ ...UNGROUNDED, intent: "getTransactions" })
+    })
+
     it("refuses one in any case, once trimmed, as resolvePayee reads it", async () => {
       const utterance = "Hook Contact:DreadMax up with 5 dollars"
       await expect(
