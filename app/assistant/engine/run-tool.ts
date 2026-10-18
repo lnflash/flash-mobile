@@ -41,6 +41,12 @@ export type RunToolDeps = {
    * prepare a payment by accident.
    */
   actionDeps?: ActionDeps
+  /**
+   * The on-device model emitted this call (ENG-690): the event says so in
+   * `onDeviceModelAvailable`, which analytics.ts reads as "a model served
+   * the call". False, or absent, for the grammar's calls and every other.
+   */
+  servedByOnDeviceModel?: boolean
 }
 
 /**
@@ -142,8 +148,7 @@ export const runTool = async (
       tier,
       outcome,
       latencyMs,
-      // No on-device model is wired in yet (Phase 3).
-      onDeviceModelAvailable: false,
+      onDeviceModelAvailable: deps.servedByOnDeviceModel ?? false,
     }),
   )
   return result

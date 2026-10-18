@@ -99,14 +99,24 @@ jest.mock("@app/assistant/ui/assistant-runtime", () => ({
 import { MockedProvider } from "@apollo/client/testing"
 
 import { confirmPaymentFixture } from "@app/assistant/cards/fixtures"
+import type { ModelAdapter } from "@app/assistant/engine/model-adapter"
 import type { ToolResult } from "@app/assistant/registry/types"
 import { AskFlashScreen } from "@app/assistant/ui"
+import { FeatureFlagContext } from "@app/config/feature-flags-context"
 import { createCache } from "@app/graphql/cache"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import theme from "@app/rne-theme/theme"
 import { makeAction } from "../executor-harness"
-import { btcPayment, graphqlTx, JMD_PRICE, page, USD_PRICE } from "../fakes"
+import {
+  btcPayment,
+  fakeModelAdapter,
+  graphqlTx,
+  JMD_PRICE,
+  modelCall,
+  page,
+  USD_PRICE,
+} from "../fakes"
 import { CASH_WALLETS, fakeRuntime } from "./thread-harness"
 
 loadLocale("en")
@@ -118,17 +128,34 @@ const en = i18nObject("en")
 
 jest.setTimeout(30000)
 
-const show = () => {
-  const harness = fakeRuntime()
+type Flags = React.ComponentProps<typeof FeatureFlagContext.Provider>["value"]
+
+const FLAGS_OFF: Flags = {
+  deviceAccountEnabled: false,
+  bridgeTopupEnabled: false,
+  cashuCardUsdEnabled: false,
+  assistantEnabled: false,
+  assistantVoice: false,
+  assistantVoiceReplies: false,
+  assistantServerFallback: false,
+  assistantOnDeviceModel: false,
+}
+
+const show = <M extends ModelAdapter>(
+  options: { flags?: Partial<Flags>; modelAdapter?: M } = {},
+) => {
+  const harness = fakeRuntime({ modelAdapter: options.modelAdapter })
   mockRuntime = harness.runtime
   // The app's transaction row reads the hidden-balance flag and the price
   // from the Apollo cache, as it does on the home screen.
   const screen = render(
-    <MockedProvider mocks={[]} cache={createCache()}>
-      <ThemeProvider theme={theme}>
-        <AskFlashScreen />
-      </ThemeProvider>
-    </MockedProvider>,
+    <FeatureFlagContext.Provider value={{ ...FLAGS_OFF, ...options.flags }}>
+      <MockedProvider mocks={[]} cache={createCache()}>
+        <ThemeProvider theme={theme}>
+          <AskFlashScreen />
+        </ThemeProvider>
+      </MockedProvider>
+    </FeatureFlagContext.Provider>,
   )
   return { ...harness, screen }
 }
@@ -147,6 +174,41 @@ afterEach(() => {
 })
 
 describe("AskFlashScreen", () => {
+  it("lets the on-device model read what the grammar misses while both its flags are on", async () => {
+    const { screen, graphql, modelAdapter } = show({
+      flags: { assistantEnabled: true, assistantOnDeviceModel: true },
+      modelAdapter: fakeModelAdapter(modelCall({ intent: "getBalances", args: {} })),
+    })
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+
+    await ask(screen, "how loaded am i right now")
+
+    expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(screen.getByTestId("ask-flash-balances")).toBeTruthy())
+    expect(screen.getByText("USD 1234")).toBeTruthy()
+  })
+
+  // Plain loops rather than it.each: this repo's tsconfig types `it` without
+  // .each (navigation-container-wrapper.spec.tsx).
+  const ONE_FLAG: [string, Partial<Flags>][] = [
+    ["the assistant's flag alone", { assistantEnabled: true }],
+    ["the model's flag alone", { assistantOnDeviceModel: true }],
+  ]
+  ONE_FLAG.forEach(([name, flags]) =>
+    it(`never asks the on-device model with ${name} on`, async () => {
+      const { screen, modelAdapter } = show({
+        flags,
+        modelAdapter: fakeModelAdapter(modelCall({ intent: "getBalances", args: {} })),
+      })
+
+      await ask(screen, "how loaded am i right now")
+
+      expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(screen.getByText(en.Assistant.unknownIntent())).toBeTruthy()
+    }),
+  )
+
   it("greets an empty thread with its hint, an input and an Ask button, all from LL", () => {
     const { screen } = show()
 

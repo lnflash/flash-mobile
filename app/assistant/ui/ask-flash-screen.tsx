@@ -7,6 +7,7 @@ import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
 import { Screen } from "@app/components/screen"
 import { TxItem } from "@app/components/transaction-item"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 import { WalletCurrency } from "@app/graphql/generated"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useConnectivity } from "@app/hooks/use-connectivity"
@@ -38,7 +39,9 @@ import { useThread } from "./use-thread"
 // Every figure comes from a tool's payload, formatted here by the app's own
 // display-currency formatter, never from the model or the grammar. Cards
 // render through ActionCardView, unchanged. Offline, a banner says so, and
-// answers from the cache carry the stale label at their top.
+// answers from the cache carry the stale label at their top. The on-device
+// model reads what the grammar misses only while assistantEnabled and
+// assistantOnDeviceModel are both on (ENG-690, architect decision 2).
 
 /** The label that says an answer came from the cache: at the top, in the error box's colors. */
 const StaleBadge: React.FC = () => {
@@ -310,6 +313,7 @@ export const AskFlashScreen: React.FC = () => {
   const { colors } = useTheme().theme
   const { isOffline } = useConnectivity()
   const { appConfig } = useAppConfig()
+  const { assistantEnabled, assistantOnDeviceModel } = useFeatureFlags()
   const {
     displayCurrency,
     fiatSymbol,
@@ -332,6 +336,7 @@ export const AskFlashScreen: React.FC = () => {
     display: { formatMoneyAmount, formatDisplayAndWalletAmount, fractionDigits },
     graphqlUri: appConfig.galoyInstance.graphqlUri,
     lnAddressHostname: appConfig.galoyInstance.lnAddressHostname,
+    onDeviceModel: assistantEnabled && assistantOnDeviceModel,
   }
   const thread = useThread(runtime, env)
   const canSend = !thread.busy && text.trim().length > 0

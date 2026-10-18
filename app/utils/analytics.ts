@@ -283,7 +283,14 @@ export type AssistantEventParams = {
   tier: "read" | "action" | "none"
   outcome: AssistantEventOutcome
   latencyMs: number
-  /** Whether an on-device model served the call. False until Phase 3. */
+  /**
+   * Whether an on-device model served the call (ENG-690): true for a call
+   * the model emitted, whether it ran or was refused (by the router's
+   * pre-check or the grounding check); false for the grammar's calls, for
+   * an utterance no model answered with a call, and for Confirms. Not
+   * AssistantCoverageParams.onDeviceModelAvailable, which says whether the
+   * device could run a model at all.
+   */
   onDeviceModelAvailable: boolean
 }
 

@@ -11,13 +11,19 @@ const BridgeTopupEnabledKey = "bridgeTopupEnabled"
 // every card proof as sats, so a USD card would be charged many times over.
 const CashuCardUsdEnabledKey = "cashuCardUsdEnabled"
 // The Flash assistant (ENG-684, docs/ai-assistant-tool-registry.md §1, rule 7):
-// the assistant itself, voice input, spoken replies, and the server-side
-// model fallback. All four stay off until Remote Config turns them on, on
-// the Local instance too: dogfooding flips the remote flag.
+// the assistant itself, voice input, spoken replies, the server-side model
+// fallback, and the on-device model (ENG-690). All five stay off until
+// Remote Config turns them on, on the Local instance too: dogfooding flips
+// the remote flag.
 const AssistantEnabledKey = "assistantEnabled"
 const AssistantVoiceKey = "assistantVoice"
 const AssistantVoiceRepliesKey = "assistantVoiceReplies"
 const AssistantServerFallbackKey = "assistantServerFallback"
+// The on-device model tier's own switch (ENG-690, architect decision 2): it
+// rides on two beta SDKs (Foundation Models, ML Kit GenAI), and dogfooding
+// compares the grammar alone with the grammar and the model. The tier runs
+// only while assistantEnabled is on too (ask-flash-screen.tsx).
+const AssistantOnDeviceModelKey = "assistantOnDeviceModel"
 
 type FeatureFlags = {
   deviceAccountEnabled: boolean
@@ -27,6 +33,7 @@ type FeatureFlags = {
   assistantVoice: boolean
   assistantVoiceReplies: boolean
   assistantServerFallback: boolean
+  assistantOnDeviceModel: boolean
 }
 
 type RemoteConfig = {
@@ -37,6 +44,7 @@ type RemoteConfig = {
   [AssistantVoiceKey]: boolean
   [AssistantVoiceRepliesKey]: boolean
   [AssistantServerFallbackKey]: boolean
+  [AssistantOnDeviceModelKey]: boolean
 }
 
 const defaultRemoteConfig: RemoteConfig = {
@@ -47,6 +55,7 @@ const defaultRemoteConfig: RemoteConfig = {
   assistantVoice: false,
   assistantVoiceReplies: false,
   assistantServerFallback: false,
+  assistantOnDeviceModel: false,
 }
 
 const defaultFeatureFlags = {
@@ -57,6 +66,7 @@ const defaultFeatureFlags = {
   assistantVoice: false,
   assistantVoiceReplies: false,
   assistantServerFallback: false,
+  assistantOnDeviceModel: false,
 }
 
 // Resolves once the native side has handed JS its values: the defaults above
@@ -95,6 +105,7 @@ const readActive = (): RemoteConfig => {
     [AssistantVoiceKey]: read(AssistantVoiceKey),
     [AssistantVoiceRepliesKey]: read(AssistantVoiceRepliesKey),
     [AssistantServerFallbackKey]: read(AssistantServerFallbackKey),
+    [AssistantOnDeviceModelKey]: read(AssistantOnDeviceModelKey),
   }
 }
 
@@ -164,6 +175,7 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
     assistantVoice: remoteConfig.assistantVoice,
     assistantVoiceReplies: remoteConfig.assistantVoiceReplies,
     assistantServerFallback: remoteConfig.assistantServerFallback,
+    assistantOnDeviceModel: remoteConfig.assistantOnDeviceModel,
   }
 
   if (!remoteConfigReady && currentLevel === "NonAuth") {

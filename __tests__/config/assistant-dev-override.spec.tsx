@@ -1,8 +1,8 @@
 /**
  * ENG-689, architect decision 3: a debug or e2e build may turn the assistant
  * on with a dev link, so the Maestro flows can open Ask Flash; a release
- * build never does. Only assistantEnabled follows it: voice, spoken replies
- * and the server fallback stay Remote Config's alone.
+ * build never does. Only assistantEnabled follows it: voice, spoken replies,
+ * the server fallback and the on-device model stay Remote Config's alone.
  */
 import * as React from "react"
 import { Linking, LogBox, Text } from "react-native"
@@ -48,6 +48,7 @@ const Flags = () => {
         assistantVoice: flags.assistantVoice,
         assistantVoiceReplies: flags.assistantVoiceReplies,
         assistantServerFallback: flags.assistantServerFallback,
+        assistantOnDeviceModel: flags.assistantOnDeviceModel,
       })}
     </Text>
   )
@@ -149,6 +150,7 @@ describe("the assistant's dev override", () => {
       assistantVoice: false,
       assistantVoiceReplies: false,
       assistantServerFallback: false,
+      assistantOnDeviceModel: false,
     })
 
     act(() => setAssistantDevOverride(false))

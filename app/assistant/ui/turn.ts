@@ -1,6 +1,7 @@
 import type { BtcRail } from "@app/payments/btc-rail"
 import { cardOf, validateCard } from "../cards/types"
 import type { ToolCall } from "../engine/intent-router"
+import { ModelTierResult, tryOnDeviceModel } from "../engine/model-tier"
 import { report } from "../engine/telemetry"
 import { matchGrammar } from "../grammar"
 import type { GraphqlRail } from "../rails/graphql-rail"
@@ -14,16 +15,25 @@ import type { AssistantRuntime } from "./assistant-runtime"
 import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 
 // One turn of the Ask Flash thread (ENG-689, spec §7, §7.2): the grammar
-// reads the utterance; a miss or an amount it cannot read is a templated
-// reply, and runTool is never called for it. Offline, nothing that needs
-// the network runs: no prepare (a send, a request) and no price, which is
-// never estimated (spec §4). Reads run against the cache then, and their
-// answers carry the stale label. Every tool result is noted for the
-// thread's metrics, and every prepared action is held as text-initiated,
-// which the auth policy confirms with a tap (spec §5).
+// reads the utterance; an amount it cannot read is a templated reply, and
+// runTool is never called for it. Offline, nothing that needs the network
+// runs: no prepare (a send, a request) and no price, which is never
+// estimated (spec §4). Reads run against the cache then, and their answers
+// carry the stale label. Every tool result is noted for the thread's
+// metrics, and every prepared action is held as text-initiated, which the
+// auth policy confirms with a tap (spec §5).
 //
-// Dispatch order (spec §7): the grammar, then an on-device model (Phase 3)
-// and the server (Phase 5), neither of which exists yet.
+// Dispatch order (spec §7): the grammar, then, only for what it missed, the
+// on-device model (ENG-690, engine/model-tier.ts) where the flags allow it
+// (TurnEnv.onDeviceModel), then the server (Phase 5), which does not exist
+// yet. A grammar hit or an amount question never waits on the model. The
+// model's call goes through runTool as the grammar's does, held as text, so
+// the person taps to confirm whatever it prepared; nothing it said reaches
+// execute(). No answer from it, or an answer the model tier refuses, is the
+// templated miss reply, as before. Each utterance reports one
+// `assistant_event`: runTool's for a call, else a rejected one whose
+// onDeviceModelAvailable says whether the model answered with a call that
+// was refused (its rejection rate) or did not answer with one at all.
 
 /** What a turn needs from the screen: the connection, and the account's display currency. */
 export type TurnEnv = {
@@ -37,6 +47,18 @@ export type TurnEnv = {
   /** The instance's GraphQL endpoint and Lightning address host, for sendPayment. */
   graphqlUri: string
   lnAddressHostname: string
+  /**
+   * Whether the on-device model may read what the grammar misses: both
+   * assistantEnabled and assistantOnDeviceModel are on (ENG-690, architect
+   * decision 2). Off, or absent, every miss is the miss reply, as before.
+   */
+  onDeviceModel?: boolean
+}
+
+/** How a call came to run: the on-device model emitted it (ENG-690). */
+export type CallOrigin = {
+  /** Its event says a model served it (RunToolDeps.servedByOnDeviceModel). */
+  servedByOnDeviceModel?: boolean
 }
 
 /**
@@ -151,7 +173,7 @@ const listingRails = (graphql: GraphqlRail, btcRail: BtcRail) => {
 export const runCall = async (
   runtime: AssistantRuntime,
   call: ToolCall,
-  env: TurnEnv,
+  env: TurnEnv & CallOrigin,
 ): Promise<NewEntry[]> => {
   const offline = env.isOffline
   const graphql = offline ? runtime.cachedGraphql : runtime.graphql
@@ -165,6 +187,7 @@ export const runCall = async (
     lnAddressHostname: env.lnAddressHostname,
     now: runtime.now,
     telemetry: runtime.telemetry,
+    ...(env.servedByOnDeviceModel ? { servedByOnDeviceModel: true } : {}),
     ...(offline
       ? {}
       : {
@@ -201,15 +224,26 @@ export const answerUtterance = async (
     displaySymbol: env.displaySymbol,
   })
   if (match === undefined) {
+    const model: ModelTierResult = env.onDeviceModel
+      ? await tryOnDeviceModel(runtime, utterance)
+      : { kind: "none", reason: "unavailable" }
+    if (model.kind === "call") {
+      if (env.isOffline && needsNetwork(model.call)) {
+        return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      }
+      return runCall(runtime, model.call, { ...env, servedByOnDeviceModel: true })
+    }
     // A miss is counted as the router counts a call it cannot read, so
-    // the grammar's coverage shows in the same event.
+    // the grammar's coverage shows in the same event. A call the model tier
+    // refused carries the intent the model named, and the model's flag.
+    const intent = model.kind === "rejected" ? model.intent : "unknown"
     report(() =>
       runtime.telemetry.tool({
-        intent: "unknown",
-        tier: "none",
+        intent,
+        tier: intent === "unknown" ? "none" : tierOf(intent),
         outcome: "rejected",
         latencyMs: 0,
-        onDeviceModelAvailable: false,
+        onDeviceModelAvailable: model.kind === "rejected",
       }),
     )
     return [{ kind: "reply", replyKey: "Assistant.unknownIntent" }]
