@@ -22,6 +22,7 @@ import { formatBreezPayment } from "@app/utils/transactions"
 import { ActionCardView } from "../cards/ActionCardView"
 import type { CardActions } from "../cards/card-actions"
 import { replyText } from "../cards/card-parts"
+import { registerModelEvalHook } from "../engine/model-eval-hook"
 import type {
   BalancesProjection,
   PricePayload,
@@ -42,6 +43,10 @@ import { useThread } from "./use-thread"
 // answers from the cache carry the stale label at their top. The on-device
 // model reads what the grammar misses only while assistantEnabled and
 // assistantOnDeviceModel are both on (ENG-690, architect decision 2).
+
+// A development build's hook for the on-device model's device eval
+// (engine/model-eval-hook.ts); a no-op in a release build.
+registerModelEvalHook()
 
 /** The label that says an answer came from the cache: at the top, in the error box's colors. */
 const StaleBadge: React.FC = () => {

@@ -13,7 +13,9 @@ import { describeScore, score } from "./score"
 // never a wrong action: "I can't help with that yet" moves nothing. The
 // numbers are logged for the PR.
 //
-// This is the only importer of held-out.ts (held-out-isolation.spec.ts).
+// This is the only spec that imports held-out.ts; the on-device model's
+// device eval, a script CI never runs, is the one other importer
+// (held-out-isolation.spec.ts, ENG-690).
 
 const MIN_CORRECT_RATE = 0.95
 const MAX_WRONG_ACTION_RATE = 0.005
