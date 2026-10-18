@@ -51,6 +51,78 @@ const COUNT_WORDS: Readonly<Record<string, number>> = {
   twenty: 20,
 }
 
+// ---------------------------------------------------------------------------
+// What a history read the on-device model made may hold (ENG-751)
+// ---------------------------------------------------------------------------
+
+/**
+ * Words that say the money went out: the grammar's own (SENT), and the
+ * words for paying and giving ("paid", "gave", "spending", patois "spen").
+ */
+const SEND_WORDS: ReadonlySet<string> = new Set([
+  ...SENT,
+  ..."paid pay paying pays gave give giving spending spen".split(" "),
+])
+
+/** Words that say the money came in: the grammar's own (RECEIVED), "from", and earning. */
+const RECEIVE_WORDS: ReadonlySet<string> = new Set([
+  ...RECEIVED,
+  ..."from earned earn earning".split(" "),
+])
+
+/**
+ * The directions a history ask's words give (ENG-751): SEND for a word of
+ * money going out ("sent", "paid", "spent", "outgoing") or "to" someone;
+ * RECEIVE for a word of money coming in ("received", "got", "from",
+ * "earned"), or a word of money going out that points at the user ("sent
+ * me", "who pay mi", "to us"). Patois "mi" is "my" as often as "me", so
+ * "fi mi madda" gives both. The model tier keeps the model's direction only
+ * when the words give it, and drops it otherwise: a direction the words do
+ * not give is not what was asked ("how much did I spend" is no list of what
+ * came in).
+ */
+export const directionsSaid = (
+  tokens: readonly Token[],
+): ReadonlySet<"SEND" | "RECEIVE"> => {
+  const said = new Set<"SEND" | "RECEIVE">()
+  tokens.forEach(({ word }, i) => {
+    const next = tokens[i + 1]?.raw.toLowerCase()
+    const atUser = next === "me" || next === "us" || next === "mi"
+    const atOther = next !== undefined && next !== "me" && next !== "us"
+    if (SEND_WORDS.has(word)) said.add("SEND")
+    if ((SEND_WORDS.has(word) || word === "to") && atUser) said.add("RECEIVE")
+    if (word === "to" && atOther) said.add("SEND")
+    if (RECEIVE_WORDS.has(word)) said.add("RECEIVE")
+  })
+  return said
+}
+
+/**
+ * Words about amounts or order, which name no one and no memo: "my biggest
+ * payment", "my first payment", "how much".
+ */
+const ORDER_WORDS = new Set(
+  (
+    "biggest largest smallest highest lowest total totals sum average most least much many " +
+    "first oldest newest earliest"
+  ).split(" "),
+)
+
+/**
+ * Whether a word is one a history ask is made of, never what it looks for
+ * (ENG-751): its nouns and the rest of its vocabulary, its directions, its
+ * counts, and words about amounts or order. A search made of such words
+ * alone ("my payments", "money i received") looks for nothing the person
+ * named.
+ */
+export const isHistoryWord = (word: string): boolean =>
+  VOCABULARY.has(word) ||
+  LIST_NOUNS.has(word) ||
+  SEND_WORDS.has(word) ||
+  RECEIVE_WORDS.has(word) ||
+  ORDER_WORDS.has(word) ||
+  Object.prototype.hasOwnProperty.call(COUNT_WORDS, word)
+
 const countOf = (token: Token | undefined): number | undefined => {
   if (!token) return undefined
   if (/^\d+$/.test(token.word)) return Number(token.word)

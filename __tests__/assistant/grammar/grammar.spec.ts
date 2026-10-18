@@ -1,8 +1,15 @@
 import * as amountPhrase from "@app/assistant/engine/amount-phrase"
 import { routeIntent } from "@app/assistant/engine/intent-router"
 import { GRAMMAR_RULES, matchGrammar, readGrammar } from "@app/assistant/grammar"
+import { directionsSaid, isHistoryWord } from "@app/assistant/grammar/get-transactions"
 import { normalize, textOf, WORD_FOLDS } from "@app/assistant/grammar/normalize"
 import type { GrammarRule } from "@app/assistant/grammar/types"
+import {
+  GROUP_WORDS,
+  namesDate,
+  namesTwoPeople,
+  stripFrame,
+} from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
@@ -699,5 +706,135 @@ describe("readGrammar (ENG-690)", () => {
     expect(readGrammar("my balance", USD, [refuses, ...GRAMMAR_RULES])).toEqual({
       kind: "refused",
     })
+  })
+})
+
+describe("the words the on-device model's calls are held to (ENG-751)", () => {
+  const tokensOf = (utterance: string) => stripFrame(normalize(utterance).tokens)
+
+  it("names a date by its words, numbers, months and stretches, never by a count", () => {
+    const dated = [
+      "what did i get yesterday",
+      "payments this month",
+      "transactions from last week",
+      "what came in today",
+      "payments since june",
+      "payments in september",
+      "show the past year",
+      "what did i send 3 days ago",
+      "payments on 10/15",
+      "payments on 2026-10-15",
+      "payments since the 15th",
+      "what did i get may 5",
+      "payments from 5 oct",
+      "transactions in 2025",
+      "payments between june and july",
+      "payments between the 1st and the 9th",
+      "what i spent last night",
+      "wah mi get tideh",
+      "wah mi sen yessideh",
+      "how much mi spen dis mont",
+    ]
+    const undated = [
+      "my last 5 payments",
+      "my last payment",
+      "show every payment to bob",
+      "may i see my payments",
+      "payments from jan",
+      "who sent me money recently",
+      "latest transactions",
+      "payments of 2000",
+      "send bob $5",
+    ]
+
+    expect(dated.filter((utterance) => !namesDate(normalize(utterance).tokens))).toEqual(
+      [],
+    )
+    expect(undated.filter((utterance) => namesDate(normalize(utterance).tokens))).toEqual(
+      [],
+    )
+  })
+
+  it("names two people joined as one ask, and never an amount or a frame's word as one", () => {
+    const two = [
+      "tanya and kemar need 20",
+      "tanya & kemar need 20",
+      "bob + alice get 5",
+      "bob or alice can have 40",
+      "tanya an kemar fi get 500",
+      "mi an jason need 1000",
+      "me and bob need 20",
+      "hook up bob, tanya with 15",
+      "tanya and my sister need 25",
+      "give it to him and her",
+    ]
+    const one = [
+      "send bob $5 and $3",
+      "bob gets 5 and 10",
+      "send $5 to bob, please",
+      "hook bob up with 5 dollars",
+      "send tanya $12 for kemar's lunch",
+      "pay bob 50 for rent and lights",
+      "throw bob 5 and thanks",
+      "make an invoice",
+    ]
+
+    expect(two.filter((utterance) => !namesTwoPeople(tokensOf(utterance), USD))).toEqual(
+      [],
+    )
+    expect(one.filter((utterance) => namesTwoPeople(tokensOf(utterance), USD))).toEqual(
+      [],
+    )
+  })
+
+  it("holds the group words of a split, a share and a plural, not a single send's", () => {
+    ;["split", "between", "each", "both", "everyone", "everybody", "half", "halves"]
+      .concat(["us", "them", "people"])
+      .forEach((word) => expect([word, GROUP_WORDS.has(word)]).toEqual([word, true]))
+    ;["and", "with", "all", "to", "for"].forEach((word) =>
+      expect([word, GROUP_WORDS.has(word)]).toEqual([word, false]),
+    )
+    // Patois "dem" reaches the rules as "them".
+    expect(normalize("dem").tokens[0].word).toBe("them")
+  })
+
+  it("gives the directions a history ask's words name, both when they are unsure", () => {
+    const said = (utterance: string) =>
+      [...directionsSaid(normalize(utterance).tokens)].sort()
+
+    expect(said("what did i send")).toEqual(["SEND"])
+    expect(said("what have i spent")).toEqual(["SEND"])
+    expect(said("who did i pay")).toEqual(["SEND"])
+    expect(said("outgoing payments")).toEqual(["SEND"])
+    expect(said("payments to kemar")).toEqual(["SEND"])
+    expect(said("what did i receive")).toEqual(["RECEIVE"])
+    expect(said("payments from alice")).toEqual(["RECEIVE"])
+    expect(said("what came in")).toEqual(["RECEIVE"])
+    expect(said("what did i earn")).toEqual(["RECEIVE"])
+    expect(said("money sent to me")).toEqual(["RECEIVE", "SEND"])
+    expect(said("who sent me money")).toEqual(["RECEIVE", "SEND"])
+    expect(said("who pay mi")).toEqual(["RECEIVE", "SEND"])
+    expect(said("payments fi mi madda")).toEqual(["RECEIVE", "SEND"])
+    expect(said("what did i send my mom")).toEqual(["SEND"])
+    expect(said("show my transactions")).toEqual([])
+    expect(said("recent payments")).toEqual([])
+  })
+
+  it("tells the words a history ask is made of from what it looks for", () => {
+    const own = [
+      "payments",
+      "transactions",
+      "history",
+      "received",
+      "sent",
+      "paid",
+      "money",
+    ]
+    own
+      .concat(["recent", "biggest", "first", "five"])
+      .forEach((word) => expect([word, isHistoryWord(word)]).toEqual([word, true]))
+    ;["kemar", "rent", "lunch", "madda", "dreadmax"].forEach((word) =>
+      expect([word, isHistoryWord(word)]).toEqual([word, false]),
+    )
   })
 })
