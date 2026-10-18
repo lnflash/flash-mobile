@@ -4,12 +4,14 @@ import {
   MAX_QUOTED_ROWS,
   MAX_THREAD_CHARS,
   MAX_THREAD_ENTRIES,
+  modelTierRegistry,
   quoted,
   THREAD_CLOSE,
   THREAD_OPEN,
 } from "@app/assistant/engine/model-prompt"
-import { assistantRegistry } from "@app/assistant/registry"
-import { INTENTS } from "@app/assistant/registry/types"
+import { assistantRegistry, READ_TOOLS } from "@app/assistant/registry"
+import { createRegistry } from "@app/assistant/registry/define"
+import { INTENTS, MODEL_TIER_INTENTS } from "@app/assistant/registry/types"
 import { createThreadStore, NewEntry, ThreadEntry } from "@app/assistant/ui/thread-store"
 import { toWalletAmount } from "@app/types/amounts"
 
@@ -80,8 +82,17 @@ describe("the instructions", () => {
     .filter((line) => line.startsWith('{"intent"'))
     .map((line) => JSON.parse(line))
 
-  it("list every registered tool: its intent, description and input schema", () => {
-    expect(catalog.map(({ intent }) => intent)).toEqual([...assistantRegistry.keys()])
+  it("list the model tier's five tools alone: each one's intent, description and input schema", () => {
+    // The shipped five (ENG-749, MODEL_TIER_INTENTS), in the registry's order.
+    expect(catalog.map(({ intent }) => intent)).toEqual([
+      "getBalances",
+      "getTransactions",
+      "getPrice",
+      "prepareSend",
+      "prepareReceive",
+    ])
+    expect(catalog.map(({ intent }) => intent)).toEqual([...MODEL_TIER_INTENTS])
+    // The registry still holds every intent: only the model's list is narrowed.
     expect([...assistantRegistry.keys()].sort()).toEqual([...INTENTS].sort())
     catalog.forEach((entry) => {
       const tool = assistantRegistry.get(entry.intent)
@@ -93,10 +104,12 @@ describe("the instructions", () => {
     })
   })
 
-  it("come with every registered tool for the answer's shape, its arguments in schema order", () => {
+  it("come with the same five tools for the answer's shape, their arguments in schema order", () => {
     const { tools } = buildModelPrompt(assistantRegistry, [], "my balance")
 
-    expect(tools.map(({ intent }) => intent)).toEqual([...assistantRegistry.keys()])
+    // iOS builds the answer's schema from these (AssistantModelBridge.swift),
+    // so no other intent can be generated there.
+    expect(tools.map(({ intent }) => intent)).toEqual([...MODEL_TIER_INTENTS])
     tools.forEach(({ intent, description, arguments: args }) => {
       const tool = assistantRegistry.get(intent as never)
       expect(description).toBe(tool?.description)
@@ -112,6 +125,23 @@ describe("the instructions", () => {
     expect(
       send?.arguments.filter(({ required }) => required).map(({ name }) => name),
     ).toEqual(["payee"])
+  })
+
+  it("take from any registry only the five it holds, in its order", () => {
+    const readsOnly = createRegistry([...READ_TOOLS])
+
+    expect([...modelTierRegistry(readsOnly).keys()]).toEqual([
+      "getBalances",
+      "getTransactions",
+      "getPrice",
+    ])
+    expect(
+      buildModelPrompt(readsOnly, [], "hi").tools.map(({ intent }) => intent),
+    ).toEqual(["getBalances", "getTransactions", "getPrice"])
+    // The same tools as the registry's own, never copies.
+    modelTierRegistry(assistantRegistry).forEach((tool, intent) =>
+      expect(tool).toBe(assistantRegistry.get(intent)),
+    )
   })
 
   it("say what to answer: one intent or none, nothing invented, nothing from the thread", () => {

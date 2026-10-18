@@ -1,4 +1,5 @@
 import { readAmountPhrase } from "@app/assistant/engine/amount-phrase"
+import { routeIntent } from "@app/assistant/engine/intent-router"
 import { MODEL_RESPONSE_TIMEOUT_MS } from "@app/assistant/engine/model-adapter"
 import { THREAD_CLOSE, THREAD_OPEN } from "@app/assistant/engine/model-prompt"
 import {
@@ -15,6 +16,7 @@ import {
   Registry,
   RegisteredTool,
 } from "@app/assistant/registry/define"
+import { INTENTS, MODEL_TIER_INTENTS } from "@app/assistant/registry/types"
 import { createThreadStore, NewEntry } from "@app/assistant/ui/thread-store"
 import {
   fakeModelAdapter,
@@ -161,6 +163,73 @@ describe("the pre-check: the router, unmodified", () => {
   })
 })
 
+describe("the model tier's five intents (ENG-749)", () => {
+  it("are the shipped five, every one of them registered", () => {
+    expect(MODEL_TIER_INTENTS).toEqual([
+      "getBalances",
+      "getTransactions",
+      "getPrice",
+      "prepareSend",
+      "prepareReceive",
+    ])
+    MODEL_TIER_INTENTS.forEach((intent) =>
+      expect(assistantRegistry.has(intent)).toBe(true),
+    )
+  })
+
+  it("refuses a call of any other intent at the pre-check, naming it, though it is registered", async () => {
+    const others = INTENTS.filter((intent) => !MODEL_TIER_INTENTS.includes(intent))
+    expect(others).toHaveLength(8)
+    for (const intent of others) {
+      expect(assistantRegistry.has(intent)).toBe(true)
+      await expect(ask({ intent, args: {} }, "do it")).resolves.toEqual({
+        kind: "rejected",
+        reason: "precheck",
+        intent,
+      })
+    }
+  })
+
+  it('never makes "convert 20 dollars to btc" a conversion or "withdraw $50" a cash-out', async () => {
+    // What the macOS model answered for these (ENG-690 proxy run). Each
+    // would route through the whole registry and ground in the words: only
+    // the model tier's five keep them out.
+    const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
+      [
+        "convert 20 dollars to btc",
+        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
+      ],
+      ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
+    ]
+    for (const [utterance, raw] of answers) {
+      const route = routeIntent(raw, assistantRegistry)
+      expect(route.ok).toBe(true)
+      if (route.ok) {
+        expect(isGrounded(route.tool, raw.args, { ...USD, utterance })).toBe(true)
+      }
+      await expect(ask(raw, utterance)).resolves.toEqual({
+        kind: "rejected",
+        reason: "precheck",
+        intent: raw.intent,
+      })
+    }
+  })
+
+  it("asks the model with the five tools alone, in the prompt and in the answer's shape", async () => {
+    const modelAdapter = fakeModelAdapter()
+
+    await tryOnDeviceModel(runtimeOf(modelAdapter), "convert 20 dollars to btc", USD)
+
+    const [prompt] = modelAdapter.decide.mock.calls[0]
+    expect(prompt.tools.map(({ intent }: { intent: string }) => intent)).toEqual([
+      ...MODEL_TIER_INTENTS,
+    ])
+    ;["prepareConversion", "prepareCashout", "searchMerchants"].forEach((intent) =>
+      expect(prompt.instructions).not.toContain(`"intent":"${intent}"`),
+    )
+  })
+})
+
 describe("a call the checks pass", () => {
   it("is the model's own call, intent and raw arguments", async () => {
     const raw = {
@@ -244,35 +313,27 @@ describe("grounding", () => {
         "send bob 5",
       ),
     ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
-    await expect(
-      ask(
-        { intent: "prepareCashout", args: { amount: "20", bankAccountId: "bank-1" } },
-        "cash out 20",
+    // A cash-out is outside the model tier's five (ENG-749), so the
+    // pre-check refuses it first; grounding refuses its id all the same.
+    expect(
+      isGrounded(
+        tool("prepareCashout"),
+        { amount: "20", bankAccountId: "bank-1" },
+        { ...USD, utterance: "cash out 20" },
       ),
-    ).resolves.toEqual({
-      kind: "rejected",
-      reason: "ungrounded",
-      intent: "prepareCashout",
-    })
+    ).toBe(false)
   })
 
-  it("takes every payee of a group send only when each was typed", async () => {
-    await expect(
-      ask(
-        { intent: "prepareGroupSend", args: { payees: ["bob", "alice"], total: "10" } },
-        "split 10 between bob and alice",
-      ),
-    ).resolves.toMatchObject({ kind: "call" })
-    await expect(
-      ask(
-        { intent: "prepareGroupSend", args: { payees: ["bob", "eve"], total: "10" } },
-        "split 10 between bob and alice",
-      ),
-    ).resolves.toEqual({
-      kind: "rejected",
-      reason: "ungrounded",
-      intent: "prepareGroupSend",
-    })
+  it("takes every payee of a group send only when each was typed", () => {
+    // Outside the model tier's five (ENG-749): grounding, read alone.
+    const split = (payees: string[]) =>
+      isGrounded(
+        tool("prepareGroupSend"),
+        { payees, total: "10" },
+        { ...USD, utterance: "split 10 between bob and alice" },
+      )
+    expect(split(["bob", "alice"])).toBe(true)
+    expect(split(["bob", "eve"])).toBe(false)
   })
 
   describe("a picked person's id, which only the thread's re-issue of a pick makes (spec §8)", () => {
@@ -299,26 +360,16 @@ describe("grounding", () => {
       ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareSend" })
     })
 
-    it("refuses one among a group send's payees", async () => {
-      const utterance = "split 10 between bob and contact:dreadmax"
-      await expect(
-        ask(
-          {
-            intent: "prepareGroupSend",
-            args: { payees: ["bob", "dreadmax"], total: "10" },
-          },
-          utterance,
-        ),
-      ).resolves.toMatchObject({ kind: "call" })
-      await expect(
-        ask(
-          {
-            intent: "prepareGroupSend",
-            args: { payees: ["bob", "contact:dreadmax"], total: "10" },
-          },
-          utterance,
-        ),
-      ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareGroupSend" })
+    it("refuses one among a group send's payees", () => {
+      // Outside the model tier's five (ENG-749): grounding, read alone.
+      const split = (payees: string[]) =>
+        isGrounded(
+          tool("prepareGroupSend"),
+          { payees, total: "10" },
+          { ...USD, utterance: "split 10 between bob and contact:dreadmax" },
+        )
+      expect(split(["bob", "dreadmax"])).toBe(true)
+      expect(split(["bob", "contact:dreadmax"])).toBe(false)
     })
 
     it("refuses one in a read's free text too", async () => {
@@ -358,12 +409,15 @@ describe("grounding", () => {
   })
 
   it("takes a wallet or a way to be paid only when the words name it", async () => {
-    await expect(
-      ask(
-        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
-        "move 20 dollars into my bitcoin",
+    // A conversion is outside the model tier's five (ENG-749): grounding,
+    // read alone.
+    expect(
+      isGrounded(
+        tool("prepareConversion"),
+        { from: "USD", to: "BTC", amount: "20" },
+        { ...USD, utterance: "move 20 dollars into my bitcoin" },
       ),
-    ).resolves.toMatchObject({ kind: "call" })
+    ).toBe(true)
     await expect(
       ask(
         {

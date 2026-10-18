@@ -111,14 +111,15 @@ final class AssistantModelPromise: @unchecked Sendable {
 }
 
 #if canImport(FoundationModels)
-/// The answer's shape, built from the tools the prompt carries (JS sends each
-/// registered tool's intent, description and arguments, in its schema's
-/// order: app/assistant/engine/model-prompt.ts, ModelTool). Guided generation
-/// then holds the model to one of them, or to "none":
+/// The answer's shape, built from the tools the prompt carries (JS sends the
+/// model tier's tools, the five shipped intents of MODEL_TIER_INTENTS, each
+/// with its intent, description and arguments in its schema's order:
+/// app/assistant/engine/model-prompt.ts, ModelTool). Guided generation then
+/// holds the model to one of them, or to "none":
 ///
 ///   {"intent": "<intent>", "args": {<that tool's arguments>}}
 ///
-/// so an intent outside the registry, or an argument a tool does not take,
+/// so an intent outside that list, or an argument a tool does not take,
 /// cannot be generated at all, and JS still checks everything it gets.
 /// Arguments are typed from each tool's JSON Schema (an enum is its choices,
 /// an integer an Int, a list a list); the schema's patterns are left to JS:

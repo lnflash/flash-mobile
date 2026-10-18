@@ -536,6 +536,41 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ])
   })
 
+  it('answers "convert 20 dollars to btc" and "withdraw $50" as misses, whatever the model calls them (ENG-749)', async () => {
+    // What the macOS model answered for them (ENG-690 proxy run): intents
+    // outside the model tier's five, which the pre-check refuses.
+    const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
+      [
+        "convert 20 dollars to btc",
+        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
+      ],
+      ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
+    ]
+    for (const [utterance, call] of answers) {
+      // A plain miss, so the shipped order asks the model.
+      expect(
+        matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" }),
+      ).toBe(undefined)
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(modelCall(call))
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(runTool).not.toHaveBeenCalled()
+      // Refused by the checks: the model's rejection rate, its intent named.
+      expect(toolEvents()).toEqual([
+        {
+          intent: call.intent,
+          tier: "action",
+          outcome: "rejected",
+          latencyMs: 0,
+          onDeviceModelAvailable: true,
+        },
+      ])
+    }
+  })
+
   it("is never asked while the flags keep it off", async () => {
     const { runtime, modelAdapter, runTool, toolEvents } = withModel(
       modelCall({ intent: "getBalances", args: {} }),

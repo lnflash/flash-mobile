@@ -7,7 +7,7 @@ import type { ThreadEntry, ThreadStore } from "../ui/thread-store"
 import type { AmountPhraseContext } from "./amount-phrase"
 import { routeIntent, ToolCall } from "./intent-router"
 import { MODEL_RESPONSE_TIMEOUT_MS, ModelAdapter } from "./model-adapter"
-import { buildModelPrompt } from "./model-prompt"
+import { buildModelPrompt, modelTierRegistry } from "./model-prompt"
 import { AMOUNT_PATTERN } from "./parse-amount"
 import { isPlainObject, JsonSchema } from "./schema-validator"
 
@@ -19,9 +19,13 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    coverage heuristic (app/utils/on-device-model-coverage.ts).
 // 2. The prompt (model-prompt.ts) and the model's decision, within the
 //    timeout. No answer, or none, is no call.
-// 3. The router, unmodified, as a pre-check: a non-object, an intent outside
-//    the closed set or with no tool, an extra envelope key, arguments the
-//    schema refuses and an amount that does not parse are all refused here.
+// 3. The router, unmodified, as a pre-check, over the model tier's tools
+//    only (modelTierRegistry: the five shipped intents, ENG-749): a
+//    non-object, an intent outside the closed set, outside the model tier's
+//    five or with no tool, an extra envelope key, arguments the schema
+//    refuses and an amount that does not parse are all refused here. So
+//    "convert 20 dollars to btc" is never a conversion, whatever the model
+//    answers on a platform that does not hold it to its tool list.
 // 4. Grounding (architect decision 4): an action's free-text arguments
 //    (payees, memos, ids), its amounts with their units, and its other
 //    closed-set values (a wallet, a way to be paid) must be in what the
@@ -331,8 +335,9 @@ export const tryOnDeviceModel = async (
 ): Promise<ModelTierResult> => {
   try {
     if (!(await runtime.modelAdapter.isAvailable())) return NO_MODEL
+    const registry = modelTierRegistry(runtime.registry)
     const prompt = buildModelPrompt(
-      runtime.registry,
+      registry,
       threadBefore(runtime.transcript.get().entries, utterance),
       utterance,
     )
@@ -341,7 +346,7 @@ export const tryOnDeviceModel = async (
     })
     if (decision.kind !== "call") return { kind: "none", reason: decision.kind }
 
-    const route = routeIntent(decision.raw, runtime.registry)
+    const route = routeIntent(decision.raw, registry)
     // A routed call is a plain object with an intent and, at most, args.
     if (!route.ok || !isPlainObject(decision.raw)) {
       return { kind: "rejected", reason: "precheck", intent: route.intent }

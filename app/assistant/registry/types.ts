@@ -52,6 +52,21 @@ export const isIntent = (value: unknown): value is Intent =>
 export const tierOf = (intent: Intent): Tier =>
   (READ_INTENTS as readonly string[]).includes(intent) ? "read" : "action"
 
+/**
+ * The intents the on-device model may call (ENG-749): the grammar's five
+ * shipped ones (spec §7.2). The model's tool list holds only these, and the
+ * model tier refuses a call of any other (engine/model-tier.ts), while every
+ * intent stays registered and runTool runs it. A later phase gives the model
+ * an intent by adding it here, and nothing else changes.
+ */
+export const MODEL_TIER_INTENTS: readonly Intent[] = [
+  "getBalances",
+  "getTransactions",
+  "getPrice",
+  "prepareSend",
+  "prepareReceive",
+]
+
 // ---------------------------------------------------------------------------
 // Replies and cards
 // ---------------------------------------------------------------------------

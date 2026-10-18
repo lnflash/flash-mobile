@@ -105,9 +105,9 @@ describe("the iOS bridge", () => {
   })
 
   it("holds the model to the tools the prompt carries, or none, with no list of its own", () => {
-    // The answer's shape is built from ModelPrompt.tools, which lists every
-    // registered intent (model-prompt.spec.ts): no intent is written here,
-    // so the registry stays the one list.
+    // The answer's shape is built from ModelPrompt.tools, which lists the
+    // model tier's five intents (MODEL_TIER_INTENTS, model-prompt.spec.ts):
+    // no intent is written here, so that list stays the one list.
     expect(swift).toContain('let tools = parts["tools"] as? [[String: Any]]')
     expect(swift).toContain("AssistantAnswerSchema.of(tools)")
     expect(swift).toContain('intentProperty("none")')
