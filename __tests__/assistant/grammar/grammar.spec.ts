@@ -259,6 +259,17 @@ describe("matchGrammar", () => {
       "make one payment request",
       "give me one qr code",
       "make two bitcoin invoices",
+      // So may the wallet or account it is for, and "payment" names a
+      // request as "invoice" does.
+      "gi mi one bitcoin wallet address",
+      "give me one btc wallet address",
+      "give me one bitcoin account address",
+      "make one bitcoin wallet invoice",
+      "receive one payment",
+      "mi waan receive one payment",
+      "request one payment",
+      "receive one bitcoin payment",
+      "receive one usd payment",
     ].forEach((utterance) => {
       ;[USD, JMD].forEach((ctx) => {
         const match = matchGrammar(utterance, ctx)
@@ -267,6 +278,32 @@ describe("matchGrammar", () => {
           utterance,
           ctx.displayCurrency,
           undefined,
+        ])
+      })
+    })
+  })
+
+  it("never answers a request that names the bitcoin wallet with another wallet's", () => {
+    // A currency's name read into the amount is a word the wallet check never
+    // sees: "gi mi one bitcoin wallet address" was the cash wallet's address
+    // with a 1 BTC amount line. Each of these asks about the amount, or is a
+    // request with `wallet: "BTC"`.
+    ;[
+      "gi mi one bitcoin wallet address",
+      "give me one btc wallet address",
+      "give me one bitcoin account address",
+      "make one bitcoin wallet invoice",
+      "bitcoin wallet address",
+      "receive to my btc wallet",
+      "request 50 c for my bitcoin wallet",
+    ].forEach((utterance) => {
+      ;[USD, JMD].forEach((ctx) => {
+        const match = matchGrammar(utterance, ctx)
+        const elsewhere = match?.kind === "call" && match.call.args?.wallet !== "BTC"
+        expect([utterance, ctx.displayCurrency, elsewhere]).toEqual([
+          utterance,
+          ctx.displayCurrency,
+          false,
         ])
       })
     })
@@ -292,6 +329,10 @@ describe("matchGrammar", () => {
     )
     expect(matchGrammar("make an invoice for five", JMD)).toEqual(
       receive({ amount: "5" }),
+    )
+    // "payment" names a request as "invoice" does, so a unit keeps the amount.
+    expect(matchGrammar("receive a five usd payment", JMD)).toEqual(
+      receive({ amount: "5", currency: "USD" }),
     )
     // Digits are never an article.
     expect(matchGrammar("make a 500 invoice", JMD)).toEqual(receive({ amount: "500" }))

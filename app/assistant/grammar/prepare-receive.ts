@@ -32,11 +32,17 @@ const VOCABULARY = new Set(
   ).split(" "),
 )
 
-/** A request's name after a count: its nouns, and "request" in "one payment request". */
-const REQUEST_NAMES = new Set([...REQUEST_NOUNS, "request"])
+/**
+ * A request's name after a count: its nouns, "payment" ("receive one
+ * payment", "one payment request") and "request".
+ */
+const REQUEST_NAMES = new Set([...REQUEST_NOUNS, "request", "payment"])
 
-/** Words that say which request, between a count and the request's name. */
-const REQUEST_KINDS = new Set(["new", "lightning", "cash", "payment"])
+/**
+ * Words that say which request, or which wallet it is for, between a count
+ * and the request's name: "one new address", "one bitcoin wallet address".
+ */
+const REQUEST_KINDS = new Set(["new", "lightning", "cash", "wallet", "account"])
 
 /** Currency names and codes, which say which wallet a request is for: "one bitcoin address". */
 const CURRENCY_NAMES = new Set(["bitcoin", "btc", "usd", "usdt"])
@@ -47,14 +53,17 @@ const namesCurrency = (word: string, ctx: GrammarContext): boolean =>
 /**
  * Whether an amount's words count the requests rather than give their
  * amount: "make one invoice", "give me two invoices", "gi mi one bitcoin
- * address". "one" is Jamaican English's article, so "one" and a currency
- * named after it say which request, as "a bitcoin address" does, and any
- * number before "invoices" counts them. Words that say which request may
- * come between ("one new bitcoin address", "one lightning invoice"). Such
- * an ask's amount is a question, as every number in words was before
- * ENG-731. A number in digits, one with a unit of its own ("a twenty dollar
- * invoice", "a five usd invoice"), and one with no request named after it
- * ("request one bitcoin", "an invoice for five") stay amounts.
+ * address", "receive one payment". "one" is Jamaican English's article, so
+ * "one" and a currency named after it say which request, as "a bitcoin
+ * address" does, and any number before "invoices" counts them. Words that
+ * say which request, or which wallet it is for, may come between ("one new
+ * bitcoin address", "one lightning invoice", "one bitcoin wallet address",
+ * "one btc account address"). "payment" is a request's name ("receive one
+ * bitcoin payment"), so "one payment request" ends at it. Such an ask's
+ * amount is a question, as every number in words was before ENG-731. A
+ * number in digits, one with a unit of its own ("a twenty dollar invoice",
+ * "a five usd invoice"), and one with no request named after it ("request
+ * one bitcoin", "an invoice for five") stay amounts.
  */
 const countsRequests = (
   asked: readonly Token[],
