@@ -3,7 +3,12 @@ import { assistantRegistry } from "../registry"
 import type { Registry } from "../registry/define"
 import type { ToolCall } from "./intent-router"
 import { createNativeModelAdapter, ModelAdapter } from "./model-adapter"
-import { ModelTierRuntime, prewarmOnDeviceModel, tryOnDeviceModel } from "./model-tier"
+import {
+  ModelTierResult,
+  ModelTierRuntime,
+  prewarmOnDeviceModel,
+  tryOnDeviceModel,
+} from "./model-tier"
 import { isPlainObject } from "./schema-validator"
 
 // The on-device model's eval hook (ENG-690), for the manual device run the
@@ -12,10 +17,11 @@ import { isPlainObject } from "./schema-validator"
 // (__tests__/assistant/model/device-eval.ts) hands it a corpus's utterances
 // from React Native DevTools. For each, it runs the grammar (and says
 // whether a miss was a refusal), then the model tier on an empty thread (the
-// model, the router's pre-check, grounding), and answers both outcomes and
-// the model's time as JSON. Unless it is told otherwise, each ask finds the
-// model's session warmed as the app leaves every ask, and the run says
-// which state its times measured (ModelEvalSessions, ENG-749).
+// model, the router's pre-check, grounding), and answers both outcomes, what
+// the model tier made of the utterance and the model's time as JSON. Unless
+// it is told otherwise, each ask that finds a model finds its session warmed
+// as the app leaves every ask, and the run says which state its times
+// measured (ModelEvalSessions, ENG-749).
 //
 // The corpus never enters the app: the hook gets each utterance and its
 // account's display currency, never what it means, and nothing here imports
@@ -31,6 +37,18 @@ export type ModelEvalEntry = {
 /** What a tier made of an utterance, in the corpus's terms (corpus/entries.ts, Expected). */
 export type ModelEvalOutcome = ToolCall | "miss" | "clarifyAmount"
 
+/**
+ * What the model tier made of an utterance (ModelTierResult), by kind and
+ * reason: a call; a call it refused, and why; or none, and why: no answer
+ * (no model, a failure, or the time ran out), the model's none, or a
+ * reference to the thread alone, which the model is never asked about. The
+ * call itself is the row's `model`; a refused call's intent is left out.
+ */
+export type ModelEvalModelResult =
+  | { kind: "call" }
+  | Pick<Extract<ModelTierResult, { kind: "rejected" }>, "kind" | "reason">
+  | Extract<ModelTierResult, { kind: "none" }>
+
 export type ModelEvalRow = {
   grammar: ModelEvalOutcome
   /**
@@ -40,6 +58,12 @@ export type ModelEvalRow = {
   refused: boolean
   /** The model tier's checked call, or miss: no model, no call, or one it refused. */
   model: ModelEvalOutcome
+  /**
+   * What the model tier made of the utterance (ENG-749), so a run shows
+   * which of its asks the model answered: the run's `available` says only
+   * how the run began.
+   */
+  modelResult: ModelEvalModelResult
   /** How long the model tier took, availability check included. */
   modelMs: number
 }
@@ -73,7 +97,10 @@ export const WARM_SESSIONS: ModelEvalSessions = {
 }
 
 export type ModelEvalRun = {
-  /** Whether the model could answer when the run began; false makes every model row a miss. */
+  /**
+   * Whether the model could answer when the run began. Each row's
+   * modelResult says whether it answered that entry.
+   */
   available: boolean
   /** How each ask found the model's session: the state the times measured. */
   sessions: ModelEvalSessions
@@ -92,6 +119,13 @@ export type ModelEvalDeps = {
 /** Every utterance is read on its own, as the first of a thread. */
 const EMPTY_THREAD: ModelTierRuntime["transcript"] = {
   get: () => ({ entries: [], busy: false }),
+}
+
+/** The model tier's result as a row records it: its kind and reason. */
+const modelResultOf = (result: ModelTierResult): ModelEvalModelResult => {
+  if (result.kind === "call") return { kind: "call" }
+  if (result.kind === "rejected") return { kind: "rejected", reason: result.reason }
+  return { kind: "none", reason: result.reason }
 }
 
 /** The grammar's reading of an utterance, as the corpus states outcomes, and whether a miss was a refusal. */
@@ -114,9 +148,11 @@ const grammarOutcome = (
  * Both tiers over every entry, one after the other: the model takes one
  * request at a time. The model runs on every entry, so a run scores the
  * model alone as well as the shipped order (the grammar, then the model on
- * what it missed). With warm sessions, each ask first waits for its warm-up
- * to start and for the idle, outside its time; a run that began with no
- * model has nothing to warm, and waits for nothing.
+ * what it missed), and each row records what the model tier made of its
+ * entry. With warm sessions, each ask that finds a model first waits for its
+ * warm-up to start and for the idle, outside its time. The native check
+ * decides it per ask, as the app's warm-up does, not how the run began: an
+ * ask that finds no model has nothing to warm, and waits for nothing.
  */
 export const runModelEval = async (
   entries: readonly ModelEvalEntry[],
@@ -131,7 +167,7 @@ export const runModelEval = async (
   const available = await deps.modelAdapter.isAvailable()
   const rows: ModelEvalRow[] = []
   for (const entry of entries) {
-    if (sessions.mode === "warm" && available) {
+    if (sessions.mode === "warm" && (await deps.modelAdapter.isAvailable())) {
       // As Ask Flash and the last ask leave the session, then a person typing.
       await prewarmOnDeviceModel(runtime)
       await deps.sleep(sessions.idleMs)
@@ -144,6 +180,7 @@ export const runModelEval = async (
     rows.push({
       ...grammarOutcome(entry),
       model: result.kind === "call" ? result.call : "miss",
+      modelResult: modelResultOf(result),
       modelMs: deps.now() - startedAt,
     })
   }

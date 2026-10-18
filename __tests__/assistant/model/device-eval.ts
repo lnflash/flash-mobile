@@ -13,8 +13,12 @@
 // payee, amount, currency or wallet differs from the label's; a wrong read
 // is any other wrong call. Step 3 prints both numbers on every line and,
 // for the held-out set alone, the bar's verdict last: a run of any other set
-// says the bar was not judged. The grammar tier's own launch gate
-// (accuracy-gate.spec.ts) is unchanged.
+// says the bar was not judged, and so does a held-out run that began with no
+// model, one from a hook that records no sessions or no model tier results,
+// and one in which the model never answered an ask the shipped order made.
+// Each measured the grammar alone, or cannot show otherwise, and the grammar
+// alone can meet the bar (whyBarNotJudged, eval-run.ts). The grammar tier's
+// own launch gate (accuracy-gate.spec.ts) is unchanged.
 //
 // It is the one importer of the held-out corpus besides the launch gate: a
 // named, reviewed exception (ENG-690, plan §7; held-out-isolation.spec.ts),
@@ -32,17 +36,19 @@
 //      assistantOnDeviceModel on and Metro attached; in React Native
 //      DevTools' console (engine/model-eval-hook.ts):
 //        copy(await __flashModelEval(<the file's JSON>))
-//      and save what it copied as /tmp/tuning.outcomes.json. Each ask finds
-//      the model's session as the app leaves every ask: warmed, then 2 s
-//      idle (MODEL_EVAL_WARM_IDLE_MS, outside the ask's time), so a run takes
-//      at least 2 s an entry. __flashModelEval(<the JSON>, { sessions:
-//      "cold" }) asks back to back instead, for near-cold times. The run
-//      records which (ModelEvalSessions), and step 3 prints it.
-//   3. The scores: how the asks found the session, the model alone and the
-//      shipped order (the grammar, then the model on what it missed), each
-//      overall, English and Jamaican patois, with its wrong prepared actions
-//      and wrong reads, the model's p50 and p95 time, and, for the held-out
-//      set alone, the bar's verdict:
+//      and save what it copied as /tmp/tuning.outcomes.json. Each ask that
+//      finds a model finds its session as the app leaves every ask: warmed,
+//      then 2 s idle (MODEL_EVAL_WARM_IDLE_MS, outside the ask's time), so a
+//      run takes at least 2 s an entry. __flashModelEval(<the JSON>, {
+//      sessions: "cold" }) asks back to back instead, for near-cold times.
+//      The run records which (ModelEvalSessions) and what the model tier
+//      made of each entry (ModelEvalModelResult); step 3 prints both.
+//   3. The scores: how the asks found the session, what the model tier made
+//      of every entry and of the shipped order's asks, the model alone and
+//      the shipped order (the grammar, then the model on what it missed),
+//      each overall, English and Jamaican patois, with its wrong prepared
+//      actions and wrong reads, the model's p50 and p95 time, and, for the
+//      held-out set alone, the bar's verdict:
 //        MODEL_EVAL=score MODEL_EVAL_SET=tuning MODEL_EVAL_FILE=/tmp/tuning.outcomes.json \
 //          yarn jest --testRegex '__tests__/assistant/model/device-eval\.ts$'
 //
