@@ -154,6 +154,193 @@ describe("matchGrammar", () => {
     expect(read).toHaveBeenLastCalledWith("-5", JMD)
   })
 
+  it("reads an amount in cents or in words up to ninety-nine, as readAmountPhrase does (ENG-731)", () => {
+    const sendTo = (payee: string, amount: string, currency?: "USD") => ({
+      kind: "call",
+      call: {
+        intent: "prepareSend",
+        args: { payee, amount, ...(currency ? { currency } : {}) },
+      },
+    })
+    const question = (reason: string) => ({ kind: "clarifyAmount", reason })
+
+    // The owner's dogfood: cents are the display currency's, so the call
+    // carries no currency, on a USD account and a J$ one alike.
+    expect(matchGrammar("Send 5 cent to dreadmax", USD)).toEqual(
+      sendTo("dreadmax", "0.05"),
+    )
+    expect(matchGrammar("Send 5 cent to dreadmax", JMD)).toEqual(
+      sendTo("dreadmax", "0.05"),
+    )
+    expect(matchGrammar("send five dollars to mom", USD)).toEqual(
+      sendTo("mom", "5", "USD"),
+    )
+    // "dollars" on a J$ account is a question, in words as in digits.
+    expect(matchGrammar("send five dollars to mom", JMD)).toEqual(question("unit"))
+    // Patois as the corpus writes it: "fi" is "to", never five, and
+    // "dolla" is "dollar"; past ninety-nine is a question.
+    expect(matchGrammar("sen fifty cent fi tanya", JMD)).toEqual(sendTo("tanya", "0.50"))
+    expect(matchGrammar("sen bob ten dolla", JMD)).toEqual(question("unit"))
+    expect(matchGrammar("sen five hundred to bob", JMD)).toEqual(question("suffix"))
+    // A number in words with a hyphen, and "c" right after a number.
+    expect(matchGrammar("send ninety-nine cents to tanya", USD)).toEqual(
+      sendTo("tanya", "0.99"),
+    )
+    expect(matchGrammar("send 5 c to bob", USD)).toEqual(sendTo("bob", "0.05"))
+    expect(matchGrammar("send bob 50c", JMD)).toEqual(sendTo("bob", "0.50"))
+    // That "c" ends the amount: the last word, or before "to" ("fi"),
+    // "for" or "from".
+    expect(matchGrammar("send bob 5 c", USD)).toEqual(sendTo("bob", "0.05"))
+    expect(matchGrammar("send 5 c fi bob", JMD)).toEqual(sendTo("bob", "0.05"))
+    expect(matchGrammar("send 20 c to bob for lunch", JMD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "prepareSend",
+        args: { payee: "bob", amount: "0.20", memo: "lunch" },
+      },
+    })
+    expect(matchGrammar("request 50 c for my bitcoin wallet", JMD)).toEqual({
+      kind: "call",
+      call: { intent: "prepareReceive", args: { amount: "0.50", wallet: "BTC" } },
+    })
+    // Before "and", it ends one of two amounts: a question, as "$5 and $10" is.
+    expect(matchGrammar("send 5 c and 10 c to bob", USD)).toEqual(question("mixed"))
+    // "c" anywhere else is a word: here, the payee's initial, after "to" or
+    // before the number.
+    expect(matchGrammar("send 5 to c", USD)).toEqual(sendTo("c", "5"))
+    expect(matchGrammar("pay c 5", USD)).toEqual(sendTo("c", "5"))
+    // A "c" right after the number that a name follows is the name's
+    // initial too: J$500 to C Brown, never J$5.00 to Brown, whom
+    // resolveContact would take as one whole word of "C Brown".
+    expect(matchGrammar("send 500 c brown", JMD)).toEqual(sendTo("c brown", "500"))
+    expect(matchGrammar("send 2000 c. brown", JMD)).toEqual(sendTo("c brown", "2000"))
+    // A request reads them the same.
+    expect(matchGrammar("request two dollars", USD)).toEqual({
+      kind: "call",
+      call: { intent: "prepareReceive", args: { amount: "2", currency: "USD" } },
+    })
+  })
+
+  it("hands readAmountPhrase the words for a number and for cents with the amount", () => {
+    const read = jest.spyOn(amountPhrase, "readAmountPhrase")
+
+    matchGrammar("send five cents to bob", USD)
+    expect(read).toHaveBeenLastCalledWith("five cents", USD)
+    matchGrammar("pay alice twenty five cents", USD)
+    expect(read).toHaveBeenLastCalledWith("twenty five cents", USD)
+    // normalize.ts drops the hyphen of a word with no digit.
+    matchGrammar("send ninety-nine cents to tanya", USD)
+    expect(read).toHaveBeenLastCalledWith("ninetynine cents", USD)
+    matchGrammar("send 5 c to bob", USD)
+    expect(read).toHaveBeenLastCalledWith("5 c", USD)
+    // A name after the "c" keeps it out of the amount.
+    matchGrammar("send 500 c brown", JMD)
+    expect(read).toHaveBeenLastCalledWith("500", JMD)
+  })
+
+  it("never reads an article before a currency's name, or a count of requests, as an amount", () => {
+    // Each asks for an address or an invoice, not for one bitcoin or one
+    // dollar. Jamaican English's article is "one", and a number in words
+    // that counts the requests ("two invoices") gives no amount either.
+    ;[
+      "give me a bitcoin address",
+      "make a bitcoin invoice",
+      "make a usd invoice",
+      "give me one bitcoin address",
+      "gi mi one bitcoin address",
+      "make one invoice",
+      "make one usd invoice",
+      "make one jmd invoice",
+      "give me two invoices",
+      // Words that say which request may sit between the count and its name.
+      "make one lightning invoice",
+      "give me one new bitcoin address",
+      "make one cash invoice",
+      "make one payment request",
+      "give me one qr code",
+      "make two bitcoin invoices",
+      // So may the wallet or account it is for, and "payment" names a
+      // request as "invoice" does.
+      "gi mi one bitcoin wallet address",
+      "give me one btc wallet address",
+      "give me one bitcoin account address",
+      "make one bitcoin wallet invoice",
+      "receive one payment",
+      "mi waan receive one payment",
+      "request one payment",
+      "receive one bitcoin payment",
+      "receive one usd payment",
+      // "payment" before another name says which request is counted.
+      "make two usd payment invoices",
+      "give me two bitcoin payment invoices",
+    ].forEach((utterance) => {
+      ;[USD, JMD].forEach((ctx) => {
+        const match = matchGrammar(utterance, ctx)
+        const amount = match?.kind === "call" ? match.call.args?.amount : undefined
+        expect([utterance, ctx.displayCurrency, amount]).toEqual([
+          utterance,
+          ctx.displayCurrency,
+          undefined,
+        ])
+      })
+    })
+  })
+
+  it("never answers a counted request for the bitcoin wallet, or one that names it outside the amount, with another wallet's", () => {
+    // A currency's name read into the amount is a word the wallet check never
+    // sees: "gi mi one bitcoin wallet address" was the cash wallet's address
+    // with a 1 BTC amount line. Each of these asks about the amount, or is a
+    // request with `wallet: "BTC"`.
+    ;[
+      "gi mi one bitcoin wallet address",
+      "give me one btc wallet address",
+      "give me one bitcoin account address",
+      "make one bitcoin wallet invoice",
+      "bitcoin wallet address",
+      "receive to my btc wallet",
+      "request 50 c for my bitcoin wallet",
+    ].forEach((utterance) => {
+      ;[USD, JMD].forEach((ctx) => {
+        const match = matchGrammar(utterance, ctx)
+        const elsewhere = match?.kind === "call" && match.call.args?.wallet !== "BTC"
+        expect([utterance, ctx.displayCurrency, elsewhere]).toEqual([
+          utterance,
+          ctx.displayCurrency,
+          false,
+        ])
+      })
+    })
+  })
+
+  it("reads a request's amount in words when it has a unit, or no request is named after it", () => {
+    const receive = (args: Record<string, string>) => ({
+      kind: "call",
+      call: { intent: "prepareReceive", args },
+    })
+
+    expect(matchGrammar("make a twenty dollar invoice", USD)).toEqual(
+      receive({ amount: "20", currency: "USD" }),
+    )
+    expect(matchGrammar("make a five usd invoice", JMD)).toEqual(
+      receive({ amount: "5", currency: "USD" }),
+    )
+    expect(matchGrammar("receive five dollars", USD)).toEqual(
+      receive({ amount: "5", currency: "USD" }),
+    )
+    expect(matchGrammar("request one bitcoin", USD)).toEqual(
+      receive({ amount: "1", currency: "BTC" }),
+    )
+    expect(matchGrammar("make an invoice for five", JMD)).toEqual(
+      receive({ amount: "5" }),
+    )
+    // "payment" names a request as "invoice" does, so a unit keeps the amount.
+    expect(matchGrammar("receive a five usd payment", JMD)).toEqual(
+      receive({ amount: "5", currency: "USD" }),
+    )
+    // Digits are never an article.
+    expect(matchGrammar("make a 500 invoice", JMD)).toEqual(receive({ amount: "500" }))
+  })
+
   it("never takes what a payment is for as the payee", () => {
     // It names no one: resolveContact could only ask about Brent for "rent",
     // Billy for "bill" or Vargas for "gas".

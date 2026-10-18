@@ -9,8 +9,6 @@ en/JMD "pay mom 50 dollars" -> clarifyAmount
 en/USD "send bob 10k" -> clarifyAmount
 en/USD "send 2m sats to bob" -> clarifyAmount
 en/USD "send alice 5 thousand" -> clarifyAmount
-en/USD "send a dollar to bob" -> clarifyAmount
-en/USD "send twenty dollars to alice" -> clarifyAmount
 en/USD "send bob money" -> clarifyAmount
 en/USD "pay alice" -> clarifyAmount
 en/USD "send something to mom" -> clarifyAmount

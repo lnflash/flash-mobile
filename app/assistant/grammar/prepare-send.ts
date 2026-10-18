@@ -29,8 +29,8 @@ import {
 //   names no one, so resolveContact could only ask about a contact whose
 //   name holds it (Brent, Billy). A word the list lacks gets that question;
 // - the amount's words go to readAmountPhrase, which reads them or makes
-//   them a question (a k or m suffix, a "$" on a J$ account, words for a
-//   number). An ask with no amount is a question too.
+//   them a question (a k or m suffix, a "$" on a J$ account, a number in
+//   words past ninety-nine). An ask with no amount is a question too.
 
 const SEND_VERBS = new Set(["send", "pay", "give", "transfer", "tip"])
 
