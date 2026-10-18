@@ -17,8 +17,10 @@ import { isPlainObject } from "./schema-validator"
 // (__tests__/assistant/model/device-eval.ts) hands it a corpus's utterances
 // from React Native DevTools. For each, it runs the grammar (and says
 // whether a miss was a refusal), then the model tier on an empty thread (the
-// model, the router's pre-check, grounding), and answers both outcomes, what
-// the model tier made of the utterance and the model's time as JSON. Unless
+// model, the router's pre-check, the guards, grounding), and answers both
+// outcomes, what the model tier made of the utterance and the model's time
+// as JSON. The guards read the words alone here: the hook reads no cache,
+// so no contact of the phone's account changes a run (ENG-751). Unless
 // it is told otherwise, each ask that finds a model finds its session warmed
 // as the app leaves every ask, and the run says which state its times
 // measured (ModelEvalSessions, ENG-749).
@@ -40,14 +42,17 @@ export type ModelEvalOutcome = ToolCall | "miss" | "clarifyAmount"
 /**
  * What the model tier made of an utterance (ModelTierResult), by kind and
  * reason: a call; a call it refused, and why; or none, and why: no answer
- * (no model, a failure, or the time ran out), the model's none, or a
- * reference to the thread alone, which the model is never asked about. The
- * call itself is the row's `model`; a refused call's intent is left out.
+ * (no model, a failure, or the time ran out), the model's none, a
+ * reference to the thread alone, which the model is never asked about, or
+ * the model's call a guard made none (groupSend, timeFilter,
+ * ungroundedFilter; ENG-751). The call itself is the row's `model`, which
+ * is "miss" for all but a call; the intent of a refused call, or of one a
+ * guard made none, is left out.
  */
 export type ModelEvalModelResult =
   | { kind: "call" }
   | Pick<Extract<ModelTierResult, { kind: "rejected" }>, "kind" | "reason">
-  | Extract<ModelTierResult, { kind: "none" }>
+  | Pick<Extract<ModelTierResult, { kind: "none" }>, "kind" | "reason">
 
 export type ModelEvalRow = {
   grammar: ModelEvalOutcome

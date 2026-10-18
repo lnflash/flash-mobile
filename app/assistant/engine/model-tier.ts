@@ -1,7 +1,20 @@
+import { directionsSaid, isHistoryWord } from "../grammar/get-transactions"
 import { normalize } from "../grammar/normalize"
-import { amountRuns, readAmount, refersToThreadOnly, stripFrame } from "../grammar/words"
+import {
+  amountRuns,
+  GROUP_WORDS,
+  hasWord,
+  namesDate,
+  namesTwoPeople,
+  neverNames,
+  readAmount,
+  refersToThreadOnly,
+  stripFrame,
+} from "../grammar/words"
+import type { ContactRow, GraphqlRail } from "../rails/graphql-rail"
 import { CONTACT_PICK_PREFIX } from "../registry/actions/shared/payee"
 import type { Registry, RegisteredTool } from "../registry/define"
+import { comparable, namesContact } from "../registry/read/resolve-contact"
 import type { Intent } from "../registry/types"
 import type { ThreadEntry, ThreadStore } from "../ui/thread-store"
 import type { AmountPhraseContext } from "./amount-phrase"
@@ -31,7 +44,15 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    refuses and an amount that does not parse are all refused here. So
 //    "convert 20 dollars to btc" is never a conversion, whatever the model
 //    answers on a platform that does not hold it to its tool list.
-// 4. Grounding (architect decision 4): an action's free-text arguments
+// 4. The guards (ENG-751), each a none with its reason: a send to one payee
+//    for an ask about more than one person (groupSend); a history read for
+//    an ask that names a date, which no read can filter by (timeFilter), or
+//    whose search the person never typed, or that looks only for the ask's
+//    own words (ungroundedFilter). A history read's direction that no word
+//    of the ask gives is dropped, not refused. Grounding passed both calls
+//    of the 2026-10-18 held-out device run that these stop: every word they
+//    used was typed.
+// 5. Grounding (architect decision 4): an action's free-text arguments
 //    (payees, memos, ids), its amounts with their units, and its other
 //    closed-set values (a wallet, a way to be paid) must be in what the
 //    person typed, so nothing from the thread, a memo someone else wrote or
@@ -45,9 +66,9 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    about ("5k"), whatever number the model made of it. No free text may
 //    be a picked person's id (`contact:<username>`), even typed: only the
 //    thread's re-issue of a pick makes one (spec §8).
-// 5. The call as the model sent it, intent and raw arguments, for runCall:
-//    the router turns amounts into MoneyAmounts, so routed arguments would
-//    not route again.
+// 6. The call as the model sent it, intent and raw arguments (a direction
+//    the guards dropped aside), for runCall: the router turns amounts into
+//    MoneyAmounts, so routed arguments would not route again.
 //
 // Nothing here throws into the turn: a failure is no call.
 
@@ -56,21 +77,67 @@ export type ModelTierRuntime = {
   registry: Registry
   modelAdapter: ModelAdapter
   transcript: Pick<ThreadStore, "get">
+  /**
+   * The reads from the app's cache alone: the contacts it holds, which the
+   * group check knows people by (ENG-751). The thread's runtime has them;
+   * without them (the device eval) the check reads the words alone.
+   */
+  cachedGraphql?: Pick<GraphqlRail, "contacts">
 }
 
 /**
- * - call: a call the pre-check and the grounding check passed.
- * - rejected: the model answered with a call they refused, and the intent
- *   it named ("unknown" when it named none of the closed set); the turn
- *   reports it with the model's flag set (the model's rejection rate).
+ * Why a guard made the model's call none (ENG-751):
+ *
+ * - groupSend: a send to one payee for an ask about more than one person;
+ * - timeFilter: a history read for an ask that names a date;
+ * - ungroundedFilter: a history read whose search the person never typed,
+ *   or that looks only for the ask's own words.
+ */
+export type ModelGuardReason = "groupSend" | "timeFilter" | "ungroundedFilter"
+
+/**
+ * - call: a call the pre-check, the guards and the grounding check passed.
+ * - rejected: the model answered with a call the pre-check or grounding
+ *   refused, and the intent it named ("unknown" when it named none of the
+ *   closed set); the turn reports it with the model's flag set (the model's
+ *   rejection rate) and the reason.
  * - none: no model, no answer in time, a failure, or no call in the
  *   answer; or a reference to the thread alone, which the model is never
- *   asked about ("thread").
+ *   asked about ("thread"); or a call a guard made none (ENG-751): the
+ *   model answered an ask no call serves (a group's send, a read by date)
+ *   or with a search the person never asked for, so no call is the answer.
+ *   A guard's none carries the intent the model named, and the turn reports
+ *   it as it reports a refused call, with the model's flag and the reason.
  */
 export type ModelTierResult =
   | { kind: "call"; call: ToolCall }
   | { kind: "rejected"; reason: "precheck" | "ungrounded"; intent: Intent | "unknown" }
   | { kind: "none"; reason: "unavailable" | "miss" | "thread" }
+  | { kind: "none"; reason: ModelGuardReason; intent: Intent }
+
+/**
+ * Why the model tier refused a call the model answered with: the pre-check,
+ * grounding, or a guard (ENG-751). The turn's `assistant_event` carries it
+ * (AssistantEventParams.onDeviceModelReason, app/utils/analytics.ts).
+ */
+export type ModelRefusalReason =
+  | Extract<ModelTierResult, { kind: "rejected" }>["reason"]
+  | ModelGuardReason
+
+/**
+ * The call the model answered with that the model tier refused, the intent
+ * it named, and why (ENG-751): a rejected call, or a guard's none.
+ * Undefined when the model answered no call, or was never asked.
+ */
+export const refusalOf = (
+  result: ModelTierResult,
+): { intent: Intent | "unknown"; reason: ModelRefusalReason } | undefined => {
+  if (result.kind === "rejected") return { intent: result.intent, reason: result.reason }
+  if (result.kind === "none" && "intent" in result) {
+    return { intent: result.intent, reason: result.reason }
+  }
+  return undefined
+}
 
 // ---------------------------------------------------------------------------
 // Grounding
@@ -316,6 +383,176 @@ export const isGrounded = (
 }
 
 // ---------------------------------------------------------------------------
+// Guards (ENG-751)
+// ---------------------------------------------------------------------------
+
+/** A call through the guards: its arguments, or none and why. */
+type Guarded =
+  | { kind: "pass"; args: Record<string, unknown> }
+  | { kind: "none"; reason: ModelGuardReason }
+
+/**
+ * The contacts the app's cache holds (ModelTierRuntime.cachedGraphql), or
+ * none: with no cache to read (the device eval), or no list in it, the
+ * group check reads the words alone. It never waits on the network.
+ */
+const cachedContacts = async (
+  runtime: ModelTierRuntime,
+): Promise<readonly ContactRow[]> => {
+  try {
+    const contacts = await runtime.cachedGraphql?.contacts()
+    return Array.isArray(contacts) ? contacts : []
+  } catch {
+    return []
+  }
+}
+
+/** What the person typed, word by word, as resolveContact compares names; "alice's" is alice. */
+const comparableWords = (utterance: string): string =>
+  normalize(utterance)
+    .tokens.map(({ raw }) => comparable(raw.replace(/['’]s$/i, "")))
+    .filter((word) => word !== "")
+    .join(" ")
+
+/** `text` with each whole-word `words` in it cut out. */
+const withoutWords = (text: string, words: string): string => {
+  if (words === "") return text
+  let rest = text
+  let at = rest.indexOf(words)
+  while (at >= 0) {
+    if (!isWordChar(rest[at - 1]) && !isWordChar(rest[at + words.length])) {
+      rest = `${rest.slice(0, at)}|${rest.slice(at + words.length)}`
+    }
+    at = rest.indexOf(words, at + 1)
+  }
+  return rest
+}
+
+/**
+ * The names a contact goes by, compared as resolveContact compares them:
+ * its username, its alias, and each word of its alias, which names it
+ * alone (namesContact: "joe" for Uncle Joe); never a word that names no
+ * one ("my" in "My Mom").
+ */
+const namesOfContact = ({ username, alias }: ContactRow): string[] => {
+  const aliasName = alias ? comparable(alias) : ""
+  return [comparable(username), aliasName, ...aliasName.split(" ")].filter(
+    (name) => name.length > 1 && !neverNames(name),
+  )
+}
+
+/**
+ * Whether the words name a contact the account knows other than the payee:
+ * its username, its alias or a word of its alias, as whole words outside
+ * the payee's own words. A contact the payee names (namesContact) is the
+ * payee.
+ */
+const namesAnotherContact = (
+  utterance: string,
+  payee: string,
+  contacts: readonly ContactRow[],
+): boolean => {
+  if (contacts.length === 0) return false
+  const rest = withoutWords(comparableWords(utterance), comparable(payee))
+  return contacts.some(
+    (contact) =>
+      !namesContact(payee, contact) &&
+      namesOfContact(contact).some((name) => holdsWords(rest, name)),
+  )
+}
+
+/**
+ * Whether a send to one payee answers an ask about more than one person
+ * (groupSend): the ask holds a group word ("split", "between", "each",
+ * "both", "everyone", "us", patois "dem"; GROUP_WORDS), two people joined
+ * as one ask ("tanya and kemar", patois "mi an jason"; namesTwoPeople), or
+ * more than one amount (two payments, or a question the grammar would ask,
+ * never one send), or it names a contact the account knows besides the
+ * payee, anywhere, a memo included. A single payee for a group's ask moves
+ * the whole amount to one person: the 2026-10-18 held-out device run had
+ * $20 split between two named people answered as a $20 send to the first.
+ * The grammar's own refusals stand as they are.
+ */
+const isGroupAsk = async (
+  args: Record<string, unknown>,
+  said: Said,
+  runtime: ModelTierRuntime,
+): Promise<boolean> => {
+  const tokens = stripFrame(normalize(said.utterance).tokens)
+  if (
+    hasWord(tokens, GROUP_WORDS) ||
+    namesTwoPeople(tokens, said) ||
+    amountRuns(tokens, said).length > 1
+  ) {
+    return true
+  }
+  return (
+    typeof args.payee === "string" &&
+    namesAnotherContact(said.utterance, args.payee, await cachedContacts(runtime))
+  )
+}
+
+/**
+ * Whether a history search looks for something the person named: a word of
+ * it that names someone or something, not one that names no one
+ * (NOT_A_NAME), one a history ask is made of ("payments", "received",
+ * "biggest"; isHistoryWord), or a date's.
+ */
+const looksForSomething = (query: string): boolean =>
+  normalize(query).tokens.some(
+    (token) =>
+      !neverNames(token.word) && !isHistoryWord(token.word) && !namesDate([token]),
+  )
+
+/**
+ * A history read, held to the words. A date anywhere in the ask makes it
+ * none (timeFilter): getTransactions has no date filter, so a read would
+ * answer for a stretch of time other than the one asked about, or search
+ * payees and memos for the date's words, as the 2026-10-18 held-out device
+ * run's model did for "this month". A direction no word of the ask gives
+ * (directionsSaid) is dropped, not refused. A search must be in the words,
+ * as typed, and look for a contact, a username or a memo's text, not only
+ * the ask's own words ("my payments", "money i received")
+ * (ungroundedFilter): a search for what no payment holds reads as "you
+ * never paid them".
+ */
+const guardHistory = (args: Record<string, unknown>, said: Said): Guarded => {
+  const tokens = normalize(said.utterance).tokens
+  if (namesDate(tokens)) return { kind: "none", reason: "timeFilter" }
+  const { direction, ...withoutDirection } = args
+  const given =
+    direction === undefined ||
+    ((direction === "SEND" || direction === "RECEIVE") &&
+      directionsSaid(tokens).has(direction))
+  const kept = given ? args : withoutDirection
+  const { query } = kept
+  const searched =
+    query === undefined ||
+    (typeof query === "string" &&
+      holdsWords(normalizedText(said.utterance), normalizedText(query)) &&
+      looksForSomething(query))
+  return searched
+    ? { kind: "pass", args: kept }
+    : { kind: "none", reason: "ungroundedFilter" }
+}
+
+/**
+ * The model's call through the guards: a send to one payee and a history
+ * read, each held to what the person asked. Every other call passes as it
+ * came.
+ */
+const guardCall = async (
+  { intent, args }: { intent: Intent; args: Record<string, unknown> },
+  said: Said,
+  runtime: ModelTierRuntime,
+): Promise<Guarded> => {
+  if (intent === "prepareSend" && (await isGroupAsk(args, said, runtime))) {
+    return { kind: "none", reason: "groupSend" }
+  }
+  return intent === "getTransactions" ? guardHistory(args, said) : { kind: "pass", args }
+}
+
+// ---------------------------------------------------------------------------
 // The tier
 // ---------------------------------------------------------------------------
 
@@ -390,11 +627,22 @@ export const tryOnDeviceModel = async (
     if (!route.ok || !isPlainObject(decision.raw)) {
       return { kind: "rejected", reason: "precheck", intent: route.intent }
     }
-    const args = isPlainObject(decision.raw.args) ? decision.raw.args : {}
-    if (!isGrounded(route.tool, args, { ...account, utterance })) {
+    const said = { ...account, utterance }
+    const guarded = await guardCall(
+      {
+        intent: route.intent,
+        args: isPlainObject(decision.raw.args) ? decision.raw.args : {},
+      },
+      said,
+      runtime,
+    )
+    if (guarded.kind === "none") {
+      return { kind: "none", reason: guarded.reason, intent: route.intent }
+    }
+    if (!isGrounded(route.tool, guarded.args, said)) {
       return { kind: "rejected", reason: "ungrounded", intent: route.intent }
     }
-    return { kind: "call", call: { intent: route.intent, args } }
+    return { kind: "call", call: { intent: route.intent, args: guarded.args } }
   } catch (err) {
     console.warn("[assistant] the on-device model tier failed", err)
     return NO_MODEL
