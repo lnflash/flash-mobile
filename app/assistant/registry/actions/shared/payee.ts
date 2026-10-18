@@ -5,7 +5,6 @@ import {
 } from "@flash/client"
 
 import { LNURL_DOMAINS } from "@app/config/appinfo"
-import { parseDestination } from "@app/screens/send-bitcoin-screen/payment-destination"
 import {
   DestinationDirection,
   InvalidDestinationReason,
@@ -14,7 +13,7 @@ import {
 import { createIntraLedgerDestination } from "@app/screens/send-bitcoin-screen/payment-destination/intraledger"
 import { createReadToolCtx } from "../../../engine/run-tool"
 import type { ContactPayload } from "../../projections"
-import { accountDefaultWalletQueryOver } from "../../read/decode-payment-request"
+import { parseDestinationOver } from "../../read/decode-payment-request"
 import { flashUserWallet, resolveContact } from "../../read/resolve-contact"
 import type {
   ActionToolCtx,
@@ -233,19 +232,18 @@ const DESTINATION_REPLY: Partial<Record<InvalidDestinationReason, AssistantReply
   [InvalidDestinationReason.SelfPayment]: "Assistant.selfPayment",
 }
 
-/** A destination, through the send flow's own parser. */
+/**
+ * A destination, through the send flow's own parser, as decodePaymentRequest
+ * reads it: a Flash user's LNURL whose username lookup fails still pays as
+ * LNURL-pay, and a Flash Lightning address whose lookup fails is a failed
+ * read, never "no such user" (parseDestinationOver).
+ */
 const fromDestination = async (
   raw: string,
   ctx: Pick<ActionToolCtx, "graphql">,
   myWalletIds: readonly string[],
 ): Promise<PayeeResolution> => {
-  const result = await parseDestination({
-    rawInput: raw,
-    myWalletIds: [...myWalletIds],
-    bitcoinNetwork: "mainnet", // parseDestination hard-codes mainnet too
-    lnurlDomains: LNURL_DOMAINS,
-    accountDefaultWalletQuery: accountDefaultWalletQueryOver(ctx.graphql),
-  })
+  const result = await parseDestinationOver(raw, ctx.graphql, myWalletIds)
   if (!result.valid) {
     return error(
       DESTINATION_REPLY[result.invalidReason] ?? "Assistant.invalidDestination",

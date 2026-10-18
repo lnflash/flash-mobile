@@ -4,6 +4,18 @@ jest.mock("@app/screens/send-bitcoin-screen/payment-destination", () => ({
   // it answers.
   parseDestination: jest.fn(),
 }))
+// The cases that run the real parser on an LNURL say what its service answers.
+jest.mock("js-lnurl", () => ({
+  ...jest.requireActual("js-lnurl"),
+  getParams: jest.fn(),
+}))
+jest.mock("lnurl-pay", () => ({
+  ...jest.requireActual("lnurl-pay"),
+  requestPayServiceParams: jest.fn(),
+}))
+
+import { getParams } from "js-lnurl"
+import { requestPayServiceParams } from "lnurl-pay"
 
 import { createAttemptJournal } from "@app/assistant/engine/attempt-journal"
 import { createExecutor } from "@app/assistant/engine/executor"
@@ -871,6 +883,86 @@ describe("prepareSend to an LNURL payee from the cash wallet", () => {
     await expect(
       run({ payee: "carol@blink.sv", amount: "5", currency: "USD" }, fake),
     ).resolves.toEqual({ kind: "error", userMessage: "Assistant.recipientInvoiceFailed" })
+  })
+})
+
+describe("prepareSend to a Flash user's address when the username lookup fails (ENG-730 review)", () => {
+  // The send flow's real parser, over the real rail failing every lookup as
+  // lnflash/flash fails one for an account that may exist (failingAccountLookup).
+  const { parseDestination: realParse } = jest.requireActual(
+    "@app/screens/send-bitcoin-screen/payment-destination",
+  )
+
+  /** A Flash user's LNURL-pay link: https://flashapp.me/.well-known/lnurlp/dreadmax. */
+  const FLASH_LNURL =
+    "LNURL1DP68GURN8GHJ7ENVV9EKSCTSWQHX6EF09EMK2MRV944KUMMHDCHKCMN4WFK8QTMYWFJKZERDV9UQGM6W09"
+
+  const failingLookups = () => {
+    const fake = setup()
+    fake.graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+    parse.mockImplementation(realParse)
+    return fake
+  }
+
+  it("prepares a Flash user's LNURL as LNURL-pay, as the send screen does, never refusing it as unsupported", async () => {
+    // The send screen's lazy query resolves on an error, so its parser falls
+    // back from the Flash user to the LNURL-pay request, which still pays
+    // them (payment-destination/lnurl.ts:56-79).
+    const fake = failingLookups()
+    ;(getParams as jest.Mock).mockResolvedValue({ tag: "payRequest" })
+    ;(requestPayServiceParams as jest.Mock).mockResolvedValue({
+      ...LNURL_PARAMS,
+      identifier: "dreadmax@flashapp.me",
+      description: "Pay dreadmax",
+      callback: "https://flashapp.me/lnurlp/dreadmax/callback",
+      domain: "flashapp.me",
+    })
+    // $5.00 is 7,937 sats at $63,000 a bitcoin.
+    fake.requestLnurlInvoice.mockResolvedValue({
+      invoice: bolt11({ id: "dreadmax-7937", sats: 7_937, expirySeconds: 600 }),
+    })
+    fake.actions.feeProbes.lnUsdInvoiceFeeProbe.mockResolvedValue({
+      data: { lnUsdInvoiceFeeProbe: { amount: 2, errors: [] } },
+    })
+
+    const action = prepared(
+      await run({ payee: FLASH_LNURL, amount: "5", currency: "USD" }, fake),
+    )
+
+    expect(fake.graphql.accountDefaultWallet).toHaveBeenCalledWith("dreadmax")
+    expect(fake.requestLnurlInvoice).toHaveBeenCalledWith(
+      expect.objectContaining({ lnUrlOrAddress: FLASH_LNURL.toLowerCase(), sats: 7_937 }),
+    )
+    expect(action.summary).toMatchObject({ payeeLabel: "dreadmax@flashapp.me" })
+  })
+
+  it("answers a Flash Lightning address with a failed read, never calling a real user unknown", async () => {
+    // The parser takes the address as that username and reads the failed
+    // lookup as no account: UsernameDoesNotExist, which prepareSend would
+    // answer with invalidDestination about a user who exists.
+    const fake = failingLookups()
+    const { graphql, displayCurrency, now, ...actionDeps } = fake.ctx
+
+    const result = await runTool(
+      {
+        intent: "prepareSend",
+        args: { payee: "dreadmax@flashapp.me", amount: "5", currency: "USD" },
+      },
+      {
+        registry: assistantRegistry,
+        graphql,
+        btcRail: fake.btcRail,
+        displayCurrency,
+        lnAddressHostname: actionDeps.send.lnAddressHostname,
+        now,
+        telemetry: recordingTelemetry().telemetry,
+        actionDeps,
+      },
+    )
+
+    expect(result).toEqual({ kind: "error", userMessage: "Assistant.toolFailed" })
+    expect(fake.graphql.accountDefaultWallet).toHaveBeenCalledWith("dreadmax")
+    expect(fake.actions.feeProbes.lnUsdInvoiceFeeProbe).not.toHaveBeenCalled()
   })
 })
 
