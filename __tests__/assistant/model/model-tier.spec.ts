@@ -24,9 +24,9 @@ import {
 
 // The on-device model tier (ENG-690, app/assistant/engine/model-tier.ts): the
 // router test the ticket asks for. A model's call is a call only when the
-// unmodified router takes it and, for an action, every free-text argument,
-// every amount with its unit and every other closed-set value is in what the
-// person typed; anything else is no call.
+// unmodified router takes it and its arguments are in what the person typed:
+// free text and numbers for every call; for an action, also every amount
+// with its unit and every other closed-set value. Anything else is no call.
 
 /** A US-dollar account, and a Jamaican-dollar one, as useDisplayCurrency names them. */
 const USD = { displayCurrency: "USD", displaySymbol: "$" }
@@ -330,16 +330,40 @@ describe("grounding", () => {
     ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
   })
 
-  it("skips the read intents, which move nothing", async () => {
+  it("lets a read's closed sets pass, and holds its free text to the words", async () => {
+    // What the macOS model added to a third of the reads it served.
+    await expect(
+      ask(
+        { intent: "getTransactions", args: { query: "none", direction: "RECEIVE" } },
+        "show me my transactions",
+      ),
+    ).resolves.toEqual({
+      kind: "rejected",
+      reason: "ungrounded",
+      intent: "getTransactions",
+    })
     await expect(
       ask(
         { intent: "getTransactions", args: { query: "rent" } },
         "what did i spend lately",
       ),
+    ).resolves.toMatchObject({ kind: "rejected", reason: "ungrounded" })
+    // A choice of a closed set answers what was asked, named or not.
+    await expect(
+      ask(
+        { intent: "getTransactions", args: { direction: "SEND", query: "rent" } },
+        "what went out for rent",
+      ),
     ).resolves.toEqual({
       kind: "call",
-      call: { intent: "getTransactions", args: { query: "rent" } },
+      call: { intent: "getTransactions", args: { direction: "SEND", query: "rent" } },
     })
+    await expect(
+      ask({ intent: "getTransactions", args: { first: 3 } }, "my last 3 payments"),
+    ).resolves.toMatchObject({ kind: "call" })
+    await expect(
+      ask({ intent: "getTransactions", args: { first: 13 } }, "my last 3 payments"),
+    ).resolves.toMatchObject({ kind: "rejected", reason: "ungrounded" })
   })
 })
 
@@ -433,14 +457,29 @@ describe("isGrounded", () => {
     expect(conversion("turn 20 bucks into bitcoin", JMD)).toBe(false)
   })
 
-  it("is always true for a read tool", () => {
+  it("asks of a read only its free text and numbers", () => {
+    const history = tool("getTransactions")
+    const read = (args: Record<string, unknown>, utterance: string) =>
+      isGrounded(history, args, { ...USD, utterance })
+
+    expect(read({}, "history")).toBe(true)
+    expect(read({ direction: "RECEIVE" }, "history")).toBe(true)
+    expect(read({ query: "anything" }, "history")).toBe(false)
+    expect(read({ query: "Kemar" }, "payments with kemar")).toBe(true)
     expect(
       isGrounded(
-        tool("getTransactions"),
-        { query: "anything" },
-        { ...USD, utterance: "history" },
+        tool("getPrice"),
+        { currency: "JMD" },
+        { ...USD, utterance: "price in jmd" },
       ),
     ).toBe(true)
+    expect(
+      isGrounded(
+        tool("getPrice"),
+        { currency: "EUR" },
+        { ...USD, utterance: "price in jmd" },
+      ),
+    ).toBe(false)
   })
 })
 

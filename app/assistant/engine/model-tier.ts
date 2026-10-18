@@ -28,9 +28,11 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    a contact's name, becomes a payee or an amount on the model's word, and
 //    no unit is guessed: an amount is read from the words as the grammar
 //    reads one (readAmountPhrase), so "$9" is never 9 BTC, and "$5" on a J$
-//    account stays the question the grammar makes it. Read intents move
-//    nothing and skip it. It keeps the grammar's v1 boundary: no follow-ups
-//    ("send him 10 more"), and no amount the model rewrote ("5k", "five").
+//    account stays the question the grammar makes it. A read's free text is
+//    held to the words too (a history search for "none" is not what was
+//    asked); its closed sets pass. It keeps the grammar's v1 boundary: no
+//    follow-ups ("send him 10 more"), and no amount the model rewrote
+//    ("5k", "five").
 // 5. The call as the model sent it, intent and raw arguments, for runCall:
 //    the router turns amounts into MoneyAmounts, so routed arguments would
 //    not route again.
@@ -180,31 +182,45 @@ const readTyped = (said: Said): Typed => {
   }
 }
 
+/**
+ * How strictly one call's arguments are held to the words: an action's
+ * closed-set values must be named; a read's pass, since a read moves
+ * nothing and every choice of its sets answers what the person asked.
+ */
+type Check = { typed: Typed; closedSetsPass: boolean }
+
 /** Whether a value of one argument, not an amount or its currency, is in what the person typed. */
 const valueTyped = (
   value: unknown,
   field: JsonSchema | undefined,
-  typed: Typed,
+  check: Check,
 ): boolean => {
   if (field === undefined) return false
   if (field.type === "array") {
     return (
-      Array.isArray(value) && value.every((item) => valueTyped(item, field.items, typed))
+      Array.isArray(value) && value.every((item) => valueTyped(item, field.items, check))
     )
   }
   // A currency, a wallet, a way to be paid: named in the words, never only
   // picked by the model from the schema's choices.
-  if (field.enum !== undefined)
-    return typeof value === "string" && typed.values.has(value)
+  if (field.enum !== undefined) {
+    return (
+      check.closedSetsPass || (typeof value === "string" && check.typed.values.has(value))
+    )
+  }
   if (field.type === "integer" || field.type === "number") {
     const number = canonicalNumber(String(value))
-    return typeof value === "number" && number !== undefined && typed.numbers.has(number)
+    return (
+      typeof value === "number" && number !== undefined && check.typed.numbers.has(number)
+    )
   }
   if (field.type === "string") {
-    return typeof value === "string" && holdsWords(typed.text, normalizedText(value))
+    return (
+      typeof value === "string" && holdsWords(check.typed.text, normalizedText(value))
+    )
   }
   // A flag or an object: nothing in the words can show the model did not make it up.
-  return false
+  return field.type === "boolean" && check.closedSetsPass
 }
 
 /** An action tool's amount fields, each with the field that holds its currency, if it has one. */
@@ -228,21 +244,30 @@ const amountFieldsOf = (tool: RegisteredTool): Map<string, string | undefined> =
 }
 
 /**
- * Whether an action call's arguments are all in what the person typed:
- * free text as whole words, case aside; an amount with its currency as the
- * grammar would read the words, the display currency when the call names
- * none, so the model can neither invent an amount nor a unit for one; every
- * other closed-set value (a wallet, a way to be paid) named in the words.
- * Read intents move nothing and always pass. Generic over each tool's input
- * schema, so a new action intent is checked without an edit here.
+ * Whether a call's arguments are all in what the person typed: free text as
+ * whole words, case aside, and numbers as typed. An action's amount comes
+ * with its currency as the grammar would read the words (the display
+ * currency when the call names none), so the model can neither invent an
+ * amount nor a unit for one, and every other closed-set value it takes (a
+ * wallet, a way to be paid) must be named in the words. A read moves
+ * nothing, so its closed sets pass; its free text is held to the words all
+ * the same, because a filter the person never named answers another
+ * question, and an empty search reads as "you never paid them" (spec
+ * v0.2.13, history search). Generic over each tool's input schema, so a
+ * new intent is checked without an edit here.
  */
 export const isGrounded = (
   tool: RegisteredTool,
   args: Record<string, unknown>,
   said: Said,
 ): boolean => {
-  if (tool.tier !== "action") return true
   const typed = readTyped(said)
+  if (tool.tier !== "action") {
+    const check = { typed, closedSetsPass: true }
+    return Object.entries(args).every(([name, value]) =>
+      valueTyped(value, tool.input.properties[name], check),
+    )
+  }
   const amountFields = amountFieldsOf(tool)
   const unitFields = new Set(
     [...amountFields].flatMap(([amount, currency]) =>
@@ -261,7 +286,10 @@ export const isGrounded = (
     }
     // A currency that goes with an amount was checked with it.
     if (unitFields.has(name)) return true
-    return valueTyped(value, tool.input.properties[name], typed)
+    return valueTyped(value, tool.input.properties[name], {
+      typed,
+      closedSetsPass: false,
+    })
   })
 }
 
