@@ -1,7 +1,7 @@
 import type { BtcRail } from "@app/payments/btc-rail"
 import { cardOf, validateCard } from "../cards/types"
 import type { ToolCall } from "../engine/intent-router"
-import { ModelTierResult, tryOnDeviceModel } from "../engine/model-tier"
+import { ModelTierResult, refusalOf, tryOnDeviceModel } from "../engine/model-tier"
 import { report } from "../engine/telemetry"
 import { readGrammar } from "../grammar"
 import type { GraphqlRail } from "../rails/graphql-rail"
@@ -31,12 +31,14 @@ import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 // model. The model's call goes through runTool as the grammar's does, held
 // as text, so the person taps to confirm whatever it prepared; nothing it
 // said reaches execute(). No answer from it, or an answer the model tier
-// refuses, is the templated miss reply, as before. Each utterance reports
-// one `assistant_event`: runTool's for a call, else a rejected one whose
-// onDeviceModelAvailable says whether the model answered with a call that
-// was refused (its rejection rate) or did not answer with one at all. A
-// pick, a Try again or a Refresh of a card the model prepared re-issues
-// the model's call, and its event says so too (CallOrigin).
+// refuses or a guard of it makes none (ENG-751), is the templated miss
+// reply, as before. Each utterance reports one `assistant_event`: runTool's
+// for a call, else a rejected one whose onDeviceModelAvailable says whether
+// the model answered with a call that was refused (its rejection rate) or
+// did not answer with one at all, and whose onDeviceModelReason says why a
+// call it answered with was refused (refusalOf). A pick, a Try again or a
+// Refresh of a card the model prepared re-issues the model's call, and its
+// event says so too (CallOrigin).
 
 /** What a turn needs from the screen: the connection, and the account's display currency. */
 export type TurnEnv = {
@@ -264,15 +266,18 @@ export const answerUtterance = async (
     }
     // A miss is counted as the router counts a call it cannot read, so
     // the grammar's coverage shows in the same event. A call the model tier
-    // refused carries the intent the model named, and the model's flag.
-    const intent = model.kind === "rejected" ? model.intent : "unknown"
+    // refused, or a guard made none, carries the intent the model named,
+    // the model's flag, and why (ENG-751).
+    const refused = refusalOf(model)
+    const intent = refused?.intent ?? "unknown"
     report(() =>
       runtime.telemetry.tool({
         intent,
         tier: intent === "unknown" ? "none" : tierOf(intent),
         outcome: "rejected",
         latencyMs: 0,
-        onDeviceModelAvailable: model.kind === "rejected",
+        onDeviceModelAvailable: refused !== undefined,
+        ...(refused ? { onDeviceModelReason: refused.reason } : {}),
       }),
     )
     return [{ kind: "reply", replyKey: "Assistant.unknownIntent" }]

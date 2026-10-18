@@ -35,6 +35,40 @@ describe("assistant analytics (ENG-687, spec §8)", () => {
     })
   })
 
+  it("logs why the model tier refused the model's call, beside the five, when it did (ENG-751)", () => {
+    const reasons = [
+      "precheck",
+      "ungrounded",
+      "groupSend",
+      "timeFilter",
+      "ungroundedFilter",
+    ] as const
+    reasons.forEach((reason) =>
+      logAssistantEvent({
+        intent: "prepareSend",
+        tier: "action",
+        outcome: "rejected",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+        onDeviceModelReason: reason,
+      }),
+    )
+
+    expect(logEvent.mock.calls).toEqual(
+      reasons.map((reason) => [
+        "assistant_event",
+        {
+          intent: "prepareSend",
+          tier: "action",
+          outcome: "rejected",
+          latency_ms: 0,
+          on_device_model_available: true,
+          on_device_model_reason: reason,
+        },
+      ]),
+    )
+  })
+
   it("logs a thread open, the weekly-active-users event", () => {
     logAssistantThreadOpened()
 

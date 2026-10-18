@@ -558,7 +558,7 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     }),
   )
 
-  it("answers the miss reply for a call the checks refuse, and reports it with the flag", async () => {
+  it("answers the miss reply for a call the checks refuse, and reports it with the flag and the reason", async () => {
     const outOfSet = withModel(modelCall({ intent: "execute", args: {} }))
     const ungrounded = withModel(
       modelCall({ intent: "prepareSend", args: { payee: "eve", amount: "500" } }),
@@ -578,6 +578,7 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
         outcome: "rejected",
         latencyMs: 0,
         onDeviceModelAvailable: true,
+        onDeviceModelReason: "precheck",
       },
     ])
     expect(ungrounded.toolEvents()).toEqual([
@@ -587,6 +588,7 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
         outcome: "rejected",
         latencyMs: 0,
         onDeviceModelAvailable: true,
+        onDeviceModelReason: "ungrounded",
       },
     ])
   })
@@ -621,9 +623,138 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
           outcome: "rejected",
           latencyMs: 0,
           onDeviceModelAvailable: true,
+          onDeviceModelReason: "precheck",
         },
       ])
     }
+  })
+
+  describe("the model tier's guards (ENG-751)", () => {
+    const USD = { displayCurrency: "USD", displaySymbol: "$" }
+
+    it("answers a group's ask the model made one send of with the miss reply, and reports the guard's reason with the model's flag", async () => {
+      const utterance = "split 30 dollars between tanya and kemar"
+      expect(matchGrammar(utterance, USD)).toBe(undefined)
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+        modelCall({
+          intent: "prepareSend",
+          args: { payee: "tanya", amount: "30", currency: "USD" },
+        }),
+      )
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(runTool).not.toHaveBeenCalled()
+      // The model answered with a call the model tier refused: its flag,
+      // its intent, and the guard's reason, as for a refused call.
+      expect(toolEvents()).toEqual([
+        {
+          intent: "prepareSend",
+          tier: "action",
+          outcome: "rejected",
+          latencyMs: 0,
+          onDeviceModelAvailable: true,
+          onDeviceModelReason: "groupSend",
+        },
+      ])
+    })
+
+    it("answers a history read by date, or one searching for what no one asked, with the miss reply, and reports why", async () => {
+      const cases: [string, Record<string, unknown>, string][] = [
+        ["what did i receive yesterday", { direction: "RECEIVE" }, "timeFilter"],
+        ["my biggest payment", { query: "biggest" }, "ungroundedFilter"],
+        [
+          "what did i send kemar",
+          { query: "bob", direction: "SEND" },
+          "ungroundedFilter",
+        ],
+      ]
+      for (const [utterance, args, reason] of cases) {
+        // A plain miss, so the shipped order asks the model.
+        expect([utterance, matchGrammar(utterance, USD)]).toEqual([utterance, undefined])
+        const { runtime, runTool, toolEvents } = withModel(
+          modelCall({ intent: "getTransactions", args }),
+        )
+
+        const entries = await answerUtterance(runtime, utterance, env(ON))
+
+        expect([utterance, entries]).toEqual([
+          utterance,
+          [{ kind: "reply", replyKey: "Assistant.unknownIntent" }],
+        ])
+        expect(runTool).not.toHaveBeenCalled()
+        expect(toolEvents()).toEqual([
+          {
+            intent: "getTransactions",
+            tier: "read",
+            outcome: "rejected",
+            latencyMs: 0,
+            onDeviceModelAvailable: true,
+            onDeviceModelReason: reason,
+          },
+        ])
+      }
+    })
+
+    it("runs the model's history read without a direction no word of the ask gives, served by the model", async () => {
+      const utterance = "what did i send kemar"
+      expect(matchGrammar(utterance, USD)).toBe(undefined)
+      const { runtime, runTool, graphql } = withModel(
+        modelCall({
+          intent: "getTransactions",
+          args: { query: "kemar", direction: "RECEIVE" },
+        }),
+      )
+      graphql.transactions.mockResolvedValue({
+        rows: [],
+        hasNextPage: false,
+        endCursor: null,
+      })
+
+      await answerUtterance(runtime, utterance, env(ON))
+
+      expect(runTool).toHaveBeenCalledTimes(1)
+      const [routed, deps] = runTool.mock.calls[0]
+      expect(routed).toEqual({ intent: "getTransactions", args: { query: "kemar" } })
+      expect(deps.servedByOnDeviceModel).toBe(true)
+    })
+
+    it("knows people by the contacts the app's cache holds, and never asks the network for them", async () => {
+      const utterance = "throw tanya 20 for kemar's taxi"
+      const call = {
+        intent: "prepareSend",
+        args: { payee: "tanya", amount: "20", memo: "kemar's taxi" },
+      }
+      const contact = (username: string, alias: string) => ({
+        __typename: "UserContact",
+        id: username,
+        username,
+        alias,
+        transactionsCount: 1,
+      })
+      const { runtime, runTool, graphql, cachedGraphql, toolEvents } = withModel(
+        modelCall(call),
+      )
+      cachedGraphql.contacts.mockResolvedValue([
+        contact("tanya_b", "Tanya"),
+        contact("kemar99", "Kemar Brown"),
+      ])
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(runTool).not.toHaveBeenCalled()
+      expect(cachedGraphql.contacts).toHaveBeenCalledTimes(1)
+      expect(graphql.contacts).not.toHaveBeenCalled()
+      expect(toolEvents()).toEqual([
+        expect.objectContaining({
+          intent: "prepareSend",
+          onDeviceModelReason: "groupSend",
+        }),
+      ])
+    })
   })
 
   it("is never asked while the flags keep it off", async () => {
