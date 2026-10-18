@@ -71,20 +71,24 @@ describe("the iOS bridge", () => {
       lines.some(({ line, guarded }) => guarded && /LanguageModelSession/.test(line)),
     ).toBe(true)
     expect(linesWithGuard("SystemLanguageModel.default")[0].guarded).toBe(false)
-    // Every type declared inside the guard is marked iOS 26.
-    const declarations = [
-      ...swift.matchAll(/^(@\w+[^\n]*\n)*(struct|enum|class|extension) (\w+)/gm),
-    ]
-    const guardedTypes = declarations.filter(({ index }) => {
-      const lineNo = swift.slice(0, index).split("\n").length - 1
-      return lines[lineNo]?.guarded
+    // Every type declared inside the guard is marked iOS 26: each
+    // declaration line, with the attribute lines right above it.
+    const declarations = lines.flatMap(({ line, guarded }, index) => {
+      const name = /^(?:struct|enum|class|extension) (\w+)/.exec(line)?.[1]
+      if (name === undefined) return []
+      const attributes: string[] = []
+      for (let at = index - 1; at >= 0 && lines[at].line.startsWith("@"); at -= 1) {
+        attributes.unshift(lines[at].line)
+      }
+      return [{ name, attributes, guarded }]
     })
-    expect(guardedTypes.map(([, , , name]) => name)).toEqual([
+    const guardedTypes = declarations.filter(({ guarded }) => guarded)
+    expect(guardedTypes.map(({ name }) => name)).toEqual([
       "AssistantAnswerSchema",
       "AssistantOnDeviceModel",
     ])
-    guardedTypes.forEach(([declaration]) =>
-      expect(declaration).toContain("@available(iOS 26.0, *)"),
+    guardedTypes.forEach(({ attributes }) =>
+      expect(attributes).toContain("@available(iOS 26.0, *)"),
     )
   })
 
