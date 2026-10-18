@@ -1,6 +1,6 @@
 # Signs in on the Test instance, turns the assistant on for this run (a
 # development build's dev link: Remote Config holds assistantEnabled off),
-# and opens Ask Flash from the home screen.
+# and opens Ask Flash from the home screen's header.
 appId: com.lnflash
 ---
 - runFlow: ../../flashcard/subflows/login.yaml
@@ -8,8 +8,9 @@ appId: com.lnflash
     file: ../../flashcard/subflows/open-link.yaml
     env:
       LINK: flash://dev/assistant?on=1
-# The home screen's button row grows the Ask Flash button once the flag
-# reads on.
+# The home screen's header grows the Ask Flash button, right beside the
+# price icon at the top left, once the flag reads on (ENG-733). The header
+# never scrolls, so the button is tapped where it stands.
 - extendedWaitUntil:
     visible:
       id: home-ask-flash

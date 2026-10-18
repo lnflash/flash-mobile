@@ -16,9 +16,10 @@ bundled with `ASSISTANT_DEV_LINK=true` in `.env` (ENG-734). A store build must
 never carry that key: the deploy workflows, the Fastfile's store lanes and the
 release scripts refuse it (`scripts/ci/check-store-env.sh`).
 `subflows/open-ask-flash.yaml` opens it after signing in, then taps the home
-screen's Ask Flash button (`home-ask-flash`). Like the card bridge's link, it
-also hides LogBox: the sign-in subflow relaunches the app, which brings LogBox
-back, and its toasts sit over the thread's input and Ask button.
+screen's Ask Flash button, in its header beside the price icon
+(`home-ask-flash`). Like the card bridge's link, it also hides LogBox: the
+sign-in subflow relaunches the app, which brings LogBox back, and its toasts
+sit over the thread's input and Ask button.
 
 ## Flows
 
