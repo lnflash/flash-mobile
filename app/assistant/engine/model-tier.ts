@@ -7,7 +7,7 @@ import type { ThreadEntry, ThreadStore } from "../ui/thread-store"
 import type { AmountPhraseContext } from "./amount-phrase"
 import { routeIntent, ToolCall } from "./intent-router"
 import { MODEL_RESPONSE_TIMEOUT_MS, ModelAdapter } from "./model-adapter"
-import { buildModelPrompt, modelTierRegistry } from "./model-prompt"
+import { buildModelPrompt, buildModelWarmup, modelTierRegistry } from "./model-prompt"
 import { AMOUNT_PATTERN } from "./parse-amount"
 import { isPlainObject, JsonSchema } from "./schema-validator"
 
@@ -368,5 +368,23 @@ export const tryOnDeviceModel = async (
   } catch (err) {
     console.warn("[assistant] the on-device model tier failed", err)
     return NO_MODEL
+  }
+}
+
+/**
+ * Warm the on-device model as Ask Flash opens (ENG-749), so the first
+ * request does not wait for its session to start: when the model can answer
+ * now, start a session with the instructions every request carries, and
+ * send nothing. The caller asks only while both flags are on. It never
+ * throws, reports no event of its own, and does nothing without a model.
+ */
+export const prewarmOnDeviceModel = async (
+  runtime: Pick<ModelTierRuntime, "registry" | "modelAdapter">,
+): Promise<void> => {
+  try {
+    if (!(await runtime.modelAdapter.isAvailable())) return
+    await runtime.modelAdapter.prewarm(buildModelWarmup(runtime.registry))
+  } catch {
+    // Best effort: a request that finds no warm session starts its own.
   }
 }

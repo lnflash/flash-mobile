@@ -6,7 +6,9 @@
 //  Models framework, on iOS 26 and an Apple Intelligence iPhone. The JS layer
 //  (app/assistant/engine/native-model-bridge.ts) asks `isAvailable` on every
 //  turn the grammar tier cannot read, then `complete` for at most one tool
-//  call, which JS validates before anything runs.
+//  call, which JS validates before anything runs. Ask Flash calls `prewarm`
+//  when it opens (ENG-749): a session for the instructions, warmed, which
+//  the first request that carries them takes.
 //
 //  The app still runs on iOS 15.1 (IPHONEOS_DEPLOYMENT_TARGET) and the
 //  framework exists only on iOS 26, so:
@@ -77,6 +79,24 @@ class AssistantModelBridge: NSObject {
     }
     #endif
     promise.reject("unavailable", "No on-device model on this system")
+  }
+
+  /// Starts a session for the instructions `warmupJson` holds and warms it,
+  /// sending nothing (ENG-749): Ask Flash calls it when it opens, so the
+  /// first request does not wait for the model to load. Resolves at once,
+  /// with a model or without one, and on any iOS before 26; never rejects.
+  @objc(prewarm:resolver:rejecter:)
+  func prewarm(
+    _ warmupJson: String,
+    resolver resolve: @escaping RCTPromiseResolveBlock,
+    rejecter reject: @escaping RCTPromiseRejectBlock
+  ) {
+    #if canImport(FoundationModels)
+    if #available(iOS 26.0, *) {
+      AssistantOnDeviceModel.prewarm(warmupJson: warmupJson)
+    }
+    #endif
+    resolve(nil)
   }
 }
 
@@ -200,11 +220,60 @@ enum AssistantOnDeviceModel {
   /// payees and a memo, and cuts a runaway answer short.
   static let maximumResponseTokens = 160
 
+  /// The session Ask Flash warmed when it opened (ENG-749), held for the
+  /// next request with the same instructions, which takes it once. It holds
+  /// the instructions and nothing else: no turn carries into another.
+  private static let warm = WarmSession()
+
+  /// At most one warmed session, with the instructions it was made for. The
+  /// bridge's calls arrive on any thread.
+  private final class WarmSession: @unchecked Sendable {
+    private let lock = NSLock()
+    private var held: (instructions: String, session: LanguageModelSession)?
+
+    func put(_ session: LanguageModelSession, for instructions: String) {
+      lock.lock()
+      defer { lock.unlock() }
+      held = (instructions, session)
+    }
+
+    func take(for instructions: String) -> LanguageModelSession? {
+      lock.lock()
+      defer { lock.unlock() }
+      guard let current = held, current.instructions == instructions else { return nil }
+      held = nil
+      return current.session
+    }
+  }
+
   static func isAvailable() -> Bool {
     if case .available = SystemLanguageModel.default.availability {
       return true
     }
     return false
+  }
+
+  /// Makes a session for the instructions and warms it, sending no prompt:
+  /// the system loads the model now rather than at the first request. No
+  /// model, or a warm-up it cannot read, does nothing.
+  static func prewarm(warmupJson: String) {
+    guard
+      isAvailable(),
+      let data = warmupJson.data(using: .utf8),
+      let parts = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+      let instructions = parts["instructions"] as? String
+    else {
+      return
+    }
+    let session = LanguageModelSession(instructions: instructions)
+    session.prewarm()
+    warm.put(session, for: instructions)
+  }
+
+  /// The session for one request: the warmed one when it was made for these
+  /// instructions and no request has taken it, else a new one.
+  static func takeSession(instructions: String) -> LanguageModelSession {
+    warm.take(for: instructions) ?? LanguageModelSession(instructions: instructions)
   }
 
   static func complete(promptJson: String, timeoutMs: Int, promise: AssistantModelPromise) {
@@ -231,12 +300,12 @@ enum AssistantOnDeviceModel {
       await withTaskGroup(of: Void.self) { group in
         group.addTask {
           do {
-            // A new session per request: nothing from one turn carries into
-            // the next, and the thread the model sees is the one JS quoted.
-            // The instructions already list every tool's arguments, so the
-            // schema is not repeated in the prompt: both would not fit the
-            // model's 4,096 tokens.
-            let session = LanguageModelSession(instructions: instructions)
+            // A new session per request, or the one Ask Flash warmed for
+            // these instructions, which no request has used: nothing from
+            // one turn carries into the next, and the thread the model sees
+            // is the one JS quoted. The instructions already list every
+            // tool's arguments, so the schema is not repeated in the prompt.
+            let session = takeSession(instructions: instructions)
             let response = try await session.respond(
               to: prompt,
               schema: schema,

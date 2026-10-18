@@ -11,6 +11,10 @@ import { NativeModules } from "react-native"
 //   {"intent": "<an intent, or none>", "argsJson": "<its arguments>"}. It
 //   rejects when there is no model, when the time runs out (the native side
 //   cancels the work at `timeoutMs`), or when the model fails.
+// - prewarm (ENG-749): start the model's session for the instructions every
+//   request carries, and send nothing; Ask Flash calls it when it opens. It
+//   resolves at once and never rejects. A build without it is warmed by
+//   nothing, and its first request starts the session itself.
 //
 // Nothing the module answers is trusted: model-adapter.ts reads it, and the
 // model tier checks the call as the router checks any other.
@@ -22,9 +26,14 @@ export type AssistantModelBridge = {
    * instructions, the prompt, and the tools iOS shapes the answer from.
    */
   complete: (promptJson: string, timeoutMs: number) => Promise<string>
+  /**
+   * `warmupJson` is a ModelWarmup (model-prompt.ts) as JSON: the
+   * instructions every request carries. Absent from a build made before it.
+   */
+  prewarm?: (warmupJson: string) => Promise<unknown>
 }
 
-/** The module, when this build has one with both methods. Read on each call. */
+/** The module, when this build has one with isAvailable and complete. Read on each call. */
 export const nativeModelBridge = (): AssistantModelBridge | undefined => {
   const { AssistantModelBridge: bridge } = NativeModules as {
     AssistantModelBridge?: Partial<AssistantModelBridge>

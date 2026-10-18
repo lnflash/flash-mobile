@@ -1,4 +1,4 @@
-import type { ModelPrompt } from "./model-prompt"
+import type { ModelPrompt, ModelWarmup } from "./model-prompt"
 import { AssistantModelBridge, nativeModelBridge } from "./native-model-bridge"
 import { isPlainObject } from "./schema-validator"
 
@@ -6,7 +6,9 @@ import { isPlainObject } from "./schema-validator"
 // answer, and what it answered. Whatever the native side does (no module,
 // no model on this device, a throw, a hang, text that is not a call) comes
 // back as one of three decisions, and nothing here ever rejects: a failed
-// model is a turn answered as it is without one.
+// model is a turn answered as it is without one. Ask Flash also warms the
+// model's session when it opens (ENG-749), which sends nothing and settles
+// whatever the native side does.
 
 /**
  * How long the model has for one utterance (architect decision 3): 2.5 s,
@@ -26,6 +28,12 @@ export const MODEL_BACKSTOP_GRACE_MS = 250
 export const MODEL_AVAILABILITY_TIMEOUT_MS = 1000
 
 /**
+ * The native side starts a warm-up and answers at once; past this, the
+ * adapter stops waiting for that answer (the warm-up itself goes on).
+ */
+export const MODEL_PREWARM_TIMEOUT_MS = 1000
+
+/**
  * - call: what the model emitted, unchecked: `raw` goes through the router
  *   like any other emitter's call, then the grounding check (model-tier.ts).
  * - miss: the model answered and named no call ("none"), or answered
@@ -42,6 +50,12 @@ export type ModelAdapter = {
   isAvailable: () => Promise<boolean>
   /** At most one call for the prompt. Never rejects. */
   decide: (prompt: ModelPrompt, options: { timeoutMs: number }) => Promise<ModelDecision>
+  /**
+   * Start the model's session for the instructions every request carries,
+   * and send nothing (ENG-749). Never rejects; does nothing without a
+   * module, or with one built before it.
+   */
+  prewarm: (warmup: ModelWarmup) => Promise<void>
 }
 
 const MISS: ModelDecision = { kind: "miss" }
@@ -105,9 +119,9 @@ export const decisionOf = (answer: unknown): ModelDecision => {
 }
 
 /**
- * The adapter over the native module. Without a module every check is false
- * and every decision unavailable. `bridge` is read on each call; a spec
- * hands in its own.
+ * The adapter over the native module. Without a module every check is false,
+ * every decision unavailable and every warm-up nothing. `bridge` is read on
+ * each call; a spec hands in its own.
  */
 export const createNativeModelAdapter = (
   bridge: () => AssistantModelBridge | undefined = nativeModelBridge,
@@ -129,5 +143,14 @@ export const createNativeModelAdapter = (
       timeoutMs + MODEL_BACKSTOP_GRACE_MS,
     )
     return answer.ok ? decisionOf(answer.value) : UNAVAILABLE
+  },
+  prewarm: async (warmup) => {
+    const native = bridge()
+    const prewarm = native?.prewarm
+    if (typeof prewarm !== "function") return
+    await settleWithin(
+      () => prewarm.call(native, JSON.stringify(warmup)),
+      MODEL_PREWARM_TIMEOUT_MS,
+    )
   },
 })

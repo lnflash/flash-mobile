@@ -1,11 +1,16 @@
 import { readAmountPhrase } from "@app/assistant/engine/amount-phrase"
 import { routeIntent } from "@app/assistant/engine/intent-router"
 import { MODEL_RESPONSE_TIMEOUT_MS } from "@app/assistant/engine/model-adapter"
-import { THREAD_CLOSE, THREAD_OPEN } from "@app/assistant/engine/model-prompt"
+import {
+  buildModelPrompt,
+  THREAD_CLOSE,
+  THREAD_OPEN,
+} from "@app/assistant/engine/model-prompt"
 import {
   canonicalNumber,
   isGrounded,
   ModelTierRuntime,
+  prewarmOnDeviceModel,
   tryOnDeviceModel,
 } from "@app/assistant/engine/model-tier"
 import { AMOUNT_CURRENCIES, AMOUNT_PATTERN } from "@app/assistant/engine/parse-amount"
@@ -774,5 +779,43 @@ describe("what the model is asked", () => {
     expect(data).toContain("earlier words")
     expect(data).not.toContain("the request itself")
     expect(prompt.prompt.endsWith("Request: the request itself")).toBe(true)
+  })
+})
+
+describe("prewarmOnDeviceModel (ENG-749)", () => {
+  it("warms a model that is there with the instructions every request carries, and asks it nothing", async () => {
+    const modelAdapter = fakeModelAdapter(modelCall({ intent: "getBalances", args: {} }))
+
+    await prewarmOnDeviceModel(runtimeOf(modelAdapter))
+
+    expect(modelAdapter.isAvailable).toHaveBeenCalledTimes(1)
+    expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1)
+    // The same instructions as a request's prompt, the five tools and the
+    // rules, so the native side can hand the warmed session to it.
+    const [warmup] = modelAdapter.prewarm.mock.calls[0]
+    expect(warmup).toEqual({
+      instructions: buildModelPrompt(assistantRegistry, [], "hi").instructions,
+    })
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
+  })
+
+  it("warms nothing when the model is not there", async () => {
+    const modelAdapter = unavailableModelAdapter()
+
+    await prewarmOnDeviceModel(runtimeOf(modelAdapter))
+
+    expect(modelAdapter.isAvailable).toHaveBeenCalledTimes(1)
+    expect(modelAdapter.prewarm).not.toHaveBeenCalled()
+  })
+
+  it("never throws: an adapter that does is nothing", async () => {
+    const failing = fakeModelAdapter()
+    failing.isAvailable.mockRejectedValue(new Error("bridge gone"))
+    const failingWarmUp = fakeModelAdapter()
+    failingWarmUp.prewarm.mockRejectedValue(new Error("bridge gone"))
+
+    await expect(prewarmOnDeviceModel(runtimeOf(failing))).resolves.toBeUndefined()
+    await expect(prewarmOnDeviceModel(runtimeOf(failingWarmUp))).resolves.toBeUndefined()
+    expect(failing.prewarm).not.toHaveBeenCalled()
   })
 })

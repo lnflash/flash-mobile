@@ -46,6 +46,13 @@ export type ModelPrompt = {
   tools: ModelTool[]
 }
 
+/**
+ * What the model's session is warmed with when Ask Flash opens (ENG-749):
+ * the instructions every request carries, and nothing from the thread or
+ * the person.
+ */
+export type ModelWarmup = Pick<ModelPrompt, "instructions">
+
 /** At most this many of the thread's latest lines are quoted. */
 export const MAX_THREAD_ENTRIES = 10
 
@@ -264,6 +271,19 @@ const catalogOf = (registry: Registry): string =>
     )
     .join("\n")
 
+/** The instructions every request carries: the model tier's tools, then the rules. */
+const instructionsOf = (tools: Registry): string =>
+  [INTRO, CATALOG_INTRO, catalogOf(tools), RULES].join("\n\n")
+
+/**
+ * What warms the model's session when Ask Flash opens (ENG-749): the
+ * instructions of every request's prompt (buildModelPrompt), so the native
+ * side can hand the warmed session to the first request that carries them.
+ */
+export const buildModelWarmup = (registry: Registry): ModelWarmup => ({
+  instructions: instructionsOf(modelTierRegistry(registry)),
+})
+
 /**
  * The prompt for one request: the model tier's tools (modelTierRegistry)
  * and the rules, then the current thread's entries before the request (the
@@ -277,7 +297,7 @@ export const buildModelPrompt = (
   const tools = modelTierRegistry(registry)
   const lines = threadLines(entries)
   return {
-    instructions: [INTRO, CATALOG_INTRO, catalogOf(tools), RULES].join("\n\n"),
+    instructions: instructionsOf(tools),
     prompt: [
       ...(lines.length > 0
         ? [[THREAD_INTRO, THREAD_OPEN, ...lines, THREAD_CLOSE].join("\n")]

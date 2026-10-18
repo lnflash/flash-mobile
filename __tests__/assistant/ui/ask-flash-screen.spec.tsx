@@ -115,6 +115,7 @@ import {
   JMD_PRICE,
   modelCall,
   page,
+  unavailableModelAdapter,
   USD_PRICE,
 } from "../fakes"
 import { CASH_WALLETS, fakeRuntime } from "./thread-harness"
@@ -208,6 +209,52 @@ describe("AskFlashScreen", () => {
       expect(screen.getByText(en.Assistant.unknownIntent())).toBeTruthy()
     }),
   )
+
+  const BOTH_ON: Partial<Flags> = { assistantEnabled: true, assistantOnDeviceModel: true }
+
+  it("warms the on-device model once as it opens, while both flags are on and the model is there, with no event of its own (ENG-749)", async () => {
+    const off = show()
+    await act(async () => undefined)
+    const openedWithoutModel = off.events.map(({ type }) => type)
+    off.screen.unmount()
+
+    const { screen, graphql, modelAdapter, events } = show({
+      flags: BOTH_ON,
+      modelAdapter: fakeModelAdapter(modelCall({ intent: "getBalances", args: {} })),
+    })
+
+    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1))
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
+    // Opening reports what it does without a model, and nothing more.
+    expect(events.map(({ type }) => type)).toEqual(openedWithoutModel)
+
+    // Typing and a turn render the screen again; the warm-up stays at one.
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+    await ask(screen, "how loaded am i right now")
+    await waitFor(() => expect(screen.getByTestId("ask-flash-balances")).toBeTruthy())
+    expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1)
+  })
+
+  ONE_FLAG.forEach(([name, flags]) =>
+    it(`never warms the on-device model with ${name} on (ENG-749)`, async () => {
+      const { modelAdapter } = show({ flags, modelAdapter: fakeModelAdapter() })
+
+      await act(async () => undefined)
+
+      expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+      expect(modelAdapter.prewarm).not.toHaveBeenCalled()
+    }),
+  )
+
+  it("never warms an on-device model that is not there (ENG-749)", async () => {
+    const { modelAdapter } = show({
+      flags: BOTH_ON,
+      modelAdapter: unavailableModelAdapter(),
+    })
+
+    await waitFor(() => expect(modelAdapter.isAvailable).toHaveBeenCalledTimes(1))
+    expect(modelAdapter.prewarm).not.toHaveBeenCalled()
+  })
 
   it("greets an empty thread with its hint, an input and an Ask button, all from LL", () => {
     const { screen } = show()

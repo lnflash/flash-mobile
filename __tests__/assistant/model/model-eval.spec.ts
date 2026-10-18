@@ -61,6 +61,7 @@ const scriptedModel = (answers: Answers) => {
       async (prompt: ModelPrompt): Promise<ModelDecision> =>
         byRequest.get(requestOf(prompt)) ?? { kind: "miss" },
     ),
+    prewarm: jest.fn(async () => undefined),
   }
 }
 

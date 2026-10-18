@@ -31,7 +31,7 @@ import java.util.concurrent.TimeoutException;
  * The JS layer (app/assistant/engine/native-model-bridge.ts) asks
  * {@link #isAvailable} on every turn the grammar tier cannot read, then
  * {@link #complete} for at most one tool call, which JS validates before
- * anything runs.
+ * anything runs. Ask Flash calls {@link #prewarm} when it opens (ENG-749).
  *
  * <ul>
  *   <li>Only a model AICore reports AVAILABLE counts. DOWNLOADABLE and
@@ -111,6 +111,35 @@ public final class AssistantModelBridgeModule extends ReactContextBaseJavaModule
       worker.execute(() -> run(promptJson, (long) Math.max(0, timeoutMs), promise));
     } catch (Throwable t) {
       promise.reject("unavailable", "The on-device model cannot take a request");
+    }
+  }
+
+  /**
+   * Warms Gemini Nano for the next request, sending nothing (ENG-749): Ask
+   * Flash calls it when it opens, so the first request does not wait for
+   * AICore to load the model. Only a model AICore reports AVAILABLE is
+   * warmed, and nothing here starts a download. {@code warmupJson} holds the
+   * instructions iOS warms its session with; ML Kit's warm-up takes none.
+   * Resolves at once, whatever happens on the worker; never rejects.
+   */
+  @ReactMethod
+  public void prewarm(String warmupJson, Promise promise) {
+    try {
+      worker.execute(this::warmUp);
+    } catch (Throwable t) {
+      // No worker to run on: there is nothing to warm.
+    }
+    promise.resolve(null);
+  }
+
+  /** Starts ML Kit's warm-up of an AVAILABLE model and does not wait for it. Worker thread only. */
+  private void warmUp() {
+    GenerativeModelFutures ready = readyModel();
+    if (ready == null) return;
+    try {
+      ready.warmup();
+    } catch (Throwable t) {
+      // Best effort: the next request warms the model itself.
     }
   }
 

@@ -514,12 +514,14 @@ export const USD_PRICE = {
 export type FakeModelAdapter = ModelAdapter & {
   isAvailable: jest.Mock
   decide: jest.Mock
+  prewarm: jest.Mock
 }
 
 /** An on-device model that is never there: what every thread spec runs on by default. */
 export const unavailableModelAdapter = (): FakeModelAdapter => ({
   isAvailable: jest.fn(async () => false),
   decide: jest.fn(async (): Promise<ModelDecision> => ({ kind: "unavailable" })),
+  prewarm: jest.fn(async () => undefined),
 })
 
 /** An on-device model that is there and decides `decision` for every prompt, unless a case scripts it. */
@@ -528,6 +530,7 @@ export const fakeModelAdapter = (
 ): FakeModelAdapter => ({
   isAvailable: jest.fn(async () => true),
   decide: jest.fn(async (): Promise<ModelDecision> => decision),
+  prewarm: jest.fn(async () => undefined),
 })
 
 /** The decision of a model that emitted `raw` as its call. */
