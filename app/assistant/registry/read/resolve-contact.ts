@@ -13,8 +13,10 @@ import type { ClarificationOption, ReadToolCtx, ToolResult } from "../types"
 // words for them or by the user's own pick. Only when no contact looks like
 // the hint at all is it looked up as a Flash username (ENG-730): a Flash
 // user of that name is a picker of one, whose prompt says the person is not
-// in the contacts, and no one of that name is the payeeNotFound refusal
-// card. So a question from here always offers at least one option.
+// in the contacts, the user's own username is the self-payment reply, and
+// no one of that name is the payeeNotFound refusal card. So a question from
+// here always offers at least one option, and one that can be paid. A
+// lookup that fails is a failed read, never "no one of that name".
 // It never prepares anything either.
 
 /**
@@ -83,31 +85,50 @@ const option = (contact: ContactRow): ClarificationOption => ({
 })
 
 /**
- * The default wallet of the Flash user with this username, as the send
- * screen looks up a typed one (payment-destination/intraledger.ts), or null
- * when no account has it. A username is one word: words with a space in
- * them ("the guy from work"), or none at all, are no one's and cost no
- * query. A failed read still rejects.
+ * The words a Flash username can be: the server's Username pattern
+ * (UsernameRegex, lnflash/flash src/domain/accounts/index.ts:74), 3 to 50
+ * letters, digits or "_", and not starting with 1, 3, bc1 or lnbc1, in any
+ * case. The server refuses any other word with an error ("Invalid value for
+ * Username"), not with "no account", so a lookup of one would be a failed
+ * read for a name that no one can have. @flash/client's reUsername, which
+ * gates the send screen's lookups, minds the case of that start, so the
+ * parser passes "LNBC1abc" as a handle that the server refuses.
+ */
+export const FLASH_USERNAME = /^(?!^(1|3|bc1|lnbc1))[\p{L}0-9_]{3,50}$/iu
+
+/**
+ * The default wallet of the Flash user with this username, looked up as the
+ * send screen looks up a typed one (payment-destination/intraledger.ts:87-94),
+ * or null when no account has it. A word that cannot be a username
+ * (FLASH_USERNAME) is no one's, and costs no query: words with a space
+ * ("the guy from work"), a hyphen, or none at all. A lookup the server fails
+ * rejects (the rail's accountDefaultWallet), so it is never "no such user".
  */
 export const flashUserWallet = async (
   username: string,
   graphql: Pick<GraphqlRail, "accountDefaultWallet">,
 ): Promise<PublicWalletRow | null> =>
-  username === "" || /\s/.test(username) ? null : graphql.accountDefaultWallet(username)
+  FLASH_USERNAME.test(username) ? graphql.accountDefaultWallet(username) : null
 
 /**
  * No contact looks like the hint: the Flash user it names, as a picker of
  * one, or the refusal card (ENG-730). The option is data only, the username
  * as the user typed it; the prompt is the copy. A pick of it is looked up
- * again at the tap (payee.ts, fromPick), never taken from this answer.
+ * again at the tap (payee.ts, fromPick), never taken from this answer. The
+ * user's own username is the self-payment reply, never a question: the send
+ * screen refuses a typed one at lookup time (intraledger.ts:39-45), and the
+ * one option would be refused at the tap.
  */
 const flashUserOrRefusal = async (
   hint: string,
   ctx: ReadToolCtx,
 ): Promise<ToolResult<ContactPayload>> => {
   const username = hint.trim()
-  if (!(await flashUserWallet(username, ctx.graphql))) {
-    return prepareRefusalResult("payeeNotFound")
+  const userWallet = await flashUserWallet(username, ctx.graphql)
+  if (!userWallet) return prepareRefusalResult("payeeNotFound")
+  const myWallets = await ctx.graphql.wallets()
+  if (myWallets.some(({ id }) => id === userWallet.id)) {
+    return { kind: "error", userMessage: "Assistant.selfPayment" }
   }
   return {
     kind: "clarification",

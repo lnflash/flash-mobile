@@ -10,9 +10,10 @@ jest.mock("lnurl-pay", () => ({
 import { getParams } from "js-lnurl"
 import { requestPayServiceParams } from "lnurl-pay"
 
+import { GraphqlRailError } from "@app/assistant/rails/graphql-rail"
 import { decodePaymentRequest } from "@app/assistant/registry/read/decode-payment-request"
 import { toBtcMoneyAmount } from "@app/types/amounts"
-import { fakeCtx, wallet } from "../fakes"
+import { failingAccountLookup, fakeCtx, wallet } from "../fakes"
 
 // Real mainnet invoices (see __tests__/screens/send-confirmation.spec.tsx).
 // The parser refuses an expired invoice, so each case pins the clock inside
@@ -141,6 +142,32 @@ describe("decodePaymentRequest", () => {
     await expect(decode("myself")).resolves.toMatchObject({
       result: { payload: { valid: false, reason: "SelfPayment" } },
     })
+  })
+
+  it("reads a handle the server's Username pattern refuses as no one's, without asking the server", async () => {
+    // The parser passes "LNBC1abc" as a handle: @flash/client's reUsername
+    // minds the case of the lnbc1 start, and the server's UsernameRegex does
+    // not, so the server answers its lookup with an error, which the rail
+    // reads as a failed lookup, not as no account (ENG-730 review).
+    const { result, graphql } = await decode("LNBC1abc")
+
+    expect(result).toMatchObject({
+      payload: { valid: false, reason: "UsernameDoesNotExist" },
+    })
+    expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
+  })
+
+  it("fails when the server fails a username's lookup, never calling the username unknown", async () => {
+    // A GraphQL error on an HTTP 200 for an account that may exist
+    // (DB_ERROR), through the real rail: a failed read, which runTool
+    // answers with Assistant.toolFailed (ENG-730 review).
+    const { ctx, graphql } = fakeCtx()
+    graphql.wallets.mockResolvedValue([wallet({ id: "my-usd-wallet" })])
+    graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+
+    await expect(decodePaymentRequest.run({ raw: "alice" }, ctx)).rejects.toThrow(
+      GraphqlRailError,
+    )
   })
 
   it("reads a fixed-amount Lightning address", async () => {

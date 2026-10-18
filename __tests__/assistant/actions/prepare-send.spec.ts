@@ -45,6 +45,7 @@ import { memoryStorage } from "../executor-harness"
 import {
   accountsOf,
   bolt11,
+  failingAccountLookup,
   fakeActionCtx,
   fundedBefore,
   graphqlTx,
@@ -386,6 +387,61 @@ describe("prepareSend to a contact from the cash wallet", () => {
 })
 
 describe("prepareSend to someone who is not a contact (ENG-730)", () => {
+  // Beside the amount question above: a payee is resolved before it (spec
+  // §5.1, "Payee resolution before a card"). The grammar never emits a send
+  // with no amount, so these guard the order against a refactor.
+  it("refuses a name that is no contact's and no Flash user's before asking for an amount", async () => {
+    const fake = setup()
+
+    await expect(run({ payee: "mallory" }, fake)).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+  })
+
+  it("asks which Flash user before asking for an amount, and asks for the amount once the user picks", async () => {
+    const fake = setup()
+
+    const asked = await run({ payee: NOT_A_CONTACT }, fake)
+
+    expect(asked).toEqual({
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickFlashUser",
+        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+        about: "dreadmax",
+      },
+    })
+    if (asked.kind !== "clarification") throw new Error("expected a question")
+
+    // The tap re-issues the call with the pick, still with no amount.
+    await expect(run({ payee: asked.card.options[0].id }, fake)).resolves.toEqual({
+      kind: "clarification",
+      card: { type: "clarification", prompt: "Assistant.amountRequired", options: [] },
+    })
+  })
+
+  it("answers the user's own username with the self-payment reply, never a picker, before reading a price", async () => {
+    // Signed in as dreadmax, the user names dreadmax: the send screen refuses
+    // that at lookup time (payment-destination/intraledger.ts:39-45), and the
+    // picker's one option would only be refused at the tap (ENG-730 review).
+    const fake = setup()
+    fake.graphql.wallets.mockResolvedValue([
+      wallet({ id: "dreadmax-wallet", walletCurrency: "USD", balance: 10_000 }),
+      BTC_ROW,
+    ])
+
+    await expect(
+      run({ payee: NOT_A_CONTACT, amount: "5", currency: "USD" }, fake),
+    ).resolves.toEqual({ kind: "error", userMessage: "Assistant.selfPayment" })
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+    Object.values(fake.actions.feeProbes).forEach((probe) =>
+      expect(probe).not.toHaveBeenCalled(),
+    )
+  })
+
   it("asks with a picker of one for a Flash user, then prepares the pick's card for that user", async () => {
     // The dogfood ask: "Send 0.05 usd to dreadmax", dreadmax being a Flash
     // user the user has not added.
@@ -519,6 +575,76 @@ describe("prepareSend to someone who is not a contact (ENG-730)", () => {
     await expect(executor.canConfirm(action.id)).resolves.toMatchObject({
       enabled: false,
     })
+  })
+
+  it("leaves a picked Flash user's expired card expired, for another try, when the refresh's lookup fails", async () => {
+    // The server fails dreadmax's lookup at the Confirm that prepares the
+    // card again: a GraphQL error on an HTTP 200 (DB_ERROR), through the
+    // real rail (ENG-730 review). Read as no account, it was the not-found
+    // refusal, and the action ended for good. It is a failed read: the
+    // action stays, expired, and the next Confirm prepares it again.
+    const fake = setup()
+    let clock = NOW_MS
+    const now = () => clock
+    const executor = createExecutor({
+      auth: { availability: async () => "none", authenticate: async () => false },
+      journal: createAttemptJournal({ storage: memoryStorage() }),
+      reconcile: jest.fn(async () => "unknown" as const),
+      telemetry: recordingTelemetry().telemetry,
+      now,
+    })
+    const { graphql, displayCurrency, now: _fixed, ...actionDeps } = fake.ctx
+    const action = prepared(
+      await runTool(
+        {
+          intent: "prepareSend",
+          args: { payee: "contact:dreadmax", amount: "5", currency: "USD" },
+        },
+        {
+          registry: assistantRegistry,
+          graphql,
+          btcRail: fake.btcRail,
+          displayCurrency,
+          lnAddressHostname: actionDeps.send.lnAddressHostname,
+          now,
+          telemetry: recordingTelemetry().telemetry,
+          actionDeps,
+        },
+      ),
+    )
+    executor.addPrepared(action, "text")
+    clock += FIXED_CENT_INTRALEDGER_TTL_MS + 1_000
+    fake.graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+
+    await expect(executor.executePreparedAction(action.id)).resolves.toEqual({
+      kind: "expired",
+      actionId: action.id,
+      replyKey: "Assistant.expired",
+      refresh: { kind: "error", userMessage: "Assistant.toolFailed" },
+    })
+    expect(fake.mutations.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
+    await expect(executor.canConfirm(action.id)).resolves.toEqual({
+      enabled: true,
+      state: "armed",
+    })
+
+    // The lookup answers again: the next Confirm prepares the same card, and
+    // with the numbers unchanged it pays dreadmax.
+    fake.graphql.accountDefaultWallet.mockImplementation(
+      accountsOf(["alice", "jane", NOT_A_CONTACT]),
+    )
+    fake.mutations.intraLedgerUsdPaymentSend.mockResolvedValue(
+      sentOk("intraLedgerUsdPaymentSend"),
+    )
+
+    await expect(executor.executePreparedAction(action.id)).resolves.toMatchObject({
+      kind: "executed",
+      replacedActionId: action.id,
+      outcome: { status: "succeeded" },
+    })
+    expect(
+      fake.mutations.intraLedgerUsdPaymentSend.mock.calls[0][0].variables.input,
+    ).toMatchObject({ recipientWalletId: "dreadmax-wallet", amount: 500 })
   })
 
   it("refuses a pick whose Flash user is gone by the tap with the not-found card", async () => {

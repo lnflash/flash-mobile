@@ -16,6 +16,7 @@ import type { GraphqlRail } from "../../rails/graphql-rail"
 import { defineRead } from "../define"
 import { DecodedPaymentRequest, projectDecodedPaymentRequest } from "../projections"
 import type { ReadToolCtx, ToolResult } from "../types"
+import { flashUserWallet } from "./resolve-contact"
 
 // decodePaymentRequest (docs/ai-assistant-tool-registry.md §4): what a pasted
 // or scanned request is, through the send flow's own destination parser
@@ -32,14 +33,18 @@ type AccountDefaultWalletQueryFn = AccountDefaultWalletLazyQueryHookResult[0]
  * The destination resolvers take the send screens' lazy query and read only
  * `data` from its answer (payment-destination/intraledger.ts and
  * resolve-username-to-lnurl.ts): `{ data }` from the GraphQL rail stands in
- * for the rest of a QueryResult, which nothing reads.
+ * for the rest of a QueryResult, which nothing reads. A handle that cannot
+ * be a username has no wallet and costs no query (flashUserWallet): the
+ * parser passes "LNBC1abc", which the server refuses with an error. A
+ * lookup the server fails rejects, so the read fails rather than calling
+ * the username unknown.
  */
 export const accountDefaultWalletQueryOver = (
   graphql: GraphqlRail,
 ): AccountDefaultWalletQueryFn => {
   const query = async (options?: { variables?: { username?: string } }) => {
     const username = options?.variables?.username
-    const wallet = username ? await graphql.accountDefaultWallet(username) : null
+    const wallet = username ? await flashUserWallet(username, graphql) : null
     const data: AccountDefaultWalletQuery | undefined = wallet
       ? { __typename: "Query", accountDefaultWallet: wallet }
       : undefined
