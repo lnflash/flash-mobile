@@ -59,7 +59,8 @@ const namesCurrency = (word: string, ctx: GrammarContext): boolean =>
  * say which request, or which wallet it is for, may come between ("one new
  * bitcoin address", "one lightning invoice", "one bitcoin wallet address",
  * "one btc account address"). "payment" is a request's name ("receive one
- * bitcoin payment"), so "one payment request" ends at it. Such an ask's
+ * bitcoin payment"), so "one payment request" ends at it unless another
+ * name follows ("two usd payment invoices" counts invoices). Such an ask's
  * amount is a question, as every number in words was before ENG-731. A
  * number in digits, one with a unit of its own ("a twenty dollar invoice",
  * "a five usd invoice"), and one with no request named after it ("request
@@ -73,15 +74,20 @@ const countsRequests = (
   const [count, ...named] = asked.slice(start, end)
   if (!isNumberWord(count.word)) return false
   if (named.some(({ word }) => !namesCurrency(word, ctx))) return false
+  const between = (word: string): boolean =>
+    REQUEST_KINDS.has(word) || namesCurrency(word, ctx)
   let next = end
-  while (
-    next < asked.length &&
-    (REQUEST_KINDS.has(asked[next].word) || namesCurrency(asked[next].word, ctx))
-  ) {
-    next += 1
-  }
-  const noun = asked[next]?.word
+  while (next < asked.length && between(asked[next].word)) next += 1
+  let noun = asked[next]?.word
   if (noun === undefined || !REQUEST_NAMES.has(noun)) return false
+  // Before another name, "payment" says which request: "two usd payment
+  // invoices" counts invoices.
+  if (noun === "payment") {
+    let past = next + 1
+    while (past < asked.length && between(asked[past].word)) past += 1
+    const name = asked[past]?.word
+    if (name !== undefined && REQUEST_NAMES.has(name)) noun = name
+  }
   return named.length === 0 || count.word === "one" || noun === "invoices"
 }
 

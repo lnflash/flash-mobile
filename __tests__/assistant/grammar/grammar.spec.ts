@@ -270,6 +270,9 @@ describe("matchGrammar", () => {
       "request one payment",
       "receive one bitcoin payment",
       "receive one usd payment",
+      // "payment" before another name says which request is counted.
+      "make two usd payment invoices",
+      "give me two bitcoin payment invoices",
     ].forEach((utterance) => {
       ;[USD, JMD].forEach((ctx) => {
         const match = matchGrammar(utterance, ctx)
@@ -283,7 +286,7 @@ describe("matchGrammar", () => {
     })
   })
 
-  it("never answers a request that names the bitcoin wallet with another wallet's", () => {
+  it("never answers a counted request for the bitcoin wallet, or one that names it outside the amount, with another wallet's", () => {
     // A currency's name read into the amount is a word the wallet check never
     // sees: "gi mi one bitcoin wallet address" was the cash wallet's address
     // with a 1 BTC amount line. Each of these asks about the amount, or is a
