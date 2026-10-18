@@ -275,6 +275,75 @@ describe("grounding", () => {
     })
   })
 
+  describe("a picked person's id, which only the thread's re-issue of a pick makes (spec §8)", () => {
+    // `contact:<username>` is what a picker's option re-issues, and
+    // resolvePayee takes it as that contact, or else as the Flash user of
+    // that username, with no question (payee.ts). Each utterance below holds
+    // the id as whole words, and each bare name grounds, so only this rule
+    // refuses the id.
+    const UNGROUNDED = { kind: "rejected", reason: "ungrounded" }
+
+    it("refuses one as a send's payee", async () => {
+      const utterance = "hook contact:dreadmax up with 5 dollars"
+      await expect(
+        ask(
+          { intent: "prepareSend", args: { payee: "dreadmax", amount: "5" } },
+          utterance,
+        ),
+      ).resolves.toMatchObject({ kind: "call" })
+      await expect(
+        ask(
+          { intent: "prepareSend", args: { payee: "contact:dreadmax", amount: "5" } },
+          utterance,
+        ),
+      ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareSend" })
+    })
+
+    it("refuses one among a group send's payees", async () => {
+      const utterance = "split 10 between bob and contact:dreadmax"
+      await expect(
+        ask(
+          {
+            intent: "prepareGroupSend",
+            args: { payees: ["bob", "dreadmax"], total: "10" },
+          },
+          utterance,
+        ),
+      ).resolves.toMatchObject({ kind: "call" })
+      await expect(
+        ask(
+          {
+            intent: "prepareGroupSend",
+            args: { payees: ["bob", "contact:dreadmax"], total: "10" },
+          },
+          utterance,
+        ),
+      ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareGroupSend" })
+    })
+
+    it("refuses one in any case, once trimmed, as resolvePayee reads it", async () => {
+      const utterance = "Hook Contact:DreadMax up with 5 dollars"
+      await expect(
+        ask(
+          { intent: "prepareSend", args: { payee: "DreadMax", amount: "5" } },
+          utterance,
+        ),
+      ).resolves.toMatchObject({ kind: "call" })
+      await expect(
+        ask(
+          { intent: "prepareSend", args: { payee: "Contact:DreadMax", amount: "5" } },
+          utterance,
+        ),
+      ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareSend" })
+      await expect(
+        ask(
+          { intent: "prepareSend", args: { payee: "  CONTACT:dreadmax ", amount: "5" } },
+          utterance,
+        ),
+      ).resolves.toEqual({ ...UNGROUNDED, intent: "prepareSend" })
+    })
+  })
+
   it("takes a wallet or a way to be paid only when the words name it", async () => {
     await expect(
       ask(

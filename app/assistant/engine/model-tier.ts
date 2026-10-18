@@ -1,5 +1,6 @@
 import { normalize } from "../grammar/normalize"
 import { amountRuns, readAmount } from "../grammar/words"
+import { CONTACT_PICK_PREFIX } from "../registry/actions/shared/payee"
 import type { Registry, RegisteredTool } from "../registry/define"
 import type { Intent } from "../registry/types"
 import type { ThreadEntry, ThreadStore } from "../ui/thread-store"
@@ -32,7 +33,9 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    held to the words too (a history search for "none" is not what was
 //    asked); its closed sets pass. It keeps the grammar's v1 boundary: no
 //    follow-ups ("send him 10 more"), and no amount the grammar would ask
-//    about ("5k"), whatever number the model made of it.
+//    about ("5k"), whatever number the model made of it. No free text may
+//    be a picked person's id (`contact:<username>`), even typed: only the
+//    thread's re-issue of a pick makes one (spec §8).
 // 5. The call as the model sent it, intent and raw arguments, for runCall:
 //    the router turns amounts into MoneyAmounts, so routed arguments would
 //    not route again.
@@ -217,8 +220,14 @@ const valueTyped = (
     )
   }
   if (field.type === "string") {
+    // A picked person's id (`contact:<username>`), however the words hold
+    // it: only the thread's re-issue of a pick makes one (spec §8), and
+    // resolvePayee takes it as that person with no question. Read as
+    // resolvePayee reads it: trimmed, in any case.
     return (
-      typeof value === "string" && holdsWords(check.typed.text, normalizedText(value))
+      typeof value === "string" &&
+      !value.trim().toLowerCase().startsWith(CONTACT_PICK_PREFIX) &&
+      holdsWords(check.typed.text, normalizedText(value))
     )
   }
   // A flag or an object: nothing in the words can show the model did not make it up.

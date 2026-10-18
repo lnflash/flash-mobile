@@ -435,6 +435,26 @@ describe("readGrammar (ENG-690)", () => {
     )
   })
 
+  it('reads two amounts as one ask only with nothing but "and", "or" or "plus" between them', () => {
+    // CONNECTORS (words.ts), the set the spec's ENG-690 entry names: two
+    // amounts so joined are a question about the amount, never a refusal.
+    // Any other word between them refuses the ask. Neither reaches the model.
+    const joined = ["send bob $5 and $3", "send bob $5 or $3", "send bob $5 plus $3"]
+    joined.forEach((utterance) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([
+        utterance,
+        { kind: "clarifyAmount", reason: "mixed" },
+      ]),
+    )
+    const apart = ["send bob $5 minus $3", "send bob $5 and then $3"]
+    apart.forEach((utterance) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ]),
+    )
+  })
+
   it("answers a match as matchGrammar does", () => {
     expect(readGrammar("my balance", USD)).toEqual(matchGrammar("my balance", USD))
     expect(readGrammar("send bob 5k", JMD)).toEqual(matchGrammar("send bob 5k", JMD))
