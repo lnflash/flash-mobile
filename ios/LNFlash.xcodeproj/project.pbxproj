@@ -30,6 +30,8 @@
 		65403F50DCC45A6C0F8A7719 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0153E6F92FF0AF1E00DA9493 /* WidgetKit.framework */; };
 		69B54F686F5835A64060EE6D /* libPods-LNFlash-Alt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 177D9FE829C0CBCE225C8178 /* libPods-LNFlash-Alt.a */; };
 		6FFA8CCE9FDC46439521C643 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */; };
+		F4E3932F09F0520C88FAB18A /* AssistantModelBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */; };
+		D08484CD75DF3114E1FB8A4F /* AssistantModelBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7D27F331EC3E362947CD73 /* AssistantModelBridge.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		833D390F570BFF9674FCBD74 /* FlashWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD465FEB229510D51684EDE6 /* FlashWidget.swift */; };
 		855F657BD177625DE7B379D9 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B92CDD11F2D823E2EE004D /* SharedStore.swift */; };
@@ -171,6 +173,8 @@
 		C63A9181296313BE00B54FDB /* hermes.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = hermes.xcframework; path = "Pods/hermes-engine/destroot/Library/Frameworks/universal/hermes.xcframework"; sourceTree = "<group>"; };
 		C6FCE05724592E5E0076B3C0 /* LNFlash-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LNFlash-Bridging-Header.h"; sourceTree = "<group>"; };
 		D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetBridge.swift; path = LNFlash/WidgetBridge.swift; sourceTree = "<group>"; };
+		C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = AssistantModelBridge.m; path = LNFlash/AssistantModelBridge.m; sourceTree = "<group>"; };
+		CC7D27F331EC3E362947CD73 /* AssistantModelBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssistantModelBridge.swift; path = LNFlash/AssistantModelBridge.swift; sourceTree = "<group>"; };
 		DC2E9F1C6B51F42DF36183FA /* PriceService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PriceService.swift; sourceTree = "<group>"; };
 		DD465FEB229510D51684EDE6 /* FlashWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashWidget.swift; sourceTree = "<group>"; };
 		DD9A2B3A3DB948C0E9DA3E8A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
@@ -295,6 +299,8 @@
 				13B07FB71A68108700A75B9A /* main.m */,
 				5899AF96676F3AEF8C018031 /* WidgetBridge.m */,
 				D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */,
+				C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */,
+				CC7D27F331EC3E362947CD73 /* AssistantModelBridge.swift */,
 			);
 			name = LNFlash;
 			sourceTree = "<group>";
@@ -1130,6 +1136,8 @@
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				2D8F35872583AB46148D4EC8 /* WidgetBridge.m in Sources */,
 				6FFA8CCE9FDC46439521C643 /* WidgetBridge.swift in Sources */,
+				F4E3932F09F0520C88FAB18A /* AssistantModelBridge.m in Sources */,
+				D08484CD75DF3114E1FB8A4F /* AssistantModelBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1538,6 +1546,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-weak_framework",
+					FoundationModels,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash;
 				PRODUCT_NAME = Flash;
@@ -1692,6 +1702,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-weak_framework",
+					FoundationModels,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash;
 				PRODUCT_NAME = Flash;
