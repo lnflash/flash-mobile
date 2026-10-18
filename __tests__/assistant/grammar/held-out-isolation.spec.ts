@@ -7,10 +7,15 @@ import { appDir, resolveSpecifier, sourcesUnder, specifiers } from "../import-sc
 // it (docs/ai-assistant-tool-registry.md §7.2): nothing in the app, and no
 // spec but the launch gate, may import it. The scan is the module-boundary
 // spec's own.
+//
+// One named, reviewed exception (ENG-690, plan §7): the on-device model's
+// device eval, which scores a phone's run on the held-out set once per PR.
+// It is not a spec, so CI never runs it, and nothing is tuned on it.
 
 const testsDir = path.join(__dirname, "../..")
 const heldOut = path.join(__dirname, "corpus", "held-out")
 const gate = path.join(__dirname, "accuracy-gate.spec.ts")
+const deviceEval = path.join(__dirname, "..", "model", "device-eval.ts")
 
 /** Whether `specifier`, imported from `file`, is the held-out corpus. */
 const isHeldOut = (file: string, specifier: string): boolean => {
@@ -33,14 +38,27 @@ describe("the held-out corpus", () => {
     expect(importersOfHeldOut(sources)).toEqual([])
   })
 
-  it("is imported by no spec but the launch gate: not the tuning specs, not their helpers", () => {
+  it("is imported by no spec but the launch gate and the device eval: not the tuning specs, not their helpers", () => {
     const specs = sourcesUnder(testsDir)
-    // The scan reached the grammar's specs.
+    // The scan reached the grammar's specs and the device eval.
     expect(specs).toEqual(
-      expect.arrayContaining([gate, path.join(__dirname, "corpus", "tuning.ts")]),
+      expect.arrayContaining([
+        gate,
+        deviceEval,
+        path.join(__dirname, "corpus", "tuning.ts"),
+      ]),
     )
 
-    expect(importersOfHeldOut(specs)).toEqual([gate])
+    expect(importersOfHeldOut(specs).sort()).toEqual([gate, deviceEval].sort())
+  })
+
+  it("lets the device eval import it only as a script CI never runs", () => {
+    // jest.config.js runs files named .spec or .test only.
+    expect(path.basename(deviceEval)).not.toMatch(/\.(spec|test)\.[jt]sx?$/)
+    // The device eval's scoring, which the specs do run, is apart from it
+    // and imports no corpus.
+    const evalRun = path.join(__dirname, "..", "model", "eval-run.ts")
+    expect(importersOfHeldOut([evalRun])).toEqual([])
   })
 
   it("is caught however it is imported", () => {

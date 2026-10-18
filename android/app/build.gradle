@@ -175,8 +175,17 @@ dependencies {
 
     implementation("androidx.core:core-splashscreen:1.0.0")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    // The assistant's on-device model (ENG-690): Gemini Nano through AICore.
+    // Pinned to beta2: beta3 and beta4 need kotlin-stdlib 2.3, which this
+    // app's Kotlin 2.0 toolchain cannot compile against.
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta2")
 
     implementation 'com.facebook.fresco:animated-gif:3.4.0'
+
+    // JVM unit tests (src/test, ./gradlew :app:testDebugUnitTest). org.json
+    // stands in for the Android one, which the unit-test android.jar only stubs.
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20260814")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
@@ -189,6 +198,16 @@ configurations.all {
     resolutionStrategy {
         force "org.webkit:android-jsc:245459.0.0"
     }
+}
+
+// genai-prompt (above) is built with Kotlin 2.2. This app's Kotlin 2.0
+// compiler refuses newer metadata anywhere on its classpath, even in classes
+// no Kotlin file here reads, so this module skips that check. No Kotlin code
+// may use genai-prompt: the assistant's bridge that calls it is Java
+// (com/lnflash/assistant/AssistantModelBridgeModule.java), which javac
+// compiles from bytecode alone. Drop this once the app is on Kotlin 2.1+.
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions.freeCompilerArgs.add("-Xskip-metadata-version-check")
 }
 
 // Replace old support library with AndroidX

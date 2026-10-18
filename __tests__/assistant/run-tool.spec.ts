@@ -217,6 +217,42 @@ describe("runTool", () => {
       ])
     })
 
+    it("says an on-device model served the call only when its caller says so (ENG-690)", async () => {
+      const { deps, toolEvents } = setup()
+
+      await runTool({ intent: "getBalances" }, deps)
+      await runTool({ intent: "getBalances" }, { ...deps, servedByOnDeviceModel: false })
+      await runTool({ intent: "getBalances" }, { ...deps, servedByOnDeviceModel: true })
+      // A refused call the model emitted says so too.
+      await runTool(
+        { intent: "transferEverything" },
+        { ...deps, servedByOnDeviceModel: true },
+      )
+
+      expect(
+        toolEvents().map(({ onDeviceModelAvailable }) => onDeviceModelAvailable),
+      ).toEqual([false, false, true, true])
+    })
+
+    it("never hands the model's flag to a tool", async () => {
+      let seen: unknown
+      const spy = defineRead({
+        intent: "getBalances",
+        description: "Watches its context.",
+        input: emptyInput,
+        run: async (_args, ctx) => {
+          seen = ctx
+          return { kind: "answer", payload: {} }
+        },
+        project: (payload) => payload,
+      })
+      const { deps } = setup(createRegistry([spy]))
+
+      await runTool({ intent: "getBalances" }, { ...deps, servedByOnDeviceModel: true })
+
+      expect(Object.keys(seen as object)).not.toContain("servedByOnDeviceModel")
+    })
+
     it("reports clarifications and failures as such", async () => {
       const { deps, graphql, toolEvents } = setup()
       graphql.contacts.mockResolvedValue([])

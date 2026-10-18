@@ -1,8 +1,9 @@
 import type { BtcRail } from "@app/payments/btc-rail"
 import { cardOf, validateCard } from "../cards/types"
 import type { ToolCall } from "../engine/intent-router"
+import { ModelTierResult, tryOnDeviceModel } from "../engine/model-tier"
 import { report } from "../engine/telemetry"
-import { matchGrammar } from "../grammar"
+import { readGrammar } from "../grammar"
 import type { GraphqlRail } from "../rails/graphql-rail"
 import type {
   BalancesProjection,
@@ -14,16 +15,28 @@ import type { AssistantRuntime } from "./assistant-runtime"
 import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 
 // One turn of the Ask Flash thread (ENG-689, spec §7, §7.2): the grammar
-// reads the utterance; a miss or an amount it cannot read is a templated
-// reply, and runTool is never called for it. Offline, nothing that needs
-// the network runs: no prepare (a send, a request) and no price, which is
-// never estimated (spec §4). Reads run against the cache then, and their
-// answers carry the stale label. Every tool result is noted for the
-// thread's metrics, and every prepared action is held as text-initiated,
-// which the auth policy confirms with a tap (spec §5).
+// reads the utterance; an amount it cannot read is a templated reply, and
+// runTool is never called for it. Offline, nothing that needs the network
+// runs: no prepare (a send, a request) and no price, which is never
+// estimated (spec §4). Reads run against the cache then, and their answers
+// carry the stale label. Every tool result is noted for the thread's
+// metrics, and every prepared action is held as text-initiated, which the
+// auth policy confirms with a tap (spec §5).
 //
-// Dispatch order (spec §7): the grammar, then an on-device model (Phase 3)
-// and the server (Phase 5), neither of which exists yet.
+// Dispatch order (spec §7): the grammar, then, only for what it missed, the
+// on-device model (ENG-690, engine/model-tier.ts) where the flags allow it
+// (TurnEnv.onDeviceModel), then the server (Phase 5), which does not exist
+// yet. A grammar hit, an amount question or a refusal (an ask v1 does not
+// serve, which readGrammar in grammar/index.ts names) never waits on the
+// model. The model's call goes through runTool as the grammar's does, held
+// as text, so the person taps to confirm whatever it prepared; nothing it
+// said reaches execute(). No answer from it, or an answer the model tier
+// refuses, is the templated miss reply, as before. Each utterance reports
+// one `assistant_event`: runTool's for a call, else a rejected one whose
+// onDeviceModelAvailable says whether the model answered with a call that
+// was refused (its rejection rate) or did not answer with one at all. A
+// pick, a Try again or a Refresh of a card the model prepared re-issues
+// the model's call, and its event says so too (CallOrigin).
 
 /** What a turn needs from the screen: the connection, and the account's display currency. */
 export type TurnEnv = {
@@ -37,7 +50,26 @@ export type TurnEnv = {
   /** The instance's GraphQL endpoint and Lightning address host, for sendPayment. */
   graphqlUri: string
   lnAddressHostname: string
+  /**
+   * Whether the on-device model may read what the grammar misses: both
+   * assistantEnabled and assistantOnDeviceModel are on (ENG-690, architect
+   * decision 2). Off, or absent, every miss is the miss reply, as before.
+   */
+  onDeviceModel?: boolean
 }
+
+/** How a call came to run: the on-device model emitted it (ENG-690). */
+export type CallOrigin = {
+  /** Its event says a model served it (RunToolDeps.servedByOnDeviceModel). */
+  servedByOnDeviceModel?: boolean
+}
+
+/**
+ * The origin of a card's call, for issuing it again: a pick, a Try again or
+ * a Refresh of a card the model prepared still runs the model's call.
+ */
+export const originOf = (entry: CallOrigin): CallOrigin =>
+  entry.servedByOnDeviceModel ? { servedByOnDeviceModel: true } : {}
 
 /**
  * Whether a call needs the network: anything that prepares (an action tool)
@@ -63,13 +95,22 @@ const listedFor = (
 /**
  * What a tool's result puts in the thread. `listed` is what the rails
  * handed a getTransactions call, by listedKey: the answer keeps the rows it
- * lists, for the app's transaction row.
+ * lists, for the app's transaction row. A card that holds its call holds
+ * the call's origin too (CallOrigin), for the calls issued from it.
  */
 export const entriesFor = (
   call: ToolCall,
   result: ToolResult<unknown>,
-  { stale, listed }: { stale: boolean; listed?: ReadonlyMap<string, ListedTransaction> },
+  {
+    stale,
+    listed,
+    servedByOnDeviceModel,
+  }: {
+    stale: boolean
+    listed?: ReadonlyMap<string, ListedTransaction>
+  } & CallOrigin,
 ): NewEntry[] => {
+  const origin = originOf({ servedByOnDeviceModel })
   switch (result.kind) {
     case "answer":
       switch (call.intent) {
@@ -97,9 +138,9 @@ export const entriesFor = (
             : [{ kind: "reply", replyKey: "Assistant.toolFailed" }]
       }
     case "prepared":
-      return [{ kind: "card", card: cardOf(result.preparedAction), call }]
+      return [{ kind: "card", card: cardOf(result.preparedAction), call, ...origin }]
     case "clarification":
-      return [{ kind: "card", card: result.card, call }]
+      return [{ kind: "card", card: result.card, call, ...origin }]
     case "error":
       // A refused prepare's card says the refusal's own reply: it is the
       // bubble, as an alert, never the same sentence twice.
@@ -146,12 +187,13 @@ const listingRails = (graphql: GraphqlRail, btcRail: BtcRail) => {
  * action context then, so nothing can be prepared), the network otherwise.
  * What it prepared is held as text-initiated; the result is noted. A
  * history call's rails note the rows they hand the tool, so the answer can
- * draw them with the app's own transaction row.
+ * draw them with the app's own transaction row. A call the on-device model
+ * emitted says so in its event (CallOrigin).
  */
 export const runCall = async (
   runtime: AssistantRuntime,
   call: ToolCall,
-  env: TurnEnv,
+  env: TurnEnv & CallOrigin,
 ): Promise<NewEntry[]> => {
   const offline = env.isOffline
   const graphql = offline ? runtime.cachedGraphql : runtime.graphql
@@ -165,6 +207,7 @@ export const runCall = async (
     lnAddressHostname: env.lnAddressHostname,
     now: runtime.now,
     telemetry: runtime.telemetry,
+    ...originOf(env),
     ...(offline
       ? {}
       : {
@@ -187,7 +230,11 @@ export const runCall = async (
     runtime.executor.addPrepared(result.preparedAction, "text")
   }
   runtime.executor.noteToolResult(runtime.threadId, result)
-  return entriesFor(call, result, { stale: offline, listed: listing?.listed })
+  return entriesFor(call, result, {
+    stale: offline,
+    listed: listing?.listed,
+    ...originOf(env),
+  })
 }
 
 /** The thread's answer to what the user typed. */
@@ -196,20 +243,36 @@ export const answerUtterance = async (
   utterance: string,
   env: TurnEnv,
 ): Promise<NewEntry[]> => {
-  const match = matchGrammar(utterance, {
+  const account = {
     displayCurrency: env.displayCurrency,
     displaySymbol: env.displaySymbol,
-  })
-  if (match === undefined) {
+  }
+  const match = readGrammar(utterance, account)
+  if (match === undefined || match.kind === "refused") {
+    // Only a miss goes to the model: what the grammar refused (readGrammar
+    // names it: an invoice, a question, a send it cannot read) is the v1
+    // boundary.
+    const model: ModelTierResult =
+      env.onDeviceModel && match === undefined
+        ? await tryOnDeviceModel(runtime, utterance, account)
+        : { kind: "none", reason: "unavailable" }
+    if (model.kind === "call") {
+      if (env.isOffline && needsNetwork(model.call)) {
+        return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      }
+      return runCall(runtime, model.call, { ...env, servedByOnDeviceModel: true })
+    }
     // A miss is counted as the router counts a call it cannot read, so
-    // the grammar's coverage shows in the same event.
+    // the grammar's coverage shows in the same event. A call the model tier
+    // refused carries the intent the model named, and the model's flag.
+    const intent = model.kind === "rejected" ? model.intent : "unknown"
     report(() =>
       runtime.telemetry.tool({
-        intent: "unknown",
-        tier: "none",
+        intent,
+        tier: intent === "unknown" ? "none" : tierOf(intent),
         outcome: "rejected",
         latencyMs: 0,
-        onDeviceModelAvailable: false,
+        onDeviceModelAvailable: model.kind === "rejected",
       }),
     )
     return [{ kind: "reply", replyKey: "Assistant.unknownIntent" }]

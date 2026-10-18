@@ -164,9 +164,11 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
+      # assembleDebug alone never compiles android/app/src/test, so the app's
+      # JVM unit tests (AssistantModelBridgeModuleTest, ENG-690) run here too.
       - name: Build Android (Debug)
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug :app:testDebugUnitTest --no-daemon --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

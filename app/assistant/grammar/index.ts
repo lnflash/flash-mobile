@@ -17,6 +17,11 @@ import { isQuestionAboutHow, namesPaymentRequest, stripFrame } from "./words"
 // last a balance. Adding a sixth intent is one new file of rules and one line
 // here, as the registry grows (spec §7.2).
 
+/** A match, a refusal (an ask v1 does not serve), or undefined for a miss. */
+export type GrammarVerdict = GrammarMatch | { kind: "refused" } | undefined
+
+const REFUSED: GrammarVerdict = { kind: "refused" }
+
 export const GRAMMAR_RULES: readonly GrammarRule[] = [
   ...PREPARE_SEND_RULES,
   ...PREPARE_RECEIVE_RULES,
@@ -25,22 +30,44 @@ export const GRAMMAR_RULES: readonly GrammarRule[] = [
   ...GET_BALANCES_RULES,
 ]
 
-/** What the grammar makes of one utterance, read on its own. */
+/**
+ * What the grammar makes of one utterance, its refusals kept apart from its
+ * misses (ENG-690): `refused` is an ask v1 does not serve, and only these:
+ * an invoice, an address or a link anywhere in it (namesPaymentRequest); a
+ * question that opens with one of isQuestionAboutHow's fifteen openers
+ * ("how do", "why", "where", "when", "is", "do" and the rest, words.ts);
+ * or a rule's refusal, which today is the send rule's: a send it cannot
+ * read as one contact's words and at most one amount (prepare-send.ts: a
+ * follow-up or a time, a "from" it cannot read, two payments, a pronoun or
+ * no payee, a word for what a payment is for). Undefined is words no rule
+ * reads. Only a miss may go to a later tier (the on-device model): a
+ * refusal is the v1 boundary (spec §7.2), which no tier reads past.
+ */
+export const readGrammar = (
+  utterance: string,
+  ctx: GrammarContext,
+  rules: readonly GrammarRule[] = GRAMMAR_RULES,
+): GrammarVerdict => {
+  const tokens = stripFrame(normalize(utterance).tokens)
+  if (tokens.length === 0) return undefined
+  // An invoice or an address is a payee v1 does not take, and a question
+  // ("how do I", "where can I") is about the app: neither is any rule's.
+  if (namesPaymentRequest(tokens) || isQuestionAboutHow(tokens)) return REFUSED
+  for (const rule of rules) {
+    const result = rule.match({ tokens }, ctx)
+    if (result !== undefined) return result.kind === "refuse" ? REFUSED : result
+  }
+  return undefined
+}
+
+/** What the grammar makes of one utterance, read on its own: a refusal is no match. */
 export const matchGrammar = (
   utterance: string,
   ctx: GrammarContext,
   rules: readonly GrammarRule[] = GRAMMAR_RULES,
 ): GrammarMatch | undefined => {
-  const tokens = stripFrame(normalize(utterance).tokens)
-  if (tokens.length === 0) return undefined
-  // An invoice or an address is a payee v1 does not take, and a "how do I"
-  // is a question about the app: neither is any rule's.
-  if (namesPaymentRequest(tokens) || isQuestionAboutHow(tokens)) return undefined
-  for (const rule of rules) {
-    const result = rule.match({ tokens }, ctx)
-    if (result !== undefined) return result.kind === "refuse" ? undefined : result
-  }
-  return undefined
+  const verdict = readGrammar(utterance, ctx, rules)
+  return verdict?.kind === "refused" ? undefined : verdict
 }
 
 export type { GrammarContext, GrammarMatch } from "./types"

@@ -1,5 +1,7 @@
 // How the grammar did on a corpus, as the launch gate counts it
-// (docs/ai-assistant-tool-registry.md §7.2). Not a spec itself.
+// (docs/ai-assistant-tool-registry.md §7.2), and the same count for any
+// other reader's outcomes (`tally`: the on-device model's device run,
+// ENG-690). Not a spec itself.
 import { matchGrammar } from "@app/assistant/grammar"
 import type { GrammarMatch } from "@app/assistant/grammar/types"
 import { CorpusEntry, DISPLAY_SYMBOL, Expected } from "./corpus/entries"
@@ -48,14 +50,25 @@ export type Score = {
   failures: { entry: CorpusEntry; got: Expected }[]
 }
 
-export const score = (entries: readonly CorpusEntry[]): Score => {
+/**
+ * Count `outcomes` against what `entries` meant, one outcome per entry in
+ * the same order: the launch gate's counting for any reader of a corpus
+ * (the grammar here, the on-device model in a device run, ENG-690).
+ */
+export const tally = (
+  entries: readonly CorpusEntry[],
+  outcomes: readonly Expected[],
+): Score => {
+  if (outcomes.length !== entries.length) {
+    throw new Error(`${outcomes.length} outcomes for ${entries.length} entries`)
+  }
   let correct = 0
   let wrongAction = 0
   let missed = 0
   let askedAmount = 0
   const failures: Score["failures"] = []
-  entries.forEach((entry) => {
-    const got = resolve(entry)
+  entries.forEach((entry, index) => {
+    const got = outcomes[index]
     if (sameOutcome(got, entry.expected)) {
       correct += 1
       return
@@ -77,6 +90,10 @@ export const score = (entries: readonly CorpusEntry[]): Score => {
     failures,
   }
 }
+
+/** How the grammar did on `entries`. */
+export const score = (entries: readonly CorpusEntry[]): Score =>
+  tally(entries, entries.map(resolve))
 
 /** A score as the PR reports it. */
 export const describeScore = (label: string, s: Score): string =>

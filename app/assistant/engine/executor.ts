@@ -381,6 +381,9 @@ export const createExecutor = (deps: ExecutorDeps): Executor => {
         tier: "action",
         outcome,
         latencyMs: now() - startedAt,
+        // Confirms are not tagged with the model that prepared them: that
+        // would carry a flag through StoredAction (ENG-690, decision 8,
+        // deferred), so a model-prepared action's Confirm reports false.
         onDeviceModelAvailable: false,
       }),
     )

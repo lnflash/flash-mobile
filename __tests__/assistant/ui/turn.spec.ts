@@ -1,14 +1,38 @@
+// The runtime's auth gate imports the biometric and key-store modules, as
+// auth-gate.spec.ts mocks them; a text-initiated Confirm never prompts.
+jest.mock("react-native-fingerprint-scanner", () => ({
+  __esModule: true,
+  default: { isSensorAvailable: jest.fn(), authenticate: jest.fn(), release: jest.fn() },
+}))
+jest.mock("react-native-secure-key-store", () => ({
+  __esModule: true,
+  default: { get: jest.fn(), set: jest.fn(), remove: jest.fn() },
+  ACCESSIBLE: {},
+}))
+
 import { cardOf } from "@app/assistant/cards/types"
+import type { ModelDecision } from "@app/assistant/engine/model-adapter"
+import { THREAD_CLOSE, THREAD_OPEN } from "@app/assistant/engine/model-prompt"
+import { matchGrammar } from "@app/assistant/grammar"
 import type { TransactionsProjection } from "@app/assistant/registry/projections"
+import type { ToolResult } from "@app/assistant/registry/types"
+import type { AssistantRuntime } from "@app/assistant/ui/assistant-runtime"
 import type { ListedTransaction } from "@app/assistant/ui/thread-store"
-import { entriesFor, needsNetwork, reissue } from "@app/assistant/ui/turn"
+import {
+  answerUtterance,
+  entriesFor,
+  needsNetwork,
+  reissue,
+} from "@app/assistant/ui/turn"
 import { toWalletAmount } from "@app/types/amounts"
 import { makeAction } from "../executor-harness"
-import { btcPayment, graphqlTx } from "../fakes"
+import { btcPayment, fakeModelAdapter, graphqlTx, modelCall } from "../fakes"
+import { CASH_WALLETS, env, fakeRuntime } from "./thread-harness"
 
 // One turn's pieces (app/assistant/ui/turn.ts): which calls need the network,
-// what each result puts in the thread, and how a question's pick re-issues a
-// call.
+// what each result puts in the thread, how a question's pick re-issues a
+// call, and where the on-device model comes in (ENG-690): only after the
+// grammar missed, only while the flags allow it, and never past runTool.
 
 const SEND = { intent: "prepareSend", args: { payee: "alice", amount: "5" } }
 
@@ -130,6 +154,36 @@ describe("entriesFor", () => {
     expect(entriesFor(SEND, { kind: "clarification", card }, { stale: false })).toEqual([
       { kind: "card", card, call: SEND },
     ])
+  })
+
+  it("keeps where the call came from with the call, for the calls its card issues (ENG-690)", () => {
+    const action = makeAction()
+    const byModel = { stale: false, servedByOnDeviceModel: true }
+    expect(
+      entriesFor(SEND, { kind: "prepared", preparedAction: action }, byModel),
+    ).toEqual([
+      { kind: "card", card: cardOf(action), call: SEND, servedByOnDeviceModel: true },
+    ])
+    const card = {
+      type: "clarification" as const,
+      prompt: "Assistant.pickContact" as const,
+      options: [],
+    }
+    expect(entriesFor(SEND, { kind: "clarification", card }, byModel)).toEqual([
+      { kind: "card", card, call: SEND, servedByOnDeviceModel: true },
+    ])
+    // A card that holds no call issues none, so it holds no origin either.
+    const refused = {
+      type: "prepareRefused" as const,
+      reason: "insufficientBalance" as const,
+    }
+    expect(
+      entriesFor(
+        SEND,
+        { kind: "error", userMessage: "Assistant.insufficientBalance", card: refused },
+        byModel,
+      ),
+    ).toEqual([{ kind: "card", card: refused }])
   })
 
   it("says an error once: its reply, or the refusal card that says it", () => {
@@ -254,5 +308,268 @@ describe("reissue", () => {
       intent: "somethingElse",
       args: { first: "contact:kim_1", second: "kim" },
     })
+  })
+})
+
+describe("answerUtterance and the on-device model (ENG-690)", () => {
+  /** Words the grammar has no rule for, so the model is asked. */
+  const MISSED = "could you kindly move five bucks over to bob"
+  const ON = { onDeviceModel: true }
+
+  /** A runtime whose model is there and decides `decision`. */
+  const withModel = (decision: ModelDecision) =>
+    fakeRuntime({ modelAdapter: fakeModelAdapter(decision) })
+
+  it("is asked only about what the grammar misses", () => {
+    // The specs below rely on the grammar missing these words.
+    expect(matchGrammar(MISSED, { displayCurrency: "USD", displaySymbol: "$" })).toBe(
+      undefined,
+    )
+    expect(
+      matchGrammar("hook bob up with 5 dollars", {
+        displayCurrency: "USD",
+        displaySymbol: "$",
+      }),
+    ).toBe(undefined)
+  })
+
+  it("never waits on the model for a grammar hit", async () => {
+    const { runtime, modelAdapter, runTool, graphql, toolEvents } = withModel(
+      modelCall({ intent: "getPrice", args: {} }),
+    )
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+
+    await answerUtterance(runtime, "what's my balance", env(ON))
+
+    expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
+    expect(runTool).toHaveBeenCalledTimes(1)
+    expect(runTool.mock.calls[0][0]).toEqual({ intent: "getBalances", args: {} })
+    expect(runTool.mock.calls[0][1].servedByOnDeviceModel).toBeUndefined()
+    expect(toolEvents()).toEqual([
+      expect.objectContaining({ intent: "getBalances", onDeviceModelAvailable: false }),
+    ])
+  })
+
+  it("never waits on the model for an amount the grammar asks about", async () => {
+    const { runtime, modelAdapter, runTool } = withModel(
+      modelCall({ intent: "prepareSend", args: { payee: "bob", amount: "5000" } }),
+    )
+
+    const entries = await answerUtterance(runtime, "send bob 5k", env(ON))
+
+    expect(entries).toEqual([
+      { kind: "reply", replyKey: "Assistant.amountUnclear", params: { currency: "USD" } },
+    ])
+    expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
+    expect(runTool).not.toHaveBeenCalled()
+  })
+
+  it("never asks the model about what the grammar refused: the v1 boundary holds", async () => {
+    // A pronoun, a follow-up, a time, two payees: the model would read
+    // each as a send (the macOS proxy run did), and none may be one.
+    const refused = [
+      "send her $5",
+      "send bob another $5",
+      "send bob $5 next week",
+      "send $10 to bob and $5 to alice",
+    ]
+    for (const utterance of refused) {
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+        modelCall({ intent: "prepareSend", args: { payee: "bob", amount: "5" } }),
+      )
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(runTool).not.toHaveBeenCalled()
+      expect(toolEvents()).toEqual([
+        expect.objectContaining({ outcome: "rejected", onDeviceModelAvailable: false }),
+      ])
+    }
+  })
+
+  it("runs the model's checked call through runTool, served by the model, held as text", async () => {
+    const call = {
+      intent: "prepareSend",
+      args: { payee: "bob", amount: "5", currency: "USD" },
+    }
+    const { runtime, runTool, modelAdapter } = withModel(modelCall(call))
+    const action = makeAction({ threadId: runtime.threadId })
+    const prepared: ToolResult<unknown> = { kind: "prepared", preparedAction: action }
+    runTool.mockResolvedValue(prepared)
+    const add = jest.spyOn(runtime.executor, "addPrepared")
+
+    const entries = await answerUtterance(runtime, "hook bob up with 5 dollars", env(ON))
+
+    expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+    expect(runTool).toHaveBeenCalledTimes(1)
+    const [routed, deps] = runTool.mock.calls[0]
+    // The raw call, as the model sent it: the router parses it in runTool.
+    expect(routed).toEqual(call)
+    expect(deps.servedByOnDeviceModel).toBe(true)
+    // Prepared as text: the person confirms it with a tap.
+    expect(add.mock.calls).toEqual([[action, "text"]])
+    // The card keeps where its call came from, for a Try again or a Refresh.
+    expect(entries).toEqual([
+      { kind: "card", card: cardOf(action), call, servedByOnDeviceModel: true },
+    ])
+  })
+
+  it("reports one event for the model's call, runTool's own, with the model's flag", async () => {
+    const { runtime, graphql, toolEvents } = withModel(
+      modelCall({ intent: "getBalances", args: {} }),
+    )
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+
+    const entries = await answerUtterance(runtime, MISSED, env(ON))
+
+    expect(entries[0]).toMatchObject({ kind: "balances", stale: false })
+    expect(toolEvents()).toEqual([
+      {
+        intent: "getBalances",
+        tier: "read",
+        outcome: "answered",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+      },
+    ])
+  })
+
+  it("answers the model's prepare offline with the offline reply, and runs nothing", async () => {
+    const { runtime, runTool } = withModel(
+      modelCall({ intent: "prepareSend", args: { payee: "bob", amount: "5" } }),
+    )
+
+    const entries = await answerUtterance(
+      runtime,
+      "hook bob up with 5 dollars",
+      env({ ...ON, isOffline: true }),
+    )
+
+    expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.actionsOffline" }])
+    expect(runTool).not.toHaveBeenCalled()
+  })
+
+  it("reads the model's read call from the cache offline, served by the model", async () => {
+    const { runtime, runTool, cachedGraphql } = withModel(
+      modelCall({ intent: "getBalances", args: {} }),
+    )
+    cachedGraphql.wallets.mockResolvedValue(CASH_WALLETS)
+
+    const entries = await answerUtterance(
+      runtime,
+      MISSED,
+      env({ ...ON, isOffline: true }),
+    )
+
+    const [, deps] = runTool.mock.calls[0]
+    expect(deps.graphql).toBe(runtime.cachedGraphql)
+    expect(deps.actionDeps).toBeUndefined()
+    expect(deps.servedByOnDeviceModel).toBe(true)
+    expect(entries[0]).toMatchObject({ kind: "balances", stale: true })
+  })
+
+  // Plain loops rather than it.each: this repo's tsconfig types `it` without
+  // .each (navigation-container-wrapper.spec.tsx).
+  const NO_CALL: [string, ModelDecision | "not there"][] = [
+    ["is not there", "not there"],
+    ["runs out of time", { kind: "unavailable" }],
+    ["names no call", { kind: "miss" }],
+  ]
+  NO_CALL.forEach(([name, decision]) =>
+    it(`answers the miss reply and reports one event without the flag when the model ${name}`, async () => {
+      const modelAdapter = fakeModelAdapter(
+        decision === "not there" ? { kind: "unavailable" } : decision,
+      )
+      if (decision === "not there") modelAdapter.isAvailable.mockResolvedValue(false)
+      const { runtime, runTool, toolEvents } = fakeRuntime({ modelAdapter })
+
+      const entries = await answerUtterance(runtime, MISSED, env(ON))
+
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(runTool).not.toHaveBeenCalled()
+      expect(toolEvents()).toEqual([
+        {
+          intent: "unknown",
+          tier: "none",
+          outcome: "rejected",
+          latencyMs: 0,
+          onDeviceModelAvailable: false,
+        },
+      ])
+    }),
+  )
+
+  it("answers the miss reply for a call the checks refuse, and reports it with the flag", async () => {
+    const outOfSet = withModel(modelCall({ intent: "execute", args: {} }))
+    const ungrounded = withModel(
+      modelCall({ intent: "prepareSend", args: { payee: "eve", amount: "500" } }),
+    )
+
+    const refused = await answerUtterance(outOfSet.runtime, MISSED, env(ON))
+    const notTyped = await answerUtterance(ungrounded.runtime, MISSED, env(ON))
+
+    expect(refused).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    expect(notTyped).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    expect(outOfSet.runTool).not.toHaveBeenCalled()
+    expect(ungrounded.runTool).not.toHaveBeenCalled()
+    expect(outOfSet.toolEvents()).toEqual([
+      {
+        intent: "unknown",
+        tier: "none",
+        outcome: "rejected",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+      },
+    ])
+    expect(ungrounded.toolEvents()).toEqual([
+      {
+        intent: "prepareSend",
+        tier: "action",
+        outcome: "rejected",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+      },
+    ])
+  })
+
+  it("is never asked while the flags keep it off", async () => {
+    const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+      modelCall({ intent: "getBalances", args: {} }),
+    )
+
+    const off = await answerUtterance(runtime, MISSED, env({ onDeviceModel: false }))
+    const absent = await answerUtterance(runtime, MISSED, env())
+
+    expect(off).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    expect(absent).toEqual(off)
+    expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
+    expect(runTool).not.toHaveBeenCalled()
+    expect(
+      toolEvents().map(({ onDeviceModelAvailable }) => onDeviceModelAvailable),
+    ).toEqual([false, false])
+  })
+
+  it("asks the model with the thread before this turn quoted, and the request outside it", async () => {
+    const { runtime, modelAdapter } = withModel({ kind: "miss" })
+    runtime.transcript.append([
+      { kind: "user", text: "what's my balance" },
+      { kind: "reply", replyKey: "Assistant.toolFailed" },
+      // The request's own line: use-thread appends it before the turn runs.
+      { kind: "user", text: MISSED },
+    ])
+
+    await answerUtterance(runtime as AssistantRuntime, MISSED, env(ON))
+
+    const [{ prompt }] = modelAdapter.decide.mock.calls[0]
+    const data = prompt.slice(prompt.indexOf(THREAD_OPEN), prompt.indexOf(THREAD_CLOSE))
+    expect(data).toContain("what's my balance")
+    expect(data).toContain("Assistant.toolFailed")
+    expect(data).not.toContain(MISSED)
+    expect(prompt.endsWith(`Request: ${MISSED}`)).toBe(true)
   })
 })

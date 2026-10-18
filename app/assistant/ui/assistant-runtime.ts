@@ -6,6 +6,7 @@ import { createGraphqlMutationFns, GraphqlMutationFns } from "@app/payments/send
 import { AttemptJournal, createAttemptJournal } from "../engine/attempt-journal"
 import { AuthGate, createDeviceAuthGate } from "../engine/auth-gate"
 import { createExecutor, Executor } from "../engine/executor"
+import { createNativeModelAdapter, ModelAdapter } from "../engine/model-adapter"
 import { createTransactionListReconciler } from "../engine/reconcile"
 import { runTool } from "../engine/run-tool"
 import { analyticsTelemetry, AssistantTelemetry } from "../engine/telemetry"
@@ -43,6 +44,12 @@ export type AssistantRuntime = {
   transcript: ThreadStore
   /** runTool: the engine's, unless a spec watches it. */
   runTool: typeof runTool
+  /**
+   * The on-device model (ENG-690), asked only after the grammar misses and
+   * only while the flags allow (TurnEnv.onDeviceModel): the native module,
+   * unless a spec hands in a fake.
+   */
+  modelAdapter: ModelAdapter
   /** Epoch milliseconds. */
   now: () => number
 }
@@ -64,6 +71,7 @@ export type AssistantRuntimeOptions = {
   journal?: AttemptJournal
   auth?: AuthGate
   runTool?: typeof runTool
+  modelAdapter?: ModelAdapter
   now?: () => number
 }
 
@@ -100,6 +108,7 @@ export const createAssistantRuntime = (
     executor,
     transcript: createThreadStore(),
     runTool: options.runTool ?? runTool,
+    modelAdapter: options.modelAdapter ?? createNativeModelAdapter(),
     now,
   }
 }

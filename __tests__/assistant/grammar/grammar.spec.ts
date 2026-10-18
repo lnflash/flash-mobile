@@ -1,6 +1,6 @@
 import * as amountPhrase from "@app/assistant/engine/amount-phrase"
 import { routeIntent } from "@app/assistant/engine/intent-router"
-import { GRAMMAR_RULES, matchGrammar } from "@app/assistant/grammar"
+import { GRAMMAR_RULES, matchGrammar, readGrammar } from "@app/assistant/grammar"
 import { normalize, textOf, WORD_FOLDS } from "@app/assistant/grammar/normalize"
 import type { GrammarRule } from "@app/assistant/grammar/types"
 import { assistantRegistry } from "@app/assistant/registry"
@@ -542,5 +542,116 @@ describe("matchGrammar", () => {
 
     const refused = calls.filter((call) => !routeIntent(call, assistantRegistry).ok)
     expect(refused).toEqual([])
+  })
+})
+
+describe("readGrammar (ENG-690)", () => {
+  it("keeps what v1 refuses apart from what no rule reads, so no later tier reads past a refusal", () => {
+    const refused = [
+      // A rule's refusal: a pronoun, a follow-up, a time, two payees, what
+      // a payment is for.
+      "send her $5",
+      "send bob another $5",
+      "send bob $5 next week",
+      "send $10 to bob and $5 to alice",
+      "sen 800 fi di book",
+      // Before any rule: an invoice or an address, and a question about the app.
+      "send $5 to alice@flashapp.me",
+      "how do I send money",
+    ]
+    refused.forEach((utterance) => {
+      expect(readGrammar(utterance, USD)).toEqual({ kind: "refused" })
+      // matchGrammar answers both the same way.
+      expect(matchGrammar(utterance, USD)).toBeUndefined()
+    })
+    // Words no rule reads are a miss, not a refusal.
+    expect(readGrammar("hook bob up with 5 dollars", USD)).toBeUndefined()
+    expect(readGrammar("tell me a joke", USD)).toBeUndefined()
+    expect(readGrammar("   ", USD)).toBeUndefined()
+  })
+
+  it("refuses a question by its opener: these fifteen, and no other", () => {
+    // isQuestionAboutHow (words.ts), once the frame is stripped. The spec's
+    // ENG-690 entry names this set, and the owner decides whether questions
+    // stay inside the boundary: a change here is a change there.
+    const questions: [string, typeof USD][] = [
+      ["how do I send money", USD],
+      ["how can I get paid", USD],
+      ["how does lightning work", USD],
+      ["how to receive bitcoin", USD],
+      ["how should I save", USD],
+      ["how mi fi sen money", JMD],
+      ["why is bitcoin down", USD],
+      ["where can I spend bitcoin", USD],
+      ["when did kemar last pay me", USD],
+      ["is bitcoin going up", USD],
+      ["are fees high today", USD],
+      ["should I buy bitcoin", USD],
+      ["will bitcoin go up", USD],
+      ["does flash charge fees", USD],
+      ["do I have enough to send bob 20", USD],
+    ]
+    expect(questions).toHaveLength(15)
+    questions.forEach(([utterance, account]) =>
+      expect([utterance, readGrammar(utterance, account)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ]),
+    )
+    // A question with any other opener is a plain miss: the model may read it.
+    expect(readGrammar("what is lightning", USD)).toBeUndefined()
+  })
+
+  it("refuses a send it cannot read as one contact and at most one amount", () => {
+    // The send rule's refusals beyond the pronoun, follow-up, time, two
+    // payments and purpose above: no payee, a wallet it does not know after
+    // "from", payee words on both sides of the amount or before its "to",
+    // and words no one name holds (more than four of them).
+    const sends = [
+      "send 5 dollars",
+      "send bob $5 from my savings",
+      "send bob $5 alice",
+      "send bob 5 to alice",
+      "send 5 to bob jones smith brown junior",
+    ]
+    sends.forEach((utterance) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ]),
+    )
+  })
+
+  it('reads two amounts as one ask only with nothing but "and", "or" or "plus" between them', () => {
+    // CONNECTORS (words.ts), the set the spec's ENG-690 entry names: two
+    // amounts so joined are a question about the amount, never a refusal.
+    // Any other word between them refuses the ask. Neither reaches the model.
+    const joined = ["send bob $5 and $3", "send bob $5 or $3", "send bob $5 plus $3"]
+    joined.forEach((utterance) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([
+        utterance,
+        { kind: "clarifyAmount", reason: "mixed" },
+      ]),
+    )
+    const apart = ["send bob $5 minus $3", "send bob $5 and then $3"]
+    apart.forEach((utterance) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ]),
+    )
+  })
+
+  it("answers a match as matchGrammar does", () => {
+    expect(readGrammar("my balance", USD)).toEqual(matchGrammar("my balance", USD))
+    expect(readGrammar("send bob 5k", JMD)).toEqual(matchGrammar("send bob 5k", JMD))
+    const refuses: GrammarRule = {
+      name: "test.refuses",
+      intent: "prepareSend",
+      match: () => ({ kind: "refuse" }),
+    }
+    expect(readGrammar("my balance", USD, [refuses, ...GRAMMAR_RULES])).toEqual({
+      kind: "refused",
+    })
   })
 })

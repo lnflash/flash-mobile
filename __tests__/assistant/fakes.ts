@@ -3,6 +3,7 @@
 import { createHash } from "crypto"
 import { encode, sign } from "bolt11"
 import type { ApolloClient } from "@apollo/client"
+import type { ModelAdapter, ModelDecision } from "@app/assistant/engine/model-adapter"
 import type {
   AssistantTelemetry,
   AssistantToolEvent,
@@ -505,3 +506,29 @@ export const USD_PRICE = {
   btcSatPrice: { ...JMD_PRICE.btcSatPrice, base: 63_000, offset: 6 },
   usdCentPrice: { ...JMD_PRICE.usdCentPrice, base: 1_000_000, offset: 6 },
 }
+
+// ---------------------------------------------------------------------------
+// The on-device model (ENG-690)
+// ---------------------------------------------------------------------------
+
+export type FakeModelAdapter = ModelAdapter & {
+  isAvailable: jest.Mock
+  decide: jest.Mock
+}
+
+/** An on-device model that is never there: what every thread spec runs on by default. */
+export const unavailableModelAdapter = (): FakeModelAdapter => ({
+  isAvailable: jest.fn(async () => false),
+  decide: jest.fn(async (): Promise<ModelDecision> => ({ kind: "unavailable" })),
+})
+
+/** An on-device model that is there and decides `decision` for every prompt, unless a case scripts it. */
+export const fakeModelAdapter = (
+  decision: ModelDecision = { kind: "miss" },
+): FakeModelAdapter => ({
+  isAvailable: jest.fn(async () => true),
+  decide: jest.fn(async (): Promise<ModelDecision> => decision),
+})
+
+/** The decision of a model that emitted `raw` as its call. */
+export const modelCall = (raw: unknown): ModelDecision => ({ kind: "call", raw })

@@ -4,6 +4,7 @@
 import type { ApolloClient } from "@apollo/client"
 
 import { createAttemptJournal } from "@app/assistant/engine/attempt-journal"
+import type { ModelAdapter } from "@app/assistant/engine/model-adapter"
 import { runTool } from "@app/assistant/engine/run-tool"
 import type { GraphqlActionRail } from "@app/assistant/rails/graphql-action-rail"
 import type { GraphqlRail } from "@app/assistant/rails/graphql-rail"
@@ -23,9 +24,19 @@ import {
   fakeSendTriggers,
   NOW_MS,
   recordingTelemetry,
+  unavailableModelAdapter,
 } from "../fakes"
 
-export const fakeRuntime = () => {
+/**
+ * The runtime. Its on-device model is never there unless a case hands one
+ * in (ENG-690): the thread specs run on the grammar alone.
+ */
+export const fakeRuntime = <
+  M extends ModelAdapter = ReturnType<typeof unavailableModelAdapter>,
+>(
+  options: { modelAdapter?: M } = {},
+) => {
+  const modelAdapter = options.modelAdapter ?? unavailableModelAdapter()
   const graphql = fakeGraphqlRail()
   const cachedGraphql = fakeGraphqlRail()
   const btcRail = fakeBtcRail()
@@ -44,10 +55,12 @@ export const fakeRuntime = () => {
     journal: createAttemptJournal({ storage: memoryStorage() }),
     auth: { availability: async () => "none", authenticate: async () => false },
     runTool: watchedRunTool,
+    modelAdapter,
     now: () => NOW_MS,
   })
   return {
     runtime,
+    modelAdapter: modelAdapter as M,
     graphql,
     cachedGraphql,
     btcRail,

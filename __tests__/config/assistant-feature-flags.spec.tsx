@@ -1,13 +1,16 @@
 /**
- * ENG-687: the four assistant flags (docs/ai-assistant-tool-registry.md §1,
- * rule 7). They default off, follow Remote Config, and unlike the older flags
- * are NOT forced on for the Local instance: dogfooding flips the remote flag.
+ * ENG-687: the assistant flags (docs/ai-assistant-tool-registry.md §1, rule
+ * 7), and ENG-690's fifth, assistantOnDeviceModel. They default off, follow
+ * Remote Config, and unlike the older flags are NOT forced on for the Local
+ * instance: dogfooding flips the remote flag. The dev link turns on
+ * assistantEnabled alone, never assistantOnDeviceModel.
  */
 import * as React from "react"
 import { Text } from "react-native"
 import { act, render } from "@testing-library/react-native"
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 
+import { setAssistantDevOverride } from "../../app/config/assistant-dev-override"
 import {
   FeatureFlagContextProvider,
   useFeatureFlags,
@@ -34,6 +37,7 @@ const ASSISTANT_KEYS = [
   "assistantVoice",
   "assistantVoiceReplies",
   "assistantServerFallback",
+  "assistantOnDeviceModel",
 ] as const
 
 // Captured before any test clears the mocks: setDefaults runs once, when the
@@ -52,6 +56,7 @@ const Flags = () => {
         assistantVoice: flags.assistantVoice,
         assistantVoiceReplies: flags.assistantVoiceReplies,
         assistantServerFallback: flags.assistantServerFallback,
+        assistantOnDeviceModel: flags.assistantOnDeviceModel,
         bridgeTopupEnabled: flags.bridgeTopupEnabled,
       })}
     </Text>
@@ -81,13 +86,14 @@ beforeEach(() => {
 })
 
 describe("assistant feature flags", () => {
-  it("registers all four as Remote Config defaults, off", () => {
+  it("registers all five as Remote Config defaults, off", () => {
     expect(registeredDefaults).toEqual(
       expect.objectContaining({
         assistantEnabled: false,
         assistantVoice: false,
         assistantVoiceReplies: false,
         assistantServerFallback: false,
+        assistantOnDeviceModel: false,
       }),
     )
   })
@@ -104,6 +110,7 @@ describe("assistant feature flags", () => {
       assistantVoice: true,
       assistantVoiceReplies: true,
       assistantServerFallback: true,
+      assistantOnDeviceModel: true,
     }
 
     const flags = await renderFlags()
@@ -121,7 +128,39 @@ describe("assistant feature flags", () => {
       assistantVoice: false,
       assistantVoiceReplies: false,
       assistantServerFallback: false,
+      assistantOnDeviceModel: false,
     })
+  })
+
+  it("keep the on-device model off until its own flag is on, the assistant's alone is not enough", async () => {
+    active = { assistantEnabled: true }
+    expect((await renderFlags()).assistantOnDeviceModel).toBe(false)
+
+    active = { assistantEnabled: true, assistantOnDeviceModel: true }
+    expect(await renderFlags()).toMatchObject({
+      assistantEnabled: true,
+      assistantOnDeviceModel: true,
+    })
+  })
+
+  it("keep the on-device model off when the dev link turns the assistant on", async () => {
+    // A development build's link (assistant-dev-override.ts) turns on
+    // assistantEnabled alone: the on-device model stays Remote Config's
+    // (ENG-690, architect decision 2), so a test build never asks it.
+    const dev = globalThis as unknown as { __DEV__: boolean }
+    const wasDev = dev.__DEV__
+    dev.__DEV__ = true
+    try {
+      act(() => setAssistantDevOverride(true))
+
+      const flags = await renderFlags()
+
+      expect(flags.assistantEnabled).toBe(true)
+      expect(flags.assistantOnDeviceModel).toBe(false)
+    } finally {
+      act(() => setAssistantDevOverride(false))
+      dev.__DEV__ = wasDev
+    }
   })
 
   it("stay off on the Local instance, which forces the older flags on", async () => {

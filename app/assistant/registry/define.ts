@@ -64,6 +64,12 @@ export type ActionToolDefinition<Args, Payload> = {
 type RegisteredToolBase = {
   intent: Intent
   description: string
+  /**
+   * The input schema `validate` enforces, as defined: the on-device model's
+   * tool list shows it beside the description (ENG-690), and the model tier
+   * reads which arguments are free text from it.
+   */
+  input: ObjectSchema
   validate: Validator
   amounts: AmountFields
   project: (payload: unknown, args: Record<string, unknown>) => unknown
@@ -126,6 +132,7 @@ export const defineRead = <Args, Payload, Projection>(
     intent: definition.intent,
     tier: "read",
     description: definition.description,
+    input: definition.input,
     validate,
     amounts,
     // The router hands run() only arguments its schema accepted, with the
@@ -151,6 +158,7 @@ export const defineAction = <Args, Payload>(
     intent: definition.intent,
     tier: "action",
     description: definition.description,
+    input: definition.input,
     validate,
     amounts,
     // As for a read tool: the router hands run() only accepted arguments.
