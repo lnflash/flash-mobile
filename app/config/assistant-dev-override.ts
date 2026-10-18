@@ -8,8 +8,7 @@ import { ASSISTANT_DEV_LINK } from "@env"
 // (docs/ai-assistant-tool-registry.md §1, rule 7), so nothing turns the
 // assistant on in a test build that Maestro drives. This does, in a build
 // where __DEV__ holds (Debug, which the e2e job builds) or that was bundled
-// with ASSISTANT_DEV_LINK=true in its .env, and never in a store build: the
-// flows open
+// with ASSISTANT_DEV_LINK=true in its .env: the flows open
 //
 //   flash://dev/assistant?on=1    the assistant on, for this run of the app
 //   flash://dev/assistant?off=1   back to what Remote Config says
@@ -17,8 +16,13 @@ import { ASSISTANT_DEV_LINK } from "@env"
 // ASSISTANT_DEV_LINK is for local phone builds only. The test phones carry a
 // production-mode bundle (--dev false), where __DEV__ is false, so without it
 // the link would do nothing there. react-native-dotenv inlines it when the
-// app is bundled, and the deploy workflows refuse a .env that carries it
-// (scripts/ci/check-store-env.sh).
+// app is bundled, from .env, the other env files it reads, or the
+// environment. A store build must never carry it, and
+// scripts/ci/check-store-env.sh enforces that where it runs: the deploy
+// workflows, the Fastfile's store lanes and `yarn aab-android` /
+// `yarn apk-android` stop before building while the key is set. An archive
+// made by hand in Xcode, or a bare `./gradlew bundleRelease`, runs no check;
+// docs/release.md says to run it first.
 //
 // It turns on the assistant only, never voice, spoken replies or the server
 // fallback, and it lives in memory: a relaunch forgets it. The navigation
@@ -30,7 +34,8 @@ import { ASSISTANT_DEV_LINK } from "@env"
 
 /**
  * Whether this build honours the link: __DEV__, or ASSISTANT_DEV_LINK=true in
- * the .env it was bundled with. Never a store build.
+ * the .env it was bundled with. The store build paths that run
+ * scripts/ci/check-store-env.sh (above) refuse to build with that key.
  */
 const linkEnabled = (): boolean =>
   (typeof __DEV__ !== "undefined" && __DEV__ === true) || ASSISTANT_DEV_LINK === "true"
@@ -79,9 +84,10 @@ export const parseAssistantDevLink = (url: string): boolean | undefined => {
 }
 
 /**
- * Acts on the assistant's dev link, at launch and while the app runs. App
- * mounts it beside DevCardLinks, in every build: it listens only in a build
- * that honours the link, and elsewhere the parser answers undefined anyway.
+ * Acts on the assistant's dev link, at launch and while the app runs.
+ * DevLinks (app/components/dev-links.tsx) mounts it beside DevCardLinks, in
+ * every build: it listens only in a build that honours the link, and
+ * elsewhere the parser answers undefined anyway.
  */
 export const useDevAssistantLink = (): void => {
   useEffect(() => {

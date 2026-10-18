@@ -114,8 +114,8 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
 
   const mounted = useRef(true)
   // A debug or e2e build's switch for the assistant (ENG-689), and a local
-  // phone build's with ASSISTANT_DEV_LINK (ENG-734); always off in a store
-  // build.
+  // phone build's with ASSISTANT_DEV_LINK (ENG-734); never meant for a store
+  // build (assistant-dev-override.ts says where that is enforced).
   const assistantDevOverride = useAssistantDevOverride()
 
   useEffect(() => {
@@ -161,7 +161,7 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
     // No Local override for the assistant flags (spec §1, rule 7). A debug
     // or e2e build, or a local phone build with ASSISTANT_DEV_LINK, may turn
     // the assistant itself on with a dev link (assistant-dev-override.ts,
-    // ENG-689 decision 3, ENG-734); a store build never.
+    // ENG-689 decision 3, ENG-734), never meant for a store build.
     assistantEnabled: remoteConfig.assistantEnabled || assistantDevOverride,
     assistantVoice: remoteConfig.assistantVoice,
     assistantVoiceReplies: remoteConfig.assistantVoiceReplies,

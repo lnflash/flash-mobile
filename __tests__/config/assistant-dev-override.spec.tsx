@@ -6,15 +6,18 @@
  *
  * ENG-734: the test phones carry a production-mode bundle, so __DEV__ is
  * false there; ASSISTANT_DEV_LINK=true in the .env they were bundled with
- * honours the link too. Nothing else does.
+ * honours the link too. Nothing else does. App mounts the link through
+ * DevLinks with no condition around it, and nothing in between may add one.
  */
 import * as fs from "fs"
 import * as path from "path"
 import * as React from "react"
+import * as ts from "typescript"
 import { Linking, LogBox, Text } from "react-native"
 import { act, render, renderHook } from "@testing-library/react-native"
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 
+import { DevLinks } from "@app/components/dev-links"
 import {
   assistantDevOverride,
   DevAssistantLink,
@@ -37,6 +40,17 @@ jest.mock("@env", () => ({
 }))
 jest.mock("@app/hooks", () => ({
   useAppConfig: () => ({ appConfig: { galoyInstance: { id: "Test" } } }),
+}))
+// DevLinks mounts the card links beside the assistant's. They need
+// FlashcardContext and the navigator, and their own spec covers them
+// (use-dev-card-links.spec.tsx); this stand-in records whether DevLinks
+// mounted them.
+const mockDevCardLinks = jest.fn()
+jest.mock("@app/hooks/use-tap-flashcard", () => ({
+  DevCardLinks: () => {
+    mockDevCardLinks()
+    return null
+  },
 }))
 // Signed in, so the provider renders at once instead of waiting on the gate.
 jest.mock("@app/graphql/level-context", () => ({
@@ -325,13 +339,116 @@ describe("a production-mode build with ASSISTANT_DEV_LINK (ENG-734)", () => {
   }
 })
 
-describe("App", () => {
-  // The link's own gate is the only one: a __DEV__ guard where App mounts it
-  // would leave the link dead on the test phones again (ENG-734).
-  it("mounts DevAssistantLink in every build", () => {
-    const app = fs.readFileSync(path.join(__dirname, "../../app/app.tsx"), "utf8")
+describe("DevLinks", () => {
+  // What App mounts (below). The assistant's link has no gate here but its
+  // own: a __DEV__ guard around it, however written, would leave the link dead
+  // on the test phones again (ENG-734). These render it as those phones run.
+  it('listens for the link in a production-mode build when ASSISTANT_DEV_LINK is "true"', async () => {
+    setDev(false)
+    setDevLink("true")
+    ;(Linking.getInitialURL as jest.Mock).mockResolvedValue("flash://dev/assistant?on=1")
 
-    expect(app).toMatch(/<DevAssistantLink \/>/)
-    expect(app).not.toMatch(/__DEV__\s*&&\s*<DevAssistantLink/)
+    const { toJSON } = render(<DevLinks />)
+    await act(async () => {})
+
+    expect(toJSON()).toBeNull()
+    expect(Linking.addEventListener).toHaveBeenCalledWith("url", expect.any(Function))
+    expect(assistantDevOverride()).toBe(true)
+    act(() => urlListener?.({ url: "flash://dev/assistant?off=1" }))
+    expect(assistantDevOverride()).toBe(false)
+    // The simulated card stays in development builds.
+    expect(mockDevCardLinks).not.toHaveBeenCalled()
+  })
+
+  it("listens for nothing in a production-mode build without it", async () => {
+    setDev(false)
+
+    render(<DevLinks />)
+    await act(async () => {})
+
+    expect(Linking.addEventListener).not.toHaveBeenCalled()
+    expect(Linking.getInitialURL).not.toHaveBeenCalled()
+    expect(mockDevCardLinks).not.toHaveBeenCalled()
+  })
+
+  it("mounts the card links and the assistant's link in a development build", async () => {
+    render(<DevLinks />)
+    await act(async () => {})
+
+    expect(mockDevCardLinks).toHaveBeenCalled()
+    act(() => urlListener?.({ url: "flash://dev/assistant?on=1" }))
+    expect(assistantDevOverride()).toBe(true)
+  })
+})
+
+describe("App", () => {
+  // Rendering App needs the whole native provider tree, so this parses
+  // app.tsx. DevLinks must be a plain JSX child: every node from it up to
+  // App's return a JSX element or fragment. A `__DEV__ &&`, a `? :`, or a
+  // variable holding the element stops that walk, however it is written.
+  const file = path.join(__dirname, "../../app/app.tsx")
+  const source = ts.createSourceFile(
+    file,
+    fs.readFileSync(file, "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  )
+  const elementsNamed = (name: string): ts.JsxSelfClosingElement[] => {
+    const found: ts.JsxSelfClosingElement[] = []
+    const visit = (node: ts.Node) => {
+      if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(source) === name) {
+        found.push(node)
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(source)
+    return found
+  }
+
+  it("mounts DevLinks once, with no condition around it, inside FlashcardProvider", () => {
+    const mounts = elementsNamed("DevLinks")
+    expect(mounts).toHaveLength(1)
+
+    const wrappers: string[] = []
+    let node: ts.Node = mounts[0].parent
+    while (
+      ts.isJsxElement(node) ||
+      ts.isJsxFragment(node) ||
+      ts.isParenthesizedExpression(node)
+    ) {
+      if (ts.isJsxElement(node))
+        wrappers.push(node.openingElement.tagName.getText(source))
+      node = node.parent
+    }
+    expect(ts.SyntaxKind[node.kind]).toBe("ReturnStatement")
+
+    let owner: ts.Node = node.parent
+    while (!ts.isArrowFunction(owner) && !ts.isFunctionDeclaration(owner)) {
+      owner = owner.parent
+    }
+    expect(
+      ts.isVariableDeclaration(owner.parent) && owner.parent.name.getText(source),
+    ).toBe("App")
+    // DevCardLinks, inside DevLinks, reads FlashcardContext.
+    expect(wrappers).toContain("FlashcardProvider")
+  })
+
+  it("mounts the assistant's link only through DevLinks, from the module rendered above", () => {
+    expect(elementsNamed("DevAssistantLink")).toHaveLength(0)
+
+    const from = source.statements
+      .filter(ts.isImportDeclaration)
+      .find(
+        ({ importClause }) =>
+          importClause?.namedBindings !== undefined &&
+          ts.isNamedImports(importClause.namedBindings) &&
+          importClause.namedBindings.elements.some(
+            ({ name }) => name.text === "DevLinks",
+          ),
+      )
+    expect(
+      from && ts.isStringLiteral(from.moduleSpecifier) && from.moduleSpecifier.text,
+    ).toBe("./components/dev-links")
   })
 })

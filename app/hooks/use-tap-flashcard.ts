@@ -118,7 +118,8 @@ export const useDevCardLinks = (): void => {
 
 /**
  * `useDevCardLinks` in a component of its own, rendering nothing, which
- * app.tsx mounts only in a development build (`__DEV__ &&`). The hook reads
+ * DevLinks (app/components/dev-links.tsx, mounted by app.tsx) mounts only in
+ * a development build (`__DEV__ &&`). The hook reads
  * FlashcardContext (through `useTapFlashcard`), whose value is a new object on
  * every provider render: called from RootStack, it re-rendered the whole
  * screen list on every card state change, in release builds too.
