@@ -24,8 +24,13 @@ import {
 
 // The on-device model tier (ENG-690, app/assistant/engine/model-tier.ts): the
 // router test the ticket asks for. A model's call is a call only when the
-// unmodified router takes it and, for an action, every free-text argument
-// and amount is in what the person typed; anything else is no call.
+// unmodified router takes it and, for an action, every free-text argument,
+// every amount with its unit and every other closed-set value is in what the
+// person typed; anything else is no call.
+
+/** A US-dollar account, and a Jamaican-dollar one, as useDisplayCurrency names them. */
+const USD = { displayCurrency: "USD", displaySymbol: "$" }
+const JMD = { displayCurrency: "JMD", displaySymbol: "J$" }
 
 const runtimeOf = (
   modelAdapter: FakeModelAdapter,
@@ -36,11 +41,14 @@ const runtimeOf = (
   return { registry, modelAdapter, transcript }
 }
 
-const ask = (
-  raw: unknown,
-  utterance: string,
-  options?: Parameters<typeof runtimeOf>[1],
-) => tryOnDeviceModel(runtimeOf(fakeModelAdapter(modelCall(raw)), options), utterance)
+type AskOptions = Parameters<typeof runtimeOf>[1] & { account?: typeof USD }
+
+const ask = (raw: unknown, utterance: string, options: AskOptions = {}) =>
+  tryOnDeviceModel(
+    runtimeOf(fakeModelAdapter(modelCall(raw)), options),
+    utterance,
+    options.account ?? USD,
+  )
 
 const tool = (intent: string): RegisteredTool => {
   const found = assistantRegistry.get(intent as never)
@@ -221,7 +229,7 @@ describe("grounding", () => {
     )
 
     await expect(
-      tryOnDeviceModel(runtimeOf(modelAdapter, { thread }), "pay it back"),
+      tryOnDeviceModel(runtimeOf(modelAdapter, { thread }), "pay it back", USD),
     ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
     // The memo did reach the model, quoted.
     const [prompt] = modelAdapter.decide.mock.calls[0]
@@ -266,13 +274,60 @@ describe("grounding", () => {
     })
   })
 
-  it("passes the closed sets, a currency or a wallet, which the schema holds, not the model", async () => {
+  it("takes a wallet or a way to be paid only when the words name it", async () => {
     await expect(
       ask(
         { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
         "move 20 dollars into my bitcoin",
       ),
     ).resolves.toMatchObject({ kind: "call" })
+    await expect(
+      ask(
+        {
+          intent: "prepareSend",
+          args: { payee: "bob", amount: "5", sourceWallet: "BTC" },
+        },
+        "send bob 5",
+      ),
+    ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
+    await expect(
+      ask(
+        {
+          intent: "prepareSend",
+          args: { payee: "bob", amount: "5", sourceWallet: "BTC" },
+        },
+        "send bob 5 from my bitcoin wallet",
+      ),
+    ).resolves.toMatchObject({ kind: "call" })
+    await expect(
+      ask(
+        { intent: "prepareReceive", args: { wallet: "BTC", method: "onchain" } },
+        "gimme a bitcoin address",
+      ),
+    ).resolves.toMatchObject({ kind: "call" })
+  })
+
+  it('never takes a unit the words do not give: "$9" is not 9 BTC', async () => {
+    // What the macOS model answered for these (ENG-690 proxy run).
+    await expect(
+      ask(
+        {
+          intent: "prepareSend",
+          args: { payee: "kemar", amount: "9", currency: "BTC", sourceWallet: "BTC" },
+        },
+        "send kemar $9 for the taxi",
+      ),
+    ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
+    await expect(
+      ask(
+        {
+          intent: "prepareSend",
+          args: { payee: "gi", amount: "1000.00", currency: "BTC", sourceWallet: "BTC" },
+        },
+        "gi har 1000",
+        { account: JMD },
+      ),
+    ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
   })
 
   it("skips the read intents, which move nothing", async () => {
@@ -290,12 +345,18 @@ describe("grounding", () => {
 
 describe("isGrounded", () => {
   const send = tool("prepareSend")
-  const grounded = (args: Record<string, unknown>, utterance: string) =>
-    isGrounded(send, args, utterance)
+  const grounded = (
+    args: Record<string, unknown>,
+    utterance: string,
+    account: typeof USD = USD,
+  ) => isGrounded(send, args, { ...account, utterance })
 
-  it("reads amounts as numbers: signs, commas, a leading point, trailing zeros", () => {
+  it("reads amounts as the grammar does: signs, commas, a leading point, trailing zeros", () => {
     expect(grounded({ payee: "bob", amount: "5" }, "send bob $5")).toBe(true)
-    expect(grounded({ payee: "bob", amount: "5" }, "send bob J$5.00.")).toBe(true)
+    expect(grounded({ payee: "bob", amount: "5", currency: "USD" }, "send bob $5")).toBe(
+      true,
+    )
+    expect(grounded({ payee: "bob", amount: "5" }, "send bob J$5.00.", JMD)).toBe(true)
     expect(grounded({ payee: "bob", amount: "1250.75" }, "pay bob 1,250.75 now")).toBe(
       true,
     )
@@ -303,14 +364,49 @@ describe("isGrounded", () => {
     expect(grounded({ payee: "bob", amount: "12000" }, "send bob (12,000)")).toBe(true)
   })
 
-  it("refuses an amount the model rewrote: a suffix, words, sats as bitcoin, a part of a name", () => {
+  it("reads an amount's unit as the grammar does: sats are bitcoin, a code wins", () => {
+    expect(
+      grounded(
+        { payee: "bob", amount: "0.00000500", currency: "BTC" },
+        "send bob 500 sats",
+      ),
+    ).toBe(true)
+    expect(
+      grounded(
+        { payee: "bob", amount: "0.001", currency: "BTC" },
+        "0.001 bitcoin to bob",
+      ),
+    ).toBe(true)
+    expect(
+      grounded({ payee: "bob", amount: "5", currency: "USD" }, "send bob 5 usd", JMD),
+    ).toBe(true)
+  })
+
+  it("refuses an amount the model rewrote: a suffix, words, a part of a name", () => {
     expect(grounded({ payee: "bob", amount: "5000" }, "send bob 5k")).toBe(false)
     expect(grounded({ payee: "bob", amount: "5" }, "send bob five")).toBe(false)
-    expect(grounded({ payee: "bob", amount: "0.000005" }, "send bob 500 sats")).toBe(
-      false,
-    )
     expect(grounded({ payee: "bob123", amount: "123" }, "send bob123 5")).toBe(false)
     expect(grounded({ payee: "bob", amount: "5" }, "send bob 55")).toBe(false)
+  })
+
+  it("refuses a unit the words do not give, or give as a question", () => {
+    // Sats the model left in the display currency, or a currency it made up.
+    expect(grounded({ payee: "bob", amount: "0.00000500" }, "send bob 500 sats")).toBe(
+      false,
+    )
+    expect(grounded({ payee: "bob", amount: "500" }, "send bob 500 sats")).toBe(false)
+    expect(grounded({ payee: "bob", amount: "9", currency: "BTC" }, "send bob $9")).toBe(
+      false,
+    )
+    expect(
+      grounded({ payee: "bob", amount: "5", currency: "USD" }, "send bob 5", JMD),
+    ).toBe(false)
+    expect(grounded({ payee: "bob", amount: "5" }, "send bob 5 usd", JMD)).toBe(false)
+    // "$5" on a J$ account is a question to the grammar, never a guess here.
+    expect(grounded({ payee: "bob", amount: "5" }, "send bob $5", JMD)).toBe(false)
+    expect(
+      grounded({ payee: "bob", amount: "5", currency: "USD" }, "send bob $5", JMD),
+    ).toBe(false)
   })
 
   it("reads payees as whole words, in any case", () => {
@@ -322,10 +418,29 @@ describe("isGrounded", () => {
     expect(grounded({ payee: "", amount: "5" }, "send bob 5")).toBe(false)
   })
 
+  it("reads dollars as USD only on a USD account, and a bitcoin sign as bitcoin", () => {
+    const convert = tool("prepareConversion")
+    const conversion = (utterance: string, account: typeof USD) =>
+      isGrounded(
+        convert,
+        { from: "USD", to: "BTC", amount: "20" },
+        { ...account, utterance },
+      )
+
+    expect(conversion("turn 20 bucks into bitcoin", USD)).toBe(true)
+    expect(conversion("turn 20 bucks into ₿", USD)).toBe(true)
+    // On a J$ account "bucks" and "dollars" are a question, never USD.
+    expect(conversion("turn 20 bucks into bitcoin", JMD)).toBe(false)
+  })
+
   it("is always true for a read tool", () => {
-    expect(isGrounded(tool("getTransactions"), { query: "anything" }, "history")).toBe(
-      true,
-    )
+    expect(
+      isGrounded(
+        tool("getTransactions"),
+        { query: "anything" },
+        { ...USD, utterance: "history" },
+      ),
+    ).toBe(true)
   })
 })
 
@@ -346,7 +461,9 @@ describe("no call", () => {
   it("never asks a model that is not there", async () => {
     const modelAdapter = unavailableModelAdapter()
 
-    await expect(tryOnDeviceModel(runtimeOf(modelAdapter), "hello")).resolves.toEqual({
+    await expect(
+      tryOnDeviceModel(runtimeOf(modelAdapter), "hello", USD),
+    ).resolves.toEqual({
       kind: "none",
       reason: "unavailable",
     })
@@ -355,10 +472,14 @@ describe("no call", () => {
 
   it("is a miss when the model names no call, and unavailable when it does not answer", async () => {
     await expect(
-      tryOnDeviceModel(runtimeOf(fakeModelAdapter({ kind: "miss" })), "hello"),
+      tryOnDeviceModel(runtimeOf(fakeModelAdapter({ kind: "miss" })), "hello", USD),
     ).resolves.toEqual({ kind: "none", reason: "miss" })
     await expect(
-      tryOnDeviceModel(runtimeOf(fakeModelAdapter({ kind: "unavailable" })), "hello"),
+      tryOnDeviceModel(
+        runtimeOf(fakeModelAdapter({ kind: "unavailable" })),
+        "hello",
+        USD,
+      ),
     ).resolves.toEqual({ kind: "none", reason: "unavailable" })
   })
 
@@ -367,7 +488,9 @@ describe("no call", () => {
     modelAdapter.isAvailable.mockRejectedValue(new Error("bridge gone"))
     const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined)
 
-    await expect(tryOnDeviceModel(runtimeOf(modelAdapter), "hello")).resolves.toEqual({
+    await expect(
+      tryOnDeviceModel(runtimeOf(modelAdapter), "hello", USD),
+    ).resolves.toEqual({
       kind: "none",
       reason: "unavailable",
     })
@@ -387,7 +510,7 @@ describe("what the model is asked", () => {
       ],
     })
 
-    await tryOnDeviceModel(runtime, "the request itself")
+    await tryOnDeviceModel(runtime, "the request itself", USD)
 
     const [prompt, options] = modelAdapter.decide.mock.calls[0]
     expect(options).toEqual({ timeoutMs: MODEL_RESPONSE_TIMEOUT_MS })

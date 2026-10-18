@@ -1,6 +1,9 @@
+import { normalize } from "../grammar/normalize"
+import { amountRuns, readAmount } from "../grammar/words"
 import type { Registry, RegisteredTool } from "../registry/define"
 import type { Intent } from "../registry/types"
 import type { ThreadEntry, ThreadStore } from "../ui/thread-store"
+import type { AmountPhraseContext } from "./amount-phrase"
 import { routeIntent, ToolCall } from "./intent-router"
 import { MODEL_RESPONSE_TIMEOUT_MS, ModelAdapter } from "./model-adapter"
 import { buildModelPrompt } from "./model-prompt"
@@ -19,12 +22,15 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    the closed set or with no tool, an extra envelope key, arguments the
 //    schema refuses and an amount that does not parse are all refused here.
 // 4. Grounding (architect decision 4): an action's free-text arguments
-//    (payees, memos, ids) and its amounts must be in what the person typed,
-//    so nothing from the thread, a memo someone else wrote or a contact's
-//    name, becomes a payee or an amount on the model's word. Enum arguments
-//    are closed sets and pass; read intents move nothing and skip it. It
-//    keeps the grammar's v1 boundary: no follow-ups ("send him 10 more"),
-//    and no amount the model rewrote ("5k", "five", sats as bitcoin).
+//    (payees, memos, ids), its amounts with their units, and its other
+//    closed-set values (a wallet, a way to be paid) must be in what the
+//    person typed, so nothing from the thread, a memo someone else wrote or
+//    a contact's name, becomes a payee or an amount on the model's word, and
+//    no unit is guessed: an amount is read from the words as the grammar
+//    reads one (readAmountPhrase), so "$9" is never 9 BTC, and "$5" on a J$
+//    account stays the question the grammar makes it. Read intents move
+//    nothing and skip it. It keeps the grammar's v1 boundary: no follow-ups
+//    ("send him 10 more"), and no amount the model rewrote ("5k", "five").
 // 5. The call as the model sent it, intent and raw arguments, for runCall:
 //    the router turns amounts into MoneyAmounts, so routed arguments would
 //    not route again.
@@ -54,7 +60,10 @@ export type ModelTierResult =
 // Grounding
 // ---------------------------------------------------------------------------
 
-/** What the person typed, as grounding compares it: lower case, single spaces. */
+/** What the person typed, and the account they typed it on, as grounding reads them. */
+export type Said = AmountPhraseContext & { utterance: string }
+
+/** What the person typed, lower case, with single spaces. */
 const normalizedText = (text: string): string =>
   text.replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim().toLowerCase()
 
@@ -76,16 +85,6 @@ export const canonicalNumber = (text: string): string | undefined => {
   return fraction ? `${whole}.${fraction}` : whole
 }
 
-/** The numbers the person typed, each written one way. */
-const numbersIn = (utterance: string): Set<string> =>
-  new Set(
-    utterance.split(/\s+/).flatMap((word) => {
-      const number = NUMBER_WORD.exec(word)?.[1]
-      const canonical = number === undefined ? undefined : canonicalNumber(number)
-      return canonical === undefined ? [] : [canonical]
-    }),
-  )
-
 /** A letter or a digit, in any script, as the grammar reads words (normalize.ts). */
 const isWordChar = (char: string | undefined): boolean =>
   char !== undefined && /[\p{L}\p{N}_]/u.test(char)
@@ -101,66 +100,169 @@ const holdsWords = (text: string, words: string): boolean => {
   return false
 }
 
-type Typed = { text: string; numbers: Set<string> }
+/**
+ * The words that name each closed-set value an action takes (a currency or
+ * a wallet, the way to be paid), as the grammar names them (words.ts,
+ * amount-phrase.ts). "Dollars", "bucks" and "$" name USD only on an account
+ * whose display currency is USD: elsewhere they are a question
+ * (readAmountPhrase), never a guess. A value no word names here is never
+ * shown to be typed.
+ */
+const VALUE_WORDS: Readonly<Record<string, readonly string[]>> = {
+  BTC: ["btc", "bitcoin", "bitcoins", "sat", "sats", "satoshi", "satoshis"],
+  USD: ["usd", "us$"],
+  USDT: ["usdt", "tether"],
+  lightning: ["lightning", "invoice", "bolt11"],
+  onchain: ["onchain", "on-chain", "address"],
+}
+const USD_ACCOUNT_WORDS = ["dollar", "dollars", "buck", "bucks"]
 
-/** Whether a value of one argument is in what the person typed. */
-const groundedValue = (
+/** The closed-set values the person's words name. */
+const valuesNamed = (text: string, { displayCurrency }: Said): Set<string> => {
+  const named = new Set(
+    Object.keys(VALUE_WORDS).filter((value) =>
+      VALUE_WORDS[value].some((word) => holdsWords(text, word)),
+    ),
+  )
+  if (text.includes("₿")) named.add("BTC")
+  // A bare "$", not part of J$ or TT$: USD only on a USD account.
+  const bareDollar = /(^|[^a-z])\$/.test(text)
+  if (
+    displayCurrency === "USD" &&
+    (bareDollar || USD_ACCOUNT_WORDS.some((word) => holdsWords(text, word)))
+  ) {
+    named.add("USD")
+  }
+  return named
+}
+
+type TypedAmount = { amount: string; currency: string }
+
+/**
+ * Every amount the person typed, as the grammar reads it (amountRuns,
+ * readAmountPhrase): its number, and its currency, which is the display
+ * currency when the words name none. An amount the grammar would ask about
+ * ("5k", "$5" on a J$ account, words for a number) is not one.
+ */
+const amountsTyped = (said: Said): TypedAmount[] => {
+  const { tokens } = normalize(said.utterance)
+  return amountRuns(tokens, said).flatMap((run) => {
+    const phrase = readAmount(tokens, run, said)
+    if (phrase.kind !== "amount") return []
+    const amount = canonicalNumber(phrase.amount)
+    return amount === undefined
+      ? []
+      : [{ amount, currency: phrase.currency ?? said.displayCurrency }]
+  })
+}
+
+type Typed = {
+  text: string
+  /** Every number typed, written one way, for an integer argument. */
+  numbers: Set<string>
+  amounts: TypedAmount[]
+  values: Set<string>
+}
+
+const readTyped = (said: Said): Typed => {
+  const text = normalizedText(said.utterance)
+  return {
+    text,
+    numbers: new Set(
+      said.utterance.split(/\s+/).flatMap((word) => {
+        const number = NUMBER_WORD.exec(word)?.[1]
+        const canonical = number === undefined ? undefined : canonicalNumber(number)
+        return canonical === undefined ? [] : [canonical]
+      }),
+    ),
+    amounts: amountsTyped(said),
+    values: valuesNamed(text, said),
+  }
+}
+
+/** Whether a value of one argument, not an amount or its currency, is in what the person typed. */
+const valueTyped = (
   value: unknown,
-  schema: { field?: JsonSchema; amount: boolean },
+  field: JsonSchema | undefined,
   typed: Typed,
 ): boolean => {
-  const { field, amount } = schema
   if (field === undefined) return false
   if (field.type === "array") {
     return (
-      Array.isArray(value) &&
-      value.every((item) => groundedValue(item, { field: field.items, amount }, typed))
+      Array.isArray(value) && value.every((item) => valueTyped(item, field.items, typed))
     )
   }
-  // A closed set: the schema, not the model, holds every value it can take.
-  if (field.enum !== undefined || field.type === "boolean") return true
-  const isAmount =
-    amount ||
-    field.type === "integer" ||
-    field.type === "number" ||
-    (field.type === "string" && field.pattern === AMOUNT_PATTERN)
-  if (isAmount) {
-    if (typeof value !== "string" && typeof value !== "number") return false
+  // A currency, a wallet, a way to be paid: named in the words, never only
+  // picked by the model from the schema's choices.
+  if (field.enum !== undefined)
+    return typeof value === "string" && typed.values.has(value)
+  if (field.type === "integer" || field.type === "number") {
     const number = canonicalNumber(String(value))
-    return number !== undefined && typed.numbers.has(number)
+    return typeof value === "number" && number !== undefined && typed.numbers.has(number)
   }
   if (field.type === "string") {
     return typeof value === "string" && holdsWords(typed.text, normalizedText(value))
   }
-  // An object, or a shape this check cannot read: not shown to be typed.
+  // A flag or an object: nothing in the words can show the model did not make it up.
   return false
 }
 
+/** An action tool's amount fields, each with the field that holds its currency, if it has one. */
+const amountFieldsOf = (tool: RegisteredTool): Map<string, string | undefined> => {
+  const { properties } = tool.input
+  const amounts = new Map<string, string | undefined>()
+  Object.keys(properties).forEach((name) => {
+    const declared = Object.prototype.hasOwnProperty.call(tool.amounts, name)
+    const field = properties[name]
+    if (!declared && !(field.type === "string" && field.pattern === AMOUNT_PATTERN))
+      return
+    // No tool declares its amounts yet (define.ts): each names its amount's
+    // currency `currency`.
+    const currency = declared ? tool.amounts[name] : "currency"
+    amounts.set(
+      name,
+      Object.prototype.hasOwnProperty.call(properties, currency) ? currency : undefined,
+    )
+  })
+  return amounts
+}
+
 /**
- * Whether an action call's arguments are all in what the person typed
- * (case-insensitive, as whole words; amounts as numbers). Read intents move
- * nothing and always pass. Generic over each tool's input schema, so a new
- * action intent is checked without an edit here: today no tool declares
- * `amounts` (define.ts), so a string with the amount pattern is an amount
- * as well.
+ * Whether an action call's arguments are all in what the person typed:
+ * free text as whole words, case aside; an amount with its currency as the
+ * grammar would read the words, the display currency when the call names
+ * none, so the model can neither invent an amount nor a unit for one; every
+ * other closed-set value (a wallet, a way to be paid) named in the words.
+ * Read intents move nothing and always pass. Generic over each tool's input
+ * schema, so a new action intent is checked without an edit here.
  */
 export const isGrounded = (
   tool: RegisteredTool,
   args: Record<string, unknown>,
-  utterance: string,
+  said: Said,
 ): boolean => {
   if (tool.tier !== "action") return true
-  const typed: Typed = { text: normalizedText(utterance), numbers: numbersIn(utterance) }
-  return Object.entries(args).every(([name, value]) =>
-    groundedValue(
-      value,
-      {
-        field: tool.input.properties[name],
-        amount: Object.prototype.hasOwnProperty.call(tool.amounts, name),
-      },
-      typed,
+  const typed = readTyped(said)
+  const amountFields = amountFieldsOf(tool)
+  const unitFields = new Set(
+    [...amountFields].flatMap(([amount, currency]) =>
+      args[amount] !== undefined && currency !== undefined ? [currency] : [],
     ),
   )
+  return Object.entries(args).every(([name, value]) => {
+    if (amountFields.has(name)) {
+      const currencyField = amountFields.get(name)
+      const named = currencyField === undefined ? undefined : args[currencyField]
+      const amount = typeof value === "string" ? canonicalNumber(value) : undefined
+      const currency = typeof named === "string" ? named : said.displayCurrency
+      return typed.amounts.some((typedAmount) => {
+        return typedAmount.amount === amount && typedAmount.currency === currency
+      })
+    }
+    // A currency that goes with an amount was checked with it.
+    if (unitFields.has(name)) return true
+    return valueTyped(value, tool.input.properties[name], typed)
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -178,10 +280,15 @@ const threadBefore = (
 
 const NO_MODEL: ModelTierResult = { kind: "none", reason: "unavailable" }
 
-/** The on-device model's call for an utterance the grammar missed, checked. */
+/**
+ * The on-device model's call for an utterance the grammar missed, checked,
+ * on the account `account` names (its display currency and symbol), which
+ * grounding reads amounts in.
+ */
 export const tryOnDeviceModel = async (
   runtime: ModelTierRuntime,
   utterance: string,
+  account: AmountPhraseContext,
 ): Promise<ModelTierResult> => {
   try {
     if (!(await runtime.modelAdapter.isAvailable())) return NO_MODEL
@@ -201,7 +308,7 @@ export const tryOnDeviceModel = async (
       return { kind: "rejected", reason: "precheck", intent: route.intent }
     }
     const args = isPlainObject(decision.raw.args) ? decision.raw.args : {}
-    if (!isGrounded(route.tool, args, utterance)) {
+    if (!isGrounded(route.tool, args, { ...account, utterance })) {
       return { kind: "rejected", reason: "ungrounded", intent: route.intent }
     }
     return { kind: "call", call: { intent: route.intent, args } }

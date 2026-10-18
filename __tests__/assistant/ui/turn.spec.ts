@@ -294,6 +294,31 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     expect(runTool).not.toHaveBeenCalled()
   })
 
+  it("never asks the model about what the grammar refused: the v1 boundary holds", async () => {
+    // A pronoun, a follow-up, a time, two payees: the model would read
+    // each as a send (the macOS proxy run did), and none may be one.
+    const refused = [
+      "send her $5",
+      "send bob another $5",
+      "send bob $5 next week",
+      "send $10 to bob and $5 to alice",
+    ]
+    for (const utterance of refused) {
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+        modelCall({ intent: "prepareSend", args: { payee: "bob", amount: "5" } }),
+      )
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(runTool).not.toHaveBeenCalled()
+      expect(toolEvents()).toEqual([
+        expect.objectContaining({ outcome: "rejected", onDeviceModelAvailable: false }),
+      ])
+    }
+  })
+
   it("runs the model's checked call through runTool, served by the model, held as text", async () => {
     const call = {
       intent: "prepareSend",

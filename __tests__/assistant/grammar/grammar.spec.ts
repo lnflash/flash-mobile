@@ -1,6 +1,6 @@
 import * as amountPhrase from "@app/assistant/engine/amount-phrase"
 import { routeIntent } from "@app/assistant/engine/intent-router"
-import { GRAMMAR_RULES, matchGrammar } from "@app/assistant/grammar"
+import { GRAMMAR_RULES, matchGrammar, readGrammar } from "@app/assistant/grammar"
 import { normalize, textOf, WORD_FOLDS } from "@app/assistant/grammar/normalize"
 import type { GrammarRule } from "@app/assistant/grammar/types"
 import { assistantRegistry } from "@app/assistant/registry"
@@ -355,5 +355,44 @@ describe("matchGrammar", () => {
 
     const refused = calls.filter((call) => !routeIntent(call, assistantRegistry).ok)
     expect(refused).toEqual([])
+  })
+})
+
+describe("readGrammar (ENG-690)", () => {
+  it("keeps what v1 refuses apart from what no rule reads, so no later tier reads past a refusal", () => {
+    const refused = [
+      // A rule's refusal: a pronoun, a follow-up, a time, two payees, what
+      // a payment is for.
+      "send her $5",
+      "send bob another $5",
+      "send bob $5 next week",
+      "send $10 to bob and $5 to alice",
+      "sen 800 fi di book",
+      // Before any rule: an invoice or an address, and a question about the app.
+      "send $5 to alice@flashapp.me",
+      "how do I send money",
+    ]
+    refused.forEach((utterance) => {
+      expect(readGrammar(utterance, USD)).toEqual({ kind: "refused" })
+      // matchGrammar answers both the same way.
+      expect(matchGrammar(utterance, USD)).toBeUndefined()
+    })
+    // Words no rule reads are a miss, not a refusal.
+    expect(readGrammar("hook bob up with 5 dollars", USD)).toBeUndefined()
+    expect(readGrammar("tell me a joke", USD)).toBeUndefined()
+    expect(readGrammar("   ", USD)).toBeUndefined()
+  })
+
+  it("answers a match as matchGrammar does", () => {
+    expect(readGrammar("my balance", USD)).toEqual(matchGrammar("my balance", USD))
+    expect(readGrammar("send bob 5k", JMD)).toEqual(matchGrammar("send bob 5k", JMD))
+    const refuses: GrammarRule = {
+      name: "test.refuses",
+      intent: "prepareSend",
+      match: () => ({ kind: "refuse" }),
+    }
+    expect(readGrammar("my balance", USD, [refuses, ...GRAMMAR_RULES])).toEqual({
+      kind: "refused",
+    })
   })
 })

@@ -3,7 +3,7 @@ import { cardOf, validateCard } from "../cards/types"
 import type { ToolCall } from "../engine/intent-router"
 import { ModelTierResult, tryOnDeviceModel } from "../engine/model-tier"
 import { report } from "../engine/telemetry"
-import { matchGrammar } from "../grammar"
+import { readGrammar } from "../grammar"
 import type { GraphqlRail } from "../rails/graphql-rail"
 import type {
   BalancesProjection,
@@ -26,7 +26,9 @@ import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 // Dispatch order (spec §7): the grammar, then, only for what it missed, the
 // on-device model (ENG-690, engine/model-tier.ts) where the flags allow it
 // (TurnEnv.onDeviceModel), then the server (Phase 5), which does not exist
-// yet. A grammar hit or an amount question never waits on the model. The
+// yet. A grammar hit, an amount question or a refusal (an ask v1 does not
+// serve: a pronoun, a follow-up, a time, two payees, an invoice) never
+// waits on the model. The
 // model's call goes through runTool as the grammar's does, held as text, so
 // the person taps to confirm whatever it prepared; nothing it said reaches
 // execute(). No answer from it, or an answer the model tier refuses, is the
@@ -219,14 +221,18 @@ export const answerUtterance = async (
   utterance: string,
   env: TurnEnv,
 ): Promise<NewEntry[]> => {
-  const match = matchGrammar(utterance, {
+  const account = {
     displayCurrency: env.displayCurrency,
     displaySymbol: env.displaySymbol,
-  })
-  if (match === undefined) {
-    const model: ModelTierResult = env.onDeviceModel
-      ? await tryOnDeviceModel(runtime, utterance)
-      : { kind: "none", reason: "unavailable" }
+  }
+  const match = readGrammar(utterance, account)
+  if (match === undefined || match.kind === "refused") {
+    // Only a miss goes to the model: what the grammar refused (a pronoun, a
+    // follow-up, a time, two payees, an invoice) is the v1 boundary.
+    const model: ModelTierResult =
+      env.onDeviceModel && match === undefined
+        ? await tryOnDeviceModel(runtime, utterance, account)
+        : { kind: "none", reason: "unavailable" }
     if (model.kind === "call") {
       if (env.isOffline && needsNetwork(model.call)) {
         return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
