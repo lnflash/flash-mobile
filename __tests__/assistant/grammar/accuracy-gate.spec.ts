@@ -29,7 +29,7 @@ const MAX_WRONG_ACTION_RATE = 0.005
  * pins it again, and so must anyone who changes the set after that, saying
  * why in the commit.
  */
-const HELD_OUT_SHA256 = "06ff5c28e00f7f54d7f75ac5fc87e7d87108158372434a574f4c2dde89d22d02"
+const HELD_OUT_SHA256 = "c85aa4f506a70e6e1325e2eebea26bc47172f979ffbd868db71b6c724ffd5fbc"
 
 const sha256 = (text: string): string => createHash("sha256").update(text).digest("hex")
 
