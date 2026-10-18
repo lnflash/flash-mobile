@@ -12,6 +12,9 @@
 // architect decision 5) and frozen as it stood. Its entries are pinned by
 // hash in accuracy-gate.spec.ts, so a change to any of them fails there and
 // needs a new review, never a quiet re-pin.
+// Re-reviewed by the owner on 2026-10-18 for one entry: "send bob five
+// dollars" became the $5 send after ENG-731 (number words), and the hash
+// was re-pinned for that change alone (ENG-746).
 //
 // Negatives on purpose: pronoun follow-ups, invoices and addresses, "$" on
 // a J$ account, words for a number, suffixes, and asks outside the five
@@ -222,7 +225,10 @@ export const HELD_OUT: readonly CorpusEntry[] = [
   en("JMD", "request $50", "clarifyAmount"),
   en("USD", "send bob 5k", "clarifyAmount"),
   jm("sen 2k to jason", "clarifyAmount"),
-  en("USD", "send bob five dollars", "clarifyAmount"),
+  // Re-reviewed by the owner on 2026-10-18: written as a "words for a number"
+  // negative before ENG-731 taught the grammar number words; the $5 send is
+  // the reading now. The only entry changed since the freeze.
+  en("USD", "send bob five dollars", send("bob", "5", { currency: "USD" })),
   en("USD", "send money to mom", "clarifyAmount"),
   en("USD", "pay bob", "clarifyAmount"),
   en("USD", "send 5 to bob 10", "clarifyAmount"),
