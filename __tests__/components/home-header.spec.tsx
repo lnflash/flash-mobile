@@ -60,6 +60,7 @@ jest.mock("@app/assets/icons/chart.svg", () => "PriceIcon")
 jest.mock("@app/assets/icons-redesign/ask-flash.svg", () => "AskFlashIcon")
 
 import Header from "@app/components/home-screen/Header"
+import { saveHideBalance } from "@app/graphql/client-only-query"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import theme from "@app/rne-theme/theme"
@@ -80,11 +81,11 @@ const header = () => (
   </ThemeProvider>
 )
 
-/** The header's left side, as the navigator was last handed it. */
-const leftSide = () => {
+/** One side of the header, as the navigator was last handed it. */
+const headerSide = (which: keyof HeaderOptions) => {
   const options = mockSetOptions.mock.lastCall?.[0]
   if (!options) throw new Error("the header never handed the navigator its buttons")
-  const side = render(options.headerLeft())
+  const side = render(options[which]())
   const row = side.toJSON() as ReactTestRendererJSON
   return {
     side,
@@ -93,6 +94,12 @@ const leftSide = () => {
     touchables: side.UNSAFE_getAllByType(TouchableOpacity),
   }
 }
+
+/** The header's left side: the price icon, and Ask Flash while the flag is on. */
+const leftSide = () => headerSide("headerLeft")
+
+/** The header's right side: the eye, then the menu. */
+const rightSide = () => headerSide("headerRight")
 
 /** A button's icon: the one node inside it. */
 const iconOf = (button: ReactTestRendererJSON) =>
@@ -164,6 +171,27 @@ describe("the home screen's header", () => {
 
     fireEvent.press(touchables[0])
     expect(mockNavigate).toHaveBeenLastCalledWith("priceHistory")
+  })
+
+  it("spaces the eye and the menu on the right as the pair on the left, so the sides mirror", () => {
+    mockAssistantEnabled = true
+    render(header())
+    const left = leftSide().buttons
+    const { buttons: right, touchables } = rightSide()
+
+    // The eye, then the menu.
+    expect(right).toHaveLength(2)
+    expect(touchables).toHaveLength(2)
+    fireEvent.press(touchables[0])
+    expect(saveHideBalance).toHaveBeenCalledWith(mockClient, true)
+    fireEvent.press(touchables[1])
+    expect(mockNavigate).toHaveBeenCalledWith("settings")
+
+    // 20pt at the screen's edge and 20pt between the icons, and the same
+    // space either side of each icon as the price icon and Ask Flash keep.
+    expect(sides(right[0])).toEqual({ left: 20, right: 10 })
+    expect(sides(right[1])).toEqual({ left: 10, right: 20 })
+    expect(right.map(sides)).toEqual(left.map(sides))
   })
 
   it("shows Ask Flash when the flag turns on after the header was set, and hides it when it turns off", () => {

@@ -111,7 +111,7 @@ const Header: React.FC<Props> = ({ setModalVisible }) => {
   const renderHeaderRight = () => (
     <HeaderRow>
       <IconWrapper
-        style={{ paddingLeft: 20 }}
+        style={styles.pairStart}
         onPress={() => saveHideBalance(client, !hideBalance)}
         activeOpacity={0.5}
       >
@@ -123,7 +123,7 @@ const Header: React.FC<Props> = ({ setModalVisible }) => {
         />
       </IconWrapper>
       <IconWrapper
-        style={{ paddingRight: 20 }}
+        style={styles.pairEnd}
         onPress={() => navigation.navigate("settings")}
         activeOpacity={0.5}
       >
@@ -152,7 +152,8 @@ const IconWrapper = styled.TouchableOpacity`
 
 // Over IconWrapper's 10pt a side. A lone icon has 20pt on both sides. In a
 // pair, each icon has 20pt on its outer side and keeps 10pt on the side it
-// shares, as the eye and the menu on the right do.
+// shares. Both pairs use these, the price icon and Ask Flash on the left and
+// the eye and the menu on the right, so the two sides stay mirrored.
 const styles = StyleSheet.create({
   alone: {
     paddingHorizontal: 20,
