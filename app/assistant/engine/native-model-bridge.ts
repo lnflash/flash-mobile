@@ -17,7 +17,10 @@ import { NativeModules } from "react-native"
 
 export type AssistantModelBridge = {
   isAvailable: () => Promise<boolean>
-  /** `promptJson` is a ModelPrompt (model-prompt.ts) as JSON. */
+  /**
+   * `promptJson` is a ModelPrompt (model-prompt.ts) as JSON: the
+   * instructions, the prompt, and the tools iOS shapes the answer from.
+   */
   complete: (promptJson: string, timeoutMs: number) => Promise<string>
 }
 

@@ -93,6 +93,27 @@ describe("the instructions", () => {
     })
   })
 
+  it("come with every registered tool for the answer's shape, its arguments in schema order", () => {
+    const { tools } = buildModelPrompt(assistantRegistry, [], "my balance")
+
+    expect(tools.map(({ intent }) => intent)).toEqual([...assistantRegistry.keys()])
+    tools.forEach(({ intent, description, arguments: args }) => {
+      const tool = assistantRegistry.get(intent as never)
+      expect(description).toBe(tool?.description)
+      expect(args.map(({ name }) => name)).toEqual(
+        Object.keys(tool?.input.properties ?? {}),
+      )
+      args.forEach(({ name, schema, required }) => {
+        expect(schema).toBe(tool?.input.properties[name])
+        expect(required).toBe((tool?.input.required ?? []).includes(name))
+      })
+    })
+    const send = tools.find(({ intent }) => intent === "prepareSend")
+    expect(
+      send?.arguments.filter(({ required }) => required).map(({ name }) => name),
+    ).toEqual(["payee"])
+  })
+
   it("say what to answer: one intent or none, nothing invented, nothing from the thread", () => {
     expect(instructions).toContain('or "none"')
     expect(instructions).toContain("Never invent one, and never take one from the thread")

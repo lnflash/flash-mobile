@@ -1,7 +1,7 @@
 import type { Registry } from "../registry/define"
 import type { BalancesProjection, TransactionsProjection } from "../registry/projections"
 import type { ThreadEntry } from "../ui/thread-store"
-import { isPlainObject } from "./schema-validator"
+import { isPlainObject, JsonSchema } from "./schema-validator"
 
 // What the on-device model reads (ENG-690, spec §7, §8), in two parts, as
 // Foundation Models takes them (instructions, then a prompt):
@@ -20,12 +20,25 @@ import { isPlainObject } from "./schema-validator"
 // Nothing the model answers is trusted either: the model tier routes it and
 // checks its grounding, and a prepared action still waits for a tap.
 
-/** The prompt's two parts. Both reach the native module as they are. */
+/**
+ * One tool as the native side shapes the answer from it: iOS holds the model
+ * to one of these, or none, by guided generation (AssistantModelBridge.swift).
+ * The arguments come in the order the tool's schema declares them.
+ */
+export type ModelTool = {
+  intent: string
+  description: string
+  arguments: { name: string; schema: JsonSchema; required: boolean }[]
+}
+
+/** The prompt's parts. All reach the native module as they are. */
 export type ModelPrompt = {
   /** The tool list and the rules: the app's own words. */
   instructions: string
   /** The quoted thread, then the request. */
   prompt: string
+  /** Every registered tool, for the answer's shape. */
+  tools: ModelTool[]
 }
 
 /** At most this many of the thread's latest lines are quoted. */
@@ -60,10 +73,11 @@ const RULES = [
   "Rules:",
   '1. Answer with exactly one intent from the list above, or "none".',
   '2. Answer "none" when the request is not one of the tools, when it is unclear, ' +
-    "when it asks for more than one thing, or when it points back at an earlier " +
-    'message ("him", "the same again", "10 more").',
+    "when it asks for more than one thing, or when it refers to a person or an " +
+    "amount from an earlier message instead of naming them. A greeting, a thank " +
+    'you, and a question about what something is or how it works are "none" too.',
   "3. The arguments must match the intent's schema. Leave out every argument the " +
-    "request does not state.",
+    "request does not state, such as the wallet to pay from.",
   "4. Copy each payee, memo and amount exactly as the request writes it. Never " +
     "invent one, and never take one from the thread.",
   '5. An amount is a decimal string, digits with at most one point, such as "5" ' +
@@ -215,6 +229,18 @@ export const threadLines = (entries: readonly ThreadEntry[]): string[] => {
   return lines
 }
 
+/** Every registered tool, its arguments in its schema's order. */
+export const toolsOf = (registry: Registry): ModelTool[] =>
+  [...registry.values()].map(({ intent, description, input }) => ({
+    intent,
+    description,
+    arguments: Object.keys(input.properties).map((name) => ({
+      name,
+      schema: input.properties[name],
+      required: (input.required ?? []).includes(name),
+    })),
+  }))
+
 const catalogOf = (registry: Registry): string =>
   [...registry.values()]
     .map(({ intent, description, input }) =>
@@ -241,5 +267,6 @@ export const buildModelPrompt = (
         : []),
       `Request: ${utterance.trim()}`,
     ].join("\n\n"),
+    tools: toolsOf(registry),
   }
 }

@@ -20,6 +20,7 @@ import {
 const PROMPT: ModelPrompt = {
   instructions: "the tools and the rules",
   prompt: "Request: hi",
+  tools: [{ intent: "getBalances", description: "Balances.", arguments: [] }],
 }
 const OPTIONS = { timeoutMs: MODEL_RESPONSE_TIMEOUT_MS }
 
