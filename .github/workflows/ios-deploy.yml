@@ -57,6 +57,12 @@ jobs:
       - name: Create .env from secrets
         run: echo "${{ secrets.DOT_ENV }}" > .env
 
+      # ENG-734: ASSISTANT_DEV_LINK is for local phone builds only (it makes a
+      # production-mode bundle honour the assistant's dev link). Stop here,
+      # before anything is built, if the DOT_ENV secret ever carries it.
+      - name: Refuse ASSISTANT_DEV_LINK in .env
+        run: bash scripts/ci/check-store-env.sh .env
+
       - name: Create GoogleService-Info.plist from secrets
         run: echo '${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}' > ios/LNFlash/GoogleService-Info.plist
 

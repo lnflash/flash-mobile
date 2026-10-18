@@ -38,9 +38,11 @@ yarn aab-android
 
 ```json
 "scripts": {
-  "aab-android": "cd android && ./gradlew bundleRelease"
+  "aab-android": "bash scripts/ci/check-store-env.sh .env && cd android && ./gradlew bundleRelease && cd .."
 }
 ```
+
+> It runs `scripts/ci/check-store-env.sh` first, which stops the build while `ASSISTANT_DEV_LINK` (local phone builds only, ENG-734) is in `.env`, the other env files the bundle reads, or the environment.
 
 ### 3. **Upload to Google Play Console**
 
@@ -66,6 +68,8 @@ In Xcode:
   - `Build` (increment this number)
 
 ### 2. **Archive the iOS App**
+
+> **Before archiving:** run `bash scripts/ci/check-store-env.sh .env` and archive only if it passes. An Xcode archive runs no check, and a checkout whose `.env` carries `ASSISTANT_DEV_LINK` (local phone builds only, ENG-734) would ship the assistant's dev link to the App Store.
 
 - Select a real device or `Any iOS Device (arm64)`
 - Go to **Product** > **Archive**

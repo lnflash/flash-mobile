@@ -79,6 +79,7 @@ yalc.lock
 .env
 .env.*
 !.env.fastlane.example
+!.env.example
 .envrc
 .dependencies
 ios/assets
