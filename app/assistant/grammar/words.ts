@@ -168,6 +168,22 @@ const QUESTIONS: readonly (readonly string[])[] = [
 export const isQuestionAboutHow = (tokens: readonly Token[]): boolean =>
   QUESTIONS.some((words) => startsWith(tokens, words))
 
+/**
+ * Asks what something is (ENG-749): "what is lightning", "what's a sat",
+ * "whats an invoice", "what are fees". "What's" and "whats" both reach the
+ * rules as "what" (normalize.ts, folds.ts), so the word as typed tells
+ * them from a plain "what"; a patois "wah is" folds to "what is" and is one
+ * too. Unlike the openers above, a rule reads first: "what is my balance"
+ * and "what's the price" are reads, and only an ask no rule reads is a
+ * question about what something is (readGrammar).
+ */
+export const isQuestionAboutWhat = (tokens: readonly Token[]): boolean => {
+  const [first, second] = tokens
+  if (first?.word !== "what") return false
+  const typed = first.raw.toLowerCase().replace(/['’‘]/g, "")
+  return typed === "whats" || second?.word === "is" || second?.word === "are"
+}
+
 // ---------------------------------------------------------------------------
 // Payment requests and addresses, which v1 does not take
 // ---------------------------------------------------------------------------

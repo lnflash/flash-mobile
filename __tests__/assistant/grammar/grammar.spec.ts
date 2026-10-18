@@ -598,8 +598,54 @@ describe("readGrammar (ENG-690)", () => {
         { kind: "refused" },
       ]),
     )
-    // A question with any other opener is a plain miss: the model may read it.
-    expect(readGrammar("what is lightning", USD)).toBeUndefined()
+    // A question with any other opener is a plain miss: the model may read
+    // it. "What is" and "what are" are refused too, but only after the
+    // rules (the next case).
+    expect(readGrammar("who is satoshi", USD)).toBeUndefined()
+    expect(readGrammar("what can you do", USD)).toBeUndefined()
+    expect(readGrammar("what time is it", USD)).toBeUndefined()
+  })
+
+  it('refuses a question about what something is once no rule reads it: "what is", "what\'s", "whats", "what are" (ENG-749)', () => {
+    const questions: [string, typeof USD][] = [
+      ["what is lightning", USD],
+      ["what's a sat", USD],
+      ["What’s lightning?", USD],
+      ["whats an invoice", USD],
+      ["what are fees", USD],
+      ["what is bitcoin", USD],
+      // Its frame goes first, as for the other openers.
+      ["hey, what is lightning", USD],
+      ["can you tell me what's an onchain address", USD],
+      // Patois "wah" is "what" (folds.ts).
+      ["wah is lightning", JMD],
+    ]
+    questions.forEach(([utterance, account]) => {
+      expect([utterance, readGrammar(utterance, account)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ])
+      expect(matchGrammar(utterance, account)).toBeUndefined()
+    })
+    // A read a rule takes stays a read: the question is asked only after
+    // the rules, so the gate's hits are untouched.
+    const reads: [string, typeof USD, unknown][] = [
+      ["what is my balance", USD, { intent: "getBalances", args: {} }],
+      ["What's my balance today?", USD, { intent: "getBalances", args: {} }],
+      ["whats in my account", USD, { intent: "getBalances", args: {} }],
+      ["what are my balances", JMD, { intent: "getBalances", args: {} }],
+      ["what is the bitcoin price", JMD, { intent: "getPrice", args: {} }],
+      ["what's btc worth", JMD, { intent: "getPrice", args: {} }],
+    ]
+    reads.forEach(([utterance, account, call]) =>
+      expect([utterance, readGrammar(utterance, account)]).toEqual([
+        utterance,
+        { kind: "call", call },
+      ]),
+    )
+    // "What" before any other word is no such question.
+    expect(readGrammar("what did bob say", USD)).toBeUndefined()
+    expect(readGrammar("what", USD)).toBeUndefined()
   })
 
   it("refuses a send it cannot read as one contact and at most one amount", () => {

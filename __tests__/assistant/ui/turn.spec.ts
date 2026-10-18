@@ -391,6 +391,31 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     }
   })
 
+  it('never asks the model about a question about what something is: "what is lightning" (ENG-749)', async () => {
+    // What the macOS model answered for it (ENG-690 proxy run).
+    for (const utterance of ["what is lightning", "what's a sat", "whats an invoice"]) {
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+        modelCall({ intent: "getTransactions", args: { query: "lightning" } }),
+      )
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      // The refusal's reply, as "how does lightning work" gets.
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(runTool).not.toHaveBeenCalled()
+      expect(toolEvents()).toEqual([
+        expect.objectContaining({ outcome: "rejected", onDeviceModelAvailable: false }),
+      ])
+    }
+    const how = withModel(modelCall({ intent: "getBalances", args: {} }))
+    await expect(
+      answerUtterance(how.runtime, "how does lightning work", env(ON)),
+    ).resolves.toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    expect(how.modelAdapter.decide).not.toHaveBeenCalled()
+  })
+
   it("runs the model's checked call through runTool, served by the model, held as text", async () => {
     const call = {
       intent: "prepareSend",

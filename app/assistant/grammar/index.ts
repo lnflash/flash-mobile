@@ -5,7 +5,12 @@ import { normalize } from "./normalize"
 import { PREPARE_RECEIVE_RULES } from "./prepare-receive"
 import { PREPARE_SEND_RULES } from "./prepare-send"
 import type { GrammarContext, GrammarMatch, GrammarRule } from "./types"
-import { isQuestionAboutHow, namesPaymentRequest, stripFrame } from "./words"
+import {
+  isQuestionAboutHow,
+  isQuestionAboutWhat,
+  namesPaymentRequest,
+  stripFrame,
+} from "./words"
 
 // The grammar tier's entry (docs/ai-assistant-tool-registry.md §7, §7.2):
 // the first reader of every utterance, on every device, and for most users
@@ -36,12 +41,15 @@ export const GRAMMAR_RULES: readonly GrammarRule[] = [
  * an invoice, an address or a link anywhere in it (namesPaymentRequest); a
  * question that opens with one of isQuestionAboutHow's fifteen openers
  * ("how do", "why", "where", "when", "is", "do" and the rest, words.ts);
- * or a rule's refusal, which today is the send rule's: a send it cannot
- * read as one contact's words and at most one amount (prepare-send.ts: a
+ * a rule's refusal, which today is the send rule's: a send it cannot read
+ * as one contact's words and at most one amount (prepare-send.ts: a
  * follow-up or a time, a "from" it cannot read, two payments, a pronoun or
- * no payee, a word for what a payment is for). Undefined is words no rule
- * reads. Only a miss may go to a later tier (the on-device model): a
- * refusal is the v1 boundary (spec §7.2), which no tier reads past.
+ * no payee, a word for what a payment is for); or, once no rule has read
+ * it, a question about what something is, opening "what is", "what's",
+ * "whats" or "what are" (isQuestionAboutWhat, ENG-749): "what is my
+ * balance" stays a read. Undefined is words no rule reads. Only a miss may
+ * go to a later tier (the on-device model): a refusal is the v1 boundary
+ * (spec §7.2), which no tier reads past.
  */
 export const readGrammar = (
   utterance: string,
@@ -57,7 +65,10 @@ export const readGrammar = (
     const result = rule.match({ tokens }, ctx)
     if (result !== undefined) return result.kind === "refuse" ? REFUSED : result
   }
-  return undefined
+  // A question about what something is ("what is lightning") that no rule
+  // read: about the app or the world, as a "how" question is. Asked only
+  // now, since "what is my balance" and "what's the price" are reads.
+  return isQuestionAboutWhat(tokens) ? REFUSED : undefined
 }
 
 /** What the grammar makes of one utterance, read on its own: a refusal is no match. */
