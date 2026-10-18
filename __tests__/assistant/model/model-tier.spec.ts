@@ -1,3 +1,4 @@
+import { readAmountPhrase } from "@app/assistant/engine/amount-phrase"
 import { MODEL_RESPONSE_TIMEOUT_MS } from "@app/assistant/engine/model-adapter"
 import { THREAD_CLOSE, THREAD_OPEN } from "@app/assistant/engine/model-prompt"
 import {
@@ -406,11 +407,22 @@ describe("isGrounded", () => {
     ).toBe(true)
   })
 
-  it("refuses an amount the model rewrote: a suffix, words, a part of a name", () => {
+  it("refuses an amount the grammar would ask about, and a number the words do not hold", () => {
+    // A suffix, and words for a number with a multiplier, stay a question
+    // to readAmountPhrase, whatever number the model made of them.
     expect(grounded({ payee: "bob", amount: "5000" }, "send bob 5k")).toBe(false)
-    expect(grounded({ payee: "bob", amount: "5" }, "send bob five")).toBe(false)
+    expect(grounded({ payee: "bob", amount: "500" }, "send bob five hundred")).toBe(false)
+    // A part of a name, or of another number, is not the amount.
     expect(grounded({ payee: "bob123", amount: "123" }, "send bob123 5")).toBe(false)
     expect(grounded({ payee: "bob", amount: "5" }, "send bob 55")).toBe(false)
+  })
+
+  it("reads a number in words exactly as the grammar's amount reader does", () => {
+    // Grounding keeps no list of number words: "five" is an amount here
+    // exactly when readAmountPhrase reads it as one, so a change to that
+    // reader moves both together.
+    const readsFive = readAmountPhrase("five", USD).kind === "amount"
+    expect(grounded({ payee: "bob", amount: "5" }, "send bob five")).toBe(readsFive)
   })
 
   it("refuses a unit the words do not give, or give as a question", () => {

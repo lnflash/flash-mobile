@@ -42,7 +42,8 @@ export type RunToolDeps = {
    */
   actionDeps?: ActionDeps
   /**
-   * The on-device model emitted this call (ENG-690): the event says so in
+   * The on-device model emitted this call, or a card it prepared issues it
+   * again (a pick, a Try again, a Refresh; ENG-690): the event says so in
    * `onDeviceModelAvailable`, which analytics.ts reads as "a model served
    * the call". False, or absent, for the grammar's calls and every other.
    */

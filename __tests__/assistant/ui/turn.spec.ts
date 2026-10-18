@@ -156,6 +156,36 @@ describe("entriesFor", () => {
     ])
   })
 
+  it("keeps where the call came from with the call, for the calls its card issues (ENG-690)", () => {
+    const action = makeAction()
+    const byModel = { stale: false, servedByOnDeviceModel: true }
+    expect(
+      entriesFor(SEND, { kind: "prepared", preparedAction: action }, byModel),
+    ).toEqual([
+      { kind: "card", card: cardOf(action), call: SEND, servedByOnDeviceModel: true },
+    ])
+    const card = {
+      type: "clarification" as const,
+      prompt: "Assistant.pickContact" as const,
+      options: [],
+    }
+    expect(entriesFor(SEND, { kind: "clarification", card }, byModel)).toEqual([
+      { kind: "card", card, call: SEND, servedByOnDeviceModel: true },
+    ])
+    // A card that holds no call issues none, so it holds no origin either.
+    const refused = {
+      type: "prepareRefused" as const,
+      reason: "insufficientBalance" as const,
+    }
+    expect(
+      entriesFor(
+        SEND,
+        { kind: "error", userMessage: "Assistant.insufficientBalance", card: refused },
+        byModel,
+      ),
+    ).toEqual([{ kind: "card", card: refused }])
+  })
+
   it("says an error once: its reply, or the refusal card that says it", () => {
     expect(
       entriesFor(
@@ -340,7 +370,10 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     expect(deps.servedByOnDeviceModel).toBe(true)
     // Prepared as text: the person confirms it with a tap.
     expect(add.mock.calls).toEqual([[action, "text"]])
-    expect(entries).toEqual([{ kind: "card", card: cardOf(action), call }])
+    // The card keeps where its call came from, for a Try again or a Refresh.
+    expect(entries).toEqual([
+      { kind: "card", card: cardOf(action), call, servedByOnDeviceModel: true },
+    ])
   })
 
   it("reports one event for the model's call, runTool's own, with the model's flag", async () => {

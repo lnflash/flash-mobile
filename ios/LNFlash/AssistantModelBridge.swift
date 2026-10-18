@@ -14,8 +14,10 @@
 //   - every use of it sits inside `#if canImport(FoundationModels)` (an SDK
 //     without it compiles this module down to "no model") and
 //     `@available(iOS 26.0, *)` (older systems answer "no model");
-//   - it is weak-linked (OTHER_LDFLAGS: -weak_framework FoundationModels),
-//     so dyld does not look for it at launch on iOS 15 to 25.
+//   - it is weak-linked (OTHER_LDFLAGS: $(FOUNDATION_MODELS_LDFLAGS), which
+//     is -weak_framework FoundationModels on iOS 26 and later SDKs and
+//     nothing on older ones, where ld would refuse a framework it cannot
+//     find), so dyld does not look for it at launch on iOS 15 to 25.
 //
 //  A strong link or an unguarded use is a crash at launch for every user
 //  below iOS 26.

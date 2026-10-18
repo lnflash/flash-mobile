@@ -32,12 +32,16 @@ export const GRAMMAR_RULES: readonly GrammarRule[] = [
 
 /**
  * What the grammar makes of one utterance, its refusals kept apart from its
- * misses (ENG-690): `refused` is an ask v1 does not serve (an invoice or an
- * address for a payee, a "how do I", a rule's refusal: a pronoun or a
- * follow-up, two payees, a time, a word for what a payment is for);
- * undefined is words no rule reads. Only a miss may go to a later tier (the
- * on-device model): a refusal is the v1 boundary (spec §7.2), which no tier
- * reads past.
+ * misses (ENG-690): `refused` is an ask v1 does not serve, and only these:
+ * an invoice, an address or a link anywhere in it (namesPaymentRequest); a
+ * question that opens with one of isQuestionAboutHow's fifteen openers
+ * ("how do", "why", "where", "when", "is", "do" and the rest, words.ts);
+ * or a rule's refusal, which today is the send rule's: a send it cannot
+ * read as one contact's words and at most one amount (prepare-send.ts: a
+ * follow-up or a time, a "from" it cannot read, two payments, a pronoun or
+ * no payee, a word for what a payment is for). Undefined is words no rule
+ * reads. Only a miss may go to a later tier (the on-device model): a
+ * refusal is the v1 boundary (spec §7.2), which no tier reads past.
  */
 export const readGrammar = (
   utterance: string,
@@ -46,8 +50,8 @@ export const readGrammar = (
 ): GrammarVerdict => {
   const tokens = stripFrame(normalize(utterance).tokens)
   if (tokens.length === 0) return undefined
-  // An invoice or an address is a payee v1 does not take, and a "how do I"
-  // is a question about the app: neither is any rule's.
+  // An invoice or an address is a payee v1 does not take, and a question
+  // ("how do I", "where can I") is about the app: neither is any rule's.
   if (namesPaymentRequest(tokens) || isQuestionAboutHow(tokens)) return REFUSED
   for (const rule of rules) {
     const result = rule.match({ tokens }, ctx)

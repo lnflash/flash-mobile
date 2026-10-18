@@ -144,14 +144,28 @@ describe("the iOS bridge", () => {
         .exec(config)?.[1]
         .split(",")
         .map((flag) => flag.trim())
-      expect(flags).toEqual(expect.arrayContaining(['"-weak_framework"']))
-      expect(flags?.[(flags?.indexOf('"-weak_framework"') ?? -2) + 1]).toBe(
-        "FoundationModels",
-      )
+      // The flag comes from a setting an SDK without the framework never
+      // sets: ld refuses a framework it cannot find, even to weak-link it,
+      // so an unconditional -weak_framework fails the link on Xcode 16.
+      expect(flags).toEqual(expect.arrayContaining(['"$(FOUNDATION_MODELS_LDFLAGS)"']))
+      expect(flags).not.toEqual(expect.arrayContaining(['"-weak_framework"']))
+      expect(flags?.join(" ")).not.toContain("FoundationModels,")
+      // Set for iOS 26 and later SDKs only (iphoneos26.x, iphonesimulator26.x),
+      // and only to weak-link: never on every SDK, never strongly.
+      const settings = [
+        ...config.matchAll(/^\t+"?FOUNDATION_MODELS_LDFLAGS(\[[^\]]*\])?"? = (.*);$/gm),
+      ]
+      expect(settings.map(([, condition, value]) => [condition, value])).toEqual([
+        ["[sdk=iphoneos2*]", '"-weak_framework FoundationModels"'],
+        ["[sdk=iphonesimulator2*]", '"-weak_framework FoundationModels"'],
+      ])
       // If the deployment target ever reaches 26, the guards may go; until
       // then they are what keeps iOS 15 to 25 launching.
       expect(config).toContain("IPHONEOS_DEPLOYMENT_TARGET = 15.1;")
     })
+    // And nothing links it another way: no Frameworks-phase entry, which
+    // would be a strong link.
+    expect(pbxproj).not.toContain("FoundationModels.framework")
   })
 })
 
@@ -200,5 +214,46 @@ describe("the Android bridge", () => {
     expect(gradle).toMatch(
       /implementation\("com\.google\.mlkit:genai-prompt:\d+\.\d+\.\d+-[a-z]+\d+"\)/,
     )
+  })
+
+  it("keeps genai-prompt out of Kotlin, the rule that lets :app skip the metadata check", () => {
+    // build.gradle turns off Kotlin's metadata version check for the whole
+    // app module, so the Kotlin 2.0 compiler accepts genai-prompt's Kotlin
+    // 2.2 classes on its classpath. Kotlin code that used them would compile
+    // against metadata that compiler cannot read, silently: the bridge that
+    // calls the library stays Java.
+    const sourceDir = path.join(repoDir, "android", "app", "src")
+    const kotlin = fs
+      .readdirSync(sourceDir, { encoding: "utf8", recursive: true })
+      .filter((file) => file.endsWith(".kt"))
+    expect(kotlin).toEqual(
+      expect.arrayContaining([
+        path.join("main", "java", "com", "lnflash", "MainApplication.kt"),
+      ]),
+    )
+    const usesGenai = kotlin.filter((file) =>
+      /com\.google\.mlkit\.genai/.test(
+        fs.readFileSync(path.join(sourceDir, file), "utf8"),
+      ),
+    )
+    expect(usesGenai).toEqual([])
+    expect(java).toContain(
+      "import com.google.mlkit.genai.prompt.java.GenerativeModelFutures;",
+    )
+
+    // The skip is set once, and stays under the comment that states the rule.
+    const lines = gradle.split("\n")
+    const at = lines.findIndex((line) => line.includes("-Xskip-metadata-version-check"))
+    expect(gradle.split("-Xskip-metadata-version-check")).toHaveLength(2)
+    const block = lines.findIndex(
+      (line, index) => index < at && line.startsWith("tasks.withType("),
+    )
+    expect(block).toBe(at - 1)
+    let start = block
+    while (start > 0 && lines[start - 1].startsWith("//")) start -= 1
+    const comment = lines.slice(start, block).join(" ")
+    expect(comment).toContain("No Kotlin code")
+    expect(comment).toContain("may use genai-prompt")
+    expect(comment).toContain("AssistantModelBridgeModule.java")
   })
 })

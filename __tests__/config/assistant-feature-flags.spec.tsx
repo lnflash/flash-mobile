@@ -2,13 +2,15 @@
  * ENG-687: the assistant flags (docs/ai-assistant-tool-registry.md §1, rule
  * 7), and ENG-690's fifth, assistantOnDeviceModel. They default off, follow
  * Remote Config, and unlike the older flags are NOT forced on for the Local
- * instance: dogfooding flips the remote flag.
+ * instance: dogfooding flips the remote flag. The dev link turns on
+ * assistantEnabled alone, never assistantOnDeviceModel.
  */
 import * as React from "react"
 import { Text } from "react-native"
 import { act, render } from "@testing-library/react-native"
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 
+import { setAssistantDevOverride } from "../../app/config/assistant-dev-override"
 import {
   FeatureFlagContextProvider,
   useFeatureFlags,
@@ -139,6 +141,26 @@ describe("assistant feature flags", () => {
       assistantEnabled: true,
       assistantOnDeviceModel: true,
     })
+  })
+
+  it("keep the on-device model off when the dev link turns the assistant on", async () => {
+    // A development build's link (assistant-dev-override.ts) turns on
+    // assistantEnabled alone: the on-device model stays Remote Config's
+    // (ENG-690, architect decision 2), so a test build never asks it.
+    const dev = globalThis as unknown as { __DEV__: boolean }
+    const wasDev = dev.__DEV__
+    dev.__DEV__ = true
+    try {
+      act(() => setAssistantDevOverride(true))
+
+      const flags = await renderFlags()
+
+      expect(flags.assistantEnabled).toBe(true)
+      expect(flags.assistantOnDeviceModel).toBe(false)
+    } finally {
+      act(() => setAssistantDevOverride(false))
+      dev.__DEV__ = wasDev
+    }
   })
 
   it("stay off on the Local instance, which forces the older flags on", async () => {

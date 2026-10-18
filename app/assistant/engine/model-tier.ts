@@ -31,8 +31,8 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    account stays the question the grammar makes it. A read's free text is
 //    held to the words too (a history search for "none" is not what was
 //    asked); its closed sets pass. It keeps the grammar's v1 boundary: no
-//    follow-ups ("send him 10 more"), and no amount the model rewrote
-//    ("5k", "five").
+//    follow-ups ("send him 10 more"), and no amount the grammar would ask
+//    about ("5k"), whatever number the model made of it.
 // 5. The call as the model sent it, intent and raw arguments, for runCall:
 //    the router turns amounts into MoneyAmounts, so routed arguments would
 //    not route again.
@@ -146,7 +146,7 @@ type TypedAmount = { amount: string; currency: string }
  * Every amount the person typed, as the grammar reads it (amountRuns,
  * readAmountPhrase): its number, and its currency, which is the display
  * currency when the words name none. An amount the grammar would ask about
- * ("5k", "$5" on a J$ account, words for a number) is not one.
+ * ("5k", "$5" on a J$ account) is not one.
  */
 const amountsTyped = (said: Said): TypedAmount[] => {
   const { tokens } = normalize(said.utterance)

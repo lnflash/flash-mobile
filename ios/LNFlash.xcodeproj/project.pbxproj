@@ -1415,6 +1415,8 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
+				"FOUNDATION_MODELS_LDFLAGS[sdk=iphoneos2*]" = "-weak_framework FoundationModels";
+				"FOUNDATION_MODELS_LDFLAGS[sdk=iphonesimulator2*]" = "-weak_framework FoundationModels";
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1546,8 +1548,7 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
-					"-weak_framework",
-					FoundationModels,
+					"$(FOUNDATION_MODELS_LDFLAGS)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash;
 				PRODUCT_NAME = Flash;
@@ -1571,6 +1572,8 @@
 				CURRENT_PROJECT_VERSION = 51;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
+				"FOUNDATION_MODELS_LDFLAGS[sdk=iphoneos2*]" = "-weak_framework FoundationModels";
+				"FOUNDATION_MODELS_LDFLAGS[sdk=iphonesimulator2*]" = "-weak_framework FoundationModels";
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1702,8 +1705,7 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
-					"-weak_framework",
-					FoundationModels,
+					"$(FOUNDATION_MODELS_LDFLAGS)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash;
 				PRODUCT_NAME = Flash;

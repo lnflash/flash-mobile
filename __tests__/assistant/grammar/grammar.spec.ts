@@ -383,6 +383,58 @@ describe("readGrammar (ENG-690)", () => {
     expect(readGrammar("   ", USD)).toBeUndefined()
   })
 
+  it("refuses a question by its opener: these fifteen, and no other", () => {
+    // isQuestionAboutHow (words.ts), once the frame is stripped. The spec's
+    // ENG-690 entry names this set, and the owner decides whether questions
+    // stay inside the boundary: a change here is a change there.
+    const questions: [string, typeof USD][] = [
+      ["how do I send money", USD],
+      ["how can I get paid", USD],
+      ["how does lightning work", USD],
+      ["how to receive bitcoin", USD],
+      ["how should I save", USD],
+      ["how mi fi sen money", JMD],
+      ["why is bitcoin down", USD],
+      ["where can I spend bitcoin", USD],
+      ["when did kemar last pay me", USD],
+      ["is bitcoin going up", USD],
+      ["are fees high today", USD],
+      ["should I buy bitcoin", USD],
+      ["will bitcoin go up", USD],
+      ["does flash charge fees", USD],
+      ["do I have enough to send bob 20", USD],
+    ]
+    expect(questions).toHaveLength(15)
+    questions.forEach(([utterance, account]) =>
+      expect([utterance, readGrammar(utterance, account)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ]),
+    )
+    // A question with any other opener is a plain miss: the model may read it.
+    expect(readGrammar("what is lightning", USD)).toBeUndefined()
+  })
+
+  it("refuses a send it cannot read as one contact and at most one amount", () => {
+    // The send rule's refusals beyond the pronoun, follow-up, time, two
+    // payments and purpose above: no payee, a wallet it does not know after
+    // "from", payee words on both sides of the amount or before its "to",
+    // and words no one name holds (more than four of them).
+    const sends = [
+      "send 5 dollars",
+      "send bob $5 from my savings",
+      "send bob $5 alice",
+      "send bob 5 to alice",
+      "send 5 to bob jones smith brown junior",
+    ]
+    sends.forEach((utterance) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ]),
+    )
+  })
+
   it("answers a match as matchGrammar does", () => {
     expect(readGrammar("my balance", USD)).toEqual(matchGrammar("my balance", USD))
     expect(readGrammar("send bob 5k", JMD)).toEqual(matchGrammar("send bob 5k", JMD))

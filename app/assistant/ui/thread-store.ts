@@ -54,6 +54,8 @@ export const listedKey = (rail: "graphql" | "btc", id: string): string => `${rai
  * - card: an action card's payload (a confirm card, an invoice, a question),
  *   drawn by ActionCardView, and the call that made it: a pick of a
  *   question, and a card's Try again or Refresh, issue that call again.
+ *   `servedByOnDeviceModel` when the on-device model emitted that call
+ *   (ENG-690), so the event of each call issued again says so too.
  */
 export type ThreadEntry =
   | { id: string; kind: "user"; text: string }
@@ -67,7 +69,13 @@ export type ThreadEntry =
       listed?: Readonly<Record<string, ListedTransaction>>
     }
   | { id: string; kind: "price"; payload: PricePayload }
-  | { id: string; kind: "card"; card: unknown; call?: ToolCall }
+  | {
+      id: string
+      kind: "card"
+      card: unknown
+      call?: ToolCall
+      servedByOnDeviceModel?: boolean
+    }
 
 type WithoutId<E> = E extends unknown ? Omit<E, "id"> : never
 

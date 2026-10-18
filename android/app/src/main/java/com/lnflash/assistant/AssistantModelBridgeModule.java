@@ -174,9 +174,13 @@ public final class AssistantModelBridgeModule extends ReactContextBaseJavaModule
 
   /**
    * The model's text as the bridge's answer: the first JSON object in it,
-   * its {@code intent} and its {@code args} re-serialised as {@code argsJson}.
-   * Text with no readable object, or an object with no string intent, is
-   * none. JS checks the call itself: the intent, the arguments, the grounding.
+   * its {@code intent} and its {@code args} re-serialised as {@code argsJson},
+   * whatever JSON {@code args} is. Text with no readable object, or an object
+   * with no string intent, is none. An {@code args} that is not an object (a
+   * string, a number, a list) goes to JS as it was, and the router refuses
+   * it: malformed output gets the miss reply, never a different call with no
+   * arguments. A null or absent {@code args} is no arguments. JS checks the
+   * call itself: the intent, the arguments, the grounding.
    */
   @VisibleForTesting
   static String callJsonOf(@Nullable String text) {
@@ -189,8 +193,12 @@ public final class AssistantModelBridgeModule extends ReactContextBaseJavaModule
       Object intent = parsed.opt("intent");
       if (!(intent instanceof String)) return NONE;
       JSONObject answer = new JSONObject().put("intent", intent);
-      JSONObject args = parsed.optJSONObject("args");
-      if (args != null) answer.put("argsJson", args.toString());
+      Object args = parsed.opt("args");
+      if (args != null && args != JSONObject.NULL) {
+        answer.put(
+            "argsJson",
+            args instanceof String ? JSONObject.quote((String) args) : args.toString());
+      }
       return answer.toString();
     } catch (Throwable t) {
       return NONE;

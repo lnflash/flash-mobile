@@ -10,7 +10,14 @@ import { isPlainObject } from "../engine/schema-validator"
 import type { AssistantRuntime } from "./assistant-runtime"
 import { createLiveCardActions } from "./live-actions"
 import type { ThreadEntry } from "./thread-store"
-import { answerUtterance, needsNetwork, reissue, runCall, TurnEnv } from "./turn"
+import {
+  answerUtterance,
+  needsNetwork,
+  originOf,
+  reissue,
+  runCall,
+  TurnEnv,
+} from "./turn"
 
 // The Ask Flash thread as the screen uses it (ENG-689): the transcript, one
 // turn at a time, and the actions its cards take.
@@ -104,8 +111,12 @@ export const useThread = (runtime: AssistantRuntime, env: TurnEnv): Thread => {
         if (!validation.valid || validation.card.type !== "clarification") return
         const call = reissue(entry.call, validation.card.about, optionId)
         if (!call || refusedOffline(call)) return
-        // The answer takes the question's place.
-        runtime.transcript.replace(entryId, await runCall(runtime, call, envRef.current))
+        // The answer takes the question's place. A question about the
+        // model's call re-issues the model's call (CallOrigin).
+        runtime.transcript.replace(
+          entryId,
+          await runCall(runtime, call, { ...envRef.current, ...originOf(entry) }),
+        )
       }),
     [refusedOffline, runtime, turn],
   )
@@ -121,7 +132,7 @@ export const useThread = (runtime: AssistantRuntime, env: TurnEnv): Thread => {
         runtime.executor.dismiss(preparedActionId)
         runtime.transcript.replace(
           entry.id,
-          await runCall(runtime, entry.call, envRef.current),
+          await runCall(runtime, entry.call, { ...envRef.current, ...originOf(entry) }),
         )
       }),
     [refusedOffline, runtime, turn],
@@ -138,7 +149,12 @@ export const useThread = (runtime: AssistantRuntime, env: TurnEnv): Thread => {
         const entry = runtime.transcript.cardEntry(result.replacedActionId)
         if (entry) {
           runtime.transcript.replace(entry.id, [
-            { kind: "card", card: cardOf(result.preparedAction), call: entry.call },
+            {
+              kind: "card",
+              card: cardOf(result.preparedAction),
+              call: entry.call,
+              ...originOf(entry),
+            },
           ])
         }
         runtime.transcript.append([{ kind: "reply", replyKey: result.replyKey }])

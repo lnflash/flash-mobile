@@ -182,6 +182,11 @@ dependencies {
 
     implementation 'com.facebook.fresco:animated-gif:3.4.0'
 
+    // JVM unit tests (src/test, ./gradlew :app:testDebugUnitTest). org.json
+    // stands in for the Android one, which the unit-test android.jar only stubs.
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20260814")
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
