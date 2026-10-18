@@ -3,7 +3,7 @@ import { Meta } from "@storybook/react"
 
 import { StoryScreen } from "../../../.storybook/views"
 import { ClarificationCard } from "./ClarificationCard"
-import { clarificationFixture } from "./fixtures"
+import { clarificationFixture, flashUserClarificationFixture } from "./fixtures"
 
 export default {
   title: "Assistant / Clarification card",
@@ -15,10 +15,11 @@ export const PickContact = () => (
   <ClarificationCard payload={clarificationFixture} onPick={() => undefined} />
 )
 
-export const NoMatch = () => (
-  <ClarificationCard
-    payload={{ type: "clarification", prompt: "Assistant.noContactMatch", options: [] }}
-  />
+// A payee question always has an option to pick (ENG-730): a Flash user who
+// is not a contact is offered alone, and no one by that name is the refused
+// card's payeeNotFound story.
+export const PickFlashUser = () => (
+  <ClarificationCard payload={flashUserClarificationFixture} onPick={() => undefined} />
 )
 
 export const BadPayload = () => (

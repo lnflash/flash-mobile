@@ -36,6 +36,7 @@ const REFUSALS: [PrepareRefusalReason, string][] = [
   ["insufficientBalance", en.Assistant.insufficientBalance()],
   ["limitExceeded", en.Assistant.limitExceeded()],
   ["notAvailableYet", en.Assistant.notYetAvailable()],
+  ["payeeNotFound", en.Assistant.payeeNotFound()],
 ]
 
 describe("ActionCardView: the card renderer", () => {

@@ -315,6 +315,10 @@ export const TUNING: readonly CorpusEntry[] = [
     send("bill jones", "12", { currency: "USD" }),
   ),
   jm("pay di barber 1500", send("barber", "1500")),
+  // A Flash user the user has not added (ENG-730, from the dogfood): the
+  // grammar takes the words as for anyone, and resolveContact, finding no
+  // contact like them, offers that user as a picker of one.
+  en("USD", "Send 0.05 usd to dreadmax", send("dreadmax", "0.05", { currency: "USD" })),
 
   // ----------------------------------------------------------------- receive
   en("USD", "receive $20", receive({ amount: "20", currency: "USD" })),
@@ -487,4 +491,7 @@ export const TUNING: readonly CorpusEntry[] = [
   // Two payees, joined by a sign or a comma.
   en("USD", "send 10 to alice + bob", "miss"),
   en("USD", "send $15 to bob, tanya", "miss"),
+  // Adding a contact is the Contacts screen's, not a call (ENG-730, from the
+  // dogfood); a reply that points there needs a rule of its own.
+  en("USD", "Add dreadmax as a contact", "miss"),
 ]

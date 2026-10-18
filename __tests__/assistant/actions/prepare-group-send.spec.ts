@@ -30,6 +30,7 @@ import {
 import { resetIdempotencyKeySupport } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
 import { memoryStorage } from "../executor-harness"
 import {
+  accountsOf,
   bolt11,
   fakeActionCtx,
   JMD_PRICE,
@@ -80,11 +81,11 @@ const setup = ({
   ])
   fake.graphql.realtimePrice.mockResolvedValue(display === "USD" ? USD_PRICE : JMD_PRICE)
   fake.graphql.contacts.mockResolvedValue(CONTACTS)
-  fake.graphql.accountDefaultWallet.mockImplementation(async (username: string) => ({
-    __typename: "PublicWallet",
-    id: `${username}-wallet`,
-    walletCurrency: "USD",
-  }))
+  // Every contact a case names has an account, and so does dreadmax, who is
+  // no contact (ENG-730); any other word is no one's username.
+  fake.graphql.accountDefaultWallet.mockImplementation(
+    accountsOf([...CONTACTS.map(({ username }) => username), "alina", "dreadmax"]),
+  )
   const scripts = new Map<string, LegScript[]>()
   const script = (username: string, ...answers: LegScript[]) =>
     scripts.set(`${username}-wallet`, answers)
@@ -430,6 +431,49 @@ describe("prepareGroupSend", () => {
       }),
     })
     expect(fake.mutations.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
+  })
+
+  it("refuses the group with the not-found card when one payee is no contact and no Flash user (ENG-730)", async () => {
+    const fake = setup()
+
+    await expect(
+      run({ payees: ["Bob", "mallory", "Dave"], total: "9", currency: "USD" }, fake),
+    ).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+    // Refused at that payee: nothing priced, nothing sent.
+    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
+    expect(fake.mutations.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
+  })
+
+  it("asks about a payee who is a Flash user but no contact, then pays the pick as a leg (ENG-730)", async () => {
+    const fake = setup()
+    const args = { payees: ["Bob", "dreadmax"], total: "10", currency: "USD" as const }
+
+    const asked = await run(args, fake)
+
+    expect(asked).toEqual({
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickFlashUser",
+        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+        about: "dreadmax",
+      },
+    })
+    if (asked.kind !== "clarification") throw new Error("expected a question")
+
+    const action = prepared(
+      await run({ ...args, payees: ["Bob", asked.card.options[0].id] }, fake),
+    )
+    await confirm(action)
+
+    expect(dispatches(fake).map(({ to, amount }) => ({ to, amount }))).toEqual([
+      { to: "bob-wallet", amount: 500 },
+      { to: "dreadmax-wallet", amount: 500 },
+    ])
   })
 
   it("pays Flash users only", async () => {

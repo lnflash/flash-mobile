@@ -1,10 +1,19 @@
+import { runTool } from "@app/assistant/engine/run-tool"
+import { assistantRegistry } from "@app/assistant/registry"
 import {
   CONTACT_PICKER_LIMIT,
   namesContact,
   resolveContact,
 } from "@app/assistant/registry/read/resolve-contact"
-import type { ContactRow } from "@app/assistant/rails/graphql-rail"
-import { fakeCtx } from "../fakes"
+import { ContactRow, GraphqlRailError } from "@app/assistant/rails/graphql-rail"
+import type { ToolResult } from "@app/assistant/registry/types"
+import {
+  accountsOf,
+  failingAccountLookup,
+  fakeCtx,
+  recordingTelemetry,
+  wallet,
+} from "../fakes"
 
 const contact = (username: string, alias: string | null = null): ContactRow =>
   ({
@@ -23,27 +32,234 @@ const CONTACTS = [
   contact("alicia99"),
 ]
 
+/** Flash users the user has not added: an account, and no contact (ENG-730). */
+const NOT_CONTACTS = ["dreadmax"]
+
+/**
+ * A question with nothing to pick is a dead end (ENG-730): no hint may
+ * produce one. Every hint this file resolves through `resolve` is checked.
+ */
+const expectSomethingToPick = (hint: string, result: ToolResult<unknown>) => {
+  if (result.kind === "clarification") {
+    expect([hint, result.card.options.length > 0]).toEqual([hint, true])
+  }
+}
+
 const resolve = async (hint: string, contacts: ContactRow[] = CONTACTS) => {
   const { ctx, graphql } = fakeCtx()
   graphql.contacts.mockResolvedValue(contacts)
-  graphql.accountDefaultWallet.mockImplementation(async (username: string) => ({
-    __typename: "PublicWallet",
-    id: `${username}-wallet`,
-    walletCurrency: "USD",
-  }))
+  // Each contact has an account, and so does each Flash user who is not a
+  // contact; any other word is no one's username.
+  graphql.accountDefaultWallet.mockImplementation(
+    accountsOf([...contacts.map(({ username }) => username), ...NOT_CONTACTS]),
+  )
   const result = await resolveContact.run({ hint }, ctx)
+  expectSomethingToPick(hint, result)
   return { result, graphql }
 }
 
 describe("resolveContact", () => {
-  it("asks the user to say it another way when nothing matches", async () => {
+  it("refuses with the not-found card when the words name neither a contact nor a Flash user", async () => {
     const { result, graphql } = await resolve("zzzz")
 
     expect(result).toEqual({
+      kind: "error",
+      userMessage: "Assistant.payeeNotFound",
+      card: { type: "prepareRefused", reason: "payeeNotFound" },
+    })
+    // Looked up as a username first, once, and no one has it.
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["zzzz"]])
+  })
+
+  it("offers a Flash user who is not a contact as a picker of one, never as an answer", async () => {
+    const { result, graphql } = await resolve("dreadmax")
+
+    expect(result).toEqual({
       kind: "clarification",
-      card: { type: "clarification", prompt: "Assistant.noContactMatch", options: [] },
+      card: {
+        type: "clarification",
+        // The prompt says the person is not in the contacts; the option is
+        // the username alone, data and no copy.
+        prompt: "Assistant.pickFlashUser",
+        options: [{ id: "dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+      },
+    })
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"]])
+  })
+
+  it("looks up the username without the spaces around the words", async () => {
+    const { result, graphql } = await resolve("  dreadmax ")
+
+    expect(result).toMatchObject({
+      kind: "clarification",
+      card: { options: [{ id: "dreadmax", label: "dreadmax", sublabel: "dreadmax" }] },
+    })
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"]])
+  })
+
+  it("never looks up words with a space in them as a username: no username has one", async () => {
+    // A blank hint is no one's either; with no contacts, Fuse finds none for it.
+    const cases: [string, ContactRow[]][] = [
+      ["the guy from work", CONTACTS],
+      ["dread max", CONTACTS],
+      [" ", []],
+    ]
+    for (const [hint, contacts] of cases) {
+      const { result, graphql } = await resolve(hint, contacts)
+
+      expect([hint, result]).toEqual([
+        hint,
+        {
+          kind: "error",
+          userMessage: "Assistant.payeeNotFound",
+          card: { type: "prepareRefused", reason: "payeeNotFound" },
+        },
+      ])
+      expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
+    }
+  })
+
+  it("never looks up words that cannot be a username: the server would refuse them, not find no one", async () => {
+    // The server's Username pattern (lnflash/flash UsernameRegex,
+    // src/domain/accounts/index.ts:74): 3 to 50 letters, digits or "_", not
+    // starting with 1, 3, bc1 or lnbc1 in any case. It answers any other word
+    // with an error, which the rail reads as a failed lookup (ENG-730 review).
+    const notUsernames = [
+      "kerry-ann",
+      "d'andre",
+      "mom.",
+      "jo",
+      "x".repeat(51),
+      "1dread",
+      "3dread",
+      "bc1dread",
+      "LNBC1dread",
+      "Bc1dread",
+    ]
+    for (const hint of notUsernames) {
+      // No contacts, so no contact looks like any of them.
+      const { result, graphql } = await resolve(hint, [])
+
+      expect([hint, result]).toEqual([
+        hint,
+        {
+          kind: "error",
+          userMessage: "Assistant.payeeNotFound",
+          card: { type: "prepareRefused", reason: "payeeNotFound" },
+        },
+      ])
+      expect([hint, graphql.accountDefaultWallet.mock.calls]).toEqual([hint, []])
+    }
+
+    // Words that can be one are looked up, whatever their letters.
+    for (const hint of ["josé_1", "abc", "x".repeat(50), "DreadMax_2"]) {
+      const { graphql } = await resolve(hint, [])
+
+      expect([hint, graphql.accountDefaultWallet.mock.calls]).toEqual([hint, [[hint]]])
+    }
+  })
+
+  it("fails when the username lookup fails, never calling it not found", async () => {
+    // runTool answers the rejection with Assistant.toolFailed, as for every
+    // other read that fails.
+    const { ctx, graphql } = fakeCtx()
+    graphql.contacts.mockResolvedValue(CONTACTS)
+    graphql.accountDefaultWallet.mockRejectedValue(new Error("Network request failed"))
+
+    await expect(resolveContact.run({ hint: "dreadmax" }, ctx)).rejects.toThrow(
+      "Network request failed",
+    )
+  })
+
+  it("fails when the server fails the lookup of an account that may exist, never refusing a real user as not found", async () => {
+    // The real rail, over a server that failed dreadmax's lookup with a
+    // GraphQL error on an HTTP 200 (DB_ERROR; ENG-730 review). Read as no
+    // account, it was the payeeNotFound card about a real user. It is a
+    // failed read, which runTool answers with Assistant.toolFailed.
+    const { ctx, graphql, btcRail } = fakeCtx()
+    graphql.contacts.mockResolvedValue(CONTACTS)
+    graphql.accountDefaultWallet.mockImplementation(failingAccountLookup())
+
+    await expect(resolveContact.run({ hint: "dreadmax" }, ctx)).rejects.toThrow(
+      GraphqlRailError,
+    )
+    await expect(
+      runTool(
+        { intent: "resolveContact", args: { hint: "dreadmax" } },
+        {
+          registry: assistantRegistry,
+          graphql: ctx.graphql,
+          btcRail,
+          displayCurrency: ctx.displayCurrency,
+          lnAddressHostname: ctx.lnAddressHostname,
+          now: ctx.now,
+          telemetry: recordingTelemetry().telemetry,
+        },
+      ),
+    ).resolves.toEqual({ kind: "error", userMessage: "Assistant.toolFailed" })
+  })
+
+  it("answers the user's own username with the self-payment reply, never a question whose one option is refused", async () => {
+    // Signed in as dreadmax, the user names dreadmax, who is no contact: the
+    // send screen refuses that at lookup time (payment-destination/
+    // intraledger.ts:39-45), and the picker's one option would be refused at
+    // the tap (ENG-730 review).
+    const { ctx, graphql } = fakeCtx()
+    graphql.contacts.mockResolvedValue(CONTACTS)
+    graphql.accountDefaultWallet.mockImplementation(accountsOf(NOT_CONTACTS))
+    graphql.wallets.mockResolvedValue([wallet({ id: "dreadmax-wallet" })])
+
+    await expect(resolveContact.run({ hint: "dreadmax" }, ctx)).resolves.toEqual({
+      kind: "error",
+      userMessage: "Assistant.selfPayment",
+    })
+  })
+
+  it("asks about a contact the words look like, never offering a Flash user of those words", async () => {
+    // "carl" is close to carol: her picker, even if a Flash user is called carl.
+    const { ctx, graphql } = fakeCtx()
+    graphql.contacts.mockResolvedValue(CONTACTS)
+    graphql.accountDefaultWallet.mockImplementation(accountsOf(["carol", "carl"]))
+
+    const result = await resolveContact.run({ hint: "carl" }, ctx)
+
+    expect(result).toMatchObject({
+      kind: "clarification",
+      card: { prompt: "Assistant.pickContact", options: [{ id: "carol" }] },
     })
     expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
+  })
+
+  it("never asks a question with nothing to pick, and never says no contact matched as a question", async () => {
+    const hints = [
+      "zzzz",
+      "dreadmax",
+      "the guy from work",
+      "Mom",
+      "carl",
+      "alice",
+      "bob",
+      "Rob",
+    ]
+    const results = await Promise.all(
+      hints.map(async (hint) => ({ hint, result: (await resolve(hint)).result })),
+    )
+
+    results.forEach(({ hint, result }) => {
+      expectSomethingToPick(hint, result)
+      expect([hint, result.kind === "clarification" && result.card.prompt]).not.toEqual([
+        hint,
+        "Assistant.noContactMatch",
+      ])
+    })
+    // Both kinds of question are among them: a contact picker and a Flash user's.
+    expect(
+      results.flatMap(({ result }) =>
+        result.kind === "clarification" ? [result.card.prompt] : [],
+      ),
+    ).toEqual(
+      expect.arrayContaining(["Assistant.pickContact", "Assistant.pickFlashUser"]),
+    )
   })
 
   it("answers a single strong match with its full username and default wallet", async () => {

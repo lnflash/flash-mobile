@@ -53,8 +53,15 @@ export const prepareSendRun = (
     if (resolution.kind === "clarification") {
       return { kind: "clarification", card: resolution.card }
     }
-    if (resolution.kind === "error")
-      return { kind: "error", userMessage: resolution.replyKey }
+    // A payee that names no one refuses here, with its card, before any
+    // price read, fee probe or affordability check (ENG-730).
+    if (resolution.kind === "error") {
+      return {
+        kind: "error",
+        userMessage: resolution.replyKey,
+        ...(resolution.card ? { card: resolution.card } : {}),
+      }
+    }
     const { payee } = resolution
 
     // A gated Breez branch is refused before any balance, price or fee is read.

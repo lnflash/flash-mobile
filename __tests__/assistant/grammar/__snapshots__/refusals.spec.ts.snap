@@ -100,5 +100,6 @@ jm/JMD "sen 5000 fi market" -> miss
 en/JMD "pay the phone-bill 2000" -> miss
 jm/JMD "gi 1000 fi taxi-fare" -> miss
 en/USD "send 10 to alice + bob" -> miss
-en/USD "send $15 to bob, tanya" -> miss"
+en/USD "send $15 to bob, tanya" -> miss
+en/USD "Add dreadmax as a contact" -> miss"
 `;

@@ -2,12 +2,15 @@
 // itself: the file name does not end in .spec or .test.
 import { createHash } from "crypto"
 import { encode, sign } from "bolt11"
+import type { ApolloClient } from "@apollo/client"
 import type {
   AssistantTelemetry,
   AssistantToolEvent,
 } from "@app/assistant/engine/telemetry"
-import type {
+import {
+  createGraphqlRail,
   GraphqlRail,
+  PublicWalletRow,
   TransactionPage,
   TransactionRow,
   WalletRow,
@@ -48,6 +51,43 @@ export const fakeGraphqlRail = (): FakeGraphqlRail => ({
   businessMapMarkers: jest.fn(async () => []),
   accountLimits: jest.fn(async () => ({ withdrawal: [], internalSend: [], convert: [] })),
 })
+
+/**
+ * An accountDefaultWallet that knows only these usernames, compared as the
+ * server compares them, case ignored: each has the default USD wallet
+ * `<username>-wallet`, and any other username has no account (null). A fake
+ * that finds every username would turn a not-found case into a found one
+ * (ENG-730), so a spec names the Flash users it means.
+ */
+export const accountsOf =
+  (usernames: readonly string[]) =>
+  async (username: string): Promise<PublicWalletRow | null> =>
+    usernames.some((known) => known.toLowerCase() === username.toLowerCase())
+      ? { __typename: "PublicWallet", id: `${username}-wallet`, walletCurrency: "USD" }
+      : null
+
+/**
+ * The real rail's accountDefaultWallet over an Apollo client that answers
+ * every lookup as lnflash/flash answers one that it failed for an account
+ * that may exist: its database down (DB_ERROR, src/graphql/error-map.ts:527-531),
+ * a GraphQL error on an HTTP 200 with data null, as the gateway in front of
+ * it forwards it, with no code. Read as "no account", it would refuse a
+ * payment to a real user (ENG-730 review); the rail rejects it.
+ */
+export const failingAccountLookup = (): GraphqlRail["accountDefaultWallet"] =>
+  createGraphqlRail({
+    query: async () => ({
+      data: null,
+      errors: [
+        {
+          message:
+            "Service offline, please try again in a few minutes. If the problem persists, please contact support.",
+          path: ["accountDefaultWallet"],
+          extensions: { service: "public" },
+        },
+      ],
+    }),
+  } as unknown as ApolloClient<unknown>).accountDefaultWallet
 
 /** The whole BTC rail, sends included, so a spec can show they are never called. */
 export const fakeBtcRail = () => ({

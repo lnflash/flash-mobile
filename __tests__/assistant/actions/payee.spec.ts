@@ -17,7 +17,7 @@ import {
   createLnurlPaymentDestination,
   createLnurlWithdrawDestination,
 } from "@app/screens/send-bitcoin-screen/payment-destination/lnurl"
-import { bolt11, fakeActionCtx } from "../fakes"
+import { accountsOf, bolt11, fakeActionCtx } from "../fakes"
 
 const parse = parseDestination as jest.Mock
 
@@ -31,14 +31,23 @@ const contact = (username: string, alias: string | null = null) => ({
 
 const MINE = ["my-usd", "my-btc"]
 
+/** A Flash user the user has not added (ENG-730). */
+const NOT_A_CONTACT = "dreadmax"
+
+const NOT_FOUND = {
+  kind: "error",
+  replyKey: "Assistant.payeeNotFound",
+  card: { type: "prepareRefused", reason: "payeeNotFound" },
+}
+
 const setup = (contacts = [contact("alice", "Alice"), contact("jane", "mom")]) => {
   const fake = fakeActionCtx()
   fake.graphql.contacts.mockResolvedValue(contacts)
-  fake.graphql.accountDefaultWallet.mockImplementation(async (username: string) => ({
-    __typename: "PublicWallet",
-    id: `${username}-wallet`,
-    walletCurrency: "USD",
-  }))
+  // Each contact has an account, and so does dreadmax, who is no contact;
+  // any other word is no one's username.
+  fake.graphql.accountDefaultWallet.mockImplementation(
+    accountsOf([...contacts.map(({ username }) => username), NOT_A_CONTACT]),
+  )
   return fake
 }
 
@@ -87,18 +96,43 @@ describe("resolvePayee: a contact the user names", () => {
     })
   })
 
-  it("says it found no one, and never pays a Flash user of that name", async () => {
+  it("says it found no one, with the refusal card, when the name is no contact's and no Flash user's", async () => {
     const { ctx, graphql } = setup()
 
-    await expect(resolvePayee("mallory", ctx, MINE)).resolves.toEqual({
+    await expect(resolvePayee("mallory", ctx, MINE)).resolves.toEqual(NOT_FOUND)
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["mallory"]])
+  })
+
+  it("asks about a Flash user who is not a contact, never paying them straight away", async () => {
+    const { ctx, graphql } = setup()
+
+    await expect(resolvePayee(NOT_A_CONTACT, ctx, MINE)).resolves.toEqual({
       kind: "clarification",
       card: {
         type: "clarification",
-        prompt: "Assistant.noContactMatch",
-        options: [],
-        about: "mallory",
+        prompt: "Assistant.pickFlashUser",
+        // The one option re-issues the pick, as a contact's does.
+        options: [
+          { id: contactPick("dreadmax"), label: "dreadmax", sublabel: "dreadmax" },
+        ],
+        about: "dreadmax",
       },
     })
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"]])
+  })
+
+  it("asks about a contact the name looks like, never adding a Flash user of that name", async () => {
+    // "jan" is close to jane: her picker, even with a Flash user called jan.
+    const { ctx, graphql } = setup()
+    graphql.accountDefaultWallet.mockImplementation(accountsOf(["jane", "jan"]))
+
+    const resolved = await resolvePayee("jan", ctx, MINE)
+
+    expect(resolved).toMatchObject({
+      kind: "clarification",
+      card: { prompt: "Assistant.pickContact", options: [{ id: contactPick("jane") }] },
+    })
+    expect(resolved.kind === "clarification" && resolved.card.options).toHaveLength(1)
     expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
   })
 
@@ -139,13 +173,80 @@ describe("resolvePayee: a picked contact", () => {
     })
   })
 
-  it("refuses a pick that is not one of the user's contacts", async () => {
+  it("refuses, with the refusal card, a pick that is neither a contact nor a Flash user", async () => {
     const { ctx, graphql } = setup()
 
-    await expect(resolvePayee(contactPick("mallory"), ctx, MINE)).resolves.toEqual({
-      kind: "error",
-      replyKey: "Assistant.noContactMatch",
+    await expect(resolvePayee(contactPick("mallory"), ctx, MINE)).resolves.toEqual(
+      NOT_FOUND,
+    )
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["mallory"]])
+  })
+
+  it("resolves a pick that is no contact to the Flash user of that username", async () => {
+    const { ctx, graphql } = setup()
+
+    const resolved = await resolvePayee(contactPick(NOT_A_CONTACT), ctx, MINE)
+
+    expect(resolved).toMatchObject({
+      kind: "payee",
+      payee: {
+        kind: "flashUser",
+        label: "dreadmax",
+        username: "dreadmax",
+        recipientWalletId: "dreadmax-wallet",
+      },
     })
+    // Paid as the send screen pays a Flash user: intraledger, to that wallet.
+    expect(resolved.kind === "payee" && resolved.payee.destination).toMatchObject({
+      valid: true,
+      validDestination: {
+        paymentType: "intraledger",
+        handle: "dreadmax",
+        walletId: "dreadmax-wallet",
+      },
+    })
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"]])
+  })
+
+  it("refuses a picked Flash user whose wallet is the user's own", async () => {
+    const { ctx, graphql } = setup()
+    graphql.accountDefaultWallet.mockResolvedValue({
+      __typename: "PublicWallet",
+      id: "my-usd",
+      walletCurrency: "USD",
+    })
+
+    await expect(resolvePayee(contactPick(NOT_A_CONTACT), ctx, MINE)).resolves.toEqual({
+      kind: "error",
+      replyKey: "Assistant.selfPayment",
+    })
+  })
+
+  it("looks a picked Flash user up again at the tap, refusing one who is gone since the question", async () => {
+    const { ctx, graphql } = setup()
+    // The account answers the question's lookup, and is gone by the tap.
+    graphql.accountDefaultWallet
+      .mockResolvedValueOnce({
+        __typename: "PublicWallet",
+        id: "dreadmax-wallet",
+        walletCurrency: "USD",
+      })
+      .mockResolvedValueOnce(null)
+
+    const asked = await resolvePayee(NOT_A_CONTACT, ctx, MINE)
+    if (asked.kind !== "clarification") throw new Error("expected a question")
+    const picked = await resolvePayee(asked.card.options[0].id, ctx, MINE)
+
+    expect(picked).toEqual(NOT_FOUND)
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"], ["dreadmax"]])
+  })
+
+  it("never looks up a pick with a space in it: no username has one", async () => {
+    const { ctx, graphql } = setup()
+
+    await expect(
+      resolvePayee(contactPick("the guy from work"), ctx, MINE),
+    ).resolves.toEqual(NOT_FOUND)
     expect(graphql.accountDefaultWallet).not.toHaveBeenCalled()
   })
 })
