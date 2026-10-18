@@ -47,9 +47,9 @@ export type ModelPrompt = {
 }
 
 /**
- * What the model's session is warmed with when Ask Flash opens (ENG-749):
- * the instructions every request carries, and nothing from the thread or
- * the person.
+ * What the model's session is warmed with when Ask Flash opens, and after
+ * each ask the model reads (tryOnDeviceModel, ENG-749): the instructions
+ * every request carries, and nothing from the thread or the person.
  */
 export type ModelWarmup = Pick<ModelPrompt, "instructions">
 
@@ -276,9 +276,10 @@ const instructionsOf = (tools: Registry): string =>
   [INTRO, CATALOG_INTRO, catalogOf(tools), RULES].join("\n\n")
 
 /**
- * What warms the model's session when Ask Flash opens (ENG-749): the
- * instructions of every request's prompt (buildModelPrompt), so the native
- * side can hand the warmed session to the first request that carries them.
+ * What warms the model's session when Ask Flash opens, and after each ask
+ * the model reads (tryOnDeviceModel, ENG-749): the instructions of every
+ * request's prompt (buildModelPrompt), so the native side can hand the
+ * warmed session to the next request that carries them.
  */
 export const buildModelWarmup = (registry: Registry): ModelWarmup => ({
   instructions: instructionsOf(modelTierRegistry(registry)),

@@ -12,9 +12,10 @@ import { NativeModules } from "react-native"
 //   rejects when there is no model, when the time runs out (the native side
 //   cancels the work at `timeoutMs`), or when the model fails.
 // - prewarm (ENG-749): start the model's session for the instructions every
-//   request carries, and send nothing; Ask Flash calls it when it opens. It
-//   resolves at once and never rejects. A build without it is warmed by
-//   nothing, and its first request starts the session itself.
+//   request carries, and send nothing; Ask Flash calls it when it opens, and
+//   after each ask the model reads (tryOnDeviceModel). It resolves at once
+//   and never rejects. A build without it is warmed by nothing, and the next
+//   request starts its session itself.
 //
 // Nothing the module answers is trusted: model-adapter.ts reads it, and the
 // model tier checks the call as the router checks any other.

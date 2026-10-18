@@ -2,7 +2,8 @@
 // is handed, how its answer is read, and how it is counted, with the launch
 // gate's own count (grammar/score.ts, tally), and its wrong calls split by
 // what they would have done (ENG-749): wrong prepared actions and wrong
-// reads, the two numbers the model tier's bar is set in (MODEL_TIER_BAR).
+// reads, the two numbers the model tier's bar is set in (MODEL_TIER_BAR),
+// whose verdict is printed for a run of the held-out set alone.
 // The device eval (device-eval.ts) runs it on a corpus; model-eval.spec.ts
 // checks it with a fake model over the tuning corpus. Not a spec itself, and
 // it imports no corpus.
@@ -12,6 +13,7 @@ import type {
   ModelEvalOutcome,
   ModelEvalRow,
   ModelEvalRun,
+  ModelEvalSessions,
 } from "@app/assistant/engine/model-eval-hook"
 import { canonicalNumber } from "@app/assistant/engine/model-tier"
 import { isPlainObject } from "@app/assistant/engine/schema-validator"
@@ -31,6 +33,16 @@ export const deviceEntries = (entries: readonly CorpusEntry[]): ModelEvalEntry[]
 export const pipelineOutcome = (row: ModelEvalRow): Expected =>
   row.grammar === "miss" && !row.refused ? row.model : row.grammar
 
+/**
+ * A run as a device answered it. A hook from before the warm mode (ENG-749)
+ * answered no `sessions`: its asks ran back to back.
+ */
+export type DeviceRun = Omit<ModelEvalRun, "sessions"> & { sessions?: ModelEvalSessions }
+
+const isSessions = (value: unknown): value is ModelEvalSessions =>
+  isPlainObject(value) &&
+  ((value.mode === "warm" && typeof value.idleMs === "number") || value.mode === "cold")
+
 const isOutcome = (value: unknown): value is ModelEvalOutcome =>
   value === "miss" ||
   value === "clarifyAmount" ||
@@ -42,7 +54,7 @@ const isOutcome = (value: unknown): value is ModelEvalOutcome =>
 export const parseDeviceRun = (
   json: string,
   entries: readonly CorpusEntry[],
-): ModelEvalRun => {
+): DeviceRun => {
   const run: unknown = JSON.parse(json)
   if (
     !isPlainObject(run) ||
@@ -50,6 +62,11 @@ export const parseDeviceRun = (
     !Array.isArray(run.rows)
   ) {
     throw new Error("A device run is { available, rows }")
+  }
+  if (run.sessions !== undefined && !isSessions(run.sessions)) {
+    throw new Error(
+      'A device run\'s sessions are { mode: "warm", idleMs } or { mode: "cold" }',
+    )
   }
   if (run.rows.length !== entries.length) {
     throw new Error(`${run.rows.length} rows for ${entries.length} entries`)
@@ -65,8 +82,14 @@ export const parseDeviceRun = (
       throw new Error(`Row ${index} is not { grammar, refused, model, modelMs }`)
     }
   })
-  return run as ModelEvalRun
+  return run as DeviceRun
 }
+
+/**
+ * The corpora a device run reads (device-eval.ts, MODEL_EVAL_SET). The model
+ * tier's bar is judged on the held-out set alone.
+ */
+export type EvalSet = "tuning" | "held-out"
 
 /** A score overall and per dialect, as the launch gate reports it. */
 export type DialectScores = { all: Score; en: Score; jm: Score }
@@ -96,6 +119,8 @@ export type DialectWrongCalls = { all: WrongCalls; en: WrongCalls; jm: WrongCall
 
 export type DeviceScores = {
   available: boolean
+  /** How each ask found the model's session; undefined when the run did not say. */
+  sessions: ModelEvalSessions | undefined
   /** The model on every entry, the grammar set aside. */
   model: DialectScores
   /** The shipped order: the grammar, then the model on what it missed. */
@@ -120,19 +145,27 @@ export const meetsModelTierBar = (wrong: WrongCalls): boolean =>
   wrong.preparedAction <= MODEL_TIER_BAR.maxWrongPreparedActions &&
   wrong.readRate <= MODEL_TIER_BAR.maxWrongReadRate
 
-/** The arguments that say who a prepared action pays (a contact, a group, a bank account). */
-const PAYEE_FIELDS = ["payee", "payees", "bankAccountId"]
+/** The arguments that name who a prepared action pays: a person, or a group's people. */
+const PAYEE_FIELDS = ["payee", "payees"]
+/** The argument that says who a cash-out pays: a bank account's id, compared as written. */
+const PAYEE_ID_FIELDS = ["bankAccountId"]
 /** The arguments that hold its amount. */
 const AMOUNT_FIELDS = ["amount", "total"]
 /** The arguments that name a wallet: the one it pays from or into, a conversion's two. */
 const WALLET_FIELDS = ["sourceWallet", "wallet", "from", "to"]
 
-/** A payee as resolveContact matches one: in any case, with single spaces. */
+/**
+ * A payee as resolveContact matches one: in any case, with single spaces. A
+ * group's payees keep their order, since their order decides who is paid
+ * what: the shares hand the leftover minor units out one each in payee-list
+ * order from index 0 (spec §5, prepareGroupSend; splitMoneyAmount), and the
+ * legs go one at a time and stop at the first that fails. So the same names
+ * in another order are another payment.
+ */
 const payeeWords = (value: unknown): unknown => {
   const words = (text: unknown) =>
     typeof text === "string" ? text.trim().replace(/\s+/g, " ").toLowerCase() : text
-  // A group's payees share the total equally: their order pays no one else.
-  return Array.isArray(value) ? JSON.stringify(value.map(words).sort()) : words(value)
+  return Array.isArray(value) ? value.map(words) : words(value)
 }
 
 const sameValue = (a: unknown, b: unknown): boolean =>
@@ -140,10 +173,11 @@ const sameValue = (a: unknown, b: unknown): boolean =>
 
 /**
  * Whether two calls of one action prepare the same money movement: the same
- * payee, amount, currency and wallet, read as the tool reads them. A payee
- * in any case with single spaces (resolveContact matches names so), an
- * amount as a number ("10.00" is 10), and no currency as the account's
- * display currency (requestedAmount). A wallet is compared as named.
+ * payee, amount, currency and wallet, read as the tool reads them. A payee's
+ * name in any case with single spaces (resolveContact matches names so), a
+ * group's payees in their order, a bank account's id as written, an amount
+ * as a number ("10.00" is 10), and no currency as the account's display
+ * currency (requestedAmount). A wallet is compared as named.
  */
 export const samePreparedAction = (
   got: ToolCall,
@@ -159,6 +193,7 @@ export const samePreparedAction = (
     PAYEE_FIELDS.every((field) =>
       sameValue(payeeWords(gotArgs[field]), payeeWords(meantArgs[field])),
     ) &&
+    PAYEE_ID_FIELDS.every((field) => sameValue(gotArgs[field], meantArgs[field])) &&
     AMOUNT_FIELDS.every((field) =>
       sameValue(amount(gotArgs[field]), amount(meantArgs[field])),
     ) &&
@@ -254,7 +289,7 @@ export const percentile = (values: readonly number[], p: number): number => {
 /** How a run scored on `entries`: the model alone, the shipped order, and the time. */
 export const scoreDeviceRun = (
   entries: readonly CorpusEntry[],
-  run: ModelEvalRun,
+  run: DeviceRun,
 ): DeviceScores => {
   if (run.rows.length !== entries.length) {
     throw new Error(`${run.rows.length} rows for ${entries.length} entries`)
@@ -267,6 +302,7 @@ export const scoreDeviceRun = (
   const pipeline = byDialect(entries, run.rows.map(pipelineOutcome))
   return {
     available: run.available,
+    sessions: run.sessions,
     model,
     pipeline,
     wrongCalls: {
@@ -304,20 +340,41 @@ const describeWithWrongCalls = (label: string, s: Score, wrong: WrongCalls): str
   return [`${first}; ${describeWrongCalls(wrong)}`, ...failures].join("\n")
 }
 
-/** The model tier's bar, read on the shipped order's overall score. */
-const describeBar = (label: string, scores: DeviceScores): string[] => {
+/** How the run's asks found the model's session, as the run recorded it (ModelEvalSessions). */
+const describeSessions = (
+  label: string,
+  sessions: ModelEvalSessions | undefined,
+): string => {
+  if (sessions === undefined) {
+    return `${label}: sessions not recorded (a hook from before the warm mode): asks back to back, near-cold times`
+  }
+  return sessions.mode === "warm"
+    ? `${label}: sessions warm: each ask warmed, then ${sessions.idleMs} ms idle, as the app leaves every ask`
+    : `${label}: sessions cold: asks back to back, near-cold times, not the state the app leaves an ask in`
+}
+
+/**
+ * The model tier's bar, read on the shipped order's overall score, and its
+ * verdict for a run of the held-out set alone: on any other set the bar is
+ * not judged, whatever the numbers. Either way, every wrong prepared action
+ * is listed.
+ */
+const describeBar = (label: string, scores: DeviceScores, set: EvalSet): string[] => {
   const wrong = scores.wrongCalls.pipeline.all
   const verdict = meetsModelTierBar(wrong) ? "met" : "NOT met"
   const prepared = scores.pipeline.all.failures.filter(
     ({ entry, got }) => typeof got !== "string" && isWrongPreparedAction(got, entry),
   )
   return [
-    `${label}: the model tier's bar (held-out set, real device, grammar then model): ` +
-      `${counted(wrong.preparedAction, "wrong prepared action")} (allowed ${
-        MODEL_TIER_BAR.maxWrongPreparedActions
-      }), ${percent(wrong.readRate)} wrong reads (allowed at most ${percent(
-        MODEL_TIER_BAR.maxWrongReadRate,
-      )}): ${verdict}`,
+    set === "held-out"
+      ? `${label}: the model tier's bar (held-out set, real device, grammar then model): ` +
+        `${counted(wrong.preparedAction, "wrong prepared action")} (allowed ${
+          MODEL_TIER_BAR.maxWrongPreparedActions
+        }), ${percent(wrong.readRate)} wrong reads (allowed at most ${percent(
+          MODEL_TIER_BAR.maxWrongReadRate,
+        )}): ${verdict}`
+      : `${label}: bar not judged: not the held-out set (the model tier's bar reads the held-out set, ` +
+        "real device, grammar then model)",
     ...prepared.map(
       ({ entry, got }) =>
         `  wrong prepared action: ${entry.dialect}/${
@@ -330,16 +387,23 @@ const describeBar = (label: string, scores: DeviceScores): string[] => {
 }
 
 /**
- * A run's scores as the PR reports them: the failures listed once, under
- * each overall line; each line with its wrong calls by consequence; and,
- * last, the model tier's bar, read on the shipped order.
+ * A run's scores as the PR reports them: how its asks found the model's
+ * session; the failures listed once, under each overall line; each line
+ * with its wrong calls by consequence; and, last, the model tier's bar, read
+ * on the shipped order, with its verdict when `set`, the corpus the run
+ * read, is the held-out set.
  */
-export const describeDeviceRun = (label: string, scores: DeviceScores): string => {
+export const describeDeviceRun = (
+  label: string,
+  scores: DeviceScores,
+  set: EvalSet,
+): string => {
   const { model, pipeline } = scores.wrongCalls
   return [
     `${label}: model available when the run began: ${
       scores.available ? "yes" : "NO, so every model row is a miss"
     }`,
+    describeSessions(label, scores.sessions),
     `${label}: model time p50 ${scores.latency.p50} ms, p95 ${scores.latency.p95} ms, max ${scores.latency.max} ms`,
     describeWithWrongCalls(`${label}, model alone`, scores.model.all, model.all),
     describeWithWrongCalls(
@@ -367,6 +431,6 @@ export const describeDeviceRun = (label: string, scores: DeviceScores): string =
       withoutFailures(scores.pipeline.jm),
       pipeline.jm,
     ),
-    ...describeBar(label, scores),
+    ...describeBar(label, scores, set),
   ].join("\n")
 }

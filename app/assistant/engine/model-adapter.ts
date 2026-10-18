@@ -7,8 +7,9 @@ import { isPlainObject } from "./schema-validator"
 // no model on this device, a throw, a hang, text that is not a call) comes
 // back as one of three decisions, and nothing here ever rejects: a failed
 // model is a turn answered as it is without one. Ask Flash also warms the
-// model's session when it opens (ENG-749), which sends nothing and settles
-// whatever the native side does.
+// model's session when it opens, and after each ask the model reads
+// (tryOnDeviceModel, ENG-749), which sends nothing and settles whatever the
+// native side does.
 
 /**
  * How long the model has for one utterance (architect decision 3): 2.5 s,

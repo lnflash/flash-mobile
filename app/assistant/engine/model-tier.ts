@@ -332,14 +332,18 @@ const NO_MODEL: ModelTierResult = { kind: "none", reason: "unavailable" }
 
 /**
  * Warm the on-device model's next session (ENG-749): when the model can
- * answer now, have the native side start a session with the instructions
- * every request carries and process them, sending nothing, so the next
- * request pays only for its own words. Ask Flash calls it when it opens,
- * and tryOnDeviceModel after each request the model was asked, so every
- * ask in the thread finds one ready: a session is never reused across asks,
- * since one that answered holds that turn's words. The caller asks only
- * while both flags are on. It never throws, reports no event of its own,
- * and does nothing without a model.
+ * answer now, hand the native side the instructions every request carries,
+ * sending nothing. iOS makes a session for them and processes them in
+ * advance, so the next request, once that warm-up has finished, pays only
+ * for its own words. Android's warm-up loads the model only (ML Kit's
+ * warmup() takes no instructions), and each request still reads the
+ * instructions within its own time; ML Kit's CachedContext is the
+ * follow-up. Ask Flash calls it when it opens, and tryOnDeviceModel after
+ * each request the model was asked, so each ask in the thread finds one
+ * started before it: a session is never reused across asks, since one that
+ * answered holds that turn's words. The caller asks only while both flags
+ * are on. It never throws, reports no event of its own, and does nothing
+ * without a model.
  */
 export const prewarmOnDeviceModel = async (
   runtime: Pick<ModelTierRuntime, "registry" | "modelAdapter">,

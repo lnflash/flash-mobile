@@ -5,17 +5,23 @@ import {
 import type { ToolCall } from "@app/assistant/engine/intent-router"
 import {
   evalEntriesOf,
+  evalSessionsOf,
+  MODEL_EVAL_WARM_IDLE_MS,
   ModelEvalDeps,
+  ModelEvalEntry,
   ModelEvalOutcome,
   ModelEvalRow,
   registerModelEvalHook,
   runModelEval,
+  WARM_SESSIONS,
 } from "@app/assistant/engine/model-eval-hook"
 import type { ModelPrompt } from "@app/assistant/engine/model-prompt"
 import { readGrammar } from "@app/assistant/grammar"
 import { normalize } from "@app/assistant/grammar/normalize"
 import { refersToThreadOnly, stripFrame } from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
+import { splitMoneyAmount } from "@app/assistant/registry/actions/shared/split"
+import { toUsdMoneyAmount } from "@app/types/amounts"
 import {
   CorpusEntry,
   DISPLAY_SYMBOL,
@@ -24,6 +30,7 @@ import {
 } from "../grammar/corpus/entries"
 import { TUNING } from "../grammar/corpus/tuning"
 import { score } from "../grammar/score"
+import { unavailableModelAdapter } from "../fakes"
 import {
   describeDeviceRun,
   deviceEntries,
@@ -65,7 +72,13 @@ const scriptedModel = (answers: Answers) => {
   }
 }
 
-const depsOf = (modelAdapter: ModelEvalDeps["modelAdapter"]): ModelEvalDeps => {
+/**
+ * The hook's dependencies on a fake clock: each reading is 10 ms past the
+ * last, and a warm run's wait moves the clock by its whole length, at once.
+ */
+const depsOf = (
+  modelAdapter: ModelEvalDeps["modelAdapter"],
+): ModelEvalDeps & { sleep: jest.Mock } => {
   let clock = 0
   return {
     registry: assistantRegistry,
@@ -74,6 +87,9 @@ const depsOf = (modelAdapter: ModelEvalDeps["modelAdapter"]): ModelEvalDeps => {
       clock += 10
       return clock
     },
+    sleep: jest.fn(async (ms: number) => {
+      clock += ms
+    }),
   }
 }
 
@@ -101,6 +117,8 @@ describe("the eval over the tuning corpus, with a fake model", () => {
     const scores = await runOver(TUNING, scriptedModel(answers))
 
     expect(scores.available).toBe(true)
+    // Each ask warmed as the app leaves it, the run's default (ENG-749).
+    expect(scores.sessions).toEqual(WARM_SESSIONS)
     expect(scores.model.all.total).toBe(TUNING.length)
     // A meant call is never a wrong one; grounding turns the ones the
     // model would have to rewrite (sats as bitcoin) into misses.
@@ -192,7 +210,7 @@ describe("the eval over the tuning corpus, with a fake model", () => {
 
     expect(scores.available).toBe(false)
     expect(scores.pipeline.all).toEqual(grammar)
-    expect(describeDeviceRun("tuning", scores)).toContain(
+    expect(describeDeviceRun("tuning", scores, "tuning")).toContain(
       "NO, so every model row is a miss",
     )
   })
@@ -290,6 +308,89 @@ describe("runModelEval", () => {
       "utterance",
     ])
   })
+
+  describe("each ask's session (ENG-749)", () => {
+    /** Two asks the model is asked about: the run asks it about every entry but a reference to the thread. */
+    const asks: ModelEvalEntry[] = [
+      { utterance: "tell me a joke", displayCurrency: "USD", displaySymbol: "$" },
+      {
+        utterance: "how loaded am i right now",
+        displayCurrency: "USD",
+        displaySymbol: "$",
+      },
+    ]
+
+    /** A model there for every ask, and its warm-ups, the asks and the hook's waits, in order. */
+    const logged = () => {
+      const log: string[] = []
+      const model = scriptedModel(new Map())
+      model.prewarm.mockImplementation(async () => {
+        log.push("prewarm")
+        return undefined
+      })
+      model.decide.mockImplementation(async (prompt: ModelPrompt) => {
+        log.push(`ask ${requestOf(prompt)}`)
+        return { kind: "miss" }
+      })
+      const deps = depsOf(model)
+      const { sleep } = deps
+      const waits = jest.fn(async (ms: number) => {
+        log.push(`wait ${ms}`)
+        await sleep(ms)
+      })
+      return { log, model, deps: { ...deps, sleep: waits } }
+    }
+
+    it("warms the session before each ask and waits as a person typing would, outside the ask's time, by default", async () => {
+      const { log, model, deps } = logged()
+
+      const run = await runModelEval(asks, deps)
+
+      expect(MODEL_EVAL_WARM_IDLE_MS).toBe(2000)
+      expect(run.sessions).toEqual({ mode: "warm", idleMs: MODEL_EVAL_WARM_IDLE_MS })
+      expect(log.filter((line) => line !== "prewarm")).toEqual([
+        "wait 2000",
+        "ask tell me a joke",
+        "wait 2000",
+        "ask how loaded am i right now",
+      ])
+      // Each wait follows a warm-up the hook waited for; nothing but the
+      // hook could have warmed the first ask's session.
+      expect(log[0]).toBe("prewarm")
+      expect(
+        log.flatMap((line, index) => (line.startsWith("wait") ? [log[index - 1]] : [])),
+      ).toEqual(["prewarm", "prewarm"])
+      // The hook's warm-up before each ask, and the model tier's after it.
+      expect(model.prewarm).toHaveBeenCalledTimes(2 * asks.length)
+      // The wait is not the model's time.
+      expect(run.rows.map(({ modelMs }) => modelMs)).toEqual([10, 10])
+    })
+
+    it("asks back to back when told cold: no warm-up of its own and no wait, and the run says so", async () => {
+      const { log, model, deps } = logged()
+
+      const run = await runModelEval(asks, deps, { mode: "cold" })
+
+      expect(run.sessions).toEqual({ mode: "cold" })
+      expect(deps.sleep).not.toHaveBeenCalled()
+      expect(log[0]).toBe("ask tell me a joke")
+      // Only the model tier's warm-up after each ask, which the next ask
+      // meets a moment later.
+      expect(model.prewarm).toHaveBeenCalledTimes(asks.length)
+      expect(run.rows.map(({ modelMs }) => modelMs)).toEqual([10, 10])
+    })
+
+    it("warms nothing and waits for nothing when the run began with no model", async () => {
+      const absent = unavailableModelAdapter()
+      const deps = depsOf(absent)
+
+      const run = await runModelEval(asks, deps)
+
+      expect(run).toMatchObject({ available: false, sessions: WARM_SESSIONS })
+      expect(deps.sleep).not.toHaveBeenCalled()
+      expect(absent.prewarm).not.toHaveBeenCalled()
+    })
+  })
 })
 
 describe("the dev hook", () => {
@@ -310,6 +411,7 @@ describe("the dev hook", () => {
 
     expect(JSON.parse(answer ?? "")).toEqual({
       available: true,
+      sessions: { mode: "warm", idleMs: MODEL_EVAL_WARM_IDLE_MS },
       rows: [
         {
           grammar: { intent: "getBalances", args: {} },
@@ -331,6 +433,39 @@ describe("the dev hook", () => {
     registerModelEvalHook(depsOf(scriptedModel(new Map())), host)
 
     expect(host.__flashModelEval).toBeUndefined()
+  })
+
+  it('takes { sessions: "cold" } after the entries, and refuses options it cannot read (ENG-749)', async () => {
+    const host: {
+      __flashModelEval?: (entries: unknown, options?: unknown) => Promise<string>
+    } = {}
+    const deps = depsOf(scriptedModel(new Map()))
+    registerModelEvalHook(deps, host)
+    const entries = [{ utterance: "my balance", displayCurrency: "USD" }]
+
+    const cold = JSON.parse(
+      (await host.__flashModelEval?.(entries, { sessions: "cold" })) ?? "",
+    )
+
+    expect(cold.sessions).toEqual({ mode: "cold" })
+    expect(deps.sleep).not.toHaveBeenCalled()
+    await expect(host.__flashModelEval?.(entries, { sessions: "hot" })).rejects.toThrow(
+      '{ sessions: "warm" | "cold" }',
+    )
+    await expect(host.__flashModelEval?.(entries, "cold")).rejects.toThrow(
+      "__flashModelEval takes",
+    )
+  })
+
+  it("reads the hook's options as warm sessions unless they say cold (ENG-749)", () => {
+    expect(evalSessionsOf(undefined)).toEqual(WARM_SESSIONS)
+    expect(evalSessionsOf({})).toEqual(WARM_SESSIONS)
+    expect(evalSessionsOf({ sessions: "warm" })).toEqual(WARM_SESSIONS)
+    expect(evalSessionsOf({ sessions: "cold" })).toEqual({ mode: "cold" })
+    expect(evalSessionsOf({ sessions: "hot" })).toBeUndefined()
+    expect(evalSessionsOf({ sessions: "cold", idleMs: 5 })).toBeUndefined()
+    expect(evalSessionsOf("cold")).toBeUndefined()
+    expect(evalSessionsOf(null)).toBeUndefined()
   })
 
   it("takes only a list of utterances with a display currency", () => {
@@ -444,7 +579,7 @@ describe("wrong calls by consequence, the model tier's bar (ENG-749)", () => {
       preparedActionRate: 0,
       readRate: 0,
     })
-    const report = describeDeviceRun("fake", scores)
+    const report = describeDeviceRun("fake", scores, "held-out")
     expect(report).toContain(
       "fake, grammar then model: 1/3 correct (33.3%), 2 wrong action (66.67%), 0 missed, " +
         "0 asked about the amount; 1 wrong prepared action (33.33%), 1 wrong read (33.33%)",
@@ -496,26 +631,36 @@ describe("wrong calls by consequence, the model tier's bar (ENG-749)", () => {
     const inUsd = send({ payee: "tanya", amount: "20", currency: "USD" })
     expect(isWrongPreparedAction(inUsd, bare)).toBe(false)
     expect(isWrongPreparedAction(inUsd, { ...bare, displayCurrency: "JMD" })).toBe(true)
-    // A group's payees in another order pay the same people.
-    const group = en("split 10 between bob and alice", {
+    // A group's payees in their order: an indivisible total's leftover cent
+    // goes to the first payee (spec §5, prepareGroupSend), so the same names
+    // in another order pay another person another amount.
+    expect(
+      splitMoneyAmount(toUsdMoneyAmount(1000), 3).map(({ amount }) => amount),
+    ).toEqual([334, 333, 333])
+    const group = en("split 10 between bob, alice and eve", {
       intent: "prepareGroupSend",
-      args: { payees: ["bob", "alice"], total: "10" },
+      args: { payees: ["bob", "alice", "eve"], total: "10" },
+    })
+    const groupSend = (payees: string[], total = "10"): ToolCall => ({
+      intent: "prepareGroupSend",
+      args: { payees, total },
     })
     expect(
-      isWrongPreparedAction(
-        {
-          intent: "prepareGroupSend",
-          args: { payees: ["Alice", "bob"], total: "10.00" },
-        },
-        group,
-      ),
+      isWrongPreparedAction(groupSend(["Bob", " alice ", "EVE"], "10.00"), group),
     ).toBe(false)
-    expect(
-      isWrongPreparedAction(
-        { intent: "prepareGroupSend", args: { payees: ["bob", "eve"], total: "10" } },
-        group,
-      ),
-    ).toBe(true)
+    expect(isWrongPreparedAction(groupSend(["alice", "bob", "eve"]), group)).toBe(true)
+    expect(isWrongPreparedAction(groupSend(["bob", "alice", "kemar"]), group)).toBe(true)
+    // A cash-out's bank account is an id, compared as written, case and all.
+    const cashout = en("cash out 50 to my bank", {
+      intent: "prepareCashout",
+      args: { amount: "50", bankAccountId: "AcctB7" },
+    })
+    const toBank = (bankAccountId: string): ToolCall => ({
+      intent: "prepareCashout",
+      args: { amount: "50.00", bankAccountId },
+    })
+    expect(isWrongPreparedAction(toBank("AcctB7"), cashout)).toBe(false)
+    expect(isWrongPreparedAction(toBank("acctb7"), cashout)).toBe(true)
     // A prepare where a read, a question or a miss was meant.
     expect(
       isWrongPreparedAction(inUsd, en("history", { intent: "getTransactions" })),
@@ -550,9 +695,88 @@ describe("wrong calls by consequence, the model tier's bar (ENG-749)", () => {
       available: true,
       rows: [row("miss")],
     })
-    expect(describeDeviceRun("fake", scores)).toContain(
+    expect(describeDeviceRun("fake", scores, "held-out")).toContain(
       "0 wrong prepared actions (allowed 0), 0.00% wrong reads (allowed at most 0.50%): met",
     )
+  })
+})
+
+describe("the bar's verdict, for the held-out set alone (ENG-749)", () => {
+  const en = (utterance: string, expected: Expected): CorpusEntry => ({
+    utterance,
+    dialect: "en",
+    displayCurrency: "USD",
+    expected,
+  })
+  const row = (model: ModelEvalOutcome): ModelEvalRow => ({
+    grammar: "miss",
+    refused: false,
+    model,
+    modelMs: 1,
+  })
+  const clean = scoreDeviceRun([en("hi", "miss")], {
+    available: true,
+    rows: [row("miss")],
+  })
+  const failing = scoreDeviceRun([en("top up", "miss")], {
+    available: true,
+    rows: [row({ intent: "prepareReceive", args: {} })],
+  })
+
+  it("judges the held-out set", () => {
+    expect(describeDeviceRun("held-out", clean, "held-out")).toMatch(
+      /^held-out: the model tier's bar \(held-out set, real device, grammar then model\): .*: met$/m,
+    )
+    expect(describeDeviceRun("held-out", failing, "held-out")).toMatch(/: NOT met$/m)
+  })
+
+  it("never judges any other set, whatever its numbers, and still lists its wrong prepared actions", () => {
+    ;[clean, failing].forEach((scores) => {
+      const report = describeDeviceRun("tuning", scores, "tuning")
+      expect(report).toContain(
+        "tuning: bar not judged: not the held-out set (the model tier's bar reads the held-out set, " +
+          "real device, grammar then model)",
+      )
+      expect(report).not.toMatch(/\bmet$/m)
+    })
+    expect(describeDeviceRun("tuning", failing, "tuning")).toContain(
+      '  wrong prepared action: en/USD "top up": meant "miss", got {"intent":"prepareReceive","args":{}}',
+    )
+  })
+})
+
+describe("how a run's asks found the model's session (ENG-749)", () => {
+  const entries = TUNING.slice(0, 1)
+  const rows = [{ grammar: "miss", refused: false, model: "miss", modelMs: 1 }]
+  const reportOf = (run: object): string =>
+    describeDeviceRun(
+      "tuning",
+      scoreDeviceRun(entries, parseDeviceRun(JSON.stringify(run), entries)),
+      "tuning",
+    )
+
+  it("prints the state the run says its times measured", () => {
+    expect(
+      reportOf({ available: true, sessions: { mode: "warm", idleMs: 2000 }, rows }),
+    ).toContain(
+      "tuning: sessions warm: each ask warmed, then 2000 ms idle, as the app leaves every ask",
+    )
+    expect(reportOf({ available: true, sessions: { mode: "cold" }, rows })).toContain(
+      "tuning: sessions cold: asks back to back, near-cold times, not the state the app leaves an ask in",
+    )
+    // A hook from before the warm mode said nothing: its asks ran back to back.
+    expect(reportOf({ available: true, rows })).toContain(
+      "tuning: sessions not recorded (a hook from before the warm mode): asks back to back, near-cold times",
+    )
+  })
+
+  it("refuses sessions it cannot read", () => {
+    const parse = (sessions: unknown) => () =>
+      parseDeviceRun(JSON.stringify({ available: true, sessions, rows }), entries)
+
+    expect(parse({ mode: "hot" })).toThrow("sessions are")
+    expect(parse({ mode: "warm" })).toThrow("sessions are")
+    expect(parse("warm")).toThrow("sessions are")
   })
 })
 

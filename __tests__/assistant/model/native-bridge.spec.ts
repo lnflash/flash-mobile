@@ -124,7 +124,8 @@ describe("the iOS bridge", () => {
     expect(objc).toMatch(
       /RCT_EXTERN_METHOD\(complete:\(NSString \*\)promptJson\s+timeoutMs:/,
     )
-    // ENG-749: the warm-up Ask Flash asks for when it opens.
+    // ENG-749: the warm-up Ask Flash asks for when it opens, and the model
+    // tier after each ask the model reads.
     expect(objc).toMatch(
       /RCT_EXTERN_METHOD\(prewarm:\(NSString \*\)warmupJson\s+resolver:\(RCTPromiseResolveBlock\)resolve\s+rejecter:/,
     )
