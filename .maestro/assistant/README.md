@@ -11,7 +11,10 @@ take the same env: `E2E_TOKEN`, `BRIDGE_URL`, `MINT_URL`.
 `assistantEnabled` follows Remote Config and is off. A development build
 (`__DEV__`, which the e2e job's Debug build is) honours
 `flash://dev/assistant?on=1`, which turns the assistant on for that run of the
-app (`app/config/assistant-dev-override.ts`); a release build ignores it.
+app (`app/config/assistant-dev-override.ts`), and so does a local phone build
+bundled with `ASSISTANT_DEV_LINK=true` in `.env` (ENG-734). A store build must
+never carry that key: the deploy workflows, the Fastfile's store lanes and the
+release scripts refuse it (`scripts/ci/check-store-env.sh`).
 `subflows/open-ask-flash.yaml` opens it after signing in, then taps the home
 screen's Ask Flash button, in its header beside the price icon
 (`home-ask-flash`). Like the card bridge's link, it also hides LogBox: the

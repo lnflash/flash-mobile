@@ -35,6 +35,15 @@ def update_android_version_from_tag
   end
 end
 
+# ENG-734: ASSISTANT_DEV_LINK makes a production-mode bundle honour the
+# assistant's dev link (app/config/assistant-dev-override.ts). It is for local
+# phone builds only, so every lane that builds for a store calls this first:
+# scripts/ci/check-store-env.sh fails it while the key is in .env, the other
+# env files the bundle reads, or the environment. Lanes run from fastlane/.
+def check_store_env
+  sh("bash", "../scripts/ci/check-store-env.sh", "../.env")
+end
+
 def increment_android_version_code
   gradle_path = File.join(Dir.pwd, "..", "android", "app", "build.gradle")
   content = File.read(gradle_path)
@@ -83,6 +92,7 @@ platform :ios do
 
   desc "Deploy to TestFlight (beta)"
   lane :beta do
+    check_store_env
     ensure_git_status_clean unless ENV['CI']
 
     api_key = app_store_connect_api_key(
@@ -164,6 +174,7 @@ platform :ios do
 
   desc "Deploy to App Store (release)"
   lane :release do
+    check_store_env
     ensure_git_status_clean unless ENV['CI']
 
     api_key = app_store_connect_api_key(
@@ -275,6 +286,7 @@ platform :ios do
 
   desc "Deploy Alt to TestFlight (beta)"
   lane :beta_alt do
+    check_store_env
     ensure_git_status_clean unless ENV['CI']
 
     api_key = app_store_connect_api_key(
@@ -334,6 +346,7 @@ platform :ios do
 
   desc "Deploy Alt to App Store (release)"
   lane :release_alt do
+    check_store_env
     ensure_git_status_clean unless ENV['CI']
 
     api_key = app_store_connect_api_key(
@@ -402,6 +415,7 @@ end
 platform :android do
   desc "Deploy to Google Play Internal Testing (beta)"
   lane :beta do
+    check_store_env
     ensure_git_status_clean unless ENV['CI']
 
     update_android_version_from_tag
@@ -439,6 +453,7 @@ platform :android do
 
   desc "Deploy to Google Play Production (release)"
   lane :release do
+    check_store_env
     ensure_git_status_clean unless ENV['CI']
 
     update_android_version_from_tag
