@@ -191,21 +191,66 @@ const QUESTIONS: readonly (readonly string[])[] = [
 export const isQuestionAboutHow = (tokens: readonly Token[]): boolean =>
   QUESTIONS.some((words) => startsWith(tokens, words))
 
+/** "What's" as typed, its chat forms included (folds.ts, ENG-753). */
+const WHATS = set("whats wats wuts")
+
 /**
  * Asks what something is (ENG-749): "what is lightning", "what's a sat",
- * "whats an invoice", "what are fees". "What's" and "whats" both reach the
- * rules as "what" (normalize.ts, folds.ts), so the word as typed tells
- * them from a plain "what"; a patois "wah is" folds to "what is" and is one
- * too. Unlike the openers above, a rule reads first: "what is my balance"
- * and "what's the price" are reads, and only an ask no rule reads is a
- * question about what something is (readGrammar).
+ * "whats an invoice", "what are fees". "What's", "whats" and the chat
+ * forms "wats" and "wuts" all reach the rules as "what" (normalize.ts,
+ * folds.ts), so the word as typed tells them from a plain "what"; a patois
+ * "wah is" folds to "what is" and is one too. Unlike the openers above, a
+ * rule reads first: "what is my balance" and "what's the price" are reads,
+ * and only an ask no rule reads is a question about what something is
+ * (readGrammar).
  */
 export const isQuestionAboutWhat = (tokens: readonly Token[]): boolean => {
   const [first, second] = tokens
   if (first?.word !== "what") return false
   const typed = first.raw.toLowerCase().replace(/['’‘]/g, "")
-  return typed === "whats" || second?.word === "is" || second?.word === "are"
+  return WHATS.has(typed) || second?.word === "is" || second?.word === "are"
 }
+
+/** Words that ask to change one of the user's currencies into another. */
+const CONVERSION_WORDS = set("swap swaps swapping convert converting conversion")
+/** Words that ask for a conversion only when another currency follows ("exchange 20 usd for btc"). */
+const CHANGE_WORDS = set("exchange change")
+const INTO_WORDS = set("to into for")
+/** The currencies and wallets a conversion names on its far side. */
+const MONEY_WORDS = set("bitcoin btc sats usd usdt jmd dollar dollars cash")
+
+/**
+ * Asks for a conversion between the user's own currencies (ENG-753): a
+ * word for one ("swap", "convert"), or "exchange" or "change" with another
+ * currency after a "to", "into" or "for" ("change my dollars to bitcoin",
+ * patois "change mi dolla dem to bitcoin"). The model tier has no tool for
+ * one (prepareConversion is not among its five), so the model can only
+ * answer with a call for another ask. readGrammar asks only once no rule
+ * has read the words: "what is the exchange rate" is a price, and "send bob
+ * 5 for swap meet" a send with its memo.
+ */
+export const asksConversion = (tokens: readonly Token[]): boolean => {
+  if (hasWord(tokens, CONVERSION_WORDS)) return true
+  const change = tokens.findIndex(({ word }) => CHANGE_WORDS.has(word))
+  if (change < 0) return false
+  const into = tokens.findIndex(({ word }, i) => i > change && INTO_WORDS.has(word))
+  return into > change && hasWord(tokens.slice(into + 1), MONEY_WORDS)
+}
+
+/** Words that name the user's contacts as a list. */
+const CONTACT_LIST_WORDS = set("contacts phonebook")
+
+/**
+ * Asks about the user's contacts as a list (ENG-753): "show my contacts",
+ * "who is in my contacts", "my address book", "my contact list". No intent
+ * reads them. As with asksConversion, readGrammar asks only once no rule
+ * has read the words, so "send contacts 5" stays a send to someone of that
+ * name.
+ */
+export const asksContacts = (tokens: readonly Token[]): boolean =>
+  hasWord(tokens, CONTACT_LIST_WORDS) ||
+  indexOfWords(tokens, ["address", "book"]) >= 0 ||
+  indexOfWords(tokens, ["contact", "list"]) >= 0
 
 // ---------------------------------------------------------------------------
 // Payment requests and addresses, which v1 does not take

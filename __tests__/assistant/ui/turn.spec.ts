@@ -595,12 +595,12 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
 
   it('answers "convert 20 dollars to btc" and "withdraw $50" as misses, whatever the model calls them (ENG-749)', async () => {
     // What the macOS model answered for them (ENG-690 proxy run): intents
-    // outside the model tier's five, which the pre-check refuses.
+    // outside the model tier's five, which the pre-check refuses. Since
+    // ENG-753 the grammar refuses a conversion before the model is asked
+    // (asksConversion; the test below), so "withdraw $50" is the miss that
+    // still reaches the model, and the pre-check's refusal of
+    // prepareConversion is model-tier.spec.ts's.
     const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
-      [
-        "convert 20 dollars to btc",
-        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
-      ],
       ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
     ]
     for (const [utterance, call] of answers) {
@@ -624,6 +624,54 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
           latencyMs: 0,
           onDeviceModelAvailable: true,
           onDeviceModelReason: "precheck",
+        },
+      ])
+    }
+  })
+
+  it("refuses a conversion or a contacts ask before the model, with the miss reply and no model call (ENG-753)", async () => {
+    // What the macOS model answered for the dogfood asks: a send for a swap
+    // and a history search for the contacts, each with words the person
+    // never typed. Neither reaches the model now.
+    const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
+      [
+        "swap 0.01 usd to bitcoin",
+        {
+          intent: "prepareSend",
+          args: {
+            amount: "0.01",
+            memo: "test",
+            currency: "USD",
+            payee: "user@example.com",
+            sourceWallet: "USD",
+          },
+        },
+      ],
+      [
+        "convert 20 dollars to btc",
+        { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
+      ],
+      [
+        "show my contacts",
+        { intent: "getTransactions", args: { query: "John Doe", direction: "RECEIVE" } },
+      ],
+    ]
+    for (const [utterance, call] of answers) {
+      const { runtime, modelAdapter, runTool, toolEvents } = withModel(modelCall(call))
+
+      const entries = await answerUtterance(runtime, utterance, env(ON))
+
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(runTool).not.toHaveBeenCalled()
+      // The grammar's refusal: no model answered, so no model's flag.
+      expect(toolEvents()).toEqual([
+        {
+          intent: "unknown",
+          tier: "none",
+          outcome: "rejected",
+          latencyMs: 0,
+          onDeviceModelAvailable: false,
         },
       ])
     }

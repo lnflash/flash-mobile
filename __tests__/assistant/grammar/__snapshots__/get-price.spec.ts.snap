@@ -36,5 +36,13 @@ jm/JMD "wah bitcoin a sell fa" -> getPrice {}
 jm/JMD "wah bitcoin deh pon" -> getPrice {}
 jm/JMD "wah di rate" -> getPrice {}
 jm/JMD "bitcoin price inna usd" -> getPrice {"currency":"USD"}
-jm/JMD "how much one bitcoin cost now" -> getPrice {}"
+jm/JMD "how much one bitcoin cost now" -> getPrice {}
+jm/JMD "wat di bitcoin price" -> getPrice {}
+jm/JMD "wat is di bitcoin price" -> getPrice {}
+jm/JMD "wat di bitcoin rate" -> getPrice {}
+en/USD "wat is the bitcoin price" -> getPrice {}
+en/USD "wats the rate" -> getPrice {}
+jm/JMD "wah di bitcoin rate" -> getPrice {}
+en/USD "what is the exchange rate" -> getPrice {}
+en/USD "bitcoin exchange rate" -> getPrice {}"
 `;

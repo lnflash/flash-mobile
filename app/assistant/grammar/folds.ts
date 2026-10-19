@@ -47,6 +47,16 @@ export const WORD_FOLDS: Readonly<Record<string, string>> = {
   thx: "thanks",
   ty: "thanks",
   whats: "what",
+  // "wat" and "wut" drop the "h" from "what" as chat and patois type it
+  // ("wat di bitcoin price", "wut is my balance"; ENG-753), and "wats" and
+  // "wuts" are their "whats". None is a common name, a currency or a
+  // payee word, and a contact called one still keeps its spelling as typed
+  // (Token.raw, normalize.ts); isQuestionAboutWhat reads "wats" and "wuts"
+  // as it reads "whats".
+  wat: "what",
+  wut: "what",
+  wats: "what",
+  wuts: "what",
   hows: "how",
   wheres: "where",
   ive: "i",

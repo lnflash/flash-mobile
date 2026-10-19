@@ -58,5 +58,8 @@ jm/JMD "mi waan see mi balance" -> getBalances {}
 jm/JMD "mi wan check mi balance" -> getBalances {}
 jm/JMD "how much bitcoin mi have" -> getBalances {}
 jm/JMD "how much cash mi have" -> getBalances {}
-jm/JMD "wah mi balance seh" -> getBalances {}"
+jm/JMD "wah mi balance seh" -> getBalances {}
+jm/JMD "wat mi balance" -> getBalances {}
+en/USD "wut is my balance" -> getBalances {}
+en/JMD "wats my balance" -> getBalances {}"
 `;

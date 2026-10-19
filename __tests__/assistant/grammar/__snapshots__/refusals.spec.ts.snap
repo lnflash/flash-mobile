@@ -129,5 +129,20 @@ en/USD "my biggest payment" -> miss
 jm/JMD "wah mi sen dis week" -> miss
 jm/JMD "wah mi get yesterday" -> miss
 jm/JMD "how much mi spen las month" -> miss
-jm/JMD "wah di biggest payment mi get" -> miss"
+jm/JMD "wah di biggest payment mi get" -> miss
+en/USD "swap 0.01 usd to bitcoin" -> miss
+en/USD "convert my bitcoin to usd" -> miss
+en/USD "exchange 20 usd for btc" -> miss
+en/USD "change my dollars to bitcoin" -> miss
+en/USD "can i swap usd to btc" -> miss
+jm/JMD "change mi dolla dem to bitcoin" -> miss
+jm/JMD "swap mi usd fi bitcoin" -> miss
+jm/JMD "mek mi swap to bitcoin" -> miss
+en/USD "show my contacts" -> miss
+en/JMD "who is in my contacts" -> miss
+en/USD "open my address book" -> miss
+en/USD "show my contact list" -> miss
+en/JMD "list my contacts" -> miss
+jm/JMD "show mi contacts" -> miss
+jm/JMD "wah contacts mi have" -> miss"
 `;
