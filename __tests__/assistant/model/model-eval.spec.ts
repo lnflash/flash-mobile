@@ -371,6 +371,60 @@ describe("runModelEval", () => {
     expect(model.decide).toHaveBeenCalledTimes(2)
   })
 
+  it("records a call a guard made none as a miss, with the guard's reason beside it (ENG-751)", async () => {
+    const entries: CorpusEntry[] = [
+      "split 30 dollars between tanya and kemar",
+      "what did i receive yesterday",
+      "my biggest payment",
+    ].map((utterance) => ({
+      utterance,
+      dialect: "en",
+      displayCurrency: "USD",
+      expected: "miss",
+    }))
+    const model = scriptedModel(
+      new Map<string, ModelDecision>([
+        [
+          "split 30 dollars between tanya and kemar",
+          {
+            kind: "call",
+            raw: {
+              intent: "prepareSend",
+              args: { payee: "tanya", amount: "30", currency: "USD" },
+            },
+          },
+        ],
+        [
+          "what did i receive yesterday",
+          {
+            kind: "call",
+            raw: { intent: "getTransactions", args: { direction: "RECEIVE" } },
+          },
+        ],
+        [
+          "my biggest payment",
+          {
+            kind: "call",
+            raw: { intent: "getTransactions", args: { query: "biggest" } },
+          },
+        ],
+      ]),
+    )
+
+    const run = await runModelEval(deviceEntries(entries), depsOf(model))
+
+    // The outcome stays a miss; the reason is the row's extra.
+    expect(
+      run.rows.map(({ model: outcome, modelResult }) => [outcome, modelResult]),
+    ).toEqual([
+      ["miss", { kind: "none", reason: "groupSend" }],
+      ["miss", { kind: "none", reason: "timeFilter" }],
+      ["miss", { kind: "none", reason: "ungroundedFilter" }],
+    ])
+    // What a device answers reads back as it was written.
+    expect(parseDeviceRun(JSON.stringify(run), entries).rows).toEqual(run.rows)
+  })
+
   describe("each ask's session (ENG-749)", () => {
     /** Two asks the model is asked about: the run asks it about every entry but a reference to the thread. */
     const asks: ModelEvalEntry[] = [
@@ -1028,6 +1082,14 @@ describe("reading a device's answer", () => {
     const call = { intent: "getBalances", args: {} }
 
     expect(parse([none, none])).not.toThrow()
+    // The guards' reasons (ENG-751) are a none's, never a refused call's.
+    ;["groupSend", "timeFilter", "ungroundedFilter"].forEach((reason) => {
+      const guarded = { ...row, modelResult: { kind: "none", reason } }
+      expect(parse([guarded, none])).not.toThrow()
+      expect(
+        parse([{ ...guarded, modelResult: { kind: "rejected", reason } }, none]),
+      ).toThrow("Row 0's modelResult is not")
+    })
     expect(
       parse([{ ...row, modelResult: { kind: "none", reason: "timeout" } }, none]),
     ).toThrow("Row 0's modelResult is not")
@@ -1074,5 +1136,193 @@ describe("reading a device's answer", () => {
       ),
     ).toBe(95)
     expect(percentile([5], 95)).toBe(5)
+  })
+})
+
+describe("the guards over the tuning corpus (ENG-751)", () => {
+  const send = (payee: string, amount: string, currency?: string): ModelDecision => ({
+    kind: "call",
+    raw: {
+      intent: "prepareSend",
+      args: { payee, amount, ...(currency ? { currency } : {}) },
+    },
+  })
+  const read = (args: Record<string, unknown>): ModelDecision => ({
+    kind: "call",
+    raw: { intent: "getTransactions", args },
+  })
+
+  /**
+   * The ENG-751 entries meant as misses, each answered as the 2026-10-18
+   * held-out run's model answered its kind: a group's ask as one send to
+   * the first person named, and a dated read with its time phrase as the
+   * search or a direction the words do not give; and a read searching for
+   * the ask's own words. Every answer grounds, so before the guards each
+   * was a wrong call.
+   */
+  const ANSWERS: [string, ModelDecision, string][] = [
+    ["split 30 dollars between tanya and kemar", send("tanya", "30", "USD"), "groupSend"],
+    ["tanya and kemar each get $10", send("tanya", "10", "USD"), "groupSend"],
+    ["share 3000 between mom and dad", send("mom", "3000"), "groupSend"],
+    ["everybody on the team gets $5", send("everybody", "5", "USD"), "groupSend"],
+    ["go halves with jason on the $30 dinner", send("jason", "30", "USD"), "groupSend"],
+    ["bob gets 10 and alice gets 5", send("bob", "10", "USD"), "groupSend"],
+    ["split di 2000 between mi an tanya", send("tanya", "2000"), "groupSend"],
+    ["tanya an kemar fi get 500 each", send("tanya", "500"), "groupSend"],
+    ["mi an jason fi share 1000", send("jason", "1000"), "groupSend"],
+    ["gi di yute dem 300 each", send("yute", "300"), "groupSend"],
+    [
+      "what did i receive yesterday",
+      read({ query: "yesterday", direction: "RECEIVE" }),
+      "timeFilter",
+    ],
+    [
+      "show my payments from last week",
+      read({ query: "last week", direction: "RECEIVE" }),
+      "timeFilter",
+    ],
+    [
+      "how much have i spent so far this year",
+      read({ query: "this year", direction: "RECEIVE" }),
+      "timeFilter",
+    ],
+    ["transactions since monday", read({ query: "monday" }), "timeFilter"],
+    [
+      "payments i got in september",
+      read({ query: "september", direction: "RECEIVE" }),
+      "timeFilter",
+    ],
+    ["payments with tanya this week", read({ query: "tanya" }), "timeFilter"],
+    ["my biggest payment", read({ query: "biggest" }), "ungroundedFilter"],
+    ["wah mi sen dis week", read({ query: "dis week", direction: "SEND" }), "timeFilter"],
+    ["wah mi get yesterday", read({ direction: "RECEIVE" }), "timeFilter"],
+    [
+      "how much mi spen las month",
+      read({ query: "las month", direction: "RECEIVE" }),
+      "timeFilter",
+    ],
+    [
+      "wah di biggest payment mi get",
+      read({ query: "biggest payment", direction: "RECEIVE" }),
+      "ungroundedFilter",
+    ],
+  ]
+
+  const entriesOf = (utterances: readonly string[]): CorpusEntry[] =>
+    utterances.map((utterance) => {
+      const entry = TUNING.find((candidate) => candidate.utterance === utterance)
+      if (!entry) throw new Error(`the tuning corpus has no entry ${utterance}`)
+      return entry
+    })
+
+  it("holds each of them as a miss, in the corpus and to the grammar", () => {
+    const entries = entriesOf(ANSWERS.map(([utterance]) => utterance))
+
+    expect(entries.map(({ expected }) => expected)).toEqual(ANSWERS.map(() => "miss"))
+    expect(score(entries)).toMatchObject({ correct: entries.length, wrongAction: 0 })
+    expect(new Set(entries.map(({ dialect }) => dialect))).toEqual(new Set(["en", "jm"]))
+  })
+
+  it("makes each of those answers none, with its guard's reason: no wrong call, alone or in the shipped order", async () => {
+    const entries = entriesOf(ANSWERS.map(([utterance]) => utterance))
+    const model = scriptedModel(
+      new Map(ANSWERS.map(([utterance, answer]) => [utterance, answer])),
+    )
+
+    const run = await runModelEval(deviceEntries(entries), depsOf(model))
+    const scores = scoreDeviceRun(entries, parseDeviceRun(JSON.stringify(run), entries))
+
+    expect(run.rows.map(({ modelResult }) => modelResult)).toEqual(
+      ANSWERS.map(([, , reason]) => ({ kind: "none", reason })),
+    )
+    const none: WrongCalls = {
+      preparedAction: 0,
+      read: 0,
+      preparedActionRate: 0,
+      readRate: 0,
+    }
+    expect(scores.wrongCalls.model.all).toEqual(none)
+    expect(scores.wrongCalls.pipeline.all).toEqual(none)
+    expect(scores.model.all.correct).toBe(entries.length)
+    // The device eval counts them, by reason (ENG-751 decision 3).
+    expect(scores.modelResults?.model).toMatchObject({
+      total: entries.length,
+      none: 0,
+      groupSend: 10,
+      timeFilter: 9,
+      ungroundedFilter: 2,
+    })
+    const report = describeDeviceRun("tuning", scores, "tuning")
+    expect(report).toContain(
+      "tuning: model tier results, every entry (21): 0 calls, 0 refused calls, 0 answered none, " +
+        "0 unanswered (no model, a failure or the time ran out), " +
+        "0 not asked (a reference to the thread alone), " +
+        "21 made none by a guard (10 groupSend, 9 timeFilter, 2 ungroundedFilter)",
+    )
+  })
+
+  it("keeps the near-misses answered in the shipped order: a memo's second person, a read by a contact's name", async () => {
+    const nearMisses = entriesOf([
+      "send tanya $12 for kemar's lunch",
+      "sen 1000 to mi bredda for tanya lunch money",
+      "what did i send kemar",
+      "wah mi sen tanya",
+    ])
+    // The model answers each as meant: the guards pass every one.
+    const model = scriptedModel(
+      new Map(
+        nearMisses.flatMap(({ utterance, expected }) =>
+          typeof expected === "string"
+            ? []
+            : [[utterance, { kind: "call", raw: expected }]],
+        ),
+      ),
+    )
+
+    const scores = await runOver(nearMisses, model)
+
+    expect(scores.model.all).toMatchObject({ correct: 4, wrongAction: 0 })
+    expect(scores.pipeline.all).toMatchObject({ correct: 4, wrongAction: 0 })
+    // The two sends are the grammar's; the two reads are misses to it, and
+    // the model's in the shipped order.
+    expect(nearMisses.map(grammarExpected).map((expected) => typeof expected)).toEqual([
+      "object",
+      "object",
+      "string",
+      "string",
+    ])
+  })
+
+  it("counts a guard's none as an answer, so a held-out run whose only answers are guards' is judged", () => {
+    const miss = (utterance: string): CorpusEntry => ({
+      utterance,
+      dialect: "en",
+      displayCurrency: "USD",
+      expected: "miss",
+    })
+    const row = (modelResult: ModelEvalModelResult): ModelEvalRow => ({
+      grammar: "miss",
+      refused: false,
+      model: "miss",
+      modelResult,
+      modelMs: 1,
+    })
+    const run = (first: ModelEvalModelResult): ModelEvalRun => ({
+      available: true,
+      sessions: WARM_SESSIONS,
+      rows: [row(first), row({ kind: "none", reason: "unavailable" })],
+    })
+    const entries = [miss("split 30 between tanya and kemar"), miss("tell me a joke")]
+    const reportOf = (first: ModelEvalModelResult) =>
+      describeDeviceRun("held-out", scoreDeviceRun(entries, run(first)), "held-out")
+
+    // The model answered the first ask, and a guard made its call none.
+    expect(reportOf({ kind: "none", reason: "groupSend" })).toMatch(
+      /^held-out: the model tier's bar \(held-out set, real device, grammar then model\): .*: met$/m,
+    )
+    // Had it answered neither, the run measured the grammar alone.
+    expect(reportOf({ kind: "none", reason: "unavailable" })).toContain(
+      "held-out: bar not judged: the shipped order asked the model 2 times and it never answered",
+    )
   })
 })

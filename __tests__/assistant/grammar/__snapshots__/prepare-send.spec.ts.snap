@@ -89,5 +89,7 @@ en/JMD "send 1000 to wayne" -> prepareSend {"amount":"1000","payee":"wayne"}
 en/USD "pay Andrea $8" -> prepareSend {"amount":"8","currency":"USD","payee":"andrea"}
 en/USD "send 12 dollars to Bill Jones" -> prepareSend {"amount":"12","currency":"USD","payee":"bill jones"}
 jm/JMD "pay di barber 1500" -> prepareSend {"amount":"1500","payee":"barber"}
-en/USD "Send 0.05 usd to dreadmax" -> prepareSend {"amount":"0.05","currency":"USD","payee":"dreadmax"}"
+en/USD "Send 0.05 usd to dreadmax" -> prepareSend {"amount":"0.05","currency":"USD","payee":"dreadmax"}
+en/USD "send tanya $12 for kemar's lunch" -> prepareSend {"amount":"12","currency":"USD","memo":"kemar's lunch","payee":"tanya"}
+jm/JMD "sen 1000 to mi bredda for tanya lunch money" -> prepareSend {"amount":"1000","memo":"tanya lunch money","payee":"bredda"}"
 `;

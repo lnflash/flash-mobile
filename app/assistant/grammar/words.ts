@@ -115,6 +115,15 @@ const TRAILERS: readonly (readonly string[])[] = [
   ["okay"],
 ]
 
+/**
+ * Every word of a frame or a trailer ("please", "thanks", "hey", "can",
+ * "you"), which never names the person a send pays (ENG-751).
+ */
+export const FRAME_WORDS: ReadonlySet<string> = new Set([
+  ...FRAMES.flatMap(({ words }) => words),
+  ...TRAILERS.flat(),
+])
+
 /** The frame that opens these words, if one does. */
 const leadingFrame = (rest: readonly Token[]) =>
   FRAMES.find(
@@ -141,6 +150,20 @@ export const stripFrame = (tokens: readonly Token[]): Token[] => {
     rest = rest.slice(0, rest.length - trailer.length)
   }
   return rest
+}
+
+/**
+ * The words of an ask's frame, as stripFrame takes them off it (ENG-751):
+ * "show" and "my" in "show my earnings"; "can", "you", "list" and "please"
+ * in "can you list my payments please". They are the ask's own words, never
+ * what it looks for. A word the ask itself holds is not one, wherever else
+ * it stands: "check" in "what did i pay for the check" and in "check what i
+ * paid for the check" is the memo's, and "will" in "will you show me what
+ * i got from will" is the name the ask ends with.
+ */
+export const frameWordsOf = (tokens: readonly Token[]): ReadonlySet<string> => {
+  const askWords = new Set(stripFrame(tokens).map(({ word }) => word))
+  return new Set(tokens.map(({ word }) => word).filter((word) => !askWords.has(word)))
 }
 
 /**
@@ -320,6 +343,17 @@ export const amountRuns = (tokens: readonly Token[], ctx: GrammarContext): Run[]
   return runs
 }
 
+/** The indexes of the tokens that are part of an amount (amountRuns). */
+export const indexesInAmounts = (
+  tokens: readonly Token[],
+  ctx: GrammarContext,
+): ReadonlySet<number> =>
+  new Set(
+    amountRuns(tokens, ctx).flatMap(({ start, end }) =>
+      Array.from({ length: end - start }, (_, offset) => start + offset),
+    ),
+  )
+
 /** What an amount's words mean, as readAmountPhrase reads them. */
 export const readAmount = (
   tokens: readonly Token[],
@@ -359,6 +393,14 @@ export const splitAroundRuns = (
 export const CONNECTORS = set("and or plus")
 
 /**
+ * Words for more than one payee, held in one place (ENG-751): the grammar
+ * never reads one as a name (NOT_A_NAME), and the model tier's group check
+ * reads each as a group's send (GROUP_WORDS). The grammar has no group-send
+ * rule, so this is the list of its own that the check reuses.
+ */
+const MORE_THAN_ONE_PAYEE = "between split each everyone everybody people"
+
+/**
  * Words that never name a contact: people the ask points at rather than
  * names (a pronoun, "the same"), more than one payee, a wallet or account
  * of the user's own, a time, an amount the ask does not give.
@@ -370,8 +412,7 @@ const NOT_A_NAME = set(
     // Follow-ups.
     "same again more another back too also else extra rest " +
     // More than one payee ("&" and "+" reach here as "and", normalize.ts).
-    "and or plus with between split each everyone everybody all someone somebody " +
-    "anyone anybody people " +
+    `and or plus with all someone somebody anyone anybody ${MORE_THAN_ONE_PAYEE} ` +
     // The user's own wallets and accounts.
     "wallet wallets account accounts bank card flashcard savings saving btc bitcoin usd " +
     "usdt jmd cash dollar dollars sats " +
@@ -393,6 +434,17 @@ const NAME_WORD = /^[\p{L}\p{N}_.]+(?:['’-][\p{L}\p{N}_.]+)*$/u
 /** The most words a contact's name is taken to be. */
 export const MAX_NAME_WORDS = 4
 
+/** Whether a word, as the rules match it, never names a contact (NOT_A_NAME). */
+export const neverNames = (word: string): boolean => NOT_A_NAME.has(word)
+
+/**
+ * Whether a word can be part of a contact's name, as nameOf reads one: a
+ * NAME_WORD as typed, and not a word that never names one. The model tier
+ * reads names with it too (ENG-751): a second person in a send.
+ */
+export const isNameWord = ({ word, raw }: Token): boolean =>
+  !neverNames(word) && NAME_WORD.test(raw)
+
 /**
  * The words that name a contact, as typed and lower-cased, or why they do
  * not: "none" when there are none, "refuse" when they point at someone
@@ -407,9 +459,7 @@ export const nameOf = (tokens: readonly Token[]): string | "none" | "refuse" => 
   }
   if (words.length === 0) return "none"
   if (words.length > MAX_NAME_WORDS) return "refuse"
-  if (words.some(({ word, raw }) => NOT_A_NAME.has(word) || !NAME_WORD.test(raw))) {
-    return "refuse"
-  }
+  if (words.some((token) => !isNameWord(token))) return "refuse"
   // A comma inside the words is a list of names; one after the last ends
   // the sentence ("send $5 to bob, please").
   if (words.slice(0, -1).some(({ comma }) => comma)) return "refuse"
@@ -437,6 +487,14 @@ export const PURPOSE_WORDS = set(
 
 /** Purpose words that are also names: a send takes one only after a typed "to". */
 export const PURPOSE_NAMES = set("bill")
+
+/**
+ * Whether a word, as the rules match it, says what a payment is for and is
+ * never read as a person (ENG-751): one of PURPOSE_WORDS but the names among
+ * them (PURPOSE_NAMES), so "taxi" and never "bill".
+ */
+export const isPurposeOnly = (word: string): boolean =>
+  PURPOSE_WORDS.has(word) && !PURPOSE_NAMES.has(word)
 
 /** Words of a time, which make an ask one v1 does not serve ("next week", "every month"). */
 export const TIME_WORDS = set(
@@ -475,3 +533,173 @@ export const refersToThreadOnly = (tokens: readonly Token[]): boolean =>
 
 /** Pronouns that stand for a person. */
 export const PERSON_PRONOUNS = set("him her them they it she he us im yall unu")
+
+// ---------------------------------------------------------------------------
+// Groups and dates, which the on-device model's calls are held to (ENG-751)
+// ---------------------------------------------------------------------------
+
+/**
+ * Words that make a send more than one person's, whoever the model names as
+ * its payee (ENG-751): a split or a share ("split", "between", "among",
+ * "amongst", "half", "halves"), each or both of them, everyone, people, and
+ * the plural pronouns "us" (as in "all of us") and "them", which patois
+ * "dem" folds to. The words for more than one payee are NOT_A_NAME's own
+ * (MORE_THAN_ONE_PAYEE), and "us" and "them" are its pronouns, so the
+ * grammar never takes one for a payee's name either. "among" and "amongst"
+ * are the group check's alone: in NOT_A_NAME they would change what the
+ * grammar reads. "and", "or", "with" and "all" are not here: each is in a
+ * send to one person as often ("hook bob up with 5"), and two people joined
+ * by a connector are namesTwoPeople's.
+ */
+export const GROUP_WORDS = set(
+  `${MORE_THAN_ONE_PAYEE} among amongst splits splitting both half halves us them`,
+)
+
+/** Words for a person that are no name: the user, the one they ask, a pronoun. */
+const PERSON_WORDS: ReadonlySet<string> = new Set([
+  ...PERSON_PRONOUNS,
+  "i",
+  "me",
+  "you",
+  "yourself",
+])
+
+/**
+ * Whether a word stands for a person in a send: one that can be part of a
+ * name (isNameWord) and is not part of an amount, a frame's word, a verb, a
+ * placeholder for an amount, a unit, or a word for what a payment is for;
+ * or a word for a person that is no name ("me", "him"), patois "mi" (me)
+ * included, which reaches the rules as "my".
+ */
+const isPerson = (token: Token, inAmount: boolean, ctx: GrammarContext): boolean => {
+  if (inAmount) return false
+  if (PERSON_WORDS.has(token.word) || token.raw.toLowerCase() === "mi") return true
+  return (
+    isNameWord(token) &&
+    !FRAME_WORDS.has(token.word) &&
+    !VERBS.has(token.word) &&
+    !AMOUNT_PLACEHOLDERS.has(token.word) &&
+    !isUnit(token.word, ctx) &&
+    !isPurposeOnly(token.word)
+  )
+}
+
+/**
+ * Words that join two people: "and", "or" and "plus" ("&" and "+" reach
+ * here as "and"), patois "an" and chat "n" ("tanya n kemar").
+ */
+const joinsPeople = ({ word }: Token): boolean =>
+  CONNECTORS.has(word) || word === "an" || word === "n"
+
+/**
+ * Whether the words name two people as one ask (ENG-751): two joined by a
+ * connector ("tanya and kemar", "mom & dad", "bob or alice", patois "mi an
+ * jason") or by a comma ("bob, tanya"), a "my" or "the" before the second
+ * aside ("bob and my sister"). A person is read as nameOf reads a name it
+ * does not know (isNameWord), so this needs no address book. An amount is
+ * never a person ("$5 and $10"), and the words are the ask without its frame
+ * (stripFrame), so "send $5 to bob, please" names one.
+ */
+export const namesTwoPeople = (
+  tokens: readonly Token[],
+  ctx: GrammarContext,
+): boolean => {
+  const inAmount = indexesInAmounts(tokens, ctx)
+  const person = (i: number): boolean =>
+    i >= 0 && i < tokens.length && isPerson(tokens[i], inAmount.has(i), ctx)
+  // The second person's word, past a "my" or "the" before it. Patois "mi"
+  // stands for "me" as often as for "my", so it is a person itself.
+  const second = (i: number): number => {
+    const owner = tokens[i]
+    const skips =
+      owner !== undefined &&
+      (owner.word === "my" || owner.word === "the") &&
+      owner.raw.toLowerCase() !== "mi"
+    return skips ? i + 1 : i
+  }
+  return tokens.some(
+    (token, i) =>
+      (joinsPeople(token) && person(i - 1) && person(second(i + 1))) ||
+      (token.comma === true && person(i) && person(second(i + 1))),
+  )
+}
+
+/** The months, by name. */
+const MONTHS = set(
+  "january february march april june july august september october november december",
+)
+
+/**
+ * "may", and the months' short forms, which name a month only beside a
+ * number ("may 5", "5 oct"): "may" opens a question as often, and "jan" is
+ * a name.
+ */
+const MONTHS_BESIDE_A_NUMBER = set("may jan feb mar apr jun jul aug sep sept oct nov dec")
+
+/**
+ * Words of a date or a stretch of time (ENG-751): the times a send refuses
+ * (TIME_WORDS) but "every", which opens a list as often ("every payment to
+ * bob"); today, tonight, a day, an hour, a weekend, years, "ago" and
+ * "since"; the parts of a day; the months; and patois "tideh" (today),
+ * "yessideh" and "yesside" (yesterday) and "mont" (month), which await the
+ * same native-speaker review as the patois corpus.
+ */
+const DATE_WORDS: ReadonlySet<string> = new Set([
+  ...[...TIME_WORDS].filter((word) => word !== "every"),
+  ...set(
+    "today todays tonights yesterdays day days hour hours weekend weekends years ago " +
+      "since morning afternoon evening night",
+  ),
+  ...MONTHS,
+  ...set("tideh yessideh yesside mont"),
+])
+
+/** A date written in numbers: "10/15", "15/10/2026", "2026-10-15". */
+const DATE_NUMBERS = /^\d{1,4}[/-]\d{1,2}(?:[/-]\d{1,4})?$/
+
+/** A day of the month: "1st", "22nd", "15th". */
+const ORDINAL_DAY = /^\d{1,2}(?:st|[nr]d|th)$/
+
+/** A year. */
+const YEAR = /^(?:19|20)\d{2}$/
+
+/** Words before a year that make it one: "in 2025", "from 2024 to 2025". */
+const BEFORE_A_YEAR = set("in since during until till before after from to")
+
+const holdsNumber = (token: Token | undefined): boolean =>
+  token !== undefined && /^\d/.test(token.word)
+
+/**
+ * Whether the words name a date or a stretch of time (ENG-751), which no
+ * history read can filter by: a word of one ("yesterday", "this month",
+ * "last week", "since monday", "september"), a date in numbers or a day of
+ * the month ("10/15", "the 15th"), "may" or a month's short form beside a
+ * number, a year after "in", "since", "from", "to" and the like or after a
+ * month ("in 2025", "from 2024 to 2025", "june 2025"), or "between" right
+ * before a word that starts a number, as the grammar reads one
+ * (NUMBER_START, "$50" and "j$500" included), whatever joins the span: a
+ * span of years ("between 2024 and 2025", "between 2024-2025"), which no
+ * other word marks, or of amounts ("between 500 and 1000", "between 500 to
+ * 1000", "between $50 and $100"), which no read filters by either. A span
+ * of days, months or dates is a date by its own words, and "between me and
+ * kemar" is a read filtered by a contact, not a date, wherever a count
+ * stands ("between me and kemar, last 5"). "last" on its own is no date:
+ * "my last 5 payments" is a count.
+ */
+export const namesDate = (tokens: readonly Token[]): boolean =>
+  tokens.some(({ word }, i) => {
+    const before = tokens[i - 1]
+    const after = tokens[i + 1]
+    return (
+      DATE_WORDS.has(word) ||
+      DATE_NUMBERS.test(word) ||
+      ORDINAL_DAY.test(word) ||
+      (MONTHS_BESIDE_A_NUMBER.has(word) && (holdsNumber(before) || holdsNumber(after))) ||
+      (YEAR.test(word) &&
+        before !== undefined &&
+        (BEFORE_A_YEAR.has(before.word) ||
+          MONTHS.has(before.word) ||
+          MONTHS_BESIDE_A_NUMBER.has(before.word))) ||
+      (word === "between" && NUMBER_START.test(after?.word ?? ""))
+    )
+  })

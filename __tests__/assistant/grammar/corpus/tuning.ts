@@ -161,6 +161,56 @@ export const TUNING: readonly CorpusEntry[] = [
   jm("payments fi tanya", transactions({ direction: "SEND", query: "tanya" })),
   jm("payments from mi madda", transactions({ direction: "RECEIVE", query: "madda" })),
   jm("payments fi Kerry-Ann", transactions({ direction: "SEND", query: "kerry-ann" })),
+  // A history read filtered by a contact's name (ENG-751 near-misses): the
+  // grammar's rules miss these, and the on-device model's read of them
+  // must stay a read, the guards passing it: no date, a search the person
+  // typed that names someone, and a direction the words give.
+  {
+    ...en(
+      "USD",
+      "what did i send kemar",
+      transactions({ direction: "SEND", query: "kemar" }),
+    ),
+    grammar: "miss",
+  },
+  {
+    ...jm("wah mi sen tanya", transactions({ direction: "SEND", query: "tanya" })),
+    grammar: "miss",
+  },
+  // A history read by a noun for what came in or went out (ENG-751 review):
+  // the grammar's rules miss these, and the noun gives the direction, so the
+  // on-device model's read keeps it.
+  {
+    ...en("USD", "show my earnings", transactions({ direction: "RECEIVE" })),
+    grammar: "miss",
+  },
+  {
+    ...en("JMD", "show my income", transactions({ direction: "RECEIVE" })),
+    grammar: "miss",
+  },
+  {
+    ...en("USD", "show my refunds", transactions({ direction: "RECEIVE" })),
+    grammar: "miss",
+  },
+  {
+    ...en("JMD", "show my expenses", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
+  {
+    ...en("USD", "show my purchases", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
+  // A history read by one of the grammar's send verbs that its history rule
+  // does not read (ENG-751 review round 2): the verb gives the direction, so
+  // the on-device model's read keeps it.
+  {
+    ...en("USD", "who did i tip", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
+  {
+    ...en("JMD", "what did i transfer", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
 
   // ------------------------------------------------------------------- price
   en("USD", "price", price()),
@@ -335,6 +385,19 @@ export const TUNING: readonly CorpusEntry[] = [
   // grammar takes the words as for anyone, and resolveContact, finding no
   // contact like them, offers that user as a picker of one.
   en("USD", "Send 0.05 usd to dreadmax", send("dreadmax", "0.05", { currency: "USD" })),
+  // A send to one person that names another only in its memo (ENG-751
+  // near-misses): the grammar reads each as that send today, and the
+  // shipped order keeps it, whatever the on-device model's guards make of
+  // the words.
+  en(
+    "USD",
+    "send tanya $12 for kemar's lunch",
+    send("tanya", "12", { currency: "USD", memo: "kemar's lunch" }),
+  ),
+  jm(
+    "sen 1000 to mi bredda for tanya lunch money",
+    send("bredda", "1000", { memo: "tanya lunch money" }),
+  ),
 
   // ----------------------------------------------------------------- receive
   en("USD", "receive $20", receive({ amount: "20", currency: "USD" })),
@@ -517,4 +580,33 @@ export const TUNING: readonly CorpusEntry[] = [
   // Adding a contact is the Contacts screen's, not a call (ENG-730, from the
   // dogfood); a reply that points there needs a rule of its own.
   en("USD", "Add dreadmax as a contact", "miss"),
+  // A send for more than one person (ENG-751): a split, a share, each of
+  // them, two people as one ask, or two amounts. No send to one payee
+  // answers it; the grammar misses or refuses each, and the on-device
+  // model's single-payee send for any of them is none (groupSend).
+  en("USD", "split 30 dollars between tanya and kemar", "miss"),
+  en("USD", "tanya and kemar each get $10", "miss"),
+  en("JMD", "share 3000 between mom and dad", "miss"),
+  en("USD", "everybody on the team gets $5", "miss"),
+  en("USD", "go halves with jason on the $30 dinner", "miss"),
+  en("USD", "bob gets 10 and alice gets 5", "miss"),
+  jm("split di 2000 between mi an tanya", "miss"),
+  jm("tanya an kemar fi get 500 each", "miss"),
+  jm("mi an jason fi share 1000", "miss"),
+  jm("gi di yute dem 300 each", "miss"),
+  // A history read by date, or by what no payment holds (ENG-751): the
+  // history tool has no date filter or sort, so no read answers these; the
+  // grammar misses each, and the on-device model's read of any of them is
+  // none (timeFilter, ungroundedFilter).
+  en("USD", "what did i receive yesterday", "miss"),
+  en("USD", "show my payments from last week", "miss"),
+  en("JMD", "how much have i spent so far this year", "miss"),
+  en("USD", "transactions since monday", "miss"),
+  en("USD", "payments i got in september", "miss"),
+  en("USD", "payments with tanya this week", "miss"),
+  en("USD", "my biggest payment", "miss"),
+  jm("wah mi sen dis week", "miss"),
+  jm("wah mi get yesterday", "miss"),
+  jm("how much mi spen las month", "miss"),
+  jm("wah di biggest payment mi get", "miss"),
 ]

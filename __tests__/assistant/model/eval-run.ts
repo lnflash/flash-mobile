@@ -72,6 +72,9 @@ const NONE_REASONS: Record<ReasonOf<"none">, true> = {
   unavailable: true,
   miss: true,
   thread: true,
+  groupSend: true,
+  timeFilter: true,
+  ungroundedFilter: true,
 }
 
 const hasOnlyKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean =>
@@ -192,14 +195,14 @@ export type DialectWrongCalls = { all: WrongCalls; en: WrongCalls; jm: WrongCall
 
 /**
  * What the model tier made of a run's entries (ModelEvalModelResult),
- * counted. The model answered the entries in `call`, `rejected` and `none`,
- * gave no answer on those in `noAnswer`, and was never asked about those in
- * `thread`.
+ * counted. The model answered the entries in `call`, `rejected`, `none`
+ * and the guards' three (ENG-751), gave no answer on those in `noAnswer`,
+ * and was never asked about those in `thread`.
  */
 export type ModelResults = {
   /** The entries counted. */
   total: number
-  /** A call the pre-check and grounding passed. */
+  /** A call the pre-check, the guards and grounding passed. */
   call: number
   /** A call the pre-check or grounding refused. */
   rejected: number
@@ -209,11 +212,24 @@ export type ModelResults = {
   noAnswer: number
   /** A reference to the thread alone, which the model is not asked about. */
   thread: number
+  /** A send to one payee for an ask about more than one person, which a guard made none. */
+  groupSend: number
+  /** A history read for an ask that names a date, which a guard made none. */
+  timeFilter: number
+  /** A history read whose search the person never asked for, which a guard made none. */
+  ungroundedFilter: number
 }
 
-/** How many entries the model answered, a refused call or its none included. */
-const answeredBy = ({ call, rejected, none }: ModelResults): number =>
-  call + rejected + none
+/** How many entries the model answered, a refused call, a guard's none and its own none included. */
+const answeredBy = ({
+  call,
+  rejected,
+  none,
+  groupSend,
+  timeFilter,
+  ungroundedFilter,
+}: ModelResults): number =>
+  call + rejected + none + groupSend + timeFilter + ungroundedFilter
 
 export type DeviceScores = {
   /** Whether the model could answer when the run began. */
@@ -383,6 +399,19 @@ const byDialect = (
   return { all: tally(entries, outcomes), en: only("en"), jm: only("jm") }
 }
 
+/** The count each reason the model tier gives for none goes to. */
+const NONE_COUNTS: Record<
+  ReasonOf<"none">,
+  keyof Omit<ModelResults, "total" | "call" | "rejected">
+> = {
+  miss: "none",
+  unavailable: "noAnswer",
+  thread: "thread",
+  groupSend: "groupSend",
+  timeFilter: "timeFilter",
+  ungroundedFilter: "ungroundedFilter",
+}
+
 const countResults = (rows: readonly ModelEvalRow[]): ModelResults => {
   const counts: ModelResults = {
     total: rows.length,
@@ -391,13 +420,14 @@ const countResults = (rows: readonly ModelEvalRow[]): ModelResults => {
     none: 0,
     noAnswer: 0,
     thread: 0,
+    groupSend: 0,
+    timeFilter: 0,
+    ungroundedFilter: 0,
   }
   rows.forEach(({ modelResult }) => {
     if (modelResult.kind === "call") counts.call += 1
     else if (modelResult.kind === "rejected") counts.rejected += 1
-    else if (modelResult.reason === "miss") counts.none += 1
-    else if (modelResult.reason === "unavailable") counts.noAnswer += 1
-    else counts.thread += 1
+    else counts[NONE_COUNTS[modelResult.reason]] += 1
   })
   return counts
 }
@@ -510,6 +540,11 @@ const describeResults = (results: ModelResults): string =>
     `${results.none} answered none`,
     `${results.noAnswer} unanswered (no model, a failure or the time ran out)`,
     `${results.thread} not asked (a reference to the thread alone)`,
+    `${
+      results.groupSend + results.timeFilter + results.ungroundedFilter
+    } made none by a guard (${results.groupSend} groupSend, ${
+      results.timeFilter
+    } timeFilter, ${results.ungroundedFilter} ungroundedFilter)`,
   ].join(", ")
 
 /** What the model tier made of every entry, and of the entries the shipped order asks it about. */

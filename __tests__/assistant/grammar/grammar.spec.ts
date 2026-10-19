@@ -1,8 +1,17 @@
 import * as amountPhrase from "@app/assistant/engine/amount-phrase"
 import { routeIntent } from "@app/assistant/engine/intent-router"
 import { GRAMMAR_RULES, matchGrammar, readGrammar } from "@app/assistant/grammar"
+import { directionsSaid, isHistoryWord } from "@app/assistant/grammar/get-transactions"
 import { normalize, textOf, WORD_FOLDS } from "@app/assistant/grammar/normalize"
 import type { GrammarRule } from "@app/assistant/grammar/types"
+import {
+  frameWordsOf,
+  GROUP_WORDS,
+  namesDate,
+  namesTwoPeople,
+  neverNames,
+  stripFrame,
+} from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
 import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
@@ -679,7 +688,10 @@ describe("readGrammar (ENG-690)", () => {
         { kind: "clarifyAmount", reason: "mixed" },
       ]),
     )
-    const apart = ["send bob $5 minus $3", "send bob $5 and then $3"]
+    // Chat "n" joins two people for the model tier's group check
+    // (namesTwoPeople, ENG-751), never two amounts here: CONNECTORS is the
+    // grammar's own, unchanged.
+    const apart = ["send bob $5 minus $3", "send bob $5 and then $3", "send bob $5 n $3"]
     apart.forEach((utterance) =>
       expect([utterance, readGrammar(utterance, USD)]).toEqual([
         utterance,
@@ -699,5 +711,217 @@ describe("readGrammar (ENG-690)", () => {
     expect(readGrammar("my balance", USD, [refuses, ...GRAMMAR_RULES])).toEqual({
       kind: "refused",
     })
+  })
+})
+
+describe("the words the on-device model's calls are held to (ENG-751)", () => {
+  const tokensOf = (utterance: string) => stripFrame(normalize(utterance).tokens)
+
+  it("names a date by its words, numbers, months and stretches, never by a count", () => {
+    const dated = [
+      "what did i get yesterday",
+      "payments this month",
+      "transactions from last week",
+      "what came in today",
+      "payments since june",
+      "payments in september",
+      "show the past year",
+      "what did i send 3 days ago",
+      "payments on 10/15",
+      "payments on 2026-10-15",
+      "payments since the 15th",
+      "what did i get may 5",
+      "payments from 5 oct",
+      "transactions in 2025",
+      "payments between june and july",
+      "payments between the 1st and the 9th",
+      // A span of years, which no other word marks, and a span of amounts,
+      // which no read filters by either: "between" with a number right
+      // after it, a currency sign before it included.
+      "payments between 2024 and 2025",
+      "payments between 500 and 1000",
+      "payments between $50 and $100",
+      "payments between j$500 and j$1000",
+      // Whatever joins the span: "to", or a hyphen inside the number.
+      "payments between 500 to 1000",
+      "transactions between 2024-2025",
+      "payments between 500-1000",
+      // A year after "from" or "to", as after "in" or "since".
+      "transactions from 2024 to 2025",
+      "payments on monday",
+      "what i spent last night",
+      "wah mi get tideh",
+      "wah mi sen yessideh",
+      "how much mi spen dis mont",
+    ]
+    const undated = [
+      "my last 5 payments",
+      "my last payment",
+      "show every payment to bob",
+      "may i see my payments",
+      "payments from jan",
+      "who sent me money recently",
+      "latest transactions",
+      "payments of 2000",
+      "send bob $5",
+      // "between" two people is a read filtered by a contact, not a date,
+      // wherever a count stands.
+      "transactions between me and kemar",
+      "transactions between me and kemar, last 5",
+      "my 5 latest payments between me and kemar",
+      "my 5 latest payments between me n kemar",
+    ]
+
+    expect(dated.filter((utterance) => !namesDate(normalize(utterance).tokens))).toEqual(
+      [],
+    )
+    expect(undated.filter((utterance) => namesDate(normalize(utterance).tokens))).toEqual(
+      [],
+    )
+  })
+
+  it("names two people joined as one ask, and never an amount or a frame's word as one", () => {
+    const two = [
+      "tanya and kemar need 20",
+      "tanya & kemar need 20",
+      "bob + alice get 5",
+      "bob or alice can have 40",
+      "tanya an kemar fi get 500",
+      "tanya n kemar need 500",
+      "mi an jason need 1000",
+      "me and bob need 20",
+      "hook up bob, tanya with 15",
+      "tanya and my sister need 25",
+      "give it to him and her",
+    ]
+    const one = [
+      "send bob $5 and $3",
+      "bob gets 5 and 10",
+      "send $5 to bob, please",
+      "hook bob up with 5 dollars",
+      "send tanya $12 for kemar's lunch",
+      "pay bob 50 for rent and lights",
+      "throw bob 5 and thanks",
+      // Chat "n" after an amount or between two purposes joins no two
+      // people, and an "n" inside a name ("brandon") is no word of its own.
+      "throw bob 5 n thanks",
+      "pay brandon 50 for lunch n gas",
+      "make an invoice",
+    ]
+
+    expect(two.filter((utterance) => !namesTwoPeople(tokensOf(utterance), USD))).toEqual(
+      [],
+    )
+    expect(one.filter((utterance) => namesTwoPeople(tokensOf(utterance), USD))).toEqual(
+      [],
+    )
+  })
+
+  it("holds the group words of a split, a share and a plural, not a single send's", () => {
+    ;["split", "between", "each", "both", "everyone", "everybody", "half", "halves"]
+      .concat(["us", "them", "people", "among", "amongst"])
+      .forEach((word) => expect([word, GROUP_WORDS.has(word)]).toEqual([word, true]))
+    ;["and", "with", "all", "to", "for"].forEach((word) =>
+      expect([word, GROUP_WORDS.has(word)]).toEqual([word, false]),
+    )
+    // Patois "dem" reaches the rules as "them".
+    expect(normalize("dem").tokens[0].word).toBe("them")
+    // The words for more than one payee are the grammar's own, one list for
+    // both: never a payee's name to the grammar, always a group's send here.
+    ;["between", "split", "each", "everyone", "everybody", "people"].forEach((word) =>
+      expect([word, GROUP_WORDS.has(word), neverNames(word)]).toEqual([word, true, true]),
+    )
+    // "among" and "amongst" are the group check's alone, not NOT_A_NAME's,
+    // so the grammar reads every ask as it did.
+    ;["among", "amongst"].forEach((word) =>
+      expect([word, neverNames(word)]).toEqual([word, false]),
+    )
+  })
+
+  it("gives the directions a history ask's words name, both when they are unsure", () => {
+    const said = (utterance: string) =>
+      [...directionsSaid(normalize(utterance).tokens)].sort()
+
+    expect(said("what did i send")).toEqual(["SEND"])
+    expect(said("what have i spent")).toEqual(["SEND"])
+    expect(said("who did i pay")).toEqual(["SEND"])
+    expect(said("outgoing payments")).toEqual(["SEND"])
+    expect(said("payments to kemar")).toEqual(["SEND"])
+    expect(said("what did i receive")).toEqual(["RECEIVE"])
+    expect(said("payments from alice")).toEqual(["RECEIVE"])
+    expect(said("what came in")).toEqual(["RECEIVE"])
+    expect(said("what did i earn")).toEqual(["RECEIVE"])
+    expect(said("money sent to me")).toEqual(["RECEIVE", "SEND"])
+    expect(said("who sent me money")).toEqual(["RECEIVE", "SEND"])
+    expect(said("who pay mi")).toEqual(["RECEIVE", "SEND"])
+    expect(said("payments fi mi madda")).toEqual(["RECEIVE", "SEND"])
+    expect(said("what did i send my mom")).toEqual(["SEND"])
+    // The nouns for what came in and what went out.
+    expect(said("show my earnings")).toEqual(["RECEIVE"])
+    expect(said("show my income")).toEqual(["RECEIVE"])
+    expect(said("show my expenses")).toEqual(["SEND"])
+    expect(said("show my purchases")).toEqual(["SEND"])
+    // The grammar's own send verbs (SEND_VERBS) and their other forms.
+    expect(said("who did i tip")).toEqual(["SEND"])
+    expect(said("what did i transfer")).toEqual(["SEND"])
+    expect(said("who did i transfer to")).toEqual(["SEND"])
+    expect(said("money i transferred")).toEqual(["SEND"])
+    expect(said("who did i give money")).toEqual(["SEND"])
+    // The grammar's own receive verbs (RECEIVE_VERBS) and their other forms.
+    expect(said("what did i collect")).toEqual(["RECEIVE"])
+    expect(said("money i collected")).toEqual(["RECEIVE"])
+    // A refund goes either way: one the user got, or one they gave.
+    expect(said("show my refunds")).toEqual(["RECEIVE", "SEND"])
+    expect(said("my last refund")).toEqual(["RECEIVE", "SEND"])
+    expect(said("who did i refund")).toEqual(["RECEIVE", "SEND"])
+    expect(said("show my transactions")).toEqual([])
+    expect(said("recent payments")).toEqual([])
+  })
+
+  it("tells the words a history ask is made of from what it looks for", () => {
+    const own = [
+      "payments",
+      "transactions",
+      "history",
+      "received",
+      "sent",
+      "paid",
+      "money",
+    ]
+    own
+      .concat(["recent", "biggest", "first", "five"])
+      // A comparison with an amount ("over $50", "less than 2000").
+      .concat(["over", "above", "under", "below", "than", "less", "bigger"])
+      // The nouns for what came in and what went out.
+      .concat(["earnings", "income", "refunds", "expenses", "purchases"])
+      // The grammar's send and receive verbs, and their other forms.
+      .concat(["tip", "tipped", "transfer", "transferred", "collect", "requested"])
+      .forEach((word) => expect([word, isHistoryWord(word)]).toEqual([word, true]))
+    ;["kemar", "rent", "lunch", "madda", "dreadmax", "invoice"].forEach((word) =>
+      expect([word, isHistoryWord(word)]).toEqual([word, false]),
+    )
+  })
+
+  it("gives the words of an ask's own frame, and never a word of the ask itself", () => {
+    const frameOf = (utterance: string) =>
+      [...frameWordsOf(normalize(utterance).tokens)].sort()
+
+    expect(frameOf("show my earnings")).toEqual(["my", "show"])
+    expect(frameOf("can you list my payments please")).toEqual([
+      "can",
+      "list",
+      "please",
+      "you",
+    ])
+    expect(frameOf("what did i pay for the check")).toEqual([])
+    expect(frameOf("my payments")).toEqual([])
+    // A word the ask itself holds is the ask's, though the frame holds it
+    // too: the memo's "check", the name "will".
+    expect(frameOf("check what i paid for the check")).toEqual([])
+    expect(frameOf("will you show me what i got from will")).toEqual([
+      "me",
+      "show",
+      "you",
+    ])
   })
 })

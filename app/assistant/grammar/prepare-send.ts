@@ -32,7 +32,17 @@ import {
 //   them a question (a k or m suffix, a "$" on a J$ account, a number in
 //   words past ninety-nine). An ask with no amount is a question too.
 
-const SEND_VERBS = new Set(["send", "pay", "give", "transfer", "tip"])
+/**
+ * The verbs a send opens with. A history read's direction reuses them
+ * (get-transactions.ts, ENG-751): "who did i tip" asks what went out.
+ */
+export const SEND_VERBS: ReadonlySet<string> = new Set([
+  "send",
+  "pay",
+  "give",
+  "transfer",
+  "tip",
+])
 
 const FROM_BTC = new Set(["bitcoin", "btc"])
 const FROM_CASH = new Set(["cash", "usd", "usdt", "dollar", "dollars"])

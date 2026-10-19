@@ -1,7 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`the grammar on what is no call, over the tuning corpus resolves the corpus as the snapshot records 1`] = `
-"jm/JMD "sen 700 to bob fi lunch" -> miss
+"en/USD "what did i send kemar" -> miss
+jm/JMD "wah mi sen tanya" -> miss
+en/USD "show my earnings" -> miss
+en/JMD "show my income" -> miss
+en/USD "show my refunds" -> miss
+en/JMD "show my expenses" -> miss
+en/USD "show my purchases" -> miss
+en/USD "who did i tip" -> miss
+en/JMD "what did i transfer" -> miss
+jm/JMD "sen 700 to bob fi lunch" -> miss
 en/JMD "send $20 to bob" -> clarifyAmount
 en/JMD "send alice $5" -> clarifyAmount
 en/JMD "receive $100" -> clarifyAmount
@@ -99,5 +108,26 @@ en/JMD "pay the phone-bill 2000" -> miss
 jm/JMD "gi 1000 fi taxi-fare" -> miss
 en/USD "send 10 to alice + bob" -> miss
 en/USD "send $15 to bob, tanya" -> miss
-en/USD "Add dreadmax as a contact" -> miss"
+en/USD "Add dreadmax as a contact" -> miss
+en/USD "split 30 dollars between tanya and kemar" -> miss
+en/USD "tanya and kemar each get $10" -> miss
+en/JMD "share 3000 between mom and dad" -> miss
+en/USD "everybody on the team gets $5" -> miss
+en/USD "go halves with jason on the $30 dinner" -> miss
+en/USD "bob gets 10 and alice gets 5" -> miss
+jm/JMD "split di 2000 between mi an tanya" -> miss
+jm/JMD "tanya an kemar fi get 500 each" -> miss
+jm/JMD "mi an jason fi share 1000" -> miss
+jm/JMD "gi di yute dem 300 each" -> miss
+en/USD "what did i receive yesterday" -> miss
+en/USD "show my payments from last week" -> miss
+en/JMD "how much have i spent so far this year" -> miss
+en/USD "transactions since monday" -> miss
+en/USD "payments i got in september" -> miss
+en/USD "payments with tanya this week" -> miss
+en/USD "my biggest payment" -> miss
+jm/JMD "wah mi sen dis week" -> miss
+jm/JMD "wah mi get yesterday" -> miss
+jm/JMD "how much mi spen las month" -> miss
+jm/JMD "wah di biggest payment mi get" -> miss"
 `;

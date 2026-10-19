@@ -41,9 +41,10 @@ type Args = { hint: string }
 /**
  * A name as resolveContact compares it: lower case, single spaces, and no
  * "_", "-", "'" or "’", so "Kerry-Ann", "kerryann" and "kerry_ann" are one
- * name, as are "D'Andre" and "D’Andre".
+ * name, as are "D'Andre" and "D’Andre". The model tier finds a contact's
+ * name in what the person typed the same way (ENG-751).
  */
-const comparable = (name: string): string =>
+export const comparable = (name: string): string =>
   name
     .toLowerCase()
     .replace(/[_\-'’]/g, "")

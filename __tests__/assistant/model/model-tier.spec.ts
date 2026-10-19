@@ -9,11 +9,15 @@ import {
 import {
   canonicalNumber,
   isGrounded,
+  ModelTierResult,
   ModelTierRuntime,
   prewarmOnDeviceModel,
+  refusalOf,
   tryOnDeviceModel,
 } from "@app/assistant/engine/model-tier"
 import { AMOUNT_CURRENCIES, AMOUNT_PATTERN } from "@app/assistant/engine/parse-amount"
+import { matchGrammar } from "@app/assistant/grammar"
+import type { ContactRow } from "@app/assistant/rails/graphql-rail"
 import { assistantRegistry, READ_TOOLS } from "@app/assistant/registry"
 import {
   createRegistry,
@@ -474,14 +478,32 @@ describe("grounding", () => {
 
   it("lets a read's closed sets pass, and holds its free text to the words", async () => {
     // What the macOS model added to a third of the reads it served.
+    // Grounding refuses a search the person never typed; in the model tier
+    // a history read's search meets the guards first (ENG-751), which make
+    // the call none, ungroundedFilter.
+    const history = tool("getTransactions")
+    expect(
+      isGrounded(
+        history,
+        { query: "none" },
+        { ...USD, utterance: "show me my transactions" },
+      ),
+    ).toBe(false)
+    expect(
+      isGrounded(
+        history,
+        { query: "rent" },
+        { ...USD, utterance: "what did i spend lately" },
+      ),
+    ).toBe(false)
     await expect(
       ask(
         { intent: "getTransactions", args: { query: "none", direction: "RECEIVE" } },
         "show me my transactions",
       ),
     ).resolves.toEqual({
-      kind: "rejected",
-      reason: "ungrounded",
+      kind: "none",
+      reason: "ungroundedFilter",
       intent: "getTransactions",
     })
     await expect(
@@ -489,8 +511,14 @@ describe("grounding", () => {
         { intent: "getTransactions", args: { query: "rent" } },
         "what did i spend lately",
       ),
-    ).resolves.toMatchObject({ kind: "rejected", reason: "ungrounded" })
-    // A choice of a closed set answers what was asked, named or not.
+    ).resolves.toEqual({
+      kind: "none",
+      reason: "ungroundedFilter",
+      intent: "getTransactions",
+    })
+    // A choice of a closed set passes grounding, named or not; a history
+    // read's direction stays when a word of the ask gives it ("went out"),
+    // and the guards drop it otherwise (ENG-751).
     await expect(
       ask(
         { intent: "getTransactions", args: { direction: "SEND", query: "rent" } },
@@ -753,6 +781,629 @@ describe("a reference to the thread with nothing new in it (ENG-749)", () => {
       ).resolves.toEqual({ kind: "none", reason: "miss" })
       expect([utterance, modelAdapter.decide.mock.calls.length]).toEqual([utterance, 1])
     }
+  })
+})
+
+describe("the guards (ENG-751)", () => {
+  // The 2026-10-18 held-out device run's two wrong calls passed grounding,
+  // every word they used typed: a split between two people answered as one
+  // send, and a history read that searched for its time phrase. Each case
+  // here passes the pre-check and grounding, so only a guard stops it.
+
+  type Raw = { intent: string; args: Record<string, unknown> }
+  type Account = typeof USD
+
+  const contact = (username: string, alias: string | null = null): ContactRow =>
+    ({
+      __typename: "UserContact",
+      id: username,
+      username,
+      alias,
+      transactionsCount: 1,
+    } as ContactRow)
+
+  /** A runtime whose cache holds `contacts`, or whose cache read fails. */
+  const knowing = (raw: Raw, contacts: ContactRow[] | Error): ModelTierRuntime => ({
+    ...runtimeOf(fakeModelAdapter(modelCall(raw))),
+    cachedGraphql: {
+      contacts: jest.fn(async () => {
+        if (contacts instanceof Error) throw contacts
+        return contacts
+      }),
+    },
+  })
+
+  /** Whether grounding alone, the model tier's check before ENG-751, takes the call. */
+  const grounds = (raw: Raw, utterance: string, account: Account = USD): boolean =>
+    isGrounded(tool(raw.intent), raw.args, { ...account, utterance })
+
+  /** Each case's result, with its utterance, so a failure names the case. */
+  const resultsOf = async (cases: [string, Raw, Account?][]) =>
+    Promise.all(
+      cases.map(async ([utterance, raw, account]) => [
+        utterance,
+        await ask(raw, utterance, { account: account ?? USD }),
+      ]),
+    )
+
+  describe("a send to one payee for an ask about more than one person: none, groupSend", () => {
+    const send = (
+      payee: string,
+      amount: string,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      intent: "prepareSend",
+      args: { payee, amount, ...extra },
+    })
+    const GROUP_SEND = { kind: "none", reason: "groupSend", intent: "prepareSend" }
+
+    it("is none for a group word: a split, a share, each, both, everyone, half, us, them", async () => {
+      const cases: [string, Raw, Account?][] = [
+        [
+          "split 30 dollars between tanya and kemar",
+          send("tanya", "30", { currency: "USD" }),
+        ],
+        ["tanya gets $10 each", send("tanya", "10", { currency: "USD" })],
+        ["give both of them 15", send("both", "15")],
+        ["everybody on the team gets $5", send("everybody", "5", { currency: "USD" })],
+        [
+          "go halves with jason on the $30 dinner",
+          send("jason", "30", { currency: "USD" }),
+        ],
+        ["bob needs half of the 40", send("bob", "40")],
+        ["pay everyone in the group 1000", send("everyone", "1000"), JMD],
+        ["drop 20 on all of us", send("us", "20")],
+        ["dem fi get 500", send("dem", "500"), JMD],
+        ["share 5000 among my kids", send("kids", "5000"), JMD],
+        ["divide 900 amongst the cousins", send("cousins", "900"), JMD],
+      ]
+      for (const [utterance, raw, account] of cases) {
+        expect([utterance, grounds(raw, utterance, account)]).toEqual([utterance, true])
+      }
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance]) => [utterance, GROUP_SEND]),
+      )
+    })
+
+    it('is none for two people joined as one ask, chat "n", patois "an" and a comma included', async () => {
+      const cases: [string, Raw, Account?][] = [
+        ["tanya and kemar need 20", send("tanya", "20")],
+        ["tanya & kemar need 20", send("kemar", "20")],
+        ["bob or alice can have 40", send("bob", "40")],
+        ["tanya an kemar fi get 500", send("tanya", "500"), JMD],
+        ["mi an jason need 1000", send("jason", "1000"), JMD],
+        ["tanya n kemar need 500", send("tanya", "500"), JMD],
+        ["hook up bob, tanya with 15", send("bob", "15")],
+        ["tanya and my sister need 25", send("tanya", "25")],
+      ]
+      for (const [utterance, raw, account] of cases) {
+        expect([utterance, grounds(raw, utterance, account)]).toEqual([utterance, true])
+      }
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance]) => [utterance, GROUP_SEND]),
+      )
+    })
+
+    it("is none for more than one amount: two payments, or an amount the grammar would ask about", async () => {
+      const raw = send("bob", "10", { currency: "USD" })
+      const utterance = "bob gets 10 and alice gets 5"
+      expect(grounds(raw, utterance)).toBe(true)
+
+      await expect(ask(raw, utterance)).resolves.toEqual(GROUP_SEND)
+      await expect(
+        ask(send("tanya", "20"), "throw tanya 20 for 2 tickets"),
+      ).resolves.toEqual(GROUP_SEND)
+    })
+
+    it("is none for a contact the app's cache knows besides the payee, anywhere in the words, a memo included, never for a word of an alias that names no one", async () => {
+      const contacts = [
+        contact("tanya_b", "Tanya"),
+        contact("kemar99", "Kemar Brown"),
+        contact("carol", "My Mom"),
+      ]
+      const taxi = send("tanya", "20", { memo: "kemar's taxi" })
+      const utterance = "throw tanya 20 for kemar's taxi"
+      expect(grounds(taxi, utterance)).toBe(true)
+
+      // The words alone name one person: no cache, or a cache that fails.
+      await expect(ask(taxi, utterance)).resolves.toEqual({ kind: "call", call: taxi })
+      await expect(
+        tryOnDeviceModel(
+          knowing(taxi, new Error("No answer in the cache")),
+          utterance,
+          USD,
+        ),
+      ).resolves.toEqual({ kind: "call", call: taxi })
+      // Kemar Brown, by a word of the alias, and kemar99, by the username.
+      await expect(
+        tryOnDeviceModel(knowing(taxi, contacts), utterance, USD),
+      ).resolves.toEqual(GROUP_SEND)
+      const lunch = send("tanya", "20", { memo: "kemar99 lunch" })
+      await expect(
+        tryOnDeviceModel(
+          knowing(lunch, contacts),
+          "throw tanya 20 for kemar99 lunch",
+          USD,
+        ),
+      ).resolves.toEqual(GROUP_SEND)
+      // The payee's own contact, and a word of an alias that names no one
+      // ("my"), are no second person.
+      const alone = send("tanya", "20", { memo: "my lunch" })
+      await expect(
+        tryOnDeviceModel(knowing(alone, contacts), "throw tanya 20 for my lunch", USD),
+      ).resolves.toEqual({ kind: "call", call: alone })
+      // Nor is a word of an alias that the grammar reads as no name once
+      // folded: patois "mi" (my), patois "di" (the), and "the", the
+      // determiner nameOf skips; nor a word for what a payment is for,
+      // which the grammar never reads as a person ("taxi" in Taxi Man). An
+      // alias that is one such word ("Fi", "Di", "Mi") names no one either,
+      // whole: patois "fi" (to) and "di" are in most patois sends. The
+      // device eval reads no cache, so only this spec can show it.
+      const determiners = [
+        ...contacts,
+        contact("madda1", "Mi Madda"),
+        contact("boss1", "Di Boss"),
+        contact("barber1", "The Barber"),
+        contact("fiona_j", "Fi"),
+        contact("dianne_r", "Di"),
+        contact("michelle_k", "Mi"),
+        contact("taximan1", "Taxi Man"),
+        contact("jbrown7", "J B"),
+      ]
+      const passing: [string, Raw, Account][] = [
+        ["tanya fi get 1000 from mi", send("tanya", "1000"), JMD],
+        ["tanya fi get 1000", send("tanya", "1000"), JMD],
+        ["throw tanya 20 for the taxi", send("tanya", "20", { memo: "the taxi" }), USD],
+        ["tanya fi get 500 fi di taxi", send("tanya", "500", { memo: "di taxi" }), JMD],
+        ["throw tanya 20 for my lunch", alone, USD],
+      ]
+      for (const [words, raw, account] of passing) {
+        expect([words, grounds(raw, words, account)]).toEqual([words, true])
+      }
+      expect(
+        await Promise.all(
+          passing.map(async ([words, raw, account]) => [
+            words,
+            await tryOnDeviceModel(knowing(raw, determiners), words, account),
+          ]),
+        ),
+      ).toEqual(passing.map(([words, raw]) => [words, { kind: "call", call: raw }]))
+      // A word of such an alias that does name someone still does: Madda,
+      // and Man, with the whole alias Taxi Man. An alias of initials ("J
+      // B") names its contact whole, though no one letter does, and a
+      // one-word alias's contact is still named by its username.
+      const medicine = send("tanya", "20", { memo: "madda medicine" })
+      const named: [string, Raw][] = [
+        ["throw tanya 20 for madda medicine", medicine],
+        [
+          "throw tanya 20 for the taxi man",
+          send("tanya", "20", { memo: "the taxi man" }),
+        ],
+        ["throw tanya 20 for j b lunch", send("tanya", "20", { memo: "j b lunch" })],
+        [
+          "throw tanya 20 for fiona_j lunch",
+          send("tanya", "20", { memo: "fiona_j lunch" }),
+        ],
+      ]
+      expect(
+        await Promise.all(
+          named.map(async ([words, raw]) => [
+            words,
+            await tryOnDeviceModel(knowing(raw, determiners), words, USD),
+          ]),
+        ),
+      ).toEqual(named.map(([words]) => [words, GROUP_SEND]))
+      // A contact the payee names by a word of its alias (bob for Bob
+      // Marley) is the payee, whatever other word of that alias is typed.
+      const bob = send("bob", "20")
+      await expect(
+        tryOnDeviceModel(
+          knowing(bob, [contact("bmarley", "Bob Marley")]),
+          "throw bob marley 20",
+          USD,
+        ),
+      ).resolves.toEqual({ kind: "call", call: bob })
+    })
+
+    it("reads only the cache for contacts, and only for a send the words leave to one person", async () => {
+      const read = send("tanya", "20")
+      const runtime = knowing(read, [contact("kemar99", "Kemar")])
+
+      await tryOnDeviceModel(runtime, "throw tanya 20", USD)
+      await tryOnDeviceModel(runtime, "split 20 between tanya and kemar", USD)
+
+      // The runtime holds no network rail at all: a contact is what the
+      // app's cache already knows. The split was a group's without it.
+      expect(runtime.cachedGraphql?.contacts).toHaveBeenCalledTimes(1)
+    })
+
+    it('lets a send to one person stand: a second person in a memo the grammar reads, "with", a comma before "please", an "n" inside a word or after the amount', async () => {
+      // A near-miss of the tuning corpus: the grammar reads it as this
+      // send, so the shipped order never asks the model about it.
+      const memo = send("tanya", "12", { currency: "USD", memo: "kemar's lunch" })
+      expect(matchGrammar("send tanya $12 for kemar's lunch", USD)).toEqual({
+        kind: "call",
+        call: memo,
+      })
+      const cases: [string, Raw][] = [
+        ["send tanya $12 for kemar's lunch", memo],
+        ["hook bob up with 5 dollars", send("bob", "5", { currency: "USD" })],
+        ["send $5 to bob, please", send("bob", "5", { currency: "USD" })],
+        ["sen 1000 to mi bredda for tanya lunch money", send("bredda", "1000")],
+        ["send nathan $15 for lunch", send("nathan", "15", { currency: "USD" })],
+        ["throw bob 5 n thanks", send("bob", "5")],
+      ]
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance, raw]) => [utterance, { kind: "call", call: raw }]),
+      )
+    })
+
+    it("holds sends alone: a request for an amount from two people is no payment", async () => {
+      const receive = {
+        intent: "prepareReceive",
+        args: { amount: "20", currency: "USD" },
+      }
+
+      await expect(ask(receive, "request $20 from tanya and kemar")).resolves.toEqual({
+        kind: "call",
+        call: receive,
+      })
+    })
+  })
+
+  describe("a history read for an ask that names a date: none, timeFilter", () => {
+    const history = (args: Record<string, unknown> = {}) => ({
+      intent: "getTransactions",
+      args,
+    })
+    const TIME_FILTER = { kind: "none", reason: "timeFilter", intent: "getTransactions" }
+
+    it("is none whatever the read searches for: no history read filters by date", async () => {
+      const cases: [string, Raw, Account?][] = [
+        // What the held-out run's model made of such an ask: its time phrase
+        // as the search, and a direction the words do not give.
+        [
+          "what have i spent so far this month",
+          history({ query: "this month", direction: "RECEIVE" }),
+        ],
+        ["what did i receive yesterday", history({ direction: "RECEIVE" })],
+        ["show my payments from last week", history({ query: "last week" })],
+        ["how much have i spent so far this year", history({ direction: "SEND" }), JMD],
+        ["transactions since monday", history()],
+        ["payments i got in september", history({ direction: "RECEIVE" })],
+        // A contact's name does not save a read the date makes none.
+        ["payments with tanya this week", history({ query: "tanya" })],
+        ["what came in today", history({ direction: "RECEIVE" })],
+        ["what did i send last night", history({ direction: "SEND" })],
+        ["payments to bob on 10/15", history({ query: "bob" })],
+        ["payments since the 1st", history()],
+        ["what did i get on may 5", history()],
+        ["transactions in 2025", history()],
+        ["payments between june and july", history()],
+        // "between" with a number right after it: a span of years, or of
+        // amounts, which no read filters by either, a currency sign before
+        // the number included.
+        ["payments between 2024 and 2025", history()],
+        ["payments between 500 and 1000", history({ query: "500" }), JMD],
+        ["payments between 50 and 100", history()],
+        ["payments between $50 and $100", history()],
+        // Whatever joins the span: "to", or a hyphen inside the number; and
+        // a year after "from" or "to", as after "in" or "since".
+        ["payments between 500 to 1000", history(), JMD],
+        ["transactions between 2024-2025", history()],
+        ["payments between 500-1000", history()],
+        ["transactions from 2024 to 2025", history()],
+        ["wah mi sen dis week", history({ direction: "SEND" }), JMD],
+        ["wah mi get yesterday", history({ direction: "RECEIVE" }), JMD],
+        ["how much mi spen las month", history(), JMD],
+        ["wah come in tideh", history(), JMD],
+      ]
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance]) => [utterance, TIME_FILTER]),
+      )
+      // Grounding takes the held-out shape: every word of its search typed.
+      const [[utterance, heldOutShape]] = cases
+      expect(grounds(heldOutShape, utterance)).toBe(true)
+    })
+
+    it('reads "last" with a count, "every", "may" as a word, a name like Jan and "between" two people as no date', async () => {
+      const cases: [string, Raw][] = [
+        ["my last 3 payments", history({ first: 3 })],
+        ["show every payment to bob", history({ query: "bob", direction: "SEND" })],
+        ["may i see my payments", history()],
+        ["show my payments from jan", history({ query: "jan", direction: "RECEIVE" })],
+        ["who sent me money recently", history({ direction: "RECEIVE" })],
+        // A read filtered by a contact, which stays a read (decision 4),
+        // wherever its count stands.
+        ["transactions between me and kemar", history({ query: "kemar" })],
+        [
+          "transactions between me and kemar, last 5",
+          history({ query: "kemar", first: 5 }),
+        ],
+        [
+          "my 5 latest payments between me and kemar",
+          history({ query: "kemar", first: 5 }),
+        ],
+        [
+          "my 5 latest payments between me n kemar",
+          history({ query: "kemar", first: 5 }),
+        ],
+      ]
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance, raw]) => [utterance, { kind: "call", call: raw }]),
+      )
+    })
+  })
+
+  describe("a history read whose search the person never asked for: none, ungroundedFilter", () => {
+    const history = (args: Record<string, unknown>) => ({
+      intent: "getTransactions",
+      args,
+    })
+    const UNGROUNDED_FILTER = {
+      kind: "none",
+      reason: "ungroundedFilter",
+      intent: "getTransactions",
+    }
+
+    it("is none for a search the words do not hold", async () => {
+      await expect(
+        ask(history({ query: "bob", direction: "SEND" }), "what did i send"),
+      ).resolves.toEqual(UNGROUNDED_FILTER)
+      await expect(
+        ask(history({ query: "you", direction: "RECEIVE" }), "who sent me money"),
+      ).resolves.toEqual(UNGROUNDED_FILTER)
+    })
+
+    it("is none for a search made of the ask's own words alone, though typed", async () => {
+      // What the macOS model searched for (ENG-749 proxy run): each typed,
+      // so grounding took it, and none names anyone or a memo's text.
+      const cases: [string, Raw, Account?][] = [
+        ["my payments", history({ query: "my payments", direction: "RECEIVE" })],
+        [
+          "money i received",
+          history({ query: "money i received", direction: "RECEIVE" }),
+        ],
+        ["who did i pay", history({ query: "who did i pay" })],
+        [
+          "who sent me money recently",
+          history({ query: "who sent me money recently", direction: "RECEIVE" }),
+        ],
+        ["show mi mi payments", history({ query: "mi mi", direction: "RECEIVE" }), JMD],
+        ["my biggest payment", history({ query: "biggest" })],
+        ["wah di biggest payment mi get", history({ query: "biggest payment" }), JMD],
+        // What the macOS model answered to the reads by a noun for what came
+        // in or went out (ENG-751 review proxy run, both runs alike): the
+        // ask's own words, its frame ("show") or its noun, as the search.
+        [
+          "show my earnings",
+          history({ query: "show my earnings", direction: "RECEIVE" }),
+        ],
+        ["show my income", history({ query: "income", direction: "RECEIVE" }), JMD],
+        ["show my expenses", history({ query: "expenses", direction: "RECEIVE" })],
+        [
+          "can you list my payments please",
+          history({ query: "list my payments please" }),
+        ],
+      ]
+      for (const [utterance, raw, account] of cases) {
+        expect([utterance, grounds(raw, utterance, account)]).toEqual([utterance, true])
+      }
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance]) => [utterance, UNGROUNDED_FILTER]),
+      )
+    })
+
+    it("is none for a search made only of an amount, though typed: no read filters by size; a memo's number stays", async () => {
+      // A read that searched memos and usernames for "50" would answer "no
+      // payments matching" to a question about how big they were.
+      const cases: [string, Raw, Account?][] = [
+        ["show my payments over $50", history({ query: "50" })],
+        ["show my payments over $50", history({ query: "$50" })],
+        ["show my payments over $50", history({ query: "over $50" })],
+        ["show my payments less than $50", history({ query: "less than $50" })],
+        ["payments of 2000", history({ query: "2000" }), JMD],
+        ["what did i get above 1000", history({ query: "above 1000" }), JMD],
+      ]
+      for (const [utterance, raw, account] of cases) {
+        expect([utterance, grounds(raw, utterance, account)]).toEqual([utterance, true])
+      }
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance]) => [utterance, UNGROUNDED_FILTER]),
+      )
+      // A number beside a word that names a memo's text is a search for it.
+      const invoice = history({ query: "invoice 2041" })
+      await expect(ask(invoice, "what did i pay for invoice 2041")).resolves.toEqual({
+        kind: "call",
+        call: invoice,
+      })
+    })
+
+    it("lets a search for a contact, a username or a memo's text stand", async () => {
+      const cases: [string, Raw, Account?][] = [
+        ["what did i send kemar", history({ query: "kemar", direction: "SEND" })],
+        ["wah mi sen tanya", history({ query: "tanya", direction: "SEND" }), JMD],
+        [
+          "payments from mi madda",
+          history({ query: "mi madda", direction: "RECEIVE" }),
+          JMD,
+        ],
+        [
+          "payments fi Kerry-Ann",
+          history({ query: "Kerry-Ann", direction: "SEND" }),
+          JMD,
+        ],
+        ["what did i send dreadmax", history({ query: "dreadmax", direction: "SEND" })],
+        ["show me what i paid for groceries", history({ query: "groceries" })],
+        // A frame's word is the ask's own only where the ask itself does
+        // not hold it: here "check" is the memo's, and "will" a name, though
+        // the ask's frame holds each too.
+        ["what did i pay for the check", history({ query: "check" })],
+        ["check what i paid for the check", history({ query: "check" })],
+        [
+          "will you show me what i got from will",
+          history({ query: "will", direction: "RECEIVE" }),
+        ],
+        [
+          "can you show me what i got from will",
+          history({ query: "will", direction: "RECEIVE" }),
+        ],
+      ]
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance, raw]) => [utterance, { kind: "call", call: raw }]),
+      )
+    })
+  })
+
+  describe("a history read's direction: kept when a word of the ask gives it, dropped otherwise", () => {
+    const history = (args: Record<string, unknown>) => ({
+      intent: "getTransactions",
+      args,
+    })
+    const call = (args: Record<string, unknown>) => ({
+      kind: "call",
+      call: history(args),
+    })
+
+    it("drops a direction no word gives, and keeps the rest of the read: never a refusal", async () => {
+      // What the macOS model answered (ENG-749 proxy run): RECEIVE for a
+      // list of everything, and for what went to Kemar.
+      await expect(
+        ask(history({ direction: "RECEIVE" }), "show my payments"),
+      ).resolves.toEqual(call({}))
+      await expect(
+        ask(history({ query: "kemar", direction: "RECEIVE" }), "payments to kemar"),
+      ).resolves.toEqual(call({ query: "kemar" }))
+      await expect(
+        ask(history({ first: 2, direction: "SEND" }), "my last 2 payments"),
+      ).resolves.toEqual(call({ first: 2 }))
+      // A noun for what came in gives RECEIVE, never SEND; a send verb of
+      // the grammar's gives SEND, never RECEIVE.
+      await expect(
+        ask(history({ direction: "SEND" }), "show my earnings"),
+      ).resolves.toEqual(call({}))
+      await expect(
+        ask(history({ direction: "RECEIVE" }), "who did i tip"),
+      ).resolves.toEqual(call({}))
+    })
+
+    it('keeps one the words give, sending or receiving, "sent me" and patois "pay mi" included', async () => {
+      const cases: [string, Record<string, unknown>, Account?][] = [
+        ["what did i send kemar", { query: "kemar", direction: "SEND" }],
+        ["what went out for rent", { query: "rent", direction: "SEND" }],
+        ["what i paid kemar", { query: "kemar", direction: "SEND" }],
+        ["payments to kemar", { query: "kemar", direction: "SEND" }],
+        ["who sent me money", { direction: "RECEIVE" }],
+        ["payments from alice", { query: "alice", direction: "RECEIVE" }],
+        ["what came in", { direction: "RECEIVE" }],
+        ["what did i earn", { direction: "RECEIVE" }],
+        ["who pay mi", { direction: "RECEIVE" }, JMD],
+        ["payments fi mi madda", { query: "madda", direction: "SEND" }, JMD],
+        // The nouns for what came in and what went out.
+        ["show my earnings", { direction: "RECEIVE" }],
+        ["show my income", { direction: "RECEIVE" }, JMD],
+        ["show my expenses", { direction: "SEND" }],
+        ["show my purchases", { direction: "SEND" }, JMD],
+        // The grammar's send and receive verbs, which its history rule does
+        // not read: "tip", "transfer", "collect".
+        ["who did i tip", { direction: "SEND" }],
+        ["what did i transfer", { direction: "SEND" }, JMD],
+        ["who did i transfer to", { direction: "SEND" }],
+        ["what did i collect", { direction: "RECEIVE" }, JMD],
+        // A refund goes either way: one the user got, or one they gave.
+        ["show my refunds", { direction: "RECEIVE" }],
+        ["who did i refund", { direction: "SEND" }],
+      ]
+
+      expect(
+        await resultsOf(
+          cases.map(([utterance, args, account]) => [utterance, history(args), account]),
+        ),
+      ).toEqual(cases.map(([utterance, args]) => [utterance, call(args)]))
+    })
+  })
+
+  describe("where the guards sit", () => {
+    it("come after the pre-check: an intent outside the five is the pre-check's", async () => {
+      const split = {
+        intent: "prepareGroupSend",
+        args: { payees: ["tanya", "kemar"], total: "30" },
+      }
+
+      await expect(ask(split, "split 30 between tanya and kemar")).resolves.toEqual({
+        kind: "rejected",
+        reason: "precheck",
+        intent: "prepareGroupSend",
+      })
+    })
+
+    it("come before grounding: an ask no call serves is none, whatever the model made up", async () => {
+      await expect(
+        ask(
+          { intent: "prepareSend", args: { payee: "eve", amount: "99" } },
+          "split 30 between tanya and kemar",
+        ),
+      ).resolves.toEqual({ kind: "none", reason: "groupSend", intent: "prepareSend" })
+      await expect(
+        ask(
+          { intent: "getTransactions", args: { first: 13 } },
+          "what did i receive yesterday",
+        ),
+      ).resolves.toEqual({
+        kind: "none",
+        reason: "timeFilter",
+        intent: "getTransactions",
+      })
+      // A read the guards pass meets grounding as before.
+      await expect(
+        ask({ intent: "getTransactions", args: { first: 13 } }, "my last 3 payments"),
+      ).resolves.toEqual({
+        kind: "rejected",
+        reason: "ungrounded",
+        intent: "getTransactions",
+      })
+    })
+  })
+
+  it("names what the model answered with, and why, for each call the model tier refused (refusalOf)", () => {
+    const results: [ModelTierResult, ReturnType<typeof refusalOf>][] = [
+      [{ kind: "call", call: { intent: "getBalances", args: {} } }, undefined],
+      [
+        { kind: "rejected", reason: "precheck", intent: "unknown" },
+        { intent: "unknown", reason: "precheck" },
+      ],
+      [
+        { kind: "rejected", reason: "ungrounded", intent: "prepareSend" },
+        { intent: "prepareSend", reason: "ungrounded" },
+      ],
+      [
+        { kind: "none", reason: "groupSend", intent: "prepareSend" },
+        { intent: "prepareSend", reason: "groupSend" },
+      ],
+      [
+        { kind: "none", reason: "timeFilter", intent: "getTransactions" },
+        { intent: "getTransactions", reason: "timeFilter" },
+      ],
+      [
+        { kind: "none", reason: "ungroundedFilter", intent: "getTransactions" },
+        { intent: "getTransactions", reason: "ungroundedFilter" },
+      ],
+      [{ kind: "none", reason: "miss" }, undefined],
+      [{ kind: "none", reason: "unavailable" }, undefined],
+      [{ kind: "none", reason: "thread" }, undefined],
+    ]
+
+    expect(results.map(([result]) => refusalOf(result))).toEqual(
+      results.map(([, refusal]) => refusal),
+    )
   })
 })
 

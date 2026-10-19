@@ -1,5 +1,7 @@
 import { TX_PAGE_SIZE } from "../registry/read/get-transactions"
 import type { Token } from "./normalize"
+import { RECEIVE_VERBS } from "./prepare-receive"
+import { SEND_VERBS } from "./prepare-send"
 import type { GrammarRule, RuleResult } from "./types"
 import { indexOfWords, nameOf, startsWith, TIME_WORDS } from "./words"
 
@@ -50,6 +52,104 @@ const COUNT_WORDS: Readonly<Record<string, number>> = {
   fifteen: 15,
   twenty: 20,
 }
+
+// ---------------------------------------------------------------------------
+// What a history read the on-device model made may hold (ENG-751)
+// ---------------------------------------------------------------------------
+
+/**
+ * Words that say money moved without saying which way: a refund the user
+ * got ("my refunds") or one they gave ("who did i refund"). Each gives both
+ * directions, as words that are unsure do.
+ */
+const EITHER_WAY: readonly string[] = ["refund", "refunds", "refunded"]
+
+/**
+ * Words that say the money went out: the grammar's own, its history rule's
+ * (SENT) and its send verbs (SEND_VERBS: send, pay, give, transfer, tip);
+ * the other forms of those verbs ("paid", "gave", "transferred", "tipped");
+ * spending (patois "spen"); the nouns for what went out ("expenses",
+ * "purchases"); and a refund, which goes either way (EITHER_WAY).
+ */
+const SEND_WORDS: ReadonlySet<string> = new Set([
+  ...SENT,
+  ...SEND_VERBS,
+  ...(
+    "sending paid paying pays gave gives giving transferred transferring tipped tipping " +
+    "spending spen expenses purchases"
+  ).split(" "),
+  ...EITHER_WAY,
+])
+
+/**
+ * Words that say the money came in: the grammar's own, its history rule's
+ * (RECEIVED) and its receive verbs (RECEIVE_VERBS: receive, request,
+ * collect); the other forms of those verbs ("receiving", "requested",
+ * "collected"); "from"; earning; the nouns for what came in ("earnings",
+ * "income"); and a refund, which goes either way (EITHER_WAY).
+ */
+const RECEIVE_WORDS: ReadonlySet<string> = new Set([
+  ...RECEIVED,
+  ...RECEIVE_VERBS,
+  ..."receiving requested collected from earned earn earning earnings income".split(" "),
+  ...EITHER_WAY,
+])
+
+/**
+ * The directions a history ask's words give (ENG-751): SEND for a word of
+ * money going out ("sent", "paid", "spent", "tip", "transfer", "outgoing",
+ * "expenses") or "to" someone; RECEIVE for a word of money coming in
+ * ("received", "got", "collect", "from", "earned", "earnings", "income"),
+ * or a word of money going out that points at the user ("sent me", "who
+ * pay mi", "to us"); both for a refund, which goes either way. Patois "mi"
+ * is "my" as often as "me", so "fi mi madda" gives both. The model tier
+ * keeps the model's direction only when the words give it, and drops it
+ * otherwise: a direction the words do not give is not what was asked ("how
+ * much did I spend" is no list of what came in).
+ */
+export const directionsSaid = (
+  tokens: readonly Token[],
+): ReadonlySet<"SEND" | "RECEIVE"> => {
+  const said = new Set<"SEND" | "RECEIVE">()
+  tokens.forEach(({ word }, i) => {
+    const next = tokens[i + 1]?.raw.toLowerCase()
+    const atUser = next === "me" || next === "us" || next === "mi"
+    const atOther = next !== undefined && next !== "me" && next !== "us"
+    if (SEND_WORDS.has(word)) said.add("SEND")
+    if ((SEND_WORDS.has(word) || word === "to") && atUser) said.add("RECEIVE")
+    if (word === "to" && atOther) said.add("SEND")
+    if (RECEIVE_WORDS.has(word)) said.add("RECEIVE")
+  })
+  return said
+}
+
+/**
+ * Words about amounts or order, which name no one and no memo: "my biggest
+ * payment", "my first payment", "how much", and a comparison with an amount
+ * ("over $50", "less than 2000"), which no read filters by.
+ */
+const ORDER_WORDS = new Set(
+  (
+    "biggest largest smallest highest lowest total totals sum average most least much many " +
+    "first oldest newest earliest over above under below than less greater bigger larger " +
+    "smaller"
+  ).split(" "),
+)
+
+/**
+ * Whether a word is one a history ask is made of, never what it looks for
+ * (ENG-751): its nouns and the rest of its vocabulary, its directions, its
+ * counts, and words about amounts or order. A search made of such words
+ * alone ("my payments", "money i received", "tip" in "who did i tip")
+ * looks for nothing the person named.
+ */
+export const isHistoryWord = (word: string): boolean =>
+  VOCABULARY.has(word) ||
+  LIST_NOUNS.has(word) ||
+  SEND_WORDS.has(word) ||
+  RECEIVE_WORDS.has(word) ||
+  ORDER_WORDS.has(word) ||
+  Object.prototype.hasOwnProperty.call(COUNT_WORDS, word)
 
 const countOf = (token: Token | undefined): number | undefined => {
   if (!token) return undefined
