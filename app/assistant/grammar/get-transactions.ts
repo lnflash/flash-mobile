@@ -56,30 +56,34 @@ const COUNT_WORDS: Readonly<Record<string, number>> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Words that say the money went out: the grammar's own (SENT), and the
- * words for paying and giving ("paid", "gave", "spending", patois "spen").
+ * Words that say the money went out: the grammar's own (SENT), the words
+ * for paying and giving ("paid", "gave", "spending", patois "spen"), and
+ * the nouns for what went out ("expenses", "purchases").
  */
 const SEND_WORDS: ReadonlySet<string> = new Set([
   ...SENT,
-  ..."paid pay paying pays gave give giving spending spen".split(" "),
+  ..."paid pay paying pays gave give giving spending spen expenses purchases".split(" "),
 ])
 
-/** Words that say the money came in: the grammar's own (RECEIVED), "from", and earning. */
+/**
+ * Words that say the money came in: the grammar's own (RECEIVED), "from",
+ * earning, and the nouns for what came in ("earnings", "income", "refunds").
+ */
 const RECEIVE_WORDS: ReadonlySet<string> = new Set([
   ...RECEIVED,
-  ..."from earned earn earning".split(" "),
+  ..."from earned earn earning earnings income refund refunds".split(" "),
 ])
 
 /**
  * The directions a history ask's words give (ENG-751): SEND for a word of
- * money going out ("sent", "paid", "spent", "outgoing") or "to" someone;
- * RECEIVE for a word of money coming in ("received", "got", "from",
- * "earned"), or a word of money going out that points at the user ("sent
- * me", "who pay mi", "to us"). Patois "mi" is "my" as often as "me", so
- * "fi mi madda" gives both. The model tier keeps the model's direction only
- * when the words give it, and drops it otherwise: a direction the words do
- * not give is not what was asked ("how much did I spend" is no list of what
- * came in).
+ * money going out ("sent", "paid", "spent", "outgoing", "expenses") or "to"
+ * someone; RECEIVE for a word of money coming in ("received", "got",
+ * "from", "earned", "earnings", "income", "refunds"), or a word of money
+ * going out that points at the user ("sent me", "who pay mi", "to us").
+ * Patois "mi" is "my" as often as "me", so "fi mi madda" gives both. The
+ * model tier keeps the model's direction only when the words give it, and
+ * drops it otherwise: a direction the words do not give is not what was
+ * asked ("how much did I spend" is no list of what came in).
  */
 export const directionsSaid = (
   tokens: readonly Token[],
@@ -99,12 +103,14 @@ export const directionsSaid = (
 
 /**
  * Words about amounts or order, which name no one and no memo: "my biggest
- * payment", "my first payment", "how much".
+ * payment", "my first payment", "how much", and a comparison with an amount
+ * ("over $50", "less than 2000"), which no read filters by.
  */
 const ORDER_WORDS = new Set(
   (
     "biggest largest smallest highest lowest total totals sum average most least much many " +
-    "first oldest newest earliest"
+    "first oldest newest earliest over above under below than less greater bigger larger " +
+    "smaller"
   ).split(" "),
 )
 

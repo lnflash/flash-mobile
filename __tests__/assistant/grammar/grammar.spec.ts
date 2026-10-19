@@ -5,9 +5,11 @@ import { directionsSaid, isHistoryWord } from "@app/assistant/grammar/get-transa
 import { normalize, textOf, WORD_FOLDS } from "@app/assistant/grammar/normalize"
 import type { GrammarRule } from "@app/assistant/grammar/types"
 import {
+  frameWordsOf,
   GROUP_WORDS,
   namesDate,
   namesTwoPeople,
+  neverNames,
   stripFrame,
 } from "@app/assistant/grammar/words"
 import { assistantRegistry } from "@app/assistant/registry"
@@ -730,6 +732,11 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "transactions in 2025",
       "payments between june and july",
       "payments between the 1st and the 9th",
+      // A span of years, which no other word marks, and a span of amounts,
+      // which no read filters by either: "between" with a number after it.
+      "payments between 2024 and 2025",
+      "payments between 500 and 1000",
+      "payments on monday",
       "what i spent last night",
       "wah mi get tideh",
       "wah mi sen yessideh",
@@ -745,6 +752,8 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "latest transactions",
       "payments of 2000",
       "send bob $5",
+      // "between" two people is a read filtered by a contact, not a date.
+      "transactions between me and kemar",
     ]
 
     expect(dated.filter((utterance) => !namesDate(normalize(utterance).tokens))).toEqual(
@@ -796,6 +805,11 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
     )
     // Patois "dem" reaches the rules as "them".
     expect(normalize("dem").tokens[0].word).toBe("them")
+    // The words for more than one payee are the grammar's own, one list for
+    // both: never a payee's name to the grammar, always a group's send here.
+    ;["between", "split", "each", "everyone", "everybody", "people"].forEach((word) =>
+      expect([word, GROUP_WORDS.has(word), neverNames(word)]).toEqual([word, true, true]),
+    )
   })
 
   it("gives the directions a history ask's words name, both when they are unsure", () => {
@@ -816,6 +830,13 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
     expect(said("who pay mi")).toEqual(["RECEIVE", "SEND"])
     expect(said("payments fi mi madda")).toEqual(["RECEIVE", "SEND"])
     expect(said("what did i send my mom")).toEqual(["SEND"])
+    // The nouns for what came in and what went out.
+    expect(said("show my earnings")).toEqual(["RECEIVE"])
+    expect(said("show my income")).toEqual(["RECEIVE"])
+    expect(said("show my refunds")).toEqual(["RECEIVE"])
+    expect(said("my last refund")).toEqual(["RECEIVE"])
+    expect(said("show my expenses")).toEqual(["SEND"])
+    expect(said("show my purchases")).toEqual(["SEND"])
     expect(said("show my transactions")).toEqual([])
     expect(said("recent payments")).toEqual([])
   })
@@ -832,9 +853,28 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
     ]
     own
       .concat(["recent", "biggest", "first", "five"])
+      // A comparison with an amount ("over $50", "less than 2000").
+      .concat(["over", "above", "under", "below", "than", "less", "bigger"])
+      // The nouns for what came in and what went out.
+      .concat(["earnings", "income", "refunds", "expenses", "purchases"])
       .forEach((word) => expect([word, isHistoryWord(word)]).toEqual([word, true]))
-    ;["kemar", "rent", "lunch", "madda", "dreadmax"].forEach((word) =>
+    ;["kemar", "rent", "lunch", "madda", "dreadmax", "invoice"].forEach((word) =>
       expect([word, isHistoryWord(word)]).toEqual([word, false]),
     )
+  })
+
+  it("gives the words of an ask's own frame, and never a word of the ask itself", () => {
+    const frameOf = (utterance: string) =>
+      [...frameWordsOf(normalize(utterance).tokens)].sort()
+
+    expect(frameOf("show my earnings")).toEqual(["my", "show"])
+    expect(frameOf("can you list my payments please")).toEqual([
+      "can",
+      "list",
+      "please",
+      "you",
+    ])
+    expect(frameOf("what did i pay for the check")).toEqual([])
+    expect(frameOf("my payments")).toEqual([])
   })
 })

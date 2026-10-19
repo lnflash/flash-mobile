@@ -894,7 +894,7 @@ describe("the guards (ENG-751)", () => {
       ).resolves.toEqual(GROUP_SEND)
     })
 
-    it("is none for a contact the app's cache knows besides the payee, anywhere in the words, a memo included", async () => {
+    it("is none for a contact the app's cache knows besides the payee, anywhere in the words, a memo included, never for a word of an alias that names no one", async () => {
       const contacts = [
         contact("tanya_b", "Tanya"),
         contact("kemar99", "Kemar Brown"),
@@ -931,6 +931,42 @@ describe("the guards (ENG-751)", () => {
       await expect(
         tryOnDeviceModel(knowing(alone, contacts), "throw tanya 20 for my lunch", USD),
       ).resolves.toEqual({ kind: "call", call: alone })
+      // Nor is a word of an alias that the grammar reads as no name once
+      // folded: patois "mi" (my), patois "di" (the), and "the", the
+      // determiner nameOf skips. The device eval reads no cache, so only
+      // this spec can show it.
+      const determiners = [
+        ...contacts,
+        contact("madda1", "Mi Madda"),
+        contact("boss1", "Di Boss"),
+        contact("barber1", "The Barber"),
+      ]
+      const passing: [string, Raw, Account][] = [
+        ["tanya fi get 1000 from mi", send("tanya", "1000"), JMD],
+        ["throw tanya 20 for the taxi", send("tanya", "20", { memo: "the taxi" }), USD],
+        ["tanya fi get 500 fi di taxi", send("tanya", "500", { memo: "di taxi" }), JMD],
+        ["throw tanya 20 for my lunch", alone, USD],
+      ]
+      for (const [words, raw, account] of passing) {
+        expect([words, grounds(raw, words, account)]).toEqual([words, true])
+      }
+      expect(
+        await Promise.all(
+          passing.map(async ([words, raw, account]) => [
+            words,
+            await tryOnDeviceModel(knowing(raw, determiners), words, account),
+          ]),
+        ),
+      ).toEqual(passing.map(([words, raw]) => [words, { kind: "call", call: raw }]))
+      // A word of such an alias that does name someone still does: Madda.
+      const medicine = send("tanya", "20", { memo: "madda medicine" })
+      await expect(
+        tryOnDeviceModel(
+          knowing(medicine, determiners),
+          "throw tanya 20 for madda medicine",
+          USD,
+        ),
+      ).resolves.toEqual(GROUP_SEND)
       // A contact the payee names by a word of its alias (bob for Bob
       // Marley) is the payee, whatever other word of that alias is typed.
       const bob = send("bob", "20")
@@ -1017,6 +1053,10 @@ describe("the guards (ENG-751)", () => {
         ["what did i get on may 5", history()],
         ["transactions in 2025", history()],
         ["payments between june and july", history()],
+        // "between" with a number after it: a span of years, or of amounts,
+        // which no read filters by either.
+        ["payments between 2024 and 2025", history()],
+        ["payments between 500 and 1000", history({ query: "500" }), JMD],
         ["wah mi sen dis week", history({ direction: "SEND" }), JMD],
         ["wah mi get yesterday", history({ direction: "RECEIVE" }), JMD],
         ["how much mi spen las month", history(), JMD],
@@ -1031,13 +1071,15 @@ describe("the guards (ENG-751)", () => {
       expect(grounds(heldOutShape, utterance)).toBe(true)
     })
 
-    it('reads "last" with a count, "every", "may" as a word and a name like Jan as no date', async () => {
+    it('reads "last" with a count, "every", "may" as a word, a name like Jan and "between" two people as no date', async () => {
       const cases: [string, Raw][] = [
         ["my last 3 payments", history({ first: 3 })],
         ["show every payment to bob", history({ query: "bob", direction: "SEND" })],
         ["may i see my payments", history()],
         ["show my payments from jan", history({ query: "jan", direction: "RECEIVE" })],
         ["who sent me money recently", history({ direction: "RECEIVE" })],
+        // A read filtered by a contact, which stays a read (decision 4).
+        ["transactions between me and kemar", history({ query: "kemar" })],
       ]
 
       expect(await resultsOf(cases)).toEqual(
@@ -1083,6 +1125,19 @@ describe("the guards (ENG-751)", () => {
         ["show mi mi payments", history({ query: "mi mi", direction: "RECEIVE" }), JMD],
         ["my biggest payment", history({ query: "biggest" })],
         ["wah di biggest payment mi get", history({ query: "biggest payment" }), JMD],
+        // What the macOS model answered to the reads by a noun for what came
+        // in or went out (ENG-751 review proxy run, both runs alike): the
+        // ask's own words, its frame ("show") or its noun, as the search.
+        [
+          "show my earnings",
+          history({ query: "show my earnings", direction: "RECEIVE" }),
+        ],
+        ["show my income", history({ query: "income", direction: "RECEIVE" }), JMD],
+        ["show my expenses", history({ query: "expenses", direction: "RECEIVE" })],
+        [
+          "can you list my payments please",
+          history({ query: "list my payments please" }),
+        ],
       ]
       for (const [utterance, raw, account] of cases) {
         expect([utterance, grounds(raw, utterance, account)]).toEqual([utterance, true])
@@ -1091,6 +1146,32 @@ describe("the guards (ENG-751)", () => {
       expect(await resultsOf(cases)).toEqual(
         cases.map(([utterance]) => [utterance, UNGROUNDED_FILTER]),
       )
+    })
+
+    it("is none for a search made only of an amount, though typed: no read filters by size; a memo's number stays", async () => {
+      // A read that searched memos and usernames for "50" would answer "no
+      // payments matching" to a question about how big they were.
+      const cases: [string, Raw, Account?][] = [
+        ["show my payments over $50", history({ query: "50" })],
+        ["show my payments over $50", history({ query: "$50" })],
+        ["show my payments over $50", history({ query: "over $50" })],
+        ["show my payments less than $50", history({ query: "less than $50" })],
+        ["payments of 2000", history({ query: "2000" }), JMD],
+        ["what did i get above 1000", history({ query: "above 1000" }), JMD],
+      ]
+      for (const [utterance, raw, account] of cases) {
+        expect([utterance, grounds(raw, utterance, account)]).toEqual([utterance, true])
+      }
+
+      expect(await resultsOf(cases)).toEqual(
+        cases.map(([utterance]) => [utterance, UNGROUNDED_FILTER]),
+      )
+      // A number beside a word that names a memo's text is a search for it.
+      const invoice = history({ query: "invoice 2041" })
+      await expect(ask(invoice, "what did i pay for invoice 2041")).resolves.toEqual({
+        kind: "call",
+        call: invoice,
+      })
     })
 
     it("lets a search for a contact, a username or a memo's text stand", async () => {
@@ -1109,6 +1190,9 @@ describe("the guards (ENG-751)", () => {
         ],
         ["what did i send dreadmax", history({ query: "dreadmax", direction: "SEND" })],
         ["show me what i paid for groceries", history({ query: "groceries" })],
+        // A frame's word is the ask's own only where the ask used it as its
+        // frame: here "check" is the memo's.
+        ["what did i pay for the check", history({ query: "check" })],
       ]
 
       expect(await resultsOf(cases)).toEqual(
@@ -1139,6 +1223,10 @@ describe("the guards (ENG-751)", () => {
       await expect(
         ask(history({ first: 2, direction: "SEND" }), "my last 2 payments"),
       ).resolves.toEqual(call({ first: 2 }))
+      // A noun for what came in gives RECEIVE, never SEND.
+      await expect(
+        ask(history({ direction: "SEND" }), "show my earnings"),
+      ).resolves.toEqual(call({}))
     })
 
     it('keeps one the words give, sending or receiving, "sent me" and patois "pay mi" included', async () => {
@@ -1153,6 +1241,12 @@ describe("the guards (ENG-751)", () => {
         ["what did i earn", { direction: "RECEIVE" }],
         ["who pay mi", { direction: "RECEIVE" }, JMD],
         ["payments fi mi madda", { query: "madda", direction: "SEND" }, JMD],
+        // The nouns for what came in and what went out.
+        ["show my earnings", { direction: "RECEIVE" }],
+        ["show my income", { direction: "RECEIVE" }, JMD],
+        ["show my refunds", { direction: "RECEIVE" }],
+        ["show my expenses", { direction: "SEND" }],
+        ["show my purchases", { direction: "SEND" }, JMD],
       ]
 
       expect(

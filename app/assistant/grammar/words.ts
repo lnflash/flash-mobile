@@ -153,6 +153,18 @@ export const stripFrame = (tokens: readonly Token[]): Token[] => {
 }
 
 /**
+ * The words of an ask's frame, as stripFrame takes them off it (ENG-751):
+ * "show" and "my" in "show my earnings"; "can", "you", "list" and "please"
+ * in "can you list my payments please". They are the ask's own words, never
+ * what it looks for. A word of the ask itself is not one: "check" in "what
+ * did i pay for the check" is the memo's.
+ */
+export const frameWordsOf = (tokens: readonly Token[]): ReadonlySet<string> => {
+  const ask = new Set(stripFrame(tokens))
+  return new Set(tokens.filter((token) => !ask.has(token)).map(({ word }) => word))
+}
+
+/**
  * Asks about how something works, or whether, rather than for something:
  * "how do I send money", "why is bitcoin down", "is bitcoin going up".
  */
@@ -329,6 +341,17 @@ export const amountRuns = (tokens: readonly Token[], ctx: GrammarContext): Run[]
   return runs
 }
 
+/** The indexes of the tokens that are part of an amount (amountRuns). */
+export const indexesInAmounts = (
+  tokens: readonly Token[],
+  ctx: GrammarContext,
+): ReadonlySet<number> =>
+  new Set(
+    amountRuns(tokens, ctx).flatMap(({ start, end }) =>
+      Array.from({ length: end - start }, (_, offset) => start + offset),
+    ),
+  )
+
 /** What an amount's words mean, as readAmountPhrase reads them. */
 export const readAmount = (
   tokens: readonly Token[],
@@ -368,6 +391,14 @@ export const splitAroundRuns = (
 export const CONNECTORS = set("and or plus")
 
 /**
+ * Words for more than one payee, held in one place (ENG-751): the grammar
+ * never reads one as a name (NOT_A_NAME), and the model tier's group check
+ * reads each as a group's send (GROUP_WORDS). The grammar has no group-send
+ * rule, so this is the list of its own that the check reuses.
+ */
+const MORE_THAN_ONE_PAYEE = "between split each everyone everybody people"
+
+/**
  * Words that never name a contact: people the ask points at rather than
  * names (a pronoun, "the same"), more than one payee, a wallet or account
  * of the user's own, a time, an amount the ask does not give.
@@ -379,8 +410,7 @@ const NOT_A_NAME = set(
     // Follow-ups.
     "same again more another back too also else extra rest " +
     // More than one payee ("&" and "+" reach here as "and", normalize.ts).
-    "and or plus with between split each everyone everybody all someone somebody " +
-    "anyone anybody people " +
+    `and or plus with all someone somebody anyone anybody ${MORE_THAN_ONE_PAYEE} ` +
     // The user's own wallets and accounts.
     "wallet wallets account accounts bank card flashcard savings saving btc bitcoin usd " +
     "usdt jmd cash dollar dollars sats " +
@@ -503,13 +533,15 @@ export const PERSON_PRONOUNS = set("him her them they it she he us im yall unu")
  * its payee (ENG-751): a split or a share ("split", "between", "half",
  * "halves"), each or both of them, everyone, people, and the plural
  * pronouns "us" (as in "all of us") and "them", which patois "dem" folds
- * to. NOT_A_NAME holds most of them, so the grammar never takes one for a
- * payee's name either. "and", "or", "with" and "all" are not here: each is
- * in a send to one person as often ("hook bob up with 5"), and two people
- * joined by a connector are namesTwoPeople's.
+ * to. The words for more than one payee are NOT_A_NAME's own
+ * (MORE_THAN_ONE_PAYEE), and "us" and "them" are its pronouns, so the
+ * grammar never takes one for a payee's name either. "and", "or", "with"
+ * and "all" are not here: each is in a send to one person as often ("hook
+ * bob up with 5"), and two people joined by a connector are
+ * namesTwoPeople's.
  */
 export const GROUP_WORDS = set(
-  "split splits splitting between each both everyone everybody people half halves us them",
+  `${MORE_THAN_ONE_PAYEE} splits splitting both half halves us them`,
 )
 
 /** Words for a person that are no name: the user, the one they ask, a pronoun. */
@@ -560,11 +592,7 @@ export const namesTwoPeople = (
   tokens: readonly Token[],
   ctx: GrammarContext,
 ): boolean => {
-  const inAmount = new Set(
-    amountRuns(tokens, ctx).flatMap(({ start, end }) =>
-      Array.from({ length: end - start }, (_, offset) => start + offset),
-    ),
-  )
+  const inAmount = indexesInAmounts(tokens, ctx)
   const person = (i: number): boolean =>
     i >= 0 && i < tokens.length && isPerson(tokens[i], inAmount.has(i), ctx)
   // The second person's word, past a "my" or "the" before it. Patois "mi"
@@ -634,9 +662,13 @@ const holdsNumber = (token: Token | undefined): boolean =>
  * history read can filter by: a word of one ("yesterday", "this month",
  * "last week", "since monday", "september"), a date in numbers or a day of
  * the month ("10/15", "the 15th"), "may" or a month's short form beside a
- * number, a year after "in" or a month ("in 2025", "june 2025"), or
- * "between" one thing "and" another. "last" on its own is no date: "my
- * last 5 payments" is a count.
+ * number, a year after "in", "since" and the like or after a month ("in
+ * 2025", "june 2025"), or "between" one thing "and" another with a number
+ * after "between": a span of years ("between 2024 and 2025"), which no
+ * other word marks, or of amounts ("between 500 and 1000"), which no read
+ * filters by either. A span of days, months or dates is a date by its own
+ * words, and "between me and kemar" is a read filtered by a contact, not a
+ * date. "last" on its own is no date: "my last 5 payments" is a count.
  */
 export const namesDate = (tokens: readonly Token[]): boolean =>
   tokens.some(({ word }, i) => {
@@ -652,6 +684,8 @@ export const namesDate = (tokens: readonly Token[]): boolean =>
         (BEFORE_A_YEAR.has(before.word) ||
           MONTHS.has(before.word) ||
           MONTHS_BESIDE_A_NUMBER.has(before.word))) ||
-      (word === "between" && tokens.slice(i + 1).some((later) => later.word === "and"))
+      (word === "between" &&
+        tokens.slice(i + 1).some((later) => later.word === "and") &&
+        tokens.slice(i + 1).some(holdsNumber))
     )
   })

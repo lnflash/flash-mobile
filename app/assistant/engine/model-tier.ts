@@ -2,8 +2,11 @@ import { directionsSaid, isHistoryWord } from "../grammar/get-transactions"
 import { normalize } from "../grammar/normalize"
 import {
   amountRuns,
+  frameWordsOf,
   GROUP_WORDS,
   hasWord,
+  indexesInAmounts,
+  isNameWord,
   namesDate,
   namesTwoPeople,
   neverNames,
@@ -48,10 +51,10 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    for an ask about more than one person (groupSend); a history read for
 //    an ask that names a date, which no read can filter by (timeFilter), or
 //    whose search the person never typed, or that looks only for the ask's
-//    own words (ungroundedFilter). A history read's direction that no word
-//    of the ask gives is dropped, not refused. Grounding passed both calls
-//    of the 2026-10-18 held-out device run that these stop: every word they
-//    used was typed.
+//    own words or an amount (ungroundedFilter). A history read's direction
+//    that no word of the ask gives is dropped, not refused. Grounding passed
+//    both calls of the 2026-10-18 held-out device run that these stop: every
+//    word they used was typed.
 // 5. Grounding (architect decision 4): an action's free-text arguments
 //    (payees, memos, ids), its amounts with their units, and its other
 //    closed-set values (a wallet, a way to be paid) must be in what the
@@ -91,7 +94,7 @@ export type ModelTierRuntime = {
  * - groupSend: a send to one payee for an ask about more than one person;
  * - timeFilter: a history read for an ask that names a date;
  * - ungroundedFilter: a history read whose search the person never typed,
- *   or that looks only for the ask's own words.
+ *   or that looks only for the ask's own words or an amount.
  */
 export type ModelGuardReason = "groupSend" | "timeFilter" | "ungroundedFilter"
 
@@ -431,12 +434,20 @@ const withoutWords = (text: string, words: string): string => {
 /**
  * The names a contact goes by, compared as resolveContact compares them:
  * its username, its alias, and each word of its alias, which names it
- * alone (namesContact: "joe" for Uncle Joe); never a word that names no
- * one ("my" in "My Mom").
+ * alone (namesContact: "joe" for Uncle Joe). A word of the alias counts
+ * only when the grammar could read it as part of a name (isNameWord), and
+ * never as "the", the determiner nameOf skips: so never a word that names
+ * no one, as the grammar reads it once folded, whether "my" in "My Mom",
+ * patois "mi" (my) in "Mi Madda", "di" (the) in "Di Boss" or "the" in "The
+ * Barber".
  */
 const namesOfContact = ({ username, alias }: ContactRow): string[] => {
-  const aliasName = alias ? comparable(alias) : ""
-  return [comparable(username), aliasName, ...aliasName.split(" ")].filter(
+  const aliasWords = alias
+    ? normalize(alias)
+        .tokens.filter((token) => isNameWord(token) && token.word !== "the")
+        .map(({ raw }) => comparable(raw))
+    : []
+  return [comparable(username), alias ? comparable(alias) : "", ...aliasWords].filter(
     (name) => name.length > 1 && !neverNames(name),
   )
 }
@@ -496,13 +507,25 @@ const isGroupAsk = async (
  * Whether a history search looks for something the person named: a word of
  * it that names someone or something, not one that names no one
  * (NOT_A_NAME), one a history ask is made of ("payments", "received",
- * "biggest"; isHistoryWord), or a date's.
+ * "biggest", "over"; isHistoryWord), one of the ask's frame ("show" in "show
+ * my earnings"; frameWordsOf), a date's, or part of an amount, read in the
+ * person's account as the grammar reads one (amountRuns): a search for "50"
+ * or "over $50" looks for the size of a payment, which no read filters by,
+ * not a name or a memo's text. "invoice 2041" looks for one.
  */
-const looksForSomething = (query: string): boolean =>
-  normalize(query).tokens.some(
-    (token) =>
-      !neverNames(token.word) && !isHistoryWord(token.word) && !namesDate([token]),
+const looksForSomething = (query: string, said: Said): boolean => {
+  const { tokens } = normalize(query)
+  const inAmount = indexesInAmounts(tokens, said)
+  const frame = frameWordsOf(normalize(said.utterance).tokens)
+  return tokens.some(
+    (token, i) =>
+      !inAmount.has(i) &&
+      !frame.has(token.word) &&
+      !neverNames(token.word) &&
+      !isHistoryWord(token.word) &&
+      !namesDate([token]),
   )
+}
 
 /**
  * A history read, held to the words. A date anywhere in the ask makes it
@@ -512,9 +535,9 @@ const looksForSomething = (query: string): boolean =>
  * run's model did for "this month". A direction no word of the ask gives
  * (directionsSaid) is dropped, not refused. A search must be in the words,
  * as typed, and look for a contact, a username or a memo's text, not only
- * the ask's own words ("my payments", "money i received")
- * (ungroundedFilter): a search for what no payment holds reads as "you
- * never paid them".
+ * the ask's own words or an amount ("my payments", "money i received",
+ * "over $50") (ungroundedFilter): a search for what no payment holds reads
+ * as "you never paid them".
  */
 const guardHistory = (args: Record<string, unknown>, said: Said): Guarded => {
   const tokens = normalize(said.utterance).tokens
@@ -530,7 +553,7 @@ const guardHistory = (args: Record<string, unknown>, said: Said): Guarded => {
     query === undefined ||
     (typeof query === "string" &&
       holdsWords(normalizedText(said.utterance), normalizedText(query)) &&
-      looksForSomething(query))
+      looksForSomething(query, said))
   return searched
     ? { kind: "pass", args: kept }
     : { kind: "none", reason: "ungroundedFilter" }

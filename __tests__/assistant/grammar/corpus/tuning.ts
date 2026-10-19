@@ -177,6 +177,29 @@ export const TUNING: readonly CorpusEntry[] = [
     ...jm("wah mi sen tanya", transactions({ direction: "SEND", query: "tanya" })),
     grammar: "miss",
   },
+  // A history read by a noun for what came in or went out (ENG-751 review):
+  // the grammar's rules miss these, and the noun gives the direction, so the
+  // on-device model's read keeps it.
+  {
+    ...en("USD", "show my earnings", transactions({ direction: "RECEIVE" })),
+    grammar: "miss",
+  },
+  {
+    ...en("JMD", "show my income", transactions({ direction: "RECEIVE" })),
+    grammar: "miss",
+  },
+  {
+    ...en("USD", "show my refunds", transactions({ direction: "RECEIVE" })),
+    grammar: "miss",
+  },
+  {
+    ...en("JMD", "show my expenses", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
+  {
+    ...en("USD", "show my purchases", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
 
   // ------------------------------------------------------------------- price
   en("USD", "price", price()),
