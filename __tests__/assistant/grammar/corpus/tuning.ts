@@ -200,6 +200,17 @@ export const TUNING: readonly CorpusEntry[] = [
     ...en("USD", "show my purchases", transactions({ direction: "SEND" })),
     grammar: "miss",
   },
+  // A history read by one of the grammar's send verbs that its history rule
+  // does not read (ENG-751 review round 2): the verb gives the direction, so
+  // the on-device model's read keeps it.
+  {
+    ...en("USD", "who did i tip", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
+  {
+    ...en("JMD", "what did i transfer", transactions({ direction: "SEND" })),
+    grammar: "miss",
+  },
 
   // ------------------------------------------------------------------- price
   en("USD", "price", price()),

@@ -733,9 +733,12 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "payments between june and july",
       "payments between the 1st and the 9th",
       // A span of years, which no other word marks, and a span of amounts,
-      // which no read filters by either: "between" with a number after it.
+      // which no read filters by either: "between" with a number right
+      // after it, a currency sign before it included.
       "payments between 2024 and 2025",
       "payments between 500 and 1000",
+      "payments between $50 and $100",
+      "payments between j$500 and j$1000",
       "payments on monday",
       "what i spent last night",
       "wah mi get tideh",
@@ -752,8 +755,11 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "latest transactions",
       "payments of 2000",
       "send bob $5",
-      // "between" two people is a read filtered by a contact, not a date.
+      // "between" two people is a read filtered by a contact, not a date,
+      // wherever a count stands.
       "transactions between me and kemar",
+      "transactions between me and kemar, last 5",
+      "my 5 latest payments between me and kemar",
     ]
 
     expect(dated.filter((utterance) => !namesDate(normalize(utterance).tokens))).toEqual(
@@ -833,10 +839,21 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
     // The nouns for what came in and what went out.
     expect(said("show my earnings")).toEqual(["RECEIVE"])
     expect(said("show my income")).toEqual(["RECEIVE"])
-    expect(said("show my refunds")).toEqual(["RECEIVE"])
-    expect(said("my last refund")).toEqual(["RECEIVE"])
     expect(said("show my expenses")).toEqual(["SEND"])
     expect(said("show my purchases")).toEqual(["SEND"])
+    // The grammar's own send verbs (SEND_VERBS) and their other forms.
+    expect(said("who did i tip")).toEqual(["SEND"])
+    expect(said("what did i transfer")).toEqual(["SEND"])
+    expect(said("who did i transfer to")).toEqual(["SEND"])
+    expect(said("money i transferred")).toEqual(["SEND"])
+    expect(said("who did i give money")).toEqual(["SEND"])
+    // The grammar's own receive verbs (RECEIVE_VERBS) and their other forms.
+    expect(said("what did i collect")).toEqual(["RECEIVE"])
+    expect(said("money i collected")).toEqual(["RECEIVE"])
+    // A refund goes either way: one the user got, or one they gave.
+    expect(said("show my refunds")).toEqual(["RECEIVE", "SEND"])
+    expect(said("my last refund")).toEqual(["RECEIVE", "SEND"])
+    expect(said("who did i refund")).toEqual(["RECEIVE", "SEND"])
     expect(said("show my transactions")).toEqual([])
     expect(said("recent payments")).toEqual([])
   })
@@ -857,6 +874,8 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       .concat(["over", "above", "under", "below", "than", "less", "bigger"])
       // The nouns for what came in and what went out.
       .concat(["earnings", "income", "refunds", "expenses", "purchases"])
+      // The grammar's send and receive verbs, and their other forms.
+      .concat(["tip", "tipped", "transfer", "transferred", "collect", "requested"])
       .forEach((word) => expect([word, isHistoryWord(word)]).toEqual([word, true]))
     ;["kemar", "rent", "lunch", "madda", "dreadmax", "invoice"].forEach((word) =>
       expect([word, isHistoryWord(word)]).toEqual([word, false]),
@@ -876,5 +895,13 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
     ])
     expect(frameOf("what did i pay for the check")).toEqual([])
     expect(frameOf("my payments")).toEqual([])
+    // A word the ask itself holds is the ask's, though the frame holds it
+    // too: the memo's "check", the name "will".
+    expect(frameOf("check what i paid for the check")).toEqual([])
+    expect(frameOf("will you show me what i got from will")).toEqual([
+      "me",
+      "show",
+      "you",
+    ])
   })
 })

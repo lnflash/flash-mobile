@@ -18,7 +18,16 @@ import {
 // names the bitcoin wallet; an address, or "on-chain", asks for an on-chain
 // request. Nothing here moves money: the answer is the invoice card.
 
-const RECEIVE_VERBS = new Set(["receive", "request", "collect"])
+/**
+ * The verbs a payment request opens with. A history read's direction
+ * reuses them (get-transactions.ts, ENG-751): "what did i collect" asks
+ * what came in.
+ */
+export const RECEIVE_VERBS: ReadonlySet<string> = new Set([
+  "receive",
+  "request",
+  "collect",
+])
 
 /** The things a payment request is called. */
 const REQUEST_NOUNS = new Set(["invoice", "invoices", "qr", "address", "onchain"])

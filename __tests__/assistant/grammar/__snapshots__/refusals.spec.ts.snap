@@ -8,6 +8,8 @@ en/JMD "show my income" -> miss
 en/USD "show my refunds" -> miss
 en/JMD "show my expenses" -> miss
 en/USD "show my purchases" -> miss
+en/USD "who did i tip" -> miss
+en/JMD "what did i transfer" -> miss
 jm/JMD "sen 700 to bob fi lunch" -> miss
 en/JMD "send $20 to bob" -> clarifyAmount
 en/JMD "send alice $5" -> clarifyAmount

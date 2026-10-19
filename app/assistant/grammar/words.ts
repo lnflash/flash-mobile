@@ -156,12 +156,14 @@ export const stripFrame = (tokens: readonly Token[]): Token[] => {
  * The words of an ask's frame, as stripFrame takes them off it (ENG-751):
  * "show" and "my" in "show my earnings"; "can", "you", "list" and "please"
  * in "can you list my payments please". They are the ask's own words, never
- * what it looks for. A word of the ask itself is not one: "check" in "what
- * did i pay for the check" is the memo's.
+ * what it looks for. A word the ask itself holds is not one, wherever else
+ * it stands: "check" in "what did i pay for the check" and in "check what i
+ * paid for the check" is the memo's, and "will" in "will you show me what
+ * i got from will" is the name the ask ends with.
  */
 export const frameWordsOf = (tokens: readonly Token[]): ReadonlySet<string> => {
-  const ask = new Set(stripFrame(tokens))
-  return new Set(tokens.filter((token) => !ask.has(token)).map(({ word }) => word))
+  const askWords = new Set(stripFrame(tokens).map(({ word }) => word))
+  return new Set(tokens.map(({ word }) => word).filter((word) => !askWords.has(word)))
 }
 
 /**
@@ -486,6 +488,14 @@ export const PURPOSE_WORDS = set(
 /** Purpose words that are also names: a send takes one only after a typed "to". */
 export const PURPOSE_NAMES = set("bill")
 
+/**
+ * Whether a word, as the rules match it, says what a payment is for and is
+ * never read as a person (ENG-751): one of PURPOSE_WORDS but the names among
+ * them (PURPOSE_NAMES), so "taxi" and never "bill".
+ */
+export const isPurposeOnly = (word: string): boolean =>
+  PURPOSE_WORDS.has(word) && !PURPOSE_NAMES.has(word)
+
 /** Words of a time, which make an ask one v1 does not serve ("next week", "every month"). */
 export const TIME_WORDS = set(
   "tomorrow tonight later next week weeks month months year every daily weekly monthly " +
@@ -569,7 +579,7 @@ const isPerson = (token: Token, inAmount: boolean, ctx: GrammarContext): boolean
     !VERBS.has(token.word) &&
     !AMOUNT_PLACEHOLDERS.has(token.word) &&
     !isUnit(token.word, ctx) &&
-    !(PURPOSE_WORDS.has(token.word) && !PURPOSE_NAMES.has(token.word))
+    !isPurposeOnly(token.word)
   )
 }
 
@@ -663,12 +673,15 @@ const holdsNumber = (token: Token | undefined): boolean =>
  * "last week", "since monday", "september"), a date in numbers or a day of
  * the month ("10/15", "the 15th"), "may" or a month's short form beside a
  * number, a year after "in", "since" and the like or after a month ("in
- * 2025", "june 2025"), or "between" one thing "and" another with a number
- * after "between": a span of years ("between 2024 and 2025"), which no
- * other word marks, or of amounts ("between 500 and 1000"), which no read
- * filters by either. A span of days, months or dates is a date by its own
- * words, and "between me and kemar" is a read filtered by a contact, not a
- * date. "last" on its own is no date: "my last 5 payments" is a count.
+ * 2025", "june 2025"), or "between" one thing "and" another when the word
+ * right after "between" starts a number, as the grammar reads one
+ * (NUMBER_START, "$50" and "j$500" included): a span of years ("between
+ * 2024 and 2025"), which no other word marks, or of amounts ("between 500
+ * and 1000", "between $50 and $100"), which no read filters by either. A
+ * span of days, months or dates is a date by its own words, and "between
+ * me and kemar" is a read filtered by a contact, not a date, wherever a
+ * count stands ("between me and kemar, last 5"). "last" on its own is no
+ * date: "my last 5 payments" is a count.
  */
 export const namesDate = (tokens: readonly Token[]): boolean =>
   tokens.some(({ word }, i) => {
@@ -685,7 +698,7 @@ export const namesDate = (tokens: readonly Token[]): boolean =>
           MONTHS.has(before.word) ||
           MONTHS_BESIDE_A_NUMBER.has(before.word))) ||
       (word === "between" &&
-        tokens.slice(i + 1).some((later) => later.word === "and") &&
-        tokens.slice(i + 1).some(holdsNumber))
+        NUMBER_START.test(after?.word ?? "") &&
+        tokens.slice(i + 2).some((later) => later.word === "and"))
     )
   })

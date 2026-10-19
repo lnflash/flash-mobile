@@ -7,6 +7,7 @@ import {
   hasWord,
   indexesInAmounts,
   isNameWord,
+  isPurposeOnly,
   namesDate,
   namesTwoPeople,
   neverNames,
@@ -435,19 +436,29 @@ const withoutWords = (text: string, words: string): string => {
  * The names a contact goes by, compared as resolveContact compares them:
  * its username, its alias, and each word of its alias, which names it
  * alone (namesContact: "joe" for Uncle Joe). A word of the alias counts
- * only when the grammar could read it as part of a name (isNameWord), and
- * never as "the", the determiner nameOf skips: so never a word that names
- * no one, as the grammar reads it once folded, whether "my" in "My Mom",
- * patois "mi" (my) in "Mi Madda", "di" (the) in "Di Boss" or "the" in "The
- * Barber".
+ * only when the grammar could read it as part of a person's name: a name
+ * word (isNameWord), never "the", the determiner nameOf skips, and never a
+ * word for what a payment is for, which the grammar never reads as a
+ * person (isPurposeOnly). So never a word that names no one as the grammar
+ * reads it once folded, whether "my" in "My Mom", patois "mi" (my) in "Mi
+ * Madda", "di" (the) in "Di Boss", "the" in "The Barber" or "taxi" in
+ * "Taxi Man". The whole alias counts only when one of its words does: a
+ * one-word alias that folds to such a word ("Fi", "Di", "Mi") would
+ * otherwise name the contact in every patois ask that holds it, while an
+ * alias of initials ("J B") names its contact whole, though no one letter
+ * does.
  */
 const namesOfContact = ({ username, alias }: ContactRow): string[] => {
   const aliasWords = alias
     ? normalize(alias)
-        .tokens.filter((token) => isNameWord(token) && token.word !== "the")
+        .tokens.filter(
+          (token) =>
+            isNameWord(token) && token.word !== "the" && !isPurposeOnly(token.word),
+        )
         .map(({ raw }) => comparable(raw))
     : []
-  return [comparable(username), alias ? comparable(alias) : "", ...aliasWords].filter(
+  const wholeAlias = alias && aliasWords.length > 0 ? [comparable(alias)] : []
+  return [comparable(username), ...wholeAlias, ...aliasWords].filter(
     (name) => name.length > 1 && !neverNames(name),
   )
 }
