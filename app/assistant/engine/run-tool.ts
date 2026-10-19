@@ -11,7 +11,12 @@ import {
   ToolResult,
 } from "../registry/types"
 import { routeIntent } from "./intent-router"
-import { AssistantOutcome, AssistantTelemetry, report } from "./telemetry"
+import {
+  AssistantOutcome,
+  AssistantTelemetry,
+  AssistantToolEvent,
+  report,
+} from "./telemetry"
 
 // The single entry every tool call goes through, from the grammar tier and
 // from any model alike (docs/ai-assistant-tool-registry.md §2): route, run,
@@ -48,6 +53,13 @@ export type RunToolDeps = {
    * the call". False, or absent, for the grammar's calls and every other.
    */
   servedByOnDeviceModel?: boolean
+  /**
+   * The argument the model tier dropped from the model's call before it ran
+   * (ENG-753, ModelDropReason in model-tier.ts), which the event carries in
+   * `onDeviceModelReason`. Absent for every other call, a re-issue of a
+   * model's card included: the call it holds is the one that ran.
+   */
+  onDeviceModelReason?: AssistantToolEvent["onDeviceModelReason"]
 }
 
 /**
@@ -150,6 +162,9 @@ export const runTool = async (
       outcome,
       latencyMs,
       onDeviceModelAvailable: deps.servedByOnDeviceModel ?? false,
+      ...(deps.onDeviceModelReason === undefined
+        ? {}
+        : { onDeviceModelReason: deps.onDeviceModelReason }),
     }),
   )
   return result

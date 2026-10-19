@@ -1,3 +1,4 @@
+import { namesPriceCurrency } from "../grammar/get-price"
 import { directionsSaid, isHistoryWord } from "../grammar/get-transactions"
 import { normalize } from "../grammar/normalize"
 import {
@@ -53,7 +54,10 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    an ask that names a date, which no read can filter by (timeFilter), or
 //    whose search the person never typed, or that looks only for the ask's
 //    own words or an amount (ungroundedFilter). A history read's direction
-//    that no word of the ask gives is dropped, not refused. Grounding passed
+//    that no word of the ask gives is dropped, not refused, and so is a
+//    price read's currency in an ask that names none (ENG-753: "wat di
+//    bitcoin price" answered with BTC reads the display currency's price,
+//    as the grammar's own read does; currencyDropped). Grounding passed
 //    both calls of the 2026-10-18 held-out device run that these stop: every
 //    word they used was typed.
 // 5. Grounding (architect decision 4): an action's free-text arguments
@@ -71,7 +75,7 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    be a picked person's id (`contact:<username>`), even typed: only the
 //    thread's re-issue of a pick makes one (spec §8).
 // 6. The call as the model sent it, intent and raw arguments (a direction
-//    the guards dropped aside), for runCall: the router turns amounts into
+//    or a price's currency the guards dropped aside), for runCall: the router turns amounts into
 //    MoneyAmounts, so routed arguments would not route again.
 //
 // Nothing here throws into the turn: a failure is no call.
@@ -100,7 +104,15 @@ export type ModelTierRuntime = {
 export type ModelGuardReason = "groupSend" | "timeFilter" | "ungroundedFilter"
 
 /**
- * - call: a call the pre-check, the guards and the grounding check passed.
+ * An argument a guard dropped from a call it passed (ENG-753), which is not
+ * a refusal: currencyDropped is a price read's currency that no word of
+ * the ask names. The call's own event carries it (RunToolDeps).
+ */
+export type ModelDropReason = "currencyDropped"
+
+/**
+ * - call: a call the pre-check, the guards and the grounding check passed,
+ *   and the argument a guard dropped from it, if one did (ModelDropReason).
  * - rejected: the model answered with a call the pre-check or grounding
  *   refused, and the intent it named ("unknown" when it named none of the
  *   closed set); the turn reports it with the model's flag set (the model's
@@ -114,7 +126,7 @@ export type ModelGuardReason = "groupSend" | "timeFilter" | "ungroundedFilter"
  *   it as it reports a refused call, with the model's flag and the reason.
  */
 export type ModelTierResult =
-  | { kind: "call"; call: ToolCall }
+  | { kind: "call"; call: ToolCall; dropped?: ModelDropReason }
   | { kind: "rejected"; reason: "precheck" | "ungrounded"; intent: Intent | "unknown" }
   | { kind: "none"; reason: "unavailable" | "miss" | "thread" }
   | { kind: "none"; reason: ModelGuardReason; intent: Intent }
@@ -392,7 +404,7 @@ export const isGrounded = (
 
 /** A call through the guards: its arguments, or none and why. */
 type Guarded =
-  | { kind: "pass"; args: Record<string, unknown> }
+  | { kind: "pass"; args: Record<string, unknown>; dropped?: ModelDropReason }
   | { kind: "none"; reason: ModelGuardReason }
 
 /**
@@ -571,9 +583,33 @@ const guardHistory = (args: Record<string, unknown>, said: Said): Guarded => {
 }
 
 /**
- * The model's call through the guards: a send to one payee and a history
- * read, each held to what the person asked. Every other call passes as it
- * came.
+ * A price read, held to the words (ENG-753): a currency that the ask does
+ * not hold, as typed, in an ask that names no currency at all ("BTC" for
+ * "wat di bitcoin price", where bitcoin is what is priced, not what it is
+ * priced in) is dropped, not refused, so the read quotes the display
+ * currency, the price the person asked for, as the grammar's read of the
+ * same ask does. A currency the words hold ("in usd") stays, and so does
+ * one in an ask that names a currency another way ("in jamaican money";
+ * namesPriceCurrency), for grounding to refuse as before: the display
+ * currency would answer another question. Only the currency: grounding
+ * holds every other argument as before.
+ */
+const guardPrice = (args: Record<string, unknown>, said: Said): Guarded => {
+  const { currency, ...withoutCurrency } = args
+  if (
+    typeof currency !== "string" ||
+    holdsWords(normalizedText(said.utterance), normalizedText(currency)) ||
+    namesPriceCurrency(normalize(said.utterance).tokens)
+  ) {
+    return { kind: "pass", args }
+  }
+  return { kind: "pass", args: withoutCurrency, dropped: "currencyDropped" }
+}
+
+/**
+ * The model's call through the guards: a send to one payee, a history read
+ * and a price read, each held to what the person asked. Every other call
+ * passes as it came.
  */
 const guardCall = async (
   { intent, args }: { intent: Intent; args: Record<string, unknown> },
@@ -583,7 +619,8 @@ const guardCall = async (
   if (intent === "prepareSend" && (await isGroupAsk(args, said, runtime))) {
     return { kind: "none", reason: "groupSend" }
   }
-  return intent === "getTransactions" ? guardHistory(args, said) : { kind: "pass", args }
+  if (intent === "getTransactions") return guardHistory(args, said)
+  return intent === "getPrice" ? guardPrice(args, said) : { kind: "pass", args }
 }
 
 // ---------------------------------------------------------------------------
@@ -676,7 +713,10 @@ export const tryOnDeviceModel = async (
     if (!isGrounded(route.tool, guarded.args, said)) {
       return { kind: "rejected", reason: "ungrounded", intent: route.intent }
     }
-    return { kind: "call", call: { intent: route.intent, args: guarded.args } }
+    const call = { intent: route.intent, args: guarded.args }
+    return guarded.dropped
+      ? { kind: "call", call, dropped: guarded.dropped }
+      : { kind: "call", call }
   } catch (err) {
     console.warn("[assistant] the on-device model tier failed", err)
     return NO_MODEL

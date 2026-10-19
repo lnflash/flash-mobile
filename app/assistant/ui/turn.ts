@@ -1,7 +1,12 @@
 import type { BtcRail } from "@app/payments/btc-rail"
 import { cardOf, validateCard } from "../cards/types"
 import type { ToolCall } from "../engine/intent-router"
-import { ModelTierResult, refusalOf, tryOnDeviceModel } from "../engine/model-tier"
+import {
+  ModelDropReason,
+  ModelTierResult,
+  refusalOf,
+  tryOnDeviceModel,
+} from "../engine/model-tier"
 import { report } from "../engine/telemetry"
 import { readGrammar } from "../grammar"
 import type { GraphqlRail } from "../rails/graphql-rail"
@@ -36,7 +41,9 @@ import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 // for a call, else a rejected one whose onDeviceModelAvailable says whether
 // the model answered with a call that was refused (its rejection rate) or
 // did not answer with one at all, and whose onDeviceModelReason says why a
-// call it answered with was refused (refusalOf). A pick, a Try again or a
+// call it answered with was refused (refusalOf); a call it passed after a
+// guard dropped an argument (a price's currency, ENG-753) says which in its
+// own event's onDeviceModelReason. A pick, a Try again or a
 // Refresh of a card the model prepared re-issues the model's call, and its
 // event says so too (CallOrigin).
 
@@ -195,7 +202,7 @@ const listingRails = (graphql: GraphqlRail, btcRail: BtcRail) => {
 export const runCall = async (
   runtime: AssistantRuntime,
   call: ToolCall,
-  env: TurnEnv & CallOrigin,
+  env: TurnEnv & CallOrigin & { modelDropped?: ModelDropReason },
 ): Promise<NewEntry[]> => {
   const offline = env.isOffline
   const graphql = offline ? runtime.cachedGraphql : runtime.graphql
@@ -210,6 +217,7 @@ export const runCall = async (
     now: runtime.now,
     telemetry: runtime.telemetry,
     ...originOf(env),
+    ...(env.modelDropped ? { onDeviceModelReason: env.modelDropped } : {}),
     ...(offline
       ? {}
       : {
@@ -262,7 +270,13 @@ export const answerUtterance = async (
       if (env.isOffline && needsNetwork(model.call)) {
         return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
       }
-      return runCall(runtime, model.call, { ...env, servedByOnDeviceModel: true })
+      // An argument the model tier dropped (ENG-753) rides this call's own
+      // event, never a card's: a re-issue runs the call as it ran.
+      return runCall(runtime, model.call, {
+        ...env,
+        servedByOnDeviceModel: true,
+        ...(model.dropped ? { modelDropped: model.dropped } : {}),
+      })
     }
     // A miss is counted as the router counts a call it cannot read, so
     // the grammar's coverage shows in the same event. A call the model tier

@@ -26,7 +26,7 @@ import {
 } from "@app/assistant/ui/turn"
 import { toWalletAmount } from "@app/types/amounts"
 import { makeAction } from "../executor-harness"
-import { btcPayment, fakeModelAdapter, graphqlTx, modelCall } from "../fakes"
+import { btcPayment, fakeModelAdapter, graphqlTx, modelCall, USD_PRICE } from "../fakes"
 import { CASH_WALLETS, env, fakeRuntime } from "./thread-harness"
 
 // One turn's pieces (app/assistant/ui/turn.ts): which calls need the network,
@@ -489,6 +489,38 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
         outcome: "answered",
         latencyMs: 0,
         onDeviceModelAvailable: true,
+      },
+    ])
+  })
+
+  it("runs a price read without the currency no word named, and its event says the currency was dropped (ENG-753)", async () => {
+    // The dogfood answer: BTC for a price the ask quotes in no currency.
+    const utterance = "how di bitcoin price a look"
+    expect(matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" })).toBe(
+      undefined,
+    )
+    const { runtime, runTool, graphql, toolEvents } = withModel(
+      modelCall({ intent: "getPrice", args: { currency: "BTC" } }),
+    )
+    graphql.realtimePrice.mockResolvedValue(USD_PRICE)
+
+    const entries = await answerUtterance(runtime, utterance, env(ON))
+
+    const [routed, deps] = runTool.mock.calls[0]
+    expect(routed).toEqual({ intent: "getPrice", args: {} })
+    expect(deps.onDeviceModelReason).toBe("currencyDropped")
+    // The display currency's price, as the grammar's read of a plain ask.
+    expect(graphql.realtimePrice).toHaveBeenCalledWith("USD")
+    expect(entries[0]).toMatchObject({ kind: "price" })
+    // A passed call, not a refusal: answered, with the drop on its event.
+    expect(toolEvents()).toEqual([
+      {
+        intent: "getPrice",
+        tier: "read",
+        outcome: "answered",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+        onDeviceModelReason: "currencyDropped",
       },
     ])
   })

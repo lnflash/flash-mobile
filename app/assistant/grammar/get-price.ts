@@ -25,6 +25,25 @@ const CURRENCY_CODES = new Set(
   ),
 )
 
+/** Words that name a currency to price bitcoin in, without its code. */
+const CURRENCY_NAMES = new Set(
+  "dollar dollars buck bucks money currency euro euros pound pounds".split(" "),
+)
+
+/**
+ * Whether the words name a currency a price could be asked in (ENG-753): a
+ * code ("usd", "jmd", or "jamaican dollars", which folds to one), a word
+ * for one ("dollars", "euros", "money") or a currency sign. The model tier
+ * drops a price read's currency only for an ask that names none, so the
+ * display currency it then quotes is never a guess at one the person named
+ * another way ("bitcoin price in jamaican money").
+ */
+export const namesPriceCurrency = (tokens: readonly Token[]): boolean =>
+  tokens.some(
+    ({ word }) =>
+      CURRENCY_CODES.has(word) || CURRENCY_NAMES.has(word) || /[$€£¥]/.test(word),
+  )
+
 /** Every word a price ask is made of, besides its currency code. */
 const VOCABULARY = new Set(
   (
