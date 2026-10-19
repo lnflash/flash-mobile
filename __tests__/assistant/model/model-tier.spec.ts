@@ -854,6 +854,8 @@ describe("the guards (ENG-751)", () => {
         ["pay everyone in the group 1000", send("everyone", "1000"), JMD],
         ["drop 20 on all of us", send("us", "20")],
         ["dem fi get 500", send("dem", "500"), JMD],
+        ["share 5000 among my kids", send("kids", "5000"), JMD],
+        ["divide 900 amongst the cousins", send("cousins", "900"), JMD],
       ]
       for (const [utterance, raw, account] of cases) {
         expect([utterance, grounds(raw, utterance, account)]).toEqual([utterance, true])
@@ -864,13 +866,14 @@ describe("the guards (ENG-751)", () => {
       )
     })
 
-    it('is none for two people joined as one ask, patois "an" and a comma included', async () => {
+    it('is none for two people joined as one ask, chat "n", patois "an" and a comma included', async () => {
       const cases: [string, Raw, Account?][] = [
         ["tanya and kemar need 20", send("tanya", "20")],
         ["tanya & kemar need 20", send("kemar", "20")],
         ["bob or alice can have 40", send("bob", "40")],
         ["tanya an kemar fi get 500", send("tanya", "500"), JMD],
         ["mi an jason need 1000", send("jason", "1000"), JMD],
+        ["tanya n kemar need 500", send("tanya", "500"), JMD],
         ["hook up bob, tanya with 15", send("bob", "15")],
         ["tanya and my sister need 25", send("tanya", "25")],
       ]
@@ -1016,7 +1019,7 @@ describe("the guards (ENG-751)", () => {
       expect(runtime.cachedGraphql?.contacts).toHaveBeenCalledTimes(1)
     })
 
-    it('lets a send to one person stand: a second person in a memo the grammar reads, "with", a comma before "please"', async () => {
+    it('lets a send to one person stand: a second person in a memo the grammar reads, "with", a comma before "please", an "n" inside a word or after the amount', async () => {
       // A near-miss of the tuning corpus: the grammar reads it as this
       // send, so the shipped order never asks the model about it.
       const memo = send("tanya", "12", { currency: "USD", memo: "kemar's lunch" })
@@ -1029,6 +1032,8 @@ describe("the guards (ENG-751)", () => {
         ["hook bob up with 5 dollars", send("bob", "5", { currency: "USD" })],
         ["send $5 to bob, please", send("bob", "5", { currency: "USD" })],
         ["sen 1000 to mi bredda for tanya lunch money", send("bredda", "1000")],
+        ["send nathan $15 for lunch", send("nathan", "15", { currency: "USD" })],
+        ["throw bob 5 n thanks", send("bob", "5")],
       ]
 
       expect(await resultsOf(cases)).toEqual(
@@ -1085,6 +1090,12 @@ describe("the guards (ENG-751)", () => {
         ["payments between 500 and 1000", history({ query: "500" }), JMD],
         ["payments between 50 and 100", history()],
         ["payments between $50 and $100", history()],
+        // Whatever joins the span: "to", or a hyphen inside the number; and
+        // a year after "from" or "to", as after "in" or "since".
+        ["payments between 500 to 1000", history(), JMD],
+        ["transactions between 2024-2025", history()],
+        ["payments between 500-1000", history()],
+        ["transactions from 2024 to 2025", history()],
         ["wah mi sen dis week", history({ direction: "SEND" }), JMD],
         ["wah mi get yesterday", history({ direction: "RECEIVE" }), JMD],
         ["how much mi spen las month", history(), JMD],
@@ -1115,6 +1126,10 @@ describe("the guards (ENG-751)", () => {
         ],
         [
           "my 5 latest payments between me and kemar",
+          history({ query: "kemar", first: 5 }),
+        ],
+        [
+          "my 5 latest payments between me n kemar",
           history({ query: "kemar", first: 5 }),
         ],
       ]

@@ -540,18 +540,19 @@ export const PERSON_PRONOUNS = set("him her them they it she he us im yall unu")
 
 /**
  * Words that make a send more than one person's, whoever the model names as
- * its payee (ENG-751): a split or a share ("split", "between", "half",
- * "halves"), each or both of them, everyone, people, and the plural
- * pronouns "us" (as in "all of us") and "them", which patois "dem" folds
- * to. The words for more than one payee are NOT_A_NAME's own
+ * its payee (ENG-751): a split or a share ("split", "between", "among",
+ * "amongst", "half", "halves"), each or both of them, everyone, people, and
+ * the plural pronouns "us" (as in "all of us") and "them", which patois
+ * "dem" folds to. The words for more than one payee are NOT_A_NAME's own
  * (MORE_THAN_ONE_PAYEE), and "us" and "them" are its pronouns, so the
- * grammar never takes one for a payee's name either. "and", "or", "with"
- * and "all" are not here: each is in a send to one person as often ("hook
- * bob up with 5"), and two people joined by a connector are
- * namesTwoPeople's.
+ * grammar never takes one for a payee's name either. "among" and "amongst"
+ * are the group check's alone: in NOT_A_NAME they would change what the
+ * grammar reads. "and", "or", "with" and "all" are not here: each is in a
+ * send to one person as often ("hook bob up with 5"), and two people joined
+ * by a connector are namesTwoPeople's.
  */
 export const GROUP_WORDS = set(
-  `${MORE_THAN_ONE_PAYEE} splits splitting both half halves us them`,
+  `${MORE_THAN_ONE_PAYEE} among amongst splits splitting both half halves us them`,
 )
 
 /** Words for a person that are no name: the user, the one they ask, a pronoun. */
@@ -585,9 +586,10 @@ const isPerson = (token: Token, inAmount: boolean, ctx: GrammarContext): boolean
 
 /**
  * Words that join two people: "and", "or" and "plus" ("&" and "+" reach
- * here as "and"), and patois "an".
+ * here as "and"), patois "an" and chat "n" ("tanya n kemar").
  */
-const joinsPeople = ({ word }: Token): boolean => CONNECTORS.has(word) || word === "an"
+const joinsPeople = ({ word }: Token): boolean =>
+  CONNECTORS.has(word) || word === "an" || word === "n"
 
 /**
  * Whether the words name two people as one ask (ENG-751): two joined by a
@@ -661,8 +663,8 @@ const ORDINAL_DAY = /^\d{1,2}(?:st|[nr]d|th)$/
 /** A year. */
 const YEAR = /^(?:19|20)\d{2}$/
 
-/** Words before a year that make it one: "in 2025", "since 2024". */
-const BEFORE_A_YEAR = set("in since during until till before after")
+/** Words before a year that make it one: "in 2025", "from 2024 to 2025". */
+const BEFORE_A_YEAR = set("in since during until till before after from to")
 
 const holdsNumber = (token: Token | undefined): boolean =>
   token !== undefined && /^\d/.test(token.word)
@@ -672,16 +674,17 @@ const holdsNumber = (token: Token | undefined): boolean =>
  * history read can filter by: a word of one ("yesterday", "this month",
  * "last week", "since monday", "september"), a date in numbers or a day of
  * the month ("10/15", "the 15th"), "may" or a month's short form beside a
- * number, a year after "in", "since" and the like or after a month ("in
- * 2025", "june 2025"), or "between" one thing "and" another when the word
- * right after "between" starts a number, as the grammar reads one
- * (NUMBER_START, "$50" and "j$500" included): a span of years ("between
- * 2024 and 2025"), which no other word marks, or of amounts ("between 500
- * and 1000", "between $50 and $100"), which no read filters by either. A
- * span of days, months or dates is a date by its own words, and "between
- * me and kemar" is a read filtered by a contact, not a date, wherever a
- * count stands ("between me and kemar, last 5"). "last" on its own is no
- * date: "my last 5 payments" is a count.
+ * number, a year after "in", "since", "from", "to" and the like or after a
+ * month ("in 2025", "from 2024 to 2025", "june 2025"), or "between" right
+ * before a word that starts a number, as the grammar reads one
+ * (NUMBER_START, "$50" and "j$500" included), whatever joins the span: a
+ * span of years ("between 2024 and 2025", "between 2024-2025"), which no
+ * other word marks, or of amounts ("between 500 and 1000", "between 500 to
+ * 1000", "between $50 and $100"), which no read filters by either. A span
+ * of days, months or dates is a date by its own words, and "between me and
+ * kemar" is a read filtered by a contact, not a date, wherever a count
+ * stands ("between me and kemar, last 5"). "last" on its own is no date:
+ * "my last 5 payments" is a count.
  */
 export const namesDate = (tokens: readonly Token[]): boolean =>
   tokens.some(({ word }, i) => {
@@ -697,8 +700,6 @@ export const namesDate = (tokens: readonly Token[]): boolean =>
         (BEFORE_A_YEAR.has(before.word) ||
           MONTHS.has(before.word) ||
           MONTHS_BESIDE_A_NUMBER.has(before.word))) ||
-      (word === "between" &&
-        NUMBER_START.test(after?.word ?? "") &&
-        tokens.slice(i + 2).some((later) => later.word === "and"))
+      (word === "between" && NUMBER_START.test(after?.word ?? ""))
     )
   })

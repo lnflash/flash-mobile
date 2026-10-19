@@ -688,7 +688,10 @@ describe("readGrammar (ENG-690)", () => {
         { kind: "clarifyAmount", reason: "mixed" },
       ]),
     )
-    const apart = ["send bob $5 minus $3", "send bob $5 and then $3"]
+    // Chat "n" joins two people for the model tier's group check
+    // (namesTwoPeople, ENG-751), never two amounts here: CONNECTORS is the
+    // grammar's own, unchanged.
+    const apart = ["send bob $5 minus $3", "send bob $5 and then $3", "send bob $5 n $3"]
     apart.forEach((utterance) =>
       expect([utterance, readGrammar(utterance, USD)]).toEqual([
         utterance,
@@ -739,6 +742,12 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "payments between 500 and 1000",
       "payments between $50 and $100",
       "payments between j$500 and j$1000",
+      // Whatever joins the span: "to", or a hyphen inside the number.
+      "payments between 500 to 1000",
+      "transactions between 2024-2025",
+      "payments between 500-1000",
+      // A year after "from" or "to", as after "in" or "since".
+      "transactions from 2024 to 2025",
       "payments on monday",
       "what i spent last night",
       "wah mi get tideh",
@@ -760,6 +769,7 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "transactions between me and kemar",
       "transactions between me and kemar, last 5",
       "my 5 latest payments between me and kemar",
+      "my 5 latest payments between me n kemar",
     ]
 
     expect(dated.filter((utterance) => !namesDate(normalize(utterance).tokens))).toEqual(
@@ -777,6 +787,7 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "bob + alice get 5",
       "bob or alice can have 40",
       "tanya an kemar fi get 500",
+      "tanya n kemar need 500",
       "mi an jason need 1000",
       "me and bob need 20",
       "hook up bob, tanya with 15",
@@ -791,6 +802,10 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
       "send tanya $12 for kemar's lunch",
       "pay bob 50 for rent and lights",
       "throw bob 5 and thanks",
+      // Chat "n" after an amount or between two purposes joins no two
+      // people, and an "n" inside a name ("brandon") is no word of its own.
+      "throw bob 5 n thanks",
+      "pay brandon 50 for lunch n gas",
       "make an invoice",
     ]
 
@@ -804,7 +819,7 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
 
   it("holds the group words of a split, a share and a plural, not a single send's", () => {
     ;["split", "between", "each", "both", "everyone", "everybody", "half", "halves"]
-      .concat(["us", "them", "people"])
+      .concat(["us", "them", "people", "among", "amongst"])
       .forEach((word) => expect([word, GROUP_WORDS.has(word)]).toEqual([word, true]))
     ;["and", "with", "all", "to", "for"].forEach((word) =>
       expect([word, GROUP_WORDS.has(word)]).toEqual([word, false]),
@@ -815,6 +830,11 @@ describe("the words the on-device model's calls are held to (ENG-751)", () => {
     // both: never a payee's name to the grammar, always a group's send here.
     ;["between", "split", "each", "everyone", "everybody", "people"].forEach((word) =>
       expect([word, GROUP_WORDS.has(word), neverNames(word)]).toEqual([word, true, true]),
+    )
+    // "among" and "amongst" are the group check's alone, not NOT_A_NAME's,
+    // so the grammar reads every ask as it did.
+    ;["among", "amongst"].forEach((word) =>
+      expect([word, neverNames(word)]).toEqual([word, false]),
     )
   })
 
