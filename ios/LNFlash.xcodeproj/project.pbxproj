@@ -30,8 +30,6 @@
 		65403F50DCC45A6C0F8A7719 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0153E6F92FF0AF1E00DA9493 /* WidgetKit.framework */; };
 		69B54F686F5835A64060EE6D /* libPods-LNFlash-Alt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 177D9FE829C0CBCE225C8178 /* libPods-LNFlash-Alt.a */; };
 		6FFA8CCE9FDC46439521C643 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */; };
-		F4E3932F09F0520C88FAB18A /* AssistantModelBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */; };
-		D08484CD75DF3114E1FB8A4F /* AssistantModelBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7D27F331EC3E362947CD73 /* AssistantModelBridge.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		833D390F570BFF9674FCBD74 /* FlashWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD465FEB229510D51684EDE6 /* FlashWidget.swift */; };
 		855F657BD177625DE7B379D9 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B92CDD11F2D823E2EE004D /* SharedStore.swift */; };
@@ -61,9 +59,11 @@
 		C61EE0AD23C530E30054100C /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C61EE0AC23C530E30054100C /* AuthenticationServices.framework */; };
 		C904177F638976744D113249 /* PriceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2E9F1C6B51F42DF36183FA /* PriceService.swift */; };
 		CB3637CFB3FAB9B2A188AB46 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2052AFF690BEC2C99884C745 /* Provider.swift */; };
+		D08484CD75DF3114E1FB8A4F /* AssistantModelBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7D27F331EC3E362947CD73 /* AssistantModelBridge.swift */; };
 		DB7F2D410CF8013086AE0F35 /* FlashWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AC352BF933E169BF74309B2C /* FlashWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DFC87A5CC1F436C2FB3A9C48 /* FlashWidgetEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A19E0142B1D06F47B8624E /* FlashWidgetEntryView.swift */; };
 		F1D71F3628CE5C9A00636277 /* AppDelegate.h in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FAF1A68108700A75B9A /* AppDelegate.h */; };
+		F4E3932F09F0520C88FAB18A /* AssistantModelBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */; };
 		FBB2BDC0DD3802BB090D3FD4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -168,13 +168,13 @@
 		91622336680E692C2E1CD466 /* Pods-LNFlash.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash.release.xcconfig"; path = "Target Support Files/Pods-LNFlash/Pods-LNFlash.release.xcconfig"; sourceTree = "<group>"; };
 		A4F431BE17DF142F8967044E /* SETUP.md */ = {isa = PBXFileReference; includeInIndex = 1; path = SETUP.md; sourceTree = "<group>"; };
 		AC352BF933E169BF74309B2C /* FlashWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FlashWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = AssistantModelBridge.m; path = LNFlash/AssistantModelBridge.m; sourceTree = "<group>"; };
 		C61EE0AB23C52FBA0054100C /* LNFlash.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = LNFlash.entitlements; path = LNFlash/LNFlash.entitlements; sourceTree = "<group>"; };
 		C61EE0AC23C530E30054100C /* AuthenticationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AuthenticationServices.framework; path = System/Library/Frameworks/AuthenticationServices.framework; sourceTree = SDKROOT; };
 		C63A9181296313BE00B54FDB /* hermes.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = hermes.xcframework; path = "Pods/hermes-engine/destroot/Library/Frameworks/universal/hermes.xcframework"; sourceTree = "<group>"; };
 		C6FCE05724592E5E0076B3C0 /* LNFlash-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LNFlash-Bridging-Header.h"; sourceTree = "<group>"; };
-		D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetBridge.swift; path = LNFlash/WidgetBridge.swift; sourceTree = "<group>"; };
-		C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = AssistantModelBridge.m; path = LNFlash/AssistantModelBridge.m; sourceTree = "<group>"; };
 		CC7D27F331EC3E362947CD73 /* AssistantModelBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssistantModelBridge.swift; path = LNFlash/AssistantModelBridge.swift; sourceTree = "<group>"; };
+		D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WidgetBridge.swift; path = LNFlash/WidgetBridge.swift; sourceTree = "<group>"; };
 		DC2E9F1C6B51F42DF36183FA /* PriceService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PriceService.swift; sourceTree = "<group>"; };
 		DD465FEB229510D51684EDE6 /* FlashWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashWidget.swift; sourceTree = "<group>"; };
 		DD9A2B3A3DB948C0E9DA3E8A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
@@ -1202,7 +1202,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_PREVIEWS = YES;
@@ -1222,7 +1222,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.watchkitapp;
@@ -1260,7 +1260,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_PREVIEWS = YES;
@@ -1276,7 +1276,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1311,7 +1311,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1331,7 +1331,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.watchkitapp.FlashWatchComplication;
@@ -1368,7 +1368,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1384,7 +1384,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.watchkitapp.FlashWatchComplication;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1411,7 +1411,7 @@
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlashDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
@@ -1543,7 +1543,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited)";
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1569,7 +1569,7 @@
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlash.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
 				"FOUNDATION_MODELS_LDFLAGS[sdk=iphoneos2*]" = "-weak_framework FoundationModels";
@@ -1700,7 +1700,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited)";
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1875,7 +1875,7 @@
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlashAltDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
@@ -1885,7 +1885,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited)";
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1911,7 +1911,7 @@
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlashAlt.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
@@ -1920,7 +1920,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited)";
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1952,7 +1952,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1968,7 +1968,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.FlashWidget;
@@ -2004,7 +2004,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 57;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = H7UAM79QQP;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2024,7 +2024,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.8.0;
+				MARKETING_VERSION = 0.9.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.lnflash.FlashWidget;
