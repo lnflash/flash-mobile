@@ -782,9 +782,10 @@ describe("readGrammar (ENG-690)", () => {
     read.forEach(([utterance, expected]) =>
       expect([utterance, readGrammar(utterance, USD)]).toEqual([utterance, expected]),
     )
-    // A change with no currency after it is no conversion: a miss, as before.
+    // A change with no currency after it is no conversion: a miss, as
+    // before. A settings ask ("change my pin", asksSettings) is refused
+    // (ENG-753); only a bare word is a miss.
     expect(readGrammar("change", USD)).toBeUndefined()
-    expect(readGrammar("change my pin to 1234", USD)).toBeUndefined()
   })
 
   it("refuses a send it cannot read as one contact and at most one amount", () => {

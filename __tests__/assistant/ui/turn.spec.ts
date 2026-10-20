@@ -625,40 +625,60 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ])
   })
 
-  it('answers "convert 20 dollars to btc" and "withdraw $50" as misses, whatever the model calls them (ENG-749)', async () => {
-    // What the macOS model answered for them (ENG-690 proxy run): intents
+  it('answers "withdraw $50" as a refusal before the model, whatever the model calls it (ENG-749, ENG-753)', async () => {
+    // What the macOS model answered for it (ENG-690 proxy run): an intent
     // outside the model tier's five, which the pre-check refuses. Since
-    // ENG-753 the grammar refuses a conversion before the model is asked
-    // (asksConversion; the test below), so "withdraw $50" is the miss that
-    // still reaches the model, and the pre-check's refusal of
+    // ENG-753 the grammar refuses the ask before the model is asked at all
+    // (asksCashout: a cashout is not shipped, and the model answered this
+    // one with a send to a payee it invented); the pre-check's refusal of
     // prepareConversion is model-tier.spec.ts's.
     const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
       ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
     ]
     for (const [utterance, call] of answers) {
-      // A plain miss, so the shipped order asks the model.
+      // Refused by the grammar (asksCashout): the model is never asked.
       expect(
         matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" }),
       ).toBe(undefined)
-      const { runtime, modelAdapter, runTool, toolEvents } = withModel(modelCall(call))
-
-      const entries = await answerUtterance(runtime, utterance, env(ON))
-
-      expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
-      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      const { runtime, modelAdapter, runTool } = withModel(modelCall(call))
+      const refused = await answerUtterance(runtime, utterance, env(ON))
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
       expect(runTool).not.toHaveBeenCalled()
-      // Refused by the checks: the model's rejection rate, its intent named.
-      expect(toolEvents()).toEqual([
-        {
-          intent: call.intent,
-          tier: "action",
-          outcome: "rejected",
-          latencyMs: 0,
-          onDeviceModelAvailable: true,
-          onDeviceModelReason: "precheck",
-        },
-      ])
+      expect(refused).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
     }
+  })
+
+  it("asks the model on a plain miss, which a refused feature never is (ENG-753)", async () => {
+    // "convert 20 dollars to btc" was the plain miss that reached the model
+    // (ENG-749); since ENG-753 the grammar refuses a conversion before the
+    // model is asked. A miss outside the refused features still reaches it.
+    const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+      modelCall({
+        intent: "prepareConversion",
+        args: { from: "USD", to: "BTC", amount: "20" },
+      }),
+    )
+    // "hook bob up with 5 dollars" is the plain miss the ENG-749 tests use.
+    const entries = await answerUtterance(runtime, "hook bob up with 5 dollars", env(ON))
+    expect(
+      matchGrammar("hook bob up with 5 dollars", {
+        displayCurrency: "USD",
+        displaySymbol: "$",
+      }),
+    ).toBe(undefined)
+    expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+    expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    expect(runTool).not.toHaveBeenCalled()
+    expect(toolEvents()).toEqual([
+      {
+        intent: "prepareConversion",
+        tier: "action",
+        outcome: "rejected",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+        onDeviceModelReason: "precheck",
+      },
+    ])
   })
 
   it("refuses a conversion or a contacts ask before the model, with the miss reply and no model call (ENG-753)", async () => {

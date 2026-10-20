@@ -6,7 +6,11 @@ import { PREPARE_RECEIVE_RULES } from "./prepare-receive"
 import { PREPARE_SEND_RULES } from "./prepare-send"
 import type { GrammarContext, GrammarMatch, GrammarRule } from "./types"
 import {
+  asksCardTopUp,
+  asksCashout,
   asksContacts,
+  asksPriceTrend,
+  asksSettings,
   asksConversion,
   isQuestionAboutHow,
   isQuestionAboutWhat,
@@ -78,7 +82,13 @@ export const readGrammar = (
   // now, since "what is my balance" and "what's the price" are reads. So
   // are a conversion and the contacts list (ENG-753): "what is the
   // exchange rate" is a price, "send bob 5 for swap meet" a send.
-  return isQuestionAboutWhat(tokens) || asksConversion(tokens) || asksContacts(tokens)
+  return isQuestionAboutWhat(tokens) ||
+    asksConversion(tokens) ||
+    asksContacts(tokens) ||
+    asksCashout(tokens) ||
+    asksCardTopUp(tokens) ||
+    asksSettings(tokens) ||
+    asksPriceTrend(tokens)
     ? REFUSED
     : undefined
 }

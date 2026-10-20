@@ -71,6 +71,50 @@ export const WORD_FOLDS: Readonly<Record<string, string>> = {
   recieve: "receive",
   recive: "receive",
   bitcoins: "bitcoin",
+  // Dropped-vowel and chat forms of words the rules read, added after the
+  // 0.9.0 dogfood (ENG-753): each folds to a word a rule already matches,
+  // none is a common name, a currency or a payee word, and a contact called
+  // one still keeps its spelling as typed (Token.raw, normalize.ts).
+  // Typos of rule words:
+  waht: "what",
+  whhat: "what",
+  hwo: "how",
+  shwo: "show",
+  shw: "show",
+  snd: "send",
+  paymnt: "payment",
+  paymet: "payment",
+  histroy: "history",
+  histry: "history",
+  histoy: "history",
+  ballance: "balance",
+  ballence: "balance",
+  blance: "balance",
+  balence: "balance",
+  acount: "account",
+  accont: "account",
+  adress: "address",
+  addres: "address",
+  invioce: "invoice",
+  invocie: "invoice",
+  convertion: "conversion",
+  lightining: "lightning",
+  tranasctions: "transactions",
+  transation: "transaction",
+  transactons: "transactions",
+  transacions: "transactions",
+  walllet: "wallet",
+  // Elongated chat forms:
+  plss: "please",
+  plsss: "please",
+  thankss: "thanks",
+  // Patois and chat verbs the rules read:
+  gimme: "give",
+  lemme: "let",
+  av: "have",
+  // "howmuch mi have": the pair fold below reads it as "how much".
+  // Plural of the price noun:
+  prices: "price",
 }
 
 /** Two-word forms folded into one word. */

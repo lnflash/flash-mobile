@@ -252,6 +252,77 @@ export const asksContacts = (tokens: readonly Token[]): boolean =>
   indexOfWords(tokens, ["address", "book"]) >= 0 ||
   indexOfWords(tokens, ["contact", "list"]) >= 0
 
+/** Words that ask to move money out to a bank or cash (ENG-753): cashout, not shipped. */
+const CASHOUT_WORDS = set("cashout withdraw withdrawing withdrawal")
+
+/**
+ * Asks to cash out to a bank or hand (ENG-753): "cash out 5000", "withdraw
+ * 100 to my bank", "mi wan cash out". No assistant intent reads them, and
+ * the model answers one with a send to a payee it invented ("your bank"),
+ * which grounding refuses after a 1-2 s call. A send to a contact of that
+ * name still reads first: readGrammar asks only once no rule has read the
+ * words.
+ */
+export const asksCashout = (tokens: readonly Token[]): boolean =>
+  hasWord(tokens, CASHOUT_WORDS) ||
+  (hasWord(tokens, set("cash")) && hasWord(tokens, set("out outta")))
+
+/**
+ * Asks to top up the Flashcard (ENG-753): "top up my card". No intent
+ * reads it, and the model answers with a send to a payee it invented
+ * ("card"). A send to a contact called Top still reads first, and so does
+ * "top up" inside a memo: only an ask no rule reads is refused.
+ */
+export const asksCardTopUp = (tokens: readonly Token[]): boolean => {
+  const top = tokens.findIndex(({ word }) => word === "top")
+  return (
+    top >= 0 &&
+    tokens[top + 1]?.word === "up" &&
+    tokens.some(({ word }, i) => i > top + 1 && CARD_WORDS.has(word))
+  )
+}
+
+/** Words a card ask names the card by. */
+const CARD_WORDS = set("card cards flashcard")
+
+/** Words that ask to change a setting or reach the app's own help (ENG-753). */
+const SETTINGS_WORDS = set("pin username password notifications backup support")
+
+/**
+ * Asks to change a setting or reach help (ENG-753): "change my pin",
+ * "contact support", "how do i back up my wallet". No intent reads them;
+ * the model answered "change my pin" with a send to "your_payee", which
+ * grounding refused. Read only once no rule has read the words, so "pay
+ * support 5" stays a send and "pin 1234" (if a rule ever reads one) too.
+ */
+export const asksSettings = (tokens: readonly Token[]): boolean => {
+  const change = tokens.findIndex(({ word }) => CHANGE_WORDS.has(word))
+  const named = tokens.findIndex(({ word }) => SETTINGS_WORDS.has(word))
+  return named >= 0 && (change >= 0 || tokens.some(({ word }) => SETTING_HELP.has(word)))
+}
+
+/** Words that carry a settings ask to its target ("change", "how do i"). */
+const SETTING_HELP = set("backup set change how contact")
+
+/** Words that ask where a price is heading, not what it is (ENG-753). */
+const TREND_WORDS = set("going rising falling up down climbing dropping")
+
+/**
+ * Asks where a price is heading ("is bitcoin going up"), not what it is
+ * (ENG-753). The model answers one with a price read for a currency it
+ * named, which the ENG-753 currency drop would then turn into the display
+ * currency's price: an answer to another question. Refused before the
+ * model; a price ask still reads first, and "are we up" (no price noun)
+ * is not one of these.
+ */
+export const asksPriceTrend = (tokens: readonly Token[]): boolean => {
+  const trend = tokens.some(({ word }) => TREND_WORDS.has(word))
+  const priced = tokens.some(({ word }) =>
+    ["bitcoin", "btc", "price", "market", "it"].includes(word),
+  )
+  return trend && priced
+}
+
 // ---------------------------------------------------------------------------
 // Payment requests and addresses, which v1 does not take
 // ---------------------------------------------------------------------------
