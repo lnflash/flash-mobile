@@ -57,6 +57,29 @@ describe("normalize", () => {
     ])
   })
 
+  it('folds "wat", "wut", "wats" and "wuts" into "what", and keeps each as typed (ENG-753)', () => {
+    expect(textOf(normalize("wat di bitcoin price").tokens)).toBe(
+      "what the bitcoin price",
+    )
+    expect(textOf(normalize("Wut is my balance?").tokens)).toBe("what is my balance")
+    expect(textOf(normalize("wats di rate").tokens)).toBe("what the rate")
+    expect(textOf(normalize("wuts mi bal").tokens)).toBe("what my balance")
+    expect(WORD_FOLDS).toMatchObject({
+      wat: "what",
+      wut: "what",
+      wats: "what",
+      wuts: "what",
+    })
+    // A contact called Wat keeps its spelling as typed: names and memos are
+    // taken from `raw`, never from a fold, as a contact called Fi is.
+    expect(normalize("send Wat $5").tokens).toEqual([
+      { word: "send", raw: "send" },
+      { word: "what", raw: "Wat" },
+      { word: "$5", raw: "$5" },
+    ])
+    expect(normalize("send 5 to Wut").tokens[3]).toEqual({ word: "what", raw: "Wut" })
+  })
+
   it("keeps the hyphens and apostrophes of a word with a digit, for readAmountPhrase", () => {
     // An amount is read only by readAmountPhrase, from what was typed:
     // "5-10" is two numbers there, never "510".
@@ -655,6 +678,114 @@ describe("readGrammar (ENG-690)", () => {
     // "What" before any other word is no such question.
     expect(readGrammar("what did bob say", USD)).toBeUndefined()
     expect(readGrammar("what", USD)).toBeUndefined()
+  })
+
+  it("reads the dogfood's wat-form asks as the rules read the same ask with what (ENG-753)", () => {
+    for (const utterance of [
+      "wat di bitcoin price",
+      "wat is di bitcoin price",
+      "wat di bitcoin rate",
+      "wat di price",
+      "wats di price",
+    ]) {
+      expect(readGrammar(utterance, USD)).toEqual({
+        kind: "call",
+        call: { intent: "getPrice", args: {} },
+      })
+    }
+    for (const utterance of ["wut is my balance", "wat mi balance", "wats my balance"]) {
+      expect(readGrammar(utterance, JMD)).toEqual({
+        kind: "call",
+        call: { intent: "getBalances", args: {} },
+      })
+    }
+    // "wats" asks what something is, as "whats" does.
+    expect(readGrammar("wats lightning", USD)).toEqual({ kind: "refused" })
+    expect(readGrammar("whats lightning", USD)).toEqual({ kind: "refused" })
+  })
+
+  it("refuses a conversion or a contacts ask once no rule reads it, so the model is never asked (ENG-753)", () => {
+    const refused = [
+      // Conversions: a word for one, or exchange/change into another currency.
+      "swap 0.01 usd to bitcoin",
+      "swap to bitcoin",
+      "convert 20 dollars to btc",
+      "convert my bitcoin to usd",
+      "exchange 20 usd for btc",
+      "exchange my dollars into bitcoin",
+      "change my dollars to bitcoin",
+      "can i swap usd to btc",
+      // Patois.
+      "change mi dolla dem to bitcoin",
+      "swap mi usd fi bitcoin",
+      "swap mi bitcoin fi usd",
+      // Contacts.
+      "show my contacts",
+      "my contacts",
+      "who is in my contacts",
+      "show mi contacts",
+      "open my address book",
+      "show my contact list",
+    ]
+    refused.forEach((utterance) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([
+        utterance,
+        { kind: "refused" },
+      ]),
+    )
+  })
+
+  it("keeps the asks a rule reads that hold a conversion's or a contact's word (ENG-753)", () => {
+    const price = { kind: "call", call: { intent: "getPrice", args: {} } }
+    const read: [string, unknown][] = [
+      ["wah di bitcoin rate", price],
+      ["what is the exchange rate", price],
+      ["bitcoin exchange rate", price],
+      ["wah di exchange rate", price],
+      [
+        "send bob 5 for lunch",
+        {
+          kind: "call",
+          call: {
+            intent: "prepareSend",
+            args: { payee: "bob", amount: "5", memo: "lunch" },
+          },
+        },
+      ],
+      // A memo with a conversion's word stays the memo of a send.
+      [
+        "send bob 5 for swap meet",
+        {
+          kind: "call",
+          call: {
+            intent: "prepareSend",
+            args: { payee: "bob", amount: "5", memo: "swap meet" },
+          },
+        },
+      ],
+      // A payee so named stays one: resolveContact asks unless it is a contact's.
+      [
+        "send 5 to Swap",
+        {
+          kind: "call",
+          call: { intent: "prepareSend", args: { payee: "swap", amount: "5" } },
+        },
+      ],
+      [
+        "send contacts 5",
+        {
+          kind: "call",
+          call: { intent: "prepareSend", args: { payee: "contacts", amount: "5" } },
+        },
+      ],
+    ]
+    read.forEach(([utterance, expected]) =>
+      expect([utterance, readGrammar(utterance, USD)]).toEqual([utterance, expected]),
+    )
+    // A change with no currency after it is no conversion: a miss, as
+    // before. A settings ask ("change my pin", asksSettings) is refused
+    // (ENG-753); only a bare word is a miss.
+    expect(readGrammar("change", USD)).toBeUndefined()
   })
 
   it("refuses a send it cannot read as one contact and at most one amount", () => {

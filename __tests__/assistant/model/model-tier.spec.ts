@@ -1407,6 +1407,110 @@ describe("the guards (ENG-751)", () => {
   })
 })
 
+describe("a price read's currency no word names (ENG-753)", () => {
+  it('drops the BTC the model gave "wat di bitcoin price", and says so, not as a refusal', async () => {
+    // The dogfood answer, reproduced with the real prompt on macOS. The
+    // grammar reads this ask now (folds.ts); the model tier holds the call
+    // the same, for an ask it does not.
+    const result = await ask(
+      { intent: "getPrice", args: { currency: "BTC" } },
+      "wat di bitcoin price",
+    )
+
+    expect(result).toEqual({
+      kind: "call",
+      call: { intent: "getPrice", args: {} },
+      dropped: "currencyDropped",
+    })
+    expect(refusalOf(result)).toBeUndefined()
+  })
+
+  it("drops one on a J$ account too, so the read quotes the display currency", async () => {
+    await expect(
+      ask(
+        { intent: "getPrice", args: { currency: "USD" } },
+        "how di bitcoin price a look",
+        {
+          account: JMD,
+        },
+      ),
+    ).resolves.toEqual({
+      kind: "call",
+      call: { intent: "getPrice", args: {} },
+      dropped: "currencyDropped",
+    })
+  })
+
+  it("keeps a currency the words hold, in any case", async () => {
+    for (const utterance of ["bitcoin price looking how in usd", "BTC price in USD rn"]) {
+      await expect(
+        ask({ intent: "getPrice", args: { currency: "USD" } }, utterance),
+      ).resolves.toEqual({
+        kind: "call",
+        call: { intent: "getPrice", args: { currency: "USD" } },
+      })
+    }
+  })
+
+  it("keeps the price read's other checks: no currency at all passes as before", async () => {
+    await expect(
+      ask({ intent: "getPrice", args: {} }, "how di bitcoin price a look"),
+    ).resolves.toEqual({ kind: "call", call: { intent: "getPrice", args: {} } })
+  })
+
+  it("never guesses the display currency for an ask that names a currency another way", async () => {
+    // "jamaican money" names JMD without its code: the display currency
+    // would answer another question, so grounding refuses it as before.
+    for (const [utterance, currency] of [
+      ["bitcoin price in jamaican money", "JMD"],
+      ["what is bitcoin worth in dollars", "USD"],
+      ["bitcoin price in euros", "EUR"],
+      ["btc in jmd today", "USD"],
+    ]) {
+      await expect(
+        ask({ intent: "getPrice", args: { currency } }, utterance, { account: JMD }),
+      ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "getPrice" })
+    }
+  })
+
+  it("drops nothing else: an action's currency, payee and memo, and a history search, stay as strict as before", async () => {
+    // The dogfood swap answer: an invented payee and memo.
+    await expect(
+      ask(
+        {
+          intent: "prepareSend",
+          args: {
+            amount: "0.01",
+            memo: "test",
+            currency: "USD",
+            payee: "user@example.com",
+            sourceWallet: "USD",
+          },
+        },
+        "swap 0.01 usd to bitcoin",
+      ),
+    ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
+    // A send's currency no word names is a guessed unit, never dropped.
+    await expect(
+      ask(
+        { intent: "prepareSend", args: { payee: "bob", amount: "5", currency: "BTC" } },
+        "hook bob up with 5",
+      ),
+    ).resolves.toEqual({ kind: "rejected", reason: "ungrounded", intent: "prepareSend" })
+    // The dogfood contacts answer: an invented search stays none.
+    await expect(
+      ask(
+        { intent: "getTransactions", args: { query: "John Doe", direction: "RECEIVE" } },
+        "show my contacts",
+      ),
+    ).resolves.toEqual({
+      kind: "none",
+      reason: "ungroundedFilter",
+      intent: "getTransactions",
+    })
+  })
+})
+
 describe("what the model is asked", () => {
   it("is the prompt for the thread before this turn, within the timeout", async () => {
     const modelAdapter = fakeModelAdapter()

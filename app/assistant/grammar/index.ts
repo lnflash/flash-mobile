@@ -6,6 +6,12 @@ import { PREPARE_RECEIVE_RULES } from "./prepare-receive"
 import { PREPARE_SEND_RULES } from "./prepare-send"
 import type { GrammarContext, GrammarMatch, GrammarRule } from "./types"
 import {
+  asksCardTopUp,
+  asksCashout,
+  asksContacts,
+  asksPriceTrend,
+  asksSettings,
+  asksConversion,
   isQuestionAboutHow,
   isQuestionAboutWhat,
   namesPaymentRequest,
@@ -47,7 +53,13 @@ export const GRAMMAR_RULES: readonly GrammarRule[] = [
  * no payee, a word for what a payment is for); or, once no rule has read
  * it, a question about what something is, opening "what is", "what's",
  * "whats" or "what are" (isQuestionAboutWhat, ENG-749): "what is my
- * balance" stays a read. Undefined is words no rule reads. Only a miss may
+ * balance" stays a read; or, once no rule has read it, an ask for a
+ * feature outside the model tier's five tools (ENG-753): a conversion
+ * ("swap 0.01 usd to bitcoin", "change my dollars to bitcoin";
+ * asksConversion) or the contacts as a list ("show my contacts";
+ * asksContacts), which the model could only answer with a call for
+ * another ask. "What is the exchange rate" stays a price and "send bob 5
+ * for swap meet" a send. Undefined is words no rule reads. Only a miss may
  * go to a later tier (the on-device model): a refusal is the v1 boundary
  * (spec §7.2), which no tier reads past.
  */
@@ -67,8 +79,18 @@ export const readGrammar = (
   }
   // A question about what something is ("what is lightning") that no rule
   // read: about the app or the world, as a "how" question is. Asked only
-  // now, since "what is my balance" and "what's the price" are reads.
-  return isQuestionAboutWhat(tokens) ? REFUSED : undefined
+  // now, since "what is my balance" and "what's the price" are reads. So
+  // are a conversion and the contacts list (ENG-753): "what is the
+  // exchange rate" is a price, "send bob 5 for swap meet" a send.
+  return isQuestionAboutWhat(tokens) ||
+    asksConversion(tokens) ||
+    asksContacts(tokens) ||
+    asksCashout(tokens) ||
+    asksCardTopUp(tokens) ||
+    asksSettings(tokens) ||
+    asksPriceTrend(tokens)
+    ? REFUSED
+    : undefined
 }
 
 /** What the grammar makes of one utterance, read on its own: a refusal is no match. */

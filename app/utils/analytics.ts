@@ -277,7 +277,10 @@ export type AssistantEventOutcome =
  * with (ENG-751): the router's pre-check, the grounding check, or one of
  * its guards: a send to one payee for an ask about more than one person
  * (groupSend), a history read for an ask that names a date (timeFilter), or
- * one whose search the person never asked for (ungroundedFilter).
+ * one whose search the person never asked for (ungroundedFilter). Or, on
+ * the event of a call the model tier passed, the argument a guard dropped
+ * from it, which is not a refusal (ENG-753): a price read's currency that
+ * an ask naming no currency never gave (currencyDropped).
  */
 export type AssistantModelRefusal =
   | "precheck"
@@ -285,6 +288,7 @@ export type AssistantModelRefusal =
   | "groupSend"
   | "timeFilter"
   | "ungroundedFilter"
+  | "currencyDropped"
 
 /** The parameters of one `assistant_event`. */
 export type AssistantEventParams = {
@@ -311,7 +315,9 @@ export type AssistantEventParams = {
   onDeviceModelAvailable: boolean
   /**
    * Why the model tier refused the call the model answered with (ENG-751),
-   * on that utterance's rejected event; absent on every other event.
+   * on that utterance's rejected event; or the argument it dropped from a
+   * call it passed (currencyDropped, ENG-753), on that call's own event;
+   * absent on every other event.
    */
   onDeviceModelReason?: AssistantModelRefusal
 }

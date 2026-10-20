@@ -609,4 +609,40 @@ export const TUNING: readonly CorpusEntry[] = [
   jm("wah mi get yesterday", "miss"),
   jm("how much mi spen las month", "miss"),
   jm("wah di biggest payment mi get", "miss"),
+  // Chat forms of "what" (ENG-753): "wat", "wut", "wats" and "wuts" fold
+  // into it (folds.ts), so each reads as the same ask with "what" does.
+  jm("wat di bitcoin price", price()),
+  jm("wat is di bitcoin price", price()),
+  jm("wat di bitcoin rate", price()),
+  jm("wat mi balance", balances()),
+  en("USD", "wat is the bitcoin price", price()),
+  en("USD", "wats the rate", price()),
+  en("USD", "wut is my balance", balances()),
+  en("JMD", "wats my balance", balances()),
+  // A conversion (ENG-753): no tool of the model tier's five serves one,
+  // so the grammar refuses it before the model is asked (asksConversion).
+  en("USD", "swap 0.01 usd to bitcoin", "miss"),
+  en("USD", "convert my bitcoin to usd", "miss"),
+  en("USD", "exchange 20 usd for btc", "miss"),
+  en("USD", "change my dollars to bitcoin", "miss"),
+  en("USD", "can i swap usd to btc", "miss"),
+  jm("change mi dolla dem to bitcoin", "miss"),
+  jm("swap mi usd fi bitcoin", "miss"),
+  jm("mek mi swap to bitcoin", "miss"),
+  // The contacts as a list (ENG-753): no intent reads them, so the grammar
+  // refuses the ask before the model is asked (asksContacts).
+  en("USD", "show my contacts", "miss"),
+  en("JMD", "who is in my contacts", "miss"),
+  en("USD", "open my address book", "miss"),
+  en("USD", "show my contact list", "miss"),
+  en("JMD", "list my contacts", "miss"),
+  jm("show mi contacts", "miss"),
+  jm("wah contacts mi have", "miss"),
+  // Near-misses (ENG-753): a rule reads each, a conversion's or a price's
+  // word included, so none is refused.
+  jm("wah di bitcoin rate", price()),
+  en("USD", "what is the exchange rate", price()),
+  en("USD", "bitcoin exchange rate", price()),
+  en("USD", "send bob 5 for lunch", send("bob", "5", { memo: "lunch" })),
+  en("USD", "send bob 5 for swap meet", send("bob", "5", { memo: "swap meet" })),
 ]

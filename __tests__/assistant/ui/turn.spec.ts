@@ -26,7 +26,7 @@ import {
 } from "@app/assistant/ui/turn"
 import { toWalletAmount } from "@app/types/amounts"
 import { makeAction } from "../executor-harness"
-import { btcPayment, fakeModelAdapter, graphqlTx, modelCall } from "../fakes"
+import { btcPayment, fakeModelAdapter, graphqlTx, modelCall, USD_PRICE } from "../fakes"
 import { CASH_WALLETS, env, fakeRuntime } from "./thread-harness"
 
 // One turn's pieces (app/assistant/ui/turn.ts): which calls need the network,
@@ -493,6 +493,38 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ])
   })
 
+  it("runs a price read without the currency no word named, and its event says the currency was dropped (ENG-753)", async () => {
+    // The dogfood answer: BTC for a price the ask quotes in no currency.
+    const utterance = "how di bitcoin price a look"
+    expect(matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" })).toBe(
+      undefined,
+    )
+    const { runtime, runTool, graphql, toolEvents } = withModel(
+      modelCall({ intent: "getPrice", args: { currency: "BTC" } }),
+    )
+    graphql.realtimePrice.mockResolvedValue(USD_PRICE)
+
+    const entries = await answerUtterance(runtime, utterance, env(ON))
+
+    const [routed, deps] = runTool.mock.calls[0]
+    expect(routed).toEqual({ intent: "getPrice", args: {} })
+    expect(deps.onDeviceModelReason).toBe("currencyDropped")
+    // The display currency's price, as the grammar's read of a plain ask.
+    expect(graphql.realtimePrice).toHaveBeenCalledWith("USD")
+    expect(entries[0]).toMatchObject({ kind: "price" })
+    // A passed call, not a refusal: answered, with the drop on its event.
+    expect(toolEvents()).toEqual([
+      {
+        intent: "getPrice",
+        tier: "read",
+        outcome: "answered",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+        onDeviceModelReason: "currencyDropped",
+      },
+    ])
+  })
+
   it("answers the model's prepare offline with the offline reply, and runs nothing", async () => {
     const { runtime, runTool } = withModel(
       modelCall({ intent: "prepareSend", args: { payee: "bob", amount: "5" } }),
@@ -593,37 +625,105 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ])
   })
 
-  it('answers "convert 20 dollars to btc" and "withdraw $50" as misses, whatever the model calls them (ENG-749)', async () => {
-    // What the macOS model answered for them (ENG-690 proxy run): intents
-    // outside the model tier's five, which the pre-check refuses.
+  it('answers "withdraw $50" as a refusal before the model, whatever the model calls it (ENG-749, ENG-753)', async () => {
+    // What the macOS model answered for it (ENG-690 proxy run): an intent
+    // outside the model tier's five, which the pre-check refuses. Since
+    // ENG-753 the grammar refuses the ask before the model is asked at all
+    // (asksCashout: a cashout is not shipped, and the model answered this
+    // one with a send to a payee it invented); the pre-check's refusal of
+    // prepareConversion is model-tier.spec.ts's.
     const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
+      ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
+    ]
+    for (const [utterance, call] of answers) {
+      // Refused by the grammar (asksCashout): the model is never asked.
+      expect(
+        matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" }),
+      ).toBe(undefined)
+      const { runtime, modelAdapter, runTool } = withModel(modelCall(call))
+      const refused = await answerUtterance(runtime, utterance, env(ON))
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
+      expect(runTool).not.toHaveBeenCalled()
+      expect(refused).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    }
+  })
+
+  it("asks the model on a plain miss, which a refused feature never is (ENG-753)", async () => {
+    // "convert 20 dollars to btc" was the plain miss that reached the model
+    // (ENG-749); since ENG-753 the grammar refuses a conversion before the
+    // model is asked. A miss outside the refused features still reaches it.
+    const { runtime, modelAdapter, runTool, toolEvents } = withModel(
+      modelCall({
+        intent: "prepareConversion",
+        args: { from: "USD", to: "BTC", amount: "20" },
+      }),
+    )
+    // "hook bob up with 5 dollars" is the plain miss the ENG-749 tests use.
+    const entries = await answerUtterance(runtime, "hook bob up with 5 dollars", env(ON))
+    expect(
+      matchGrammar("hook bob up with 5 dollars", {
+        displayCurrency: "USD",
+        displaySymbol: "$",
+      }),
+    ).toBe(undefined)
+    expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+    expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    expect(runTool).not.toHaveBeenCalled()
+    expect(toolEvents()).toEqual([
+      {
+        intent: "prepareConversion",
+        tier: "action",
+        outcome: "rejected",
+        latencyMs: 0,
+        onDeviceModelAvailable: true,
+        onDeviceModelReason: "precheck",
+      },
+    ])
+  })
+
+  it("refuses a conversion or a contacts ask before the model, with the miss reply and no model call (ENG-753)", async () => {
+    // What the macOS model answered for the dogfood asks: a send for a swap
+    // and a history search for the contacts, each with words the person
+    // never typed. Neither reaches the model now.
+    const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
+      [
+        "swap 0.01 usd to bitcoin",
+        {
+          intent: "prepareSend",
+          args: {
+            amount: "0.01",
+            memo: "test",
+            currency: "USD",
+            payee: "user@example.com",
+            sourceWallet: "USD",
+          },
+        },
+      ],
       [
         "convert 20 dollars to btc",
         { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
       ],
-      ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
+      [
+        "show my contacts",
+        { intent: "getTransactions", args: { query: "John Doe", direction: "RECEIVE" } },
+      ],
     ]
     for (const [utterance, call] of answers) {
-      // A plain miss, so the shipped order asks the model.
-      expect(
-        matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" }),
-      ).toBe(undefined)
       const { runtime, modelAdapter, runTool, toolEvents } = withModel(modelCall(call))
 
       const entries = await answerUtterance(runtime, utterance, env(ON))
 
-      expect(modelAdapter.decide).toHaveBeenCalledTimes(1)
+      expect(modelAdapter.decide).not.toHaveBeenCalled()
       expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
       expect(runTool).not.toHaveBeenCalled()
-      // Refused by the checks: the model's rejection rate, its intent named.
+      // The grammar's refusal: no model answered, so no model's flag.
       expect(toolEvents()).toEqual([
         {
-          intent: call.intent,
-          tier: "action",
+          intent: "unknown",
+          tier: "none",
           outcome: "rejected",
           latencyMs: 0,
-          onDeviceModelAvailable: true,
-          onDeviceModelReason: "precheck",
+          onDeviceModelAvailable: false,
         },
       ])
     }
