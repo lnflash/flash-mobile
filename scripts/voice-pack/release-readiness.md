@@ -184,3 +184,151 @@ Heart fixture. It completed without native error. This validates the status
 interval correction, not an improvement in acoustic onset: the full Debug app
 was starting up, so do not compare its cold timings to isolated Release engine
 measurements. Manual listening and full-app Release measurements remain open.
+
+
+## Simulator follow-up — 2026-10-21
+
+Based on merged main `126c96f4c`. Apple M5 host, 24 GiB RAM; Android 15
+ARM64 emulator with 2 virtual CPUs, repeated with 4. The emulator raised the
+requested 1.5 GB RAM to 2.5 GB, so this is not a genuine 1.5 GB-device test.
+Only generic fixtures were recorded. The user signed in directly; no credentials,
+wallet details or conversation contents were collected. Physical phones and the
+provisioner's Metro connections were preserved.
+
+The standalone Release native probe completed 27 renders across three engine
+lifetimes: first PCM 2.04–3.09 seconds, render/audio ratio 0.473–0.501, lifetime
+peak RSS 336,672 KiB, final post-disposal RSS 111,304 KiB. Cancellation joined
+within 5.4 ms. The native pronunciation/G2P/all-voices/cancellation check passed.
+The actual Android downloader installed the public 102,466,705-byte pack in
+16,685 ms including verification.
+
+On the signed-in Debug Ask Flash screen, a generic suggested-topic question sent
+through the actual input/send handlers produced an answer in 733 ms. Invoking its
+Listen handler queued the first audio at 13,615 ms from Send (~12.9 seconds from
+Listen). Separate three-voice playback runs took 10.5–13.1 seconds to start with
+2 CPUs and 10.0–12.8 seconds with 4 CPUs; a subsequent warm 4-CPU run took 2.06
+seconds. Increasing cores did not consistently resolve the variation. Matching
+packaged ORT binaries and optimized native compilation were checked; the cause
+is unresolved. These Debug timings are not Release or acoustic measurements.
+
+During the 4-CPU three-voice run, JS frame-callback median was ~16.6 ms and P95
+17.8–18.1 ms, with one 68 ms outlier. The 2-CPU run had one 411 ms outlier.
+Frame callbacks are a responsiveness proxy, not a complete touch/render benchmark.
+Full-app PSS rose from 636,743 to 786,571 KiB in the initial 2-CPU probe; simulated
+RUNNING_LOW pressure canceled inference and reduced it to 677,427 KiB. Subsequent
+playback recovered. This single pressure test does not establish leak freedom.
+
+A real regression was found: replies shorter than the two-second AudioTrack
+streaming threshold never began consuming frames and waited for the watchdog.
+Android 12+ now requests a one-frame start threshold. Older versions receive
+bounded silent padding to prime the stream, while completion counts only spoken
+frames and discards the padding. Cancellation still guards each small write.
+Six JVM regression cases cover short/long clips, partial writes, cancellation and
+write failures. All 23 JVM tests pass; Debug ARM64/x86_64 builds and their packaged
+16 KB ELF alignment checks pass.
+
+The isolated `playback-check` APK uses the compiled production PCM writer and real,
+muted AudioTrack without Flash data, network or a model. Android 10/API 29 and
+Android 15/API 35 both completed 1-frame, 33,000-frame and 72,000-frame clips.
+The 33,000-frame clip completed in 1,395/1,391 ms respectively. Legacy priming
+queued 48,000 frames but stopped at the original audio end. This validates frame
+consumption, not listening quality. The Android 10 AVD's stock 48 MB Java heap
+failed full Flash Debug startup; no full-app performance claim is made for it.
+
+Reproduce the isolated regression after `:app:compileDebugKotlin`:
+`python3 scripts/voice-pack/playback-check/build.py --output /tmp/playback-check.apk`.
+Install on an explicitly selected emulator and launch
+`com.lnflash.voiceplayercheck/com.lnflash.assistant.PlaybackCheckActivity`;
+read `files/playback-check.json` with `run-as com.lnflash.voiceplayercheck`.
+The builder generates a separate public test key, never Flash's signing key.
+
+Release gates remain open: consistent full-app Release audio onset, real
+lower-memory Android hardware, actual listening/first-word/long-answer checks,
+offline acceptance, sustained battery/thermal behavior and iOS public downloader.
+Release voice-download configuration remains disabled.
+
+
+### Full-app Release emulator follow-up
+
+`emulator-release-measurements.json` records a non-debuggable Release ARM64 build
+with bundled Hermes JS (no Metro or developer support). A separate local checkout
+added fixed-fixture timing/file-output instrumentation, enabled only the local
+assistant flags and navigated the existing signed-in account to Ask Flash. Store
+signing and release feature configuration were not used or changed. The native
+bridge played Heart, Michael and Emma twice; all six completed without errors.
+
+Activity launch (`am start -W`) was 1,633 ms; this does not mean the entire screen
+was ready. First queued audio ranged 7,417–13,824 ms. JS frame-callback medians
+were ~16.6–16.7 ms, P95 17.7–17.9 ms; one 56 ms outlier. One during-playback
+memory sample was 535,363 KiB PSS / 663,772 KiB RSS. The emulator had host audio
+disabled, so this measures real AudioTrack frame consumption, not acoustic onset
+or listening quality. These are instrumented Release measurements, not a signed
+store artifact or a complete controller/microphone acceptance test.
+
+Debug overhead therefore does not explain the delay. A separate 15-second,
+99 Hz CPU-clock/frame-pointer profile collected 1,016 samples without loss;
+91.93% were in the speech worker's ORT library. A separate ORT diagnostic trace
+placed most kernel time in CPU-provider ConvInteger operations. Neither diagnostic
+is used as the baseline latency measurement.
+
+Crucially, a contemporaneous standalone welcome-phrase probe took 2.07–2.35 s,
+while its freshly recompiled, SHA-256-identical executable later took 10.66–12.10 s
+on the same emulator, with the same library and fixture. The variation therefore
+also exists outside Flash and cannot be assigned solely to app overhead. No cause
+or engine optimization is established by these runs. Do not treat the earlier
+2–3 second emulator figures as a stable performance expectation.
+
+The exact prior Debug APK was saved and restored without uninstalling or clearing
+data. The local instrumented checkout is not a distribution build. All existing
+physical-device/provisioner connections and Metro processes were preserved.
+Consistent responsiveness is still an open release gate; next useful verification
+is a borrowed or remote physical Android device, rather than buying a device or
+changing the runtime based only on these variable emulator timings.
+
+
+### Scheduling comparison and offline Release acceptance
+
+The desktop emulator process was repeatedly observed at macOS scheduling priority
+4. Android battery saver and device idle were off. Clearing Darwin background
+policy with `taskpolicy -B` did not restore consistent timings. Restarting the
+same AVD headlessly kept macOS priority at 31, with the same four virtual CPUs,
+2.5 GB RAM, stored account and downloaded pack. The local Release build retained
+bundled JS and developer support off, with the same fixture and production speech
+engine; the temporary ORT profiling change was removed before measurement.
+
+All six playbacks (three voices, twice) then started in 2,122–2,557 ms, with no
+errors and no frame-callback intervals over 50 ms. A second cold app launch with
+airplane mode on, Wi-Fi disabled and Android reporting **no active default
+network** completed all six in 2,174–2,609 ms, with no errors and maximum frame
+interval 28.1 ms. The verified pack was already installed; this does not claim
+that downloading works offline. Cold activity launch was 523/724 ms online/offline,
+respectively, distinct from full screen readiness. Detailed counters are appended
+to `emulator-release-measurements.json`.
+
+This materially narrows the earlier Release timing concern: the desktop emulator
+scheduling/UI environment contributes to the multi-second variation. Headless mode
+and a reboot changed together, so App Nap is a plausible explanation, not a
+uniquely established cause. A similar priority-4/App Nap symptom is reported in
+[Google's emulator tracker](https://issuetracker.google.com/issues/562546399),
+for a different emulator version; the locally installed version is 37.1.11.
+Do not extrapolate these Apple M5 emulator timings to an inexpensive Android phone.
+No emulator CPU policy or model/runtime setting was added to Flash.
+
+The original desktop AVD and Debug APK were restored, preserving the signed-in
+account; airplane mode/Wi-Fi and the emulator's adb privilege level were restored.
+No physical phone or provisioner connection was modified. The short-clip fix is
+ready for review; remaining release gates concern listening quality, real-device
+full-app behavior, sustained battery/thermal measurements and iOS public download
+acceptance. A device purchase is not required to continue development.
+
+
+After restoring the visible emulator, activating its window through
+`NSRunningApplication` raised its observed macOS scheduling priority to 47.
+The same standalone binary again generated the welcome fixture in 2.06–2.34 s
+across three voices. The restored signed-in Debug Ask Flash screen queued Heart
+at 2,582 ms and completed at 6,823 ms. This provides an additional foreground
+confirmation without changing any persistent macOS preference. The documented
+App Nap hypothesis remains narrower than claiming a confirmed emulator defect.
+Android initially failed to scan the restored Debug APK on reboot; a full push
+installation (`adb install --no-incremental --no-streaming -r`) restored it while
+retaining the existing account and app data. No uninstall or data clear was used.

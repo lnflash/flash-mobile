@@ -1,0 +1,487 @@
+{
+  "date": "2026-10-21",
+  "baseCommit": "126c96f4c717fb1d5ee6735a767bdfc8f79e8469",
+  "configuration": {
+    "host": "Apple M5, 24 GiB",
+    "guest": "Android 15 API 35 ARM64",
+    "virtualCpus": 4,
+    "ramKiB": 2531992,
+    "build": "Release, non-debuggable, bundled Hermes JS; local fixed-fixture instrumentation; debug signed",
+    "audio": "emulator launched with no host audio; AudioTrack consumes frames; onset is first queued block, not acoustic",
+    "emulatorVersion": "37.1.11.0 (15917651)"
+  },
+  "release": {
+    "build": "release-local-instrumented",
+    "dev": false,
+    "phase": "complete",
+    "voices": [
+      {
+        "index": 0,
+        "voice": "af_heart",
+        "events": [
+          {
+            "type": "started",
+            "elapsedMs": 13824
+          },
+          {
+            "type": "end",
+            "elapsedMs": 18026
+          }
+        ],
+        "ackMs": 36,
+        "frames": {
+          "callbacks": 1078,
+          "medianMs": 16.660582998767495,
+          "p95Ms": 17.802332999184728,
+          "maxMs": 21.052500000223517,
+          "over50Ms": 0
+        }
+      },
+      {
+        "index": 1,
+        "voice": "am_michael",
+        "events": [
+          {
+            "type": "started",
+            "elapsedMs": 12274
+          },
+          {
+            "type": "end",
+            "elapsedMs": 17058
+          }
+        ],
+        "ackMs": 22,
+        "frames": {
+          "callbacks": 1020,
+          "medianMs": 16.639832999557257,
+          "p95Ms": 17.814292000606656,
+          "maxMs": 56.06141700036824,
+          "over50Ms": 1
+        }
+      },
+      {
+        "index": 2,
+        "voice": "bf_emma",
+        "events": [
+          {
+            "type": "started",
+            "elapsedMs": 11430
+          },
+          {
+            "type": "end",
+            "elapsedMs": 15716
+          }
+        ],
+        "ackMs": 27,
+        "frames": {
+          "callbacks": 940,
+          "medianMs": 16.648708000779152,
+          "p95Ms": 17.682291999459267,
+          "maxMs": 20.59616700001061,
+          "over50Ms": 0
+        }
+      },
+      {
+        "index": 3,
+        "voice": "af_heart",
+        "events": [
+          {
+            "type": "started",
+            "elapsedMs": 7417
+          },
+          {
+            "type": "end",
+            "elapsedMs": 11608
+          }
+        ],
+        "ackMs": 32,
+        "frames": {
+          "callbacks": 692,
+          "medianMs": 16.690541999414563,
+          "p95Ms": 17.911957999691367,
+          "maxMs": 45.32975000143051,
+          "over50Ms": 0
+        }
+      },
+      {
+        "index": 4,
+        "voice": "am_michael",
+        "events": [
+          {
+            "type": "started",
+            "elapsedMs": 11084
+          },
+          {
+            "type": "end",
+            "elapsedMs": 15839
+          }
+        ],
+        "ackMs": 33,
+        "frames": {
+          "callbacks": 947,
+          "medianMs": 16.66050000116229,
+          "p95Ms": 17.928083999082446,
+          "maxMs": 24.797999998554587,
+          "over50Ms": 0
+        }
+      },
+      {
+        "index": 5,
+        "voice": "bf_emma",
+        "events": [
+          {
+            "type": "started",
+            "elapsedMs": 8656
+          },
+          {
+            "type": "end",
+            "elapsedMs": 12942
+          }
+        ],
+        "ackMs": 16,
+        "frames": {
+          "callbacks": 774,
+          "medianMs": 16.654625000432134,
+          "p95Ms": 17.86166699975729,
+          "maxMs": 32.48562500067055,
+          "over50Ms": 0
+        }
+      }
+    ],
+    "errors": [],
+    "packReady": true,
+    "appActive": true
+  },
+  "activityColdLaunchMs": 1633,
+  "memorySampleDuringPlayback": {
+    "totalPssKiB": 535363,
+    "totalRssKiB": 663772
+  },
+  "standaloneComparison": [
+    {
+      "run": "release-comparison-engine.ndjson",
+      "binarySha256": "faf0c1d3ec0de77f51af0d3189d187f48abad876b162fea0d7b3b08cafeaaba9",
+      "renders": [
+        {
+          "audioMs": 4200.0,
+          "chunks": 1,
+          "cpuMs": 2042.817,
+          "cycle": 0,
+          "firstPcmMs": 2068.328584,
+          "peakRssKiB": 255436,
+          "phase": "render",
+          "phraseId": 0,
+          "realTimeFactor": 0.4924619645238095,
+          "round": 0,
+          "rssKiB": 183924,
+          "voice": "af_heart",
+          "wallMs": 2068.340251
+        },
+        {
+          "audioMs": 4800.0,
+          "chunks": 1,
+          "cpuMs": 2325.251,
+          "cycle": 0,
+          "firstPcmMs": 2345.790417,
+          "peakRssKiB": 272056,
+          "phase": "render",
+          "phraseId": 0,
+          "realTimeFactor": 0.48870813375,
+          "round": 0,
+          "rssKiB": 184168,
+          "voice": "am_michael",
+          "wallMs": 2345.799042
+        },
+        {
+          "audioMs": 4325.0,
+          "chunks": 1,
+          "cpuMs": 2112.742,
+          "cycle": 0,
+          "firstPcmMs": 2131.764417,
+          "peakRssKiB": 273940,
+          "phase": "render",
+          "phraseId": 0,
+          "realTimeFactor": 0.49289538543352607,
+          "round": 0,
+          "rssKiB": 188304,
+          "voice": "bf_emma",
+          "wallMs": 2131.772542
+        }
+      ]
+    },
+    {
+      "run": "fresh-current-engine.ndjson",
+      "binarySha256": "faf0c1d3ec0de77f51af0d3189d187f48abad876b162fea0d7b3b08cafeaaba9",
+      "renders": [
+        {
+          "audioMs": 4200.0,
+          "chunks": 1,
+          "cpuMs": 10146.032,
+          "cycle": 0,
+          "firstPcmMs": 10657.878422,
+          "peakRssKiB": 255576,
+          "phase": "render",
+          "phraseId": 0,
+          "realTimeFactor": 2.5375964,
+          "round": 0,
+          "rssKiB": 184260,
+          "voice": "af_heart",
+          "wallMs": 10657.90488
+        },
+        {
+          "audioMs": 4800.0,
+          "chunks": 1,
+          "cpuMs": 11598.625000000002,
+          "cycle": 0,
+          "firstPcmMs": 12102.309589,
+          "peakRssKiB": 272264,
+          "phase": "render",
+          "phraseId": 0,
+          "realTimeFactor": 2.521324124375,
+          "round": 0,
+          "rssKiB": 184396,
+          "voice": "am_michael",
+          "wallMs": 12102.355797
+        },
+        {
+          "audioMs": 4325.0,
+          "chunks": 1,
+          "cpuMs": 10875.268000000004,
+          "cycle": 0,
+          "firstPcmMs": 11248.419047,
+          "peakRssKiB": 274168,
+          "phase": "render",
+          "phraseId": 0,
+          "realTimeFactor": 2.60080033849711,
+          "round": 0,
+          "rssKiB": 188532,
+          "voice": "bf_emma",
+          "wallMs": 11248.461464
+        }
+      ]
+    }
+  ],
+  "cpuProfile": {
+    "durationSeconds": 14.9762,
+    "samples": 1016,
+    "lostSamples": 0,
+    "speechWorkerOrtPercent": 91.93,
+    "callGraph": "frame pointers; no raw stack dump",
+    "note": "Profiling was enabled only for a separate diagnostic run; baseline release timings have no ORT profiling."
+  },
+  "limitations": [
+    "Single emulator, not physical-phone performance or battery testing",
+    "Each Release condition used one pass across three voices twice, not a statistical latency distribution",
+    "Identical standalone binary produced large timing variation; later normal-priority headless and foreground desktop runs were consistently faster",
+    "Local instrumentation navigates to Ask Flash and invokes actual native speech bridge with fixed fixture; no controller text-answer latency or microphone measurement",
+    "The three fixture voices completed with no native errors; no listening-quality claim",
+    "Headless Release online/offline results narrow the earlier uncertainty; they do not uniquely identify App Nap or establish phone acoustic/battery performance."
+  ],
+  "headlessComparison": {
+    "virtualCpus": 4,
+    "ram": "same 2.5 GB AVD; cold reboot without clearing data",
+    "hostSchedulingPriority": 31,
+    "desktopObservedPriority": 4,
+    "networkRestoredAfterTest": true,
+    "runs": [
+      {
+        "offline": false,
+        "activeDefaultNetwork": "connected",
+        "airplaneMode": false,
+        "wifiEnabled": true,
+        "coldActivityLaunchMs": 523,
+        "dev": false,
+        "packReady": true,
+        "errors": [],
+        "voices": [
+          {
+            "voice": "af_heart",
+            "startedMs": 2557,
+            "endMs": 6793,
+            "frameMedianMs": 16.678291999996873,
+            "frameP95Ms": 18.5808340000076,
+            "frameMaxMs": 20.758792000007816,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "am_michael",
+            "startedMs": 2449,
+            "endMs": 7203,
+            "frameMedianMs": 16.669332999998005,
+            "frameP95Ms": 17.816500000000815,
+            "frameMaxMs": 19.21445900000981,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "bf_emma",
+            "startedMs": 2194,
+            "endMs": 6478,
+            "frameMedianMs": 16.666750000003958,
+            "frameP95Ms": 18.051875000004657,
+            "frameMaxMs": 19.696458000005805,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "af_heart",
+            "startedMs": 2122,
+            "endMs": 6284,
+            "frameMedianMs": 16.650250000006054,
+            "frameP95Ms": 18.026874999995925,
+            "frameMaxMs": 20.44366699999955,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "am_michael",
+            "startedMs": 2556,
+            "endMs": 7306,
+            "frameMedianMs": 16.656958999999915,
+            "frameP95Ms": 18.64924999998766,
+            "frameMaxMs": 21.495291999992332,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "bf_emma",
+            "startedMs": 2158,
+            "endMs": 6439,
+            "frameMedianMs": 16.65941700001713,
+            "frameP95Ms": 18.498416999995243,
+            "frameMaxMs": 20.919209000014234,
+            "framesOver50Ms": 0
+          }
+        ]
+      },
+      {
+        "offline": true,
+        "activeDefaultNetwork": "none",
+        "airplaneMode": true,
+        "wifiEnabled": false,
+        "coldActivityLaunchMs": 724,
+        "dev": false,
+        "packReady": true,
+        "errors": [],
+        "voices": [
+          {
+            "voice": "af_heart",
+            "startedMs": 2609,
+            "endMs": 6847,
+            "frameMedianMs": 16.58954100002302,
+            "frameP95Ms": 17.776957999973092,
+            "frameMaxMs": 28.102375000016764,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "am_michael",
+            "startedMs": 2496,
+            "endMs": 7269,
+            "frameMedianMs": 16.584499999997206,
+            "frameP95Ms": 17.74070799999754,
+            "frameMaxMs": 20.143332999985432,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "bf_emma",
+            "startedMs": 2252,
+            "endMs": 6515,
+            "frameMedianMs": 16.525041000015335,
+            "frameP95Ms": 17.76066699999501,
+            "frameMaxMs": 21.47675000000163,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "af_heart",
+            "startedMs": 2174,
+            "endMs": 6338,
+            "frameMedianMs": 16.57187499999418,
+            "frameP95Ms": 17.64979199998197,
+            "frameMaxMs": 20.250708000006853,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "am_michael",
+            "startedMs": 2427,
+            "endMs": 7201,
+            "frameMedianMs": 16.556042000011075,
+            "frameP95Ms": 17.78366700001061,
+            "frameMaxMs": 21.96833400000469,
+            "framesOver50Ms": 0
+          },
+          {
+            "voice": "bf_emma",
+            "startedMs": 2223,
+            "endMs": 6504,
+            "frameMedianMs": 16.51283400002285,
+            "frameP95Ms": 17.762707999994745,
+            "frameMaxMs": 18.91425000000163,
+            "framesOver50Ms": 0
+          }
+        ]
+      }
+    ],
+    "interpretation": "Desktop scheduling/UI environment contributes substantially. Headless mode and reboot were changed together, so App Nap is a hypothesis, not a uniquely proven cause."
+  },
+  "desktopForegroundConfirmation": {
+    "hostSchedulingPriority": 47,
+    "action": "Activate the existing emulator window using NSRunningApplication; no persistent macOS setting changed",
+    "standaloneRenders": [
+      {
+        "audioMs": 4200.0,
+        "chunks": 1,
+        "cpuMs": 2040.9130000000002,
+        "cycle": 0,
+        "firstPcmMs": 2064.975751,
+        "peakRssKiB": 256072,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 0.4916624804761905,
+        "round": 0,
+        "rssKiB": 184476,
+        "voice": "af_heart",
+        "wallMs": 2064.982418
+      },
+      {
+        "audioMs": 4800.0,
+        "chunks": 1,
+        "cpuMs": 2322.526,
+        "cycle": 0,
+        "firstPcmMs": 2343.783709,
+        "peakRssKiB": 272608,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 0.48829000875,
+        "round": 0,
+        "rssKiB": 184720,
+        "voice": "am_michael",
+        "wallMs": 2343.792042
+      },
+      {
+        "audioMs": 4325.0,
+        "chunks": 1,
+        "cpuMs": 2097.3630000000003,
+        "cycle": 0,
+        "firstPcmMs": 2121.420376,
+        "peakRssKiB": 274492,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 0.4905035359537572,
+        "round": 0,
+        "rssKiB": 188856,
+        "voice": "bf_emma",
+        "wallMs": 2121.427793
+      }
+    ],
+    "restoredDebugApp": {
+      "ackMs": 115,
+      "events": [
+        {
+          "elapsedMs": 2582,
+          "type": "started"
+        },
+        {
+          "elapsedMs": 6823,
+          "type": "end"
+        }
+      ],
+      "startedAt": 1792593154014
+    }
+  }
+}
