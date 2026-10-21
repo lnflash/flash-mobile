@@ -31,6 +31,7 @@ Aggrement = "Aggrement"
 Governement = "Governement"
 
 [files]
+# Keep pinned upstream speech/JSON headers byte-for-byte; their API names are not app copy.
 # The assistant grammar's patois folds and phrasing corpora (ENG-689) are
 # Jamaican patois and deliberate misspellings, not misspelled English.
-extend-exclude = ["*.svg", "app/i18n/raw-i18n", "earns-utils.test.ts", "*.plist", "*.pbxproj", "Appfile", "google-services.json", "patches", "ci/tasks/*", "logcat.txt", "*.storyboard", "app/assistant/grammar/folds.ts", "__tests__/assistant/grammar/corpus", "__tests__/assistant/grammar/__snapshots__"]
+extend-exclude = ["native/flash-speech/third_party", "*.svg", "app/i18n/raw-i18n", "earns-utils.test.ts", "*.plist", "*.pbxproj", "Appfile", "google-services.json", "patches", "ci/tasks/*", "logcat.txt", "*.storyboard", "app/assistant/grammar/folds.ts", "__tests__/assistant/grammar/corpus", "__tests__/assistant/grammar/__snapshots__"]
