@@ -63,6 +63,9 @@ jobs:
       - name: Refuse ASSISTANT_DEV_LINK in .env
         run: bash scripts/ci/check-store-env.sh .env
 
+      - name: Configure verified production voice source
+        run: python3 scripts/ci/configure-voice-pack.py .env
+
       - name: Create GoogleService-Info.plist from secrets
         run: echo '${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}' > ios/LNFlash/GoogleService-Info.plist
 

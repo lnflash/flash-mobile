@@ -21,9 +21,9 @@ propagation. Generic Python urllib User-Agent receives HTTP 403; the named
 `FlashVoicePackVerifier/1.0` agent and curl pass. Real URLSession/OkHttp production
 endpoint checks remain required; do not weaken site-wide security rules.
 
-`FLASH_VOICE_PACK_BASE_URL` remains unset in release configuration. When the gates
-below pass, wire the exact verified URL into both platforms' store build settings.
-Do not change the shared DOT_ENV secret blindly or trigger a store release.
+At this measurement, `FLASH_VOICE_PACK_BASE_URL` was unset in release
+configuration. The later production build configuration section documents the
+subsequent workflow change. No store release was triggered here.
 
 ## Android app size
 
@@ -365,8 +365,28 @@ synthesis acceptance, not a network-blocked full-Flash or acoustic playback test
 Do not extrapolate these host timings to iPhone battery/thermal performance.
 
 The native production-host transport/integrity gap is now covered on both Android
-and iOS. Production `FLASH_VOICE_PACK_BASE_URL` remains unset. Full-app listening,
+and iOS. At this checkpoint, production `FLASH_VOICE_PACK_BASE_URL` was still
+unset. Full-app listening,
 true disconnected iOS acceptance, sustained battery/thermal behavior and store
 size/distribution measurements remain separate release work. Existing Android
 emulator, physical devices, Flash account data and Metro/provisioner connections
 were not modified by this follow-up.
+
+## Production build configuration — 2026-10-21
+
+The Android, iOS and iOS Alt deploy workflows now run
+`scripts/ci/configure-voice-pack.py` after the `ASSISTANT_DEV_LINK` guard. It
+sets the verified `https://voices.flashapp.me/kokoro-en-v1` source in the build
+`.env`, replacing any older value without changing the shared `DOT_ENV` secret.
+The script checks the compiled manifest version and fails the build if it no
+longer matches. This wiring takes effect only in artifacts built after the
+change is merged and deployed; existing store artifacts still need verification.
+
+Firebase Remote Config remains a separate rollout gate. In project
+`avid-ceiling-390418`, publish Boolean `true` for `assistantEnabled`,
+`assistantVoice` and `assistantVoiceReplies` for the intended audience. The
+current fetched values on the test emulator were false. This session has no
+Firebase administrator credentials, so the console publication must be done
+by an authorized project member. Experimental model and server flags stay as
+they are. Store-mode full-app acceptance and hardware measurements listed above
+remain before release tags.
