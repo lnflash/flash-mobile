@@ -422,5 +422,5 @@ it with airplane mode on. The expanded local `.app` was 131,726,858 bytes;
 this is not an IPA or App Store download-size estimate.
 
 Store-distributed artifacts, screen-reader behavior, and sustained unplugged
-battery/thermal measurements remain open before release tags. The provisioner
-installation and existing Metro processes were preserved.
+battery/thermal measurements remain open before production rollout. The
+provisioner installation and existing Metro processes were preserved.
