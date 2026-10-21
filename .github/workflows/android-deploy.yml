@@ -58,6 +58,9 @@ jobs:
       - name: Refuse ASSISTANT_DEV_LINK in .env
         run: bash scripts/ci/check-store-env.sh .env
 
+      - name: Configure verified production voice source
+        run: python3 scripts/ci/configure-voice-pack.py .env
+
       - name: Create google-services.json from secrets
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}

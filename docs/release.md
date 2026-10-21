@@ -123,12 +123,33 @@ Voice input and spoken replies remain controlled by `assistantVoice` and
 `assistantVoiceReplies`, with defaults off. Automatic replies additionally require
 an account preference. Debug deep links are not a store rollout mechanism.
 
+The Android, iOS and iOS Alt deploy workflows set
+`FLASH_VOICE_PACK_BASE_URL=https://voices.flashapp.me/kokoro-en-v1` after checking
+the store `.env` and before building. The script verifies that this URL matches
+the compiled pack version. It overrides an older URL in the `DOT_ENV` secret,
+so the shared secret needs no edit. For a manual store build, run
+`bash scripts/ci/check-store-env.sh .env` and then
+`python3 scripts/ci/configure-voice-pack.py .env` before bundling or archiving.
+The script changes the local `.env`; keep local development settings separate.
+
+To make Ask Flash available to production users, publish these **Boolean**
+Firebase Remote Config parameters in the app's Firebase project:
+`assistantEnabled=true`, `assistantVoice=true`, and
+`assistantVoiceReplies=true`. In project `avid-ceiling-390418`, use the
+[Remote Config console](https://console.firebase.google.com/project/avid-ceiling-390418/config)
+and select **Publish changes**. Scope the values to the intended audience if
+rolling out in stages; publish after verifying the newly built store artifacts,
+and use app-version conditions if older builds should stay off. Keep the
+experimental server and on-device model flags as they are. No new app build is
+needed to change these flags, but a build made before this URL configuration
+will still lack the verified download source.
+
 Before enabling the three downloaded English voices in a store release:
 
-- Host the six pinned files from `scripts/voice-pack/manifest.json` in an immutable
-  HTTPS directory and set `FLASH_VOICE_PACK_BASE_URL` for that build. This change
-  does not publish a production pack. Without a source, Release hides the download
-  control; installed system speech remains the fallback.
+- Keep the six pinned files from `scripts/voice-pack/manifest.json` available at
+  the immutable HTTPS source above. Verify the source from the final Android and
+  iOS store artifacts. Without it, Release hides the download control; installed
+  system speech remains the fallback.
 - Follow `scripts/voice-pack/README.md` to reproduce and verify all hashes. Keep
   model/audio assets out of the app bundle and repository. All three voices share
   a 102,466,705-byte download. Include the bundled model/runtime/frontend notices.
