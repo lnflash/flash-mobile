@@ -14,7 +14,8 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
   static var base: URL { FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("flash-voices", isDirectory: true) }
   static var root: URL { base.appendingPathComponent(version, isDirectory: true) }
   static var total: Int64 { assets.reduce(0) { $0 + $1.bytes } }
-  static var installed: Bool {
+  static var installed: Bool { installed(at: root, assets: assets) }
+  private static func installed(at root: URL, assets: [Asset]) -> Bool {
     guard FileManager.default.fileExists(atPath: root.appendingPathComponent("ready").path) else { return false }
     for asset in assets {
       let path = root.appendingPathComponent(asset.name).path
@@ -22,12 +23,20 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
     }
     return true
   }
+  private let storageBase: URL
+  private let entries: [Asset]
+  private var storageRoot: URL { storageBase.appendingPathComponent(Self.version, isDirectory: true) }
+  private var byteCount: Int64 { entries.reduce(0) { $0 + $1.bytes } }
+  private var isInstalled: Bool { Self.installed(at: storageRoot, assets: entries) }
   private var backgroundObserver: NSObjectProtocol?
-  override init() {
+  override convenience init() { self.init(base: Self.base, assets: Self.assets) }
+  /// Explicit storage and immutable assets allow isolated native integration checks.
+  init(base: URL, assets: [Asset]) {
+    storageBase = base; entries = assets
     super.init()
     backgroundObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name("UIApplicationDidEnterBackgroundNotification"), object: nil, queue: .main) { [weak self] _ in self?.cancel() }
     // A terminated transfer has no resumable install; only the complete root is usable.
-    if let entries = try? FileManager.default.contentsOfDirectory(at: Self.base, includingPropertiesForKeys: nil) {
+    if let entries = try? FileManager.default.contentsOfDirectory(at: storageBase, includingPropertiesForKeys: nil) {
       let stale = entries.filter { $0.lastPathComponent.hasPrefix("staging-") }
       DispatchQueue.global(qos: .utility).async { stale.forEach { try? FileManager.default.removeItem(at: $0) } }
     }
@@ -42,7 +51,7 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
   private var received: Int64 = 0
   private var failure = false
   private var completion: ((Bool) -> Void)?
-  func state() -> [String: Any] { ["phase": active != nil ? "downloading" : Self.installed ? "ready" : failure ? "failed" : "missing", "receivedBytes": active != nil ? received : Self.installed ? Self.total : 0, "totalBytes": Self.total] }
+  func state() -> [String: Any] { ["phase": active != nil ? "downloading" : isInstalled ? "ready" : failure ? "failed" : "missing", "receivedBytes": active != nil ? received : isInstalled ? byteCount : 0, "totalBytes": byteCount] }
   private func publish() { update?(state()) }
   func download(_ url: String, done: @escaping (Bool) -> Void) {
     guard active == nil, let remote = URL(string: url), remote.host != nil, remote.query == nil, remote.fragment == nil, remote.user == nil else { done(false); return }
@@ -51,12 +60,12 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
     #else
     guard remote.scheme == "https" else { done(false); return }
     #endif
-    if Self.installed { done(true); return }
+    if isInstalled { done(true); return }
     do {
-      var base = Self.base
+      var base = storageBase
       try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
       let values = try base.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-      guard (values.volumeAvailableCapacityForImportantUsage ?? 0) >= Self.total * 2 else { throw NSError(domain: "SpeechPack", code: 3) }
+      guard (values.volumeAvailableCapacityForImportantUsage ?? 0) >= byteCount * 2 else { throw NSError(domain: "SpeechPack", code: 3) }
       var resource = URLResourceValues(); resource.isExcludedFromBackup = true; try base.setResourceValues(resource)
       let id = UUID(); let temporary = base.appendingPathComponent("staging-" + id.uuidString, isDirectory: true)
       try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
@@ -70,30 +79,30 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
   }
   private func next() {
     guard let id = active, let source = source, let session = session else { return }
-    if index == Self.assets.count {
+    if index == entries.count {
       do {
         guard let temporary = staging else { throw NSError(domain: "SpeechPack", code: 1) }
         try Data(Self.version.utf8).write(to: temporary.appendingPathComponent("ready"), options: .atomic)
-        if FileManager.default.fileExists(atPath: Self.root.path) { try FileManager.default.removeItem(at: Self.root) }
-        try FileManager.default.moveItem(at: temporary, to: Self.root)
+        if FileManager.default.fileExists(atPath: storageRoot.path) { try FileManager.default.removeItem(at: storageRoot) }
+        try FileManager.default.moveItem(at: temporary, to: storageRoot)
         finish(true)
       } catch { finish(false) }
       return
     }
-    let task = session.downloadTask(with: source.appendingPathComponent(Self.assets[index].name))
-    task.taskDescription = id.uuidString + "|" + Self.assets[index].name
+    let task = session.downloadTask(with: source.appendingPathComponent(entries[index].name))
+    task.taskDescription = id.uuidString + "|" + entries[index].name
     task.resume()
   }
   func cancel() { guard active != nil else { return }; finish(false, canceled: true) }
   func remove() throws {
     cancel()
-    if FileManager.default.fileExists(atPath: Self.root.path) { try FileManager.default.removeItem(at: Self.root) }
+    if FileManager.default.fileExists(atPath: storageRoot.path) { try FileManager.default.removeItem(at: storageRoot) }
     failure = false; publish()
   }
   private func finish(_ ok: Bool, canceled: Bool = false) {
     let old = session; let temporary = staging; let done = completion
     active = nil; session = nil; staging = nil; completion = nil; source = nil
-    failure = !ok && !canceled; received = ok ? Self.total : 0
+    failure = !ok && !canceled; received = ok ? byteCount : 0
     old?.invalidateAndCancel()
     if let temporary = temporary { DispatchQueue.global(qos: .utility).async { try? FileManager.default.removeItem(at: temporary) } }
     publish(); done?(ok)
@@ -109,17 +118,17 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
   func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
   func urlSession(_ session: URLSession, downloadTask task: URLSessionDownloadTask, didWriteData: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
     DispatchQueue.main.async { [weak self] in
-      guard let self = self, let active = self.active, self.index < Self.assets.count, task.taskDescription == active.uuidString + "|" + Self.assets[self.index].name else { return }
-      if totalBytesWritten > Self.assets[self.index].bytes || (totalBytesExpectedToWrite > 0 && totalBytesExpectedToWrite != Self.assets[self.index].bytes) { self.finish(false); return }
-      self.received = Self.assets.prefix(self.index).reduce(0) { $0 + $1.bytes } + min(totalBytesWritten, Self.assets[self.index].bytes)
+      guard let self = self, let active = self.active, self.index < self.entries.count, task.taskDescription == active.uuidString + "|" + self.entries[self.index].name else { return }
+      if totalBytesWritten > self.entries[self.index].bytes || (totalBytesExpectedToWrite > 0 && totalBytesExpectedToWrite != self.entries[self.index].bytes) { self.finish(false); return }
+      self.received = self.entries.prefix(self.index).reduce(0) { $0 + $1.bytes } + min(totalBytesWritten, self.entries[self.index].bytes)
       self.publish()
     }
   }
   func urlSession(_ session: URLSession, downloadTask task: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
     var target: URL?; var asset: Asset?; var id: UUID?
     DispatchQueue.main.sync {
-      guard let active = self.active, self.index < Self.assets.count, task.taskDescription == active.uuidString + "|" + Self.assets[self.index].name else { return }
-      id = active; asset = Self.assets[self.index]; target = self.staging?.appendingPathComponent(Self.assets[self.index].name)
+      guard let active = self.active, self.index < self.entries.count, task.taskDescription == active.uuidString + "|" + self.entries[self.index].name else { return }
+      id = active; asset = self.entries[self.index]; target = self.staging?.appendingPathComponent(self.entries[self.index].name)
     }
     guard let destination = target, let entry = asset, let run = id else { return }
     var valid = false
@@ -129,7 +138,7 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
     } catch { valid = false }
     DispatchQueue.main.async { [weak self] in
       guard let self = self, self.active == run else { return }
-      if valid { self.received = Self.assets.prefix(self.index + 1).reduce(0) { $0 + $1.bytes }; self.index += 1; self.publish(); self.next() }
+      if valid { self.received = self.entries.prefix(self.index + 1).reduce(0) { $0 + $1.bytes }; self.index += 1; self.publish(); self.next() }
       else { self.finish(false) }
     }
   }

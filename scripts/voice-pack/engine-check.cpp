@@ -29,6 +29,17 @@ int main(int argc, char **argv) {
             engine.phonemize("zero point zero zero zero five Bitcoin", true));
     require(engine.phonemize("0012", false) ==
             engine.phonemize("zero zero one two", false));
+    for (bool british : {false, true}) {
+      require(engine.phonemize("Your balance is -12.50 US dollars.", british) ==
+              engine.phonemize(
+                  "Your balance is minus twelve point five zero US dollars.",
+                  british));
+      require(
+          engine.phonemize("−2,500 sats", british) ==
+          engine.phonemize("minus two thousand five hundred sats", british));
+      require(engine.phonemize("code-12", british) ==
+              engine.phonemize("code dash twelve", british));
+    }
     require(!engine.phonemize("Gwendolyn", true).empty());
     nlohmann::json frontend;
     std::ifstream(std::string(argv[1]) + "/frontend.json") >> frontend;

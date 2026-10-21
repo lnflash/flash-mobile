@@ -4,6 +4,7 @@
 #include "../third_party/onnxruntime/onnxruntime_cxx_api.h"
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <fstream>
 #include <map>
@@ -115,6 +116,7 @@ std::string normalize(std::string s) {
   replaceAll(s, "—", ",");
   replaceAll(s, "–", ",");
   replaceAll(s, "…", "...");
+  replaceAll(s, "−", "-");
   auto digit = [](char c) { return c >= '0' && c <= '9'; };
   std::string out;
   for (size_t i = 0; i < s.size();) {
@@ -132,9 +134,13 @@ std::string normalize(std::string s) {
         out += " and ";
       else if (c == '$')
         out += " dollars ";
-      else if (c == '-')
-        out += " dash ";
-      else
+      else if (c == '-') {
+        const bool numericSign =
+            i < s.size() && digit(s[i]) &&
+            (i == 1 || std::isspace(static_cast<unsigned char>(s[i - 2])) ||
+             std::string("([{:=,$").find(s[i - 2]) != std::string::npos);
+        out += numericSign ? " minus " : " dash ";
+      } else
         out += c;
       continue;
     }

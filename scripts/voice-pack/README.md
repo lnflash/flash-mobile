@@ -93,3 +93,31 @@ when the installed pack is opened, preserving speed and automatic-reply settings
 The Debug audition entry is removed now that live previews are available.
 The user confirmed delete/fallback, cancel/retry, all three previews and airplane-mode
 suggested-question speech all worked on SuperMax.
+
+## Native installer and Android ABI regression checks
+
+Run `bash scripts/voice-pack/test-ios-pack.sh` on macOS to compile and exercise
+`SpeechPack.swift` itself with Foundation/CryptoKit and a loopback HTTP fixture.
+Only the compiled model-manifest dependency is shimmed; tiny pinned assets and a
+temporary storage root are injected. The harness covers full/partial integrity,
+size/truncation/oversize, redirects/status, cancel/immediate retry, late callbacks,
+background cancellation, reuse/removal and abandoned staging cleanup. It does not
+use the phone, real model files, user storage or external servers.
+
+Android `:app:testDebugUnitTest` includes `SpeechPackStoreTest`, using the actual
+streaming/hash/commit implementation and local HTTP, with injected immutable
+assets and a deterministic main dispatcher. These native checks supplement the
+JS adapter tests, which cannot prove native file/network behavior.
+
+The first-party Android library explicitly links with 16 KB LOAD segment alignment.
+After `:app:assembleDebug`, run:
+
+```sh
+python3 -m unittest discover -s scripts/ci -p test_elf_alignment.py
+python3 scripts/ci/check_elf_alignment.py android/app/build/outputs/apk/debug/app-universal-debug.apk
+```
+
+This validates the packaged arm64/x86_64 speech, ONNX Runtime and shared C++
+libraries. Both the native iOS harness and packaged ELF check run in build CI.
+The shared engine integration harness additionally verifies negative monetary
+amounts are spoken as “minus”; identifier/address hyphens remain “dash”.
