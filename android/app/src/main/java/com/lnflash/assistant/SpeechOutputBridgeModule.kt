@@ -176,25 +176,23 @@ class SpeechOutputBridgeModule(private val context: ReactApplicationContext) :
       if (audio.requestAudioFocus(focusRequest) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) throw IllegalStateException()
       val format = AudioFormat.Builder().setSampleRate(24000).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_FLOAT).build()
       val player = AudioTrack.Builder().setAudioAttributes(attributes).setAudioFormat(format).setBufferSizeInBytes(maxOf(24000 * 4 * 2, AudioTrack.getMinBufferSize(24000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT))).setTransferMode(AudioTrack.MODE_STREAM).build()
-      track = player; player.play()
+      track = player
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) player.setStartThresholdInFrames(1)
+      player.play()
       if (renderer == null) renderer = NeuralRenderer(pack.root.path)
       audio.registerAudioDeviceCallback(deviceCallback, main); routesRegistered = true
-      var written = 0L; var started = false
+      val output = NeuralPcmWriter(
+        write = { pcm, offset, count -> player.write(pcm, offset, count, AudioTrack.WRITE_BLOCKING) },
+        isCurrent = { neuralGeneration.get() == epoch },
+        startThresholdFrames = { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) player.startThresholdInFrames else player.bufferSizeInFrames },
+        onStarted = { main.post { if (current == id && track === player) emit(id, "started") } },
+        onFailure = { main.post { if (current == id && track === player) finish(id, "error") } },
+      )
       renderer!!.render(text, voice, rate.toFloat(), object : NeuralRenderer.Listener {
         override fun chunk(pcm: FloatArray, last: Boolean): Boolean {
-          if (neuralGeneration.get() != epoch) return false
-          var offset = 0
-          while (offset < pcm.size) {
-            if (neuralGeneration.get() != epoch) return false
-            // A whole model chunk may block for seconds while AudioTrack drains.
-            // Announce playback after the first small write, not after that wait.
-            val n = player.write(pcm, offset, minOf(1024, pcm.size - offset), AudioTrack.WRITE_BLOCKING)
-            if (n <= 0) { main.post { if (current == id && track === player) finish(id, "error") }; return false }
-            offset += n; written += n
-            if (!started) { started = true; main.post { if (current == id && track === player) emit(id, "started") } }
-          }
+          if (!output.append(pcm, last)) return false
           if (last) {
-            val frames = written
+            val frames = output.audioFrames
             main.post(object : Runnable { override fun run() {
               if (current != id || track !== player) return
               if (player.playbackHeadPosition.toLong() >= frames) finish(id, "end") else main.postDelayed(this, 20)
