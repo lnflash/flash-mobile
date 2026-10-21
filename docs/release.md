@@ -138,9 +138,11 @@ Firebase Remote Config parameters in the app's Firebase project:
 `assistantVoiceReplies=true`. In project `avid-ceiling-390418`, use the
 [Remote Config console](https://console.firebase.google.com/project/avid-ceiling-390418/config)
 and select **Publish changes**. Scope the values to the intended audience if
-rolling out in stages. Keep the experimental server and on-device model flags
-as they are. No new app build is needed to change these flags, but a build made
-before this URL configuration will still lack the verified download source.
+rolling out in stages; publish after verifying the newly built store artifacts,
+and use app-version conditions if older builds should stay off. Keep the
+experimental server and on-device model flags as they are. No new app build is
+needed to change these flags, but a build made before this URL configuration
+will still lack the verified download source.
 
 Before enabling the three downloaded English voices in a store release:
 
