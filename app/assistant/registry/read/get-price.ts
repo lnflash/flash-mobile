@@ -13,6 +13,8 @@ const run = async (
   ctx: ReadToolCtx,
 ): Promise<ToolResult<PricePayload>> => {
   const price = await ctx.graphql.realtimePrice(currency ?? ctx.displayCurrency)
+  if (price.denominatorCurrency !== (currency ?? ctx.displayCurrency))
+    return { kind: "error", userMessage: "Assistant.toolFailed" }
   return {
     kind: "answer",
     payload: {

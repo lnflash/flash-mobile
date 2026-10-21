@@ -24,8 +24,11 @@ import { ASSISTANT_DEV_LINK } from "@env"
 // made by hand in Xcode, or a bare `./gradlew bundleRelease`, runs no check;
 // docs/release.md says to run it first.
 //
-// It turns on the assistant only, never voice, spoken replies or the server
-// fallback, and it lives in memory: a relaunch forgets it. The navigation
+// Plain links turn on the assistant only. Debug builds may explicitly opt in
+// to native voice with ?on=1&voice=1 and speech output with &replies=1.
+// Even a release build carrying ASSISTANT_DEV_LINK ignores these options.
+// The replies option exposes Listen; automatic reading still needs a user
+// preference. No link enables the server fallback. Overrides live in memory. The navigation
 // container ignores every flash://dev/ link (isDevLink), so the :payment
 // route never sees this one. Like the card bridge's link (useDevCardLinks),
 // turning it on means the e2e flows are driving this build, so it hides
@@ -41,17 +44,45 @@ const linkEnabled = (): boolean =>
   (typeof __DEV__ !== "undefined" && __DEV__ === true) || ASSISTANT_DEV_LINK === "true"
 
 let on = false
+let voiceOn = false
+let repliesOn = false
 const listeners = new Set<() => void>()
 
 /** Whether the override is on. Always false in a build that ignores the link. */
 export const assistantDevOverride = (): boolean => linkEnabled() && on
 
-/** Turn the override on or off. A no-op in a build that ignores the link. */
-export const setAssistantDevOverride = (value: boolean): void => {
-  if (!linkEnabled() || value === on) return
+/** Debug voice is an explicit opt-in, never enabled by a release dev link. */
+export const assistantVoiceDevOverride = (): boolean =>
+  typeof __DEV__ !== "undefined" && __DEV__ === true && on && voiceOn
+
+/** Publish both settings together so a first screen sees one coherent value. */
+export const setAssistantDevOverride = (
+  value: boolean,
+  options: { voice?: boolean; replies?: boolean } = {},
+): void => {
+  if (!linkEnabled()) return
+  const nextVoice =
+    value &&
+    typeof __DEV__ !== "undefined" &&
+    __DEV__ === true &&
+    (options.voice ?? voiceOn)
+  const nextReplies =
+    value &&
+    typeof __DEV__ !== "undefined" &&
+    __DEV__ === true &&
+    (options.replies ?? repliesOn)
+  if (value === on && nextVoice === voiceOn && nextReplies === repliesOn) return
   on = value
+  voiceOn = nextVoice
+  repliesOn = nextReplies
   listeners.forEach((listener) => listener())
 }
+
+export const useAssistantRepliesDevOverride = (): boolean =>
+  useSyncExternalStore(
+    subscribe,
+    () => typeof __DEV__ !== "undefined" && __DEV__ === true && on && repliesOn,
+  )
 
 const subscribe = (listener: () => void) => {
   listeners.add(listener)
@@ -63,6 +94,9 @@ const subscribe = (listener: () => void) => {
 /** The override, re-rendering its reader when a link turns it on or off. */
 export const useAssistantDevOverride = (): boolean =>
   useSyncExternalStore(subscribe, assistantDevOverride)
+
+export const useAssistantVoiceDevOverride = (): boolean =>
+  useSyncExternalStore(subscribe, assistantVoiceDevOverride)
 
 /**
  * What a dev link asks of the override: true for flash://dev/assistant?on=1,
@@ -93,9 +127,20 @@ export const useDevAssistantLink = (): void => {
   useEffect(() => {
     if (!linkEnabled()) return undefined
     const handle = (url: string | null) => {
-      const value = url ? parseAssistantDevLink(url) : undefined
+      if (!url) return
+      const value = parseAssistantDevLink(url)
       if (value === undefined) return
-      setAssistantDevOverride(value)
+      const params = new URL(url).searchParams
+      const voice = params.get("voice")
+      const replies = params.get("replies")
+      setAssistantDevOverride(value, {
+        ...(voice === "1" ? { voice: true } : voice === "0" ? { voice: false } : {}),
+        ...(replies === "1"
+          ? { replies: true }
+          : replies === "0"
+          ? { replies: false }
+          : {}),
+      })
       // Off leaves LogBox as it is: the card bridge may be hiding it too.
       if (value) LogBox.ignoreAllLogs(true)
     }

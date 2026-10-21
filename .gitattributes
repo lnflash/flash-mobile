@@ -1,2 +1,5 @@
 *.pbxproj -text
 *.bat text eol=crlf
+
+# Collapse pinned upstream headers when reviewing the first-party speech engine.
+native/flash-speech/third_party/** linguist-vendored=true

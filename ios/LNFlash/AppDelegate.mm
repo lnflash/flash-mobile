@@ -1,4 +1,5 @@
 #import "AppDelegate.h"
+#import <AVFoundation/AVFoundation.h>
 #import "RNFBAppCheckModule.h"
 #import "Firebase.h"
 
@@ -8,9 +9,9 @@
 #import <WatchConnectivity/WatchConnectivity.h>
 
 #import "RNBootSplash.h"
-// Guarded so the LNFlash-Alt target (which compiles no Swift sources and
-// therefore has no generated Swift header) keeps building.
-#if __has_include("Flash-Swift.h")
+// Only the main target includes WatchConnectivityBridge. Both app targets
+// now compile Swift for voice input, so header existence alone is insufficient.
+#if FLASH_HAS_WATCH_CONNECTIVITY && __has_include("Flash-Swift.h")
 #import "Flash-Swift.h"
 #endif
 
@@ -20,7 +21,7 @@
 {
   [RNFBAppCheckModule sharedInstance];
   [FIRApp configure];
-#if __has_include("Flash-Swift.h")
+#if FLASH_HAS_WATCH_CONNECTIVITY && __has_include("Flash-Swift.h")
   [WatchConnectivityBridge activateSession];
 #endif
 

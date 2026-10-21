@@ -28,6 +28,7 @@ target 'LNFlash' do
   )
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
   pod 'RNFS', :path => '../node_modules/react-native-fs'
+  pod 'FlashSpeech', :path => '../native/flash-speech'
   # Use xcframework variant for arm64 simulator (iOS 26+) support
   pod 'GT3Captcha-iOS-xcframework'
 
@@ -53,6 +54,7 @@ target 'LNFlash-Alt' do
   )
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
   pod 'RNFS', :path => '../node_modules/react-native-fs'
+  pod 'FlashSpeech', :path => '../native/flash-speech'
   # Use xcframework variant for arm64 simulator (iOS 26+) support
   pod 'GT3Captcha-iOS-xcframework'
 

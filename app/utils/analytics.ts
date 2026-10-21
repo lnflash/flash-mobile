@@ -400,3 +400,11 @@ export const logAssistantCoverage = (params: AssistantCoverageParams) => {
     device_class: params.deviceClass,
   })
 }
+
+/** Successful voice submission: duration and length only, never transcript/audio. */
+export const logAssistantVoiceUsed = ({ ms, chars }: { ms: number; chars: number }) => {
+  getAnalytics().logEvent("assistant_voice_used", {
+    ms: Math.max(0, Math.round(ms)),
+    chars,
+  })
+}

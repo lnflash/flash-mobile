@@ -1,0 +1,19 @@
+Flash offline speech engine
+
+ONNX Runtime 1.23.0 (Microsoft), MIT license; official API v23 headers.
+nlohmann/json 3.11.3 (Niels Lohmann), MIT license.
+
+Optional downloaded assets:
+Kokoro-82M v1.0 (hexgrad), Apache License 2.0.
+Quantized ONNX export: onnx-community/Kokoro-82M-v1.0-ONNX,
+revision 1939ad2a8e416c0acfeecc08a694d14ef25f2231.
+Voices: af_heart, am_michael, bf_emma from the same revision.
+Misaki 0.9.4 (hexgrad), Apache License 2.0: US/GB lexicons and
+reference pronunciations, transformed into frontend.json.
+Neural G2P: PeterReid/graphemes_to_phonemes_en_us, Apache License 2.0;
+ONNX export nekwo/misaki-en-us-g2p-onnx, Apache License 2.0.
+The application uses a first-party C++ frontend, with no spaCy, Python,
+PyTorch or eSpeak runtime. Development-only generation tools are separate.
+
+Sources, asset sizes and integrity hashes: scripts/voice-pack/manifest.json
+and scripts/voice-pack/README.md in the Flash source repository.

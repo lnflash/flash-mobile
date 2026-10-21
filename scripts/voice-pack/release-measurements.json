@@ -1,0 +1,273 @@
+{
+  "sourceCommit": "fcd2e15a52c286bbd01f90fbd9e512f0612206f3",
+  "scope": "isolated native Release engine; first PCM is not audible latency",
+  "size": {
+    "baseline": {
+      "apkBytes": 81382393,
+      "expandedZipBytes": 131199937,
+      "speechLibraries": {}
+    },
+    "feature": {
+      "apkBytes": 102006262,
+      "expandedZipBytes": 151945178,
+      "speechLibraries": {
+        "lib/arm64-v8a/libflashspeech.so": 1176008,
+        "lib/arm64-v8a/libonnxruntime.so": 19242472,
+        "lib/arm64-v8a/libonnxruntime4j_jni.so": 75752
+      }
+    },
+    "deltaApkBytes": 20623869,
+    "deltaExpandedZipBytes": 20745241
+  },
+  "pixel": {
+    "device": "Pixel 8 Pro",
+    "android": 17,
+    "totalRamKiB": 11470908,
+    "pluggedIn": true,
+    "thermalStatus": 0,
+    "baseline": [
+      {
+        "cpuMs": 52.196,
+        "phase": "baseline",
+        "rssKiB": 4088
+      },
+      {
+        "peakRssKiB": 184660,
+        "phase": "load",
+        "rssKiB": 180532,
+        "wallMs": 1294.152019
+      },
+      {
+        "audioMs": 4200.0,
+        "chunks": 1,
+        "cpuMs": 12598.149,
+        "firstPcmMs": 7219.316736,
+        "peakRssKiB": 253376,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 1.7189057373809522,
+        "round": 0,
+        "rssKiB": 182836,
+        "voice": "af_heart",
+        "wallMs": 7219.404097
+      },
+      {
+        "audioMs": 4800.0,
+        "chunks": 1,
+        "cpuMs": 14730.853000000001,
+        "firstPcmMs": 8450.869429,
+        "peakRssKiB": 265348,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 1.7606206606250001,
+        "round": 0,
+        "rssKiB": 182788,
+        "voice": "am_michael",
+        "wallMs": 8450.979171
+      },
+      {
+        "audioMs": 4325.0,
+        "chunks": 1,
+        "cpuMs": 13171.715,
+        "firstPcmMs": 7533.518477,
+        "peakRssKiB": 265348,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 1.7418775974566474,
+        "round": 0,
+        "rssKiB": 182988,
+        "voice": "bf_emma",
+        "wallMs": 7533.620609
+      },
+      {
+        "audioMs": 5275.0,
+        "chunks": 1,
+        "cpuMs": 16218.572,
+        "firstPcmMs": 9346.560754,
+        "peakRssKiB": 272188,
+        "phase": "render",
+        "phraseId": 1,
+        "realTimeFactor": 1.7718783639810425,
+        "round": 1,
+        "rssKiB": 183560,
+        "voice": "af_heart",
+        "wallMs": 9346.65837
+      },
+      {
+        "audioMs": 5875.0,
+        "chunks": 1,
+        "cpuMs": 17496.944999999992,
+        "firstPcmMs": 10177.84937,
+        "peakRssKiB": 284764,
+        "phase": "render",
+        "phraseId": 1,
+        "realTimeFactor": 1.732422679148936,
+        "round": 1,
+        "rssKiB": 183804,
+        "voice": "am_michael",
+        "wallMs": 10177.98324
+      },
+      {
+        "audioMs": 5150.0,
+        "chunks": 1,
+        "cpuMs": 15903.393000000011,
+        "firstPcmMs": 9147.163823,
+        "peakRssKiB": 284764,
+        "phase": "render",
+        "phraseId": 1,
+        "realTimeFactor": 1.7761664794174759,
+        "round": 1,
+        "rssKiB": 184076,
+        "voice": "bf_emma",
+        "wallMs": 9147.257369
+      },
+      {
+        "audioMs": 8325.0,
+        "chunks": 2,
+        "cpuMs": 25541.896999999997,
+        "firstPcmMs": 9588.180017,
+        "peakRssKiB": 284764,
+        "phase": "render",
+        "phraseId": 2,
+        "realTimeFactor": 1.7576736363963965,
+        "round": 2,
+        "rssKiB": 184692,
+        "voice": "af_heart",
+        "wallMs": 14632.633023
+      },
+      {
+        "audioMs": 9625.0,
+        "chunks": 2,
+        "cpuMs": 28813.279999999984,
+        "firstPcmMs": 10984.147019,
+        "peakRssKiB": 293440,
+        "phase": "render",
+        "phraseId": 2,
+        "realTimeFactor": 1.7292476545454547,
+        "round": 2,
+        "rssKiB": 184824,
+        "voice": "am_michael",
+        "wallMs": 16644.008675
+      },
+      {
+        "audioMs": 8525.0,
+        "chunks": 2,
+        "cpuMs": 26000.101999999984,
+        "firstPcmMs": 9472.306117,
+        "peakRssKiB": 293440,
+        "phase": "render",
+        "phraseId": 2,
+        "realTimeFactor": 1.7502564177126099,
+        "round": 2,
+        "rssKiB": 184988,
+        "voice": "bf_emma",
+        "wallMs": 14920.935961
+      },
+      {
+        "joinMs": 3.551758,
+        "phase": "cancel"
+      },
+      {
+        "peakRssKiB": 293440,
+        "phase": "disposed",
+        "rssKiB": 61856
+      }
+    ],
+    "experiments": {
+      "release": {
+        "renders": 9,
+        "firstPcmMsRange": [
+          7219.316736,
+          10984.147019
+        ],
+        "realTimeFactorRange": [
+          1.7189057373809522,
+          1.7761664794174759
+        ],
+        "peakRssKiB": 293440,
+        "disposedRssKiB": 61856
+      },
+      "xnnpack": {
+        "renders": 3,
+        "firstPcmMsRange": [
+          3073.442303,
+          3481.95565
+        ],
+        "realTimeFactorRange": [
+          0.7216145366473988,
+          0.7317865285714286
+        ],
+        "peakRssKiB": 290944,
+        "disposedRssKiB": 183416
+      },
+      "cpu1-nospin": {
+        "renders": 3,
+        "firstPcmMsRange": [
+          5396.78699,
+          6205.980024
+        ],
+        "realTimeFactorRange": [
+          1.2849757995238096,
+          1.29517147283237
+        ],
+        "peakRssKiB": 265096,
+        "disposedRssKiB": 60660
+      },
+      "cpu2-nospin": {
+        "renders": 3,
+        "firstPcmMsRange": [
+          9191.300826,
+          9803.001022
+        ],
+        "realTimeFactorRange": [
+          2.0423170397916666,
+          2.188431290952381
+        ],
+        "peakRssKiB": 265496,
+        "disposedRssKiB": 60764
+      }
+    }
+  },
+  "hosting": {
+    "baseUrl": "https://voices.flashapp.me/kokoro-en-v1",
+    "dnsOverride": "authoritative Cloudflare edge while local DNS cache expires",
+    "files": [
+      {
+        "name": "af_heart.bin",
+        "bytes": 522240,
+        "sha256": "d583ccff3cdca2f7fae535cb998ac07e9fcb90f09737b9a41fa2734ec44a8f0b",
+        "verified": true
+      },
+      {
+        "name": "am_michael.bin",
+        "bytes": 522240,
+        "sha256": "1d1f21dd8da39c30705cd4c75d039d265e9bc4a2a93ed09bc9e1b1225eb95ba1",
+        "verified": true
+      },
+      {
+        "name": "bf_emma.bin",
+        "bytes": 522240,
+        "sha256": "669fe0647f9dd04fcab92f1439a40eeb4c8b4ab1f82e4996fe3d918ce4a63b73",
+        "verified": true
+      },
+      {
+        "name": "frontend.json",
+        "bytes": 5100625,
+        "sha256": "1b3d83d4fa8a942dcaff543f5bfbff4a5781e05ed7d997d0f416b6ca4dd42fb7",
+        "verified": true
+      },
+      {
+        "name": "g2p.onnx",
+        "bytes": 3438244,
+        "sha256": "757759c3e3ccb0bf59c379b1671c9834a27543ceaefd6846850823633b9665a1",
+        "verified": true
+      },
+      {
+        "name": "model.onnx",
+        "bytes": 92361116,
+        "sha256": "fbae9257e1e05ffc727e951ef9b9c98418e6d79f1c9b6b13bd59f5c9028a1478",
+        "verified": true
+      }
+    ]
+  }
+}

@@ -1,12 +1,16 @@
 import type { BtcRail } from "@app/payments/btc-rail"
+import type { AuthOrigin } from "../engine/auth-policy"
 import type { ToolCall } from "../engine/intent-router"
 import { isPlainObject } from "../engine/schema-validator"
 import type { TransactionRow } from "../rails/graphql-rail"
 import type {
+  AccountLimitsPayload,
+  TransactionDetailsProjection,
   BalancesProjection,
   PricePayload,
   TransactionsProjection,
 } from "../registry/projections"
+import type { HelpTopic } from "./first-use-help"
 import type { AssistantReplyKey } from "../registry/types"
 
 // The Ask Flash thread's transcript (ENG-689): what the user said and what
@@ -58,14 +62,43 @@ export const listedKey = (rail: "graphql" | "btc", id: string): string => `${rai
  *   (ENG-690), so the event of each call issued again says so too.
  */
 export type ThreadEntry =
+  | {
+      id: string
+      kind: "address"
+      state: "available" | "notSet" | "unavailable"
+      address?: string
+      stale: boolean
+    }
+  | { id: string; kind: "help"; topic: HelpTopic }
+  | {
+      id: string
+      kind: "limits"
+      payload: AccountLimitsPayload
+      stale: boolean
+      asOf?: number
+    }
+  | {
+      id: string
+      kind: "details"
+      payload: TransactionDetailsProjection
+      stale: boolean
+      asOf?: number
+    }
   | { id: string; kind: "user"; text: string }
   | { id: string; kind: "reply"; replyKey: AssistantReplyKey; params?: ReplyParams }
-  | { id: string; kind: "balances"; payload: BalancesProjection; stale: boolean }
+  | {
+      id: string
+      kind: "balances"
+      payload: BalancesProjection
+      stale: boolean
+      asOf?: number
+    }
   | {
       id: string
       kind: "transactions"
       payload: TransactionsProjection
       stale: boolean
+      asOf?: number
       listed?: Readonly<Record<string, ListedTransaction>>
     }
   | { id: string; kind: "price"; payload: PricePayload }
@@ -75,6 +108,7 @@ export type ThreadEntry =
       card: unknown
       call?: ToolCall
       servedByOnDeviceModel?: boolean
+      inputOrigin?: AuthOrigin
     }
 
 type WithoutId<E> = E extends unknown ? Omit<E, "id"> : never

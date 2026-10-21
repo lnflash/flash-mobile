@@ -98,8 +98,10 @@
 	<string>Activate your camera to scan QR codes and record videos for posts</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Access your contacts to easily invite friends to Flash</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Flash transcribes your voice on this phone to fill your ask. The audio stays on the phone.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Record audio for video posts</string>
+	<string>Flash uses your microphone for video posts and on-device voice input in Ask Flash.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save photos and videos to your library</string>
 	<key>NSFaceIDUsageDescription</key>

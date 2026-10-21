@@ -1,9 +1,10 @@
 // A runtime for the thread specs: fake rails, an in-memory journal, a fake
 // auth gate and recorded telemetry, around the real executor, registry and
 // runTool (watched). Not a spec itself.
-import type { ApolloClient } from "@apollo/client"
+import { ApolloClient, InMemoryCache } from "@apollo/client"
 
 import { createAttemptJournal } from "@app/assistant/engine/attempt-journal"
+import type { AuthGate } from "@app/assistant/engine/auth-gate"
 import type { ModelAdapter } from "@app/assistant/engine/model-adapter"
 import { runTool } from "@app/assistant/engine/run-tool"
 import type { GraphqlActionRail } from "@app/assistant/rails/graphql-action-rail"
@@ -34,7 +35,7 @@ import {
 export const fakeRuntime = <
   M extends ModelAdapter = ReturnType<typeof unavailableModelAdapter>,
 >(
-  options: { modelAdapter?: M } = {},
+  options: { modelAdapter?: M; auth?: AuthGate } = {},
 ) => {
   const modelAdapter = options.modelAdapter ?? unavailableModelAdapter()
   const graphql = fakeGraphqlRail()
@@ -44,20 +45,27 @@ export const fakeRuntime = <
   const mutations = fakeSendTriggers()
   const recorded = recordingTelemetry()
   const watchedRunTool = jest.fn(runTool)
-  const runtime: AssistantRuntime = createAssistantRuntime({} as ApolloClient<unknown>, {
-    threadId: "thread-ask-flash",
-    graphql: graphql as unknown as GraphqlRail,
-    cachedGraphql: cachedGraphql as unknown as GraphqlRail,
-    graphqlActions: actions as unknown as GraphqlActionRail,
-    btcRail: btcRail as unknown as BtcRail,
-    sendMutations: mutations as unknown as GraphqlMutationFns,
-    telemetry: recorded.telemetry,
-    journal: createAttemptJournal({ storage: memoryStorage() }),
-    auth: { availability: async () => "none", authenticate: async () => false },
-    runTool: watchedRunTool,
-    modelAdapter,
-    now: () => NOW_MS,
-  })
+  const runtime: AssistantRuntime = createAssistantRuntime(
+    new ApolloClient({ cache: new InMemoryCache(), connectToDevTools: false }),
+    {
+      cacheScope: "test-session",
+      threadId: "thread-ask-flash",
+      graphql: graphql as unknown as GraphqlRail,
+      cachedGraphql: cachedGraphql as unknown as GraphqlRail,
+      graphqlActions: actions as unknown as GraphqlActionRail,
+      btcRail: btcRail as unknown as BtcRail,
+      sendMutations: mutations as unknown as GraphqlMutationFns,
+      telemetry: recorded.telemetry,
+      journal: createAttemptJournal({ storage: memoryStorage() }),
+      auth: options.auth ?? {
+        availability: async () => "none",
+        authenticate: async () => false,
+      },
+      runTool: watchedRunTool,
+      modelAdapter,
+      now: () => NOW_MS,
+    },
+  )
   return {
     runtime,
     modelAdapter: modelAdapter as M,

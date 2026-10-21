@@ -88,6 +88,9 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Test native voice-pack installation
+        run: bash scripts/voice-pack/test-ios-pack.sh
+
       - name: Build iOS (Debug)
         run: |
           xcodebuild \
@@ -169,6 +172,11 @@ jobs:
       - name: Build Android (Debug)
         working-directory: android
         run: ./gradlew assembleDebug :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Verify speech runtime 16 KB ELF alignment
+        run: |
+          python3 -m unittest discover -s scripts/ci -p test_elf_alignment.py
+          python3 scripts/ci/check_elf_alignment.py android/app/build/outputs/apk/debug/app-universal-debug.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

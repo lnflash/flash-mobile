@@ -400,19 +400,30 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
 
       const entries = await answerUtterance(runtime, utterance, env(ON))
 
-      // The refusal's reply, as "how does lightning work" gets.
-      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      // Reviewed help stays local; other definitions retain the refusal.
+      expect(entries).toEqual(
+        utterance === "what is lightning"
+          ? [{ kind: "help", topic: "lightning" }]
+          : [{ kind: "reply", replyKey: "Assistant.unknownIntent" }],
+      )
       expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
       expect(modelAdapter.decide).not.toHaveBeenCalled()
       expect(runTool).not.toHaveBeenCalled()
-      expect(toolEvents()).toEqual([
-        expect.objectContaining({ outcome: "rejected", onDeviceModelAvailable: false }),
-      ])
+      expect(toolEvents()).toEqual(
+        utterance === "what is lightning"
+          ? []
+          : [
+              expect.objectContaining({
+                outcome: "rejected",
+                onDeviceModelAvailable: false,
+              }),
+            ],
+      )
     }
     const how = withModel(modelCall({ intent: "getBalances", args: {} }))
     await expect(
       answerUtterance(how.runtime, "how does lightning work", env(ON)),
-    ).resolves.toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+    ).resolves.toEqual([{ kind: "help", topic: "lightning" }])
     expect(how.modelAdapter.decide).not.toHaveBeenCalled()
   })
 
@@ -540,23 +551,29 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     expect(runTool).not.toHaveBeenCalled()
   })
 
-  it("reads the model's read call from the cache offline, served by the model", async () => {
-    const { runtime, runTool, cachedGraphql } = withModel(
+  it("serves a model read from a saved projection offline without touching either rail", async () => {
+    const { runtime, runTool, graphql, cachedGraphql, btcRail } = withModel(
       modelCall({ intent: "getBalances", args: {} }),
     )
-    cachedGraphql.wallets.mockResolvedValue(CASH_WALLETS)
-
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+    await answerUtterance(runtime, "what's my balance", env())
+    runTool.mockClear()
+    graphql.wallets.mockClear()
+    btcRail.getBalanceSats.mockClear()
     const entries = await answerUtterance(
       runtime,
       MISSED,
       env({ ...ON, isOffline: true }),
     )
-
-    const [, deps] = runTool.mock.calls[0]
-    expect(deps.graphql).toBe(runtime.cachedGraphql)
-    expect(deps.actionDeps).toBeUndefined()
-    expect(deps.servedByOnDeviceModel).toBe(true)
-    expect(entries[0]).toMatchObject({ kind: "balances", stale: true })
+    expect(runTool).not.toHaveBeenCalled()
+    expect(graphql.wallets).not.toHaveBeenCalled()
+    expect(cachedGraphql.wallets).not.toHaveBeenCalled()
+    expect(btcRail.getBalanceSats).not.toHaveBeenCalled()
+    expect(entries[0]).toMatchObject({
+      kind: "balances",
+      stale: true,
+      asOf: expect.any(Number),
+    })
   })
 
   // Plain loops rather than it.each: this repo's tsconfig types `it` without

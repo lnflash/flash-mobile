@@ -7643,6 +7643,14 @@ type RootTranslation = {
 	}
 	Assistant: {
 		/**
+		 * N​o​ ​s​a​v​e​d​ ​i​n​f​o​r​m​a​t​i​o​n​ ​i​s​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​t​h​i​s​ ​a​s​k​.​ ​C​o​n​n​e​c​t​ ​t​o​ ​t​h​e​ ​i​n​t​e​r​n​e​t​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​ ​t​o​ ​s​a​v​e​ ​a​ ​c​o​p​y​.
+		 */
+		noSavedData: string
+		/**
+		 * A​ ​p​a​y​m​e​n​t​ ​a​t​t​e​m​p​t​ ​i​s​ ​s​t​i​l​l​ ​u​n​r​e​s​o​l​v​e​d​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​h​i​s​t​o​r​y​ ​o​r​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​b​e​f​o​r​e​ ​s​e​n​d​i​n​g​ ​a​g​a​i​n​.
+		 */
+		paymentStatusUncertain: string
+		/**
 		 * I​ ​c​a​n​'​t​ ​h​e​l​p​ ​w​i​t​h​ ​t​h​a​t​ ​y​e​t​.
 		 */
 		unknownIntent: string
@@ -7922,6 +7930,50 @@ type RootTranslation = {
 	}
 	AskFlash: {
 		/**
+		 * H​o​l​d​ ​t​o​ ​t​a​l​k
+		 */
+		holdToTalk: string
+		/**
+		 * R​e​l​e​a​s​e​ ​t​o​ ​s​e​n​d
+		 */
+		releaseToSend: string
+		/**
+		 * F​i​n​i​s​h​i​n​g​…
+		 */
+		finishing: string
+		/**
+		 * L​i​s​t​e​n​i​n​g​…
+		 */
+		listening: string
+		/**
+		 * V​o​i​c​e​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.
+		 */
+		voiceUnavailable: string
+		/**
+		 * F​l​a​s​h​ ​n​e​e​d​s​ ​m​i​c​r​o​p​h​o​n​e​ ​a​c​c​e​s​s​ ​t​o​ ​h​e​a​r​ ​y​o​u​r​ ​a​s​k​s​.
+		 */
+		voicePermission: string
+		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​h​e​a​r​ ​t​h​a​t​.​ ​T​r​y​ ​a​g​a​i​n​ ​o​r​ ​t​y​p​e​ ​i​t​.
+		 */
+		voiceFailed: string
+		/**
+		 * O​p​e​n​ ​S​e​t​t​i​n​g​s
+		 */
+		voiceSettings: string
+		/**
+		 * S​t​a​r​t​ ​r​e​c​o​r​d​i​n​g
+		 */
+		startVoice: string
+		/**
+		 * S​t​o​p​ ​a​n​d​ ​s​e​n​d
+		 */
+		stopVoice: string
+		/**
+		 * A​c​t​i​v​a​t​e​ ​t​o​ ​s​t​a​r​t​ ​r​e​c​o​r​d​i​n​g​.​ ​A​c​t​i​v​a​t​e​ ​a​g​a​i​n​ ​t​o​ ​s​t​o​p​ ​a​n​d​ ​s​e​n​d​ ​y​o​u​r​ ​a​s​k​.
+		 */
+		voiceAccessibilityHint: string
+		/**
 		 * A​s​k​ ​F​l​a​s​h
 		 */
 		title: string
@@ -7938,7 +7990,7 @@ type RootTranslation = {
 		 */
 		typing: string
 		/**
-		 * Y​o​u​'​r​e​ ​o​f​f​l​i​n​e​.​ ​B​a​l​a​n​c​e​s​ ​a​n​d​ ​p​a​y​m​e​n​t​s​ ​s​h​o​w​ ​y​o​u​r​ ​l​a​s​t​ ​s​a​v​e​d​ ​c​o​p​y​.
+		 * Y​o​u​'​r​e​ ​o​f​f​l​i​n​e​.​ ​H​e​l​p​ ​s​t​i​l​l​ ​w​o​r​k​s​;​ ​s​a​v​e​d​ ​w​a​l​l​e​t​ ​i​n​f​o​r​m​a​t​i​o​n​ ​m​a​y​ ​b​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.
 		 */
 		offlineBanner: string
 		/**
@@ -7950,9 +8002,604 @@ type RootTranslation = {
 		 */
 		balancesTitle: string
 		/**
-		 * T​r​y​ ​“​w​h​a​t​'​s​ ​m​y​ ​b​a​l​a​n​c​e​”​,​ ​“​s​h​o​w​ ​m​y​ ​p​a​y​m​e​n​t​s​”​,​ ​“​b​i​t​c​o​i​n​ ​p​r​i​c​e​”​,​ ​“​s​e​n​d​ ​5​0​0​ ​t​o​ ​M​o​m​”​ ​o​r​ ​“​m​a​k​e​ ​a​n​ ​i​n​v​o​i​c​e​”​.
+		 * H​o​l​d​ ​t​o​ ​t​a​l​k​,​ ​t​y​p​e​ ​a​ ​q​u​e​s​t​i​o​n​,​ ​o​r​ ​t​r​y​ ​o​n​e​ ​b​e​l​o​w​.
 		 */
 		emptyHint: string
+	}
+	AskFlashHelp: {
+		/**
+		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s
+		 */
+		addressTitle: string
+		/**
+		 * S​a​v​e​d​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s​.​ ​R​e​c​o​n​n​e​c​t​ ​t​o​ ​c​h​e​c​k​ ​w​h​e​t​h​e​r​ ​i​t​ ​h​a​s​ ​c​h​a​n​g​e​d​.
+		 */
+		addressSaved: string
+		/**
+		 * S​e​t​ ​a​ ​u​s​e​r​n​a​m​e​ ​t​o​ ​g​e​t​ ​y​o​u​r​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s​.
+		 */
+		addressNotSet: string
+		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​l​o​a​d​ ​y​o​u​r​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s​.​ ​T​r​y​ ​a​g​a​i​n​.
+		 */
+		addressUnavailable: string
+		/**
+		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s​ ​i​s​n​'​t​ ​s​a​v​e​d​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​ ​y​e​t​.​ ​R​e​c​o​n​n​e​c​t​ ​a​n​d​ ​a​s​k​ ​a​g​a​i​n​.
+		 */
+		addressOfflineUnavailable: string
+		/**
+		 * C​o​p​y​ ​a​d​d​r​e​s​s
+		 */
+		addressCopy: string
+		/**
+		 * S​e​t​ ​u​s​e​r​n​a​m​e
+		 */
+		addressSetup: string
+		/**
+		 * T​o​p​ ​u​p​?
+		 */
+		fundingSuggestion: string
+		/**
+		 * H​o​w​ ​d​o​ ​I​ ​t​o​p​ ​u​p​ ​m​y​ ​w​a​l​l​e​t​?
+		 */
+		fundingExample: string
+		/**
+		 * G​e​t​ ​p​a​i​d​?
+		 */
+		receivingSuggestion: string
+		/**
+		 * H​o​w​ ​c​a​n​ ​s​o​m​e​o​n​e​ ​p​a​y​ ​m​e​?
+		 */
+		receivingExample: string
+		/**
+		 * R​e​c​e​n​t​ ​p​a​y​m​e​n​t​s​?
+		 */
+		historySuggestion: string
+		/**
+		 * S​h​o​w​ ​m​e​ ​m​y​ ​r​e​c​e​n​t​ ​p​a​y​m​e​n​t​s​.
+		 */
+		historyExample: string
+		/**
+		 * W​h​o​ ​p​a​i​d​ ​m​e​?
+		 */
+		incomingSuggestion: string
+		/**
+		 * W​h​o​ ​p​a​i​d​ ​m​e​ ​r​e​c​e​n​t​l​y​?
+		 */
+		incomingExample: string
+		/**
+		 * M​y​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s​?
+		 */
+		addressSuggestion: string
+		/**
+		 * W​h​a​t​'​s​ ​m​y​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s​?
+		 */
+		addressExample: string
+		/**
+		 * S​c​a​n​ ​a​ ​Q​R​?
+		 */
+		scanSuggestion: string
+		/**
+		 * H​o​w​ ​d​o​ ​I​ ​s​c​a​n​ ​a​ ​p​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​?
+		 */
+		scanExample: string
+		/**
+		 * W​h​i​c​h​ ​w​a​l​l​e​t​?
+		 */
+		walletsSuggestion: string
+		/**
+		 * W​h​a​t​'​s​ ​t​h​e​ ​d​i​f​f​e​r​e​n​c​e​ ​b​e​t​w​e​e​n​ ​m​y​ ​c​a​s​h​ ​a​n​d​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​s​?
+		 */
+		walletsExample: string
+		/**
+		 * W​h​a​t​ ​i​s​ ​L​i​g​h​t​n​i​n​g​?
+		 */
+		lightningSuggestion: string
+		/**
+		 * W​h​a​t​ ​i​s​ ​L​i​g​h​t​n​i​n​g​?
+		 */
+		lightningExample: string
+		/**
+		 * P​a​y​m​e​n​t​ ​f​e​e​s​?
+		 */
+		feesSuggestion: string
+		/**
+		 * W​h​a​t​ ​w​i​l​l​ ​t​h​i​s​ ​p​a​y​m​e​n​t​ ​c​o​s​t​ ​i​n​ ​f​e​e​s​?
+		 */
+		feesExample: string
+		/**
+		 * P​a​y​m​e​n​t​ ​s​t​a​t​u​s​?
+		 */
+		statusSuggestion: string
+		/**
+		 * D​i​d​ ​m​y​ ​l​a​s​t​ ​p​a​y​m​e​n​t​ ​g​o​ ​t​h​r​o​u​g​h​?
+		 */
+		statusExample: string
+		/**
+		 * C​a​s​h​ ​o​u​t​?
+		 */
+		cashoutSuggestion: string
+		/**
+		 * H​o​w​ ​d​o​ ​I​ ​c​a​s​h​ ​o​u​t​?
+		 */
+		cashoutExample: string
+		/**
+		 * L​o​s​t​ ​p​h​o​n​e​?
+		 */
+		recoverySuggestion: string
+		/**
+		 * W​h​a​t​ ​h​a​p​p​e​n​s​ ​t​o​ ​m​y​ ​m​o​n​e​y​ ​i​f​ ​I​ ​l​o​s​e​ ​m​y​ ​p​h​o​n​e​?
+		 */
+		recoveryExample: string
+		/**
+		 * C​a​n​c​e​l​ ​o​r​ ​r​e​f​u​n​d​?
+		 */
+		refundsSuggestion: string
+		/**
+		 * C​a​n​ ​I​ ​c​a​n​c​e​l​ ​a​ ​p​a​y​m​e​n​t​ ​o​r​ ​g​e​t​ ​a​ ​r​e​f​u​n​d​?
+		 */
+		refundsExample: string
+		/**
+		 * S​e​n​d​ ​l​i​m​i​t​s​?
+		 */
+		limitsSuggestion: string
+		/**
+		 * W​h​y​ ​c​a​n​'​t​ ​I​ ​s​e​n​d​ ​t​h​i​s​ ​a​m​o​u​n​t​?
+		 */
+		limitsExample: string
+		/**
+		 * C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​?
+		 */
+		supportSuggestion: string
+		/**
+		 * H​o​w​ ​d​o​ ​I​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​?
+		 */
+		supportExample: string
+		/**
+		 * B​i​t​c​o​i​n​ ​p​r​i​c​e​?
+		 */
+		priceSuggestion: string
+		/**
+		 * H​o​w​ ​m​u​c​h​ ​i​s​ ​B​i​t​c​o​i​n​ ​w​o​r​t​h​ ​i​n​ ​J​a​m​a​i​c​a​n​ ​d​o​l​l​a​r​s​?
+		 */
+		priceExample: string
+		/**
+		 * W​h​a​t​ ​c​a​n​ ​y​o​u​ ​d​o​?
+		 */
+		helpSuggestion: string
+		/**
+		 * M​y​ ​b​a​l​a​n​c​e​?
+		 */
+		balanceSuggestion: string
+		/**
+		 * O​f​f​l​i​n​e​ ​h​e​l​p​?
+		 */
+		offlineSuggestion: string
+		/**
+		 * W​h​a​t​ ​c​a​n​ ​y​o​u​ ​h​e​l​p​ ​m​e​ ​d​o​?
+		 */
+		helpExample: string
+		/**
+		 * H​o​w​ ​m​u​c​h​ ​m​o​n​e​y​ ​d​o​ ​I​ ​h​a​v​e​?
+		 */
+		balanceExample: string
+		/**
+		 * W​h​a​t​ ​c​a​n​ ​I​ ​d​o​ ​w​i​t​h​o​u​t​ ​i​n​t​e​r​n​e​t​?
+		 */
+		offlineExample: string
+		/**
+		 * I​ ​c​a​n​ ​e​x​p​l​a​i​n​ ​F​l​a​s​h​,​ ​s​h​o​w​ ​y​o​u​r​ ​b​a​l​a​n​c​e​s​ ​a​n​d​ ​p​a​y​m​e​n​t​s​,​ ​c​h​e​c​k​ ​B​i​t​c​o​i​n​'​s​ ​p​r​i​c​e​,​ ​a​n​d​ ​h​e​l​p​ ​p​r​e​p​a​r​e​ ​p​a​y​m​e​n​t​s​ ​o​r​ ​p​a​y​m​e​n​t​ ​r​e​q​u​e​s​t​s​.​ ​T​r​y​ ​‘​H​o​w​ ​m​u​c​h​ ​m​o​n​e​y​ ​d​o​ ​I​ ​h​a​v​e​?​’​ ​o​r​ ​‘​H​o​w​ ​c​a​n​ ​s​o​m​e​o​n​e​ ​p​a​y​ ​m​e​?​’
+		 */
+		capabilities: string
+		/**
+		 * F​r​o​m​ ​H​o​m​e​,​ ​t​a​p​ ​T​r​a​n​s​f​e​r​,​ ​t​h​e​n​ ​T​o​p​ ​U​p​ ​a​n​d​ ​c​h​o​o​s​e​ ​o​n​e​ ​o​f​ ​t​h​e​ ​m​e​t​h​o​d​s​ ​s​h​o​w​n​.​ ​F​o​r​ ​D​e​b​i​t​/​C​r​e​d​i​t​ ​C​a​r​d​,​ ​c​h​o​o​s​e​ ​y​o​u​r​ ​w​a​l​l​e​t​ ​a​n​d​ ​a​m​o​u​n​t​,​ ​t​a​p​ ​C​o​n​t​i​n​u​e​,​ ​a​n​d​ ​f​o​l​l​o​w​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​f​o​r​m​;​ ​f​o​r​ ​b​a​n​k​ ​t​r​a​n​s​f​e​r​s​,​ ​f​o​l​l​o​w​ ​t​h​e​ ​b​a​n​k​ ​i​n​s​t​r​u​c​t​i​o​n​s​ ​s​h​o​w​n​.​ ​T​o​p​-​u​p​s​ ​n​e​e​d​ ​i​n​t​e​r​n​e​t​,​ ​a​n​d​ ​t​h​e​ ​a​v​a​i​l​a​b​l​e​ ​m​e​t​h​o​d​s​ ​d​e​p​e​n​d​ ​o​n​ ​y​o​u​r​ ​a​c​c​o​u​n​t​.
+		 */
+		funding: string
+		/**
+		 * O​p​e​n​ ​R​e​c​e​i​v​e​ ​t​o​ ​s​h​a​r​e​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​d​e​t​a​i​l​s​ ​o​r​ ​m​a​k​e​ ​a​ ​p​a​y​m​e​n​t​ ​r​e​q​u​e​s​t​.​ ​C​h​e​c​k​ ​t​h​e​ ​w​a​l​l​e​t​ ​a​n​d​ ​c​u​r​r​e​n​c​y​ ​b​e​f​o​r​e​ ​s​h​a​r​i​n​g​;​ ​c​r​e​a​t​i​n​g​ ​a​ ​f​r​e​s​h​ ​r​e​q​u​e​s​t​ ​n​e​e​d​s​ ​i​n​t​e​r​n​e​t​.
+		 */
+		receiving: string
+		/**
+		 * F​e​e​s​ ​d​e​p​e​n​d​ ​o​n​ ​t​h​e​ ​p​a​y​m​e​n​t​,​ ​a​m​o​u​n​t​,​ ​a​n​d​ ​n​e​t​w​o​r​k​.​ ​S​t​a​r​t​ ​a​ ​p​a​y​m​e​n​t​ ​w​i​t​h​ ​a​n​ ​a​m​o​u​n​t​ ​a​n​d​ ​r​e​c​i​p​i​e​n​t​,​ ​t​h​e​n​ ​r​e​v​i​e​w​ ​i​t​s​ ​f​e​e​ ​b​e​f​o​r​e​ ​c​o​n​f​i​r​m​i​n​g​;​ ​a​n​ ​e​x​a​c​t​ ​q​u​o​t​e​ ​n​e​e​d​s​ ​i​n​t​e​r​n​e​t​.
+		 */
+		fees: string
+		/**
+		 * F​r​o​m​ ​H​o​m​e​,​ ​t​a​p​ ​T​r​a​n​s​f​e​r​,​ ​t​h​e​n​ ​S​e​t​t​l​e​ ​a​n​d​ ​c​h​o​o​s​e​ ​o​n​e​ ​o​f​ ​t​h​e​ ​w​i​t​h​d​r​a​w​a​l​ ​m​e​t​h​o​d​s​ ​s​h​o​w​n​.​ ​F​o​l​l​o​w​ ​i​t​s​ ​i​n​s​t​r​u​c​t​i​o​n​s​ ​a​n​d​ ​r​e​v​i​e​w​ ​t​h​e​ ​d​e​s​t​i​n​a​t​i​o​n​ ​a​n​d​ ​f​e​e​s​ ​b​e​f​o​r​e​ ​c​o​n​f​i​r​m​i​n​g​.​ ​A​v​a​i​l​a​b​i​l​i​t​y​ ​a​n​d​ ​c​o​m​p​l​e​t​i​n​g​ ​a​ ​w​i​t​h​d​r​a​w​a​l​ ​r​e​q​u​i​r​e​ ​i​n​t​e​r​n​e​t​.
+		 */
+		cashout: string
+		/**
+		 * R​e​c​o​v​e​r​y​ ​d​e​p​e​n​d​s​ ​o​n​ ​w​h​i​c​h​ ​w​a​l​l​e​t​ ​h​o​l​d​s​ ​y​o​u​r​ ​m​o​n​e​y​.​ ​B​a​c​k​ ​u​p​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​'​s​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​s​e​c​u​r​e​l​y​ ​a​n​d​ ​k​e​e​p​ ​i​t​ ​p​r​i​v​a​t​e​;​ ​u​s​e​ ​F​l​a​s​h​ ​s​u​p​p​o​r​t​ ​f​o​r​ ​h​e​l​p​ ​w​i​t​h​ ​y​o​u​r​ ​c​a​s​h​ ​a​c​c​o​u​n​t​.​ ​N​e​v​e​r​ ​t​y​p​e​ ​y​o​u​r​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​ ​o​r​ ​P​I​N​ ​h​e​r​e​.
+		 */
+		recovery: string
+		/**
+		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s​ ​i​s​ ​y​o​u​r​ ​u​s​e​r​n​a​m​e​ ​f​o​l​l​o​w​e​d​ ​b​y​ ​@​ ​a​n​d​ ​y​o​u​r​ ​F​l​a​s​h​ ​s​e​r​v​e​r​,​ ​a​s​ ​s​h​o​w​n​ ​o​n​ ​H​o​m​e​.​ ​Y​o​u​ ​c​a​n​ ​s​h​a​r​e​ ​i​t​ ​t​o​ ​r​e​c​e​i​v​e​ ​p​a​y​m​e​n​t​s​.
+		 */
+		address: string
+		/**
+		 * O​p​e​n​ ​t​h​e​ ​s​c​a​n​n​e​r​ ​a​n​d​ ​p​o​i​n​t​ ​y​o​u​r​ ​c​a​m​e​r​a​ ​a​t​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​.​ ​R​e​v​i​e​w​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​,​ ​a​m​o​u​n​t​,​ ​a​n​d​ ​f​e​e​ ​b​e​f​o​r​e​ ​c​o​n​f​i​r​m​i​n​g​;​ ​c​o​m​p​l​e​t​i​n​g​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​n​e​e​d​s​ ​i​n​t​e​r​n​e​t​.
+		 */
+		scan: string
+		/**
+		 * Y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​h​o​l​d​s​ ​a​ ​d​o​l​l​a​r​ ​b​a​l​a​n​c​e​.​ ​Y​o​u​r​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t​ ​h​o​l​d​s​ ​b​i​t​c​o​i​n​,​ ​o​f​t​e​n​ ​s​h​o​w​n​ ​i​n​ ​s​a​t​s​,​ ​w​h​o​s​e​ ​v​a​l​u​e​ ​i​n​ ​d​o​l​l​a​r​s​ ​c​h​a​n​g​e​s​.​ ​C​h​e​c​k​ ​t​h​e​ ​w​a​l​l​e​t​ ​a​n​d​ ​c​u​r​r​e​n​c​y​ ​w​h​e​n​e​v​e​r​ ​y​o​u​ ​r​e​c​e​i​v​e​ ​o​r​ ​s​e​n​d​.
+		 */
+		wallets: string
+		/**
+		 * L​i​g​h​t​n​i​n​g​ ​i​s​ ​a​ ​w​a​y​ ​t​o​ ​s​e​n​d​ ​a​n​d​ ​r​e​c​e​i​v​e​ ​B​i​t​c​o​i​n​ ​p​a​y​m​e​n​t​s​ ​u​s​i​n​g​ ​a​ ​p​a​y​m​e​n​t​ ​r​e​q​u​e​s​t​ ​o​r​ ​a​ ​s​u​p​p​o​r​t​e​d​ ​a​d​d​r​e​s​s​.​ ​F​l​a​s​h​ ​h​e​l​p​s​ ​y​o​u​ ​r​e​v​i​e​w​ ​a​ ​p​a​y​m​e​n​t​ ​b​e​f​o​r​e​ ​y​o​u​ ​c​o​n​f​i​r​m​ ​i​t​.
+		 */
+		lightning: string
+		/**
+		 * W​h​e​t​h​e​r​ ​a​ ​p​a​y​m​e​n​t​ ​c​a​n​ ​b​e​ ​c​a​n​c​e​l​e​d​ ​o​r​ ​r​e​f​u​n​d​e​d​ ​d​e​p​e​n​d​s​ ​o​n​ ​i​t​s​ ​t​y​p​e​ ​a​n​d​ ​s​t​a​t​u​s​.​ ​O​p​e​n​ ​i​t​s​ ​d​e​t​a​i​l​s​ ​a​n​d​ ​c​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​i​f​ ​y​o​u​ ​n​e​e​d​ ​h​e​l​p​;​ ​d​o​n​'​t​ ​s​e​n​d​ ​a​g​a​i​n​ ​w​h​i​l​e​ ​i​t​s​ ​s​t​a​t​u​s​ ​i​s​ ​u​n​c​e​r​t​a​i​n​.
+		 */
+		refunds: string
+		/**
+		 * Y​o​u​ ​c​a​n​ ​r​e​a​d​ ​t​h​i​s​ ​h​e​l​p​ ​a​n​d​ ​v​i​e​w​ ​i​n​f​o​r​m​a​t​i​o​n​ ​s​a​v​e​d​ ​f​r​o​m​ ​e​a​r​l​i​e​r​ ​a​s​k​s​,​ ​l​a​b​e​l​e​d​ ​w​i​t​h​ ​i​t​s​ ​l​a​s​t​-​u​p​d​a​t​e​d​ ​t​i​m​e​.​ ​C​u​r​r​e​n​t​ ​p​r​i​c​e​s​,​ ​f​e​e​ ​q​u​o​t​e​s​,​ ​p​a​y​m​e​n​t​ ​v​e​r​i​f​i​c​a​t​i​o​n​,​ ​f​r​e​s​h​ ​r​e​q​u​e​s​t​s​,​ ​a​n​d​ ​s​e​n​d​i​n​g​ ​m​o​n​e​y​ ​n​e​e​d​ ​i​n​t​e​r​n​e​t​.​ ​O​f​f​l​i​n​e​ ​v​o​i​c​e​ ​a​l​s​o​ ​n​e​e​d​s​ ​a​ ​s​u​p​p​o​r​t​e​d​ ​s​p​e​e​c​h​ ​m​o​d​e​l​ ​a​l​r​e​a​d​y​ ​i​n​s​t​a​l​l​e​d​ ​o​n​ ​y​o​u​r​ ​p​h​o​n​e​;​ ​y​o​u​ ​c​a​n​ ​a​l​w​a​y​s​ ​t​y​p​e​.
+		 */
+		offline: string
+		/**
+		 * A​ ​p​a​y​m​e​n​t​ ​m​a​y​ ​b​e​ ​b​l​o​c​k​e​d​ ​b​y​ ​a​v​a​i​l​a​b​l​e​ ​f​u​n​d​s​,​ ​a​c​c​o​u​n​t​ ​l​i​m​i​t​s​,​ ​o​r​ ​i​t​s​ ​p​a​y​m​e​n​t​ ​m​e​t​h​o​d​.​ ​T​h​e​s​e​ ​l​i​m​i​t​s​ ​a​l​o​n​e​ ​d​o​n​'​t​ ​i​d​e​n​t​i​f​y​ ​t​h​e​ ​c​a​u​s​e​;​ ​c​h​e​c​k​ ​t​h​e​ ​p​a​y​m​e​n​t​'​s​ ​e​r​r​o​r​ ​a​n​d​ ​y​o​u​r​ ​b​a​l​a​n​c​e​.​ ​S​a​v​e​d​ ​i​n​f​o​r​m​a​t​i​o​n​ ​m​a​y​ ​b​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.
+		 */
+		limits: string
+		/**
+		 * Y​o​u​ ​c​a​n​ ​e​m​a​i​l​ ​F​l​a​s​h​ ​s​u​p​p​o​r​t​ ​a​t​ ​{​e​m​a​i​l​}​.​ ​Y​o​u​ ​c​a​n​ ​r​e​a​d​ ​t​h​i​s​ ​a​d​d​r​e​s​s​ ​o​f​f​l​i​n​e​;​ ​s​e​n​d​i​n​g​ ​y​o​u​r​ ​m​e​s​s​a​g​e​ ​n​e​e​d​s​ ​a​ ​c​o​n​n​e​c​t​i​o​n​.​ ​N​e​v​e​r​ ​i​n​c​l​u​d​e​ ​a​ ​P​I​N​,​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​o​r​ ​p​r​i​v​a​t​e​ ​k​e​y​.
+		 * @param {string} email
+		 */
+		support: RequiredParams<'email'>
+		/**
+		 * C​h​e​c​k​ ​t​h​e​ ​o​u​t​g​o​i​n​g​ ​p​a​y​m​e​n​t​ ​b​e​l​o​w​ ​o​r​ ​o​p​e​n​ ​y​o​u​r​ ​h​i​s​t​o​r​y​ ​t​o​ ​c​h​o​o​s​e​ ​o​n​e​.​ ​S​a​v​e​d​ ​s​t​a​t​u​s​ ​i​s​ ​o​n​l​y​ ​t​h​e​ ​l​a​s​t​ ​k​n​o​w​n​ ​s​t​a​t​u​s​,​ ​a​n​d​ ​a​n​ ​u​n​a​v​a​i​l​a​b​l​e​ ​w​a​l​l​e​t​ ​m​a​y​ ​h​i​d​e​ ​a​ ​n​e​w​e​r​ ​p​a​y​m​e​n​t​.​ ​D​o​n​'​t​ ​s​e​n​d​ ​a​g​a​i​n​ ​u​n​t​i​l​ ​a​n​ ​u​n​c​e​r​t​a​i​n​ ​p​a​y​m​e​n​t​ ​i​s​ ​r​e​s​o​l​v​e​d​.
+		 */
+		paymentStatus: string
+		/**
+		 * O​p​e​n​ ​R​e​c​e​i​v​e
+		 */
+		receiveAction: string
+		/**
+		 * O​p​e​n​ ​T​r​a​n​s​f​e​r
+		 */
+		transfersAction: string
+		/**
+		 * B​a​c​k​ ​u​p​ ​B​i​t​c​o​i​n​ ​w​a​l​l​e​t
+		 */
+		backupAction: string
+		/**
+		 * O​p​e​n​ ​s​c​a​n​n​e​r
+		 */
+		scanAction: string
+		/**
+		 * O​p​e​n​ ​p​a​y​m​e​n​t​ ​h​i​s​t​o​r​y
+		 */
+		historyAction: string
+		/**
+		 * E​m​a​i​l​ ​s​u​p​p​o​r​t
+		 */
+		supportAction: string
+		/**
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​l​i​m​i​t​s
+		 */
+		limitsTitle: string
+		/**
+		 * W​i​t​h​d​r​a​w​a​l​s
+		 */
+		withdrawal: string
+		/**
+		 * P​a​y​m​e​n​t​s​ ​t​o​ ​F​l​a​s​h​ ​u​s​e​r​s
+		 */
+		internalSend: string
+		/**
+		 * C​o​n​v​e​r​s​i​o​n​s
+		 */
+		convert: string
+		/**
+		 * L​i​m​i​t
+		 */
+		limitTotal: string
+		/**
+		 * R​e​m​a​i​n​i​n​g
+		 */
+		limitRemaining: string
+		/**
+		 * P​e​r​i​o​d​ ​i​n​ ​s​e​c​o​n​d​s
+		 */
+		limitInterval: string
+		/**
+		 * N​o​t​ ​r​e​p​o​r​t​e​d
+		 */
+		notReported: string
+		/**
+		 * P​a​y​m​e​n​t​ ​s​t​a​t​u​s
+		 */
+		detailsTitle: string
+		/**
+		 * S​t​a​t​u​s
+		 */
+		status: string
+		/**
+		 * C​o​m​p​l​e​t​e​d
+		 */
+		success: string
+		/**
+		 * P​e​n​d​i​n​g
+		 */
+		pending: string
+		/**
+		 * F​a​i​l​e​d
+		 */
+		failure: string
+		/**
+		 * U​n​v​e​r​i​f​i​e​d
+		 */
+		unknown: string
+		/**
+		 * L​a​s​t​ ​s​a​v​e​d​ ​{​t​i​m​e​}​.​ ​I​t​ ​m​a​y​ ​b​e​ ​o​u​t​ ​o​f​ ​d​a​t​e​.
+		 * @param {string} time
+		 */
+		savedAt: RequiredParams<'time'>
+		/**
+		 * S​a​v​e​d​ ​h​i​s​t​o​r​y​ ​m​a​y​ ​b​e​ ​i​n​c​o​m​p​l​e​t​e​.​ ​C​u​r​r​e​n​t​ ​p​a​y​m​e​n​t​ ​s​t​a​t​u​s​ ​c​a​n​n​o​t​ ​b​e​ ​v​e​r​i​f​i​e​d​ ​o​f​f​l​i​n​e​.
+		 */
+		incompleteHistory: string
+	}
+	AskFlashSpeech: {
+		/**
+		 * F​l​a​s​h​ ​v​o​i​c​e​s
+		 */
+		packTitle: string
+		/**
+		 * H​e​a​r​t​,​ ​M​i​c​h​a​e​l​ ​&​ ​E​m​m​a​ ​·​ ​O​f​f​l​i​n​e
+		 */
+		packReady: string
+		/**
+		 * {​s​i​z​e​}​ ​M​B​ ​·​ ​O​n​e​ ​d​o​w​n​l​o​a​d​,​ ​w​o​r​k​s​ ​o​f​f​l​i​n​e
+		 * @param {string} size
+		 */
+		packSize: RequiredParams<'size'>
+		/**
+		 * D​o​w​n​l​o​a​d​ ​F​l​a​s​h​ ​v​o​i​c​e​s
+		 */
+		packDownload: string
+		/**
+		 * R​e​m​o​v​e​ ​d​o​w​n​l​o​a​d​e​d​ ​v​o​i​c​e​s
+		 */
+		packRemove: string
+		/**
+		 * C​o​u​l​d​n​’​t​ ​d​o​w​n​l​o​a​d​ ​t​h​e​ ​v​o​i​c​e​ ​p​a​c​k​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​a​v​a​i​l​a​b​l​e​ ​s​t​o​r​a​g​e​,​ ​t​h​e​n​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		packFailed: string
+		/**
+		 * F​l​a​s​h​ ​v​o​i​c​e​s
+		 */
+		packVoices: string
+		/**
+		 * S​y​s​t​e​m​ ​v​o​i​c​e​s
+		 */
+		systemVoices: string
+		/**
+		 * C​o​m​p​a​r​e​ ​n​e​w​ ​v​o​i​c​e​s
+		 */
+		auditionTitle: string
+		/**
+		 * B​a​c​k​ ​t​o​ ​v​o​i​c​e​ ​s​e​t​t​i​n​g​s
+		 */
+		auditionBack: string
+		/**
+		 * P​r​e​v​i​e​w​ ​t​h​r​e​e​ ​v​o​i​c​e​s​ ​f​o​r​ ​a​ ​f​u​t​u​r​e​ ​o​f​f​l​i​n​e​ ​v​o​i​c​e​ ​p​a​c​k​.​ ​T​h​e​s​e​ ​s​a​m​p​l​e​s​ ​d​o​n​’​t​ ​c​h​a​n​g​e​ ​t​h​e​ ​v​o​i​c​e​ ​u​s​e​d​ ​f​o​r​ ​y​o​u​r​ ​a​n​s​w​e​r​s​.
+		 */
+		auditionDescription: string
+		/**
+		 * D​o​w​n​l​o​a​d​ ​v​o​i​c​e​ ​s​a​m​p​l​e​s
+		 */
+		auditionDownloadTitle: string
+		/**
+		 * {​s​i​z​e​}​ ​M​B​.​ ​D​o​w​n​l​o​a​d​ ​o​n​c​e​,​ ​t​h​e​n​ ​l​i​s​t​e​n​ ​o​f​f​l​i​n​e​.​ ​T​h​e​s​e​ ​a​r​e​ ​s​a​m​p​l​e​ ​r​e​c​o​r​d​i​n​g​s​,​ ​n​o​t​ ​t​h​e​ ​f​u​l​l​ ​v​o​i​c​e​ ​p​a​c​k​.
+		 * @param {string} size
+		 */
+		auditionDownloadSize: RequiredParams<'size'>
+		/**
+		 * D​o​w​n​l​o​a​d​ ​s​a​m​p​l​e​s
+		 */
+		auditionDownload: string
+		/**
+		 * T​r​y​ ​d​o​w​n​l​o​a​d​ ​a​g​a​i​n
+		 */
+		auditionRetry: string
+		/**
+		 * T​h​e​ ​s​a​m​p​l​e​s​ ​c​o​u​l​d​n​’​t​ ​b​e​ ​d​o​w​n​l​o​a​d​e​d​ ​o​r​ ​v​e​r​i​f​i​e​d​.​ ​C​h​e​c​k​ ​y​o​u​r​ ​c​o​n​n​e​c​t​i​o​n​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		auditionDownloadFailed: string
+		/**
+		 * W​e​l​c​o​m​e
+		 */
+		auditionWelcome: string
+		/**
+		 * G​u​i​d​a​n​c​e
+		 */
+		auditionGuidance: string
+		/**
+		 * A​m​o​u​n​t​s
+		 */
+		auditionAmounts: string
+		/**
+		 * D​e​l​e​t​e​ ​d​o​w​n​l​o​a​d​e​d​ ​s​a​m​p​l​e​s
+		 */
+		auditionDelete: string
+		/**
+		 * T​a​p​ ​a​ ​v​o​i​c​e​ ​t​o​ ​h​e​a​r​ ​a​ ​s​a​m​p​l​e
+		 */
+		sampleHint: string
+		/**
+		 * N​e​w​ ​Z​e​a​l​a​n​d
+		 */
+		accentNZ: string
+		/**
+		 * C​a​n​a​d​a
+		 */
+		accentCA: string
+		/**
+		 * S​o​u​t​h​ ​A​f​r​i​c​a
+		 */
+		accentZA: string
+		/**
+		 * I​n​d​i​a
+		 */
+		accentIN: string
+		/**
+		 * I​r​e​l​a​n​d
+		 */
+		accentIE: string
+		/**
+		 * A​u​s​t​r​a​l​i​a
+		 */
+		accentAU: string
+		/**
+		 * U​n​i​t​e​d​ ​K​i​n​g​d​o​m
+		 */
+		accentGB: string
+		/**
+		 * U​n​i​t​e​d​ ​S​t​a​t​e​s
+		 */
+		accentUS: string
+		/**
+		 * A​l​l​ ​a​c​c​e​n​t​s
+		 */
+		allAccents: string
+		/**
+		 * A​c​c​e​n​t
+		 */
+		accents: string
+		/**
+		 * P​r​e​m​i​u​m
+		 */
+		premium: string
+		/**
+		 * E​n​h​a​n​c​e​d
+		 */
+		enhanced: string
+		/**
+		 * S​t​a​n​d​a​r​d
+		 */
+		standard: string
+		/**
+		 * D​o​n​e
+		 */
+		done: string
+		/**
+		 * A​u​t​o​m​a​t​i​c​ ​r​e​p​l​i​e​s
+		 */
+		automatic: string
+		/**
+		 * V​o​i​c​e
+		 */
+		voice: string
+		/**
+		 * T​a​p​ ​a​ ​v​o​i​c​e​ ​t​o​ ​h​e​a​r​ ​a​ ​s​a​m​p​l​e​.​ ​F​i​l​t​e​r​ ​b​y​ ​a​c​c​e​n​t​ ​t​o​ ​e​x​p​l​o​r​e​ ​i​n​s​t​a​l​l​e​d​ ​r​e​g​i​o​n​a​l​ ​v​o​i​c​e​s​.​ ​R​e​c​o​m​m​e​n​d​e​d​ ​c​h​o​o​s​e​s​ ​t​h​e​ ​b​e​s​t​ ​i​n​s​t​a​l​l​e​d​ ​o​f​f​l​i​n​e​ ​v​o​i​c​e​ ​f​o​r​ ​t​h​e​ ​a​n​s​w​e​r​’​s​ ​l​a​n​g​u​a​g​e​.
+		 */
+		voiceDescription: string
+		/**
+		 * R​e​c​o​m​m​e​n​d​e​d​ ​(​a​u​t​o​m​a​t​i​c​)
+		 */
+		recommended: string
+		/**
+		 * L​o​a​d​i​n​g​ ​i​n​s​t​a​l​l​e​d​ ​v​o​i​c​e​s​…
+		 */
+		loadingVoices: string
+		/**
+		 * T​h​i​s​ ​v​o​i​c​e​ ​i​s​ ​n​o​ ​l​o​n​g​e​r​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​t​h​i​s​ ​l​a​n​g​u​a​g​e​.​ ​F​l​a​s​h​ ​w​i​l​l​ ​u​s​e​ ​t​h​e​ ​r​e​c​o​m​m​e​n​d​e​d​ ​v​o​i​c​e​.
+		 */
+		voiceMissing: string
+		/**
+		 * S​p​e​a​k​i​n​g​ ​s​p​e​e​d
+		 */
+		speed: string
+		/**
+		 * P​r​e​v​i​e​w​ ​v​o​i​c​e
+		 */
+		preview: string
+		/**
+		 * H​e​l​l​o​,​ ​I​’​m​ ​F​l​a​s​h​.​ ​I​ ​c​a​n​ ​h​e​l​p​ ​y​o​u​ ​f​i​n​d​ ​y​o​u​r​ ​w​a​y​ ​a​r​o​u​n​d​ ​y​o​u​r​ ​w​a​l​l​e​t​.
+		 */
+		previewText: string
+		/**
+		 * L​i​s​t​e​n
+		 */
+		listen: string
+		/**
+		 * S​t​o​p
+		 */
+		stop: string
+		/**
+		 * S​p​o​k​e​n​ ​r​e​p​l​i​e​s
+		 */
+		preference: string
+		/**
+		 * A​u​t​o​m​a​t​i​c​a​l​l​y​ ​r​e​a​d​ ​g​e​n​e​r​a​l​ ​g​u​i​d​a​n​c​e​ ​a​f​t​e​r​ ​q​u​e​s​t​i​o​n​s​ ​y​o​u​ ​a​s​k​ ​o​r​ ​s​e​l​e​c​t​.​ ​B​a​l​a​n​c​e​s​,​ ​p​r​i​c​e​s​,​ ​a​d​d​r​e​s​s​e​s​ ​a​n​d​ ​p​a​y​m​e​n​t​ ​d​e​t​a​i​l​s​ ​s​t​a​y​ ​s​i​l​e​n​t​ ​u​n​l​e​s​s​ ​y​o​u​ ​t​a​p​ ​L​i​s​t​e​n​.​ ​P​a​y​m​e​n​t​ ​c​o​n​f​i​r​m​a​t​i​o​n​s​ ​r​e​m​a​i​n​ ​o​n​ ​s​c​r​e​e​n​.
+		 */
+		preferenceDescription: string
+		/**
+		 * T​u​r​n​ ​o​n
+		 */
+		turnOn: string
+		/**
+		 * T​u​r​n​ ​o​f​f
+		 */
+		turnOff: string
+		/**
+		 * C​a​n​c​e​l
+		 */
+		cancel: string
+		/**
+		 * N​o​ ​i​n​s​t​a​l​l​e​d​ ​o​f​f​l​i​n​e​ ​v​o​i​c​e​ ​i​s​ ​a​v​a​i​l​a​b​l​e​ ​f​o​r​ ​t​h​i​s​ ​a​n​s​w​e​r​'​s​ ​l​a​n​g​u​a​g​e​.​ ​Y​o​u​ ​c​a​n​ ​s​t​i​l​l​ ​r​e​a​d​ ​t​h​e​ ​a​n​s​w​e​r​ ​o​r​ ​t​y​p​e​ ​a​ ​q​u​e​s​t​i​o​n​.
+		 */
+		unavailable: string
+		/**
+		 * A​u​d​i​o​ ​c​o​u​l​d​n​'​t​ ​p​l​a​y​ ​o​r​ ​s​t​o​p​ ​s​a​f​e​l​y​.​ ​T​r​y​ ​a​g​a​i​n​ ​o​r​ ​c​o​n​t​i​n​u​e​ ​w​i​t​h​ ​t​e​x​t​.
+		 */
+		failed: string
+		/**
+		 * O​f​f​l​i​n​e​ ​v​o​i​c​e​ ​s​e​t​u​p
+		 */
+		setupTitle: string
+		/**
+		 * F​o​r​ ​m​o​r​e​ ​a​c​c​e​n​t​s​ ​o​r​ ​h​i​g​h​e​r​-​q​u​a​l​i​t​y​ ​v​o​i​c​e​s​ ​o​n​ ​i​P​h​o​n​e​:​ ​S​e​t​t​i​n​g​s​ ​→​ ​A​c​c​e​s​s​i​b​i​l​i​t​y​ ​→​ ​R​e​a​d​ ​&​ ​S​p​e​a​k​ ​(​S​p​o​k​e​n​ ​C​o​n​t​e​n​t​ ​o​n​ ​o​l​d​e​r​ ​v​e​r​s​i​o​n​s​)​ ​→​ ​V​o​i​c​e​s​ ​→​ ​y​o​u​r​ ​l​a​n​g​u​a​g​e​.​ ​D​o​w​n​l​o​a​d​ ​a​ ​v​o​i​c​e​,​ ​t​h​e​n​ ​r​e​t​u​r​n​ ​t​o​ ​F​l​a​s​h​.​ ​O​n​ ​A​n​d​r​o​i​d​,​ ​i​n​s​t​a​l​l​ ​o​f​f​l​i​n​e​ ​v​o​i​c​e​ ​d​a​t​a​ ​i​n​ ​y​o​u​r​ ​p​h​o​n​e​’​s​ ​T​e​x​t​-​t​o​-​s​p​e​e​c​h​ ​s​e​t​t​i​n​g​s​.​ ​D​o​w​n​l​o​a​d​s​ ​n​e​e​d​ ​i​n​t​e​r​n​e​t​;​ ​i​n​s​t​a​l​l​e​d​ ​v​o​i​c​e​s​ ​w​o​r​k​ ​o​f​f​l​i​n​e​.​ ​A​v​a​i​l​a​b​i​l​i​t​y​ ​d​e​p​e​n​d​s​ ​o​n​ ​y​o​u​r​ ​d​e​v​i​c​e​ ​a​n​d​ ​l​a​n​g​u​a​g​e​.
+		 */
+		setupInstructions: string
+		/**
+		 * Y​o​u​r​ ​b​a​l​a​n​c​e​s
+		 */
+		balanceTitle: string
+		/**
+		 * s​a​t​o​s​h​i​s
+		 */
+		satoshis: string
+		/**
+		 * U​S​ ​d​o​l​l​a​r​s
+		 */
+		usDollars: string
+		/**
+		 * J​a​m​a​i​c​a​n​ ​d​o​l​l​a​r​s
+		 */
+		jamaicanDollars: string
+		/**
+		 * U​ ​S​ ​D​ ​T
+		 */
+		usdt: string
+		/**
+		 * O​n​e​ ​B​i​t​c​o​i​n​:​ ​{​v​a​l​u​e​}​,​ ​i​n​ ​{​c​u​r​r​e​n​c​y​}​.​ ​Q​u​o​t​e​ ​t​i​m​e​:​ ​{​t​i​m​e​}​.
+		 * @param {string} currency
+		 * @param {string} time
+		 * @param {string} value
+		 */
+		price: RequiredParams<'currency' | 'time' | 'value'>
+		/**
+		 * Y​o​u​r​ ​r​e​c​e​n​t​ ​p​a​y​m​e​n​t​s​ ​a​r​e​ ​s​h​o​w​n​ ​b​e​l​o​w​.​ ​O​p​e​n​ ​a​ ​p​a​y​m​e​n​t​ ​t​o​ ​r​e​v​i​e​w​ ​i​t​s​ ​d​e​t​a​i​l​s​.
+		 */
+		history: string
+		/**
+		 * T​h​e​ ​p​a​y​m​e​n​t​'​s​ ​d​e​t​a​i​l​s​ ​a​r​e​ ​s​h​o​w​n​ ​b​e​l​o​w​.​ ​C​h​e​c​k​ ​i​t​s​ ​c​u​r​r​e​n​t​ ​s​t​a​t​u​s​ ​b​e​f​o​r​e​ ​s​e​n​d​i​n​g​ ​a​g​a​i​n​.
+		 */
+		details: string
+		/**
+		 * Y​o​u​r​ ​a​c​c​o​u​n​t​ ​l​i​m​i​t​s​ ​a​r​e​ ​s​h​o​w​n​ ​b​e​l​o​w​.​ ​T​h​e​s​e​ ​a​l​o​n​e​ ​d​o​ ​n​o​t​ ​i​d​e​n​t​i​f​y​ ​w​h​y​ ​a​ ​p​a​y​m​e​n​t​ ​f​a​i​l​e​d​.
+		 */
+		limits: string
 	}
 }
 
@@ -15407,6 +16054,14 @@ export type TranslationFunctions = {
 	}
 	Assistant: {
 		/**
+		 * No saved information is available for this ask. Connect to the internet and ask again to save a copy.
+		 */
+		noSavedData: () => LocalizedString
+		/**
+		 * A payment attempt is still unresolved. Check your payment history or contact support before sending again.
+		 */
+		paymentStatusUncertain: () => LocalizedString
+		/**
 		 * I can't help with that yet.
 		 */
 		unknownIntent: () => LocalizedString
@@ -15683,6 +16338,50 @@ export type TranslationFunctions = {
 	}
 	AskFlash: {
 		/**
+		 * Hold to talk
+		 */
+		holdToTalk: () => LocalizedString
+		/**
+		 * Release to send
+		 */
+		releaseToSend: () => LocalizedString
+		/**
+		 * Finishing…
+		 */
+		finishing: () => LocalizedString
+		/**
+		 * Listening…
+		 */
+		listening: () => LocalizedString
+		/**
+		 * Voice isn't available on this phone.
+		 */
+		voiceUnavailable: () => LocalizedString
+		/**
+		 * Flash needs microphone access to hear your asks.
+		 */
+		voicePermission: () => LocalizedString
+		/**
+		 * I couldn't hear that. Try again or type it.
+		 */
+		voiceFailed: () => LocalizedString
+		/**
+		 * Open Settings
+		 */
+		voiceSettings: () => LocalizedString
+		/**
+		 * Start recording
+		 */
+		startVoice: () => LocalizedString
+		/**
+		 * Stop and send
+		 */
+		stopVoice: () => LocalizedString
+		/**
+		 * Activate to start recording. Activate again to stop and send your ask.
+		 */
+		voiceAccessibilityHint: () => LocalizedString
+		/**
 		 * Ask Flash
 		 */
 		title: () => LocalizedString
@@ -15699,7 +16398,7 @@ export type TranslationFunctions = {
 		 */
 		typing: () => LocalizedString
 		/**
-		 * You're offline. Balances and payments show your last saved copy.
+		 * You're offline. Help still works; saved wallet information may be out of date.
 		 */
 		offlineBanner: () => LocalizedString
 		/**
@@ -15711,9 +16410,597 @@ export type TranslationFunctions = {
 		 */
 		balancesTitle: () => LocalizedString
 		/**
-		 * Try “what's my balance”, “show my payments”, “bitcoin price”, “send 500 to Mom” or “make an invoice”.
+		 * Hold to talk, type a question, or try one below.
 		 */
 		emptyHint: () => LocalizedString
+	}
+	AskFlashHelp: {
+		/**
+		 * Your Flash address
+		 */
+		addressTitle: () => LocalizedString
+		/**
+		 * Saved Flash address. Reconnect to check whether it has changed.
+		 */
+		addressSaved: () => LocalizedString
+		/**
+		 * Set a username to get your Flash address.
+		 */
+		addressNotSet: () => LocalizedString
+		/**
+		 * I couldn't load your Flash address. Try again.
+		 */
+		addressUnavailable: () => LocalizedString
+		/**
+		 * Your Flash address isn't saved on this phone yet. Reconnect and ask again.
+		 */
+		addressOfflineUnavailable: () => LocalizedString
+		/**
+		 * Copy address
+		 */
+		addressCopy: () => LocalizedString
+		/**
+		 * Set username
+		 */
+		addressSetup: () => LocalizedString
+		/**
+		 * Top up?
+		 */
+		fundingSuggestion: () => LocalizedString
+		/**
+		 * How do I top up my wallet?
+		 */
+		fundingExample: () => LocalizedString
+		/**
+		 * Get paid?
+		 */
+		receivingSuggestion: () => LocalizedString
+		/**
+		 * How can someone pay me?
+		 */
+		receivingExample: () => LocalizedString
+		/**
+		 * Recent payments?
+		 */
+		historySuggestion: () => LocalizedString
+		/**
+		 * Show me my recent payments.
+		 */
+		historyExample: () => LocalizedString
+		/**
+		 * Who paid me?
+		 */
+		incomingSuggestion: () => LocalizedString
+		/**
+		 * Who paid me recently?
+		 */
+		incomingExample: () => LocalizedString
+		/**
+		 * My Flash address?
+		 */
+		addressSuggestion: () => LocalizedString
+		/**
+		 * What's my Flash address?
+		 */
+		addressExample: () => LocalizedString
+		/**
+		 * Scan a QR?
+		 */
+		scanSuggestion: () => LocalizedString
+		/**
+		 * How do I scan a payment QR code?
+		 */
+		scanExample: () => LocalizedString
+		/**
+		 * Which wallet?
+		 */
+		walletsSuggestion: () => LocalizedString
+		/**
+		 * What's the difference between my cash and Bitcoin wallets?
+		 */
+		walletsExample: () => LocalizedString
+		/**
+		 * What is Lightning?
+		 */
+		lightningSuggestion: () => LocalizedString
+		/**
+		 * What is Lightning?
+		 */
+		lightningExample: () => LocalizedString
+		/**
+		 * Payment fees?
+		 */
+		feesSuggestion: () => LocalizedString
+		/**
+		 * What will this payment cost in fees?
+		 */
+		feesExample: () => LocalizedString
+		/**
+		 * Payment status?
+		 */
+		statusSuggestion: () => LocalizedString
+		/**
+		 * Did my last payment go through?
+		 */
+		statusExample: () => LocalizedString
+		/**
+		 * Cash out?
+		 */
+		cashoutSuggestion: () => LocalizedString
+		/**
+		 * How do I cash out?
+		 */
+		cashoutExample: () => LocalizedString
+		/**
+		 * Lost phone?
+		 */
+		recoverySuggestion: () => LocalizedString
+		/**
+		 * What happens to my money if I lose my phone?
+		 */
+		recoveryExample: () => LocalizedString
+		/**
+		 * Cancel or refund?
+		 */
+		refundsSuggestion: () => LocalizedString
+		/**
+		 * Can I cancel a payment or get a refund?
+		 */
+		refundsExample: () => LocalizedString
+		/**
+		 * Send limits?
+		 */
+		limitsSuggestion: () => LocalizedString
+		/**
+		 * Why can't I send this amount?
+		 */
+		limitsExample: () => LocalizedString
+		/**
+		 * Contact support?
+		 */
+		supportSuggestion: () => LocalizedString
+		/**
+		 * How do I contact support?
+		 */
+		supportExample: () => LocalizedString
+		/**
+		 * Bitcoin price?
+		 */
+		priceSuggestion: () => LocalizedString
+		/**
+		 * How much is Bitcoin worth in Jamaican dollars?
+		 */
+		priceExample: () => LocalizedString
+		/**
+		 * What can you do?
+		 */
+		helpSuggestion: () => LocalizedString
+		/**
+		 * My balance?
+		 */
+		balanceSuggestion: () => LocalizedString
+		/**
+		 * Offline help?
+		 */
+		offlineSuggestion: () => LocalizedString
+		/**
+		 * What can you help me do?
+		 */
+		helpExample: () => LocalizedString
+		/**
+		 * How much money do I have?
+		 */
+		balanceExample: () => LocalizedString
+		/**
+		 * What can I do without internet?
+		 */
+		offlineExample: () => LocalizedString
+		/**
+		 * I can explain Flash, show your balances and payments, check Bitcoin's price, and help prepare payments or payment requests. Try ‘How much money do I have?’ or ‘How can someone pay me?’
+		 */
+		capabilities: () => LocalizedString
+		/**
+		 * From Home, tap Transfer, then Top Up and choose one of the methods shown. For Debit/Credit Card, choose your wallet and amount, tap Continue, and follow the payment form; for bank transfers, follow the bank instructions shown. Top-ups need internet, and the available methods depend on your account.
+		 */
+		funding: () => LocalizedString
+		/**
+		 * Open Receive to share your payment details or make a payment request. Check the wallet and currency before sharing; creating a fresh request needs internet.
+		 */
+		receiving: () => LocalizedString
+		/**
+		 * Fees depend on the payment, amount, and network. Start a payment with an amount and recipient, then review its fee before confirming; an exact quote needs internet.
+		 */
+		fees: () => LocalizedString
+		/**
+		 * From Home, tap Transfer, then Settle and choose one of the withdrawal methods shown. Follow its instructions and review the destination and fees before confirming. Availability and completing a withdrawal require internet.
+		 */
+		cashout: () => LocalizedString
+		/**
+		 * Recovery depends on which wallet holds your money. Back up your Bitcoin wallet's recovery phrase securely and keep it private; use Flash support for help with your cash account. Never type your recovery phrase or PIN here.
+		 */
+		recovery: () => LocalizedString
+		/**
+		 * Your Flash address is your username followed by @ and your Flash server, as shown on Home. You can share it to receive payments.
+		 */
+		address: () => LocalizedString
+		/**
+		 * Open the scanner and point your camera at the payment QR code. Review the recipient, amount, and fee before confirming; completing the payment needs internet.
+		 */
+		scan: () => LocalizedString
+		/**
+		 * Your cash wallet holds a dollar balance. Your Bitcoin wallet holds bitcoin, often shown in sats, whose value in dollars changes. Check the wallet and currency whenever you receive or send.
+		 */
+		wallets: () => LocalizedString
+		/**
+		 * Lightning is a way to send and receive Bitcoin payments using a payment request or a supported address. Flash helps you review a payment before you confirm it.
+		 */
+		lightning: () => LocalizedString
+		/**
+		 * Whether a payment can be canceled or refunded depends on its type and status. Open its details and contact support if you need help; don't send again while its status is uncertain.
+		 */
+		refunds: () => LocalizedString
+		/**
+		 * You can read this help and view information saved from earlier asks, labeled with its last-updated time. Current prices, fee quotes, payment verification, fresh requests, and sending money need internet. Offline voice also needs a supported speech model already installed on your phone; you can always type.
+		 */
+		offline: () => LocalizedString
+		/**
+		 * A payment may be blocked by available funds, account limits, or its payment method. These limits alone don't identify the cause; check the payment's error and your balance. Saved information may be out of date.
+		 */
+		limits: () => LocalizedString
+		/**
+		 * You can email Flash support at {email}. You can read this address offline; sending your message needs a connection. Never include a PIN, recovery phrase, or private key.
+		 */
+		support: (arg: { email: string }) => LocalizedString
+		/**
+		 * Check the outgoing payment below or open your history to choose one. Saved status is only the last known status, and an unavailable wallet may hide a newer payment. Don't send again until an uncertain payment is resolved.
+		 */
+		paymentStatus: () => LocalizedString
+		/**
+		 * Open Receive
+		 */
+		receiveAction: () => LocalizedString
+		/**
+		 * Open Transfer
+		 */
+		transfersAction: () => LocalizedString
+		/**
+		 * Back up Bitcoin wallet
+		 */
+		backupAction: () => LocalizedString
+		/**
+		 * Open scanner
+		 */
+		scanAction: () => LocalizedString
+		/**
+		 * Open payment history
+		 */
+		historyAction: () => LocalizedString
+		/**
+		 * Email support
+		 */
+		supportAction: () => LocalizedString
+		/**
+		 * Your account limits
+		 */
+		limitsTitle: () => LocalizedString
+		/**
+		 * Withdrawals
+		 */
+		withdrawal: () => LocalizedString
+		/**
+		 * Payments to Flash users
+		 */
+		internalSend: () => LocalizedString
+		/**
+		 * Conversions
+		 */
+		convert: () => LocalizedString
+		/**
+		 * Limit
+		 */
+		limitTotal: () => LocalizedString
+		/**
+		 * Remaining
+		 */
+		limitRemaining: () => LocalizedString
+		/**
+		 * Period in seconds
+		 */
+		limitInterval: () => LocalizedString
+		/**
+		 * Not reported
+		 */
+		notReported: () => LocalizedString
+		/**
+		 * Payment status
+		 */
+		detailsTitle: () => LocalizedString
+		/**
+		 * Status
+		 */
+		status: () => LocalizedString
+		/**
+		 * Completed
+		 */
+		success: () => LocalizedString
+		/**
+		 * Pending
+		 */
+		pending: () => LocalizedString
+		/**
+		 * Failed
+		 */
+		failure: () => LocalizedString
+		/**
+		 * Unverified
+		 */
+		unknown: () => LocalizedString
+		/**
+		 * Last saved {time}. It may be out of date.
+		 */
+		savedAt: (arg: { time: string }) => LocalizedString
+		/**
+		 * Saved history may be incomplete. Current payment status cannot be verified offline.
+		 */
+		incompleteHistory: () => LocalizedString
+	}
+	AskFlashSpeech: {
+		/**
+		 * Flash voices
+		 */
+		packTitle: () => LocalizedString
+		/**
+		 * Heart, Michael & Emma · Offline
+		 */
+		packReady: () => LocalizedString
+		/**
+		 * {size} MB · One download, works offline
+		 */
+		packSize: (arg: { size: string }) => LocalizedString
+		/**
+		 * Download Flash voices
+		 */
+		packDownload: () => LocalizedString
+		/**
+		 * Remove downloaded voices
+		 */
+		packRemove: () => LocalizedString
+		/**
+		 * Couldn’t download the voice pack. Check your connection and available storage, then try again.
+		 */
+		packFailed: () => LocalizedString
+		/**
+		 * Flash voices
+		 */
+		packVoices: () => LocalizedString
+		/**
+		 * System voices
+		 */
+		systemVoices: () => LocalizedString
+		/**
+		 * Compare new voices
+		 */
+		auditionTitle: () => LocalizedString
+		/**
+		 * Back to voice settings
+		 */
+		auditionBack: () => LocalizedString
+		/**
+		 * Preview three voices for a future offline voice pack. These samples don’t change the voice used for your answers.
+		 */
+		auditionDescription: () => LocalizedString
+		/**
+		 * Download voice samples
+		 */
+		auditionDownloadTitle: () => LocalizedString
+		/**
+		 * {size} MB. Download once, then listen offline. These are sample recordings, not the full voice pack.
+		 */
+		auditionDownloadSize: (arg: { size: string }) => LocalizedString
+		/**
+		 * Download samples
+		 */
+		auditionDownload: () => LocalizedString
+		/**
+		 * Try download again
+		 */
+		auditionRetry: () => LocalizedString
+		/**
+		 * The samples couldn’t be downloaded or verified. Check your connection and try again.
+		 */
+		auditionDownloadFailed: () => LocalizedString
+		/**
+		 * Welcome
+		 */
+		auditionWelcome: () => LocalizedString
+		/**
+		 * Guidance
+		 */
+		auditionGuidance: () => LocalizedString
+		/**
+		 * Amounts
+		 */
+		auditionAmounts: () => LocalizedString
+		/**
+		 * Delete downloaded samples
+		 */
+		auditionDelete: () => LocalizedString
+		/**
+		 * Tap a voice to hear a sample
+		 */
+		sampleHint: () => LocalizedString
+		/**
+		 * New Zealand
+		 */
+		accentNZ: () => LocalizedString
+		/**
+		 * Canada
+		 */
+		accentCA: () => LocalizedString
+		/**
+		 * South Africa
+		 */
+		accentZA: () => LocalizedString
+		/**
+		 * India
+		 */
+		accentIN: () => LocalizedString
+		/**
+		 * Ireland
+		 */
+		accentIE: () => LocalizedString
+		/**
+		 * Australia
+		 */
+		accentAU: () => LocalizedString
+		/**
+		 * United Kingdom
+		 */
+		accentGB: () => LocalizedString
+		/**
+		 * United States
+		 */
+		accentUS: () => LocalizedString
+		/**
+		 * All accents
+		 */
+		allAccents: () => LocalizedString
+		/**
+		 * Accent
+		 */
+		accents: () => LocalizedString
+		/**
+		 * Premium
+		 */
+		premium: () => LocalizedString
+		/**
+		 * Enhanced
+		 */
+		enhanced: () => LocalizedString
+		/**
+		 * Standard
+		 */
+		standard: () => LocalizedString
+		/**
+		 * Done
+		 */
+		done: () => LocalizedString
+		/**
+		 * Automatic replies
+		 */
+		automatic: () => LocalizedString
+		/**
+		 * Voice
+		 */
+		voice: () => LocalizedString
+		/**
+		 * Tap a voice to hear a sample. Filter by accent to explore installed regional voices. Recommended chooses the best installed offline voice for the answer’s language.
+		 */
+		voiceDescription: () => LocalizedString
+		/**
+		 * Recommended (automatic)
+		 */
+		recommended: () => LocalizedString
+		/**
+		 * Loading installed voices…
+		 */
+		loadingVoices: () => LocalizedString
+		/**
+		 * This voice is no longer available for this language. Flash will use the recommended voice.
+		 */
+		voiceMissing: () => LocalizedString
+		/**
+		 * Speaking speed
+		 */
+		speed: () => LocalizedString
+		/**
+		 * Preview voice
+		 */
+		preview: () => LocalizedString
+		/**
+		 * Hello, I’m Flash. I can help you find your way around your wallet.
+		 */
+		previewText: () => LocalizedString
+		/**
+		 * Listen
+		 */
+		listen: () => LocalizedString
+		/**
+		 * Stop
+		 */
+		stop: () => LocalizedString
+		/**
+		 * Spoken replies
+		 */
+		preference: () => LocalizedString
+		/**
+		 * Automatically read general guidance after questions you ask or select. Balances, prices, addresses and payment details stay silent unless you tap Listen. Payment confirmations remain on screen.
+		 */
+		preferenceDescription: () => LocalizedString
+		/**
+		 * Turn on
+		 */
+		turnOn: () => LocalizedString
+		/**
+		 * Turn off
+		 */
+		turnOff: () => LocalizedString
+		/**
+		 * Cancel
+		 */
+		cancel: () => LocalizedString
+		/**
+		 * No installed offline voice is available for this answer's language. You can still read the answer or type a question.
+		 */
+		unavailable: () => LocalizedString
+		/**
+		 * Audio couldn't play or stop safely. Try again or continue with text.
+		 */
+		failed: () => LocalizedString
+		/**
+		 * Offline voice setup
+		 */
+		setupTitle: () => LocalizedString
+		/**
+		 * For more accents or higher-quality voices on iPhone: Settings → Accessibility → Read & Speak (Spoken Content on older versions) → Voices → your language. Download a voice, then return to Flash. On Android, install offline voice data in your phone’s Text-to-speech settings. Downloads need internet; installed voices work offline. Availability depends on your device and language.
+		 */
+		setupInstructions: () => LocalizedString
+		/**
+		 * Your balances
+		 */
+		balanceTitle: () => LocalizedString
+		/**
+		 * satoshis
+		 */
+		satoshis: () => LocalizedString
+		/**
+		 * US dollars
+		 */
+		usDollars: () => LocalizedString
+		/**
+		 * Jamaican dollars
+		 */
+		jamaicanDollars: () => LocalizedString
+		/**
+		 * U S D T
+		 */
+		usdt: () => LocalizedString
+		/**
+		 * One Bitcoin: {value}, in {currency}. Quote time: {time}.
+		 */
+		price: (arg: { currency: string, time: string, value: string }) => LocalizedString
+		/**
+		 * Your recent payments are shown below. Open a payment to review its details.
+		 */
+		history: () => LocalizedString
+		/**
+		 * The payment's details are shown below. Check its current status before sending again.
+		 */
+		details: () => LocalizedString
+		/**
+		 * Your account limits are shown below. These alone do not identify why a payment failed.
+		 */
+		limits: () => LocalizedString
 	}
 }
 

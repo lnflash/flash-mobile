@@ -86,7 +86,7 @@ describe("getAssistantRuntime", () => {
 
     expect(second.result.current.entries.map(({ kind }) => kind)).toEqual([
       "user",
-      "reply",
+      "help",
     ])
   })
 

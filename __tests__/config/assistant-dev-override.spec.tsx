@@ -20,6 +20,7 @@ import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import { DevLinks } from "@app/components/dev-links"
 import {
   assistantDevOverride,
+  assistantVoiceDevOverride,
   DevAssistantLink,
   parseAssistantDevLink,
   setAssistantDevOverride,
@@ -199,6 +200,81 @@ describe("the assistant's dev override", () => {
 })
 
 describe("useDevAssistantLink", () => {
+  it("exposes spoken replies only through an explicit Debug option", async () => {
+    ;(Linking.getInitialURL as jest.Mock).mockResolvedValue(
+      "flash://dev/assistant?on=1&replies=1",
+    )
+    const screen = render(
+      <FeatureFlagContextProvider>
+        <DevAssistantLink />
+        <Flags />
+      </FeatureFlagContextProvider>,
+    )
+    await act(async () => {})
+    expect(
+      JSON.parse(screen.getByTestId("flags").props.children).assistantVoiceReplies,
+    ).toBe(true)
+  })
+  it("never enables spoken replies through a release-mode dev link", async () => {
+    setDev(false)
+    setDevLink("true")
+    ;(Linking.getInitialURL as jest.Mock).mockResolvedValue(
+      "flash://dev/assistant?on=1&replies=1",
+    )
+    const screen = render(
+      <FeatureFlagContextProvider>
+        <DevAssistantLink />
+        <Flags />
+      </FeatureFlagContextProvider>,
+    )
+    await act(async () => {})
+    expect(
+      JSON.parse(screen.getByTestId("flags").props.children).assistantVoiceReplies,
+    ).toBe(false)
+  })
+
+  it("publishes assistant and explicit Debug voice together at cold launch", async () => {
+    ;(Linking.getInitialURL as jest.Mock).mockResolvedValue(
+      "flash://dev/assistant?on=1&voice=1",
+    )
+    const seen: { assistantEnabled: boolean; assistantVoice: boolean }[] = []
+    const Observe = () => {
+      const flags = useFeatureFlags()
+      seen.push({
+        assistantEnabled: flags.assistantEnabled,
+        assistantVoice: flags.assistantVoice,
+      })
+      return null
+    }
+    render(
+      <FeatureFlagContextProvider>
+        <DevAssistantLink />
+        <Observe />
+      </FeatureFlagContextProvider>,
+    )
+    await act(async () => {})
+    expect(assistantVoiceDevOverride()).toBe(true)
+    expect(seen.some((flags) => flags.assistantEnabled)).toBe(true)
+    expect(
+      seen
+        .filter((flags) => flags.assistantEnabled)
+        .every((flags) => flags.assistantVoice),
+    ).toBe(true)
+    act(() => setAssistantDevOverride(false))
+    expect(assistantVoiceDevOverride()).toBe(false)
+  })
+  it("ignores the voice opt-in in production-mode local phone builds", async () => {
+    setDev(false)
+    setDevLink("true")
+    ;(Linking.getInitialURL as jest.Mock).mockResolvedValue(
+      "flash://dev/assistant?on=1&voice=1",
+    )
+    renderHook(() => useDevAssistantLink())
+    await act(async () => {})
+    expect(assistantDevOverride()).toBe(true)
+    expect(assistantVoiceDevOverride()).toBe(false)
+  })
+
   it("acts on the link the app was opened with", async () => {
     ;(Linking.getInitialURL as jest.Mock).mockResolvedValue("flash://dev/assistant?on=1")
 

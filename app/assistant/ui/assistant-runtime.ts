@@ -15,6 +15,11 @@ import { createGraphqlRail, GraphqlRail } from "../rails/graphql-rail"
 import { createLnurlInvoiceRequest, LnurlInvoiceRequest } from "../rails/lnurl-invoice"
 import { assistantRegistry } from "../registry"
 import type { Registry } from "../registry/define"
+import { createCompletedTurns } from "./completed-turns"
+import { createSpeechPreference, SpeechPreference } from "./speech-preference"
+import { createOwnUsernameReader } from "./own-flash-address"
+import { createSuggestionStore, SuggestionStore } from "./question-suggestions"
+import { createSavedReads, SavedReads } from "./saved-reads"
 import { createThreadStore, ThreadStore } from "./thread-store"
 
 // What the Ask Flash thread runs on (ENG-689): the rails over the app's
@@ -29,10 +34,16 @@ import { createThreadStore, ThreadStore } from "./thread-store"
 export type AssistantRuntime = {
   /** The one thread this runtime holds. */
   threadId: string
+  getOwnUsername: (isOffline: boolean) => Promise<string | null | undefined>
+  speechPreference: SpeechPreference
+  completedTurns: ReturnType<typeof createCompletedTurns>
+  suggestions: SuggestionStore
+  savedReads: SavedReads
+  pendingDispatches: AttemptJournal["pending"]
   registry: Registry
   /** The custodial rail's reads, from the network: every turn online, and the reconciler. */
   graphql: GraphqlRail
-  /** The same reads from the cache alone: the thread's reads while offline. */
+  /** Cache-only reads for model grounding. Offline cards use savedReads. */
   cachedGraphql: GraphqlRail
   graphqlActions: GraphqlActionRail
   btcRail: BtcRail
@@ -60,6 +71,8 @@ export type AssistantRuntimeOptions = {
    * for it (Phase 4); a text one confirms with a tap (spec §5).
    */
   authDescription?: string
+  /** Hash of session token and server URI; never the raw credential. */
+  cacheScope?: string
   // Seams for specs.
   threadId?: string
   graphql?: GraphqlRail
@@ -83,11 +96,12 @@ export const createAssistantRuntime = (
   const now = options.now ?? Date.now
   const graphql = options.graphql ?? createGraphqlRail(client)
   const telemetry = options.telemetry ?? analyticsTelemetry
+  const journal = options.journal ?? createAttemptJournal()
   const executor = createExecutor({
     auth:
       options.auth ??
       createDeviceAuthGate({ description: options.authDescription ?? "" }),
-    journal: options.journal ?? createAttemptJournal(),
+    journal,
     // The reconciler reads the network, never the cache: an absent verdict
     // lets a payment go again.
     reconcile: createTransactionListReconciler({ graphql, now }),
@@ -96,6 +110,12 @@ export const createAssistantRuntime = (
   })
   return {
     threadId: options.threadId ?? uuidv4(),
+    savedReads: createSavedReads(client, options.cacheScope),
+    suggestions: createSuggestionStore(),
+    speechPreference: createSpeechPreference(client, options.cacheScope),
+    completedTurns: createCompletedTurns(),
+    getOwnUsername: createOwnUsernameReader(client, Boolean(options.cacheScope)),
+    pendingDispatches: journal.pending,
     registry: assistantRegistry,
     graphql,
     cachedGraphql:

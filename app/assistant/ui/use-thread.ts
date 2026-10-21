@@ -5,6 +5,7 @@ import { useI18nContext } from "@app/i18n/i18n-react"
 import { toastShow } from "@app/utils/toast"
 import type { CardActions } from "../cards/card-actions"
 import { cardOf, validateCard } from "../cards/types"
+import type { AuthOrigin } from "../engine/auth-policy"
 import type { ConfirmResult } from "../engine/executor"
 import { isPlainObject } from "../engine/schema-validator"
 import type { AssistantRuntime } from "./assistant-runtime"
@@ -37,7 +38,7 @@ export type Thread = {
   entries: readonly ThreadEntry[]
   /** A turn is running: the input is off and the typing line shows. */
   busy: boolean
-  submit: (text: string) => Promise<void>
+  submit: (text: string, origin?: AuthOrigin) => Promise<void>
   /** A question's pick: its call again, with the argument it was about replaced. */
   pick: (entryId: string, optionId: string) => Promise<void>
   cardActions: CardActions
@@ -79,15 +80,21 @@ export const useThread = (runtime: AssistantRuntime, env: TurnEnv): Thread => {
   )
 
   const submit = useCallback(
-    (text: string) => {
+    async (text: string, inputOrigin: AuthOrigin = "text") => {
       const utterance = text.trim()
-      if (utterance.length === 0) return Promise.resolve()
-      return turn(async () => {
+      if (utterance.length === 0) return
+      let completed: readonly ThreadEntry[] | undefined
+      await turn(async () => {
         runtime.transcript.append([{ kind: "user", text: utterance }])
-        runtime.transcript.append(
-          await answerUtterance(runtime, utterance, envRef.current),
-        )
+        const entries = await answerUtterance(runtime, utterance, {
+          ...envRef.current,
+          inputOrigin,
+        })
+        runtime.transcript.append(entries)
+        if (entries.length)
+          completed = runtime.transcript.get().entries.slice(-entries.length)
       })
+      if (completed) runtime.completedTurns.complete(inputOrigin, completed)
     },
     [runtime, turn],
   )

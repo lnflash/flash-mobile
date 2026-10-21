@@ -208,6 +208,14 @@ const cardFields = (card: unknown): Record<string, unknown> => {
 /** One thread entry as a line of the quoted thread. */
 export const threadLine = (entry: ThreadEntry): Record<string, unknown> => {
   switch (entry.kind) {
+    case "address":
+      return { from: "assistant", read: "ownFlashAddress" }
+    case "help":
+      return { from: "assistant", help: entry.topic }
+    case "limits":
+      return { from: "assistant", read: "getAccountLimits" }
+    case "details":
+      return { from: "assistant", read: "getTransactionDetails" }
     case "user":
       return { from: "user", text: quoted(entry.text) }
     case "reply":

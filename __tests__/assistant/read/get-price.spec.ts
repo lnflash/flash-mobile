@@ -10,6 +10,14 @@ const PRICE = {
 }
 
 describe("getPrice", () => {
+  it("refuses a quote returned in a different currency rather than relabeling it", async () => {
+    const { ctx, graphql } = fakeCtx()
+    graphql.realtimePrice.mockResolvedValue({ ...PRICE, denominatorCurrency: "USD" })
+    expect(await getPrice.run({ currency: "JMD" }, ctx)).toEqual({
+      kind: "error",
+      userMessage: "Assistant.toolFailed",
+    })
+  })
   it("reads the live price in the display currency by default", async () => {
     const { ctx, graphql } = fakeCtx()
     graphql.realtimePrice.mockResolvedValue(PRICE)
