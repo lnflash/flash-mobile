@@ -19,7 +19,7 @@ concurrency:
   group: android-deploy
   cancel-in-progress: false
 
-# The deploy pushes a version-bump commit + tag back to the repo.
+# The deploy publishes a version-bump branch and tag for a PR into protected main.
 permissions:
   contents: write
 
@@ -145,15 +145,12 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
-      - name: Push version bump
+      - name: Publish version bump for PR
         if: success() && steps.lane.outputs.lane != 'promote_to_beta'
         run: |
-          # Tag-triggered runs check out in detached HEAD, so resolve the target
-          # branch explicitly (git rev-parse --abbrev-ref HEAD would give "HEAD").
-          BRANCH="${{ github.event.repository.default_branch }}"
-          git fetch origin "$BRANCH"
-          git rebase -X theirs --autostash "origin/$BRANCH"
-          git push origin "HEAD:$BRANCH" --follow-tags
+          BRANCH="release/android-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git push origin "HEAD:refs/heads/$BRANCH" --follow-tags
+          echo "Version bump ready for a PR into ${{ github.event.repository.default_branch }}: $BRANCH" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clean up sensitive files
         if: always()
