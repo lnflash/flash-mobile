@@ -8,8 +8,10 @@ voices. No model or voice binary is included in Metro or the app bundle.
 
 The app includes native ONNX Runtime **1.23.0** and API headers from that exact
 version. Both platforms use the first-party C++17 engine in `native/flash-speech`.
-It lazily loads two CPU sessions on a serial worker, uses two inference threads,
-and streams 24 kHz mono audio chunks to the native player. Stop cancels active
+It lazily loads two sessions on a serial worker and streams 24 kHz mono audio
+chunks to the native player. iOS uses two CPU inference threads. Android uses
+the bundled XNNPACK provider with two threads and a single CPU fallback thread;
+unused arena regions are released after each run to bound retained buffers. Stop cancels active
 ORT work, invalidates queued chunks, and releases the shared audio owner before
 Hold to talk starts. System speech remains available before download and for
 other languages. Blur/background disposes the engine cache; iOS also handles

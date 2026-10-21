@@ -18,6 +18,22 @@ int main(int argc, char **argv) {
   if (argc != 2)
     return 2;
   try {
+#ifdef __ANDROID__
+    // Replacing a canceled renderer can overlap the previous model's loading.
+    // Exercise both constructors before any provider allocator is initialized.
+    std::atomic<int> loaded{0};
+    auto load = [&] {
+      try {
+        Engine candidate(argv[1]);
+        ++loaded;
+      } catch (const std::exception &) {
+      }
+    };
+    std::thread first(load), second(load);
+    first.join();
+    second.join();
+    require(loaded == 2);
+#endif
     Engine engine(argv[1]);
     // Dynamic financial precision must preserve every fractional zero and group
     // separators.

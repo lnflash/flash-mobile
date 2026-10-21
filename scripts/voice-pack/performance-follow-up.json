@@ -1,0 +1,823 @@
+{
+  "sourceBaseline": "c0b4ddc4595eea411477b1f85dcdd9a51f9a7703",
+  "androidConfiguration": "XNNPACK2, CPU1, no CPU spinning, shrink cpu:0 per run; same pinned runtime and assets",
+  "pixelOptimizedCycles": [
+    {
+      "cpuMs": 33.268,
+      "cycle": 0,
+      "phase": "baseline",
+      "rssKiB": 4108
+    },
+    {
+      "cycle": 0,
+      "peakRssKiB": 185764,
+      "phase": "load",
+      "rssKiB": 181844,
+      "wallMs": 1380.900758
+    },
+    {
+      "audioMs": 4200.0,
+      "chunks": 1,
+      "cpuMs": 3087.9519999999998,
+      "cycle": 0,
+      "firstPcmMs": 3100.768841,
+      "peakRssKiB": 266684,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.7382897952380952,
+      "round": 0,
+      "rssKiB": 195564,
+      "voice": "af_heart",
+      "wallMs": 3100.81714
+    },
+    {
+      "audioMs": 4800.0,
+      "chunks": 1,
+      "cpuMs": 3507.001,
+      "cycle": 0,
+      "firstPcmMs": 3520.896201,
+      "peakRssKiB": 283396,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.7335346564583334,
+      "round": 0,
+      "rssKiB": 195816,
+      "voice": "am_michael",
+      "wallMs": 3520.966351
+    },
+    {
+      "audioMs": 4325.0,
+      "chunks": 1,
+      "cpuMs": 3178.4230000000007,
+      "cycle": 0,
+      "firstPcmMs": 3192.013429,
+      "peakRssKiB": 285516,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.7380525484393063,
+      "round": 0,
+      "rssKiB": 200032,
+      "voice": "bf_emma",
+      "wallMs": 3192.077272
+    },
+    {
+      "audioMs": 5275.0,
+      "chunks": 1,
+      "cpuMs": 3952.388999999999,
+      "cycle": 0,
+      "firstPcmMs": 3968.538373,
+      "peakRssKiB": 305056,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.7523403023696683,
+      "round": 1,
+      "rssKiB": 200456,
+      "voice": "af_heart",
+      "wallMs": 3968.595095
+    },
+    {
+      "audioMs": 5875.0,
+      "chunks": 1,
+      "cpuMs": 4439.781999999999,
+      "cycle": 0,
+      "firstPcmMs": 4457.855512,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.7587943058723404,
+      "round": 1,
+      "rssKiB": 200508,
+      "voice": "am_michael",
+      "wallMs": 4457.916547
+    },
+    {
+      "audioMs": 5150.0,
+      "chunks": 1,
+      "cpuMs": 3924.2580000000016,
+      "cycle": 0,
+      "firstPcmMs": 3940.728518,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.7652011438834951,
+      "round": 1,
+      "rssKiB": 200696,
+      "voice": "bf_emma",
+      "wallMs": 3940.785891
+    },
+    {
+      "audioMs": 8325.0,
+      "chunks": 2,
+      "cpuMs": 6363.955000000002,
+      "cycle": 0,
+      "firstPcmMs": 4238.752281,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.7677561403003003,
+      "round": 2,
+      "rssKiB": 201088,
+      "voice": "af_heart",
+      "wallMs": 6391.569868
+    },
+    {
+      "audioMs": 9625.0,
+      "chunks": 2,
+      "cpuMs": 7385.4209999999985,
+      "cycle": 0,
+      "firstPcmMs": 4902.902672,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.7705723548051948,
+      "round": 2,
+      "rssKiB": 201128,
+      "voice": "am_michael",
+      "wallMs": 7416.758915
+    },
+    {
+      "audioMs": 8525.0,
+      "chunks": 2,
+      "cpuMs": 6599.3840000000055,
+      "cycle": 0,
+      "firstPcmMs": 4169.885338,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.7775260993548386,
+      "round": 2,
+      "rssKiB": 200176,
+      "voice": "bf_emma",
+      "wallMs": 6628.409997
+    },
+    {
+      "cycle": 0,
+      "joinMs": 11.814291,
+      "phase": "cancel"
+    },
+    {
+      "cycle": 0,
+      "peakRssKiB": 337720,
+      "phase": "disposed",
+      "rssKiB": 89244
+    },
+    {
+      "cycle": 0,
+      "peakRssKiB": 337720,
+      "phase": "settled",
+      "rssKiB": 89244
+    },
+    {
+      "cpuMs": 44203.72,
+      "cycle": 1,
+      "phase": "baseline",
+      "rssKiB": 89240
+    },
+    {
+      "cycle": 1,
+      "peakRssKiB": 337720,
+      "phase": "load",
+      "rssKiB": 197480,
+      "wallMs": 1428.308187
+    },
+    {
+      "audioMs": 4200.0,
+      "chunks": 1,
+      "cpuMs": 3226.0910000000003,
+      "cycle": 1,
+      "firstPcmMs": 3240.773968,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.7716253764285714,
+      "round": 0,
+      "rssKiB": 206692,
+      "voice": "af_heart",
+      "wallMs": 3240.826581
+    },
+    {
+      "audioMs": 4800.0,
+      "chunks": 1,
+      "cpuMs": 3864.7810000000027,
+      "cycle": 1,
+      "firstPcmMs": 3882.501915,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.8088662299999999,
+      "round": 0,
+      "rssKiB": 207296,
+      "voice": "am_michael",
+      "wallMs": 3882.557904
+    },
+    {
+      "audioMs": 4325.0,
+      "chunks": 1,
+      "cpuMs": 3581.4579999999987,
+      "cycle": 1,
+      "firstPcmMs": 3598.689618,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.8320814050867053,
+      "round": 0,
+      "rssKiB": 207488,
+      "voice": "bf_emma",
+      "wallMs": 3598.752077
+    },
+    {
+      "audioMs": 5275.0,
+      "chunks": 1,
+      "cpuMs": 4763.106,
+      "cycle": 1,
+      "firstPcmMs": 4786.656781,
+      "peakRssKiB": 337720,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.9074345491943128,
+      "round": 1,
+      "rssKiB": 208344,
+      "voice": "af_heart",
+      "wallMs": 4786.717247
+    },
+    {
+      "audioMs": 5875.0,
+      "chunks": 1,
+      "cpuMs": 5843.921999999999,
+      "cycle": 1,
+      "firstPcmMs": 5874.389001,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.9999095957446807,
+      "round": 1,
+      "rssKiB": 208352,
+      "voice": "am_michael",
+      "wallMs": 5874.468875
+    },
+    {
+      "audioMs": 5150.0,
+      "chunks": 1,
+      "cpuMs": 5750.096000000005,
+      "cycle": 1,
+      "firstPcmMs": 5787.213341,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 1.1237459,
+      "round": 1,
+      "rssKiB": 208484,
+      "voice": "bf_emma",
+      "wallMs": 5787.291385
+    },
+    {
+      "audioMs": 8325.0,
+      "chunks": 2,
+      "cpuMs": 8500.368999999992,
+      "cycle": 1,
+      "firstPcmMs": 5739.325564,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 1.026765300900901,
+      "round": 2,
+      "rssKiB": 208764,
+      "voice": "af_heart",
+      "wallMs": 8547.82113
+    },
+    {
+      "audioMs": 9625.0,
+      "chunks": 2,
+      "cpuMs": 8979.943000000014,
+      "cycle": 1,
+      "firstPcmMs": 6065.437991,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.9377808953766233,
+      "round": 2,
+      "rssKiB": 208780,
+      "voice": "am_michael",
+      "wallMs": 9026.141118
+    },
+    {
+      "audioMs": 8525.0,
+      "chunks": 2,
+      "cpuMs": 7771.41399999999,
+      "cycle": 1,
+      "firstPcmMs": 4979.792443,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.9161549169501466,
+      "round": 2,
+      "rssKiB": 207748,
+      "voice": "bf_emma",
+      "wallMs": 7810.220667
+    },
+    {
+      "cycle": 1,
+      "joinMs": 10.477783,
+      "phase": "cancel"
+    },
+    {
+      "cycle": 1,
+      "peakRssKiB": 345564,
+      "phase": "disposed",
+      "rssKiB": 97076
+    },
+    {
+      "cycle": 1,
+      "peakRssKiB": 345564,
+      "phase": "settled",
+      "rssKiB": 97076
+    },
+    {
+      "cpuMs": 98220.471,
+      "cycle": 2,
+      "phase": "baseline",
+      "rssKiB": 97072
+    },
+    {
+      "cycle": 2,
+      "peakRssKiB": 345564,
+      "phase": "load",
+      "rssKiB": 204196,
+      "wallMs": 1595.547039
+    },
+    {
+      "audioMs": 4200.0,
+      "chunks": 1,
+      "cpuMs": 3545.7139999999927,
+      "cycle": 2,
+      "firstPcmMs": 3563.135174,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.848378335,
+      "round": 0,
+      "rssKiB": 208388,
+      "voice": "af_heart",
+      "wallMs": 3563.189007
+    },
+    {
+      "audioMs": 4800.0,
+      "chunks": 1,
+      "cpuMs": 4039.2639999999956,
+      "cycle": 2,
+      "firstPcmMs": 4058.484866,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.8455302264583333,
+      "round": 0,
+      "rssKiB": 208652,
+      "voice": "am_michael",
+      "wallMs": 4058.545087
+    },
+    {
+      "audioMs": 4325.0,
+      "chunks": 1,
+      "cpuMs": 3637.7530000000115,
+      "cycle": 2,
+      "firstPcmMs": 3656.187176,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.8453750078612716,
+      "round": 0,
+      "rssKiB": 208836,
+      "voice": "bf_emma",
+      "wallMs": 3656.246909
+    },
+    {
+      "audioMs": 5275.0,
+      "chunks": 1,
+      "cpuMs": 4593.2409999999945,
+      "cycle": 2,
+      "firstPcmMs": 4616.630658,
+      "peakRssKiB": 345564,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.8752028570616114,
+      "round": 1,
+      "rssKiB": 208980,
+      "voice": "af_heart",
+      "wallMs": 4616.695071
+    },
+    {
+      "audioMs": 5875.0,
+      "chunks": 1,
+      "cpuMs": 5371.012000000002,
+      "cycle": 2,
+      "firstPcmMs": 5397.520347,
+      "peakRssKiB": 346200,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.918739154212766,
+      "round": 1,
+      "rssKiB": 208988,
+      "voice": "am_michael",
+      "wallMs": 5397.592531
+    },
+    {
+      "audioMs": 5150.0,
+      "chunks": 1,
+      "cpuMs": 4720.452000000005,
+      "cycle": 2,
+      "firstPcmMs": 4744.086062,
+      "peakRssKiB": 346200,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.9211943380582523,
+      "round": 1,
+      "rssKiB": 209112,
+      "voice": "bf_emma",
+      "wallMs": 4744.150841
+    },
+    {
+      "audioMs": 8325.0,
+      "chunks": 2,
+      "cpuMs": 7574.489000000016,
+      "cycle": 2,
+      "firstPcmMs": 5056.695478,
+      "peakRssKiB": 346200,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.9144546455255255,
+      "round": 2,
+      "rssKiB": 209368,
+      "voice": "af_heart",
+      "wallMs": 7612.834924
+    },
+    {
+      "audioMs": 9625.0,
+      "chunks": 2,
+      "cpuMs": 8732.738000000012,
+      "cycle": 2,
+      "firstPcmMs": 5820.904544,
+      "peakRssKiB": 346200,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.9118312538181819,
+      "round": 2,
+      "rssKiB": 209368,
+      "voice": "am_michael",
+      "wallMs": 8776.375818
+    },
+    {
+      "audioMs": 8525.0,
+      "chunks": 2,
+      "cpuMs": 7737.049999999988,
+      "cycle": 2,
+      "firstPcmMs": 4955.970258,
+      "peakRssKiB": 346200,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.91217668,
+      "round": 2,
+      "rssKiB": 208308,
+      "voice": "bf_emma",
+      "wallMs": 7776.306197
+    },
+    {
+      "cycle": 2,
+      "joinMs": 8.04126,
+      "phase": "cancel"
+    },
+    {
+      "cycle": 2,
+      "peakRssKiB": 346200,
+      "phase": "disposed",
+      "rssKiB": 98920
+    },
+    {
+      "cycle": 2,
+      "peakRssKiB": 346200,
+      "phase": "settled",
+      "rssKiB": 98912
+    }
+  ],
+  "pixelXnnpackWithoutShrink": [
+    {
+      "cpuMs": 28.057,
+      "phase": "baseline",
+      "rssKiB": 4208
+    },
+    {
+      "peakRssKiB": 185828,
+      "phase": "load",
+      "rssKiB": 181888,
+      "wallMs": 1353.380493
+    },
+    {
+      "audioMs": 4200.0,
+      "chunks": 1,
+      "cpuMs": 3056.484,
+      "firstPcmMs": 3070.048545,
+      "peakRssKiB": 266868,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.7309748964285714,
+      "round": 0,
+      "rssKiB": 266608,
+      "voice": "af_heart",
+      "wallMs": 3070.094565
+    },
+    {
+      "audioMs": 4800.0,
+      "chunks": 1,
+      "cpuMs": 3456.7419999999993,
+      "firstPcmMs": 3471.243817,
+      "peakRssKiB": 289968,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.7231890533333334,
+      "round": 0,
+      "rssKiB": 289708,
+      "voice": "am_michael",
+      "wallMs": 3471.307456
+    },
+    {
+      "audioMs": 4325.0,
+      "chunks": 1,
+      "cpuMs": 3103.103,
+      "firstPcmMs": 3116.529054,
+      "peakRssKiB": 291184,
+      "phase": "render",
+      "phraseId": 0,
+      "realTimeFactor": 0.7205948379190752,
+      "round": 0,
+      "rssKiB": 290924,
+      "voice": "bf_emma",
+      "wallMs": 3116.572674
+    },
+    {
+      "audioMs": 5275.0,
+      "chunks": 1,
+      "cpuMs": 3769.566999999999,
+      "firstPcmMs": 3785.641481,
+      "peakRssKiB": 299960,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.7176673890047394,
+      "round": 1,
+      "rssKiB": 299700,
+      "voice": "af_heart",
+      "wallMs": 3785.695477
+    },
+    {
+      "audioMs": 5875.0,
+      "chunks": 1,
+      "cpuMs": 4307.4310000000005,
+      "firstPcmMs": 4324.928428,
+      "peakRssKiB": 347552,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.7361702061276596,
+      "round": 1,
+      "rssKiB": 347008,
+      "voice": "am_michael",
+      "wallMs": 4324.999961
+    },
+    {
+      "audioMs": 5150.0,
+      "chunks": 1,
+      "cpuMs": 3732.5339999999997,
+      "firstPcmMs": 3748.374066,
+      "peakRssKiB": 348028,
+      "phase": "render",
+      "phraseId": 1,
+      "realTimeFactor": 0.7278554502912622,
+      "round": 1,
+      "rssKiB": 347192,
+      "voice": "bf_emma",
+      "wallMs": 3748.455569
+    },
+    {
+      "audioMs": 8325.0,
+      "chunks": 2,
+      "cpuMs": 6086.822,
+      "firstPcmMs": 4032.710614,
+      "peakRssKiB": 381844,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.7343078091291292,
+      "round": 2,
+      "rssKiB": 381556,
+      "voice": "af_heart",
+      "wallMs": 6113.112511
+    },
+    {
+      "audioMs": 9625.0,
+      "chunks": 2,
+      "cpuMs": 7041.779999999999,
+      "firstPcmMs": 4678.599327,
+      "peakRssKiB": 385328,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.7346591547012986,
+      "round": 2,
+      "rssKiB": 385080,
+      "voice": "am_michael",
+      "wallMs": 7071.094364
+    },
+    {
+      "audioMs": 8525.0,
+      "chunks": 2,
+      "cpuMs": 6240.087999999996,
+      "firstPcmMs": 4013.67676,
+      "peakRssKiB": 386968,
+      "phase": "render",
+      "phraseId": 2,
+      "realTimeFactor": 0.7352105818181819,
+      "round": 2,
+      "rssKiB": 386656,
+      "voice": "bf_emma",
+      "wallMs": 6267.67021
+    },
+    {
+      "joinMs": 7.241251,
+      "phase": "cancel"
+    },
+    {
+      "peakRssKiB": 386968,
+      "phase": "disposed",
+      "rssKiB": 278764
+    }
+  ],
+  "maxRelease": {
+    "peakFootprintBytes": 375669848,
+    "results": [
+      {
+        "footprintBytes": 9208536,
+        "lowPowerMode": false,
+        "phase": "baseline",
+        "physicalMemoryBytes": 5915164672,
+        "thermalState": 0
+      },
+      {
+        "audioMs": 4200,
+        "chunks": 1,
+        "firstPcmMs": 2812.164167,
+        "footprintBytes": 275776456,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 0.6695691666666667,
+        "round": 0,
+        "thermalState": 0,
+        "voice": "af_heart",
+        "wallMs": 2812.1905
+      },
+      {
+        "audioMs": 4800,
+        "chunks": 1,
+        "firstPcmMs": 2658.088708,
+        "footprintBytes": 282362896,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 0.5537720572916667,
+        "round": 0,
+        "thermalState": 0,
+        "voice": "am_michael",
+        "wallMs": 2658.105875
+      },
+      {
+        "audioMs": 4325,
+        "chunks": 1,
+        "firstPcmMs": 2433.31275,
+        "footprintBytes": 245089200,
+        "phase": "render",
+        "phraseId": 0,
+        "realTimeFactor": 0.5626209248554913,
+        "round": 0,
+        "thermalState": 0,
+        "voice": "bf_emma",
+        "wallMs": 2433.3355
+      },
+      {
+        "audioMs": 5275,
+        "chunks": 1,
+        "firstPcmMs": 3102.359291,
+        "footprintBytes": 294339600,
+        "phase": "render",
+        "phraseId": 1,
+        "realTimeFactor": 0.588128846635071,
+        "round": 1,
+        "thermalState": 0,
+        "voice": "af_heart",
+        "wallMs": 3102.379666
+      },
+      {
+        "audioMs": 5875,
+        "chunks": 1,
+        "firstPcmMs": 3524.586083,
+        "footprintBytes": 297387024,
+        "phase": "render",
+        "phraseId": 1,
+        "realTimeFactor": 0.5999329077446809,
+        "round": 1,
+        "thermalState": 0,
+        "voice": "am_michael",
+        "wallMs": 3524.605833
+      },
+      {
+        "audioMs": 5150,
+        "chunks": 1,
+        "firstPcmMs": 3107.913792,
+        "footprintBytes": 313295912,
+        "phase": "render",
+        "phraseId": 1,
+        "realTimeFactor": 0.6034823139805825,
+        "round": 1,
+        "thermalState": 0,
+        "voice": "bf_emma",
+        "wallMs": 3107.933917
+      },
+      {
+        "audioMs": 8325,
+        "chunks": 2,
+        "firstPcmMs": 3288.477042,
+        "footprintBytes": 240796616,
+        "phase": "render",
+        "phraseId": 2,
+        "realTimeFactor": 0.6040424975375376,
+        "round": 2,
+        "thermalState": 0,
+        "voice": "af_heart",
+        "wallMs": 5028.653792
+      },
+      {
+        "audioMs": 9625,
+        "chunks": 2,
+        "firstPcmMs": 3847.032167,
+        "footprintBytes": 293585888,
+        "phase": "render",
+        "phraseId": 2,
+        "realTimeFactor": 0.6022673463896104,
+        "round": 2,
+        "thermalState": 0,
+        "voice": "am_michael",
+        "wallMs": 5796.823209
+      },
+      {
+        "audioMs": 8525,
+        "chunks": 2,
+        "firstPcmMs": 3227.379792,
+        "footprintBytes": 271582176,
+        "phase": "render",
+        "phraseId": 2,
+        "realTimeFactor": 0.5997665542521994,
+        "round": 2,
+        "thermalState": 0,
+        "voice": "bf_emma",
+        "wallMs": 5113.009875
+      },
+      {
+        "footprintBytes": 133153640,
+        "phase": "disposed"
+      }
+    ],
+    "scope": "isolated Release native engine; first PCM is not speaker latency"
+  },
+  "scope": "Native Release synthesis with generic fixtures, no audible playback or battery measurement. Pixel AC powered; thermal status0; battery temperature30.3C before and33.2C during repeated test.",
+  "androidPublicDownloader": {
+    "source": "https://voices.flashapp.me/kokoro-en-v1",
+    "phase": "ready",
+    "receivedBytes": 102466705,
+    "totalBytes": 102466705,
+    "wallMs": 24113,
+    "scope": "Actual SpeechPackStore on physical Pixel, invoked via development runtime; no local DNS overrides, compiled integrity checks, existing account data preserved."
+  },
+  "androidNativeDebugPlayback": {
+    "voice": "af_heart",
+    "fixtureId": 0,
+    "beforeSmallWrites": {
+      "ackMs": 170,
+      "events": [
+        {
+          "type": "started",
+          "elapsedMs": 7765
+        },
+        {
+          "type": "end",
+          "elapsedMs": 9003
+        }
+      ]
+    },
+    "afterSmallWrites": {
+      "ackMs": 125,
+      "events": [
+        {
+          "type": "started",
+          "elapsedMs": 7461
+        },
+        {
+          "type": "end",
+          "elapsedMs": 11730
+        }
+      ]
+    },
+    "scope": "Actual native AudioTrack during full Debug startup; scheduling/completion events, not acoustic onset or manual listening. Different cold runs, not an app speed comparison."
+  }
+}
