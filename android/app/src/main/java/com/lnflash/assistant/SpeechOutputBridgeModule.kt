@@ -186,7 +186,9 @@ class SpeechOutputBridgeModule(private val context: ReactApplicationContext) :
           var offset = 0
           while (offset < pcm.size) {
             if (neuralGeneration.get() != epoch) return false
-            val n = player.write(pcm, offset, pcm.size - offset, AudioTrack.WRITE_BLOCKING)
+            // A whole model chunk may block for seconds while AudioTrack drains.
+            // Announce playback after the first small write, not after that wait.
+            val n = player.write(pcm, offset, minOf(1024, pcm.size - offset), AudioTrack.WRITE_BLOCKING)
             if (n <= 0) { main.post { if (current == id && track === player) finish(id, "error") }; return false }
             offset += n; written += n
             if (!started) { started = true; main.post { if (current == id && track === player) emit(id, "started") } }

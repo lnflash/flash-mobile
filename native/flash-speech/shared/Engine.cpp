@@ -239,7 +239,15 @@ struct Engine::Impl {
   std::mutex mutex;
   std::shared_ptr<Ort::RunOptions> running;
   explicit Impl(const std::string &root) {
+#ifdef __ANDROID__
+    // The pinned Android runtime already includes XNNPACK. Keep ORT's CPU
+    // fallback pool single-threaded so it does not compete with XNNPACK.
+    options.SetIntraOpNumThreads(1);
+    options.AppendExecutionProvider("XNNPACK", {{"intra_op_num_threads", "2"}});
+    options.AddConfigEntry("session.intra_op.allow_spinning", "0");
+#else
     options.SetIntraOpNumThreads(2);
+#endif
     options.SetInterOpNumThreads(1);
     options.DisableCpuMemArena();
     options.SetGraphOptimizationLevel(
@@ -266,6 +274,11 @@ struct Engine::Impl {
                               std::vector<Ort::Value> &feeds,
                               const char *output) {
     auto opts = std::make_shared<Ort::RunOptions>();
+#ifdef __ANDROID__
+    // XNNPACK's process-wide CPU arena otherwise retains the largest temporary
+    // buffers even after the engine is disposed. Return unused regions per run.
+    opts->AddConfigEntry("memory.enable_memory_arena_shrinkage", "cpu:0");
+#endif
     {
       std::lock_guard<std::mutex> lock(mutex);
       check();
@@ -455,6 +468,12 @@ struct Engine::Impl {
 };
 Engine::Engine(const std::string &root) {
   initialize();
+#ifdef __ANDROID__
+  // A canceled renderer may still be loading when its replacement starts.
+  // Serialize XNNPACK's lazy process-wide allocator initialization.
+  static std::mutex creationMutex;
+  std::lock_guard<std::mutex> lock(creationMutex);
+#endif
   impl = std::make_unique<Impl>(root);
 }
 Engine::~Engine() = default;
