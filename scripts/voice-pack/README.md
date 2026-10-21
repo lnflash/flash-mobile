@@ -60,9 +60,11 @@ to Heart only after an explicit successful download. Backgrounding cancels a
 transfer; a canceled transfer restarts rather than silently resuming later.
 
 Release builds require **FLASH_VOICE_PACK_BASE_URL** pointing to an immutable
-HTTPS directory containing exactly the manifest's six assets. It is intentionally
-unset here: no production hosting was published. The download control stays
-hidden in Release until that source is configured. Both native downloaders still
+HTTPS directory containing the manifest's six assets. The verified production
+directory is `https://voices.flashapp.me/kokoro-en-v1`, hosted in the dedicated
+Cloudflare R2 bucket `flash-voices`. Licenses and manifest metadata are also
+published under that version. Release configuration remains unset while device
+performance gates are open; the download control stays hidden until configured. Both native downloaders still
 verify compiled hashes. Do not publish a different model under this version.
 The pack needs about twice its final size free during installation. Downloading
 assets is the only network operation in this feature; synthesis has no HTTP path.
@@ -79,10 +81,10 @@ Run Jest for `voice-pack`, `speech-settings`, `native-speech-output`,
 `engine-check.cpp` links the shared core against ONNX Runtime and runs with the
 verified local pack path. It prints only pass/fail, never user data.
 
-SuperMax measurements and the current test build are recorded in the local
-Ask Flash voice handoff. No Android physical device was connected during this
-implementation; Android compilation/unit checks do not establish listening quality
-or performance on Android hardware.
+SuperMax listening checks are recorded in the local Ask Flash voice handoff.
+Physical Pixel engine measurements and outstanding release gates are recorded in
+[release readiness](release-readiness.md). Compilation and native engine probes
+do not establish full-app playback quality or battery impact.
 
 ## Three-voice picker follow-up
 
@@ -121,3 +123,18 @@ This validates the packaged arm64/x86_64 speech, ONNX Runtime and shared C++
 libraries. Both the native iOS harness and packaged ELF check run in build CI.
 The shared engine integration harness additionally verifies negative monetary
 amounts are spoken as “minus”; identifier/address hyphens remain “dash”.
+
+## Delivery verification
+
+```sh
+python3 scripts/voice-pack/delivery.py stage --assets /path/to/verified/pack --output /path/to/new/delivery
+python3 scripts/voice-pack/delivery.py verify-host --base-url https://voices.flashapp.me/kokoro-en-v1
+python3 -m unittest discover -s scripts/voice-pack -p test_delivery.py
+```
+
+Staging refuses to overwrite an existing delivery bundle. Publish only the pinned
+files with the headers in `delivery.json`; never replace an existing version.
+The verifier downloads all six files without redirects and checks status, length,
+identity encoding, immutable cache policy and SHA-256. It uses a named verifier
+User-Agent because the public edge rejects the generic Python urllib agent.
+Never disable certificate verification to work around stale DNS.
