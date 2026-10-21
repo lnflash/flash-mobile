@@ -1,5 +1,6 @@
 import type { BtcRail } from "@app/payments/btc-rail"
 import { cardOf, validateCard } from "../cards/types"
+import type { AuthOrigin } from "../engine/auth-policy"
 import type { ToolCall } from "../engine/intent-router"
 import {
   ModelDropReason,
@@ -11,30 +12,34 @@ import { report } from "../engine/telemetry"
 import { readGrammar } from "../grammar"
 import type { GraphqlRail } from "../rails/graphql-rail"
 import type {
+  AccountLimitsPayload,
+  TransactionDetailsProjection,
   BalancesProjection,
   PricePayload,
   TransactionsProjection,
 } from "../registry/projections"
 import { DisplayFormatter, isIntent, tierOf, ToolResult } from "../registry/types"
 import type { AssistantRuntime } from "./assistant-runtime"
+import { ownFlashAddress } from "./own-flash-address"
+import { readFirstUseQuestion } from "./first-use-help"
 import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 
 // One turn of the Ask Flash thread (ENG-689, spec §7, §7.2): the grammar
 // reads the utterance; an amount it cannot read is a templated reply, and
 // runTool is never called for it. Offline, nothing that needs the network
 // runs: no prepare (a send, a request) and no price, which is never
-// estimated (spec §4). Reads run against the cache then, and their answers
+// estimated (spec §4). Reads use saved projections then, and their answers
 // carry the stale label. Every tool result is noted for the thread's
-// metrics, and every prepared action is held as text-initiated, which the
-// auth policy confirms with a tap (spec §5).
+// metrics, and prepared actions retain their input origin for the auth
+// policy at Confirm (spec §5).
 //
-// Dispatch order (spec §7): the grammar, then, only for what it missed, the
+// Dispatch order: reviewed local help, the grammar, then, only for what it missed, the
 // on-device model (ENG-690, engine/model-tier.ts) where the flags allow it
 // (TurnEnv.onDeviceModel), then the server (Phase 5), which does not exist
 // yet. A grammar hit, an amount question or a refusal (an ask v1 does not
 // serve, which readGrammar in grammar/index.ts names) never waits on the
 // model. The model's call goes through runTool as the grammar's does, held
-// as text, so the person taps to confirm whatever it prepared; nothing it
+// with its input origin, so the person confirms whatever it prepared; nothing it
 // said reaches execute(). No answer from it, or an answer the model tier
 // refuses or a guard of it makes none (ENG-751), is the templated miss
 // reply, as before. Each utterance reports one `assistant_event`: runTool's
@@ -65,10 +70,13 @@ export type TurnEnv = {
    * decision 2). Off, or absent, every miss is the miss reply, as before.
    */
   onDeviceModel?: boolean
+  inputOrigin?: AuthOrigin
 }
 
 /** How a call came to run: the on-device model emitted it (ENG-690). */
 export type CallOrigin = {
+  /** Input method survives a card pick, retry or refresh for the auth policy. */
+  inputOrigin?: AuthOrigin
   /** Its event says a model served it (RunToolDeps.servedByOnDeviceModel). */
   servedByOnDeviceModel?: boolean
 }
@@ -77,8 +85,10 @@ export type CallOrigin = {
  * The origin of a card's call, for issuing it again: a pick, a Try again or
  * a Refresh of a card the model prepared still runs the model's call.
  */
-export const originOf = (entry: CallOrigin): CallOrigin =>
-  entry.servedByOnDeviceModel ? { servedByOnDeviceModel: true } : {}
+export const originOf = (entry: CallOrigin): CallOrigin => ({
+  ...(entry.servedByOnDeviceModel ? { servedByOnDeviceModel: true } : {}),
+  ...(entry.inputOrigin === "voice" ? { inputOrigin: entry.inputOrigin } : {}),
+})
 
 /**
  * Whether a call needs the network: anything that prepares (an action tool)
@@ -114,12 +124,13 @@ export const entriesFor = (
     stale,
     listed,
     servedByOnDeviceModel,
+    inputOrigin,
   }: {
     stale: boolean
     listed?: ReadonlyMap<string, ListedTransaction>
   } & CallOrigin,
 ): NewEntry[] => {
-  const origin = originOf({ servedByOnDeviceModel })
+  const origin = originOf({ servedByOnDeviceModel, inputOrigin })
   switch (result.kind) {
     case "answer":
       switch (call.intent) {
@@ -138,6 +149,18 @@ export const entriesFor = (
             },
           ]
         }
+        case "getAccountLimits":
+          return [
+            { kind: "limits", payload: result.payload as AccountLimitsPayload, stale },
+          ]
+        case "getTransactionDetails":
+          return [
+            {
+              kind: "details",
+              payload: result.payload as TransactionDetailsProjection,
+              stale,
+            },
+          ]
         case "getPrice":
           return [{ kind: "price", payload: result.payload as PricePayload }]
         default:
@@ -192,9 +215,9 @@ const listingRails = (graphql: GraphqlRail, btcRail: BtcRail) => {
 }
 
 /**
- * Run one call: through runTool, over the cache while offline (and with no
- * action context then, so nothing can be prepared), the network otherwise.
- * What it prepared is held as text-initiated; the result is noted. A
+ * Run one call: saved read projections while offline, with no rail access;
+ * through runTool and the network otherwise. Actions never prepare offline.
+ * What it prepared retains its input origin; the result is noted. A
  * history call's rails note the rows they hand the tool, so the answer can
  * draw them with the app's own transaction row. A call the on-device model
  * emitted says so in its event (CallOrigin).
@@ -205,7 +228,17 @@ export const runCall = async (
   env: TurnEnv & CallOrigin & { modelDropped?: ModelDropReason },
 ): Promise<NewEntry[]> => {
   const offline = env.isOffline
-  const graphql = offline ? runtime.cachedGraphql : runtime.graphql
+  // Offline reads use successful projections only, never GraphQL or SDK calls.
+  // Apollo's general cache alone cannot prove an account or fetch timestamp.
+  if (offline) {
+    if (needsNetwork(call))
+      return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+    const saved = runtime.savedReads.read(call)
+    return saved
+      ? saved.entries.map((entry) => ({ ...entry, stale: true, asOf: saved.fetchedAt }))
+      : [{ kind: "reply", replyKey: "Assistant.noSavedData" }]
+  }
+  const graphql = runtime.graphql
   const listing =
     call.intent === "getTransactions" ? listingRails(graphql, runtime.btcRail) : undefined
   const result = await runtime.runTool(call, {
@@ -218,33 +251,31 @@ export const runCall = async (
     telemetry: runtime.telemetry,
     ...originOf(env),
     ...(env.modelDropped ? { onDeviceModelReason: env.modelDropped } : {}),
-    ...(offline
-      ? {}
-      : {
-          actionDeps: {
-            threadId: runtime.threadId,
-            graphqlActions: runtime.graphqlActions,
-            btcRail: runtime.btcRail,
-            send: {
-              mutations: runtime.sendMutations,
-              graphqlUri: env.graphqlUri,
-              lnAddressHostname: env.lnAddressHostname,
-            },
-            requestLnurlInvoice: runtime.requestLnurlInvoice,
-            display: env.display,
-          },
-        }),
+    actionDeps: {
+      threadId: runtime.threadId,
+      graphqlActions: runtime.graphqlActions,
+      btcRail: runtime.btcRail,
+      send: {
+        mutations: runtime.sendMutations,
+        graphqlUri: env.graphqlUri,
+        lnAddressHostname: env.lnAddressHostname,
+      },
+      requestLnurlInvoice: runtime.requestLnurlInvoice,
+      display: env.display,
+    },
   })
   if (result.kind === "prepared") {
-    // Typed or tapped: text. The auth policy confirms it with a tap.
-    runtime.executor.addPrepared(result.preparedAction, "text")
+    // A picked or refreshed voice action still requires the voice auth policy.
+    runtime.executor.addPrepared(result.preparedAction, env.inputOrigin ?? "text")
   }
   runtime.executor.noteToolResult(runtime.threadId, result)
-  return entriesFor(call, result, {
+  const entries = entriesFor(call, result, {
     stale: offline,
     listed: listing?.listed,
     ...originOf(env),
   })
+  if (result.kind === "answer") runtime.savedReads.write(call, entries, runtime.now())
+  return entries
 }
 
 /** The thread's answer to what the user typed. */
@@ -256,6 +287,75 @@ export const answerUtterance = async (
   const account = {
     displayCurrency: env.displayCurrency,
     displaySymbol: env.displaySymbol,
+  }
+  const firstUse = readFirstUseQuestion(utterance)
+  if (firstUse?.topic === "address") {
+    try {
+      const username = await runtime.getOwnUsername(env.isOffline)
+      const address =
+        typeof username === "string"
+          ? ownFlashAddress(username, env.lnAddressHostname)
+          : undefined
+      return [
+        {
+          kind: "address",
+          stale: env.isOffline,
+          state: address ? "available" : username === null ? "notSet" : "unavailable",
+          ...(address ? { address } : {}),
+        },
+      ]
+    } catch {
+      return [{ kind: "address", state: "unavailable", stale: env.isOffline }]
+    }
+  }
+  if (firstUse?.topic === "paymentStatus") {
+    // A pending dispatch can be newer than history. Do not call an older
+    // successful row the last payment while an attempt is unresolved.
+    try {
+      if ((await runtime.pendingDispatches()).length > 0)
+        return [
+          { kind: "reply", replyKey: "Assistant.paymentStatusUncertain" },
+          { kind: "help", topic: "paymentStatus" },
+        ]
+    } catch {
+      return [{ kind: "reply", replyKey: "Assistant.paymentStatusUncertain" }]
+    }
+    const history = await runCall(
+      runtime,
+      {
+        intent: "getTransactions",
+        args: { direction: "SEND", first: 2 },
+      },
+      env,
+    )
+    const entry = history.find((row) => row.kind === "transactions")
+    const row = entry?.kind === "transactions" ? entry.payload.transactions[0] : undefined
+    if (
+      !row ||
+      env.isOffline ||
+      entry?.kind !== "transactions" ||
+      entry.payload.btc.state !== "ok" ||
+      entry.payload.transactions[1]?.timestamp === row.timestamp
+    )
+      return [{ kind: "help", topic: "paymentStatus" }, ...history]
+    if (row.rail === "btc") return [{ kind: "help", topic: "paymentStatus" }, ...history]
+    const details = await runCall(
+      runtime,
+      {
+        intent: "getTransactionDetails",
+        args: { transactionId: row.id, rail: row.rail },
+      },
+      env,
+    )
+    return [{ kind: "help", topic: "paymentStatus" }, ...history, ...details]
+  }
+  if (firstUse) {
+    const help: NewEntry[] = firstUse.topic
+      ? [{ kind: "help", topic: firstUse.topic }]
+      : []
+    return firstUse.call
+      ? [...help, ...(await runCall(runtime, firstUse.call, env))]
+      : help
   }
   const match = readGrammar(utterance, account)
   if (match === undefined || match.kind === "refused") {

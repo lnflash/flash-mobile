@@ -126,6 +126,8 @@ PODS:
     - nanopb (~> 3.30910.0)
     - PromisesSwift (~> 2.1)
   - FirebaseSharedSwift (12.10.0)
+  - FlashSpeech (0.1.0):
+    - onnxruntime-c (= 1.23.0)
   - fmt (11.0.2)
   - glog (0.3.5)
   - GoogleAppMeasurement/Core (12.10.0):
@@ -186,6 +188,7 @@ PODS:
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
+  - onnxruntime-c (1.23.0)
   - Plaid (6.4.7)
   - PromisesObjC (2.4.0)
   - PromisesSwift (2.4.0):
@@ -2676,6 +2679,7 @@ DEPENDENCIES:
   - FirebaseCore
   - FirebaseCoreExtension
   - FirebaseInstallations
+  - FlashSpeech (from `../native/flash-speech`)
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - GoogleDataTransport
@@ -2821,6 +2825,7 @@ SPEC REPOS:
     - GoogleUtilities
     - GT3Captcha-iOS-xcframework
     - nanopb
+    - onnxruntime-c
     - Plaid
     - PromisesObjC
     - PromisesSwift
@@ -2841,6 +2846,8 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native/third-party-podspecs/fast_float.podspec"
   FBLazyVector:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
+  FlashSpeech:
+    :path: "../native/flash-speech"
   fmt:
     :podspec: "../node_modules/react-native/third-party-podspecs/fmt.podspec"
   glog:
@@ -3095,6 +3102,7 @@ SPEC CHECKSUMS:
   FirebaseRemoteConfigInterop: a169873f4093b241eb5e27a4fbad91af36d64b8d
   FirebaseSessions: dba7635960740ad77cc2f3387d90ff22a7942f82
   FirebaseSharedSwift: 3d1e448b7202e36821a492941c84592d1308ea14
+  FlashSpeech: 14ca8df1e9e071226088e1fe7ccdd588966c549b
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
   GoogleAppMeasurement: 57270ccc2b77472d7e85c4cbe45972564eff78bb
@@ -3103,6 +3111,7 @@ SPEC CHECKSUMS:
   GT3Captcha-iOS-xcframework: b1ed0eef381afccd76d384bed6597fe2bd48c8aa
   hermes-engine: ccc24d29d650ea725d582a9a53d57cd417fbdb53
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  onnxruntime-c: 3174c63a963d9abbc2bf9627e3d622819c0ed5f7
   Plaid: 2f4e0d6deb335e141ac62e082a872414ca058b74
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
@@ -3221,6 +3230,6 @@ SPEC CHECKSUMS:
   Yoga: 1fd059161b449018342943b095a6d4e69bcaa719
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 19006009741842ea8c26c54d8c62cc996ccfb3ac
+PODFILE CHECKSUM: 34c7dc5016f30bfd0638c6753c2cbed0f15ff2c3
 
 COCOAPODS: 1.17.0

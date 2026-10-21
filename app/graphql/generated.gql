@@ -1164,6 +1164,14 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   }
 }
 
+query AssistantSavedReads {
+  assistantSavedReads @client
+}
+
+query AssistantSpeechPreference {
+  assistantSpeechPreference @client
+}
+
 query BankAccounts {
   me {
     id
@@ -1431,6 +1439,14 @@ query analytics {
   }
   globals {
     network
+    __typename
+  }
+}
+
+query assistantUsername {
+  me {
+    id
+    username
     __typename
   }
 }

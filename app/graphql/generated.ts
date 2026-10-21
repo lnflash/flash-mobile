@@ -2331,6 +2331,8 @@ export type Query = {
   readonly accountDefaultWallet: PublicWallet;
   /** All API keys for the calling account, newest first. Never includes secret material. */
   readonly apiKeys: ReadonlyArray<ApiKey>;
+  readonly assistantSavedReads?: Maybe<Scalars['String']['output']>;
+  readonly assistantSpeechPreference?: Maybe<Scalars['String']['output']>;
   readonly beta: Scalars['Boolean']['output'];
   readonly bridgeExternalAccounts?: Maybe<ReadonlyArray<Maybe<BridgeExternalAccount>>>;
   readonly bridgeKycStatus?: Maybe<Scalars['String']['output']>;
@@ -3168,6 +3170,21 @@ export type NpubByUsername = {
   /** Optional immutable user friendly identifier. */
   readonly username?: Maybe<Scalars['Username']['output']>;
 };
+
+export type AssistantUsernameQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AssistantUsernameQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly username?: string | null } | null };
+
+export type AssistantSavedReadsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AssistantSavedReadsQuery = { readonly __typename: 'Query', readonly assistantSavedReads?: string | null };
+
+export type AssistantSpeechPreferenceQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AssistantSpeechPreferenceQuery = { readonly __typename: 'Query', readonly assistantSpeechPreference?: string | null };
 
 export type MobileUpdateQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4145,6 +4162,105 @@ export const TransactionListFragmentDoc = gql`
   }
 }
     ${TransactionFragmentDoc}`;
+export const AssistantUsernameDocument = gql`
+    query assistantUsername {
+  me {
+    id
+    username
+  }
+}
+    `;
+
+/**
+ * __useAssistantUsernameQuery__
+ *
+ * To run a query within a React component, call `useAssistantUsernameQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAssistantUsernameQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAssistantUsernameQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAssistantUsernameQuery(baseOptions?: Apollo.QueryHookOptions<AssistantUsernameQuery, AssistantUsernameQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AssistantUsernameQuery, AssistantUsernameQueryVariables>(AssistantUsernameDocument, options);
+      }
+export function useAssistantUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AssistantUsernameQuery, AssistantUsernameQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AssistantUsernameQuery, AssistantUsernameQueryVariables>(AssistantUsernameDocument, options);
+        }
+export type AssistantUsernameQueryHookResult = ReturnType<typeof useAssistantUsernameQuery>;
+export type AssistantUsernameLazyQueryHookResult = ReturnType<typeof useAssistantUsernameLazyQuery>;
+export type AssistantUsernameQueryResult = Apollo.QueryResult<AssistantUsernameQuery, AssistantUsernameQueryVariables>;
+export const AssistantSavedReadsDocument = gql`
+    query AssistantSavedReads {
+  assistantSavedReads @client
+}
+    `;
+
+/**
+ * __useAssistantSavedReadsQuery__
+ *
+ * To run a query within a React component, call `useAssistantSavedReadsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAssistantSavedReadsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAssistantSavedReadsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAssistantSavedReadsQuery(baseOptions?: Apollo.QueryHookOptions<AssistantSavedReadsQuery, AssistantSavedReadsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AssistantSavedReadsQuery, AssistantSavedReadsQueryVariables>(AssistantSavedReadsDocument, options);
+      }
+export function useAssistantSavedReadsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AssistantSavedReadsQuery, AssistantSavedReadsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AssistantSavedReadsQuery, AssistantSavedReadsQueryVariables>(AssistantSavedReadsDocument, options);
+        }
+export type AssistantSavedReadsQueryHookResult = ReturnType<typeof useAssistantSavedReadsQuery>;
+export type AssistantSavedReadsLazyQueryHookResult = ReturnType<typeof useAssistantSavedReadsLazyQuery>;
+export type AssistantSavedReadsQueryResult = Apollo.QueryResult<AssistantSavedReadsQuery, AssistantSavedReadsQueryVariables>;
+export const AssistantSpeechPreferenceDocument = gql`
+    query AssistantSpeechPreference {
+  assistantSpeechPreference @client
+}
+    `;
+
+/**
+ * __useAssistantSpeechPreferenceQuery__
+ *
+ * To run a query within a React component, call `useAssistantSpeechPreferenceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAssistantSpeechPreferenceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAssistantSpeechPreferenceQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAssistantSpeechPreferenceQuery(baseOptions?: Apollo.QueryHookOptions<AssistantSpeechPreferenceQuery, AssistantSpeechPreferenceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AssistantSpeechPreferenceQuery, AssistantSpeechPreferenceQueryVariables>(AssistantSpeechPreferenceDocument, options);
+      }
+export function useAssistantSpeechPreferenceLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AssistantSpeechPreferenceQuery, AssistantSpeechPreferenceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AssistantSpeechPreferenceQuery, AssistantSpeechPreferenceQueryVariables>(AssistantSpeechPreferenceDocument, options);
+        }
+export type AssistantSpeechPreferenceQueryHookResult = ReturnType<typeof useAssistantSpeechPreferenceQuery>;
+export type AssistantSpeechPreferenceLazyQueryHookResult = ReturnType<typeof useAssistantSpeechPreferenceLazyQuery>;
+export type AssistantSpeechPreferenceQueryResult = Apollo.QueryResult<AssistantSpeechPreferenceQuery, AssistantSpeechPreferenceQueryVariables>;
 export const MobileUpdateDocument = gql`
     query mobileUpdate {
   mobileVersions {

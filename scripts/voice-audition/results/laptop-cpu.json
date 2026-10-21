@@ -1,0 +1,75 @@
+{
+  "environment": "development laptop, CPU, two threads; NOT a phone benchmark",
+  "python": "3.11.16 (main, Sep  1 2026, 14:08:22) [Clang 22.1.3 ]",
+  "onnxruntime": "1.23.2",
+  "modelRevision": "1939ad2a8e416c0acfeecc08a694d14ef25f2231",
+  "modelBytes": 92361116,
+  "modelLoadSeconds": 0.20048387499991804,
+  "clips": [
+    {
+      "voice": "af_heart",
+      "sample": "welcome",
+      "generationSeconds": 1.789,
+      "audioSeconds": 4.55,
+      "peak": 0.779
+    },
+    {
+      "voice": "af_heart",
+      "sample": "guidance",
+      "generationSeconds": 2.159,
+      "audioSeconds": 5.625,
+      "peak": 0.57
+    },
+    {
+      "voice": "af_heart",
+      "sample": "amounts",
+      "generationSeconds": 3.231,
+      "audioSeconds": 8.275,
+      "peak": 0.522
+    },
+    {
+      "voice": "am_michael",
+      "sample": "welcome",
+      "generationSeconds": 1.973,
+      "audioSeconds": 5.15,
+      "peak": 0.622
+    },
+    {
+      "voice": "am_michael",
+      "sample": "guidance",
+      "generationSeconds": 2.377,
+      "audioSeconds": 6.225,
+      "peak": 0.806
+    },
+    {
+      "voice": "am_michael",
+      "sample": "amounts",
+      "generationSeconds": 3.616,
+      "audioSeconds": 9.4,
+      "peak": 0.59
+    },
+    {
+      "voice": "bf_emma",
+      "sample": "welcome",
+      "generationSeconds": 1.745,
+      "audioSeconds": 4.675,
+      "peak": 0.573
+    },
+    {
+      "voice": "bf_emma",
+      "sample": "guidance",
+      "generationSeconds": 2.092,
+      "audioSeconds": 5.5,
+      "peak": 0.626
+    },
+    {
+      "voice": "bf_emma",
+      "sample": "amounts",
+      "generationSeconds": 3.039,
+      "audioSeconds": 7.825,
+      "peak": 0.638
+    }
+  ],
+  "processPeakRSSMB": 1001.30816,
+  "samplePackBytes": 2747196
+}

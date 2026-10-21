@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(flashspeech)
+add_library(flashspeech SHARED NativeEngine.cpp ../shared/Engine.cpp)
+target_compile_features(flashspeech PRIVATE cxx_std_17)
+target_link_libraries(flashspeech dl log)

@@ -1,9 +1,29 @@
 import * as React from "react"
+import { AppState, StyleSheet } from "react-native"
+import { nativeVoiceInput } from "@app/assistant/ui/native-voice-input"
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native"
 import { ThemeProvider } from "@rneui/themed"
 
 // The runtime's auth gate imports the biometric and key-store modules, as
 // auth-gate.spec.ts mocks them; a text-initiated Confirm never prompts.
+let mockVoiceListener: (event: { sessionId: string; type: string; text?: string }) => void
+jest.mock("@app/assistant/ui/native-voice-input", () => ({
+  nativeVoiceInput: {
+    available: jest.fn(async () => true),
+    permission: jest.fn(async () => "granted"),
+    subscribe: jest.fn((listener) => {
+      mockVoiceListener = listener
+      return jest.fn()
+    }),
+    start: jest.fn(),
+    stop: jest.fn(),
+    abort: jest.fn(),
+  },
+}))
+jest.mock("react-native-haptic-feedback", () => ({
+  __esModule: true,
+  default: { trigger: jest.fn() },
+}))
 jest.mock("react-native-fingerprint-scanner", () => ({
   __esModule: true,
   default: { isSensorAvailable: jest.fn(), authenticate: jest.fn(), release: jest.fn() },
@@ -175,6 +195,41 @@ afterEach(() => {
 })
 
 describe("AskFlashScreen", () => {
+  it("shows the account address without offline messaging while online", async () => {
+    const { screen, runtime } = show()
+    runtime.getOwnUsername = jest.fn(async () => "alice")
+    await ask(screen, "Whats my Flash address")
+    expect(screen.getByText("alice@flashapp.me")).toBeTruthy()
+    expect(screen.getByTestId("ask-flash-address-copy")).toBeTruthy()
+    expect(screen.queryByText(en.AskFlashHelp.addressSaved())).toBeNull()
+    expect(screen.queryByText(en.AskFlashHelp.addressOfflineUnavailable())).toBeNull()
+  })
+
+  it("answers a tappable starter locally without warming the model", async () => {
+    const { screen, modelAdapter, runTool } = show()
+    fireEvent.press(screen.getByTestId("ask-flash-example-0"))
+    await waitFor(() =>
+      expect(screen.getByText(en.AskFlashHelp.capabilities())).toBeTruthy(),
+    )
+    expect(modelAdapter.prewarm).not.toHaveBeenCalled()
+    expect(runTool).not.toHaveBeenCalled()
+  })
+  it("opens the existing scanner only after the help action is tapped", async () => {
+    const { screen } = show()
+    await ask(screen, "How do I scan a payment QR code?")
+    expect(mockNavigate).not.toHaveBeenCalled()
+    fireEvent.press(screen.getByTestId("ask-flash-help-action"))
+    expect(mockNavigate).toHaveBeenCalledWith("scanningQRCode")
+  })
+  it("offers offline guidance without opening a network-backed screen", async () => {
+    mockOffline = true
+    const { screen, runTool } = show()
+    await ask(screen, "How do I add money to Flash?")
+    expect(screen.getByText(en.AskFlashHelp.funding())).toBeTruthy()
+    expect(screen.queryByTestId("ask-flash-help-action")).toBeNull()
+    expect(runTool).not.toHaveBeenCalled()
+  })
+
   it("lets the on-device model read what the grammar misses while both its flags are on", async () => {
     const { screen, graphql, modelAdapter } = show({
       flags: { assistantEnabled: true, assistantOnDeviceModel: true },
@@ -212,7 +267,7 @@ describe("AskFlashScreen", () => {
 
   const BOTH_ON: Partial<Flags> = { assistantEnabled: true, assistantOnDeviceModel: true }
 
-  it("warms the on-device model once as it opens, while both flags are on and the model is there, with no event of its own (ENG-749)", async () => {
+  it("does not warm the model on opening or while answering guaranteed questions", async () => {
     const off = show()
     await act(async () => undefined)
     const openedWithoutModel = off.events.map(({ type }) => type)
@@ -223,7 +278,7 @@ describe("AskFlashScreen", () => {
       modelAdapter: fakeModelAdapter(modelCall({ intent: "getBalances", args: {} })),
     })
 
-    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1))
+    expect(modelAdapter.prewarm).not.toHaveBeenCalled()
     expect(modelAdapter.decide).not.toHaveBeenCalled()
     // Opening reports what it does without a model, and nothing more.
     expect(events.map(({ type }) => type)).toEqual(openedWithoutModel)
@@ -234,7 +289,7 @@ describe("AskFlashScreen", () => {
     await ask(screen, "what's my balance")
     await waitFor(() => expect(screen.getByTestId("ask-flash-balances")).toBeTruthy())
     expect(modelAdapter.decide).not.toHaveBeenCalled()
-    expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1)
+    expect(modelAdapter.prewarm).not.toHaveBeenCalled()
   })
 
   it("warms the next session after each ask the on-device model reads, so every ask finds one (ENG-749)", async () => {
@@ -243,12 +298,12 @@ describe("AskFlashScreen", () => {
       modelAdapter: fakeModelAdapter(modelCall({ intent: "getBalances", args: {} })),
     })
     graphql.wallets.mockResolvedValue(CASH_WALLETS)
-    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1))
+    expect(modelAdapter.prewarm).not.toHaveBeenCalled()
 
     await ask(screen, "how loaded am i right now")
-    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(1))
     await ask(screen, "am i loaded or what")
-    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(3))
+    await waitFor(() => expect(modelAdapter.prewarm).toHaveBeenCalledTimes(2))
 
     expect(modelAdapter.decide).toHaveBeenCalledTimes(2)
   })
@@ -270,7 +325,7 @@ describe("AskFlashScreen", () => {
       modelAdapter: unavailableModelAdapter(),
     })
 
-    await waitFor(() => expect(modelAdapter.isAvailable).toHaveBeenCalledTimes(1))
+    expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
     expect(modelAdapter.prewarm).not.toHaveBeenCalled()
   })
 
@@ -294,7 +349,7 @@ describe("AskFlashScreen", () => {
 
     expect(screen.getByTestId("ask-flash-user-bubble")).toBeTruthy()
     expect(screen.getByText("what is lightning")).toBeTruthy()
-    expect(screen.getByText(en.Assistant.unknownIntent())).toBeTruthy()
+    expect(screen.getByText(en.AskFlashHelp.lightning())).toBeTruthy()
     expect(screen.getByTestId("ask-flash-input").props.value).toBe("")
     expect(screen.queryByTestId("ask-flash-empty")).toBeNull()
   })
@@ -316,16 +371,25 @@ describe("AskFlashScreen", () => {
   })
 
   it("says it is offline, labels what comes from the cache, and refuses to send", async () => {
+    const { screen, graphql } = show()
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+    await ask(screen, "what's my balance")
+    graphql.wallets.mockClear()
     mockOffline = true
-    const { screen, cachedGraphql, graphql } = show()
-    cachedGraphql.wallets.mockResolvedValue(CASH_WALLETS)
+    fireEvent.changeText(screen.getByTestId("ask-flash-input"), "refresh")
 
     expect(screen.getByText(en.AskFlash.offlineBanner())).toBeTruthy()
 
     await ask(screen, "what's my balance")
-    await waitFor(() => expect(screen.getByTestId("ask-flash-balances")).toBeTruthy())
+    await waitFor(() =>
+      expect(screen.getAllByTestId("ask-flash-balances")).toHaveLength(2),
+    )
     expect(screen.getByTestId("ask-flash-stale")).toBeTruthy()
-    expect(screen.getByText(en.AskFlash.staleBadge())).toBeTruthy()
+    expect(
+      screen.getByText(
+        en.AskFlashHelp.savedAt({ time: new Date(1_760_000_000_000).toLocaleString() }),
+      ),
+    ).toBeTruthy()
     expect(graphql.wallets).not.toHaveBeenCalled()
 
     await ask(screen, "send $5 to bob")
@@ -494,4 +558,117 @@ describe("AskFlashScreen", () => {
     expect(runtime.runTool).not.toHaveBeenCalled()
     expect(screen.getByText(en.Assistant.amountUnclear({ currency: "JMD" }))).toBeTruthy()
   })
+})
+
+const voiceFlags = { assistantEnabled: true, assistantVoice: true }
+
+it("shows the talk button on first render while capability detection is still pending", async () => {
+  let resolve: (value: boolean) => void = () => undefined
+  ;(nativeVoiceInput.available as jest.Mock).mockImplementationOnce(
+    () =>
+      new Promise<boolean>((done) => {
+        resolve = done
+      }),
+  )
+  const { screen } = show({ flags: voiceFlags })
+  expect(screen.getByTestId("ask-flash-talk").props.accessibilityState.disabled).toBe(
+    true,
+  )
+  await act(async () => resolve(true))
+  expect(screen.getByTestId("ask-flash-talk").props.accessibilityState.disabled).toBe(
+    false,
+  )
+})
+
+const activateTalk = async (screen: ReturnType<typeof render>) => {
+  Object.defineProperty(AppState, "currentState", { configurable: true, value: "active" })
+  await waitFor(() =>
+    expect(screen.getByTestId("ask-flash-talk").props.accessibilityState.disabled).toBe(
+      false,
+    ),
+  )
+  await act(async () => {
+    fireEvent(screen.getByTestId("ask-flash-talk"), "responderGrant")
+  })
+  const id = jest.mocked(nativeVoiceInput.start).mock.calls.slice(-1)[0][0]
+  act(() => mockVoiceListener({ sessionId: id, type: "started" }))
+  return id
+}
+
+it("shows a large dedicated talk button only with both flags", async () => {
+  const off = show()
+  expect(off.screen.queryByTestId("ask-flash-talk")).toBeNull()
+  off.screen.unmount()
+  const one = show({ flags: { assistantVoice: true } })
+  expect(one.screen.queryByTestId("ask-flash-talk")).toBeNull()
+  one.screen.unmount()
+  const on = show({ flags: voiceFlags })
+  await waitFor(() =>
+    expect(
+      on.screen.getByTestId("ask-flash-talk").props.accessibilityState.disabled,
+    ).toBe(false),
+  )
+  const style = StyleSheet.flatten(on.screen.getByTestId("ask-flash-talk").props.style)
+  expect(style.minHeight).toBeGreaterThanOrEqual(72)
+  expect(style.alignSelf).toBe("stretch")
+})
+
+it("previews voice above the button, disables typed send and submits the final text once", async () => {
+  const { screen, runtime } = show({ flags: voiceFlags })
+  fireEvent.changeText(screen.getByTestId("ask-flash-input"), "old draft")
+  const id = await activateTalk(screen)
+  act(() => mockVoiceListener({ sessionId: id, type: "interim", text: "what's my" }))
+  expect(screen.getByTestId("ask-flash-input").props.value).toBe("what's my")
+  expect(screen.getByTestId("ask-flash-input").props.editable).toBe(false)
+  expect(screen.getByTestId("ask-flash-send")).toBeDisabled()
+  act(() => fireEvent(screen.getByTestId("ask-flash-talk"), "responderRelease"))
+  act(() => {
+    mockVoiceListener({ sessionId: id, type: "final", text: "what's my balance" })
+    mockVoiceListener({ sessionId: id, type: "end" })
+    mockVoiceListener({ sessionId: id, type: "end" })
+  })
+  await waitFor(() => expect(runtime.transcript.get().busy).toBe(false))
+  expect(
+    runtime.transcript.get().entries.filter((entry) => entry.kind === "user"),
+  ).toEqual([expect.objectContaining({ text: "what's my balance" })])
+  expect(screen.getByTestId("ask-flash-input").props.value).toBe("")
+})
+
+it("restores a draft on responder cancellation and exposes accessible start/stop", async () => {
+  const { screen, runtime } = show({ flags: voiceFlags })
+  fireEvent.changeText(screen.getByTestId("ask-flash-input"), "keep this")
+  const id = await activateTalk(screen)
+  act(() => fireEvent(screen.getByTestId("ask-flash-talk"), "responderTerminate"))
+  act(() => mockVoiceListener({ sessionId: id, type: "end" }))
+  expect(screen.getByTestId("ask-flash-input").props.value).toBe("keep this")
+  expect(runtime.transcript.get().entries).toHaveLength(0)
+  await act(async () => {
+    fireEvent(screen.getByTestId("ask-flash-talk"), "accessibilityAction", {
+      nativeEvent: { actionName: "activate" },
+    })
+  })
+  expect(nativeVoiceInput.start).toHaveBeenCalledTimes(2)
+  act(() =>
+    fireEvent(screen.getByTestId("ask-flash-talk"), "accessibilityAction", {
+      nativeEvent: { actionName: "activate" },
+    }),
+  )
+  expect(nativeVoiceInput.stop).toHaveBeenCalled()
+})
+
+it("keeps typing usable when on-device voice is unavailable", async () => {
+  jest.mocked(nativeVoiceInput.available).mockResolvedValueOnce(false)
+  const { screen, runtime } = show({ flags: voiceFlags })
+  await waitFor(() => expect(screen.getByTestId("ask-flash-voice-message")).toBeTruthy())
+  expect(screen.getByTestId("ask-flash-talk").props.accessibilityState.disabled).toBe(
+    true,
+  )
+  expect(screen.getByTestId("ask-flash-input").props.editable).toBe(true)
+  await ask(screen, "what's my balance")
+  expect(runtime.transcript.get().entries).toContainEqual(
+    expect.objectContaining({
+      kind: "user",
+      text: "what's my balance",
+    }),
+  )
 })

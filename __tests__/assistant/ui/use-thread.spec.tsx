@@ -122,28 +122,24 @@ describe("useThread", () => {
     ])
   })
 
-  it("reads balances from the cache offline, with no way to prepare, and labels them stale", async () => {
-    const { runtime, runTool, graphql, cachedGraphql } = fakeRuntime()
-    cachedGraphql.wallets.mockResolvedValue(CASH_WALLETS)
-    const hook = render(runtime, env({ isOffline: true }))
-
+  it("reads saved balances offline without running a tool or either rail", async () => {
+    const { runtime, runTool, graphql, cachedGraphql, btcRail } = fakeRuntime()
+    graphql.wallets.mockResolvedValue(CASH_WALLETS)
+    const hook = render(runtime, env())
     await submit(hook, "what's my balance")
-
-    const [call, deps] = runTool.mock.calls[0]
-    expect(call).toEqual({ intent: "getBalances", args: {} })
-    expect(deps.graphql).toBe(runtime.cachedGraphql)
-    expect(deps.actionDeps).toBeUndefined()
-    expect(cachedGraphql.wallets).toHaveBeenCalledTimes(1)
+    runTool.mockClear()
+    graphql.wallets.mockClear()
+    btcRail.getBalanceSats.mockClear()
+    hook.rerender({ e: env({ isOffline: true }) })
+    await submit(hook, "what's my balance")
+    expect(runTool).not.toHaveBeenCalled()
+    expect(cachedGraphql.wallets).not.toHaveBeenCalled()
     expect(graphql.wallets).not.toHaveBeenCalled()
-    expect(lines(hook)[1]).toEqual({
+    expect(btcRail.getBalanceSats).not.toHaveBeenCalled()
+    expect(lines(hook)[3]).toMatchObject({
       kind: "balances",
       stale: true,
-      payload: {
-        balances: [
-          expect.objectContaining({ wallet: "USD", state: "ok" }),
-          expect.objectContaining({ wallet: "BTC", state: "disabled" }),
-        ],
-      },
+      asOf: expect.any(Number),
     })
   })
 
@@ -231,6 +227,79 @@ describe("useThread", () => {
       enabled: true,
       state: "armed",
     })
+  })
+
+  it("keeps voice origin through a clarification and refresh, and fails closed at Confirm", async () => {
+    const { runtime } = fakeRuntime()
+    const first = makeAction({ threadId: runtime.threadId })
+    const refreshed = makeAction({ id: "voice-refresh", threadId: runtime.threadId })
+    const results: ToolResult<unknown>[] = [
+      {
+        kind: "clarification",
+        card: {
+          type: "clarification",
+          prompt: "Assistant.pickContact",
+          options: [{ id: "contact:alice_w", label: "Alice", sublabel: "alice_w" }],
+          about: "alice",
+        },
+      },
+      { kind: "prepared", preparedAction: first },
+      { kind: "prepared", preparedAction: refreshed },
+    ]
+    runtime.runTool = jest.fn(async () => results.shift() as ToolResult<unknown>)
+    const add = jest.spyOn(runtime.executor, "addPrepared")
+    const hook = render(runtime)
+    await act(() => hook.result.current.submit("send $5 to alice", "voice"))
+    await act(() =>
+      hook.result.current.pick(hook.result.current.entries[1].id, "contact:alice_w"),
+    )
+    expect(add).toHaveBeenLastCalledWith(first, "voice")
+    await expect(
+      hook.result.current.cardActions.canConfirm(first.id),
+    ).resolves.toMatchObject({
+      enabled: false,
+      replyKey: "Assistant.authUnavailable",
+    })
+    await act(async () => {
+      await hook.result.current.cardActions.reprepare?.(first.id)
+    })
+    expect(add).toHaveBeenLastCalledWith(refreshed, "voice")
+  })
+
+  for (const allowed of [true, false]) {
+    it(`authenticates a voice action at Confirm and ${
+      allowed ? "executes" : "refuses"
+    }`, async () => {
+      const auth = {
+        availability: jest.fn(async () => "biometric" as const),
+        authenticate: jest.fn(async () => allowed),
+      }
+      const { runtime } = fakeRuntime({ auth })
+      const action = makeAction({ threadId: runtime.threadId })
+      runtime.runTool = jest.fn(async () => ({
+        kind: "prepared" as const,
+        preparedAction: action,
+      }))
+      const hook = render(runtime)
+      await act(() => hook.result.current.submit("send $5 to alice", "voice"))
+      expect(auth.authenticate).not.toHaveBeenCalled()
+      const result = await runtime.executor.executePreparedAction(action.id)
+      expect(auth.authenticate).toHaveBeenCalledTimes(1)
+      expect(result.kind).toBe(allowed ? "executed" : "denied")
+      expect(action.execute).toHaveBeenCalledTimes(allowed ? 1 : 0)
+    })
+  }
+
+  it("does not authenticate a dictated balance read", async () => {
+    const auth = {
+      availability: jest.fn(async () => "biometric" as const),
+      authenticate: jest.fn(async () => true),
+    }
+    const { runtime } = fakeRuntime({ auth })
+    const hook = render(runtime)
+    await act(() => hook.result.current.submit("what's my balance", "voice"))
+    expect(auth.availability).not.toHaveBeenCalled()
+    expect(auth.authenticate).not.toHaveBeenCalled()
   })
 
   it("re-issues a question's call with the words it was about replaced by the pick", async () => {
@@ -464,7 +533,7 @@ describe("useThread", () => {
     ).not.toHaveProperty("memo")
   })
 
-  it("hands a history search the instance's Lightning-address host, online and offline", async () => {
+  it("hands online searches the instance host and does not run uncached searches offline", async () => {
     // On Test, a BTC send to a Flash user is recorded at test.flashapp.me,
     // which only the instance names: "payments to mom" must find it there.
     const { runtime, runTool, graphql, cachedGraphql, btcRail } = fakeRuntime()
@@ -496,12 +565,14 @@ describe("useThread", () => {
 
     expect(runTool.mock.calls.map(([, deps]) => deps.lnAddressHostname)).toEqual([
       "test.flashapp.me",
-      "test.flashapp.me",
     ])
     const found = lines(hook).flatMap((line) =>
       line.kind === "transactions" ? [line.payload.transactions.map(({ id }) => id)] : [],
     )
-    expect(found).toEqual([["pay-mom"], ["pay-mom"]])
+    expect(found).toEqual([["pay-mom"]])
+    expect(lines(hook).slice(-1)).toEqual([
+      { kind: "reply", replyKey: "Assistant.noSavedData" },
+    ])
   })
 
   it("prepares a card's Try again or Refresh in the card's place, letting the old action go", async () => {

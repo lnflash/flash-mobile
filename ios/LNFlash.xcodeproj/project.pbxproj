@@ -16,22 +16,30 @@
 		0153E70A2FF0AF2000DA9493 /* FlashWatchComplicationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0153E6F82FF0AF1E00DA9493 /* FlashWatchComplicationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0153E8032FF1300100DA9493 /* PriceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0153E8012FF1300100DA9493 /* PriceService.swift */; };
 		0153E8042FF1300100DA9493 /* WatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0153E8022FF1300100DA9493 /* WatchStore.swift */; };
+		0C51B315F13F21051D1739D3 /* VoiceInputBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = E0D9C5C515C12204595B299D /* VoiceInputBridge.m */; };
 		0D25368529E5EE4B00037874 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0D25368429E5EE4B00037874 /* BootSplash.storyboard */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		1C37FACBA6F1305D3941D9AD /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0153E6FB2FF0AF1E00DA9493 /* SwiftUI.framework */; };
 		1D0615461356D4513089873D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD9A2B3A3DB948C0E9DA3E8A /* Foundation.framework */; };
+		1DAC38153A9D7C19C14C2544 /* VoiceInputBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = E0D9C5C515C12204595B299D /* VoiceInputBridge.m */; };
+		242C5877A27449ADB97A0B9B /* AssistantAudioCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBE38F009A4B89BC2AADBD /* AssistantAudioCoordinator.swift */; };
 		2D8F35872583AB46148D4EC8 /* WidgetBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 5899AF96676F3AEF8C018031 /* WidgetBridge.m */; };
 		3152A8AF830F40A7AB689E42 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		3C0210AD3AAA4E88A7896DCB /* SpeechOutputBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D858D1DB4D49C580E040CE /* SpeechOutputBridge.swift */; };
 		3E3C92C2FC91412D8DFDE94D /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		3FA866E09CC53D5860C24757 /* SpeechPack.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30A349EE292CD1CD966FA24 /* SpeechPack.swift */; };
 		560415592C5B4119B9F91553 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
 		5CDD582462391BD4A7901BD8 /* libPods-LNFlash.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B660162FC198C5D612BB44A /* libPods-LNFlash.a */; };
+		6004E5A4AB9746AD8DF4F0AD /* SpeechOutputBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = ADB83FACDA634DC2B0CF4A42 /* SpeechOutputBridge.m */; };
+		6427663E17D905C937B5496B /* SpeechPack.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30A349EE292CD1CD966FA24 /* SpeechPack.swift */; };
 		65403F50DCC45A6C0F8A7719 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0153E6F92FF0AF1E00DA9493 /* WidgetKit.framework */; };
 		69B54F686F5835A64060EE6D /* libPods-LNFlash-Alt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 177D9FE829C0CBCE225C8178 /* libPods-LNFlash-Alt.a */; };
 		6FFA8CCE9FDC46439521C643 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		833D390F570BFF9674FCBD74 /* FlashWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD465FEB229510D51684EDE6 /* FlashWidget.swift */; };
+		83C5799C79D9A755AF22E0A5 /* VoiceInputBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3726DB184F7501B505D438 /* VoiceInputBridge.swift */; };
 		855F657BD177625DE7B379D9 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80B92CDD11F2D823E2EE004D /* SharedStore.swift */; };
 		8647B9C22DFD831600E2F160 /* AppDelegate.h in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FAF1A68108700A75B9A /* AppDelegate.h */; };
 		8647B9C32DFD831600E2F160 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
@@ -51,7 +59,9 @@
 		8647B9ED2DFEAFE500E2F160 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8647B9EC2DFEAFE500E2F160 /* GoogleService-Info.plist */; };
 		8647B9EF2DFEAFF900E2F160 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8647B9EE2DFEAFF900E2F160 /* GoogleService-Info.plist */; };
 		86FB60FC2BC40BBC0088C78C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */; };
+		87CD8E01BDDA419B9920943D /* SpeechOutputBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = ADB83FACDA634DC2B0CF4A42 /* SpeechOutputBridge.m */; };
 		94D9F3C84EB547D68D41C50F /* BuildFile in Resources */ = {isa = PBXBuildFile; };
+		94F9AF26B58A4F1487A26945 /* AssistantAudioCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBE38F009A4B89BC2AADBD /* AssistantAudioCoordinator.swift */; };
 		9912AFA8033E0A56F4AF509F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 57657429D7D7561990B272E5 /* Assets.xcassets */; };
 		AB41648389366FA2DE04E252 /* FlashWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB09C467FDAE0560EC579ED /* FlashWidgetBundle.swift */; };
 		BD157A9851974C298EB06CB7 /* BuildFile in Resources */ = {isa = PBXBuildFile; };
@@ -65,6 +75,8 @@
 		F1D71F3628CE5C9A00636277 /* AppDelegate.h in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FAF1A68108700A75B9A /* AppDelegate.h */; };
 		F4E3932F09F0520C88FAB18A /* AssistantModelBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */; };
 		FBB2BDC0DD3802BB090D3FD4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */; };
+		FE4886359887609BAFECF009 /* VoiceInputBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3726DB184F7501B505D438 /* VoiceInputBridge.swift */; };
+		FED30D51D8124832815AF02A /* SpeechOutputBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D858D1DB4D49C580E040CE /* SpeechOutputBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -145,11 +157,13 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = LNFlash/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = LNFlash/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = LNFlash/main.m; sourceTree = "<group>"; };
+		14D858D1DB4D49C580E040CE /* SpeechOutputBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SpeechOutputBridge.swift; path = LNFlash/SpeechOutputBridge.swift; sourceTree = "<group>"; };
 		177D9FE829C0CBCE225C8178 /* libPods-LNFlash-Alt.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-LNFlash-Alt.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2052AFF690BEC2C99884C745 /* Provider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
 		2E782F00A296471DB427D608 /* Ionicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Ionicons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Ionicons.ttf"; sourceTree = "<group>"; };
 		2FB6C1D703FBCCD4EF991FB5 /* Pods-LNFlash-Alt.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash-Alt.debug.xcconfig"; path = "Target Support Files/Pods-LNFlash-Alt/Pods-LNFlash-Alt.debug.xcconfig"; sourceTree = "<group>"; };
 		3CB4BEDD74CAD66898195195 /* Pods-LNFlash-Alt.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash-Alt.release.xcconfig"; path = "Target Support Files/Pods-LNFlash-Alt/Pods-LNFlash-Alt.release.xcconfig"; sourceTree = "<group>"; };
+		3E3726DB184F7501B505D438 /* VoiceInputBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VoiceInputBridge.swift; path = LNFlash/VoiceInputBridge.swift; sourceTree = "<group>"; };
 		4B660162FC198C5D612BB44A /* libPods-LNFlash.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-LNFlash.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EB09C467FDAE0560EC579ED /* FlashWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashWidgetBundle.swift; sourceTree = "<group>"; };
 		57657429D7D7561990B272E5 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -166,8 +180,10 @@
 		86FB60FB2BC40BBC0088C78C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8DEBA8D2B0E14FD0DD8B37E2 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		91622336680E692C2E1CD466 /* Pods-LNFlash.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LNFlash.release.xcconfig"; path = "Target Support Files/Pods-LNFlash/Pods-LNFlash.release.xcconfig"; sourceTree = "<group>"; };
+		94FBE38F009A4B89BC2AADBD /* AssistantAudioCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssistantAudioCoordinator.swift; path = LNFlash/AssistantAudioCoordinator.swift; sourceTree = "<group>"; };
 		A4F431BE17DF142F8967044E /* SETUP.md */ = {isa = PBXFileReference; includeInIndex = 1; path = SETUP.md; sourceTree = "<group>"; };
 		AC352BF933E169BF74309B2C /* FlashWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FlashWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADB83FACDA634DC2B0CF4A42 /* SpeechOutputBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = SpeechOutputBridge.m; path = LNFlash/SpeechOutputBridge.m; sourceTree = "<group>"; };
 		C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = AssistantModelBridge.m; path = LNFlash/AssistantModelBridge.m; sourceTree = "<group>"; };
 		C61EE0AB23C52FBA0054100C /* LNFlash.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = LNFlash.entitlements; path = LNFlash/LNFlash.entitlements; sourceTree = "<group>"; };
 		C61EE0AC23C530E30054100C /* AuthenticationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AuthenticationServices.framework; path = System/Library/Frameworks/AuthenticationServices.framework; sourceTree = SDKROOT; };
@@ -178,6 +194,8 @@
 		DC2E9F1C6B51F42DF36183FA /* PriceService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PriceService.swift; sourceTree = "<group>"; };
 		DD465FEB229510D51684EDE6 /* FlashWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashWidget.swift; sourceTree = "<group>"; };
 		DD9A2B3A3DB948C0E9DA3E8A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		E0D9C5C515C12204595B299D /* VoiceInputBridge.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = VoiceInputBridge.m; path = LNFlash/VoiceInputBridge.m; sourceTree = "<group>"; };
+		E30A349EE292CD1CD966FA24 /* SpeechPack.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LNFlash/SpeechPack.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		ED2971642150620600B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.0.sdk/System/Library/Frameworks/JavaScriptCore.framework; sourceTree = DEVELOPER_DIR; };
 		F10B45D328452374007CB684 /* LNFlashDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = LNFlashDebug.entitlements; path = LNFlash/LNFlashDebug.entitlements; sourceTree = "<group>"; };
@@ -301,6 +319,12 @@
 				D363BA80BBEB4C6646C39FBD /* WidgetBridge.swift */,
 				C44EC478D8B6DFF9A0A5E7AA /* AssistantModelBridge.m */,
 				CC7D27F331EC3E362947CD73 /* AssistantModelBridge.swift */,
+				94FBE38F009A4B89BC2AADBD /* AssistantAudioCoordinator.swift */,
+				14D858D1DB4D49C580E040CE /* SpeechOutputBridge.swift */,
+				ADB83FACDA634DC2B0CF4A42 /* SpeechOutputBridge.m */,
+				3E3726DB184F7501B505D438 /* VoiceInputBridge.swift */,
+				E0D9C5C515C12204595B299D /* VoiceInputBridge.m */,
+				E30A349EE292CD1CD966FA24 /* SpeechPack.swift */,
 			);
 			name = LNFlash;
 			sourceTree = "<group>";
@@ -699,6 +723,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseInstallations/FirebaseInstallations_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseMessaging/FirebaseMessaging_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseRemoteConfig/FirebaseRemoteConfig_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/FlashSpeech/FlashSpeechNotices.bundle",
 				"${PODS_ROOT}/GT3Captcha-iOS-xcframework/SDK/GT3Captcha.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleDataTransport/GoogleDataTransport_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle",
@@ -745,6 +770,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseInstallations_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseMessaging_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseRemoteConfig_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FlashSpeechNotices.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GT3Captcha.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleDataTransport_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleUtilities_Privacy.bundle",
@@ -927,6 +953,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseInstallations/FirebaseInstallations_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseMessaging/FirebaseMessaging_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseRemoteConfig/FirebaseRemoteConfig_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/FlashSpeech/FlashSpeechNotices.bundle",
 				"${PODS_ROOT}/GT3Captcha-iOS-xcframework/SDK/GT3Captcha.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleDataTransport/GoogleDataTransport_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle",
@@ -973,6 +1000,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseInstallations_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseMessaging_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseRemoteConfig_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FlashSpeechNotices.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GT3Captcha.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleDataTransport_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleUtilities_Privacy.bundle",
@@ -1138,6 +1166,12 @@
 				6FFA8CCE9FDC46439521C643 /* WidgetBridge.swift in Sources */,
 				F4E3932F09F0520C88FAB18A /* AssistantModelBridge.m in Sources */,
 				D08484CD75DF3114E1FB8A4F /* AssistantModelBridge.swift in Sources */,
+				242C5877A27449ADB97A0B9B /* AssistantAudioCoordinator.swift in Sources */,
+				FED30D51D8124832815AF02A /* SpeechOutputBridge.swift in Sources */,
+				87CD8E01BDDA419B9920943D /* SpeechOutputBridge.m in Sources */,
+				83C5799C79D9A755AF22E0A5 /* VoiceInputBridge.swift in Sources */,
+				1DAC38153A9D7C19C14C2544 /* VoiceInputBridge.m in Sources */,
+				3FA866E09CC53D5860C24757 /* SpeechPack.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1161,6 +1195,12 @@
 				8647B9C22DFD831600E2F160 /* AppDelegate.h in Sources */,
 				8647B9C32DFD831600E2F160 /* AppDelegate.mm in Sources */,
 				8647B9C42DFD831600E2F160 /* main.m in Sources */,
+				94F9AF26B58A4F1487A26945 /* AssistantAudioCoordinator.swift in Sources */,
+				3C0210AD3AAA4E88A7896DCB /* SpeechOutputBridge.swift in Sources */,
+				6004E5A4AB9746AD8DF4F0AD /* SpeechOutputBridge.m in Sources */,
+				FE4886359887609BAFECF009 /* VoiceInputBridge.swift in Sources */,
+				0C51B315F13F21051D1739D3 /* VoiceInputBridge.m in Sources */,
+				6427663E17D905C937B5496B /* SpeechPack.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1407,6 +1447,7 @@
 			baseConfigurationReference = 7F29A37898BAE90005494376 /* Pods-LNFlash.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlashDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
@@ -1418,6 +1459,10 @@
 				"FOUNDATION_MODELS_LDFLAGS[sdk=iphoneos2*]" = "-weak_framework FoundationModels";
 				"FOUNDATION_MODELS_LDFLAGS[sdk=iphonesimulator2*]" = "-weak_framework FoundationModels";
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"FLASH_HAS_WATCH_CONNECTIVITY=1",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"${PODS_ROOT}/Headers/Public\"",
@@ -1565,6 +1610,7 @@
 			baseConfigurationReference = 91622336680E692C2E1CD466 /* Pods-LNFlash.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlash.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
@@ -1575,6 +1621,10 @@
 				"FOUNDATION_MODELS_LDFLAGS[sdk=iphoneos2*]" = "-weak_framework FoundationModels";
 				"FOUNDATION_MODELS_LDFLAGS[sdk=iphonesimulator2*]" = "-weak_framework FoundationModels";
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"FLASH_HAS_WATCH_CONNECTIVITY=1",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"${PODS_ROOT}/Headers/Public\"",
@@ -1871,6 +1921,7 @@
 			baseConfigurationReference = 2FB6C1D703FBCCD4EF991FB5 /* Pods-LNFlash-Alt.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlashAltDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -1907,6 +1958,7 @@
 			baseConfigurationReference = 3CB4BEDD74CAD66898195195 /* Pods-LNFlash-Alt.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = LNFlash/LNFlashAlt.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";

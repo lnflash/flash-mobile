@@ -115,3 +115,32 @@ git push origin v1.0.0
 - `.env.production` – Environment variables (if used)
 
 ---
+
+
+## Ask Flash optional voice pack (ENG-754)
+
+Voice input and spoken replies remain controlled by `assistantVoice` and
+`assistantVoiceReplies`, with defaults off. Automatic replies additionally require
+an account preference. Debug deep links are not a store rollout mechanism.
+
+Before enabling the three downloaded English voices in a store release:
+
+- Host the six pinned files from `scripts/voice-pack/manifest.json` in an immutable
+  HTTPS directory and set `FLASH_VOICE_PACK_BASE_URL` for that build. This change
+  does not publish a production pack. Without a source, Release hides the download
+  control; installed system speech remains the fallback.
+- Follow `scripts/voice-pack/README.md` to reproduce and verify all hashes. Keep
+  model/audio assets out of the app bundle and repository. All three voices share
+  a 102,466,705-byte download. Include the bundled model/runtime/frontend notices.
+- Test actual store-mode builds on Android and a lower-memory iPhone. Measure
+  binary-size increase, cold/warm first audio, peak/retained RAM, battery/thermal
+  behavior and cancellation into Hold to talk. SuperMax Debug measurements do not
+  establish performance for those devices.
+- Verify download/delete/cancel/retry, cold-launch airplane-mode speech, route
+  loss, backgrounding and screen-reader behavior. The user has confirmed the
+  download/delete/retry/preview and airplane-mode suggested-question checks on
+  SuperMax; broader hardware and store-build acceptance remain pending.
+
+The native downloader checks free space before installing. Its use is declared
+under `NSPrivacyAccessedAPICategoryDiskSpace` reason `E174.1` in the app's active
+`ios/PrivacyInfo.xcprivacy` manifest; no free-space counters leave the device.

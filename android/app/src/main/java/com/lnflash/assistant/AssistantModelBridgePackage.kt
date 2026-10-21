@@ -8,7 +8,7 @@ import com.facebook.react.uimanager.ViewManager
 class AssistantModelBridgePackage : ReactPackage {
   override fun createNativeModules(
     reactContext: ReactApplicationContext,
-  ): List<NativeModule> = listOf(AssistantModelBridgeModule(reactContext))
+  ): List<NativeModule> = listOf(AssistantModelBridgeModule(reactContext), VoiceInputBridgeModule(reactContext), SpeechOutputBridgeModule(reactContext))
 
   override fun createViewManagers(
     reactContext: ReactApplicationContext,

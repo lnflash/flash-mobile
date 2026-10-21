@@ -2,7 +2,11 @@ import React, { useState, createContext, useContext, useEffect, useRef } from "r
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import { useAppConfig } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
-import { useAssistantDevOverride } from "./assistant-dev-override"
+import {
+  useAssistantDevOverride,
+  useAssistantRepliesDevOverride,
+  useAssistantVoiceDevOverride,
+} from "./assistant-dev-override"
 
 const DeviceAccountEnabledKey = "deviceAccountEnabledRestAuth"
 const BridgeTopupEnabledKey = "bridgeTopupEnabled"
@@ -128,6 +132,8 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
   // phone build's with ASSISTANT_DEV_LINK (ENG-734); never meant for a store
   // build (assistant-dev-override.ts says where that is enforced).
   const assistantDevOverride = useAssistantDevOverride()
+  const assistantVoiceDevOverride = useAssistantVoiceDevOverride()
+  const assistantRepliesDevOverride = useAssistantRepliesDevOverride()
 
   useEffect(() => {
     mounted.current = true
@@ -173,9 +179,12 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
     // or e2e build, or a local phone build with ASSISTANT_DEV_LINK, may turn
     // the assistant itself on with a dev link (assistant-dev-override.ts,
     // ENG-689 decision 3, ENG-734), never meant for a store build.
+    // Debug links can explicitly opt into voice atomically with the assistant;
+    // a Remote Config fetch cannot overwrite that test-session choice.
     assistantEnabled: remoteConfig.assistantEnabled || assistantDevOverride,
-    assistantVoice: remoteConfig.assistantVoice,
-    assistantVoiceReplies: remoteConfig.assistantVoiceReplies,
+    assistantVoice: remoteConfig.assistantVoice || assistantVoiceDevOverride,
+    assistantVoiceReplies:
+      remoteConfig.assistantVoiceReplies || assistantRepliesDevOverride,
     assistantServerFallback: remoteConfig.assistantServerFallback,
     assistantOnDeviceModel: remoteConfig.assistantOnDeviceModel,
   }
