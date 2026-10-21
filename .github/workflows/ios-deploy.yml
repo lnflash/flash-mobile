@@ -18,7 +18,7 @@ concurrency:
   group: ios-deploy
   cancel-in-progress: false
 
-# The deploy pushes a version-bump commit + tag back to the repo.
+# The deploy publishes a version-bump branch and tag for a PR into protected main.
 permissions:
   contents: write
 
@@ -102,15 +102,12 @@ jobs:
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
         run: bundle exec fastlane ios ${{ steps.lane.outputs.lane }}
 
-      - name: Push version bump
+      - name: Publish version bump for PR
         if: success()
         run: |
-          # Tag-triggered runs check out in detached HEAD, so resolve the target
-          # branch explicitly (git rev-parse --abbrev-ref HEAD would give "HEAD").
-          BRANCH="${{ github.event.repository.default_branch }}"
-          git fetch origin "$BRANCH"
-          git rebase -X theirs --autostash "origin/$BRANCH"
-          git push origin "HEAD:$BRANCH" --follow-tags
+          BRANCH="release/ios-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git push origin "HEAD:refs/heads/$BRANCH" --follow-tags
+          echo "Version bump ready for a PR into ${{ github.event.repository.default_branch }}: $BRANCH" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload artifacts on failure
         if: failure()
