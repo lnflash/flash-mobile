@@ -11,6 +11,7 @@ import type {
   TransactionsProjection,
 } from "../registry/projections"
 import type { HelpTopic } from "./first-use-help"
+import type { ScreenDestination } from "./screen-destinations"
 import type { AssistantReplyKey } from "../registry/types"
 
 // The Ask Flash thread's transcript (ENG-689): what the user said and what
@@ -70,6 +71,7 @@ export type ThreadEntry =
       stale: boolean
     }
   | { id: string; kind: "help"; topic: HelpTopic }
+  | { id: string; kind: "screen"; destination: ScreenDestination }
   | {
       id: string
       kind: "limits"

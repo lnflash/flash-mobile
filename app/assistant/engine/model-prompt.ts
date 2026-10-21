@@ -212,6 +212,8 @@ export const threadLine = (entry: ThreadEntry): Record<string, unknown> => {
       return { from: "assistant", read: "ownFlashAddress" }
     case "help":
       return { from: "assistant", help: entry.topic }
+    case "screen":
+      return { from: "assistant", screen: entry.destination }
     case "limits":
       return { from: "assistant", read: "getAccountLimits" }
     case "details":

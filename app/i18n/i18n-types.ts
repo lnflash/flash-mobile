@@ -8008,6 +8008,34 @@ type RootTranslation = {
 	}
 	AskFlashHelp: {
 		/**
+		 * O​p​e​n​ ​{​s​c​r​e​e​n​}​ ​f​r​o​m​ ​h​e​r​e​.
+		 * @param {string} screen
+		 */
+		screenLocation: RequiredParams<'screen'>
+		/**
+		 * O​p​e​n​ ​{​s​c​r​e​e​n​}
+		 * @param {string} screen
+		 */
+		screenAction: RequiredParams<'screen'>
+		/**
+		 * O​p​e​n​ ​y​o​u​r​ ​c​o​n​v​e​r​s​a​t​i​o​n​s​ ​i​n​ ​C​h​a​t​.​ ​I​f​ ​C​h​a​t​ ​i​s​ ​o​f​f​,​ ​I​'​l​l​ ​t​u​r​n​ ​i​t​ ​o​n​ ​f​i​r​s​t​.
+		 */
+		chatSetupLocation: string
+		/**
+		 * F​i​n​d​ ​{​s​c​r​e​e​n​}​ ​i​n​ ​S​e​t​t​i​n​g​s​.
+		 * @param {string} screen
+		 */
+		settingsSectionLocation: RequiredParams<'screen'>
+		/**
+		 * O​p​e​n​ ​i​n​-​a​p​p​ ​s​u​p​p​o​r​t​ ​c​h​a​t​ ​t​o​ ​c​o​n​t​a​c​t​ ​F​l​a​s​h​.​ ​Y​o​u​ ​n​e​e​d​ ​i​n​t​e​r​n​e​t​ ​t​o​ ​s​e​n​d​ ​a​ ​m​e​s​s​a​g​e​.​ ​I​f​ ​c​h​a​t​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​d​e​v​i​c​e​,​ ​y​o​u​ ​c​a​n​ ​e​m​a​i​l​ ​{​e​m​a​i​l​}​.​ ​N​e​v​e​r​ ​i​n​c​l​u​d​e​ ​a​ ​P​I​N​,​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​o​r​ ​p​r​i​v​a​t​e​ ​k​e​y​.
+		 * @param {string} email
+		 */
+		supportChat: RequiredParams<'email'>
+		/**
+		 * O​p​e​n​ ​s​u​p​p​o​r​t​ ​c​h​a​t
+		 */
+		supportChatAction: string
+		/**
 		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s
 		 */
 		addressTitle: string
@@ -16415,6 +16443,30 @@ export type TranslationFunctions = {
 		emptyHint: () => LocalizedString
 	}
 	AskFlashHelp: {
+		/**
+		 * Open {screen} from here.
+		 */
+		screenLocation: (arg: { screen: string }) => LocalizedString
+		/**
+		 * Open {screen}
+		 */
+		screenAction: (arg: { screen: string }) => LocalizedString
+		/**
+		 * Open your conversations in Chat. If Chat is off, I'll turn it on first.
+		 */
+		chatSetupLocation: () => LocalizedString
+		/**
+		 * Find {screen} in Settings.
+		 */
+		settingsSectionLocation: (arg: { screen: string }) => LocalizedString
+		/**
+		 * Open in-app support chat to contact Flash. You need internet to send a message. If chat isn't available on this device, you can email {email}. Never include a PIN, recovery phrase, or private key.
+		 */
+		supportChat: (arg: { email: string }) => LocalizedString
+		/**
+		 * Open support chat
+		 */
+		supportChatAction: () => LocalizedString
 		/**
 		 * Your Flash address
 		 */

@@ -2408,6 +2408,12 @@ const en: BaseTranslation = {
     emptyHint: "Hold to talk, type a question, or try one below."
   },
   AskFlashHelp: {
+    screenLocation: "Open {screen: string} from here.",
+    screenAction: "Open {screen: string}",
+    chatSetupLocation: "Open your conversations in Chat. If Chat is off, I'll turn it on first.",
+    settingsSectionLocation: "Find {screen: string} in Settings.",
+    supportChat: "Open in-app support chat to contact Flash. You need internet to send a message. If chat isn't available on this device, you can email {email: string}. Never include a PIN, recovery phrase, or private key.",
+    supportChatAction: "Open support chat",
     addressTitle: "Your Flash address",
     addressSaved: "Saved Flash address. Reconnect to check whether it has changed.",
     addressNotSet: "Set a username to get your Flash address.",

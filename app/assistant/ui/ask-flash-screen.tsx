@@ -4,7 +4,6 @@ import { sha256 } from "js-sha256"
 import { useNavigation } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import type { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { CONTACT_EMAIL_ADDRESS } from "@app/config/appinfo"
 import React, {
   useEffect,
   useLayoutEffect,
@@ -31,6 +30,8 @@ import { TxItem } from "@app/components/transaction-item"
 import { useFeatureFlags } from "@app/config/feature-flags-context"
 import { useAppConfig } from "@app/hooks/use-app-config"
 import { useConnectivity } from "@app/hooks/use-connectivity"
+import { useOpenSupportChat } from "@app/hooks/use-open-support-chat"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { usePriceConversion } from "@app/hooks/use-price-conversion"
@@ -56,6 +57,7 @@ import { SpeechSettings } from "./speech-settings"
 import { useSpeechOutput } from "./use-speech-output"
 import { spokenReplyFor } from "./spoken-reply"
 import { helpAnswerText } from "./reply-presentation"
+import { ScreenDestination, screenDestinationTitle } from "./screen-destinations"
 import { pricePresentation } from "./price-presentation"
 import { useVoiceInput } from "./use-voice-input"
 
@@ -329,7 +331,7 @@ const HelpAnswer: React.FC<{ topic: HelpTopic }> = ({ topic }) => {
     backup: LL.AskFlashHelp.backupAction(),
     scan: LL.AskFlashHelp.scanAction(),
     history: LL.AskFlashHelp.historyAction(),
-    support: LL.AskFlashHelp.supportAction(),
+    support: LL.AskFlashHelp.supportChatAction(),
   }
   // Network-backed screens are not opened from offline help: opening them
   // could start their queries before the user has reconnected.
@@ -352,14 +354,16 @@ const HelpAnswer: React.FC<{ topic: HelpTopic }> = ({ topic }) => {
         navigation.navigate("transactionHistory")
         break
       case "support":
-        Linking.openURL(`mailto:${CONTACT_EMAIL_ADDRESS}`).catch(() => undefined)
+        // Rendered by SupportAction below so its hook only mounts for support.
         break
     }
   }
   return (
     <View style={styles.answer} testID={`ask-flash-help-${topic}`}>
       <Text type="p2">{text}</Text>
-      {canOpen && action ? (
+      {canOpen && action === "support" ? (
+        <SupportAction />
+      ) : canOpen && action ? (
         <TouchableOpacity
           accessibilityRole="button"
           onPress={open}
@@ -371,6 +375,174 @@ const HelpAnswer: React.FC<{ topic: HelpTopic }> = ({ topic }) => {
           </Text>
         </TouchableOpacity>
       ) : null}
+    </View>
+  )
+}
+
+const SupportAction: React.FC = () => {
+  const { LL } = useI18nContext()
+  const styles = useStyles()
+  const openSupportChat = useOpenSupportChat()
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      onPress={openSupportChat}
+      testID="ask-flash-help-action"
+      style={styles.helpAction}
+    >
+      <Text type="p2" bold>
+        {LL.AskFlashHelp.supportChatAction()}
+      </Text>
+    </TouchableOpacity>
+  )
+}
+
+const ChatAction: React.FC = () => {
+  const { LL } = useI18nContext()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const { persistentState, updateState } = usePersistentStateContext()
+  const [pending, setPending] = useState(false)
+  const styles = useStyles()
+  useEffect(() => {
+    if (pending && persistentState.chatEnabled) {
+      setPending(false)
+      navigation.navigate("Primary", { screen: "Chat", params: { screen: "chatList" } })
+    }
+  }, [pending, persistentState.chatEnabled, navigation])
+  const open = () => {
+    if (persistentState.chatEnabled) {
+      navigation.navigate("Primary", { screen: "Chat", params: { screen: "chatList" } })
+    } else {
+      setPending(true)
+      updateState((state) => (state ? { ...state, chatEnabled: true } : undefined))
+    }
+  }
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      onPress={open}
+      testID="ask-flash-screen-action"
+      style={styles.helpAction}
+    >
+      <Text type="p2" bold>
+        {LL.AskFlashHelp.screenAction({ screen: LL.ChatScreen.title() })}
+      </Text>
+    </TouchableOpacity>
+  )
+}
+
+const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destination }) => {
+  const { LL } = useI18nContext()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const styles = useStyles()
+  const title = screenDestinationTitle(LL, destination)
+  const open = () => {
+    switch (destination) {
+      case "home":
+        navigation.navigate("Primary", { screen: "Home" })
+        break
+      case "contacts":
+        navigation.navigate("Contacts")
+        break
+      case "map":
+        navigation.navigate("Primary", { screen: "Map" })
+        break
+      case "chat":
+        break
+      case "chatProfile":
+        navigation.navigate("EditNostrProfile")
+        break
+      case "settings":
+        navigation.navigate("settings")
+        break
+      case "account":
+        navigation.navigate("accountScreen")
+        break
+      case "bankAccounts":
+        navigation.navigate("BankAccounts")
+        break
+      case "transfers":
+        navigation.navigate("TopupCashout")
+        break
+      case "receive":
+        navigation.navigate("receiveBitcoin")
+        break
+      case "scanner":
+        navigation.navigate("scanningQRCode")
+        break
+      case "history":
+        navigation.navigate("transactionHistory")
+        break
+      case "card":
+        navigation.navigate("Card")
+        break
+      case "invite":
+        navigation.navigate("InviteFriend")
+        break
+      case "referrals":
+        navigation.navigate("MyReferrals")
+        break
+      case "notifications":
+        navigation.navigate("notificationSettingsScreen")
+        break
+      case "language":
+        navigation.navigate("language")
+        break
+      case "currency":
+        navigation.navigate("currency")
+        break
+      case "theme":
+        navigation.navigate("theme")
+        break
+      case "backup":
+        navigation.navigate("BackupOptions")
+        break
+      case "security":
+        navigation.navigate("settings")
+        break
+      case "limits":
+        navigation.navigate("transactionLimitsScreen")
+        break
+      case "defaultWallet":
+        navigation.navigate("defaultWallet")
+        break
+      case "socialSettings":
+        navigation.navigate("NostrSettingsScreen")
+        break
+      case "bitcoinPrice":
+        navigation.navigate("priceHistory")
+        break
+      case "support":
+        break
+    }
+  }
+  return (
+    <View style={styles.answer} testID={`ask-flash-screen-${destination}`}>
+      <Text type="p2">
+        {destination === "chat"
+          ? LL.AskFlashHelp.chatSetupLocation()
+          : destination === "security"
+          ? LL.AskFlashHelp.settingsSectionLocation({ screen: title })
+          : LL.AskFlashHelp.screenLocation({ screen: title })}
+      </Text>
+      {destination === "support" ? (
+        <SupportAction />
+      ) : destination === "chat" ? (
+        <ChatAction />
+      ) : (
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={open}
+          testID="ask-flash-screen-action"
+          style={styles.helpAction}
+        >
+          <Text type="p2" bold>
+            {LL.AskFlashHelp.screenAction({
+              screen: destination === "security" ? LL.SettingsScreen.title() : title,
+            })}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
@@ -449,6 +621,8 @@ const EntryView: React.FC<{
       return <AddressAnswer entry={entry} />
     case "help":
       return <HelpAnswer topic={entry.topic} />
+    case "screen":
+      return <ScreenAnswer destination={entry.destination} />
     case "details":
       return (
         <Answer

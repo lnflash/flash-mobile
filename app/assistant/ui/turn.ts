@@ -22,6 +22,7 @@ import { DisplayFormatter, isIntent, tierOf, ToolResult } from "../registry/type
 import type { AssistantRuntime } from "./assistant-runtime"
 import { ownFlashAddress } from "./own-flash-address"
 import { readFirstUseQuestion } from "./first-use-help"
+import { readScreenDestination } from "./screen-destinations"
 import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 
 // One turn of the Ask Flash thread (ENG-689, spec §7, §7.2): the grammar
@@ -357,6 +358,8 @@ export const answerUtterance = async (
       ? [...help, ...(await runCall(runtime, firstUse.call, env))]
       : help
   }
+  const destination = readScreenDestination(utterance)
+  if (destination) return [{ kind: "screen", destination }]
   const match = readGrammar(utterance, account)
   if (match === undefined || match.kind === "refused") {
     // Only a miss goes to the model: what the grammar refused (readGrammar

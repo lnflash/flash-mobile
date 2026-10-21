@@ -3,6 +3,7 @@ import { loadLocale } from "@app/i18n/i18n-util.sync"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
 import { replyText } from "../cards/card-parts"
 import { helpAnswerText } from "./reply-presentation"
+import { screenDestinationTitle } from "./screen-destinations"
 import { pricePresentation, PriceDisplay } from "./price-presentation"
 import type { ThreadEntry } from "./thread-store"
 loadLocale("en")
@@ -44,6 +45,15 @@ export const spokenReplyFor = (
           entry.topic !== "limits" &&
           entry.topic !== "paymentStatus" &&
           entry.topic !== "address",
+      }
+    }
+    case "screen": {
+      const title = screenDestinationTitle(LL, entry.destination)
+      return {
+        text: LL.AskFlashHelp.screenLocation({ screen: title }),
+        // The navigation sentence currently falls back to English in other locales.
+        locale: "en-US",
+        automatic: true,
       }
     }
     case "reply": {
