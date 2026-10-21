@@ -332,3 +332,41 @@ App Nap hypothesis remains narrower than claiming a confirmed emulator defect.
 Android initially failed to scan the restored Debug APK on reboot; a full push
 installation (`adb install --no-incremental --no-streaming -r`) restored it while
 retaining the existing account and app data. No uninstall or data clear was used.
+
+
+## iOS public delivery follow-up — 2026-10-21
+
+PR #804 is merged as `2ef98e644`. The remaining native iOS public-host delivery
+check now passes on iOS Simulator 18.6 and 26.5. The isolated Release app under
+`delivery-check-ios` compiles unmodified production `SpeechPack.swift` and the
+actual FlashSpeech/ORT 1.23.0 pod and compiled manifest. It has a separate bundle
+ID/container, no bundled voice assets, no Flash account or microphone access,
+no ATS/TLS exceptions, and no production signing/configuration changes.
+
+| Simulator OS | Cancel after progress | Retry: full verified install | Delete + full redownload | Cold first PCM, three voices |
+| --- | ---: | ---: | ---: | ---: |
+| iOS 18.6 | 686 ms | 17,955 ms | 12,559 ms | 2.17–2.50 s |
+| iOS 26.5 | 289 ms | 8,180 ms | 8,954 ms | 2.22–2.49 s |
+
+Both complete installs on each OS validated all six assets (102,466,705 bytes)
+against the compiled manifest and then independently rechecked installed sizes
+and SHA-256 hashes. Backup exclusion was set. Cancel left the pack missing;
+retry was immediate and succeeded. Explicit removal cleared readiness before
+redownload. Results and source/manifest fingerprints are in
+`ios-delivery-measurements.json`; reproduce using `delivery-check-ios/README.md`.
+Installation timings include independent post-install verification and are not a
+CDN throughput estimate.
+
+After terminating each process, the installed-check mode creates a fresh downloader
+object, verifies persisted readiness, and renders the generic welcome fixture in
+all three voices from the saved pack. That path never calls download or creates a
+URLSession. The simulator network remains available, so this is cold local-only
+synthesis acceptance, not a network-blocked full-Flash or acoustic playback test.
+Do not extrapolate these host timings to iPhone battery/thermal performance.
+
+The native production-host transport/integrity gap is now covered on both Android
+and iOS. Production `FLASH_VOICE_PACK_BASE_URL` remains unset. Full-app listening,
+true disconnected iOS acceptance, sustained battery/thermal behavior and store
+size/distribution measurements remain separate release work. Existing Android
+emulator, physical devices, Flash account data and Metro/provisioner connections
+were not modified by this follow-up.
