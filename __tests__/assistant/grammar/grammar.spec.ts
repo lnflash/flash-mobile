@@ -758,6 +758,9 @@ describe("readGrammar (ENG-690)", () => {
         { kind: "refused" },
       ]),
     )
+    expect(readGrammar("change mi dolla dem to bitcoin", JMD)).toEqual({
+      kind: "refused",
+    })
   })
 
   it("keeps the asks a rule reads that hold a conversion's or a contact's word (ENG-753)", () => {

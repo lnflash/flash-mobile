@@ -14,15 +14,19 @@ const VERBS = new Set([
 ])
 const TO = new Set(["to", "into", "for"])
 
-const walletOf = (word: string): Wallet | undefined => {
-  if (["usd", "cash", "dollar", "dollars"].includes(word)) return "USD"
+const walletOf = (word: string, ctx: GrammarContext): Wallet | undefined => {
+  if (["usd", "cash"].includes(word)) return "USD"
+  if (["dollar", "dollars"].includes(word) && ctx.displayCurrency === "USD") return "USD"
   if (["btc", "bitcoin", "sats"].includes(word)) return "BTC"
   return undefined
 }
 
-const walletPhrase = (words: readonly string[]): Wallet | undefined => {
+const walletPhrase = (
+  words: readonly string[],
+  ctx: GrammarContext,
+): Wallet | undefined => {
   let at = words[0] === "my" || words[0] === "the" ? 1 : 0
-  const wallet = walletOf(words[at])
+  const wallet = walletOf(words[at], ctx)
   if (!wallet) return undefined
   at += 1
   if (words[at] === "wallet" || words[at] === "account") at += 1
@@ -52,15 +56,15 @@ const match = (tokens: readonly Token[], ctx: GrammarContext): RuleResult => {
   const rest = remaining.map(({ word }) => word)
   const join = rest.findIndex((word) => TO.has(word))
   if (join < 0) {
-    return words[start] === "change" && !asked.some(({ word }) => walletOf(word))
+    return words[start] === "change" && !asked.some(({ word }) => walletOf(word, ctx))
       ? undefined
       : { kind: "refuse" }
   }
-  const target = walletPhrase(rest.slice(join + 1))
+  const target = walletPhrase(rest.slice(join + 1), ctx)
   if (!target) return { kind: "refuse" }
   const sourceWords = rest.slice(0, join)
   if (sourceWords[0] === "from") sourceWords.shift()
-  const namedSource = sourceWords.length ? walletPhrase(sourceWords) : undefined
+  const namedSource = sourceWords.length ? walletPhrase(sourceWords, ctx) : undefined
   if (sourceWords.length && !namedSource) return { kind: "refuse" }
   const amountSource = amount?.kind === "amount" ? amount.currency : undefined
   const source = namedSource ?? amountSource

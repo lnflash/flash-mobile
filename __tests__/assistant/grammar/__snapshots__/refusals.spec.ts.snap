@@ -132,7 +132,7 @@ jm/JMD "wah di biggest payment mi get" -> miss
 en/USD "convert my bitcoin to usd" -> clarifyAmount
 en/USD "change my dollars to bitcoin" -> clarifyAmount
 en/USD "can i swap usd to btc" -> clarifyAmount
-jm/JMD "change mi dolla dem to bitcoin" -> clarifyAmount
+jm/JMD "change mi dolla dem to bitcoin" -> miss
 jm/JMD "swap mi usd fi bitcoin" -> clarifyAmount
 jm/JMD "mek mi swap to bitcoin" -> miss
 en/USD "show my contacts" -> miss

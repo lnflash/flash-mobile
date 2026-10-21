@@ -627,7 +627,7 @@ export const TUNING: readonly CorpusEntry[] = [
   en("USD", "exchange 20 usd for btc", conversion("USD", "BTC", "20")),
   en("USD", "change my dollars to bitcoin", "clarifyAmount"),
   en("USD", "can i swap usd to btc", "clarifyAmount"),
-  jm("change mi dolla dem to bitcoin", "clarifyAmount"),
+  jm("change mi dolla dem to bitcoin", "miss"),
   jm("swap mi usd fi bitcoin", "clarifyAmount"),
   jm("mek mi swap to bitcoin", "miss"),
   // The contacts as a list (ENG-753): no intent reads them, so the grammar
