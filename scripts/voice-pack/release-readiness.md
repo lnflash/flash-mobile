@@ -390,3 +390,37 @@ Firebase administrator credentials, so the console publication must be done
 by an authorized project member. Experimental model and server flags stay as
 they are. Store-mode full-app acceptance and hardware measurements listed above
 remain before release tags.
+
+## Physical tester builds from merged main — 2026-10-21
+
+From `d80022b42` (#806), isolated local Release builds used a store-guarded
+`.env` with the verified production voice URL and no `ASSISTANT_DEV_LINK`.
+Neither build was a Play/TestFlight distribution artifact: Pixel's APK used
+the local debug signing key to update its existing installation, and Max's iOS
+app used an Apple Development profile for the existing team. Both installed
+in place without clearing app data. The Android APK bundled JavaScript and
+contained the URL; the signed iOS app also contained the URL and passed
+`codesign --verify --deep --strict`. These checks confirm the build setting
+reaches both binaries, not store signing or distribution.
+
+The signed-in Android emulator fetched the three published Firebase flags as
+`true` from Remote Config. On Pixel 8 Pro, the Release app launched and showed
+Ask Flash and Hold to talk. The previously installed pack was removed in Flash
+and redownloaded through the new Release app; it returned to the three-voice
+offline-ready state with no error. With airplane mode on and Wi-Fi off, Flash
+still showed the installed pack as ready after tapping Heart. The user heard
+the Heart sample and a full spoken answer to a suggested question while
+airplane mode was on, with the first word intact. Airplane mode was disabled
+and Wi-Fi restored afterward. The arm64 APK was 102,041,642 bytes. A single
+post-preview `dumpsys meminfo` snapshot showed 669,930 KiB PSS; it is not peak
+memory or a sustained performance measurement.
+
+On the older Max (iPhone 13 Pro Max), the Release app installed and launched
+with build 57. The user confirmed that the first-time pack download completed,
+the Heart sample played, and a suggested question showed an answer and spoke
+it with airplane mode on. The expanded local `.app` was 131,726,858 bytes;
+this is not an IPA or App Store download-size estimate.
+
+Store-distributed artifacts, screen-reader behavior, and sustained unplugged
+battery/thermal measurements remain open before release tags. The provisioner
+installation and existing Metro processes were preserved.
