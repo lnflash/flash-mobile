@@ -3,6 +3,7 @@ import { GET_PRICE_RULES } from "./get-price"
 import { GET_TRANSACTIONS_RULES } from "./get-transactions"
 import { normalize } from "./normalize"
 import { PREPARE_RECEIVE_RULES } from "./prepare-receive"
+import { PREPARE_CONVERSION_RULES } from "./prepare-conversion"
 import { PREPARE_SEND_RULES } from "./prepare-send"
 import type { GrammarContext, GrammarMatch, GrammarRule } from "./types"
 import {
@@ -23,10 +24,9 @@ import {
 // the only one (§7.1). It emits a ToolCall for runTool, a question about an
 // amount, or nothing ("I can't help with that yet"), and never guesses.
 //
-// The most specific rules come first: an ask that names a payment is a
-// send's, one that names a request is a receive's, then a list, a price, and
-// last a balance. Adding a sixth intent is one new file of rules and one line
-// here, as the registry grows (spec §7.2).
+// The most specific rules come first: a conversion between the user's own
+// wallets, then a payment to a contact, a payment request, a list, a price,
+// and last a balance.
 
 /** A match, a refusal (an ask v1 does not serve), or undefined for a miss. */
 export type GrammarVerdict = GrammarMatch | { kind: "refused" } | undefined
@@ -34,6 +34,7 @@ export type GrammarVerdict = GrammarMatch | { kind: "refused" } | undefined
 const REFUSED: GrammarVerdict = { kind: "refused" }
 
 export const GRAMMAR_RULES: readonly GrammarRule[] = [
+  ...PREPARE_CONVERSION_RULES,
   ...PREPARE_SEND_RULES,
   ...PREPARE_RECEIVE_RULES,
   ...GET_TRANSACTIONS_RULES,
@@ -47,17 +48,16 @@ export const GRAMMAR_RULES: readonly GrammarRule[] = [
  * an invoice, an address or a link anywhere in it (namesPaymentRequest); a
  * question that opens with one of isQuestionAboutHow's fifteen openers
  * ("how do", "why", "where", "when", "is", "do" and the rest, words.ts);
- * a rule's refusal, which today is the send rule's: a send it cannot read
+ * a rule's refusal, including a conversion with an unclear direction or a send it cannot read
  * as one contact's words and at most one amount (prepare-send.ts: a
  * follow-up or a time, a "from" it cannot read, two payments, a pronoun or
  * no payee, a word for what a payment is for); or, once no rule has read
  * it, a question about what something is, opening "what is", "what's",
  * "whats" or "what are" (isQuestionAboutWhat, ENG-749): "what is my
  * balance" stays a read; or, once no rule has read it, an ask for a
- * feature outside the model tier's five tools (ENG-753): a conversion
- * ("swap 0.01 usd to bitcoin", "change my dollars to bitcoin";
- * asksConversion) or the contacts as a list ("show my contacts";
- * asksContacts), which the model could only answer with a call for
+ * feature outside the model tier's five tools (ENG-753): an unrecognized
+ * conversion phrase (asksConversion) or the contacts as a list
+ * ("show my contacts"; asksContacts), which the model could only answer with a call for
  * another ask. "What is the exchange rate" stays a price and "send bob 5
  * for swap meet" a send. Undefined is words no rule reads. Only a miss may
  * go to a later tier (the on-device model): a refusal is the v1 boundary
@@ -72,7 +72,15 @@ export const readGrammar = (
   if (tokens.length === 0) return undefined
   // An invoice or an address is a payee v1 does not take, and a question
   // ("how do I", "where can I") is about the app: neither is any rule's.
-  if (namesPaymentRequest(tokens) || isQuestionAboutHow(tokens)) return REFUSED
+  if (namesPaymentRequest(tokens)) return REFUSED
+  // An explicit conversion can be a "how do I" request. It still only
+  // prepares a review card; the payment needs a separate Confirm tap.
+  if (isQuestionAboutHow(tokens)) {
+    const conversion = rules
+      .find(({ intent }) => intent === "prepareConversion")
+      ?.match({ tokens }, ctx)
+    return conversion ? (conversion.kind === "refuse" ? REFUSED : conversion) : REFUSED
+  }
   for (const rule of rules) {
     const result = rule.match({ tokens }, ctx)
     if (result !== undefined) return result.kind === "refuse" ? REFUSED : result
@@ -80,7 +88,7 @@ export const readGrammar = (
   // A question about what something is ("what is lightning") that no rule
   // read: about the app or the world, as a "how" question is. Asked only
   // now, since "what is my balance" and "what's the price" are reads. So
-  // are a conversion and the contacts list (ENG-753): "what is the
+  // are an unrecognized conversion and the contacts list (ENG-753): "what is the
   // exchange rate" is a price, "send bob 5 for swap meet" a send.
   return isQuestionAboutWhat(tokens) ||
     asksConversion(tokens) ||

@@ -2408,6 +2408,7 @@ const en: BaseTranslation = {
     emptyHint: "Hold to talk, type a question, or try one below."
   },
   AskFlashHelp: {
+    conversionAmount: "How much {from: string} would you like to convert to {to: string}? Say or type an amount, for example 20 {from}.",
     screenLocation: "Open {screen: string} from here.",
     screenAction: "Open {screen: string}",
     chatSetupLocation: "Open your conversations in Chat. If Chat is off, I'll turn it on first.",

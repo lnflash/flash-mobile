@@ -56,6 +56,12 @@ export const spokenReplyFor = (
         automatic: true,
       }
     }
+    case "conversionAmount":
+      return {
+        text: LL.AskFlashHelp.conversionAmount({ from: entry.from, to: entry.to }),
+        locale: "en-US",
+        automatic: true,
+      }
     case "reply": {
       if (entry.replyKey === "Assistant.amountUnclear") return undefined
       const text = replyText(LL, entry.replyKey)

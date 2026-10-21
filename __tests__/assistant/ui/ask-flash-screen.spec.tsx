@@ -243,6 +243,21 @@ describe("AskFlashScreen", () => {
     fireEvent.press(screen.getByTestId("ask-flash-screen-action"))
     expect(mockNavigate).toHaveBeenCalledWith("EditNostrProfile")
   })
+  it("asks for the missing swap amount in the thread and routes the follow-up", async () => {
+    const { screen, runTool } = show()
+    await ask(screen, "Convert BTC to USD")
+    expect(screen.getByTestId("ask-flash-conversion-amount")).toBeTruthy()
+    expect(runTool).not.toHaveBeenCalled()
+    runTool.mockResolvedValue({
+      kind: "error",
+      userMessage: "Assistant.invalidArguments",
+    } as ToolResult<unknown>)
+    await ask(screen, "20000 sats")
+    expect(runTool.mock.calls[0][0]).toEqual({
+      intent: "prepareConversion",
+      args: { from: "BTC", to: "USD", amount: "0.00020000", currency: "BTC" },
+    })
+  })
   it("opens the existing in-app support chat from help", async () => {
     const { screen } = show()
     await ask(screen, "How do I contact support?")

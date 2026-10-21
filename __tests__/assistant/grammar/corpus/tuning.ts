@@ -10,6 +10,7 @@
 // native-speaker review as the held-out set.
 import {
   balances,
+  conversion,
   CorpusEntry,
   entry,
   price,
@@ -521,7 +522,7 @@ export const TUNING: readonly CorpusEntry[] = [
   en("USD", "send $10 to bob and $5 to alice", "miss"),
   en("USD", "send $5 to bob, alice and tanya", "miss"),
   en("USD", "split the bill with bob", "miss"),
-  en("USD", "convert 20 dollars to btc", "miss"),
+  en("USD", "convert 20 dollars to btc", conversion("USD", "BTC", "20")),
   en("USD", "swap to bitcoin", "miss"),
   en("USD", "move $10 to my bitcoin wallet", "miss"),
   en("USD", "send $10 to my btc wallet", "miss"),
@@ -619,15 +620,15 @@ export const TUNING: readonly CorpusEntry[] = [
   en("USD", "wats the rate", price()),
   en("USD", "wut is my balance", balances()),
   en("JMD", "wats my balance", balances()),
-  // A conversion (ENG-753): no tool of the model tier's five serves one,
-  // so the grammar refuses it before the model is asked (asksConversion).
-  en("USD", "swap 0.01 usd to bitcoin", "miss"),
-  en("USD", "convert my bitcoin to usd", "miss"),
-  en("USD", "exchange 20 usd for btc", "miss"),
-  en("USD", "change my dollars to bitcoin", "miss"),
-  en("USD", "can i swap usd to btc", "miss"),
-  jm("change mi dolla dem to bitcoin", "miss"),
-  jm("swap mi usd fi bitcoin", "miss"),
+  // An explicit direction is read locally. The follow-up amount is asked
+  // before preparing, and the model tier never invents a conversion.
+  en("USD", "swap 0.01 usd to bitcoin", conversion("USD", "BTC", "0.01")),
+  en("USD", "convert my bitcoin to usd", "clarifyAmount"),
+  en("USD", "exchange 20 usd for btc", conversion("USD", "BTC", "20")),
+  en("USD", "change my dollars to bitcoin", "clarifyAmount"),
+  en("USD", "can i swap usd to btc", "clarifyAmount"),
+  jm("change mi dolla dem to bitcoin", "clarifyAmount"),
+  jm("swap mi usd fi bitcoin", "clarifyAmount"),
   jm("mek mi swap to bitcoin", "miss"),
   // The contacts as a list (ENG-753): no intent reads them, so the grammar
   // refuses the ask before the model is asked (asksContacts).

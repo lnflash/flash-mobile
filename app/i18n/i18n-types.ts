@@ -8008,6 +8008,12 @@ type RootTranslation = {
 	}
 	AskFlashHelp: {
 		/**
+		 * H​o​w​ ​m​u​c​h​ ​{​f​r​o​m​}​ ​w​o​u​l​d​ ​y​o​u​ ​l​i​k​e​ ​t​o​ ​c​o​n​v​e​r​t​ ​t​o​ ​{​t​o​}​?​ ​S​a​y​ ​o​r​ ​t​y​p​e​ ​a​n​ ​a​m​o​u​n​t​,​ ​f​o​r​ ​e​x​a​m​p​l​e​ ​2​0​ ​{​f​r​o​m​}​.
+		 * @param {string} from
+		 * @param {string} to
+		 */
+		conversionAmount: RequiredParams<'from' | 'from' | 'to'>
+		/**
 		 * O​p​e​n​ ​{​s​c​r​e​e​n​}​ ​f​r​o​m​ ​h​e​r​e​.
 		 * @param {string} screen
 		 */
@@ -16443,6 +16449,10 @@ export type TranslationFunctions = {
 		emptyHint: () => LocalizedString
 	}
 	AskFlashHelp: {
+		/**
+		 * How much {from} would you like to convert to {to}? Say or type an amount, for example 20 {from}.
+		 */
+		conversionAmount: (arg: { from: string, to: string }) => LocalizedString
 		/**
 		 * Open {screen} from here.
 		 */

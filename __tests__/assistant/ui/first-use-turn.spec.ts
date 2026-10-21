@@ -8,6 +8,7 @@ jest.mock("react-native-secure-key-store", () => ({
   ACCESSIBLE: {},
 }))
 import { answerUtterance } from "@app/assistant/ui/turn"
+import type { ToolResult } from "@app/assistant/registry/types"
 import { env, fakeRuntime, CASH_WALLETS } from "./thread-harness"
 import { graphqlTx, page, btcPayment } from "../fakes"
 
@@ -90,6 +91,43 @@ it("never quotes prices or prepares sends and invoices offline", async () => {
     ).toEqual([{ kind: "reply", replyKey: "Assistant.actionsOffline" }])
   }
   expect(runTool).not.toHaveBeenCalled()
+})
+it("asks for a conversion amount locally, then prepares only that wallet direction", async () => {
+  const { runtime, runTool, modelAdapter } = fakeRuntime()
+  const prompt = await answerUtterance(runtime, "Swap USD to BTC", env())
+  expect(prompt).toEqual([{ kind: "conversionAmount", from: "USD", to: "BTC" }])
+  expect(runTool).not.toHaveBeenCalled()
+  runtime.transcript.append([
+    { kind: "user", text: "Swap USD to BTC" },
+    ...prompt,
+    { kind: "user", text: "20" },
+  ])
+  expect(await answerUtterance(runtime, "20 BTC", env())).toEqual(prompt)
+  expect(runTool).not.toHaveBeenCalled()
+  runTool.mockResolvedValue({
+    kind: "error",
+    userMessage: "Assistant.invalidArguments",
+  } as ToolResult<unknown>)
+  await answerUtterance(runtime, "20", env())
+  expect(runTool.mock.calls[0][0]).toEqual({
+    intent: "prepareConversion",
+    args: { from: "USD", to: "BTC", amount: "20", currency: "USD" },
+  })
+  expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
+})
+it("does not prepare a conversion follow-up offline or for an unrelated question", async () => {
+  const { runtime, runTool } = fakeRuntime()
+  runtime.transcript.append([
+    { kind: "conversionAmount", from: "BTC", to: "USD" },
+    { kind: "user", text: "20000 sats" },
+  ])
+  expect(await answerUtterance(runtime, "20000 sats", env({ isOffline: true }))).toEqual([
+    { kind: "reply", replyKey: "Assistant.actionsOffline" },
+  ])
+  expect(runTool).not.toHaveBeenCalled()
+  expect(
+    await answerUtterance(runtime, "How much money do I have?", env({ isOffline: true })),
+  ).toEqual([{ kind: "reply", replyKey: "Assistant.noSavedData" }])
 })
 it("does not mistake an older received transaction for the latest outgoing payment", async () => {
   const { runtime, graphql, btcRail, runTool } = fakeRuntime()

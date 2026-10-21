@@ -34,6 +34,18 @@ it("speaks a named screen answer without pretending to read account data", () =>
     automatic: true,
   })
 })
+it("asks for a conversion amount aloud without speaking a quote or sending money", () => {
+  expect(
+    spokenReplyFor(
+      { id: "swap", kind: "conversionAmount", from: "USD", to: "BTC" },
+      { LL, locale: "en", display },
+    ),
+  ).toEqual({
+    text: LL.AskFlashHelp.conversionAmount({ from: "USD", to: "BTC" }),
+    locale: "en-US",
+    automatic: true,
+  })
+})
 it("includes the real saved time, currency and unavailable state rather than speaking zero", () => {
   const entry: ThreadEntry = {
     id: "balances",

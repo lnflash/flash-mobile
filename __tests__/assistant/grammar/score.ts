@@ -9,7 +9,8 @@ import { CorpusEntry, DISPLAY_SYMBOL, Expected } from "./corpus/entries"
 /** What the grammar made of an entry, in the corpus's own terms. */
 export const outcomeOf = (match: GrammarMatch | undefined): Expected => {
   if (match === undefined) return "miss"
-  if (match.kind === "clarifyAmount") return "clarifyAmount"
+  if (match.kind === "clarifyAmount" || match.kind === "conversionAmount")
+    return "clarifyAmount"
   return match.call
 }
 

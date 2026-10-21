@@ -623,6 +623,14 @@ const EntryView: React.FC<{
       return <HelpAnswer topic={entry.topic} />
     case "screen":
       return <ScreenAnswer destination={entry.destination} />
+    case "conversionAmount":
+      return (
+        <Bubble
+          from="assistant"
+          text={LL.AskFlashHelp.conversionAmount({ from: entry.from, to: entry.to })}
+          testID="ask-flash-conversion-amount"
+        />
+      )
     case "details":
       return (
         <Answer

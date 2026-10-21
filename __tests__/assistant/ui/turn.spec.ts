@@ -698,13 +698,12 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ])
   })
 
-  it("refuses a conversion or a contacts ask before the model, with the miss reply and no model call (ENG-753)", async () => {
-    // What the macOS model answered for the dogfood asks: a send for a swap
-    // and a history search for the contacts, each with words the person
-    // never typed. Neither reaches the model now.
+  it("refuses an unsafe conversion or a contacts ask before the model", async () => {
+    // A conversion naming another person cannot become a payment to them.
+    // The model also cannot invent a contacts history search.
     const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
       [
-        "swap 0.01 usd to bitcoin",
+        "swap 0.01 usd to bitcoin and send Bob",
         {
           intent: "prepareSend",
           args: {
@@ -717,7 +716,7 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
         },
       ],
       [
-        "convert 20 dollars to btc",
+        "convert 20 dollars to btc for Alice",
         { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
       ],
       [

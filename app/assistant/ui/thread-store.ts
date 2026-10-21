@@ -72,6 +72,7 @@ export type ThreadEntry =
     }
   | { id: string; kind: "help"; topic: HelpTopic }
   | { id: string; kind: "screen"; destination: ScreenDestination }
+  | { id: string; kind: "conversionAmount"; from: "USD" | "BTC"; to: "USD" | "BTC" }
   | {
       id: string
       kind: "limits"

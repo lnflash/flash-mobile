@@ -22,6 +22,7 @@ import { DisplayFormatter, isIntent, tierOf, ToolResult } from "../registry/type
 import type { AssistantRuntime } from "./assistant-runtime"
 import { ownFlashAddress } from "./own-flash-address"
 import { readFirstUseQuestion } from "./first-use-help"
+import { conversionFollowup } from "../grammar/prepare-conversion"
 import { readScreenDestination } from "./screen-destinations"
 import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 
@@ -289,6 +290,18 @@ export const answerUtterance = async (
     displayCurrency: env.displayCurrency,
     displaySymbol: env.displaySymbol,
   }
+  const previous = runtime.transcript.get().entries
+  const last = previous[previous.length - 1]
+  const prior = last?.kind === "user" ? previous[previous.length - 2] : last
+  if (prior?.kind === "conversionAmount") {
+    const followup = conversionFollowup(utterance, prior.from, prior.to)
+    if (followup?.kind === "call") {
+      if (env.isOffline) return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      return runCall(runtime, followup.call, env)
+    }
+    if (followup?.kind === "clarifyAmount" || followup?.kind === "refuse")
+      return [{ kind: "conversionAmount", from: prior.from, to: prior.to }]
+  }
   const firstUse = readFirstUseQuestion(utterance)
   if (firstUse?.topic === "address") {
     try {
@@ -409,6 +422,9 @@ export const answerUtterance = async (
         params: { currency: env.displayCurrency },
       },
     ]
+  }
+  if (match.kind === "conversionAmount") {
+    return [{ kind: "conversionAmount", from: match.from, to: match.to }]
   }
   if (env.isOffline && needsNetwork(match.call)) {
     return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]

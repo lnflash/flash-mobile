@@ -64,7 +64,6 @@ en/USD "pay bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq" -> miss
 en/USD "send $10 to bob and $5 to alice" -> miss
 en/USD "send $5 to bob, alice and tanya" -> miss
 en/USD "split the bill with bob" -> miss
-en/USD "convert 20 dollars to btc" -> miss
 en/USD "swap to bitcoin" -> miss
 en/USD "move $10 to my bitcoin wallet" -> miss
 en/USD "send $10 to my btc wallet" -> miss
@@ -130,13 +129,11 @@ jm/JMD "wah mi sen dis week" -> miss
 jm/JMD "wah mi get yesterday" -> miss
 jm/JMD "how much mi spen las month" -> miss
 jm/JMD "wah di biggest payment mi get" -> miss
-en/USD "swap 0.01 usd to bitcoin" -> miss
-en/USD "convert my bitcoin to usd" -> miss
-en/USD "exchange 20 usd for btc" -> miss
-en/USD "change my dollars to bitcoin" -> miss
-en/USD "can i swap usd to btc" -> miss
-jm/JMD "change mi dolla dem to bitcoin" -> miss
-jm/JMD "swap mi usd fi bitcoin" -> miss
+en/USD "convert my bitcoin to usd" -> clarifyAmount
+en/USD "change my dollars to bitcoin" -> clarifyAmount
+en/USD "can i swap usd to btc" -> clarifyAmount
+jm/JMD "change mi dolla dem to bitcoin" -> clarifyAmount
+jm/JMD "swap mi usd fi bitcoin" -> clarifyAmount
 jm/JMD "mek mi swap to bitcoin" -> miss
 en/USD "show my contacts" -> miss
 en/JMD "who is in my contacts" -> miss
