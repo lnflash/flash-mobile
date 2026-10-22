@@ -65,4 +65,29 @@ describe("Ask Flash quick actions", () => {
     })
     expect(readQuickAction("Remove my contacts", ctx)).toBeUndefined()
   })
+
+  for (const [utterance, operation, username] of [
+    ["Remove dread marks from my contacts", "remove", "dread marks"],
+    ["Add dread Max to my contacts", "add", "dread max"],
+    ["Show me dread marks's profile", "profile", "dread marks"],
+    ["Open dread Max profile", "profile", "dread max"],
+    ["Show me José’s profile", "profile", "josé"],
+  ]) {
+    it(`passes the spoken name in ${utterance} to shared username lookup`, () => {
+      expect(readQuickAction(utterance, ctx)).toEqual({
+        kind: "contact",
+        operation,
+        username,
+      })
+    })
+  }
+
+  it("accepts spoken names in payment-history searches without joining separate commands", () => {
+    expect(readQuickAction("Show me my last payment to dread marks", ctx)).toEqual({
+      kind: "payment",
+      query: "dread marks",
+    })
+    expect(readQuickAction("Add alice and bob to my contacts", ctx)).toBeUndefined()
+    expect(readQuickAction("Remove alice then bob from my contacts", ctx)).toBeUndefined()
+  })
 })

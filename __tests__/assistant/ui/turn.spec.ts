@@ -376,6 +376,37 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ).toEqual([{ kind: "reply", replyKey: "Assistant.actionsOffline" }])
   })
 
+  it("routes spaced voice names to contact and profile lookup instead of unknown intent", async () => {
+    const { runtime } = fakeRuntime()
+    for (const [utterance, operation] of [
+      ["Remove dread marks from my contacts", "remove"],
+      ["Add dread marks to my contacts", "add"],
+      ["Show me dread marks's profile", "profile"],
+    ]) {
+      expect(await answerUtterance(runtime, utterance, env())).toEqual([
+        {
+          kind: "contactAction",
+          operation,
+          username: "dread marks",
+          hostname: "flashapp.me",
+        },
+      ])
+    }
+    expect(
+      reissue(
+        {
+          intent: "getTransactions",
+          args: { query: "dread marks", direction: "SEND", first: 10 },
+        },
+        "dread marks",
+        "dreadmax",
+      ),
+    ).toEqual({
+      intent: "getTransactions",
+      args: { query: "dreadmax", direction: "SEND", first: 10 },
+    })
+  })
+
   it("opens the card top-up flow with the requested amount", async () => {
     const { runtime } = fakeRuntime()
     expect(await answerUtterance(runtime, "Add $20 to my card", env())).toEqual([

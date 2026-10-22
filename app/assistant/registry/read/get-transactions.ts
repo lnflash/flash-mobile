@@ -18,6 +18,7 @@ import {
   TxRow,
 } from "../projections"
 import type { BtcReadRail, ReadToolCtx, ToolResult } from "../types"
+import { similarUsernames } from "./similar-usernames"
 
 // getTransactions (docs/ai-assistant-tool-registry.md §4). Both rails, one
 // newest-first list. A search pages through at most TX_MAX_PAGES pages of
@@ -245,27 +246,31 @@ const rowMatcher = (
  * (offline, the rail's GraphqlRailError) names no one, and the memo and the
  * payee are still searched. Any other failed read fails the search, as a
  * failed first page does: online, an empty card would tell the user they
- * never paid the contact they named.
+ * never paid the contact they named. Known usernames also supply suggestions
+ * when a search finds no rows; choosing one reruns the search with that name.
  */
 const contactsNamed = async (
   graphql: GraphqlRail,
   query: string | undefined,
-): Promise<ReadonlySet<string>> => {
+  knownUsernames: readonly string[],
+): Promise<{ matches: ReadonlySet<string>; usernames: readonly string[] }> => {
   const typed = typedQuery(query)
-  if (!typed) return new Set()
-  let contacts: readonly ContactRow[]
+  if (!typed) return { matches: new Set(), usernames: [] }
+  let contacts: readonly ContactRow[] = []
   try {
     contacts = await graphql.contacts()
   } catch (err) {
-    if (err instanceof GraphqlRailError) return new Set()
-    throw err
+    if (!(err instanceof GraphqlRailError)) throw err
   }
   const inAlias = finder(typed, asHandle)
-  return new Set(
-    contacts
-      .filter(({ alias }) => inAlias(alias ?? null))
-      .map(({ username }) => username.toLowerCase()),
-  )
+  return {
+    matches: new Set(
+      contacts
+        .filter(({ alias }) => inAlias(alias ?? null))
+        .map(({ username }) => username.toLowerCase()),
+    ),
+    usernames: [...contacts.map(({ username }) => username), ...knownUsernames],
+  }
 }
 
 const oldest = (rows: readonly TxRow[]): number =>
@@ -340,9 +345,14 @@ const run = async (
   const want = args.first ?? TX_DEFAULT_RESULTS
   // The schema caps `first` at 20; it cannot say "at least 1".
   if (want < 1) return { kind: "error", userMessage: "Assistant.invalidArguments" }
+  const contactNames = await contactsNamed(
+    ctx.graphql,
+    args.query,
+    ctx.knownUsernames ?? [],
+  )
   const matches = rowMatcher(
     args,
-    await contactsNamed(ctx.graphql, args.query),
+    contactNames.matches,
     flashHosts(ctx.lnAddressHostname),
   )
 
@@ -374,6 +384,30 @@ const run = async (
       replyKey: "Assistant.searchedWindow",
     },
     btc: btc.state,
+  }
+  const exactContact =
+    contactNames.matches.size > 0 ||
+    contactNames.usernames.some(
+      (name) => name.toLowerCase() === args.query?.trim().toLowerCase(),
+    )
+  if (payload.transactions.length === 0 && args.query && !exactContact) {
+    const suggestions = similarUsernames(args.query, contactNames.usernames).filter(
+      (name) => name.toLowerCase() !== args.query?.trim().toLowerCase(),
+    )
+    if (suggestions.length)
+      return {
+        kind: "clarification",
+        card: {
+          type: "clarification",
+          prompt: "Assistant.pickContact",
+          about: args.query,
+          options: suggestions.map((username) => ({
+            id: username,
+            label: username,
+            sublabel: username,
+          })),
+        },
+      }
   }
   return { kind: "answer", payload }
 }

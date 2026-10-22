@@ -9,8 +9,12 @@ export type QuickAction =
   | { kind: "cardTopUp"; amount?: string; currency?: AmountCurrency }
   | { kind: "contact"; operation: "add" | "remove" | "profile"; username: string }
 
-const username = "([a-zA-Z0-9_][a-zA-Z0-9_.-]{0,62})"
+// Capture what speech heard, including spaces; username lookup resolves it later.
+const usernameHint = "([\\p{L}0-9_][\\p{L}0-9_. -]{0,79}?)"
 const SELF_WORDS = new Set(["my", "your", "the", "his", "her", "their"])
+const isNameHint = (hint: string) =>
+  !SELF_WORDS.has(hint.toLowerCase()) && !/\b(?:and|then|also|or)\b/i.test(hint)
+const cleanNameHint = (hint: string) => hint.toLowerCase().trim().replace(/\s+/g, " ")
 const clean = (utterance: string) => textOf(normalize(utterance).tokens)
 
 /** Reviewed, whole-utterance commands. No name, destination or amount is guessed. */
@@ -21,29 +25,29 @@ export const readQuickAction = (
   const text = clean(utterance)
   const raw = utterance.trim()
   const contact = new RegExp(
-    `^(?:please )?(add|remove) @?${username} (?:to|from) my contacts[?.!]*$`,
-    "i",
+    `^(?:please )?(add|remove) @?${usernameHint} (?:to|from) my contacts[?.!]*$`,
+    "iu",
   ).exec(raw)
-  if (contact && !SELF_WORDS.has(contact[2].toLowerCase()))
+  if (contact && isNameHint(contact[2]))
     return {
       kind: "contact",
       operation: contact[1].toLowerCase() as "add" | "remove",
-      username: contact[2].toLowerCase(),
+      username: cleanNameHint(contact[2]),
     }
   const profile = new RegExp(
-    `^(?:(?:please )?show me|open|show) @?${username} profile[?.!]*$`,
-    "i",
+    `^(?:(?:please )?show me|open|show) @?${usernameHint} profile[?.!]*$`,
+    "iu",
   ).exec(raw)
   const possessive = new RegExp(
-    `^(?:(?:please )?show me|open|show) @?${username}['’]s profile[?.!]*$`,
-    "i",
+    `^(?:(?:please )?show me|open|show) @?${usernameHint}['’]s profile[?.!]*$`,
+    "iu",
   ).exec(raw)
   const profileMatch = possessive ?? profile
-  if (profileMatch && !SELF_WORDS.has(profileMatch[1].toLowerCase()))
+  if (profileMatch && isNameHint(profileMatch[1]))
     return {
       kind: "contact",
       operation: "profile",
-      username: profileMatch[1].toLowerCase(),
+      username: cleanNameHint(profileMatch[1]),
     }
 
   const merchants =
@@ -53,10 +57,11 @@ export const readQuickAction = (
   if (merchants) return { kind: "merchants", query: merchants[1] ?? merchants[2] }
 
   const payment =
-    /^(?:show|find|open)(?: me)? my (?:last|latest) payment(?: to ([a-z0-9_.-]+))?$/.exec(
+    /^(?:show|find|open)(?: me)? my (?:last|latest) payment(?: to ([a-z0-9_. -]{1,80}))?$/.exec(
       text,
     )
-  if (payment) return { kind: "payment", query: payment[1] }
+  if (payment && (!payment[1] || isNameHint(payment[1])))
+    return { kind: "payment", query: payment[1] }
 
   const cashout =
     /^(?:please )?(?:cash out|cashout|withdraw|settle)(?: (.+?))?(?: (?:to|into) (?:my |a |the )?(?:bank|bank account|account))?$/.exec(

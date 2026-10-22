@@ -19,7 +19,7 @@ import type { MerchantsPayload } from "../registry/projections"
 import type { ThreadEntry } from "./thread-store"
 import { parseAmount, parseDisplayAmount } from "../engine/parse-amount"
 import { contactTagsFor } from "./contact-tags"
-import { similarUsernames } from "../registry/read/similar-usernames"
+import { lookupFlashUsername } from "../registry/read/lookup-flash-username"
 
 const useStyles = makeStyles(({ colors }) => ({
   card: {
@@ -148,28 +148,37 @@ export const ContactActionAnswer: React.FC<{
   addProfileRef.current = addEventToProfiles
   const [pubkey, setPubkey] = useState<string>()
   const [username, setUsername] = useState(entry.username)
+  const [suggestions, setSuggestions] = useState<string[]>([])
   const [state, setState] = useState<
     "loading" | "missing" | "ready" | "working" | "done" | "error"
   >("loading")
   const handle = `${username}@${entry.hostname}`
-  const suggestions =
-    state === "missing"
-      ? similarUsernames(username, knownUsernames).filter((name) => name !== username)
-      : []
+  const verifiedHandle = useRef<string>()
   useEffect(() => {
+    // Newly loaded contact names can improve a miss, but must not reset a finished action.
+    if (verifiedHandle.current === handle) return
     let live = true
-    nip05
-      .queryProfile(handle.toLowerCase())
-      .then((found) => {
+    setPubkey(undefined)
+    setSuggestions([])
+    setState("loading")
+    lookupFlashUsername(username, knownUsernames, async (name) => {
+      const found = await nip05.queryProfile(`${name}@${entry.hostname}`.toLowerCase())
+      return found?.pubkey && /^[0-9a-f]{64}$/i.test(found.pubkey) ? found.pubkey : null
+    })
+      .then((result) => {
         if (!live) return
-        if (found?.pubkey && /^[0-9a-f]{64}$/i.test(found.pubkey)) {
-          setPubkey(found.pubkey)
+        if (result.kind === "exact") {
+          verifiedHandle.current = handle
+          setPubkey(result.match.value)
           setState("ready")
-          fetchNostrUsers([found.pubkey], (event, closer) => {
+          fetchNostrUsers([result.match.value], (event, closer) => {
             if (live) addProfileRef.current(event)
             closer.close()
           })
-        } else setState("missing")
+        } else {
+          setSuggestions(result.matches.map((match) => match.username))
+          setState("missing")
+        }
       })
       .catch(() => {
         if (live) setState("error")
@@ -177,7 +186,7 @@ export const ContactActionAnswer: React.FC<{
     return () => {
       live = false
     }
-  }, [handle])
+  }, [handle, username, entry.hostname, knownUsernames])
   const saved = Boolean(
     pubkey && contactsEvent?.tags.some((tag) => tag[0] === "p" && tag[1] === pubkey),
   )
@@ -241,7 +250,9 @@ export const ContactActionAnswer: React.FC<{
       : isOffline && entry.operation !== "profile"
       ? LL.Assistant.actionsOffline()
       : state === "missing"
-      ? LL.AskFlashActions.contactNotFound()
+      ? suggestions.length
+        ? LL.Assistant.pickContact()
+        : LL.AskFlashActions.contactNotFound()
       : state === "error"
       ? LL.AskFlashActions.contactError()
       : state === "done"

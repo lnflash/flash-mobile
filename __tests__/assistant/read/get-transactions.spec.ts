@@ -101,6 +101,31 @@ const contact = (username: string, alias: string | null = null): ContactRow =>
   } as ContactRow)
 
 describe("getTransactions", () => {
+  it("finds a known Chat username from a misheard name in payment history", async () => {
+    const setup = serve([
+      [
+        sentTo({ id: "match", createdAt: 100, username: "dreadmax" }),
+        sentTo({ id: "other", createdAt: 99, username: "alice" }),
+      ],
+    ])
+    setup.ctx.knownUsernames = ["dreadmax"]
+    setup.graphql.contacts.mockResolvedValue([])
+    enableBtc(setup, [])
+    await expect(
+      getTransactions.run({ query: "dread marks", direction: "SEND" }, setup.ctx),
+    ).resolves.toEqual({
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickContact",
+        about: "dread marks",
+        options: [{ id: "dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+      },
+    })
+    const payload = await answer(setup, { query: "dreadmax", direction: "SEND" })
+    expect(payload.transactions.map(({ id }) => id)).toEqual(["match"])
+  })
+
   describe("paging", () => {
     it("reads at most 5 pages of 20 looking for a match, and states the window on a miss", async () => {
       const setup = serve(pagesOf(10))
@@ -618,7 +643,10 @@ describe("getTransactions", () => {
         contact("andre_k", "Andre"),
       ])
 
-      expect(await ids(setup, { direction: "SEND", query: "andrea" })).toEqual([])
+      // Similar usernames are suggestions, never silently included as matching payments.
+      await expect(
+        getTransactions.run({ direction: "SEND", query: "andrea" }, setup.ctx),
+      ).resolves.toMatchObject({ kind: "clarification", card: { about: "andrea" } })
       // "gas" is in the username itself, which a search reads as typed.
       expect(await ids(setup, { query: "gas" })).toEqual(["to-vargas_j"])
     })

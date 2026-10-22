@@ -1,4 +1,4 @@
-import { FLASH_USERNAME } from "../registry/read/resolve-contact"
+import { FLASH_USERNAME } from "../registry/read/lookup-flash-username"
 
 /** Chat contacts are search hints; payment still verifies a username on the server. */
 export const knownFlashUsernames = (

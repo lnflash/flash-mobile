@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useContactsQuery } from "@app/graphql/generated"
+import { useConnectivity } from "@app/hooks/use-connectivity"
 import { nostrRuntime } from "@app/nostr/runtime/NostrRuntime"
 import { useChatContext } from "@app/screens/chat/chatContext"
 import { knownFlashUsernames } from "./known-flash-users"
 
-/** Load Chat contact names while Ask Flash is open, even if Chat was never opened. */
+/** One set of Chat and payment usernames for every Ask Flash username action. */
 export const useKnownFlashUsers = (hostname: string): string[] => {
+  const { isOffline } = useConnectivity()
+  const { data } = useContactsQuery({ fetchPolicy: "cache-first", skip: isOffline })
   const { contactsEvent, profileMap, addEventToProfiles } = useChatContext()
   const addProfile = useRef(addEventToProfiles)
   addProfile.current = addEventToProfiles
@@ -25,7 +29,12 @@ export const useKnownFlashUsers = (hostname: string): string[] => {
           seen.set(pubkey, event.id)
         }
       }
-      setNames(knownFlashUsernames(tags, profileMap, hostname))
+      const next = knownFlashUsernames(tags, profileMap, hostname)
+      setNames((previous) =>
+        previous.length === next.length && previous.every((name, i) => name === next[i])
+          ? previous
+          : next,
+      )
     }
     refresh()
     if (!pubkeys.length) return
@@ -39,5 +48,13 @@ export const useKnownFlashUsers = (hostname: string): string[] => {
     }
   }, [contactsEvent, profileMap, hostname])
 
-  return names
+  return useMemo(
+    () => [
+      ...new Set([
+        ...names,
+        ...(data?.me?.contacts.map(({ username }) => username) ?? []),
+      ]),
+    ],
+    [names, data],
+  )
 }

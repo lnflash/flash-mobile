@@ -5,7 +5,8 @@ import { defineRead } from "../define"
 import { ContactPayload, projectContact } from "../projections"
 import { prepareRefusalResult } from "../refusals"
 import type { ClarificationOption, ReadToolCtx, ToolResult } from "../types"
-import { similarUsernames } from "./similar-usernames"
+import { FLASH_USERNAME, lookupFlashUsername } from "./lookup-flash-username"
+export { FLASH_USERNAME } from "./lookup-flash-username"
 
 // resolveContact (docs/ai-assistant-tool-registry.md §4): turn what the user
 // called someone ("mom", "bob") into one Flash contact, or ask. It never
@@ -86,18 +87,6 @@ const option = (contact: ContactRow): ClarificationOption => ({
 })
 
 /**
- * The words a Flash username can be: the server's Username pattern
- * (UsernameRegex, lnflash/flash src/domain/accounts/index.ts:74), 3 to 50
- * letters, digits or "_", and not starting with 1, 3, bc1 or lnbc1, in any
- * case. The server refuses any other word with an error ("Invalid value for
- * Username"), not with "no account", so a lookup of one would be a failed
- * read for a name that no one can have. @flash/client's reUsername, which
- * gates the send screen's lookups, minds the case of that start, so the
- * parser passes "LNBC1abc" as a handle that the server refuses.
- */
-export const FLASH_USERNAME = /^(?!^(1|3|bc1|lnbc1))[\p{L}0-9_]{3,50}$/iu
-
-/**
  * The default wallet of the Flash user with this username, looked up as the
  * send screen looks up a typed one (payment-destination/intraledger.ts:87-94),
  * or null when no account has it. A word that cannot be a username
@@ -122,9 +111,15 @@ const flashUserOrRefusal = async (
   ctx: ReadToolCtx,
   contacts: readonly ContactRow[],
 ): Promise<ToolResult<ContactPayload>> => {
-  const username = hint.trim()
-  const userWallet = await flashUserWallet(username, ctx.graphql)
-  if (userWallet) {
+  const known = [
+    ...contacts.map(({ username }) => username),
+    ...(ctx.knownUsernames ?? []),
+  ]
+  const result = await lookupFlashUsername(hint, known, (name) =>
+    flashUserWallet(name, ctx.graphql),
+  )
+  if (result.kind === "exact") {
+    const { username, value: userWallet } = result.match
     const myWallets = await ctx.graphql.wallets()
     if (myWallets.some(({ id }) => id === userWallet.id)) {
       return { kind: "error", userMessage: "Assistant.selfPayment" }
@@ -139,28 +134,17 @@ const flashUserOrRefusal = async (
       },
     }
   }
-  const known = [
-    ...new Set([
-      ...contacts.map(({ username }) => username),
-      ...(ctx.knownUsernames ?? []),
-    ]),
-  ]
-  const similar = similarUsernames(username, known, CONTACT_PICKER_LIMIT)
-  const verified = (
-    await Promise.all(
-      similar.map(async (name) => ({
-        name,
-        wallet: await flashUserWallet(name, ctx.graphql),
-      })),
-    )
-  ).filter(({ wallet }) => wallet !== null)
-  if (verified.length === 0) return prepareRefusalResult("payeeNotFound")
+  if (result.matches.length === 0) return prepareRefusalResult("payeeNotFound")
   return {
     kind: "clarification",
     card: {
       type: "clarification",
       prompt: "Assistant.pickContact",
-      options: verified.map(({ name }) => ({ id: name, label: name, sublabel: name })),
+      options: result.matches.map(({ username }) => ({
+        id: username,
+        label: username,
+        sublabel: username,
+      })),
     },
   }
 }
