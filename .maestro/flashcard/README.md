@@ -80,11 +80,12 @@ java -jar tools/cardsim/target/cardsim.jar --port 9876
 # Nutshell 0.20.3 on FakeWallet, v1 keyset ids (a card slot holds an 8-byte
 # id): forge's shape. 0.20.3 pins a breez-sdk-spark range PyPI no longer has,
 # and FakeWallet never uses it, so it is installed without its dependencies
-# and they are installed beside it with breez-sdk-spark 0.17.0 (python 3.10+).
+# and they are installed beside it with breez-sdk-spark 0.18.0, which has
+# Python 3.12 macOS ARM64 wheels.
 python -m venv .nutshell && . .nutshell/bin/activate
 pip install --no-deps "cashu==0.20.3"
 python -c 'import importlib.metadata as m, re; print("\n".join(re.sub(r" \((.*)\)", r"\1", r) for r in m.requires("cashu") if not r.startswith("breez")))' > nutshell-deps.txt
-pip install -r nutshell-deps.txt "breez-sdk-spark==0.17.0" "marshmallow<4" "limits<4"
+pip install -r nutshell-deps.txt "breez-sdk-spark==0.18.0" "marshmallow<4" "limits<4"
 VERSION=0.19.2 MINT_PRIVATE_KEY=e2e-local-only \
   MINT_BACKEND_BOLT11_SAT=FakeWallet MINT_LISTEN_PORT=3338 \
   MINT_INPUT_FEE_PPK=0 MINT_RATE_LIMIT=FALSE FAKEWALLET_DELAY_INCOMING_PAYMENT=0 mint
