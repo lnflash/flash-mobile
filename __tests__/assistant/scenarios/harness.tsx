@@ -361,6 +361,13 @@ export async function replay(
       paymentRequest: bolt11({ id: "scenario-conversion", expirySeconds: 300 }),
     }))
     harness.btcRail.probeFee.mockResolvedValue({ fee: 0, err: null })
+    harness.btcRail.createInvoice.mockImplementation(async (sats: number) => ({
+      paymentRequest: bolt11({ id: "scenario-btc-conversion", sats, expirySeconds: 300 }),
+      fee: 0,
+    }))
+    harness.actions.feeProbes.lnUsdInvoiceFeeProbe.mockResolvedValue({
+      data: { lnUsdInvoiceFeeProbe: { amount: 0, errors: [] } },
+    })
     if (state.recent?.length) harness.runtime.recentUsers.remember(state.recent)
     platform.setRuntime(harness.runtime)
     const wrapper = ({ children }: React.PropsWithChildren) => (
@@ -395,7 +402,11 @@ export async function replay(
     const query = selected ?? entry.username
     let lookup: Awaited<ReturnType<typeof lookupFlashUsername<string>>>
     try {
-      lookup = await lookupFlashUsername(query, names.result.current, verify)
+      lookup = await lookupFlashUsername(
+        query,
+        { names: names.result.current, offerKnownChoices: true },
+        verify,
+      )
     } catch {
       if (view)
         await waitFor(() =>
@@ -428,6 +439,7 @@ export async function replay(
       }
     }
     const matches = lookup.matches
+    const knownChoices = lookup.source === "known"
     if (view)
       await waitFor(() => {
         const card = within(
@@ -438,6 +450,8 @@ export async function replay(
         )
         if (!matches.length)
           expect(card.getByText(LL.AskFlashActions.contactNotFound())).toBeTruthy()
+        if (knownChoices)
+          expect(card.getByText(LL.Assistant.pickKnownContact())).toBeTruthy()
       })
     return {
       kind: "contact",
@@ -445,6 +459,7 @@ export async function replay(
       operation: entry.operation,
       lookup: matches.length ? "suggestions" : "missing",
       usernames: matches.map((r) => r.username),
+      ...(lookup.source ? { suggestionSource: lookup.source } : {}),
     }
   }
   const outcome = async (): Promise<Outcome> => {
@@ -456,6 +471,8 @@ export async function replay(
         type?: string
         payeeUsername?: string
         reason?: string
+        toWallet?: string
+        prompt?: string
         options?: { id: string }[]
       }
       const call = harness.runTool.mock.calls.at(-1)?.[0] as ToolCall | undefined
@@ -468,6 +485,15 @@ export async function replay(
         currency: (call?.args as { currency?: string })?.currency,
         inputOrigin: entry.inputOrigin ?? "text",
         reason: card.reason,
+        toWallet: card.toWallet,
+        prompt: card.prompt,
+        ...(view && card.type === "confirmPayment"
+          ? {
+              title: within(
+                view.getAllByTestId("assistant-card-confirm").at(-1)!,
+              ).getByRole("header").props.children,
+            }
+          : {}),
         ...(card.options
           ? {
               usernames: card.options.map((option) => option.id.replace(/^contact:/, "")),
@@ -633,6 +659,17 @@ export async function replay(
       )
     expect(present).toBe(step.contactAction === "add")
   }
+  const correctUsername = async (text: string) => {
+    if (!view || !lastContact)
+      throw new Error("Correction requires a rendered contact card")
+    const card = within(
+      view.getAllByTestId(`ask-flash-contact-${lastContact.operation}`).at(-1)!,
+    )
+    fireEvent.changeText(card.getByTestId("ask-flash-contact-input"), text)
+    const searchButton = card.getByTestId("ask-flash-contact-search")
+    await act(async () => fireEvent.press(searchButton))
+    return readContact(lastContact, text.trim().replace(/^@/, "").toLowerCase())
+  }
   const restartSession = (nextScope?: string) => {
     cleanup()
     const saved = JSON.parse(JSON.stringify(client.cache.extract()))
@@ -675,6 +712,8 @@ export async function replay(
       results.push(row)
       try {
         if ("ask" in step) row.actual = await ask(step)
+        if ("correctUsername" in step)
+          row.actual = await correctUsername(step.correctUsername)
         if ("fixture" in step) state = { ...state, ...step.fixture }
         if ("voiceFailure" in step) await failVoice(view, harness, step.voiceFailure)
         if ("openScreen" in step) {
@@ -736,6 +775,7 @@ export async function replay(
           const buttons = view!
             .queryAllByTestId("ask-flash-help-action")
             .concat(view!.queryAllByTestId("ask-flash-screen-action"))
+            .concat(view!.queryAllByTestId("ask-flash-contact-support"))
           expect(platform.openSupport).toHaveBeenCalledTimes(before)
           fireEvent.press(buttons.at(-1)!)
           expect(platform.openSupport).toHaveBeenCalledTimes(before + 1)

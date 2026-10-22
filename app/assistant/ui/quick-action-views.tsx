@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { Alert, TouchableOpacity, View } from "react-native"
+import { Alert, TextInput, TouchableOpacity, View } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import { makeStyles, Text } from "@rneui/themed"
@@ -9,6 +9,7 @@ import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useFlashcard } from "@app/hooks/useFlashcard"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useOpenSupportChat } from "@app/hooks/use-open-support-chat"
 import type { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useChatContext } from "@app/screens/chat/chatContext"
 import { getSigner } from "@app/nostr/signer"
@@ -38,6 +39,27 @@ const useStyles = makeStyles(({ colors }) => ({
     marginTop: 12,
   },
   buttonText: { color: colors.white },
+  correction: { flexDirection: "row", gap: 8, marginTop: 12 },
+  usernameInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.grey3,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    color: colors.black,
+    fontSize: 16,
+  },
+  searchButton: { marginTop: 0, paddingHorizontal: 16 },
+  disabled: { opacity: 0.45 },
+  supportButton: {
+    minHeight: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  supportText: { color: colors.primary },
 }))
 
 export const MerchantsAnswer: React.FC<{ payload: MerchantsPayload }> = ({ payload }) => {
@@ -137,12 +159,13 @@ const RELAYS = [
 export const ContactActionAnswer: React.FC<{
   entry: Extract<ThreadEntry, { kind: "contactAction" }>
   knownUsernames: readonly string[]
-  onResolved: (entryId: string, username: string) => void
+  onResolved: (entryId: string, username?: string) => void
 }> = ({ entry, knownUsernames, onResolved }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const { isOffline } = useConnectivity()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const openSupport = useOpenSupportChat()
   const { contactsEvent, setContactsEvent, userPublicKey, addEventToProfiles } =
     useChatContext()
   const addProfileRef = useRef(addEventToProfiles)
@@ -150,6 +173,9 @@ export const ContactActionAnswer: React.FC<{
   const [pubkey, setPubkey] = useState<string>()
   const [username, setUsername] = useState(entry.username)
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const [knownChoices, setKnownChoices] = useState(false)
+  const [draft, setDraft] = useState(entry.username)
+  const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<
     "loading" | "missing" | "ready" | "working" | "done" | "error"
   >("loading")
@@ -163,11 +189,17 @@ export const ContactActionAnswer: React.FC<{
     let live = true
     setPubkey(undefined)
     setSuggestions([])
+    setKnownChoices(false)
     setState("loading")
-    lookupFlashUsername(username, knownUsernames, async (name) => {
-      const found = await nip05.queryProfile(`${name}@${entry.hostname}`.toLowerCase())
-      return found?.pubkey && /^[0-9a-f]{64}$/i.test(found.pubkey) ? found.pubkey : null
-    })
+    remember.current(entry.id, undefined)
+    lookupFlashUsername(
+      username,
+      { names: knownUsernames, offerKnownChoices: true },
+      async (name) => {
+        const found = await nip05.queryProfile(`${name}@${entry.hostname}`.toLowerCase())
+        return found?.pubkey && /^[0-9a-f]{64}$/i.test(found.pubkey) ? found.pubkey : null
+      },
+    )
       .then((result) => {
         if (!live) return
         if (result.kind === "exact") {
@@ -181,6 +213,7 @@ export const ContactActionAnswer: React.FC<{
           })
         } else {
           setSuggestions(result.matches.map((match) => match.username))
+          setKnownChoices(result.source === "known")
           setState("missing")
         }
       })
@@ -190,7 +223,16 @@ export const ContactActionAnswer: React.FC<{
     return () => {
       live = false
     }
-  }, [handle, username, entry.id, entry.hostname, knownUsernames])
+  }, [handle, username, entry.id, entry.hostname, knownUsernames, attempt])
+  const search = () => {
+    const name = draft.trim().replace(/^@/, "").toLowerCase()
+    if (!name || isOffline) return
+    verifiedHandle.current = undefined
+    setState("loading")
+    setDraft(name)
+    setUsername(name)
+    setAttempt((value) => value + 1)
+  }
   const saved = Boolean(
     pubkey && contactsEvent?.tags.some((tag) => tag[0] === "p" && tag[1] === pubkey),
   )
@@ -255,7 +297,9 @@ export const ContactActionAnswer: React.FC<{
       ? LL.Assistant.actionsOffline()
       : state === "missing"
       ? suggestions.length
-        ? LL.Assistant.pickContact()
+        ? knownChoices
+          ? LL.Assistant.pickKnownContact()
+          : LL.Assistant.pickContact()
         : LL.AskFlashActions.contactNotFound()
       : state === "error"
       ? LL.AskFlashActions.contactError()
@@ -296,6 +340,7 @@ export const ContactActionAnswer: React.FC<{
             setPubkey(undefined)
             setState("loading")
             setUsername(name)
+            setDraft(name)
           }}
         >
           <Text type="p2" bold style={styles.buttonText}>
@@ -303,6 +348,53 @@ export const ContactActionAnswer: React.FC<{
           </Text>
         </TouchableOpacity>
       ))}
+      {(state === "missing" && (!suggestions.length || knownChoices)) ||
+      state === "error" ? (
+        <View>
+          <View style={styles.correction}>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={search}
+              placeholder={LL.common.username()}
+              accessibilityLabel={LL.common.username()}
+              autoCapitalize="none"
+              autoCorrect={false}
+              selectTextOnFocus
+              maxLength={80}
+              returnKeyType="search"
+              style={styles.usernameInput}
+              testID="ask-flash-contact-input"
+            />
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={!draft.trim() || isOffline}
+              accessibilityState={{ disabled: !draft.trim() || isOffline }}
+              onPress={search}
+              style={[
+                styles.button,
+                styles.searchButton,
+                (!draft.trim() || isOffline) && styles.disabled,
+              ]}
+              testID="ask-flash-contact-search"
+            >
+              <Text type="p2" bold style={styles.buttonText}>
+                {LL.common.search()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={openSupport}
+            style={styles.supportButton}
+            testID="ask-flash-contact-support"
+          >
+            <Text type="p3" bold style={styles.supportText}>
+              {LL.AskFlashHelp.supportChatAction()}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       {available ? (
         <TouchableOpacity
           accessibilityRole="button"

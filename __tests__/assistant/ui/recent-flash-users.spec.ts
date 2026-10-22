@@ -157,3 +157,13 @@ it("bounds the directory, rejects invalid hints and isolates accounts and logout
   await client.cache.reset()
   expect(createRecentFlashUsers(client, "account-a").get()).toEqual([])
 })
+
+it("keeps full username command hints within the native bridge budget", () => {
+  const hints = voiceContext(Array.from({ length: 40 }, (_, i) => `person${i}`))
+  expect(hints.length).toBeLessThanOrEqual(100)
+  for (const name of ["person28", "person39"]) {
+    expect(hints).toContain(`Add ${name} to my contacts`)
+    expect(hints).toContain(`Remove ${name} from my contacts`)
+    expect(hints).toContain(`Send to ${name}`)
+  }
+})

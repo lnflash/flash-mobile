@@ -115,8 +115,10 @@ const flashUserOrRefusal = async (
     ...contacts.map(({ username }) => username),
     ...(ctx.knownUsernames ?? []),
   ]
-  const result = await lookupFlashUsername(hint, known, (name) =>
-    flashUserWallet(name, ctx.graphql),
+  const result = await lookupFlashUsername(
+    hint,
+    { names: known, offerKnownChoices: Boolean(ctx.knownUsernames?.length) },
+    (name) => flashUserWallet(name, ctx.graphql),
   )
   if (result.kind === "exact") {
     const { username, value: userWallet } = result.match
@@ -139,7 +141,10 @@ const flashUserOrRefusal = async (
     kind: "clarification",
     card: {
       type: "clarification",
-      prompt: "Assistant.pickContact",
+      prompt:
+        result.source === "known"
+          ? "Assistant.pickKnownContact"
+          : "Assistant.pickContact",
       options: result.matches.map(({ username }) => ({
         id: username,
         label: username,

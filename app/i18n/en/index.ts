@@ -2337,6 +2337,7 @@ const en: BaseTranslation = {
     searchedWindow: "Searched your last {count:number} payments.",
     noContactMatch: "I couldn't find a contact by that name.",
     pickContact: "Which contact do you mean?",
+    pickKnownContact: "I couldn't find that username. Choose a known Flash user or type their username.",
     pickFlashUser: "This person uses Flash but is not in your contacts.",
     payeeNotFound: "I couldn't find a contact or a Flash user by that name.",
     detailsUnavailable: "Details aren't available for this payment.",

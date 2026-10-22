@@ -162,7 +162,7 @@ export type ThreadStore = {
   /** A card entry's payload, changed in place: the card keeps its id and state. */
   setCard: (id: string, card: unknown) => void
   rememberRequest: (id: string, resolvedText: string, readCall?: ToolCall) => void
-  rememberContact: (id: string, username: string) => void
+  rememberContact: (id: string, username?: string) => void
   entry: (id: string) => ThreadEntry | undefined
   /** The card entry whose card was prepared under `preparedActionId`. */
   cardEntry: (preparedActionId: string) => CardEntry | undefined

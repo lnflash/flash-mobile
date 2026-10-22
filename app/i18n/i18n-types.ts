@@ -7744,6 +7744,10 @@ type RootTranslation = {
 		 */
 		pickContact: string
 		/**
+		 * I​ ​c​o​u​l​d​n​'​t​ ​f​i​n​d​ ​t​h​a​t​ ​u​s​e​r​n​a​m​e​.​ ​C​h​o​o​s​e​ ​a​ ​k​n​o​w​n​ ​F​l​a​s​h​ ​u​s​e​r​ ​o​r​ ​t​y​p​e​ ​t​h​e​i​r​ ​u​s​e​r​n​a​m​e​.
+		 */
+		pickKnownContact: string
+		/**
 		 * T​h​i​s​ ​p​e​r​s​o​n​ ​u​s​e​s​ ​F​l​a​s​h​ ​b​u​t​ ​i​s​ ​n​o​t​ ​i​n​ ​y​o​u​r​ ​c​o​n​t​a​c​t​s​.
 		 */
 		pickFlashUser: string
@@ -16294,6 +16298,10 @@ export type TranslationFunctions = {
 		 * Which contact do you mean?
 		 */
 		pickContact: () => LocalizedString
+		/**
+		 * I couldn't find that username. Choose a known Flash user or type their username.
+		 */
+		pickKnownContact: () => LocalizedString
 		/**
 		 * This person uses Flash but is not in your contacts.
 		 */

@@ -141,6 +141,7 @@ function validateScenario(row) {
         "voiceFailure",
         "result",
         "openScreen",
+        "correctUsername",
       ],
       row.id,
     )
@@ -158,6 +159,7 @@ function validateScenario(row) {
       "assertReads",
       "voiceFailure",
       "openScreen",
+      "correctUsername",
     ].filter((key) => key in step)
     requireThat(actions.length === 1, `${row.id}: each step must have exactly one action`)
     if ("openScreen" in step) {
@@ -212,7 +214,8 @@ function validateScenario(row) {
         `${row.id}: invalid contact result`,
       )
     requireThat(
-      "expect" in step === ("ask" in step || "select" in step),
+      "expect" in step ===
+        ("ask" in step || "select" in step || "correctUsername" in step),
       `${row.id}: only ask/select steps require an expectation`,
     )
     if ("intended" in step)
@@ -227,9 +230,10 @@ function validateScenario(row) {
         "contactAction" in step,
         `${row.id}: username requires a contact action`,
       )
-    if ("ask" in step || "select" in step) {
+    if ("ask" in step || "select" in step || "correctUsername" in step) {
       requireThat(
-        typeof (step.ask ?? step.select) === "string" && (step.ask ?? step.select).trim(),
+        typeof (step.ask ?? step.select ?? step.correctUsername) === "string" &&
+          (step.ask ?? step.select ?? step.correctUsername).trim(),
         `${row.id}: empty input`,
       )
       keys(
@@ -255,6 +259,10 @@ function validateScenario(row) {
           "currency",
           "inputOrigin",
           "reason",
+          "suggestionSource",
+          "prompt",
+          "toWallet",
+          "title",
         ],
         row.id,
       )
@@ -307,12 +315,25 @@ function validateScenario(row) {
         "intent",
         "currency",
         "reason",
+        "prompt",
+        "toWallet",
+        "title",
       ])
         if (key in step.expect)
           requireThat(
             typeof step.expect[key] === "string",
             `${row.id}: invalid expected ${key}`,
           )
+      if ("suggestionSource" in step.expect)
+        requireThat(
+          step.expect.suggestionSource === "known",
+          `${row.id}: invalid suggestion source`,
+        )
+      if ("correctUsername" in step)
+        requireThat(
+          row.layer === "screen",
+          `${row.id}: correction requires screen replay`,
+        )
       if (step.expect.kind === "help")
         requireThat(Boolean(step.expect.topic), `${row.id}: missing help topic`)
       if (step.expect.kind === "screen")

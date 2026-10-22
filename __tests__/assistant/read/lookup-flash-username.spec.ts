@@ -39,4 +39,37 @@ describe("shared Flash username lookup", () => {
       }),
     ).rejects.toThrow("offline")
   })
+  it("offers known verified people as explicit choices after an unrelated transcription", async () => {
+    const verify = jest.fn(async (name: string) =>
+      name === "dreadmax" ? "verified-key" : null,
+    )
+    await expect(
+      lookupFlashUsername(
+        "flashbacks",
+        { names: ["dreadmax"], offerKnownChoices: true },
+        verify,
+      ),
+    ).resolves.toEqual({
+      kind: "suggestions",
+      source: "known",
+      matches: [{ username: "dreadmax", value: "verified-key" }],
+    })
+    expect(verify.mock.calls).toEqual([["flashbacks"], ["dreadmax"]])
+  })
+  it("bounds known choices and verifies every one without inventing usernames", async () => {
+    const known = Array.from({ length: 12 }, (_, i) => `person${i}`)
+    const verify = jest.fn(async (name: string) => (known.includes(name) ? name : null))
+    const result = await lookupFlashUsername(
+      "flashbacks",
+      { names: known, offerKnownChoices: true },
+      verify,
+    )
+    expect(result.kind).toBe("suggestions")
+    if (result.kind !== "suggestions") throw new Error("Expected known choices")
+    expect(result.source).toBe("known")
+    expect(result.matches.map((match) => match.username)).toEqual(
+      known.slice(-5).reverse(),
+    )
+    expect(verify).toHaveBeenCalledTimes(6)
+  })
 })

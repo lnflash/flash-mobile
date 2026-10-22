@@ -3230,5 +3230,579 @@
         }
       }
     ]
+  },
+  {
+    "id": "severe-transcription-known-choices-add",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add flashbacks to my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "flashbacks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ],
+          "suggestionSource": "known"
+        },
+        "origin": "voice",
+        "intended": "Add dreadmax to my contacts"
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      },
+      {
+        "ask": "Add flashbacks to my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "flashbacks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ],
+          "suggestionSource": "known"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "severe-transcription-known-choices-remove",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Remove flashbacks from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "flashbacks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ],
+          "suggestionSource": "known"
+        },
+        "origin": "voice",
+        "intended": "Remove dreadmax from my contacts"
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      },
+      {
+        "ask": "Remove flashbacks from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "flashbacks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ],
+          "suggestionSource": "known"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "severe-transcription-known-choices-profile",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show me flashbacks's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "flashbacks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ],
+          "suggestionSource": "known"
+        },
+        "origin": "voice",
+        "intended": "Show me dreadmax's profile"
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      },
+      {
+        "ask": "Show me flashbacks's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "flashbacks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ],
+          "suggestionSource": "known"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "correct-unfamiliar-username-add",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Add flashbacks to my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "flashbacks",
+          "lookup": "missing",
+          "usernames": []
+        }
+      },
+      {
+        "correctUsername": "@dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "correct-unfamiliar-username-remove",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Remove flashbacks from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "flashbacks",
+          "lookup": "missing",
+          "usernames": []
+        }
+      },
+      {
+        "correctUsername": "@dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "correct-unfamiliar-username-profile",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me flashbacks's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "flashbacks",
+          "lookup": "missing",
+          "usernames": []
+        }
+      },
+      {
+        "correctUsername": "@dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "unfamiliar-username-support-handoff",
+    "category": "support",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Add flashbacks to my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "flashbacks",
+          "lookup": "missing",
+          "usernames": []
+        }
+      },
+      {
+        "openSupport": true
+      }
+    ]
+  },
+  {
+    "id": "profile-outage-retry-same-username",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "lookupFails": true
+    },
+    "steps": [
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "error"
+        }
+      },
+      {
+        "fixture": {
+          "lookupFails": false
+        }
+      },
+      {
+        "correctUsername": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "correction-clears-previous-verified-person",
+    "category": "safety",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "add",
+        "username": "dreadmax",
+        "result": "rejected"
+      },
+      {
+        "correctUsername": "flashbacks",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "flashbacks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ],
+          "suggestionSource": "known"
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-severe-transcription-text",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay flashbacks two cents",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "prompt": "Assistant.pickKnownContact",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        },
+        "origin": "text"
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text",
+          "title": "Review payment"
+        }
+      }
+    ]
+  },
+  {
+    "id": "one-cent-swap-review-text",
+    "category": "conversion",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Swap one cent from USD to BTC",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "intent": "prepareConversion",
+          "amount": "0.01",
+          "inputOrigin": "text",
+          "toWallet": "BTC",
+          "title": "Review conversion"
+        },
+        "origin": "text"
+      }
+    ]
+  },
+  {
+    "id": "payment-severe-transcription-voice",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay flashbacks two cents",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "prompt": "Assistant.pickKnownContact",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        },
+        "origin": "voice"
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice",
+          "title": "Review payment"
+        }
+      }
+    ]
+  },
+  {
+    "id": "one-cent-swap-review-voice",
+    "category": "conversion",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Swap one cent from USD to BTC",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "intent": "prepareConversion",
+          "amount": "0.01",
+          "inputOrigin": "voice",
+          "toWallet": "BTC",
+          "title": "Review conversion"
+        },
+        "origin": "voice"
+      }
+    ]
   }
 ]

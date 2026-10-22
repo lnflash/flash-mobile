@@ -6,7 +6,7 @@ Run the complete suite without a phone, account, backend, model download, or hum
 yarn test:assistant-scenarios
 ```
 
-Corpus **1.1.0 has 1,790 scenarios and 2,548 user turns**: 94 regression scenarios, 12 separately authored acceptance examples, and 1,684 generated permutations. It includes 236 conversations, 37 failure/recovery cases, and 98 rendered-screen flows. The runner has a four-minute timeout and returns a nonzero exit code for any mismatch, unexpected support handoff, financial dispatch, incomplete report, invalid corpus, or empty selection. It never sends a payment or connects to a live service.
+Corpus **1.2.0 has 1,803 scenarios and 2,574 user turns**: 107 regression scenarios, 12 separately authored acceptance examples, and 1,684 generated permutations. It includes 243 conversations, 38 failure/recovery cases, and 111 rendered-screen flows. The runner has a four-minute timeout and returns a nonzero exit code for any mismatch, unexpected support handoff, financial dispatch, incomplete report, invalid corpus, or empty selection. It never sends a payment or connects to a live service.
 
 ```sh
 # Quick regression conversations
@@ -42,6 +42,8 @@ Longer journeys repeat and switch help topics/screens, resolve verified-person r
 
 Rendered failure flows cover rejected contact updates without false success, cancelled removal without mutation, going offline before choosing a payment recipient, and missing/denied/blocked/restricted speech access. Native-event replay checks no-speech, recognizer failure, interruption, cancellation, empty results, stale session events, duplicate completion, and typing after failure. A held preview must not submit until release. Unsupported currency signs remain part of the amount and trigger clarification, including a separated sign such as `€ 5`.
 
+Failed usernames also exercise explicit recovery: a severe transcript such as `flashbacks` for `dreadmax` offers up to five reverified names from the current session directory with a distinct known-user prompt. They remain choices requiring a tap. No resemblance or exact identity is invented. With no usable choices, the user can correct the username inline or open support. Payment choices preserve the amount and input origin. Exact identities and ordinary fuzzy matches retain their existing behavior. Native vocabulary tests keep complete add/remove/payment phrases within the 100-hint bridge budget. Conversion screen cases also assert the visible “Review conversion” heading.
+
 ## Data and versions
 
 `v1/manifest.json` declares schema version 1, the corpus semver, file SHA-256 digests, and minimum coverage counts, including conversations and failure cases. It points to:
@@ -66,10 +68,11 @@ To add a regression:
 4. Run the failing id, fix the shared production cause, then run the full suite. Preserve the original failure. A discovered failure in `holdout.json` is promoted to a regression and replaced with a separately authored acceptance example; do not tune on it and keep calling it held out.
 5. Review any newly generated expectations once when adding the family. Thereafter, replay, comparison, reporting, and CI need no human interaction. Failure reports never rewrite expectations or weaken gates automatically.
 
-An `ask` step supports `origin: "text" | "voice"`, optional `intended`, and an `expect` object. State fields include `contacts`, `chatContacts`, `history`, `legacyLookups`, `legacyIndex`, `recent`, `offline`, `scope`, `displayCurrency`, and `voiceAvailable`. State also accepts the fixture controls below. Additional steps are `select`, `contactAction`, `restart`, `switchAccount`, `offline`, `openSupport`, `openScreen`, `toggleWallet`, `voiceUnavailable`, and `voiceFailure`; examples in `regressions.json` and generated contracts in `matrices.json` show each format. Unknown fields and unsupported schema versions fail validation.
+An `ask` step supports `origin: "text" | "voice"`, optional `intended`, and an `expect` object. State fields include `contacts`, `chatContacts`, `history`, `legacyLookups`, `legacyIndex`, `recent`, `offline`, `scope`, `displayCurrency`, and `voiceAvailable`. State also accepts the fixture controls below. Additional steps are `select`, `correctUsername`, `contactAction`, `restart`, `switchAccount`, `offline`, `openSupport`, `openScreen`, `toggleWallet`, `voiceUnavailable`, and `voiceFailure`; examples in `regressions.json` and generated contracts in `matrices.json` show each format. Unknown fields and unsupported schema versions fail validation.
 
 - `fixture` changes only scripted service state: `cashBalance` (integer cents or null), `btcSats`, `btcState`, `lookupFails`, `unverifiedUsers`, and `failServices` (`wallets`, `realtimePrice`, `transactions`, `accountDefaultWallet`). Restore with an empty failure list or `lookupFails: false`; no production result is overridden.
 - `assertReads` checks cumulative `wallets`, `realtimePrice`, `transactions`, `verification`, or `btc` reads across restarts. Every offline ask/selection also checks that no GraphQL, username-verification, or Bitcoin balance/history reads started.
+- `correctUsername` edits and submits the recovery field on a rendered contact card, then verifies the new lookup and resolved-person context. A correction cannot reuse a previous verified person while the new name is unresolved.
 - `contactAction` accepts optional `result: "cancelled" | "rejected"`. Cancellation is valid only for removal; rejection scripts relay failure and requires the error UI and unchanged contacts.
 - `voiceFailure` scripts a permission/recognizer failure, empty result, or cancelled capture. It requires a rendered screen and verifies no transcript submission and an editable text composer afterward.
 - `openScreen` declares the expected navigation `route` and optional `params`, then presses the displayed button. Any navigation, support handoff, contact publication, or wallet change without its authored button step fails.

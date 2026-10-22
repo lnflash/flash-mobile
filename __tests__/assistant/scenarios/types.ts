@@ -19,6 +19,10 @@ export type Outcome = {
   currency?: string
   inputOrigin?: "text" | "voice"
   reason?: string
+  suggestionSource?: "known"
+  prompt?: string
+  toWallet?: string
+  title?: string
 }
 export type FixtureChanges = {
   cashBalance?: number | null
@@ -43,6 +47,7 @@ export type ScenarioState = {
 export type ScenarioStep =
   | { ask: string; intended?: string; origin?: "text" | "voice"; expect: Outcome }
   | { select: string; expect: Outcome }
+  | { correctUsername: string; expect: Outcome }
   | { restart: true }
   | { offline: boolean }
   | { switchAccount: string }

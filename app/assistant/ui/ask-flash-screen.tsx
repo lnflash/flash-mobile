@@ -729,7 +729,7 @@ const EntryView: React.FC<{
   actions: CardActions
   onPick: (entryId: string, optionId: string) => void
   knownUsernames: readonly string[]
-  onContactResolved: (entryId: string, username: string) => void
+  onContactResolved: (entryId: string, username?: string) => void
 }> = ({ entry, actions, onPick, knownUsernames, onContactResolved }) => {
   const { LL } = useI18nContext()
   const { displayCurrency } = useDisplayCurrency()
@@ -1129,7 +1129,7 @@ export const AskFlashScreen: React.FC = () => {
                   onPick={thread.pick}
                   knownUsernames={knownUsernames}
                   onContactResolved={(id, username) => {
-                    runtime.recentUsers.remember([username])
+                    if (username) runtime.recentUsers.remember([username])
                     runtime.transcript.rememberContact(id, username)
                   }}
                 />

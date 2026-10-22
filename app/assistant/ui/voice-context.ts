@@ -20,13 +20,16 @@ const COMMANDS = [
 export const voiceContext = (usernames: readonly string[]): string[] => {
   const names = [...new Set(usernames)]
     .filter((name) => FLASH_USERNAME.test(name))
-    .slice(-20)
+    .slice(-12)
   return [
     ...COMMANDS,
     ...names.flatMap((name) => [
       name,
       `Add ${name} as a contact`,
+      `Add ${name} to my contacts`,
+      `Remove ${name} from my contacts`,
       `Pay ${name}`,
+      `Send to ${name}`,
       `Show me ${name}'s profile`,
     ]),
   ]
