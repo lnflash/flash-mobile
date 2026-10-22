@@ -319,7 +319,7 @@ jobs:
       # hosted runner; its default startup timeout ended one run before any
       # flow started.
       - name: Run the Flashcard and Ask Flash flows
-        timeout-minutes: 60
+        timeout-minutes: 90
         env:
           MAESTRO_DRIVER_STARTUP_TIMEOUT: "300000"
         # Alongside the flows: the app's log streamed live (its JS console is
@@ -337,9 +337,9 @@ jobs:
               sample "$pid" 2 -file ".e2e/samples/flash-$(date +%H%M%S).txt" > /dev/null 2>&1 || true
             done ) &
           echo $! > .e2e/sampler.pid
-          # Maestro's XCTest driver sometimes never comes up on the hosted Mac
-          # ("iOS driver not ready in time" after the full 5 min, before any
-          # flow runs). That is the runner, not the app: start again once.
+          # Maestro's XCTest driver can fail to start or disappear during a
+          # long suite on the hosted Mac. Retry only failed or unrun flows
+          # with a fresh driver; keep the first report for diagnosis.
           # $1 is the log, $2 the JUnit report, the rest what to run.
           run_flows() {
             log="$1"
@@ -356,11 +356,27 @@ jobs:
           set +e -o pipefail
           run_flows .e2e/maestro-1.log .e2e/maestro-junit.xml .maestro/flashcard/
           status=$?
-          if [ $status -ne 0 ] && grep -q "iOS driver not ready in time" .e2e/maestro-1.log; then
-            echo "::warning::Maestro's iOS driver did not start; restarting it once"
-            xcrun simctl terminate booted dev.mobile.maestro-driver-iosUITests.xctrunner > /dev/null 2>&1 || true
-            run_flows .e2e/maestro-2.log .e2e/maestro-junit.xml .maestro/flashcard/
-            status=$?
+          if [ $status -ne 0 ]; then
+            python3 scripts/e2e/failed-flashcard-flows.py \
+              .e2e/maestro-junit.xml > .e2e/failed-flows.txt
+            failed_flows=()
+            while IFS= read -r flow; do
+              [ -n "$flow" ] && failed_flows+=("$flow")
+            done < .e2e/failed-flows.txt
+            # No report means the driver failed before any flow started.
+            if [ ${#failed_flows[@]} -eq 0 ]; then
+              failed_flows=(.maestro/flashcard/)
+            fi
+            status=0
+            index=0
+            for flow in "${failed_flows[@]}"; do
+              index=$((index + 1))
+              echo "::warning::Retrying Maestro flow $flow with a fresh iOS driver"
+              xcrun simctl terminate booted dev.mobile.maestro-driver-iosUITests.xctrunner > /dev/null 2>&1 || true
+              run_flows ".e2e/maestro-retry-$index.log" \
+                ".e2e/maestro-retry-$index.xml" "$flow"
+              if [ $? -ne 0 ]; then status=1; fi
+            done
           fi
           # Ask Flash (ENG-689), on the same simulator and sign-in, whatever
           # the card flows did. The send golden path is tagged `funded`: it
@@ -392,12 +408,12 @@ jobs:
           [ -n "$E2E_TOKEN" ] || exit 0
           # Any Kratos session token, not just this one: a token typed with a
           # character dropped is still most of the real one.
-          for f in .e2e/*.log .e2e/maestro-junit.xml .e2e/maestro-assistant-junit.xml build/xcodebuild-e2e.log; do
+          for f in .e2e/*.log .e2e/maestro-*.xml build/xcodebuild-e2e.log; do
             if [ -f "$f" ]; then
               perl -pi -e 's/\Q$ENV{E2E_TOKEN}\E/***/g; s/ory_st_[A-Za-z0-9]+/ory_st_***/g' "$f"
             fi
           done
-          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-junit.xml .e2e/maestro-assistant-junit.xml build/xcodebuild-e2e.log 2>/dev/null; then
+          if grep -rlF -- "$E2E_TOKEN" .e2e/*.log .e2e/maestro-*.xml build/xcodebuild-e2e.log 2>/dev/null; then
             echo "::error::The session token is still in the results"
             exit 1
           fi
@@ -409,8 +425,7 @@ jobs:
           name: flashcard-e2e
           path: |
             .e2e/*.log
-            .e2e/maestro-junit.xml
-            .e2e/maestro-assistant-junit.xml
+            .e2e/maestro-*.xml
             .e2e/samples/*.txt
             ~/.maestro/tests/**/*.png
           # .e2e is a dot directory: without this the logs and the JUnit
