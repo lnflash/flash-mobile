@@ -60,6 +60,11 @@ import { helpAnswerText } from "./reply-presentation"
 import { ScreenDestination, screenDestinationTitle } from "./screen-destinations"
 import { pricePresentation } from "./price-presentation"
 import { useVoiceInput } from "./use-voice-input"
+import {
+  CardTopUpAnswer,
+  ContactActionAnswer,
+  MerchantsAnswer,
+} from "./quick-action-views"
 
 // The Ask Flash thread (ENG-689, spec §7): the user's bubbles, the
 // assistant's templated replies, the read tools' answers, the action cards,
@@ -623,6 +628,20 @@ const EntryView: React.FC<{
       return <HelpAnswer topic={entry.topic} />
     case "screen":
       return <ScreenAnswer destination={entry.destination} />
+    case "merchants":
+      return <MerchantsAnswer payload={entry.payload} />
+    case "contactAction":
+      return <ContactActionAnswer entry={entry} />
+    case "cardTopUp":
+      return <CardTopUpAnswer entry={entry} />
+    case "cashoutAmount":
+      return (
+        <Bubble
+          from="assistant"
+          text={LL.AskFlashActions.cashoutAmount({ currency: entry.displayCurrency })}
+          testID="ask-flash-cashout-amount"
+        />
+      )
     case "conversionAmount":
       return (
         <Bubble

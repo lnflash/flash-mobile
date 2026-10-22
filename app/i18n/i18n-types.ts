@@ -8006,6 +8006,97 @@ type RootTranslation = {
 		 */
 		emptyHint: string
 	}
+	AskFlashActions: {
+		/**
+		 * F​l​a​s​h​ ​m​e​r​c​h​a​n​t​s
+		 */
+		merchantsTitle: string
+		/**
+		 * N​o​ ​m​a​t​c​h​i​n​g​ ​m​e​r​c​h​a​n​t​s​ ​f​o​u​n​d​.
+		 */
+		noMerchants: string
+		/**
+		 * M​o​r​e​ ​m​e​r​c​h​a​n​t​s​ ​a​r​e​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​e​ ​m​a​p​.
+		 */
+		moreMerchants: string
+		/**
+		 * O​p​e​n​ ​M​a​p
+		 */
+		openMap: string
+		/**
+		 * L​o​a​d​ ​{​a​m​o​u​n​t​}​ ​{​c​u​r​r​e​n​c​y​}​ ​t​o​ ​y​o​u​r​ ​F​l​a​s​h​c​a​r​d​.​ ​R​e​v​i​e​w​ ​t​h​e​ ​a​m​o​u​n​t​ ​a​n​d​ ​t​a​p​ ​y​o​u​r​ ​c​a​r​d​ ​i​n​ ​t​h​e​ ​t​o​p​-​u​p​ ​f​l​o​w​.
+		 * @param {string} amount
+		 * @param {string} currency
+		 */
+		cardTopUpAmount: RequiredParams<'amount' | 'currency'>
+		/**
+		 * O​p​e​n​ ​F​l​a​s​h​c​a​r​d​ ​t​o​p​-​u​p​ ​t​o​ ​c​h​o​o​s​e​ ​a​n​ ​a​m​o​u​n​t​ ​a​n​d​ ​l​o​a​d​ ​y​o​u​r​ ​c​a​r​d​.
+		 */
+		cardTopUpPrompt: string
+		/**
+		 * O​p​e​n​ ​c​a​r​d​ ​t​o​p​-​u​p
+		 */
+		openCardTopUp: string
+		/**
+		 * H​o​w​ ​m​u​c​h​ ​w​o​u​l​d​ ​y​o​u​ ​l​i​k​e​ ​t​o​ ​c​a​s​h​ ​o​u​t​?​ ​S​a​y​ ​o​r​ ​t​y​p​e​ ​a​n​ ​a​m​o​u​n​t​,​ ​f​o​r​ ​e​x​a​m​p​l​e​ ​2​0​ ​{​c​u​r​r​e​n​c​y​}​.
+		 * @param {string} currency
+		 */
+		cashoutAmount: RequiredParams<'currency'>
+		/**
+		 * F​i​n​d​i​n​g​ ​t​h​i​s​ ​v​e​r​i​f​i​e​d​ ​F​l​a​s​h​ ​p​r​o​f​i​l​e​…
+		 */
+		findingContact: string
+		/**
+		 * I​ ​c​o​u​l​d​ ​n​o​t​ ​f​i​n​d​ ​a​ ​v​e​r​i​f​i​e​d​ ​F​l​a​s​h​ ​p​r​o​f​i​l​e​ ​f​o​r​ ​t​h​i​s​ ​u​s​e​r​n​a​m​e​.
+		 */
+		contactNotFound: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​c​h​e​c​k​ ​t​h​i​s​ ​p​r​o​f​i​l​e​ ​o​r​ ​u​p​d​a​t​e​ ​c​o​n​t​a​c​t​s​.​ ​T​r​y​ ​a​g​a​i​n​.
+		 */
+		contactError: string
+		/**
+		 * W​a​i​t​i​n​g​ ​f​o​r​ ​y​o​u​r​ ​C​h​a​t​ ​c​o​n​t​a​c​t​s​ ​t​o​ ​l​o​a​d​.
+		 */
+		contactsLoading: string
+		/**
+		 * A​l​r​e​a​d​y​ ​i​n​ ​y​o​u​r​ ​C​h​a​t​ ​c​o​n​t​a​c​t​s​.
+		 */
+		alreadyContact: string
+		/**
+		 * T​h​i​s​ ​p​e​r​s​o​n​ ​i​s​ ​n​o​t​ ​i​n​ ​y​o​u​r​ ​C​h​a​t​ ​c​o​n​t​a​c​t​s​.
+		 */
+		notContact: string
+		/**
+		 * Y​o​u​r​ ​C​h​a​t​ ​c​o​n​t​a​c​t​s​ ​h​a​v​e​ ​b​e​e​n​ ​u​p​d​a​t​e​d​.
+		 */
+		contactUpdated: string
+		/**
+		 * V​e​r​i​f​i​e​d​ ​F​l​a​s​h​ ​p​r​o​f​i​l​e​:​ ​{​h​a​n​d​l​e​}
+		 * @param {string} handle
+		 */
+		verifiedProfile: RequiredParams<'handle'>
+		/**
+		 * O​p​e​n​ ​p​r​o​f​i​l​e
+		 */
+		openProfile: string
+		/**
+		 * A​d​d​ ​t​o​ ​c​o​n​t​a​c​t​s
+		 */
+		addContact: string
+		/**
+		 * R​e​m​o​v​e​ ​f​r​o​m​ ​c​o​n​t​a​c​t​s
+		 */
+		removeContact: string
+		/**
+		 * R​e​m​o​v​e​ ​@​{​u​s​e​r​n​a​m​e​}​?
+		 * @param {string} username
+		 */
+		removeContactTitle: RequiredParams<'username'>
+		/**
+		 * T​h​i​s​ ​r​e​m​o​v​e​s​ ​t​h​e​ ​p​e​r​s​o​n​ ​f​r​o​m​ ​y​o​u​r​ ​C​h​a​t​ ​c​o​n​t​a​c​t​s​.
+		 */
+		removeContactBody: string
+	}
 	AskFlashHelp: {
 		/**
 		 * H​o​w​ ​m​u​c​h​ ​{​f​r​o​m​}​ ​w​o​u​l​d​ ​y​o​u​ ​l​i​k​e​ ​t​o​ ​c​o​n​v​e​r​t​ ​t​o​ ​{​t​o​}​?​ ​S​a​y​ ​o​r​ ​t​y​p​e​ ​a​n​ ​a​m​o​u​n​t​,​ ​f​o​r​ ​e​x​a​m​p​l​e​ ​2​0​ ​{​f​r​o​m​}​.
@@ -16447,6 +16538,92 @@ export type TranslationFunctions = {
 		 * Hold to talk, type a question, or try one below.
 		 */
 		emptyHint: () => LocalizedString
+	}
+	AskFlashActions: {
+		/**
+		 * Flash merchants
+		 */
+		merchantsTitle: () => LocalizedString
+		/**
+		 * No matching merchants found.
+		 */
+		noMerchants: () => LocalizedString
+		/**
+		 * More merchants are available on the map.
+		 */
+		moreMerchants: () => LocalizedString
+		/**
+		 * Open Map
+		 */
+		openMap: () => LocalizedString
+		/**
+		 * Load {amount} {currency} to your Flashcard. Review the amount and tap your card in the top-up flow.
+		 */
+		cardTopUpAmount: (arg: { amount: string, currency: string }) => LocalizedString
+		/**
+		 * Open Flashcard top-up to choose an amount and load your card.
+		 */
+		cardTopUpPrompt: () => LocalizedString
+		/**
+		 * Open card top-up
+		 */
+		openCardTopUp: () => LocalizedString
+		/**
+		 * How much would you like to cash out? Say or type an amount, for example 20 {currency}.
+		 */
+		cashoutAmount: (arg: { currency: string }) => LocalizedString
+		/**
+		 * Finding this verified Flash profile…
+		 */
+		findingContact: () => LocalizedString
+		/**
+		 * I could not find a verified Flash profile for this username.
+		 */
+		contactNotFound: () => LocalizedString
+		/**
+		 * Could not check this profile or update contacts. Try again.
+		 */
+		contactError: () => LocalizedString
+		/**
+		 * Waiting for your Chat contacts to load.
+		 */
+		contactsLoading: () => LocalizedString
+		/**
+		 * Already in your Chat contacts.
+		 */
+		alreadyContact: () => LocalizedString
+		/**
+		 * This person is not in your Chat contacts.
+		 */
+		notContact: () => LocalizedString
+		/**
+		 * Your Chat contacts have been updated.
+		 */
+		contactUpdated: () => LocalizedString
+		/**
+		 * Verified Flash profile: {handle}
+		 */
+		verifiedProfile: (arg: { handle: string }) => LocalizedString
+		/**
+		 * Open profile
+		 */
+		openProfile: () => LocalizedString
+		/**
+		 * Add to contacts
+		 */
+		addContact: () => LocalizedString
+		/**
+		 * Remove from contacts
+		 */
+		removeContact: () => LocalizedString
+		/**
+		 * Remove @{username}?
+		 */
+		removeContactTitle: (arg: { username: string }) => LocalizedString
+		/**
+		 * This removes the person from your Chat contacts.
+		 */
+		removeContactBody: () => LocalizedString
 	}
 	AskFlashHelp: {
 		/**

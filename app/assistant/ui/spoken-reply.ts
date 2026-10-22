@@ -62,6 +62,32 @@ export const spokenReplyFor = (
         locale: "en-US",
         automatic: true,
       }
+    case "cashoutAmount":
+      return {
+        text: LL.AskFlashActions.cashoutAmount({ currency: entry.displayCurrency }),
+        locale: "en-US",
+        automatic: true,
+      }
+    case "merchants":
+      return {
+        text: LL.AskFlashActions.merchantsTitle(),
+        locale: "en-US",
+        automatic: true,
+      }
+    case "contactAction":
+      // The NIP-05 lookup happens in the view; don't speak a verification before it finishes.
+      return undefined
+    case "cardTopUp":
+      return {
+        text: entry.amount
+          ? LL.AskFlashActions.cardTopUpAmount({
+              amount: entry.amount,
+              currency: entry.currency ?? entry.displayCurrency,
+            })
+          : LL.AskFlashActions.cardTopUpPrompt(),
+        locale: "en-US",
+        automatic: true,
+      }
     case "reply": {
       if (entry.replyKey === "Assistant.amountUnclear") return undefined
       const text = replyText(LL, entry.replyKey)

@@ -84,7 +84,12 @@ const record = (over: Partial<TopUpRecord> = {}): TopUpRecord => ({
 })
 
 let mockCard: CashuCardState | undefined
-let mockParams: { topUpId?: string } | undefined
+let mockParams:
+  | {
+      topUpId?: string
+      suggestedAmount?: { amount: number; currency: "USD"; currencyCode: "USD" }
+    }
+  | undefined
 let mockUsdEnabled = false
 let mockEntered = 1000
 let beforeRemove: (() => void) | undefined
@@ -186,6 +191,7 @@ jest.mock("@app/utils/cashu-card-topup", () => ({
 // The keypad modal is its own component; here one press sets the amount.
 type MockAmountInputProps = {
   setAmount: (a: unknown) => void
+  unitOfAccountAmount?: { amount: number; currency: string }
   initiallyOpen?: boolean
   walletCurrency?: string
   balanceWalletCurrency?: string
@@ -341,6 +347,22 @@ describe("topUpEligibility", () => {
     ).toMatchObject({
       reason: "unit-unknown",
     })
+  })
+})
+
+describe("Ask Flash card top-up handoff", () => {
+  it("opens with an Ask Flash amount ready to review", async () => {
+    mockUsdEnabled = true
+    mockParams = {
+      suggestedAmount: { amount: 2000, currency: "USD", currencyCode: "USD" },
+    }
+    await renderSettled()
+    expect(mockAmountInputProps?.unitOfAccountAmount).toMatchObject({
+      amount: 2000,
+      currency: "USD",
+    })
+    expect(mockAmountInputProps?.initiallyOpen).toBe(false)
+    expect(mockAmountInputProps?.walletCurrency).toBe("USD")
   })
 })
 
