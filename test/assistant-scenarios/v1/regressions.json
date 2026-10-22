@@ -1,0 +1,793 @@
+[
+  {
+    "id": "max-legacy-lookup",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "legacyLookups": [
+        "dreadmax"
+      ],
+      "legacyIndex": [
+        "alice"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dreadlocks of the contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadlocks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        },
+        "intended": "Add dreadmax as a contact",
+        "origin": "voice"
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "add",
+        "username": "dreadmax"
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "restart": true
+      },
+      {
+        "ask": "Remove dread marks from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dread marks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "remove",
+        "username": "dreadmax"
+      },
+      {
+        "restart": true
+      },
+      {
+        "ask": "Add dread Max as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dread max",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ],
+    "source": "Max feedback: cached successful lookup absent from contacts and recent payments"
+  },
+  {
+    "id": "shared-name-add",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "chatContacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dread marks to my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dread marks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "shared-name-remove",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "chatContacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Remove dread mask from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dread mask",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "shared-name-profile",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "chatContacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show me dread marks's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dread marks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "dropped-add-verb",
+    "category": "speech-transcript",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "legacyLookups": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Drug Max as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "drug max",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        },
+        "intended": "Add dreadmax as a contact",
+        "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "cached-history-name",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "history": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dreadlocks as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadlocks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "exact-name-review",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "add",
+        "username": "dreadmax"
+      }
+    ]
+  },
+  {
+    "id": "offline-help-followup",
+    "category": "conversation",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open it",
+        "expect": {
+          "kind": "screen",
+          "destination": "receive"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "screen",
+          "destination": "receive"
+        }
+      }
+    ]
+  },
+  {
+    "id": "contacts-again",
+    "category": "conversation",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me my contacts",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        }
+      },
+      {
+        "ask": "Show me my contacts again",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        }
+      }
+    ]
+  },
+  {
+    "id": "support-handoff",
+    "category": "support",
+    "layer": "screen",
+    "supported": false,
+    "state": {},
+    "steps": [
+      {
+        "ask": "My card was stolen",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.unknownIntent"
+        }
+      },
+      {
+        "openSupport": true
+      }
+    ]
+  },
+  {
+    "id": "support-followup",
+    "category": "support",
+    "layer": "screen",
+    "supported": false,
+    "state": {},
+    "steps": [
+      {
+        "ask": "I was charged twice",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.unknownIntent"
+        }
+      },
+      {
+        "ask": "Yes please",
+        "expect": {
+          "kind": "screen",
+          "destination": "support"
+        }
+      },
+      {
+        "openSupport": true
+      }
+    ]
+  },
+  {
+    "id": "wallet-on-off",
+    "category": "wallet",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Turn on my Bitcoin wallet",
+        "expect": {
+          "kind": "screen",
+          "destination": "bitcoinWalletOn"
+        }
+      },
+      {
+        "toggleWallet": true
+      },
+      {
+        "ask": "Turn off advanced mode",
+        "expect": {
+          "kind": "screen",
+          "destination": "bitcoinWalletOff"
+        }
+      },
+      {
+        "toggleWallet": false
+      }
+    ]
+  },
+  {
+    "id": "address-offline",
+    "category": "address",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "What's my Flash address?",
+        "expect": {
+          "kind": "address",
+          "username": "scenario_user@flashapp.me",
+          "stale": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "live-to-offline-balance",
+    "category": "balances",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "restart-forgets-pronoun",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me dreadmax profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "restart": true
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "unselected-name-is-not-context",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dread marks as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dread marks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "account-switch-isolation",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "legacyLookups": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dread marks as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dread marks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "switchAccount": "account-b"
+      },
+      {
+        "ask": "Add dread marks as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dread marks",
+          "lookup": "missing",
+          "usernames": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "profile-to-payment",
+    "category": "payment",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me dreadmax profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Pay them two cents",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-no-repeat",
+    "category": "safety",
+    "layer": "integration",
+    "supported": false,
+    "state": {
+      "contacts": [
+        "alice"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay alice two cents",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "alice",
+          "intent": "prepareSend",
+          "amount": "0.02"
+        }
+      },
+      {
+        "ask": "Yes",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.unknownIntent"
+        }
+      },
+      {
+        "ask": "Send the same again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.unknownIntent"
+        }
+      }
+    ]
+  },
+  {
+    "id": "offline-payment-blocked",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "offline": true,
+      "contacts": [
+        "alice"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay alice two cents",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.actionsOffline"
+        }
+      }
+    ]
+  },
+  {
+    "id": "unknown-person",
+    "category": "username",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Add nonexistent_user as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "nonexistent_user",
+          "lookup": "missing",
+          "usernames": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "lookup-error-is-not-no-match",
+    "category": "username",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "lookupFails": true
+    },
+    "steps": [
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "error"
+        }
+      }
+    ]
+  },
+  {
+    "id": "conversion-followup",
+    "category": "conversion",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Convert BTC to USD",
+        "expect": {
+          "kind": "conversionAmount"
+        }
+      },
+      {
+        "ask": "20000 sats",
+        "expect": {
+          "kind": "card",
+          "intent": "prepareConversion",
+          "amount": "0.00020000",
+          "cardType": "confirmPayment"
+        }
+      }
+    ]
+  },
+  {
+    "id": "cashout-help",
+    "category": "help",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "How to cashout to my account",
+        "expect": {
+          "kind": "help",
+          "topic": "cashout"
+        }
+      }
+    ]
+  },
+  {
+    "id": "funding-help",
+    "category": "help",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "How do I top up my wallet?",
+        "expect": {
+          "kind": "help",
+          "topic": "funding"
+        }
+      }
+    ]
+  },
+  {
+    "id": "ambiguous-name-needs-selection",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "recent": [
+        "alice",
+        "alicia"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add alic as a contact",
+        "expect": {
+          "kind": "contact",
+          "query": "alic",
+          "operation": "add",
+          "lookup": "suggestions",
+          "usernames": [
+            "alice",
+            "alicia"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "courteous-wallet-control",
+    "category": "wallet",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "legacyLookups": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Please turn off the bitcoin wallet",
+        "expect": {
+          "kind": "screen",
+          "destination": "bitcoinWalletOff"
+        }
+      }
+    ]
+  },
+  {
+    "id": "no-recognizer-typing-remains-available",
+    "category": "voice",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "voiceAvailable": false
+    },
+    "steps": [
+      {
+        "voiceUnavailable": true
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      }
+    ]
+  }
+]

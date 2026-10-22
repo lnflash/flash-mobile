@@ -1,0 +1,64 @@
+name: Ask Flash scenarios
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/assistant/**"
+      - "app/graphql/**"
+      - "app/hooks/**"
+      - "app/screens/chat/**"
+      - "app/i18n/**"
+      - "__tests__/assistant/**"
+      - "test/assistant-scenarios/**"
+      - "scripts/assistant-scenarios/**"
+      - "jest.config.js"
+      - "package.json"
+      - "yarn.lock"
+      - ".github/workflows/assistant-scenarios.yml"
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 10 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: assistant-scenarios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  replay:
+    name: Ask Flash scenario replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - name: Verify corpus version
+        if: github.event_name == 'pull_request'
+        env:
+          SCENARIO_BASE: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/assistant-scenarios/version.cjs --check-base "$SCENARIO_BASE"
+      - name: Test replay framework safeguards
+        run: node --test scripts/assistant-scenarios/library.test.cjs
+      - name: Replay complete scenario corpus
+        env:
+          SCENARIO_SEED: ${{ github.event_name == 'schedule' && github.run_number || 754 }}
+        run: yarn test:assistant-scenarios --seed "$SCENARIO_SEED"
+      - name: Publish summary
+        if: always()
+        run: |
+          if [ -f reports/assistant-scenarios/report.md ]; then
+            cat reports/assistant-scenarios/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ask-flash-scenario-report
+          path: reports/assistant-scenarios/
+          retention-days: 14

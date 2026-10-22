@@ -1,0 +1,273 @@
+{
+  "screens": [
+    [
+      "home",
+      "home"
+    ],
+    [
+      "my contacts",
+      "contacts"
+    ],
+    [
+      "support",
+      "support"
+    ],
+    [
+      "map",
+      "map"
+    ],
+    [
+      "messages",
+      "chat"
+    ],
+    [
+      "my chat profile",
+      "chatProfile"
+    ],
+    [
+      "settings",
+      "settings"
+    ],
+    [
+      "my account",
+      "account"
+    ],
+    [
+      "bank accounts",
+      "bankAccounts"
+    ],
+    [
+      "transfers",
+      "transfers"
+    ],
+    [
+      "receive money",
+      "receive"
+    ],
+    [
+      "QR scanner",
+      "scanner"
+    ],
+    [
+      "payment history",
+      "history"
+    ],
+    [
+      "my card",
+      "card"
+    ],
+    [
+      "invite friends",
+      "invite"
+    ],
+    [
+      "referrals",
+      "referrals"
+    ],
+    [
+      "notifications",
+      "notifications"
+    ],
+    [
+      "language",
+      "language"
+    ],
+    [
+      "currency settings",
+      "currency"
+    ],
+    [
+      "appearance",
+      "theme"
+    ],
+    [
+      "wallet backup",
+      "backup"
+    ],
+    [
+      "security",
+      "security"
+    ],
+    [
+      "account limits",
+      "limits"
+    ],
+    [
+      "default wallet",
+      "defaultWallet"
+    ],
+    [
+      "chat settings",
+      "socialSettings"
+    ],
+    [
+      "price chart",
+      "bitcoinPrice"
+    ],
+    [
+      "Bitcoin wallet",
+      "bitcoinWallet"
+    ]
+  ],
+  "navigation": [
+    "Open {name}",
+    "Show me {name}",
+    "Could you open {name}, please?",
+    "Could you please show me {name} again?",
+    "Please take me to {name}",
+    "Where can I find {name}?",
+    "I want to see {name}"
+  ],
+  "help": [
+    [
+      "What can you do?",
+      "capabilities"
+    ],
+    [
+      "How do I top up my wallet?",
+      "funding"
+    ],
+    [
+      "How can I deposit money into Flash?",
+      "funding"
+    ],
+    [
+      "How do I receive money?",
+      "receiving"
+    ],
+    [
+      "What are the payment fees?",
+      "fees"
+    ],
+    [
+      "How do I cash out to my account?",
+      "cashout"
+    ],
+    [
+      "What if I lose my phone?",
+      "recovery"
+    ],
+    [
+      "How do I scan a QR code?",
+      "scan"
+    ],
+    [
+      "Why do I have two wallets?",
+      "wallets"
+    ],
+    [
+      "What is Lightning?",
+      "lightning"
+    ],
+    [
+      "Can I get a refund?",
+      "refunds"
+    ],
+    [
+      "Does Flash work offline?",
+      "offline"
+    ],
+    [
+      "How do I contact support?",
+      "support"
+    ]
+  ],
+  "people": [
+    [
+      "dreadmax",
+      "dread max",
+      "dread marks",
+      "dreadlocks"
+    ],
+    [
+      "maria_s",
+      "maria s",
+      "maria_s"
+    ],
+    [
+      "alex7",
+      "alex 7",
+      "alex7"
+    ]
+  ],
+  "contacts": [
+    [
+      "Add {name} as a contact",
+      "add"
+    ],
+    [
+      "Add {name} to my contacts",
+      "add"
+    ],
+    [
+      "Remove {name} from my contacts",
+      "remove"
+    ],
+    [
+      "Show me {name}'s profile",
+      "profile"
+    ]
+  ],
+  "sources": [
+    "contacts",
+    "chatContacts",
+    "history",
+    "legacyLookups",
+    "recent"
+  ],
+  "unknown": [
+    "My card was stolen",
+    "My account is locked",
+    "I was charged twice",
+    "Book me a flight",
+    "Predict tomorrow's bitcoin price",
+    "Delete all my transactions"
+  ],
+  "guards": [
+    "Do not add alice as a contact",
+    "Remove alice to my contacts",
+    "Add alice from my contacts",
+    "Add alice and bob to my contacts",
+    "Remove alice then bob from my contacts"
+  ],
+  "payments": [
+    [
+      "Pay {name} two cents",
+      "0.02"
+    ],
+    [
+      "Send $0.02 to {name}",
+      "0.02"
+    ],
+    [
+      "Pay {name} 1 USD",
+      "1"
+    ],
+    [
+      "Send five dollars to {name}",
+      "5"
+    ]
+  ],
+  "wallet": [
+    [
+      "Turn on my Bitcoin wallet",
+      "bitcoinWalletOn"
+    ],
+    [
+      "Turn off advanced mode",
+      "bitcoinWalletOff"
+    ],
+    [
+      "Could you please enable BTC account?",
+      "bitcoinWalletOn"
+    ],
+    [
+      "Please disable bitcoin wallet",
+      "bitcoinWalletOff"
+    ],
+    [
+      "Would you turn off my bitcoin wallet, please?",
+      "bitcoinWalletOff"
+    ]
+  ]
+}

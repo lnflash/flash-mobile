@@ -116,3 +116,6 @@ AuthKey_*.p8
 # Local voice-pack generation tools
 __pycache__/
 *.pyc
+
+# Generated unattended assistant scenario reports
+reports/assistant-scenarios/

@@ -41,7 +41,9 @@ export type ScreenDestination = keyof typeof SCREEN_DESTINATIONS
 export const readScreenDestination = (
   utterance: string,
 ): ScreenDestination | undefined => {
-  const text = textOf(normalize(utterance).tokens).replace(/(?: (?:please|again))+$/, "")
+  const text = textOf(normalize(utterance).tokens)
+    .replace(/^(?:please )?(?:(?:can|could|would) you )?(?:please )?/, "")
+    .replace(/(?: (?:please|again))+$/, "")
   // Bare "bitcoin price" is an existing live-price read, not a request to open a chart.
   if (text === "bitcoin price") return undefined
   if (

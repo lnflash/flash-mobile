@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "corpusVersion": "1.0.0",
+  "defaultSeed": 754,
+  "files": {
+    "fixtures.json": "19cca56fcdf9daeb1a1ffe5c5031f903af6a4a8a6b978126bf7d80cc83b8977c",
+    "regressions.json": "6465559b99c241fb961ca5a6f524cad7ee9956542d683f906c36db1cc9441be4",
+    "holdout.json": "d7c60c98f1e26c72e3a4ddb25eedc255297eddb0fe0f89b85f21b4179d6a614e",
+    "matrices.json": "dcdd477857314a8eb2c0b2e3e06d467da0bcc178185963280a68a55b66186589"
+  },
+  "minimumFullCases": 1300,
+  "minimumScreenCases": 12,
+  "minimumHoldoutCases": 8
+}

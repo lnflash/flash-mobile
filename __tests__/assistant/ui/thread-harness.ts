@@ -35,7 +35,12 @@ import {
 export const fakeRuntime = <
   M extends ModelAdapter = ReturnType<typeof unavailableModelAdapter>,
 >(
-  options: { modelAdapter?: M; auth?: AuthGate } = {},
+  options: {
+    modelAdapter?: M
+    auth?: AuthGate
+    client?: ApolloClient<unknown>
+    cacheScope?: string
+  } = {},
 ) => {
   const modelAdapter = options.modelAdapter ?? unavailableModelAdapter()
   const graphql = fakeGraphqlRail()
@@ -46,9 +51,10 @@ export const fakeRuntime = <
   const recorded = recordingTelemetry()
   const watchedRunTool = jest.fn(runTool)
   const runtime: AssistantRuntime = createAssistantRuntime(
-    new ApolloClient({ cache: new InMemoryCache(), connectToDevTools: false }),
+    options.client ??
+      new ApolloClient({ cache: new InMemoryCache(), connectToDevTools: false }),
     {
-      cacheScope: "test-session",
+      cacheScope: options.cacheScope ?? "test-session",
       threadId: "thread-ask-flash",
       graphql: graphql as unknown as GraphqlRail,
       cachedGraphql: cachedGraphql as unknown as GraphqlRail,
