@@ -7958,7 +7958,7 @@ type RootTranslation = {
 		 */
 		listening: string
 		/**
-		 * V​o​i​c​e​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.
+		 * O​f​f​l​i​n​e​ ​s​p​e​e​c​h​ ​r​e​c​o​g​n​i​t​i​o​n​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​p​h​o​n​e​.​ ​Y​o​u​ ​c​a​n​ ​s​t​i​l​l​ ​t​y​p​e​.
 		 */
 		voiceUnavailable: string
 		/**
@@ -16507,7 +16507,7 @@ export type TranslationFunctions = {
 		 */
 		listening: () => LocalizedString
 		/**
-		 * Voice isn't available on this phone.
+		 * Offline speech recognition isn't available on this phone. You can still type.
 		 */
 		voiceUnavailable: () => LocalizedString
 		/**

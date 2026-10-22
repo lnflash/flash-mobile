@@ -66,9 +66,12 @@ describe("Ask Flash quick actions", () => {
     expect(readQuickAction("Remove my contacts", ctx)).toBeUndefined()
     expect(readQuickAction("Do not add alice as a contact", ctx)).toBeUndefined()
     expect(readQuickAction("Remove alice as a contact", ctx)).toBeUndefined()
+    expect(readQuickAction("Remove alice to my contacts", ctx)).toBeUndefined()
+    expect(readQuickAction("Add alice from my contacts", ctx)).toBeUndefined()
   })
 
   for (const [utterance, operation, username] of [
+    ["Add dreadlocks of the contacts", "add", "dreadlocks"],
     ["Add dreadmax as a contact", "add", "dreadmax"],
     ["Add dreadlocks as a contact", "add", "dreadlocks"],
     ["Drug Max as a contact", "add", "drug max"],

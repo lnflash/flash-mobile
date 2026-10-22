@@ -27,10 +27,16 @@ export const readQuickAction = (
     .trim()
     .replace(/^(?:please )?(?:can|could|would) you (?:please )?/i, "")
   const contact = new RegExp(
-    `^(?:please )?(add|save|remove|delete) @?${usernameHint} (?:to|from) (?:my )?contacts(?: again)?[?.!]*$`,
+    `^(?:please )?(add|save|remove|delete) @?${usernameHint} (to|from|of) (?:my |the )?contacts(?: again)?[?.!]*$`,
     "iu",
   ).exec(raw)
-  if (contact && isNameHint(contact[2]))
+  if (
+    contact &&
+    isNameHint(contact[2]) &&
+    (/^(add|save)$/i.test(contact[1])
+      ? /^(to|of)$/i.test(contact[3])
+      : /^from$/i.test(contact[3]))
+  )
     return {
       kind: "contact",
       operation: /^(remove|delete)$/i.test(contact[1]) ? "remove" : "add",

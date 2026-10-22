@@ -2172,7 +2172,7 @@
     "releaseToSend": "Release to send",
     "finishing": "Finishing…",
     "listening": "Listening…",
-    "voiceUnavailable": "Voice isn't available on this phone.",
+    "voiceUnavailable": "Offline speech recognition isn't available on this phone. You can still type.",
     "voicePermission": "Flash needs microphone access to hear your asks.",
     "voiceFailed": "I couldn't hear that. Try again or type it.",
     "voiceSettings": "Open Settings",
