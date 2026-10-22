@@ -443,6 +443,7 @@ const ChatAction: React.FC = () => {
 const BitcoinWalletAction: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
+  const { colors } = useTheme().theme
   const mode = useBitcoinWalletMode()
   const label = enabled
     ? LL.SettingsScreen.advanceMode()
@@ -450,20 +451,37 @@ const BitcoinWalletAction: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   return (
     <View style={styles.answer} testID="ask-flash-bitcoin-wallet-action">
       {mode.available && mode.enabled !== enabled ? (
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={styles.helpAction}
-          testID="ask-flash-bitcoin-wallet-toggle"
-          onPress={() =>
-            mode
-              .request(enabled)
-              .catch(() => Alert.alert(LL.common.warning(), LL.Assistant.toolFailed()))
-          }
-        >
-          <Text type="p2" bold>
-            {label}
+        <>
+          <Text type="p3" bold style={styles.walletActionTitle}>
+            {LL.common.btcAccount()}
           </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            style={styles.walletActionButton}
+            testID="ask-flash-bitcoin-wallet-toggle"
+            onPress={() =>
+              mode
+                .request(enabled)
+                .catch(() => Alert.alert(LL.common.warning(), LL.Assistant.toolFailed()))
+            }
+          >
+            <Icon
+              type="ionicon"
+              name="power-outline"
+              size={22}
+              color={colors.textInverse}
+            />
+            <Text
+              type="p2"
+              bold
+              color={colors.textInverse}
+              style={styles.walletActionLabel}
+            >
+              {label}
+            </Text>
+          </TouchableOpacity>
+        </>
       ) : (
         <Text type="p2">
           {mode.enabled
@@ -1330,6 +1348,20 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.grey5,
   },
   helpAction: { minHeight: 48, justifyContent: "center" },
+  walletActionTitle: { marginBottom: 12 },
+  walletActionButton: {
+    minHeight: 56,
+    width: "100%",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: colors.button01,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  walletActionLabel: { flexShrink: 1, textAlign: "center" },
   speechSetting: {
     flexDirection: "row",
     gap: 6,
