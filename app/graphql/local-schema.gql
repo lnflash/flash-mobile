@@ -12,6 +12,7 @@ type Contact {
 
 extend type Query {
   # Bounded, session-scoped offline assistant read projections. Never sent to the server.
+  assistantRecentUsers: String
   assistantSavedReads: String
   assistantSpeechPreference: String
   hideBalance: Boolean!

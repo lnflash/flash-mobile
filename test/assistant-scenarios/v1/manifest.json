@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "corpusVersion": "1.2.0",
+  "corpusVersion": "1.3.0",
   "defaultSeed": 754,
   "files": {
     "fixtures.json": "19cca56fcdf9daeb1a1ffe5c5031f903af6a4a8a6b978126bf7d80cc83b8977c",
-    "regressions.json": "c1038ce6368f0633a0cdd33d6bf961438ddf0a72813844807c05ac258f8ab888",
+    "regressions.json": "d32d447e3d13c3666b6668eba3ed3c732b3c90c35d834db51bc74bed98e143cc",
     "holdout.json": "22aad9bd7ec4d5a59e1274e484c15b8a7cbd78a7c9fcd900b962074e1dddd1b9",
     "matrices.json": "bf8049358cc20a7364ebff99de8f25cd4e7a9f88218946686491e76641194890"
   },

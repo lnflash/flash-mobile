@@ -24,6 +24,7 @@ import { AskFlashScreen } from "@app/assistant/ui/ask-flash-screen"
 import { FeatureFlagContext } from "@app/config/feature-flags-context"
 import { answerUtterance } from "@app/assistant/ui/turn"
 import { useKnownFlashUsers } from "@app/assistant/ui/use-known-flash-users"
+import { searchFlashUsernames } from "@app/assistant/rails/username-search"
 import { lookupFlashUsername } from "@app/assistant/registry/read/lookup-flash-username"
 import { nativeVoiceInput, type VoiceEvent } from "@app/assistant/ui/native-voice-input"
 import type { ToolCall } from "@app/assistant/engine/intent-router"
@@ -77,16 +78,25 @@ const IDENTITY = gql`
 `
 
 const ownId = "scenario-account"
-const makeClient = () =>
+const makeClient = (search: () => readonly string[]) =>
   new ApolloClient({
     cache: createCache(),
     connectToDevTools: false,
     link: new ApolloLink(
       (operation) =>
         new Observable((observer) => {
-          observer.error(
-            new Error(`Unscripted Apollo request: ${operation.operationName}`),
-          )
+          if (operation.operationName !== "searchUsernames") {
+            observer.error(
+              new Error(`Unscripted Apollo request: ${operation.operationName}`),
+            )
+            return
+          }
+          try {
+            observer.next({ data: { searchUsernames: search() } })
+            observer.complete()
+          } catch (error) {
+            observer.error(error)
+          }
         }),
     ),
   }) as ApolloClient<unknown>
@@ -192,6 +202,7 @@ export async function replay(
   let unexpectedSupport = 0
   const deliberate = { support: 0, wallet: 0, contacts: 0, navigation: 0 }
   let verificationReads = 0
+  let directoryReads = 0
   const contactRows = () =>
     (state.contacts ?? []).map((username) => ({
       __typename: "UserContact",
@@ -322,6 +333,9 @@ export async function replay(
         }),
       ]
     })
+    harness.graphql.searchUsernames.mockImplementation((hint: string) =>
+      searchFlashUsernames(client, hint),
+    )
     harness.graphql.contacts.mockImplementation(async () => contactRows())
     harness.graphql.accountDefaultWallet.mockImplementation(async (name: string) => {
       failIfScripted("accountDefaultWallet")
@@ -402,11 +416,10 @@ export async function replay(
     const query = selected ?? entry.username
     let lookup: Awaited<ReturnType<typeof lookupFlashUsername<string>>>
     try {
-      lookup = await lookupFlashUsername(
-        query,
-        { names: names.result.current, offerKnownChoices: true },
+      lookup = await lookupFlashUsername(query, names.result.current, {
         verify,
-      )
+        search: (hint) => searchFlashUsernames(client, hint),
+      })
     } catch {
       if (view)
         await waitFor(() =>
@@ -439,7 +452,6 @@ export async function replay(
       }
     }
     const matches = lookup.matches
-    const knownChoices = lookup.source === "known"
     if (view)
       await waitFor(() => {
         const card = within(
@@ -450,8 +462,6 @@ export async function replay(
         )
         if (!matches.length)
           expect(card.getByText(LL.AskFlashActions.contactNotFound())).toBeTruthy()
-        if (knownChoices)
-          expect(card.getByText(LL.Assistant.pickKnownContact())).toBeTruthy()
       })
     return {
       kind: "contact",
@@ -459,7 +469,6 @@ export async function replay(
       operation: entry.operation,
       lookup: matches.length ? "suggestions" : "missing",
       usernames: matches.map((r) => r.username),
-      ...(lookup.source ? { suggestionSource: lookup.source } : {}),
     }
   }
   const outcome = async (): Promise<Outcome> => {
@@ -598,6 +607,7 @@ export async function replay(
     return outcome()
   }
   const reads = () =>
+    directoryReads +
     verificationReads +
     allHarnesses.reduce(
       (n, h) =>
@@ -678,7 +688,12 @@ export async function replay(
       scope = nextScope
       state = { offline: state.offline }
     }
-    client = makeClient()
+    client = makeClient(() => {
+      directoryReads += 1
+      if (state.failServices?.includes("searchUsernames"))
+        throw new Error("Search unavailable")
+      return state.directoryMatches ?? []
+    })
     client.cache.restore(saved)
     if (nextScope) {
       client.writeQuery({
@@ -693,7 +708,12 @@ export async function replay(
     mount()
   }
   try {
-    client = makeClient()
+    client = makeClient(() => {
+      directoryReads += 1
+      if (state.failServices?.includes("searchUsernames"))
+        throw new Error("Search unavailable")
+      return state.directoryMatches ?? []
+    })
     seed()
     platform.setChat({
       contactsEvent: chatEvent(state.chatContacts ?? [], users),

@@ -104,7 +104,7 @@ export const flashUserWallet = async (
  * No payment-history contact matches. An exact, server-verified Flash
  * username can go straight to the payment review; that review still requires
  * Confirm before money moves. When speech got the name wrong, offer similar
- * known contacts as choices and verify each username with the server.
+ * public usernames as choices and verify each username with the server.
  */
 const flashUserOrRefusal = async (
   hint: string,
@@ -115,11 +115,10 @@ const flashUserOrRefusal = async (
     ...contacts.map(({ username }) => username),
     ...(ctx.knownUsernames ?? []),
   ]
-  const result = await lookupFlashUsername(
-    hint,
-    { names: known, offerKnownChoices: Boolean(ctx.knownUsernames?.length) },
-    (name) => flashUserWallet(name, ctx.graphql),
-  )
+  const result = await lookupFlashUsername(hint, known, {
+    verify: (name) => flashUserWallet(name, ctx.graphql),
+    search: ctx.graphql.searchUsernames,
+  })
   if (result.kind === "exact") {
     const { username, value: userWallet } = result.match
     const myWallets = await ctx.graphql.wallets()
@@ -141,10 +140,7 @@ const flashUserOrRefusal = async (
     kind: "clarification",
     card: {
       type: "clarification",
-      prompt:
-        result.source === "known"
-          ? "Assistant.pickKnownContact"
-          : "Assistant.pickContact",
+      prompt: "Assistant.pickContact",
       options: result.matches.map(({ username }) => ({
         id: username,
         label: username,

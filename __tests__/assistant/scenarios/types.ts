@@ -19,7 +19,6 @@ export type Outcome = {
   currency?: string
   inputOrigin?: "text" | "voice"
   reason?: string
-  suggestionSource?: "known"
   prompt?: string
   toWallet?: string
   title?: string
@@ -29,8 +28,15 @@ export type FixtureChanges = {
   btcState?: "ok" | "disabled" | "syncing" | "failed"
   btcSats?: number
   lookupFails?: boolean
+  directoryMatches?: string[]
   unverifiedUsers?: string[]
-  failServices?: ("wallets" | "realtimePrice" | "transactions" | "accountDefaultWallet")[]
+  failServices?: (
+    | "wallets"
+    | "realtimePrice"
+    | "transactions"
+    | "accountDefaultWallet"
+    | "searchUsernames"
+  )[]
 }
 export type ScenarioState = {
   offline?: boolean

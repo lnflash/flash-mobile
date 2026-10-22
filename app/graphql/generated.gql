@@ -1164,6 +1164,10 @@ mutation userUpdateUsername($input: UserUpdateUsernameInput!) {
   }
 }
 
+query AssistantRecentUsers {
+  assistantRecentUsers @client
+}
+
 query AssistantSavedReads {
   assistantSavedReads @client
 }
@@ -1934,6 +1938,10 @@ query scanningQRCodeScreen {
     }
     __typename
   }
+}
+
+query searchUsernames($query: String!) {
+  searchUsernames(query: $query)
 }
 
 query sendBitcoinConfirmationScreen {

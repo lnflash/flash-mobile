@@ -39,37 +39,36 @@ describe("shared Flash username lookup", () => {
       }),
     ).rejects.toThrow("offline")
   })
-  it("offers known verified people as explicit choices after an unrelated transcription", async () => {
-    const verify = jest.fn(async (name: string) =>
-      name === "dreadmax" ? "verified-key" : null,
-    )
+  it("does not offer unrelated contacts after an unrelated transcription", async () => {
+    const verify = jest.fn(async () => null)
     await expect(
-      lookupFlashUsername(
-        "flashbacks",
-        { names: ["dreadmax"], offerKnownChoices: true },
-        verify,
-      ),
-    ).resolves.toEqual({
-      kind: "suggestions",
-      source: "known",
-      matches: [{ username: "dreadmax", value: "verified-key" }],
-    })
-    expect(verify.mock.calls).toEqual([["flashbacks"], ["dreadmax"]])
+      lookupFlashUsername("flashbacks", ["dreadmax", "alice", "bob"], verify),
+    ).resolves.toEqual({ kind: "suggestions", matches: [] })
+    expect(verify.mock.calls).toEqual([["flashbacks"]])
   })
-  it("bounds known choices and verifies every one without inventing usernames", async () => {
-    const known = Array.from({ length: 12 }, (_, i) => `person${i}`)
-    const verify = jest.fn(async (name: string) => (known.includes(name) ? name : null))
-    const result = await lookupFlashUsername(
-      "flashbacks",
-      { names: known, offerKnownChoices: true },
-      verify,
+  it("searches for similar public usernames outside contacts and verifies each choice", async () => {
+    const verify = jest.fn(async (name: string) => (name === "dreadmax" ? "key" : null))
+    const search = jest.fn(async () => ["dreadmax", "dreadmark", "unrelated"])
+    await expect(lookupFlashUsername("dreadma", [], { verify, search })).resolves.toEqual(
+      {
+        kind: "suggestions",
+        matches: [{ username: "dreadmax", value: "key" }],
+      },
     )
-    expect(result.kind).toBe("suggestions")
-    if (result.kind !== "suggestions") throw new Error("Expected known choices")
-    expect(result.source).toBe("known")
-    expect(result.matches.map((match) => match.username)).toEqual(
-      known.slice(-5).reverse(),
-    )
-    expect(verify).toHaveBeenCalledTimes(6)
+    expect(search).toHaveBeenCalledWith("dreadma")
+    expect(verify).toHaveBeenCalledWith("dreadmark")
+    expect(verify).not.toHaveBeenCalledWith("unrelated")
+  })
+  it("does not search after an exact match or disguise directory outages as no matches", async () => {
+    const search = jest.fn(async () => {
+      throw new Error("directory outage")
+    })
+    await expect(
+      lookupFlashUsername("alice", [], { verify: async () => "key", search }),
+    ).resolves.toMatchObject({ kind: "exact" })
+    expect(search).not.toHaveBeenCalled()
+    await expect(
+      lookupFlashUsername("alic", [], { verify: async () => null, search }),
+    ).rejects.toThrow("directory outage")
   })
 })

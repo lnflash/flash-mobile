@@ -88,10 +88,13 @@ jest.mock("@app/i18n/i18n-react", () => {
   const { i18nObject: i18n } = jest.requireActual("@app/i18n/i18n-util")
   return { useI18nContext: () => ({ LL: i18n("en"), locale: "en" }) }
 })
-jest.mock("@apollo/client", () => ({
-  ...jest.requireActual("@apollo/client"),
-  useApolloClient: () => ({}),
-}))
+jest.mock("@apollo/client", () => {
+  const client = { query: async () => ({ data: { searchUsernames: [] } }) }
+  return {
+    ...jest.requireActual("@apollo/client"),
+    useApolloClient: () => client,
+  }
+})
 let mockOffline = false
 jest.mock("@app/hooks/use-connectivity", () => ({
   useConnectivity: () => ({ isOffline: mockOffline, justReconnected: false }),

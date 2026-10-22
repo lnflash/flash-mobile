@@ -21,10 +21,17 @@ const fixtureFields = [
   "btcState",
   "btcSats",
   "lookupFails",
+  "directoryMatches",
   "unverifiedUsers",
   "failServices",
 ]
-const services = ["wallets", "realtimePrice", "transactions", "accountDefaultWallet"]
+const services = [
+  "wallets",
+  "realtimePrice",
+  "transactions",
+  "accountDefaultWallet",
+  "searchUsernames",
+]
 function validateFixture(value, where, nullableBtc = false) {
   if ("cashBalance" in value)
     requireThat(
@@ -45,12 +52,12 @@ function validateFixture(value, where, nullableBtc = false) {
     )
   if ("lookupFails" in value)
     requireThat(typeof value.lookupFails === "boolean", `${where}: invalid lookupFails`)
-  if ("unverifiedUsers" in value)
-    requireThat(
-      Array.isArray(value.unverifiedUsers) &&
-        value.unverifiedUsers.every((v) => typeof v === "string"),
-      `${where}: invalid unverifiedUsers`,
-    )
+  for (const field of ["directoryMatches", "unverifiedUsers"])
+    if (field in value)
+      requireThat(
+        Array.isArray(value[field]) && value[field].every((v) => typeof v === "string"),
+        `${where}: invalid ${field}`,
+      )
   if ("failServices" in value)
     requireThat(
       Array.isArray(value.failServices) &&
@@ -259,7 +266,6 @@ function validateScenario(row) {
           "currency",
           "inputOrigin",
           "reason",
-          "suggestionSource",
           "prompt",
           "toWallet",
           "title",
@@ -324,11 +330,6 @@ function validateScenario(row) {
             typeof step.expect[key] === "string",
             `${row.id}: invalid expected ${key}`,
           )
-      if ("suggestionSource" in step.expect)
-        requireThat(
-          step.expect.suggestionSource === "known",
-          `${row.id}: invalid suggestion source`,
-        )
       if ("correctUsername" in step)
         requireThat(
           row.layer === "screen",

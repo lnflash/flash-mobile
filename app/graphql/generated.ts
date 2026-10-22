@@ -2331,6 +2331,7 @@ export type Query = {
   readonly accountDefaultWallet: PublicWallet;
   /** All API keys for the calling account, newest first. Never includes secret material. */
   readonly apiKeys: ReadonlyArray<ApiKey>;
+  readonly assistantRecentUsers?: Maybe<Scalars['String']['output']>;
   readonly assistantSavedReads?: Maybe<Scalars['String']['output']>;
   readonly assistantSpeechPreference?: Maybe<Scalars['String']['output']>;
   readonly beta: Scalars['Boolean']['output'];
@@ -2372,6 +2373,8 @@ export type Query = {
   readonly quizQuestions?: Maybe<ReadonlyArray<Maybe<QuizQuestion>>>;
   /** Returns 1 Sat and 1 Usd Cent price for the given currency */
   readonly realtimePrice: RealtimePrice;
+  /** Up to five similar public Flash usernames, including people outside your contacts. Requires 3–50 letters, digits or underscores after removing spaces. Uses bounded prefix and spelling searches; results require recipient verification and selection. */
+  readonly searchUsernames: ReadonlyArray<Scalars['Username']['output']>;
   readonly supportedBanks: ReadonlyArray<Bank>;
   readonly transactionDetails: TransactionDetailsPayload;
   /** @deprecated will be migrated to AccountDefaultWalletId */
@@ -2458,6 +2461,11 @@ export type QueryOnChainUsdTxFeeAsBtcDenominatedArgs = {
 
 export type QueryRealtimePriceArgs = {
   currency?: InputMaybe<Scalars['DisplayCurrency']['input']>;
+};
+
+
+export type QuerySearchUsernamesArgs = {
+  query: Scalars['String']['input'];
 };
 
 
@@ -3176,6 +3184,11 @@ export type AssistantUsernameQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AssistantUsernameQuery = { readonly __typename: 'Query', readonly me?: { readonly __typename: 'User', readonly id: string, readonly username?: string | null } | null };
 
+export type AssistantRecentUsersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AssistantRecentUsersQuery = { readonly __typename: 'Query', readonly assistantRecentUsers?: string | null };
+
 export type AssistantSavedReadsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -3585,6 +3598,13 @@ export type RealtimePriceUnauthedQueryVariables = Exact<{
 
 
 export type RealtimePriceUnauthedQuery = { readonly __typename: 'Query', readonly realtimePrice: { readonly __typename: 'RealtimePrice', readonly timestamp: number, readonly denominatorCurrency: string, readonly btcSatPrice: { readonly __typename: 'PriceOfOneSatInMinorUnit', readonly base: number, readonly offset: number }, readonly usdCentPrice: { readonly __typename: 'PriceOfOneUsdCentInMinorUnit', readonly base: number, readonly offset: number } } };
+
+export type SearchUsernamesQueryVariables = Exact<{
+  query: Scalars['String']['input'];
+}>;
+
+
+export type SearchUsernamesQuery = { readonly __typename: 'Query', readonly searchUsernames: ReadonlyArray<string> };
 
 export type NpubByUsernameQueryVariables = Exact<{
   username: Scalars['Username']['input'];
@@ -4197,6 +4217,38 @@ export function useAssistantUsernameLazyQuery(baseOptions?: Apollo.LazyQueryHook
 export type AssistantUsernameQueryHookResult = ReturnType<typeof useAssistantUsernameQuery>;
 export type AssistantUsernameLazyQueryHookResult = ReturnType<typeof useAssistantUsernameLazyQuery>;
 export type AssistantUsernameQueryResult = Apollo.QueryResult<AssistantUsernameQuery, AssistantUsernameQueryVariables>;
+export const AssistantRecentUsersDocument = gql`
+    query AssistantRecentUsers {
+  assistantRecentUsers @client
+}
+    `;
+
+/**
+ * __useAssistantRecentUsersQuery__
+ *
+ * To run a query within a React component, call `useAssistantRecentUsersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAssistantRecentUsersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAssistantRecentUsersQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAssistantRecentUsersQuery(baseOptions?: Apollo.QueryHookOptions<AssistantRecentUsersQuery, AssistantRecentUsersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<AssistantRecentUsersQuery, AssistantRecentUsersQueryVariables>(AssistantRecentUsersDocument, options);
+      }
+export function useAssistantRecentUsersLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<AssistantRecentUsersQuery, AssistantRecentUsersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<AssistantRecentUsersQuery, AssistantRecentUsersQueryVariables>(AssistantRecentUsersDocument, options);
+        }
+export type AssistantRecentUsersQueryHookResult = ReturnType<typeof useAssistantRecentUsersQuery>;
+export type AssistantRecentUsersLazyQueryHookResult = ReturnType<typeof useAssistantRecentUsersLazyQuery>;
+export type AssistantRecentUsersQueryResult = Apollo.QueryResult<AssistantRecentUsersQuery, AssistantRecentUsersQueryVariables>;
 export const AssistantSavedReadsDocument = gql`
     query AssistantSavedReads {
   assistantSavedReads @client
@@ -6782,6 +6834,39 @@ export function useRealtimePriceUnauthedLazyQuery(baseOptions?: Apollo.LazyQuery
 export type RealtimePriceUnauthedQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedQuery>;
 export type RealtimePriceUnauthedLazyQueryHookResult = ReturnType<typeof useRealtimePriceUnauthedLazyQuery>;
 export type RealtimePriceUnauthedQueryResult = Apollo.QueryResult<RealtimePriceUnauthedQuery, RealtimePriceUnauthedQueryVariables>;
+export const SearchUsernamesDocument = gql`
+    query searchUsernames($query: String!) {
+  searchUsernames(query: $query)
+}
+    `;
+
+/**
+ * __useSearchUsernamesQuery__
+ *
+ * To run a query within a React component, call `useSearchUsernamesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchUsernamesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchUsernamesQuery({
+ *   variables: {
+ *      query: // value for 'query'
+ *   },
+ * });
+ */
+export function useSearchUsernamesQuery(baseOptions: Apollo.QueryHookOptions<SearchUsernamesQuery, SearchUsernamesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchUsernamesQuery, SearchUsernamesQueryVariables>(SearchUsernamesDocument, options);
+      }
+export function useSearchUsernamesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchUsernamesQuery, SearchUsernamesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchUsernamesQuery, SearchUsernamesQueryVariables>(SearchUsernamesDocument, options);
+        }
+export type SearchUsernamesQueryHookResult = ReturnType<typeof useSearchUsernamesQuery>;
+export type SearchUsernamesLazyQueryHookResult = ReturnType<typeof useSearchUsernamesLazyQuery>;
+export type SearchUsernamesQueryResult = Apollo.QueryResult<SearchUsernamesQuery, SearchUsernamesQueryVariables>;
 export const NpubByUsernameDocument = gql`
     query npubByUsername($username: Username!) {
   npubByUsername(username: $username) {

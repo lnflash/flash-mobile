@@ -1,3 +1,4 @@
+import { useApolloClient } from "@apollo/client"
 import React, { useEffect, useRef, useState } from "react"
 import { Alert, TextInput, TouchableOpacity, View } from "react-native"
 import { useNavigation } from "@react-navigation/native"
@@ -20,6 +21,7 @@ import type { MerchantsPayload } from "../registry/projections"
 import type { ThreadEntry } from "./thread-store"
 import { parseAmount, parseDisplayAmount } from "../engine/parse-amount"
 import { contactTagsFor } from "./contact-tags"
+import { searchFlashUsernames } from "../rails/username-search"
 import { lookupFlashUsername } from "../registry/read/lookup-flash-username"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -166,6 +168,7 @@ export const ContactActionAnswer: React.FC<{
   const { isOffline } = useConnectivity()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const openSupport = useOpenSupportChat()
+  const client = useApolloClient()
   const { contactsEvent, setContactsEvent, userPublicKey, addEventToProfiles } =
     useChatContext()
   const addProfileRef = useRef(addEventToProfiles)
@@ -173,7 +176,6 @@ export const ContactActionAnswer: React.FC<{
   const [pubkey, setPubkey] = useState<string>()
   const [username, setUsername] = useState(entry.username)
   const [suggestions, setSuggestions] = useState<string[]>([])
-  const [knownChoices, setKnownChoices] = useState(false)
   const [draft, setDraft] = useState(entry.username)
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<
@@ -186,20 +188,19 @@ export const ContactActionAnswer: React.FC<{
   useEffect(() => {
     // Newly loaded contact names can improve a miss, but must not reset a finished action.
     if (verifiedHandle.current === handle) return
+    if (isOffline) return
     let live = true
     setPubkey(undefined)
     setSuggestions([])
-    setKnownChoices(false)
     setState("loading")
     remember.current(entry.id, undefined)
-    lookupFlashUsername(
-      username,
-      { names: knownUsernames, offerKnownChoices: true },
-      async (name) => {
+    lookupFlashUsername(username, knownUsernames, {
+      search: (hint) => searchFlashUsernames(client, hint),
+      verify: async (name) => {
         const found = await nip05.queryProfile(`${name}@${entry.hostname}`.toLowerCase())
         return found?.pubkey && /^[0-9a-f]{64}$/i.test(found.pubkey) ? found.pubkey : null
       },
-    )
+    })
       .then((result) => {
         if (!live) return
         if (result.kind === "exact") {
@@ -213,7 +214,6 @@ export const ContactActionAnswer: React.FC<{
           })
         } else {
           setSuggestions(result.matches.map((match) => match.username))
-          setKnownChoices(result.source === "known")
           setState("missing")
         }
       })
@@ -223,7 +223,16 @@ export const ContactActionAnswer: React.FC<{
     return () => {
       live = false
     }
-  }, [handle, username, entry.id, entry.hostname, knownUsernames, attempt])
+  }, [
+    handle,
+    username,
+    entry.id,
+    entry.hostname,
+    knownUsernames,
+    attempt,
+    client,
+    isOffline,
+  ])
   const search = () => {
     const name = draft.trim().replace(/^@/, "").toLowerCase()
     if (!name || isOffline) return
@@ -297,9 +306,7 @@ export const ContactActionAnswer: React.FC<{
       ? LL.Assistant.actionsOffline()
       : state === "missing"
       ? suggestions.length
-        ? knownChoices
-          ? LL.Assistant.pickKnownContact()
-          : LL.Assistant.pickContact()
+        ? LL.Assistant.pickContact()
         : LL.AskFlashActions.contactNotFound()
       : state === "error"
       ? LL.AskFlashActions.contactError()
@@ -348,8 +355,7 @@ export const ContactActionAnswer: React.FC<{
           </Text>
         </TouchableOpacity>
       ))}
-      {(state === "missing" && (!suggestions.length || knownChoices)) ||
-      state === "error" ? (
+      {(state === "missing" && !suggestions.length) || state === "error" ? (
         <View>
           <View style={styles.correction}>
             <TextInput

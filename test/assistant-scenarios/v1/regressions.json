@@ -3248,11 +3248,8 @@
           "kind": "contact",
           "operation": "add",
           "query": "flashbacks",
-          "lookup": "suggestions",
-          "usernames": [
-            "dreadmax"
-          ],
-          "suggestionSource": "known"
+          "lookup": "missing",
+          "usernames": []
         },
         "origin": "voice",
         "intended": "Add dreadmax to my contacts"
@@ -3270,15 +3267,11 @@
           "kind": "contact",
           "operation": "add",
           "query": "flashbacks",
-          "lookup": "suggestions",
-          "usernames": [
-            "dreadmax"
-          ],
-          "suggestionSource": "known"
+          "lookup": "missing",
+          "usernames": []
         }
       },
       {
-        "select": "dreadmax",
         "expect": {
           "kind": "contact",
           "operation": "add",
@@ -3287,7 +3280,8 @@
           "usernames": [
             "dreadmax"
           ]
-        }
+        },
+        "correctUsername": "dreadmax"
       },
       {
         "ask": "Show their profile",
@@ -3301,7 +3295,8 @@
           ]
         }
       }
-    ]
+    ],
+    "source": "Regression corrected: unrelated contacts are not username suggestions; use a typed correction after a severe speech error."
   },
   {
     "id": "severe-transcription-known-choices-remove",
@@ -3320,11 +3315,8 @@
           "kind": "contact",
           "operation": "remove",
           "query": "flashbacks",
-          "lookup": "suggestions",
-          "usernames": [
-            "dreadmax"
-          ],
-          "suggestionSource": "known"
+          "lookup": "missing",
+          "usernames": []
         },
         "origin": "voice",
         "intended": "Remove dreadmax from my contacts"
@@ -3342,15 +3334,11 @@
           "kind": "contact",
           "operation": "remove",
           "query": "flashbacks",
-          "lookup": "suggestions",
-          "usernames": [
-            "dreadmax"
-          ],
-          "suggestionSource": "known"
+          "lookup": "missing",
+          "usernames": []
         }
       },
       {
-        "select": "dreadmax",
         "expect": {
           "kind": "contact",
           "operation": "remove",
@@ -3359,7 +3347,8 @@
           "usernames": [
             "dreadmax"
           ]
-        }
+        },
+        "correctUsername": "dreadmax"
       },
       {
         "ask": "Show their profile",
@@ -3373,7 +3362,8 @@
           ]
         }
       }
-    ]
+    ],
+    "source": "Regression corrected: unrelated contacts are not username suggestions; use a typed correction after a severe speech error."
   },
   {
     "id": "severe-transcription-known-choices-profile",
@@ -3392,11 +3382,8 @@
           "kind": "contact",
           "operation": "profile",
           "query": "flashbacks",
-          "lookup": "suggestions",
-          "usernames": [
-            "dreadmax"
-          ],
-          "suggestionSource": "known"
+          "lookup": "missing",
+          "usernames": []
         },
         "origin": "voice",
         "intended": "Show me dreadmax's profile"
@@ -3414,15 +3401,11 @@
           "kind": "contact",
           "operation": "profile",
           "query": "flashbacks",
-          "lookup": "suggestions",
-          "usernames": [
-            "dreadmax"
-          ],
-          "suggestionSource": "known"
+          "lookup": "missing",
+          "usernames": []
         }
       },
       {
-        "select": "dreadmax",
         "expect": {
           "kind": "contact",
           "operation": "profile",
@@ -3431,7 +3414,8 @@
           "usernames": [
             "dreadmax"
           ]
-        }
+        },
+        "correctUsername": "dreadmax"
       },
       {
         "ask": "Show their profile",
@@ -3445,7 +3429,8 @@
           ]
         }
       }
-    ]
+    ],
+    "source": "Regression corrected: unrelated contacts are not username suggestions; use a typed correction after a severe speech error."
   },
   {
     "id": "correct-unfamiliar-username-add",
@@ -3665,11 +3650,8 @@
           "kind": "contact",
           "operation": "add",
           "query": "flashbacks",
-          "lookup": "suggestions",
-          "usernames": [
-            "dreadmax"
-          ],
-          "suggestionSource": "known"
+          "lookup": "missing",
+          "usernames": []
         }
       },
       {
@@ -3679,7 +3661,8 @@
           "replyKey": "Assistant.contextPersonUnclear"
         }
       }
-    ]
+    ],
+    "source": "Regression corrected: unrelated contacts are not username suggestions; use a typed correction after a severe speech error."
   },
   {
     "id": "payment-severe-transcription-text",
@@ -3696,30 +3679,15 @@
         "ask": "Pay flashbacks two cents",
         "expect": {
           "kind": "card",
-          "cardType": "clarification",
-          "prompt": "Assistant.pickKnownContact",
-          "usernames": [
-            "dreadmax"
-          ],
+          "cardType": "prepareRefused",
+          "reason": "payeeNotFound",
           "intent": "prepareSend",
-          "amount": "0.02",
-          "inputOrigin": "text"
+          "amount": "0.02"
         },
         "origin": "text"
-      },
-      {
-        "select": "dreadmax",
-        "expect": {
-          "kind": "card",
-          "cardType": "confirmPayment",
-          "username": "dreadmax",
-          "intent": "prepareSend",
-          "amount": "0.02",
-          "inputOrigin": "text",
-          "title": "Review payment"
-        }
       }
-    ]
+    ],
+    "source": "Regression corrected: unrelated contacts are not username suggestions; use a typed correction after a severe speech error."
   },
   {
     "id": "one-cent-swap-review-text",
@@ -3758,30 +3726,15 @@
         "ask": "Pay flashbacks two cents",
         "expect": {
           "kind": "card",
-          "cardType": "clarification",
-          "prompt": "Assistant.pickKnownContact",
-          "usernames": [
-            "dreadmax"
-          ],
+          "cardType": "prepareRefused",
+          "reason": "payeeNotFound",
           "intent": "prepareSend",
-          "amount": "0.02",
-          "inputOrigin": "voice"
+          "amount": "0.02"
         },
         "origin": "voice"
-      },
-      {
-        "select": "dreadmax",
-        "expect": {
-          "kind": "card",
-          "cardType": "confirmPayment",
-          "username": "dreadmax",
-          "intent": "prepareSend",
-          "amount": "0.02",
-          "inputOrigin": "voice",
-          "title": "Review payment"
-        }
       }
-    ]
+    ],
+    "source": "Regression corrected: unrelated contacts are not username suggestions; use a typed correction after a severe speech error."
   },
   {
     "id": "one-cent-swap-review-voice",
@@ -3802,6 +3755,432 @@
           "title": "Review conversion"
         },
         "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-add-screen",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "contacts": [
+        "alice",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dreadma as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadma",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-add-integration",
+    "category": "username",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "contacts": [
+        "alice",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dreadma as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadma",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-remove-screen",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "contacts": [
+        "alice",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Remove dreadma from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadma",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-remove-integration",
+    "category": "username",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "contacts": [
+        "alice",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Remove dreadma from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadma",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-profile-screen",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "contacts": [
+        "alice",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show me dreadma's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadma",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-profile-integration",
+    "category": "username",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "contacts": [
+        "alice",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show me dreadma's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadma",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-pay-text",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dreadma two cents",
+        "origin": "text",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "prompt": "Assistant.pickContact",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text",
+          "title": "Review payment"
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-stranger-pay-voice",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dreadma two cents",
+        "origin": "voice",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "prompt": "Assistant.pickContact",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice",
+          "title": "Review payment"
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-outage-retry",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "failServices": [
+        "searchUsernames"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dreadma as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadma",
+          "lookup": "error"
+        }
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "correctUsername": "dreadma",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadma",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-unrelated-result-ignored",
+    "category": "safety",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "contacts": [
+        "alice",
+        "bob"
+      ],
+      "recent": [
+        "dreadmax"
+      ],
+      "directoryMatches": [
+        "alice",
+        "bob",
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add flashbacks as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "flashbacks",
+          "lookup": "missing",
+          "usernames": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "directory-candidate-needs-verification",
+    "category": "safety",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "directoryMatches": [
+        "dreadmax"
+      ],
+      "unverifiedUsers": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dreadma as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadma",
+          "lookup": "missing",
+          "usernames": []
+        }
       }
     ]
   }
