@@ -46,6 +46,13 @@ jest.mock("@app/hooks/use-bitcoin-wallet-mode", () => ({
     request: mockWalletRequest,
   }),
 }))
+jest.mock("@app/store/persistent-state", () => ({
+  ...jest.requireActual("@app/store/persistent-state"),
+  usePersistentStateContext: () => ({
+    persistentState: { isAdvanceMode: true, chatEnabled: true },
+    updateState: jest.fn(),
+  }),
+}))
 jest.mock("@app/components/advanced-mode-modal", () => ({
   AdvancedModeModal: () => null,
 }))

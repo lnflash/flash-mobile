@@ -864,6 +864,7 @@ const EntryView: React.FC<{
 export const AskFlashScreen: React.FC = () => {
   const client = useApolloClient()
   const { contactsEvent, profileMap } = useChatContext()
+  const { persistentState } = usePersistentStateContext()
   const { LL, locale } = useI18nContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
@@ -926,12 +927,14 @@ export const AskFlashScreen: React.FC = () => {
     runtime.speechPreference.get,
   )
   const speechDisplay = { displayCurrency, formatMoneyAmount, formatCurrency }
+  const bitcoinWalletEnabled = Boolean(persistentState.isAdvanceMode)
   const speech = useSpeechOutput({
     enabled: speechEnabled,
     runtime,
     LL,
     locale,
     display: speechDisplay,
+    bitcoinWalletEnabled,
   })
   const stopSpeech = speech.stop
   const thread = useThread(runtime, env)
@@ -1081,7 +1084,12 @@ export const AskFlashScreen: React.FC = () => {
           keyExtractor={(entry) => entry.id}
           renderItem={({ item }) => {
             const spoken = speechEnabled
-              ? spokenReplyFor(item, { LL, locale, display: speechDisplay })
+              ? spokenReplyFor(item, {
+                  LL,
+                  locale,
+                  display: speechDisplay,
+                  bitcoinWalletEnabled,
+                })
               : undefined
             return (
               <View>

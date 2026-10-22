@@ -21,7 +21,13 @@ export const spokenReplyFor = (
     LL,
     locale,
     display,
-  }: { LL: TranslationFunctions; locale: string; display: PriceDisplay },
+    bitcoinWalletEnabled,
+  }: {
+    LL: TranslationFunctions
+    locale: string
+    display: PriceDisplay
+    bitcoinWalletEnabled?: boolean
+  },
 ): SpokenReply | undefined => {
   const speechLocale = (text: string, base: string) =>
     text === base ? "en-US" : locale.replace("_", "-")
@@ -48,6 +54,39 @@ export const spokenReplyFor = (
       }
     }
     case "screen": {
+      if (
+        entry.destination === "bitcoinWalletOn" ||
+        entry.destination === "bitcoinWalletOff"
+      ) {
+        const wantsEnabled = entry.destination === "bitcoinWalletOn"
+        const text =
+          bitcoinWalletEnabled === wantsEnabled
+            ? bitcoinWalletEnabled
+              ? LL.AskFlashHelp.screenLocation({ screen: LL.common.btcAccount() })
+              : LL.Assistant.btcDisabled()
+            : wantsEnabled
+            ? LL.SettingsScreen.advanceMode()
+            : LL.SettingsScreen.beginnerMode()
+        const base =
+          bitcoinWalletEnabled === wantsEnabled
+            ? bitcoinWalletEnabled
+              ? english.AskFlashHelp.screenLocation({
+                  screen: english.common.btcAccount(),
+                })
+              : english.Assistant.btcDisabled()
+            : wantsEnabled
+            ? english.SettingsScreen.advanceMode()
+            : english.SettingsScreen.beginnerMode()
+        return { text, locale: speechLocale(text, base), automatic: true }
+      }
+      if (entry.destination === "bitcoinWallet" && bitcoinWalletEnabled === false) {
+        const text = LL.Assistant.btcDisabled()
+        return {
+          text,
+          locale: speechLocale(text, english.Assistant.btcDisabled()),
+          automatic: true,
+        }
+      }
       const title = screenDestinationTitle(LL, entry.destination)
       return {
         text: LL.AskFlashHelp.screenLocation({ screen: title }),

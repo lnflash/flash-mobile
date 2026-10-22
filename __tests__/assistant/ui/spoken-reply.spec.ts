@@ -34,6 +34,33 @@ it("speaks a named screen answer without pretending to read account data", () =>
     automatic: true,
   })
 })
+it("speaks the Bitcoin account action shown on screen, then its current state", () => {
+  const enable: ThreadEntry = {
+    id: "enable",
+    kind: "screen",
+    destination: "bitcoinWalletOn",
+  }
+  expect(
+    spokenReplyFor(enable, { LL, locale: "en", display, bitcoinWalletEnabled: false })
+      ?.text,
+  ).toBe(LL.SettingsScreen.advanceMode())
+  expect(
+    spokenReplyFor(enable, { LL, locale: "en", display, bitcoinWalletEnabled: true })
+      ?.text,
+  ).toBe(LL.AskFlashHelp.screenLocation({ screen: LL.common.btcAccount() }))
+  expect(
+    spokenReplyFor(
+      { ...enable, destination: "bitcoinWalletOff" },
+      { LL, locale: "en", display, bitcoinWalletEnabled: true },
+    )?.text,
+  ).toBe(LL.SettingsScreen.beginnerMode())
+  expect(
+    spokenReplyFor(
+      { ...enable, destination: "bitcoinWalletOff" },
+      { LL, locale: "en", display, bitcoinWalletEnabled: false },
+    )?.text,
+  ).toBe(LL.Assistant.btcDisabled())
+})
 it("asks for a conversion amount aloud without speaking a quote or sending money", () => {
   expect(
     spokenReplyFor(
