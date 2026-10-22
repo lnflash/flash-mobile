@@ -33,7 +33,6 @@ import { useAppConfig } from "@app/hooks/use-app-config"
 import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useOpenSupportChat } from "@app/hooks/use-open-support-chat"
 import { usePersistentStateContext } from "@app/store/persistent-state"
-import { useChatContext } from "@app/screens/chat/chatContext"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useBitcoinWalletMode } from "@app/hooks/use-bitcoin-wallet-mode"
 import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
@@ -63,7 +62,7 @@ import { helpAnswerText } from "./reply-presentation"
 import { ScreenDestination, screenDestinationTitle } from "./screen-destinations"
 import { pricePresentation } from "./price-presentation"
 import { useVoiceInput } from "./use-voice-input"
-import { knownFlashUsernames } from "./known-flash-users"
+import { useKnownFlashUsers } from "./use-known-flash-users"
 import {
   CardTopUpAnswer,
   ContactActionAnswer,
@@ -711,7 +710,8 @@ const EntryView: React.FC<{
   entry: ThreadEntry
   actions: CardActions
   onPick: (entryId: string, optionId: string) => void
-}> = ({ entry, actions, onPick }) => {
+  knownUsernames: readonly string[]
+}> = ({ entry, actions, onPick, knownUsernames }) => {
   const { LL } = useI18nContext()
   const { displayCurrency } = useDisplayCurrency()
   const { formatMoneyAmount } = useDisplayCurrency()
@@ -732,7 +732,7 @@ const EntryView: React.FC<{
     case "merchants":
       return <MerchantsAnswer payload={entry.payload} />
     case "contactAction":
-      return <ContactActionAnswer entry={entry} />
+      return <ContactActionAnswer entry={entry} knownUsernames={knownUsernames} />
     case "cardTopUp":
       return <CardTopUpAnswer entry={entry} />
     case "cashoutAmount":
@@ -863,7 +863,6 @@ const EntryView: React.FC<{
 
 export const AskFlashScreen: React.FC = () => {
   const client = useApolloClient()
-  const { contactsEvent, profileMap } = useChatContext()
   const { persistentState } = usePersistentStateContext()
   const { LL, locale } = useI18nContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -871,6 +870,7 @@ export const AskFlashScreen: React.FC = () => {
   const { colors } = useTheme().theme
   const { isOffline } = useConnectivity()
   const { appConfig } = useAppConfig()
+  const knownUsernames = useKnownFlashUsers(appConfig.galoyInstance.lnAddressHostname)
   const {
     assistantEnabled,
     assistantOnDeviceModel,
@@ -903,11 +903,7 @@ export const AskFlashScreen: React.FC = () => {
   const onDeviceModel = assistantEnabled && assistantOnDeviceModel
   const env: TurnEnv = {
     isOffline,
-    knownUsernames: knownFlashUsernames(
-      contactsEvent?.tags,
-      profileMap,
-      appConfig.galoyInstance.lnAddressHostname,
-    ),
+    knownUsernames,
     displayCurrency,
     displaySymbol: fiatSymbol,
     display: { formatMoneyAmount, formatDisplayAndWalletAmount, fractionDigits },
@@ -1097,6 +1093,7 @@ export const AskFlashScreen: React.FC = () => {
                   entry={item}
                   actions={thread.cardActions}
                   onPick={thread.pick}
+                  knownUsernames={knownUsernames}
                 />
                 {spoken ? (
                   <TouchableOpacity

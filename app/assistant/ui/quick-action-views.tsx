@@ -19,7 +19,6 @@ import type { MerchantsPayload } from "../registry/projections"
 import type { ThreadEntry } from "./thread-store"
 import { parseAmount, parseDisplayAmount } from "../engine/parse-amount"
 import { contactTagsFor } from "./contact-tags"
-import { knownFlashUsernames } from "./known-flash-users"
 import { similarUsernames } from "../registry/read/similar-usernames"
 
 const useStyles = makeStyles(({ colors }) => ({
@@ -137,18 +136,14 @@ const RELAYS = [
 
 export const ContactActionAnswer: React.FC<{
   entry: Extract<ThreadEntry, { kind: "contactAction" }>
-}> = ({ entry }) => {
+  knownUsernames: readonly string[]
+}> = ({ entry, knownUsernames }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const { isOffline } = useConnectivity()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const {
-    contactsEvent,
-    setContactsEvent,
-    userPublicKey,
-    addEventToProfiles,
-    profileMap,
-  } = useChatContext()
+  const { contactsEvent, setContactsEvent, userPublicKey, addEventToProfiles } =
+    useChatContext()
   const addProfileRef = useRef(addEventToProfiles)
   addProfileRef.current = addEventToProfiles
   const [pubkey, setPubkey] = useState<string>()
@@ -159,10 +154,7 @@ export const ContactActionAnswer: React.FC<{
   const handle = `${username}@${entry.hostname}`
   const suggestions =
     state === "missing"
-      ? similarUsernames(
-          username,
-          knownFlashUsernames(contactsEvent?.tags, profileMap, entry.hostname),
-        ).filter((name) => name !== username)
+      ? similarUsernames(username, knownUsernames).filter((name) => name !== username)
       : []
   useEffect(() => {
     let live = true
