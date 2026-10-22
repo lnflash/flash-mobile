@@ -6,7 +6,7 @@ Run the complete suite without a phone, account, backend, model download, or hum
 yarn test:assistant-scenarios
 ```
 
-The initial corpus has **1,328 scenarios**: 28 regression conversations (14 through the rendered screen), eight separately authored acceptance examples, and 1,292 generated permutations. The runner has a four-minute timeout and returns a nonzero exit code for any mismatch, unexpected support handoff, financial dispatch, incomplete report, invalid corpus, or empty selection. It never sends a payment or connects to a live service.
+Corpus **1.1.0 has 1,790 scenarios and 2,548 user turns**: 94 regression scenarios, 12 separately authored acceptance examples, and 1,684 generated permutations. It includes 236 conversations, 37 failure/recovery cases, and 98 rendered-screen flows. The runner has a four-minute timeout and returns a nonzero exit code for any mismatch, unexpected support handoff, financial dispatch, incomplete report, invalid corpus, or empty selection. It never sends a payment or connects to a live service.
 
 ```sh
 # Quick regression conversations
@@ -32,15 +32,19 @@ Reports go to `reports/assistant-scenarios/report.json` and `report.md`. Use `--
 
 The integration layer uses the production turn router, conversation context, registry, action preparers, executor, shared username lookup, recent-name migration, and `useKnownFlashUsers`. Apollo queries and normalized cache are real. External rails are scripted, while an unscripted Apollo request fails. Cached lookup migration uses the same `accountDefaultWallet` cache entries as the app. Restart serializes/restores the cache and constructs a new runtime; account switching must not import the previous session's names.
 
-Screen scenarios render the actual `AskFlashScreen`. They type or replay native voice events, choose a displayed username suggestion, press add/remove actions, accept the removal dialog, toggle the wallet button, and press support. Navigation, wallet mode, OS audio/permissions, signing/relay publishing, and external services are fixture boundaries. Support navigation is checked at its callback; the destination screen and native device rendering are not mounted by this suite.
+Screen scenarios render the actual `AskFlashScreen`. They type or replay native voice events, choose displayed contact or payment suggestions, press add/remove actions, accept or cancel the removal dialog, toggle the wallet button, and press support. Fifty generated flows press navigation buttons and verify independently authored route names and parameters, online and offline. Navigation, wallet mode, OS audio/permissions, signing/relay publishing, and external services are fixture boundaries. Navigation is checked at its callback; destination screens and native device rendering are not mounted by this suite.
 
 Voice scenarios replay **transcripts and native start/final/end events** through the hold/release logic. `intended` records the intended words when the observed transcript differs. This is recovery testing, **not an audio transcription accuracy measurement**. No user audio is collected. Native recognizer quality and real-device performance remain separate checks; the JSON report marks native speech recognition as untested.
 
 The generated matrix covers named screens, polite/trailing wording, help, typed/voice origins, online/offline behavior, exact/spaced/misheard usernames, five candidate sources, payment amounts/recipients, unsupported requests, and unsafe compound/negative commands. The reviewed examples and expectations live in data, independently of the router's alias tables. There is no network-dependent paraphrase generator or runtime judge.
 
+Longer journeys repeat and switch help topics/screens, resolve verified-person references, and refuse to infer a person from an unselected suggestion or an amount from a previous payment. Stateful checks change balances, interrupt connectivity, restart, switch accounts, revoke username verification, and fail/recover wallet, price, history, or account lookup services. Expected balances, transaction ids, currencies, payment input origins, and cumulative read counts are compared explicitly. Failed refreshes must preserve the last good offline snapshot; prices and searched history must not be invented offline.
+
+Rendered failure flows cover rejected contact updates without false success, cancelled removal without mutation, going offline before choosing a payment recipient, and missing/denied/blocked/restricted speech access. Native-event replay checks no-speech, recognizer failure, interruption, cancellation, empty results, stale session events, duplicate completion, and typing after failure. A held preview must not submit until release. Unsupported currency signs remain part of the amount and trigger clarification, including a separated sign such as `€ 5`.
+
 ## Data and versions
 
-`v1/manifest.json` declares schema version 1, the corpus semver, file SHA-256 digests, and minimum coverage counts. It points to:
+`v1/manifest.json` declares schema version 1, the corpus semver, file SHA-256 digests, and minimum coverage counts, including conversations and failure cases. It points to:
 
 - `fixtures.json`: synthetic verified identities. `dreadmax` is retained as the public username from the reported regressions.
 - `regressions.json`: stable ids and multi-step reproductions, with initial state and explicit outcomes.
@@ -62,7 +66,13 @@ To add a regression:
 4. Run the failing id, fix the shared production cause, then run the full suite. Preserve the original failure. A discovered failure in `holdout.json` is promoted to a regression and replaced with a separately authored acceptance example; do not tune on it and keep calling it held out.
 5. Review any newly generated expectations once when adding the family. Thereafter, replay, comparison, reporting, and CI need no human interaction. Failure reports never rewrite expectations or weaken gates automatically.
 
-An `ask` step supports `origin: "text" | "voice"`, optional `intended`, and an `expect` object. State fields are `contacts`, `chatContacts`, `history`, `legacyLookups`, `legacyIndex`, `recent`, `offline`, `scope`, `displayCurrency`, `lookupFails`, and `voiceAvailable`. Additional steps are `select`, `contactAction`, `restart`, `switchAccount`, `offline`, `openSupport`, `toggleWallet`, and `voiceUnavailable`; examples in `regressions.json` show each format. Unknown fields and unsupported schema versions fail validation.
+An `ask` step supports `origin: "text" | "voice"`, optional `intended`, and an `expect` object. State fields include `contacts`, `chatContacts`, `history`, `legacyLookups`, `legacyIndex`, `recent`, `offline`, `scope`, `displayCurrency`, and `voiceAvailable`. State also accepts the fixture controls below. Additional steps are `select`, `contactAction`, `restart`, `switchAccount`, `offline`, `openSupport`, `openScreen`, `toggleWallet`, `voiceUnavailable`, and `voiceFailure`; examples in `regressions.json` and generated contracts in `matrices.json` show each format. Unknown fields and unsupported schema versions fail validation.
+
+- `fixture` changes only scripted service state: `cashBalance` (integer cents or null), `btcSats`, `btcState`, `lookupFails`, `unverifiedUsers`, and `failServices` (`wallets`, `realtimePrice`, `transactions`, `accountDefaultWallet`). Restore with an empty failure list or `lookupFails: false`; no production result is overridden.
+- `assertReads` checks cumulative `wallets`, `realtimePrice`, `transactions`, `verification`, or `btc` reads across restarts. Every offline ask/selection also checks that no GraphQL, username-verification, or Bitcoin balance/history reads started.
+- `contactAction` accepts optional `result: "cancelled" | "rejected"`. Cancellation is valid only for removal; rejection scripts relay failure and requires the error UI and unchanged contacts.
+- `voiceFailure` scripts a permission/recognizer failure, empty result, or cancelled capture. It requires a rendered screen and verifies no transcript submission and an editable text composer afterward.
+- `openScreen` declares the expected navigation `route` and optional `params`, then presses the displayed button. Any navigation, support handoff, contact publication, or wallet change without its authored button step fails.
 
 ## Continuous runs
 

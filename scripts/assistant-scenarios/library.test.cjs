@@ -111,6 +111,52 @@ test("a refusal card cannot satisfy an unspecified financial card expectation", 
   row.steps[0].expect = { kind: "card", intent: "prepareSend" }
   assert.throws(() => validateScenario(row), /explicit type/)
 })
+test("fault fixtures, counters and cancelled actions have strict contracts", () => {
+  const row = goodCase()
+  for (const step of [
+    { fixture: {} },
+    { fixture: { failServices: ["invented"] } },
+    { fixture: { cashBalance: -1 } },
+    { fixture: { btcState: "almost-ready" } },
+    { assertReads: { wallets: -1 } },
+    { assertReads: { invented: 1 } },
+    { voiceFailure: "denied" },
+    { contactAction: "add", username: "alice", result: "cancelled" },
+  ])
+    assert.throws(() => validateScenario({ ...row, steps: [step] }))
+  assert.doesNotThrow(() =>
+    validateScenario({ ...row, layer: "screen", steps: [{ voiceFailure: "denied" }] }),
+  )
+  assert.doesNotThrow(() =>
+    validateScenario({
+      ...row,
+      steps: [{ fixture: { cashBalance: null, btcState: "failed", failServices: [] } }],
+    }),
+  )
+})
+test("coverage floors prevent losing the longer journeys or failure cases", (t) => {
+  for (const [key, message] of [
+    ["minimumConversationCases", /conversation coverage/],
+    ["minimumFailureCases", /failure coverage/],
+  ]) {
+    const root = changedCorpus(t, (dir) => {
+      const file = path.join(dir, "manifest.json")
+      const manifest = JSON.parse(fs.readFileSync(file))
+      manifest[key] = 100000
+      fs.writeFileSync(file, JSON.stringify(manifest))
+    })
+    assert.throws(() => loadSuite({ root }), message)
+  }
+})
+test("unknown users in mid-conversation fixtures fail before replay", (t) => {
+  const root = changedCorpus(t, (dir) => {
+    const file = path.join(dir, "regressions.json")
+    const rows = JSON.parse(fs.readFileSync(file))
+    rows[0].steps.push({ fixture: { unverifiedUsers: ["invented"] } })
+    fs.writeFileSync(file, JSON.stringify(rows))
+  })
+  assert.throws(() => loadSuite({ root }), /unknown fixture user/)
+})
 test("unsupported schema versions and unversioned content tampering fail closed", (t) => {
   let root = changedCorpus(t, (dir) => {
     const p = path.join(dir, "manifest.json"),
@@ -223,7 +269,10 @@ test("the version command rejects corpus changes until the version and digests i
   assert.equal(version(["--check-base", base]).status, 0)
   fs.appendFileSync(path.join(root, "test/assistant-scenarios/v1/regressions.json"), " ")
   assert.equal(version(["--check-base", base]).status, 1)
-  assert.equal(version(["--set", "1.0.1"]).status, 0)
+  const initial = loadSuite().corpusVersion
+  const parts = initial.split(".").map(Number)
+  parts[2] += 1
+  assert.equal(version(["--set", parts.join(".")]).status, 0)
   assert.equal(version(["--check-base", base]).status, 0)
-  assert.equal(version(["--set", "1.0.0"]).status, 1)
+  assert.equal(version(["--set", initial]).status, 1)
 })

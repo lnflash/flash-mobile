@@ -789,5 +789,2446 @@
         }
       }
     ]
+  },
+  {
+    "id": "balance-refresh-and-offline-snapshot",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 1,
+          "btc": 1
+        }
+      },
+      {
+        "fixture": {
+          "cashBalance": 900,
+          "btcSats": 250
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 900,
+          "btcState": "ok",
+          "btcSats": 250
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "fixture": {
+          "cashBalance": 100,
+          "btcSats": 1
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": true,
+          "cashBalance": 900,
+          "btcState": "ok",
+          "btcSats": 250
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 2,
+          "btc": 2
+        }
+      },
+      {
+        "offline": false
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 100,
+          "btcState": "ok",
+          "btcSats": 1
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 3,
+          "btc": 3
+        }
+      }
+    ]
+  },
+  {
+    "id": "balance-snapshot-survives-restart",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      },
+      {
+        "restart": true
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": true,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 1,
+          "btc": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "balance-account-switch-never-leaks-snapshot",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      },
+      {
+        "switchAccount": "second-account"
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.noSavedData"
+        }
+      }
+    ]
+  },
+  {
+    "id": "bitcoin-state-disabled",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "btcState": "disabled"
+    },
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "disabled",
+          "btcSats": null
+        }
+      },
+      {
+        "fixture": {
+          "btcState": "ok",
+          "btcSats": 17
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 17
+        }
+      }
+    ]
+  },
+  {
+    "id": "bitcoin-state-syncing",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "btcState": "syncing"
+    },
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "syncing",
+          "btcSats": null
+        }
+      },
+      {
+        "fixture": {
+          "btcState": "ok",
+          "btcSats": 17
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 17
+        }
+      }
+    ]
+  },
+  {
+    "id": "bitcoin-state-failed",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "btcState": "failed"
+    },
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "failed",
+          "btcSats": null
+        }
+      },
+      {
+        "fixture": {
+          "btcState": "ok",
+          "btcSats": 17
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 17
+        }
+      }
+    ]
+  },
+  {
+    "id": "cash-unavailable-never-becomes-zero",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "cashBalance": null
+    },
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": null,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      },
+      {
+        "fixture": {
+          "cashBalance": 0
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 0,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      }
+    ]
+  },
+  {
+    "id": "outage-wallets-text",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "failServices": [
+        "wallets"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        },
+        "origin": "text"
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        },
+        "origin": "text"
+      },
+      {
+        "assertReads": {
+          "wallets": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "outage-wallets-voice",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "failServices": [
+        "wallets"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        },
+        "origin": "voice"
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        },
+        "origin": "voice"
+      },
+      {
+        "assertReads": {
+          "wallets": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "outage-transactions-text",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "failServices": [
+        "transactions"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show my last payments",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        },
+        "origin": "text"
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "ask": "Show my last payments",
+        "expect": {
+          "kind": "transactions",
+          "stale": false,
+          "transactionIds": []
+        },
+        "origin": "text"
+      },
+      {
+        "assertReads": {
+          "transactions": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "outage-transactions-voice",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "failServices": [
+        "transactions"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show my last payments",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        },
+        "origin": "voice"
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "ask": "Show my last payments",
+        "expect": {
+          "kind": "transactions",
+          "stale": false,
+          "transactionIds": []
+        },
+        "origin": "voice"
+      },
+      {
+        "assertReads": {
+          "transactions": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "outage-realtimeprice-text",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "failServices": [
+        "realtimePrice"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "What's the bitcoin price?",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        },
+        "origin": "text"
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "ask": "What's the bitcoin price?",
+        "expect": {
+          "kind": "price",
+          "currency": "USD"
+        },
+        "origin": "text"
+      },
+      {
+        "assertReads": {
+          "realtimePrice": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "outage-realtimeprice-voice",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "failServices": [
+        "realtimePrice"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "What's the bitcoin price?",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        },
+        "origin": "voice"
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "ask": "What's the bitcoin price?",
+        "expect": {
+          "kind": "price",
+          "currency": "USD"
+        },
+        "origin": "voice"
+      },
+      {
+        "assertReads": {
+          "realtimePrice": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "failed-refresh-retains-last-good-snapshot",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      },
+      {
+        "fixture": {
+          "failServices": [
+            "wallets"
+          ],
+          "cashBalance": 5
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": true,
+          "cashBalance": 1234,
+          "btcState": "ok",
+          "btcSats": 1000000
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "price-is-never-replayed-as-live-offline",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's the bitcoin price?",
+        "expect": {
+          "kind": "price",
+          "currency": "USD"
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.actionsOffline"
+        }
+      },
+      {
+        "assertReads": {
+          "realtimePrice": 1
+        }
+      },
+      {
+        "offline": false
+      },
+      {
+        "ask": "What's the bitcoin price?",
+        "expect": {
+          "kind": "price",
+          "currency": "USD"
+        }
+      }
+    ]
+  },
+  {
+    "id": "price-uses-jamaican-display-currency",
+    "category": "currency",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "displayCurrency": "JMD"
+    },
+    "steps": [
+      {
+        "ask": "What's the bitcoin price?",
+        "expect": {
+          "kind": "price",
+          "currency": "JMD"
+        }
+      }
+    ]
+  },
+  {
+    "id": "history-filters-and-repeats-same-person",
+    "category": "conversation-history",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "history": [
+        "alice",
+        "maria_s",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show my last payment to maria_s",
+        "expect": {
+          "kind": "transactions",
+          "stale": false,
+          "transactionIds": [
+            "history-1"
+          ]
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "transactions",
+          "stale": false,
+          "transactionIds": [
+            "history-1"
+          ]
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.noSavedData"
+        }
+      }
+    ]
+  },
+  {
+    "id": "unfiltered-history-keeps-saved-order-offline",
+    "category": "conversation-history",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "history": [
+        "alice",
+        "maria_s",
+        "bob"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Show my last payments",
+        "expect": {
+          "kind": "transactions",
+          "stale": false,
+          "transactionIds": [
+            "history-0",
+            "history-1",
+            "history-2"
+          ]
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "transactions",
+          "stale": true,
+          "transactionIds": [
+            "history-0",
+            "history-1",
+            "history-2"
+          ]
+        }
+      },
+      {
+        "assertReads": {
+          "transactions": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "lookup-outage-recovery-add",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "lookupFails": true
+    },
+    "steps": [
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "error"
+        }
+      },
+      {
+        "fixture": {
+          "lookupFails": false
+        }
+      },
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "offline-person-reconnect-add",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.actionsOffline"
+        }
+      },
+      {
+        "assertReads": {
+          "verification": 0
+        }
+      },
+      {
+        "offline": false
+      },
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "lookup-outage-recovery-remove",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "lookupFails": true
+    },
+    "steps": [
+      {
+        "ask": "Remove dreadmax from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "error"
+        }
+      },
+      {
+        "fixture": {
+          "lookupFails": false
+        }
+      },
+      {
+        "ask": "Remove dreadmax from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "offline-person-reconnect-remove",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "Remove dreadmax from my contacts",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.actionsOffline"
+        }
+      },
+      {
+        "assertReads": {
+          "verification": 0
+        }
+      },
+      {
+        "offline": false
+      },
+      {
+        "ask": "Remove dreadmax from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "lookup-outage-recovery-profile",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "lookupFails": true
+    },
+    "steps": [
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "error"
+        }
+      },
+      {
+        "fixture": {
+          "lookupFails": false
+        }
+      },
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "offline-person-reconnect-profile",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.actionsOffline"
+        }
+      },
+      {
+        "assertReads": {
+          "verification": 0
+        }
+      },
+      {
+        "offline": false
+      },
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "unverified-similar-name-is-never-offered",
+    "category": "username",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "recent": [
+        "alice",
+        "alicia"
+      ],
+      "unverifiedUsers": [
+        "alice"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add alic as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "alic",
+          "lookup": "suggestions",
+          "usernames": [
+            "alicia"
+          ]
+        }
+      },
+      {
+        "select": "alicia",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "alicia",
+          "lookup": "exact",
+          "usernames": [
+            "alicia"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "alicia",
+          "lookup": "exact",
+          "usernames": [
+            "alicia"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "two-similar-names-explicit-selection",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "alice",
+        "alicia"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add alic as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "alic",
+          "lookup": "suggestions",
+          "usernames": [
+            "alice",
+            "alicia"
+          ]
+        }
+      },
+      {
+        "select": "alicia",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "alicia",
+          "lookup": "exact",
+          "usernames": [
+            "alicia"
+          ]
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "alicia",
+          "lookup": "exact",
+          "usernames": [
+            "alicia"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "exact-name-wins-over-similar-contacts",
+    "category": "username",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "alice",
+        "alicia"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add alice as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "alice",
+          "lookup": "exact",
+          "usernames": [
+            "alice"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "cancel-contact-removal-preserves-contact",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "chatContacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Remove dreadmax from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "remove",
+        "username": "dreadmax",
+        "result": "cancelled"
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "rejected-contact-add-does-not-report-success",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "add",
+        "username": "dreadmax",
+        "result": "rejected"
+      },
+      {
+        "ask": "Add dreadmax as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "add",
+        "username": "dreadmax"
+      }
+    ]
+  },
+  {
+    "id": "rejected-contact-remove-does-not-report-success",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "chatContacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Remove dreadmax from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "remove",
+        "username": "dreadmax",
+        "result": "rejected"
+      },
+      {
+        "ask": "Remove dreadmax from my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "remove",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "contactAction": "remove",
+        "username": "dreadmax"
+      }
+    ]
+  },
+  {
+    "id": "voice-denied-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "denied"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open my contacts",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        },
+        "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "voice-blocked-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "blocked"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      }
+    ]
+  },
+  {
+    "id": "voice-restricted-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "restricted"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      }
+    ]
+  },
+  {
+    "id": "voice-no-speech-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "no-speech"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open my contacts",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        },
+        "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "voice-interrupted-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "interrupted"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open my contacts",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        },
+        "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "voice-unavailable-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "unavailable"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      }
+    ]
+  },
+  {
+    "id": "voice-failed-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "failed"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open my contacts",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        },
+        "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "voice-cancelled-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "cancelled"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open my contacts",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        },
+        "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "voice-empty-typing-fallback",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "voiceFailure": "empty"
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open my contacts",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        },
+        "origin": "voice"
+      }
+    ]
+  },
+  {
+    "id": "cold-offline-balances",
+    "category": "offline",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.noSavedData"
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 0,
+          "transactions": 0,
+          "btc": 0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cold-offline-transactions",
+    "category": "offline",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "Show my last payments",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.noSavedData"
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 0,
+          "transactions": 0,
+          "btc": 0
+        }
+      }
+    ]
+  },
+  {
+    "id": "cold-offline-limits",
+    "category": "offline",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "What are my limits?",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.noSavedData"
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 0,
+          "transactions": 0,
+          "btc": 0
+        }
+      }
+    ]
+  },
+  {
+    "id": "person-context-cleared-by-unrelated-question",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Open settings",
+        "expect": {
+          "kind": "screen",
+          "destination": "settings"
+        }
+      },
+      {
+        "ask": "Remove them from my contacts",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "person-context-cleared-on-account-switch",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "switchAccount": "another-account"
+      },
+      {
+        "ask": "Pay them two cents",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "no-inferred-amount-72",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Pay them the same amount",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.amountUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "no-inferred-amount-73",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Send him 10 more",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.amountUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "no-inferred-amount-74",
+    "category": "safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me dreadmax's profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "dreadmax",
+          "lookup": "exact",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "ask": "Pay her again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.amountUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "unaffordable-payment-never-shows-confirm",
+    "category": "payment",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "contacts": [
+        "alice"
+      ],
+      "cashBalance": 1
+    },
+    "steps": [
+      {
+        "ask": "Pay alice five dollars",
+        "expect": {
+          "kind": "card",
+          "cardType": "prepareRefused",
+          "reason": "insufficientBalance"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-lookup-outage-is-not-missing-user",
+    "category": "failure-recovery",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "contacts": [
+        "alice"
+      ],
+      "failServices": [
+        "accountDefaultWallet"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay alice two cents",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.toolFailed"
+        }
+      },
+      {
+        "fixture": {
+          "failServices": []
+        }
+      },
+      {
+        "ask": "Pay alice two cents",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "username": "alice"
+        }
+      }
+    ]
+  },
+  {
+    "id": "conversion-amount-not-reused-after-context-switch",
+    "category": "conversion",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Convert BTC to USD",
+        "expect": {
+          "kind": "conversionAmount"
+        }
+      },
+      {
+        "ask": "How do I receive money?",
+        "expect": {
+          "kind": "help",
+          "topic": "receiving"
+        }
+      },
+      {
+        "ask": "Open it",
+        "expect": {
+          "kind": "screen",
+          "destination": "receive"
+        }
+      }
+    ]
+  },
+  {
+    "id": "offline-conversion-never-prepares",
+    "category": "conversion",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "Convert BTC to USD",
+        "expect": {
+          "kind": "conversionAmount"
+        }
+      },
+      {
+        "ask": "20000 sats",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.actionsOffline"
+        }
+      }
+    ]
+  },
+  {
+    "id": "screen-balance-offline-reconnect",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's my balance?",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 1234
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": true,
+          "cashBalance": 1234
+        }
+      },
+      {
+        "offline": false
+      },
+      {
+        "fixture": {
+          "cashBalance": 25
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "balances",
+          "stale": false,
+          "cashBalance": 25
+        }
+      },
+      {
+        "assertReads": {
+          "wallets": 2,
+          "btc": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "screen-address-connectivity-label",
+    "category": "address",
+    "layer": "screen",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "What's my Flash address?",
+        "expect": {
+          "kind": "address",
+          "username": "scenario_user@flashapp.me",
+          "stale": false
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "address",
+          "username": "scenario_user@flashapp.me",
+          "stale": true
+        }
+      },
+      {
+        "offline": false
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "address",
+          "username": "scenario_user@flashapp.me",
+          "stale": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-contacts-text",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "contacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "text",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-chatcontacts-text",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "chatContacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "text",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-history-text",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "history": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "text",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-legacylookups-text",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "legacyLookups": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "text",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-recent-text",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "text",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "text"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-contacts-voice",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "contacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "voice",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-chatcontacts-voice",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "chatContacts": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "voice",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-history-voice",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "history": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "voice",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-legacylookups-voice",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "legacyLookups": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "voice",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-recent-voice",
+    "category": "payment-picker",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "origin": "voice",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "card",
+          "cardType": "confirmPayment",
+          "username": "dreadmax",
+          "intent": "prepareSend",
+          "amount": "0.02",
+          "inputOrigin": "voice"
+        }
+      },
+      {
+        "ask": "Again",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextActionReview"
+        }
+      }
+    ]
+  },
+  {
+    "id": "payment-picker-offline-before-selection",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Pay dread max two cents",
+        "expect": {
+          "kind": "card",
+          "cardType": "clarification",
+          "usernames": [
+            "dreadmax"
+          ],
+          "amount": "0.02"
+        }
+      },
+      {
+        "offline": true
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.actionsOffline"
+        }
+      }
+    ]
+  },
+  {
+    "id": "currency-symbol-must-not-be-dropped",
+    "category": "amount-safety",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "contacts": [
+        "alice"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Send \u20ac 5 to alice",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.amountUnclear"
+        }
+      },
+      {
+        "ask": "Pay alice \u00a35",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.amountUnclear"
+        }
+      }
+    ]
+  },
+  {
+    "id": "username-revoked-before-selection",
+    "category": "failure-recovery",
+    "layer": "screen",
+    "supported": true,
+    "state": {
+      "recent": [
+        "dreadmax"
+      ]
+    },
+    "steps": [
+      {
+        "ask": "Add dread marks as a contact",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dread marks",
+          "lookup": "suggestions",
+          "usernames": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "fixture": {
+          "unverifiedUsers": [
+            "dreadmax"
+          ]
+        }
+      },
+      {
+        "select": "dreadmax",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "dreadmax",
+          "lookup": "missing",
+          "usernames": []
+        }
+      },
+      {
+        "ask": "Show their profile",
+        "expect": {
+          "kind": "reply",
+          "replyKey": "Assistant.contextPersonUnclear"
+        }
+      }
+    ]
   }
 ]

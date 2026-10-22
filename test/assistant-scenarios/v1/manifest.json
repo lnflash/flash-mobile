@@ -1,14 +1,16 @@
 {
   "schemaVersion": 1,
-  "corpusVersion": "1.0.0",
+  "corpusVersion": "1.1.0",
   "defaultSeed": 754,
   "files": {
     "fixtures.json": "19cca56fcdf9daeb1a1ffe5c5031f903af6a4a8a6b978126bf7d80cc83b8977c",
-    "regressions.json": "6465559b99c241fb961ca5a6f524cad7ee9956542d683f906c36db1cc9441be4",
-    "holdout.json": "d7c60c98f1e26c72e3a4ddb25eedc255297eddb0fe0f89b85f21b4179d6a614e",
-    "matrices.json": "dcdd477857314a8eb2c0b2e3e06d467da0bcc178185963280a68a55b66186589"
+    "regressions.json": "bdf32dbd0b4cd7f9e3b5665acb44412627bea35956f3bb14d9e0440a91edc612",
+    "holdout.json": "22aad9bd7ec4d5a59e1274e484c15b8a7cbd78a7c9fcd900b962074e1dddd1b9",
+    "matrices.json": "bf8049358cc20a7364ebff99de8f25cd4e7a9f88218946686491e76641194890"
   },
-  "minimumFullCases": 1300,
-  "minimumScreenCases": 12,
-  "minimumHoldoutCases": 8
+  "minimumFullCases": 1750,
+  "minimumScreenCases": 90,
+  "minimumHoldoutCases": 12,
+  "minimumConversationCases": 200,
+  "minimumFailureCases": 30
 }

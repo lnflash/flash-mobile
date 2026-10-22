@@ -159,5 +159,101 @@
         }
       }
     ]
+  },
+  {
+    "id": "holdout-009",
+    "category": "heldout",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "How can I deposit cash into Flash?",
+        "expect": {
+          "kind": "help",
+          "topic": "funding"
+        }
+      },
+      {
+        "ask": "Go there",
+        "expect": {
+          "kind": "screen",
+          "destination": "transfers"
+        }
+      }
+    ]
+  },
+  {
+    "id": "holdout-010",
+    "category": "heldout",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "offline": true
+    },
+    "steps": [
+      {
+        "ask": "Would you show me my contacts again please?",
+        "expect": {
+          "kind": "screen",
+          "destination": "contacts"
+        }
+      }
+    ]
+  },
+  {
+    "id": "holdout-011",
+    "category": "heldout",
+    "layer": "integration",
+    "supported": true,
+    "state": {},
+    "steps": [
+      {
+        "ask": "Show me maria_s profile",
+        "expect": {
+          "kind": "contact",
+          "operation": "profile",
+          "query": "maria_s",
+          "lookup": "exact",
+          "usernames": [
+            "maria_s"
+          ]
+        }
+      },
+      {
+        "ask": "Please add her to my contacts",
+        "expect": {
+          "kind": "contact",
+          "operation": "add",
+          "query": "maria_s",
+          "lookup": "exact",
+          "usernames": [
+            "maria_s"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "holdout-012",
+    "category": "heldout",
+    "layer": "integration",
+    "supported": true,
+    "state": {
+      "cashBalance": 0,
+      "btcState": "disabled"
+    },
+    "steps": [
+      {
+        "ask": "How much money do I have?",
+        "expect": {
+          "kind": "balances",
+          "cashBalance": 0,
+          "btcState": "disabled",
+          "btcSats": null,
+          "stale": false
+        }
+      }
+    ]
   }
 ]

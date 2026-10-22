@@ -221,14 +221,29 @@
     "I was charged twice",
     "Book me a flight",
     "Predict tomorrow's bitcoin price",
-    "Delete all my transactions"
+    "Delete all my transactions",
+    "My bank transfer is missing",
+    "I need to dispute a card charge",
+    "Change my phone number",
+    "Close my account",
+    "I think I was scammed",
+    "Why was my identity verification rejected?",
+    "I need a tax report",
+    "What's the weather?",
+    "Approve my withdrawal",
+    "Tell me my recovery phrase"
   ],
   "guards": [
     "Do not add alice as a contact",
     "Remove alice to my contacts",
     "Add alice from my contacts",
     "Add alice and bob to my contacts",
-    "Remove alice then bob from my contacts"
+    "Remove alice then bob from my contacts",
+    "Do not remove alice from my contacts",
+    "Do not pay alice five dollars",
+    "Do not enable my bitcoin wallet",
+    "Add alice then remove bob from my contacts",
+    "Remove alice and bob from my contacts"
   ],
   "payments": [
     [
@@ -268,6 +283,303 @@
     [
       "Would you turn off my bitcoin wallet, please?",
       "bitcoinWalletOff"
+    ]
+  ],
+  "conversationRepeats": [
+    "Again",
+    "One more time",
+    "Could you please show me that again?"
+  ],
+  "helpRoutes": [
+    [
+      "How do I add money?",
+      "funding",
+      "transfers"
+    ],
+    [
+      "How do I receive money?",
+      "receiving",
+      "receive"
+    ],
+    [
+      "How do I cash out?",
+      "cashout",
+      "transfers"
+    ],
+    [
+      "What if I lose my phone?",
+      "recovery",
+      "backup"
+    ],
+    [
+      "How do I scan a QR code?",
+      "scan",
+      "scanner"
+    ],
+    [
+      "Can I get a refund?",
+      "refunds",
+      "history"
+    ],
+    [
+      "How do I contact support?",
+      "support",
+      "support"
+    ]
+  ],
+  "personReferences": [
+    [
+      "Show their profile",
+      "profile"
+    ],
+    [
+      "Add them to my contacts",
+      "add"
+    ],
+    [
+      "Remove them from my contacts",
+      "remove"
+    ]
+  ],
+  "amountAmbiguities": [
+    [
+      "Pay alice $5k",
+      "USD"
+    ],
+    [
+      "Pay alice 5k",
+      "USD"
+    ],
+    [
+      "Pay alice 5 dollars 50 cents",
+      "USD"
+    ],
+    [
+      "Pay alice 1.5 sats",
+      "USD"
+    ],
+    [
+      "Pay alice $5 sats",
+      "USD"
+    ],
+    [
+      "Pay alice 5 usd jmd",
+      "USD"
+    ],
+    [
+      "Pay alice €5",
+      "USD"
+    ],
+    [
+      "Pay alice 5 dollars",
+      "JMD"
+    ],
+    [
+      "Pay alice $500",
+      "JMD"
+    ],
+    [
+      "Pay alice 10 thousand",
+      "JMD"
+    ],
+    [
+      "Pay alice 1,00 USD",
+      "USD"
+    ],
+    [
+      "Pay alice € 5",
+      "USD"
+    ],
+    [
+      "Pay alice € 5",
+      "JMD"
+    ],
+    [
+      "Pay alice £5",
+      "USD"
+    ],
+    [
+      "Pay alice £5",
+      "JMD"
+    ],
+    [
+      "Pay alice £ 5",
+      "USD"
+    ],
+    [
+      "Pay alice £ 5",
+      "JMD"
+    ],
+    [
+      "Pay alice ¥5",
+      "USD"
+    ],
+    [
+      "Pay alice ¥5",
+      "JMD"
+    ],
+    [
+      "Pay alice ¥ 5",
+      "USD"
+    ],
+    [
+      "Pay alice ¥ 5",
+      "JMD"
+    ],
+    [
+      "Pay alice ₹ 5",
+      "USD"
+    ],
+    [
+      "Pay alice ₹ 5",
+      "JMD"
+    ]
+  ],
+  "supportRequests": [
+    "Talk to Pulse",
+    "Speak to a human",
+    "Chat with an agent",
+    "I want to talk to a support agent",
+    "Get me support",
+    "Escalate this"
+  ],
+  "screenRoutes": [
+    [
+      "home",
+      "home",
+      "Primary",
+      {
+        "screen": "Home"
+      }
+    ],
+    [
+      "my contacts",
+      "contacts",
+      "Contacts"
+    ],
+    [
+      "map",
+      "map",
+      "Primary",
+      {
+        "screen": "Map"
+      }
+    ],
+    [
+      "messages",
+      "chat",
+      "Primary",
+      {
+        "screen": "Chat",
+        "params": {
+          "screen": "chatList"
+        }
+      }
+    ],
+    [
+      "my chat profile",
+      "chatProfile",
+      "EditNostrProfile"
+    ],
+    [
+      "settings",
+      "settings",
+      "settings"
+    ],
+    [
+      "my account",
+      "account",
+      "accountScreen"
+    ],
+    [
+      "bank accounts",
+      "bankAccounts",
+      "BankAccounts"
+    ],
+    [
+      "transfers",
+      "transfers",
+      "TopupCashout"
+    ],
+    [
+      "receive money",
+      "receive",
+      "receiveBitcoin"
+    ],
+    [
+      "QR scanner",
+      "scanner",
+      "scanningQRCode"
+    ],
+    [
+      "payment history",
+      "history",
+      "transactionHistory"
+    ],
+    [
+      "my card",
+      "card",
+      "Card"
+    ],
+    [
+      "invite friends",
+      "invite",
+      "InviteFriend"
+    ],
+    [
+      "referrals",
+      "referrals",
+      "MyReferrals"
+    ],
+    [
+      "notifications",
+      "notifications",
+      "notificationSettingsScreen"
+    ],
+    [
+      "language",
+      "language",
+      "language"
+    ],
+    [
+      "currency settings",
+      "currency",
+      "currency"
+    ],
+    [
+      "appearance",
+      "theme",
+      "theme"
+    ],
+    [
+      "wallet backup",
+      "backup",
+      "BackupOptions"
+    ],
+    [
+      "security",
+      "security",
+      "settings"
+    ],
+    [
+      "account limits",
+      "limits",
+      "transactionLimitsScreen"
+    ],
+    [
+      "default wallet",
+      "defaultWallet",
+      "defaultWallet"
+    ],
+    [
+      "chat settings",
+      "socialSettings",
+      "NostrSettingsScreen"
+    ],
+    [
+      "price chart",
+      "bitcoinPrice",
+      "priceHistory"
     ]
   ]
 }

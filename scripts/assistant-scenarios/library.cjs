@@ -16,6 +16,48 @@ const keys = (value, allowed, where) => {
   for (const key of Object.keys(value))
     requireThat(allowed.includes(key), `${where}: unknown field ${key}`)
 }
+const fixtureFields = [
+  "cashBalance",
+  "btcState",
+  "btcSats",
+  "lookupFails",
+  "unverifiedUsers",
+  "failServices",
+]
+const services = ["wallets", "realtimePrice", "transactions", "accountDefaultWallet"]
+function validateFixture(value, where, nullableBtc = false) {
+  if ("cashBalance" in value)
+    requireThat(
+      value.cashBalance === null ||
+        (Number.isSafeInteger(value.cashBalance) && value.cashBalance >= 0),
+      `${where}: invalid cashBalance`,
+    )
+  if ("btcSats" in value)
+    requireThat(
+      (nullableBtc && value.btcSats === null) ||
+        (Number.isSafeInteger(value.btcSats) && value.btcSats >= 0),
+      `${where}: invalid btcSats`,
+    )
+  if ("btcState" in value)
+    requireThat(
+      ["ok", "disabled", "syncing", "failed"].includes(value.btcState),
+      `${where}: invalid btcState`,
+    )
+  if ("lookupFails" in value)
+    requireThat(typeof value.lookupFails === "boolean", `${where}: invalid lookupFails`)
+  if ("unverifiedUsers" in value)
+    requireThat(
+      Array.isArray(value.unverifiedUsers) &&
+        value.unverifiedUsers.every((v) => typeof v === "string"),
+      `${where}: invalid unverifiedUsers`,
+    )
+  if ("failServices" in value)
+    requireThat(
+      Array.isArray(value.failServices) &&
+        value.failServices.every((v) => services.includes(v)),
+      `${where}: invalid failServices`,
+    )
+}
 
 function validateScenario(row) {
   keys(
@@ -44,9 +86,11 @@ function validateScenario(row) {
       "displayCurrency",
       "lookupFails",
       "voiceAvailable",
+      ...fixtureFields,
     ],
     row.id,
   )
+  validateFixture(row.state, row.id)
   for (const key of [
     "contacts",
     "chatContacts",
@@ -92,6 +136,11 @@ function validateScenario(row) {
         "openSupport",
         "toggleWallet",
         "voiceUnavailable",
+        "fixture",
+        "assertReads",
+        "voiceFailure",
+        "result",
+        "openScreen",
       ],
       row.id,
     )
@@ -105,8 +154,63 @@ function validateScenario(row) {
       "openSupport",
       "toggleWallet",
       "voiceUnavailable",
+      "fixture",
+      "assertReads",
+      "voiceFailure",
+      "openScreen",
     ].filter((key) => key in step)
     requireThat(actions.length === 1, `${row.id}: each step must have exactly one action`)
+    if ("openScreen" in step) {
+      keys(step.openScreen, ["route", "params"], row.id)
+      requireThat(
+        row.layer === "screen" &&
+          typeof step.openScreen.route === "string" &&
+          step.openScreen.route.length > 0,
+        `${row.id}: invalid screen route`,
+      )
+      if ("params" in step.openScreen)
+        requireThat(object(step.openScreen.params), `${row.id}: invalid route params`)
+    }
+    if ("fixture" in step) {
+      keys(step.fixture, fixtureFields, row.id)
+      requireThat(Object.keys(step.fixture).length > 0, `${row.id}: empty fixture change`)
+      validateFixture(step.fixture, row.id)
+    }
+    if ("assertReads" in step) {
+      keys(
+        step.assertReads,
+        ["wallets", "realtimePrice", "transactions", "verification", "btc"],
+        row.id,
+      )
+      requireThat(
+        Object.keys(step.assertReads).length > 0 &&
+          Object.values(step.assertReads).every((v) => Number.isSafeInteger(v) && v >= 0),
+        `${row.id}: invalid read counters`,
+      )
+    }
+    if ("voiceFailure" in step)
+      requireThat(
+        row.layer === "screen" &&
+          [
+            "denied",
+            "blocked",
+            "restricted",
+            "no-speech",
+            "interrupted",
+            "unavailable",
+            "failed",
+            "cancelled",
+            "empty",
+          ].includes(step.voiceFailure),
+        `${row.id}: invalid voice failure`,
+      )
+    if ("result" in step)
+      requireThat(
+        "contactAction" in step &&
+          ["cancelled", "rejected"].includes(step.result) &&
+          (step.result !== "cancelled" || step.contactAction === "remove"),
+        `${row.id}: invalid contact result`,
+      )
     requireThat(
       "expect" in step === ("ask" in step || "select" in step),
       `${row.id}: only ask/select steps require an expectation`,
@@ -144,9 +248,35 @@ function validateScenario(row) {
           "amount",
           "intent",
           "stale",
+          "cashBalance",
+          "btcState",
+          "btcSats",
+          "transactionIds",
+          "currency",
+          "inputOrigin",
+          "reason",
         ],
         row.id,
       )
+      validateFixture(step.expect, row.id, true)
+      if ("btcSats" in step.expect && step.expect.btcSats === null) {
+        // Unavailable Bitcoin balances must have no number, rather than zero.
+        requireThat(
+          step.expect.btcState && step.expect.btcState !== "ok",
+          `${row.id}: missing unavailable Bitcoin state`,
+        )
+      }
+      if ("transactionIds" in step.expect)
+        requireThat(
+          Array.isArray(step.expect.transactionIds) &&
+            step.expect.transactionIds.every((v) => typeof v === "string"),
+          `${row.id}: invalid transaction ids`,
+        )
+      if ("inputOrigin" in step.expect)
+        requireThat(
+          ["text", "voice"].includes(step.expect.inputOrigin),
+          `${row.id}: invalid input origin`,
+        )
       requireThat(
         [
           "help",
@@ -175,6 +305,8 @@ function validateScenario(row) {
         "cardType",
         "amount",
         "intent",
+        "currency",
+        "reason",
       ])
         if (key in step.expect)
           requireThat(
@@ -267,6 +399,21 @@ function validateScenario(row) {
 
 function expand(matrix) {
   const rows = []
+  for (const offline of [false, true])
+    matrix.screenRoutes.forEach(([name, destination, route, params], i) =>
+      rows.push({
+        id: `screen-route.${i}.${offline ? "offline" : "online"}`,
+        category: "screen-route",
+        layer: "screen",
+        supported: true,
+        split: "generated",
+        state: { offline },
+        steps: [
+          { ask: `Open ${name}`, expect: { kind: "screen", destination } },
+          { openScreen: { route, ...(params ? { params } : {}) } },
+        ],
+      }),
+    )
   /* eslint-disable max-params -- Each matrix row declares its complete scenario contract. */
   const add = (
     id,
@@ -346,6 +493,26 @@ function expand(matrix) {
           false,
         ),
       )
+      matrix.amountAmbiguities.forEach(([text, displayCurrency], i) =>
+        add(
+          `amount-ambiguity.${i}.${suffix}`,
+          "amount-safety",
+          text,
+          { kind: "reply", replyKey: "Assistant.amountUnclear" },
+          { offline, displayCurrency, contacts: ["alice"] },
+          origin,
+        ),
+      )
+      matrix.supportRequests.forEach((text, i) =>
+        add(
+          `support-route.${i}.${suffix}`,
+          "support",
+          text,
+          { kind: "screen", destination: "support" },
+          { offline },
+          origin,
+        ),
+      )
     }
   for (const origin of ["text", "voice"])
     matrix.people.forEach(([username, ...heard], i) => {
@@ -392,6 +559,120 @@ function expand(matrix) {
           ),
         ),
       )
+  for (const offline of [false, true])
+    for (const origin of ["text", "voice"]) {
+      const suffix = `${offline ? "offline" : "online"}.${origin}`
+      matrix.screens.forEach(([name, destination], i) =>
+        rows.push({
+          id: `journey.navigation.${i}.${suffix}`,
+          category: "conversation-navigation",
+          layer: "integration",
+          supported: true,
+          split: "generated",
+          state: { offline },
+          steps: [
+            { ask: `Open ${name}`, origin, expect: { kind: "screen", destination } },
+            ...matrix.conversationRepeats.map((ask) => ({
+              ask,
+              origin,
+              expect: { kind: "screen", destination },
+            })),
+          ],
+        }),
+      )
+      matrix.helpRoutes.forEach(([ask, topic, destination], i) =>
+        rows.push({
+          id: `journey.help.${i}.${suffix}`,
+          category: "conversation-help",
+          layer: "integration",
+          supported: true,
+          split: "generated",
+          state: { offline },
+          steps: [
+            { ask, origin, expect: { kind: "help", topic } },
+            { ask: "Take me there", origin, expect: { kind: "screen", destination } },
+            { ask: "One more time", origin, expect: { kind: "screen", destination } },
+            {
+              ask: "How do I receive money?",
+              origin,
+              expect: { kind: "help", topic: "receiving" },
+            },
+            { ask: "What about fees?", origin, expect: { kind: "help", topic: "fees" } },
+            { ask: "And offline?", origin, expect: { kind: "help", topic: "offline" } },
+          ],
+        }),
+      )
+    }
+  for (const origin of ["text", "voice"])
+    matrix.people.forEach(([username, heard], i) => {
+      matrix.sources.forEach((source, j) => {
+        rows.push({
+          id: `journey.person.${i}.${j}.${origin}`,
+          category: "conversation-person",
+          layer: "integration",
+          supported: true,
+          split: "generated",
+          state: { [source]: [username] },
+          steps: [
+            {
+              ask: `Show me ${heard}'s profile`,
+              origin,
+              expect: {
+                kind: "contact",
+                operation: "profile",
+                query: heard,
+                lookup: "suggestions",
+                usernames: [username],
+              },
+            },
+            {
+              ask: "Remove them from my contacts",
+              origin,
+              expect: { kind: "reply", replyKey: "Assistant.contextPersonUnclear" },
+            },
+            {
+              ask: `Show me ${username}'s profile`,
+              origin,
+              expect: {
+                kind: "contact",
+                operation: "profile",
+                query: username,
+                lookup: "exact",
+                usernames: [username],
+              },
+            },
+            ...matrix.personReferences.map(([ask, operation]) => ({
+              ask,
+              origin,
+              expect: {
+                kind: "contact",
+                operation,
+                query: username,
+                lookup: "exact",
+                usernames: [username],
+              },
+            })),
+            {
+              ask: "Pay them two cents",
+              origin,
+              expect: {
+                kind: "card",
+                cardType: "confirmPayment",
+                intent: "prepareSend",
+                amount: "0.02",
+                username,
+                inputOrigin: origin,
+              },
+            },
+            {
+              ask: "Again",
+              origin,
+              expect: { kind: "reply", replyKey: "Assistant.contextActionReview" },
+            },
+          ],
+        })
+      })
+    })
   return rows
 }
 
@@ -445,6 +726,16 @@ function loadSuite({ root = ROOT, profile = "full", seed = 754, id, layer } = {}
     rows.filter((r) => r.split === "holdout").length >= manifest.minimumHoldoutCases,
     "Corpus is below its minimum heldout coverage",
   )
+  requireThat(
+    rows.filter((r) => r.steps.filter((s) => "ask" in s).length > 1).length >=
+      (manifest.minimumConversationCases ?? 0),
+    "Corpus is below its minimum conversation coverage",
+  )
+  requireThat(
+    rows.filter((r) => r.category === "failure-recovery").length >=
+      (manifest.minimumFailureCases ?? 0),
+    "Corpus is below its minimum failure coverage",
+  )
   const ids = new Set()
   for (const row of rows) {
     validateScenario(row)
@@ -457,9 +748,19 @@ function loadSuite({ root = ROOT, profile = "full", seed = 754, id, layer } = {}
       "legacyLookups",
       "recent",
       "legacyIndex",
+      "unverifiedUsers",
     ])
       for (const name of row.state[field] ?? [])
         requireThat(name in users, `${row.id}: unknown fixture user ${name}`)
+    for (const step of row.steps) {
+      for (const name of step.fixture?.unverifiedUsers ?? [])
+        requireThat(name in users, `${row.id}: unknown fixture user ${name}`)
+      if (step.select || step.username)
+        requireThat(
+          (step.select ?? step.username) in users,
+          `${row.id}: unknown selected user`,
+        )
+    }
   }
   let selected = rows.filter(
     (r) =>
@@ -546,6 +847,19 @@ function buildReport(suite, results) {
     byCategory: by("category"),
     byLayer: by("layer"),
     bySplit: by("split"),
+    coverage: {
+      turns: suite.scenarios.reduce(
+        (n, row) => n + row.steps.filter((step) => "ask" in step).length,
+        0,
+      ),
+      conversations: suite.scenarios.filter(
+        (row) => row.steps.filter((step) => "ask" in step).length > 1,
+      ).length,
+      failureRecovery: suite.scenarios.filter(
+        (row) => row.category === "failure-recovery",
+      ).length,
+      renderedScreens: suite.scenarios.filter((row) => row.layer === "screen").length,
+    },
     unexpectedSupport,
     unintendedDispatches: dispatches,
     passedGate:
@@ -573,6 +887,7 @@ function writeReport(suite, results, directory) {
     `Seed: ${suite.seed} · Corpus: ${suite.digest}`,
     "",
     `**${report.passed}/${report.total} passed** · Unexpected support: ${report.unexpectedSupport} · Unintended dispatches: ${report.unintendedDispatches}`,
+    `Turns: ${report.coverage.turns} · Conversations: ${report.coverage.conversations} · Failure/recovery: ${report.coverage.failureRecovery} · Rendered screens: ${report.coverage.renderedScreens}`,
     "",
     "| Category | Passed | Failed |",
     "| --- | ---: | ---: |",

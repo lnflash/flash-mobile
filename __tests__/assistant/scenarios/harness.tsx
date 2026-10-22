@@ -1,4 +1,5 @@
 import { platform } from "./platform"
+import { checkVoiceUnavailable, failVoice } from "./voice-replay"
 import React from "react"
 import { Alert } from "react-native"
 import {
@@ -31,7 +32,16 @@ import { i18nObject } from "@app/i18n/i18n-util"
 import { loadLocale } from "@app/i18n/i18n-util.sync"
 import theme from "@app/rne-theme/theme"
 import { CASH_WALLETS, env, fakeRuntime } from "../ui/thread-harness"
-import { accountsOf, bolt11, graphqlTx, NOW_MS, page, USD_PRICE, wallet } from "../fakes"
+import {
+  accountsOf,
+  bolt11,
+  graphqlTx,
+  JMD_PRICE,
+  NOW_MS,
+  page,
+  USD_PRICE,
+  wallet,
+} from "../fakes"
 import type {
   Outcome,
   Scenario,
@@ -66,30 +76,122 @@ const IDENTITY = gql`
   }
 `
 
+const ownId = "scenario-account"
+const makeClient = () =>
+  new ApolloClient({
+    cache: createCache(),
+    connectToDevTools: false,
+    link: new ApolloLink(
+      (operation) =>
+        new Observable((observer) => {
+          observer.error(
+            new Error(`Unscripted Apollo request: ${operation.operationName}`),
+          )
+        }),
+    ),
+  }) as ApolloClient<unknown>
+
+const preparePlatform = () => {
+  platform.reset()
+  jest.spyOn(Date, "now").mockReturnValue(NOW_MS)
+  return jest
+    .spyOn(global, "fetch")
+    .mockRejectedValue(new Error("Scenario attempted an unscripted network request"))
+}
+const openScreen = (
+  view: ReturnType<typeof render> | undefined,
+  expected: Extract<ScenarioStep, { openScreen: unknown }>["openScreen"],
+) => {
+  if (!view) throw new Error("Navigation requires screen replay")
+  const before = platform.navigate.mock.calls.length
+  const button = view.getAllByTestId("ask-flash-screen-action").at(-1)
+  if (!button) throw new Error("No screen action was offered")
+  expect(button.props.accessibilityRole).toBe("button")
+  fireEvent.press(button)
+  expect(platform.navigate).toHaveBeenCalledTimes(before + 1)
+  expect(platform.navigate).toHaveBeenLastCalledWith(
+    ...(expected.params ? [expected.route, expected.params] : [expected.route]),
+  )
+}
+
+const chatEvent = (contacts: string[], users: ScenarioSuite["users"]): Event => ({
+  id: "fixture-contacts",
+  kind: 3,
+  pubkey: platform.ownPubkey,
+  content: "",
+  sig: "0".repeat(128),
+  // Nostr wire field.
+  // eslint-disable-next-line camelcase
+  created_at: 100,
+  tags: contacts.map((name) => ["p", users[name].pubkey]),
+})
+
+const serviceReads = (
+  harnesses: ReturnType<typeof fakeRuntime>[],
+  verification: number,
+) => ({
+  verification,
+  btc: harnesses.reduce((n, h) => n + h.btcRail.getBalanceSats.mock.calls.length, 0),
+  ...Object.fromEntries(
+    ["wallets", "realtimePrice", "transactions"].map((name) => [
+      name,
+      harnesses.reduce(
+        (n, h) =>
+          n +
+          h.graphql[name as "wallets" | "realtimePrice" | "transactions"].mock.calls
+            .length,
+        0,
+      ),
+    ]),
+  ),
+})
+
+const dispatchCount = (allHarnesses: ReturnType<typeof fakeRuntime>[]) =>
+  allHarnesses.reduce(
+    (total, h) =>
+      total +
+      Object.values(h.mutations).reduce((n, fn) => n + fn.mock.calls.length, 0) +
+      [
+        h.btcRail.payInvoice,
+        h.btcRail.payLnurl,
+        h.btcRail.payOnchain,
+        h.actions.initiateCashout,
+      ].reduce((n, fn) => n + fn.mock.calls.length, 0),
+    0,
+  )
+
+const assertSideEffects = (
+  harnesses: ReturnType<typeof fakeRuntime>[],
+  deliberate: { contacts: number; support: number; wallet: number; navigation: number },
+  network: ReturnType<typeof preparePlatform>,
+) => {
+  expect(dispatchCount(harnesses)).toBe(0)
+  expect(platform.publish.mock.calls).toHaveLength(deliberate.contacts)
+  expect(platform.openSupport.mock.calls).toHaveLength(deliberate.support)
+  expect(platform.walletRequest.mock.calls).toHaveLength(deliberate.wallet)
+  expect(platform.navigate.mock.calls).toHaveLength(deliberate.navigation)
+  expect(network).not.toHaveBeenCalled()
+}
+
 export async function replay(
   scenario: Scenario,
   users: ScenarioSuite["users"],
 ): Promise<ScenarioResult> {
-  platform.reset()
-  jest.spyOn(Date, "now").mockReturnValue(NOW_MS)
+  const network = preparePlatform()
   let state: ScenarioState = { ...scenario.state }
   let scope = state.scope ?? SCOPE
   let client: ApolloClient<unknown>
-  let harness: ReturnType<typeof fakeRuntime>
+  let harness!: ReturnType<typeof fakeRuntime>
   let view: ReturnType<typeof render> | undefined
   let names!: ReturnType<typeof renderHook<string[], unknown>>
   let lastContact: Extract<ThreadEntry, { kind: "contactAction" }> | undefined
   let lastOutcome: Outcome | undefined
   const allHarnesses: ReturnType<typeof fakeRuntime>[] = []
-  const errors: string[] = []
-  const results: ScenarioResult["steps"] = []
+  const errors: string[] = [],
+    results: ScenarioResult["steps"] = []
   let unexpectedSupport = 0
-  const deliberate = { support: 0, wallet: 0, contacts: 0 }
+  const deliberate = { support: 0, wallet: 0, contacts: 0, navigation: 0 }
   let verificationReads = 0
-  const network = jest
-    .spyOn(global, "fetch")
-    .mockRejectedValue(new Error("Scenario attempted an unscripted network request"))
-  const ownId = "scenario-account"
   const contactRows = () =>
     (state.contacts ?? []).map((username) => ({
       __typename: "UserContact",
@@ -98,30 +200,6 @@ export async function replay(
       alias: null,
       transactionsCount: 1,
     }))
-  const makeClient = () =>
-    new ApolloClient({
-      cache: createCache(),
-      connectToDevTools: false,
-      link: new ApolloLink(
-        (operation) =>
-          new Observable((observer) => {
-            observer.error(
-              new Error(`Unscripted Apollo request: ${operation.operationName}`),
-            )
-          }),
-      ),
-    }) as ApolloClient<unknown>
-  const chatEvent = (contacts: string[]): Event => ({
-    id: "fixture-contacts",
-    kind: 3,
-    pubkey: platform.ownPubkey,
-    content: "",
-    sig: "0".repeat(128),
-    // Nostr wire field.
-    // eslint-disable-next-line camelcase
-    created_at: 100,
-    tags: contacts.map((name) => ["p", users[name].pubkey]),
-  })
   const seed = () => {
     client.writeQuery({
       query: ContactsDocument,
@@ -207,26 +285,14 @@ export async function replay(
   const verify = async (name: string) => {
     verificationReads += 1
     if (state.lookupFails) throw new Error("Scripted lookup outage")
-    return users[name]?.pubkey ?? null
+    return state.unverifiedUsers?.includes(name) ? null : users[name]?.pubkey ?? null
   }
   jest.mocked(nip05.queryProfile).mockImplementation(async (handle) => {
     const pubkey = await verify(handle.split("@")[0])
     return pubkey ? { pubkey, relays: [] } : null
   })
-  const dispatchCount = () =>
-    allHarnesses.reduce(
-      (total, h) =>
-        total +
-        Object.values(h.mutations).reduce((n, fn) => n + fn.mock.calls.length, 0) +
-        [
-          h.btcRail.payInvoice,
-          h.btcRail.payLnurl,
-          h.btcRail.payOnchain,
-          h.actions.initiateCashout,
-        ].reduce((n, fn) => n + fn.mock.calls.length, 0),
-      0,
-    )
   const mount = () => {
+    jest.mocked(nativeVoiceInput.permission).mockResolvedValue("granted")
     jest
       .mocked(nativeVoiceInput.available)
       .mockResolvedValue(state.voiceAvailable !== false)
@@ -235,22 +301,62 @@ export async function replay(
     harness = fakeRuntime({ client, cacheScope: scope })
     allHarnesses.push(harness)
     harness.runtime.executor.openThread(harness.runtime.threadId)
-    harness.graphql.wallets.mockResolvedValue([
-      ...CASH_WALLETS,
-      wallet({
-        __typename: "BTCWallet",
-        id: "cash-btc",
-        balance: 1000000,
-        walletCurrency: WalletCurrency.Btc,
-      }),
-    ])
+    const failIfScripted = (
+      service: NonNullable<ScenarioState["failServices"]>[number],
+    ) => {
+      if (state.failServices?.includes(service))
+        throw new Error(`Scripted ${service} outage`)
+    }
+    harness.graphql.wallets.mockImplementation(async () => {
+      failIfScripted("wallets")
+      return [
+        {
+          ...CASH_WALLETS[0],
+          balance: state.cashBalance === undefined ? 1234 : state.cashBalance,
+        },
+        wallet({
+          __typename: "BTCWallet",
+          id: "cash-btc",
+          balance: 1000000,
+          walletCurrency: WalletCurrency.Btc,
+        }),
+      ]
+    })
     harness.graphql.contacts.mockImplementation(async () => contactRows())
-    harness.graphql.accountDefaultWallet.mockImplementation(
-      accountsOf(Object.keys(users)),
+    harness.graphql.accountDefaultWallet.mockImplementation(async (name: string) => {
+      failIfScripted("accountDefaultWallet")
+      return accountsOf(Object.keys(users))(name)
+    })
+    harness.graphql.realtimePrice.mockImplementation(async (currency: string) => {
+      failIfScripted("realtimePrice")
+      return currency === "JMD" ? JMD_PRICE : USD_PRICE
+    })
+    harness.graphql.transactions.mockImplementation(async () => {
+      failIfScripted("transactions")
+      return page(
+        (state.history ?? []).map((username, i) =>
+          graphqlTx({
+            id: `history-${i}`,
+            createdAt: NOW_MS / 1000 - i,
+            initiationVia: {
+              __typename: "InitiationViaIntraLedger",
+              counterPartyUsername: username,
+              counterPartyWalletId: `${username}-wallet`,
+            },
+            settlementVia: {
+              __typename: "SettlementViaIntraLedger",
+              counterPartyUsername: username,
+              counterPartyWalletId: `${username}-wallet`,
+            },
+          }),
+        ),
+      )
+    })
+    harness.btcRail.getBalanceSats.mockImplementation(async () =>
+      state.btcState && state.btcState !== "ok"
+        ? { state: state.btcState }
+        : { state: "ok", sats: state.btcSats ?? 1000000 },
     )
-    harness.graphql.realtimePrice.mockResolvedValue(USD_PRICE)
-    harness.graphql.transactions.mockResolvedValue(page([]))
-    harness.btcRail.getBalanceSats.mockResolvedValue({ state: "ok", sats: 1000000 })
     harness.actions.lnUsdInvoiceCreate.mockImplementation(async () => ({
       paymentRequest: bolt11({ id: "scenario-conversion", expirySeconds: 300 }),
     }))
@@ -291,6 +397,14 @@ export async function replay(
     try {
       lookup = await lookupFlashUsername(query, names.result.current, verify)
     } catch {
+      if (view)
+        await waitFor(() =>
+          expect(
+            within(
+              view!.getAllByTestId(`ask-flash-contact-${entry.operation}`).at(-1)!,
+            ).getByText(LL.AskFlashActions.contactError()),
+          ).toBeTruthy(),
+        )
       return { kind: "contact", query, operation: entry.operation, lookup: "error" }
     }
     if (lookup.kind === "exact") {
@@ -338,7 +452,12 @@ export async function replay(
     if (!entry) return { kind: "empty" }
     if (entry.kind === "contactAction") return readContact(entry)
     if (entry.kind === "card") {
-      const card = entry.card as { type?: string; payeeUsername?: string }
+      const card = entry.card as {
+        type?: string
+        payeeUsername?: string
+        reason?: string
+        options?: { id: string }[]
+      }
       const call = harness.runTool.mock.calls.at(-1)?.[0] as ToolCall | undefined
       return {
         kind: "card",
@@ -346,6 +465,14 @@ export async function replay(
         username: card.payeeUsername,
         intent: call?.intent,
         amount: (call?.args as { amount?: string })?.amount,
+        currency: (call?.args as { currency?: string })?.currency,
+        inputOrigin: entry.inputOrigin ?? "text",
+        reason: card.reason,
+        ...(card.options
+          ? {
+              usernames: card.options.map((option) => option.id.replace(/^contact:/, "")),
+            }
+          : {}),
       }
     }
     if (entry.kind === "help") return { kind: entry.kind, topic: entry.topic }
@@ -354,11 +481,31 @@ export async function replay(
     if (entry.kind === "reply") return { kind: entry.kind, replyKey: entry.replyKey }
     if (entry.kind === "address")
       return { kind: entry.kind, username: entry.address, stale: entry.stale }
+    if (entry.kind === "balances") {
+      const cash = entry.payload.balances.find((row) => row.wallet === "USD")
+      const btc = entry.payload.balances.find((row) => row.wallet === "BTC")
+      return {
+        kind: entry.kind,
+        stale: entry.stale,
+        cashBalance: cash?.state === "ok" ? cash.balance.amount : null,
+        btcState: btc?.wallet === "BTC" ? btc.state : undefined,
+        btcSats: btc?.state === "ok" ? btc.balance.amount : null,
+      }
+    }
+    if (entry.kind === "transactions")
+      return {
+        kind: entry.kind,
+        stale: entry.stale,
+        transactionIds: entry.payload.transactions.map((row) => row.id),
+      }
+    if (entry.kind === "price")
+      return { kind: entry.kind, currency: entry.payload.currency }
     return { kind: entry.kind, ...("stale" in entry ? { stale: entry.stale } : {}) }
   }
   const ask = async (step: Extract<ScenarioStep, { ask: string }>) => {
     if (view) {
       if (step.origin === "voice") {
+        const before = harness.runtime.transcript.get().entries.length
         const subscribe = jest.mocked(nativeVoiceInput.subscribe)
         const listener = subscribe.mock.calls.at(-1)?.[0]
         if (!listener) throw new Error("Voice input did not subscribe")
@@ -376,12 +523,29 @@ export async function replay(
           listener({ sessionId: id, type, text })
         act(() => {
           emit("started")
-          emit("final", step.ask)
+          emit("interim", step.ask)
         })
+        expect(view.getByTestId("ask-flash-input").props.value).toBe(step.ask)
+        expect(harness.runtime.transcript.get().entries).toHaveLength(before)
+        act(() => {
+          emit("final", step.ask)
+          listener({ sessionId: "stale-session", type: "final", text: "Pay bob 99 USD" })
+        })
+        expect(harness.runtime.transcript.get().entries).toHaveLength(before)
         await act(async () => {
           fireEvent(view!.getByTestId("ask-flash-talk"), "responderRelease")
           emit("end")
         })
+        act(() => {
+          emit("final", "Pay bob 99 USD")
+          emit("end")
+        })
+        expect(
+          harness.runtime.transcript
+            .get()
+            .entries.slice(before)
+            .filter((row) => row.kind === "user"),
+        ).toHaveLength(1)
       } else {
         fireEvent.changeText(view.getByTestId("ask-flash-input"), step.ask)
         await act(async () => {
@@ -411,7 +575,10 @@ export async function replay(
     verificationReads +
     allHarnesses.reduce(
       (n, h) =>
-        n + Object.values(h.graphql).reduce((s, fn) => s + fn.mock.calls.length, 0),
+        n +
+        Object.values(h.graphql).reduce((s, fn) => s + fn.mock.calls.length, 0) +
+        h.btcRail.getBalanceSats.mock.calls.length +
+        h.btcRail.listPayments.mock.calls.length,
       0,
     )
   const changeContact = async (
@@ -421,7 +588,12 @@ export async function replay(
     if (!currentView) throw new Error("Contact changes require a mounted screen")
     const before = platform.publish.mock.calls.length
     expect(before).toBe(deliberate.contacts)
-    deliberate.contacts += 1
+    const contactsBefore = platform.chat().contactsEvent
+    if (step.result !== "cancelled") deliberate.contacts += 1
+    if (step.result === "rejected")
+      platform.publish.mockImplementationOnce(() => [
+        Promise.reject(new Error("Scripted relay rejection")),
+      ])
     const action = currentView.getAllByTestId("ask-flash-contact-action").at(-1)
     if (!action) throw new Error("No contact action was offered")
     await act(async () => {
@@ -429,11 +601,31 @@ export async function replay(
     })
     if (step.contactAction === "remove") {
       const buttons = jest.mocked(Alert.alert).mock.calls.at(-1)?.[2]
+      if (step.result === "cancelled") {
+        expect(buttons?.some((button) => button.style === "cancel")).toBe(true)
+        await act(async () =>
+          buttons?.find((button) => button.style === "cancel")?.onPress?.(),
+        )
+        expect(platform.publish.mock.calls).toHaveLength(before)
+        expect(platform.chat().contactsEvent).toEqual(contactsBefore)
+        return
+      }
       const confirm = buttons?.find((button) => button.style === "destructive")?.onPress
       if (!confirm) throw new Error("Missing removal confirmation")
       await act(async () => confirm())
     }
     await waitFor(() => expect(platform.publish.mock.calls).toHaveLength(before + 1))
+    if (step.result === "rejected") {
+      await waitFor(() =>
+        expect(
+          within(
+            currentView.getAllByTestId(`ask-flash-contact-${step.contactAction}`).at(-1)!,
+          ).getByText(LL.AskFlashActions.contactError()),
+        ).toBeTruthy(),
+      )
+      expect(platform.chat().contactsEvent).toEqual(contactsBefore)
+      return
+    }
     const present = platform
       .chat()
       .contactsEvent?.tags.some(
@@ -456,29 +648,18 @@ export async function replay(
         query: ContactsDocument,
         data: { me: { __typename: "User", id: "account-b", contacts: [] } },
       })
-      platform.setChat({ contactsEvent: chatEvent([]), profileMap: new Map() })
+      platform.setChat({ contactsEvent: chatEvent([], users), profileMap: new Map() })
     }
     view = undefined
     lastContact = undefined
     lastOutcome = undefined
     mount()
   }
-  const checkVoiceUnavailable = async () => {
-    const currentView = view
-    if (!currentView) throw new Error("Voice state requires a mounted screen")
-    await waitFor(() =>
-      expect(
-        currentView.getByTestId("ask-flash-talk").props.accessibilityState.disabled,
-      ).toBe(true),
-    )
-    expect(currentView.getByText(LL.AskFlash.voiceUnavailable())).toBeTruthy()
-    expect(nativeVoiceInput.start).not.toHaveBeenCalled()
-  }
   try {
     client = makeClient()
     seed()
     platform.setChat({
-      contactsEvent: chatEvent(state.chatContacts ?? []),
+      contactsEvent: chatEvent(state.chatContacts ?? [], users),
       profileMap: new Map(
         (state.chatContacts ?? []).map((name) => [
           users[name].pubkey,
@@ -494,8 +675,27 @@ export async function replay(
       results.push(row)
       try {
         if ("ask" in step) row.actual = await ask(step)
-        if ("voiceUnavailable" in step) await checkVoiceUnavailable()
-        if ("select" in step) {
+        if ("fixture" in step) state = { ...state, ...step.fixture }
+        if ("voiceFailure" in step) await failVoice(view, harness, step.voiceFailure)
+        if ("openScreen" in step) {
+          openScreen(view, step.openScreen)
+          deliberate.navigation += 1
+        }
+        if ("assertReads" in step)
+          expect(serviceReads(allHarnesses, verificationReads)).toMatchObject(
+            step.assertReads,
+          )
+        if ("voiceUnavailable" in step) await checkVoiceUnavailable(view)
+        if ("select" in step && lastOutcome?.cardType === "clarification") {
+          if (!view) throw new Error("Payment selection requires screen replay")
+          const index = lastOutcome.usernames?.indexOf(step.select) ?? -1
+          if (index < 0) throw new Error("Payment selection was not offered")
+          const selectedButton = within(
+            view.getAllByTestId("assistant-card-clarification").at(-1)!,
+          ).getByTestId(`assistant-card-option-${index}`)
+          await act(async () => fireEvent.press(selectedButton))
+          row.actual = await outcome()
+        } else if ("select" in step) {
           if (
             !lastContact ||
             lastOutcome?.lookup !== "suggestions" ||
@@ -563,12 +763,9 @@ export async function replay(
           // eslint-disable-next-line require-atomic-updates -- Each step completes before updating its follow-up context.
           lastOutcome = row.actual
         }
-        expect(dispatchCount()).toBe(0)
-        expect(platform.publish.mock.calls).toHaveLength(deliberate.contacts)
-        expect(platform.openSupport.mock.calls).toHaveLength(deliberate.support)
-        expect(platform.walletRequest.mock.calls).toHaveLength(deliberate.wallet)
-        expect(network).not.toHaveBeenCalled()
-        if (state.offline && "ask" in step) expect(reads()).toBe(beforeReads)
+        assertSideEffects(allHarnesses, deliberate, network)
+        if (state.offline && ("ask" in step || "select" in step))
+          expect(reads()).toBe(beforeReads)
       } catch (error) {
         row.error = error instanceof Error ? error.message : String(error)
         errors.push(row.error)
@@ -592,7 +789,7 @@ export async function replay(
     passed: !errors.length,
     steps: results,
     unexpectedSupport,
-    dispatches: dispatchCount(),
+    dispatches: dispatchCount(allHarnesses),
     errors,
   }
 }

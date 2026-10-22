@@ -12,6 +12,21 @@ export type Outcome = {
   amount?: string
   intent?: string
   stale?: boolean
+  cashBalance?: number | null
+  btcState?: "ok" | "disabled" | "syncing" | "failed"
+  btcSats?: number | null
+  transactionIds?: string[]
+  currency?: string
+  inputOrigin?: "text" | "voice"
+  reason?: string
+}
+export type FixtureChanges = {
+  cashBalance?: number | null
+  btcState?: "ok" | "disabled" | "syncing" | "failed"
+  btcSats?: number
+  lookupFails?: boolean
+  unverifiedUsers?: string[]
+  failServices?: ("wallets" | "realtimePrice" | "transactions" | "accountDefaultWallet")[]
 }
 export type ScenarioState = {
   offline?: boolean
@@ -23,17 +38,42 @@ export type ScenarioState = {
   legacyIndex?: string[]
   scope?: string
   displayCurrency?: "USD" | "JMD"
-  lookupFails?: boolean
   voiceAvailable?: boolean
-}
+} & FixtureChanges
 export type ScenarioStep =
   | { ask: string; intended?: string; origin?: "text" | "voice"; expect: Outcome }
   | { select: string; expect: Outcome }
   | { restart: true }
   | { offline: boolean }
   | { switchAccount: string }
-  | { contactAction: "add" | "remove"; username: string }
+  | {
+      contactAction: "add" | "remove"
+      username: string
+      result?: "cancelled" | "rejected"
+    }
+  | { fixture: FixtureChanges }
+  | {
+      assertReads: Partial<
+        Record<
+          "wallets" | "realtimePrice" | "transactions" | "verification" | "btc",
+          number
+        >
+      >
+    }
+  | {
+      voiceFailure:
+        | "denied"
+        | "blocked"
+        | "restricted"
+        | "no-speech"
+        | "interrupted"
+        | "unavailable"
+        | "failed"
+        | "cancelled"
+        | "empty"
+    }
   | { openSupport: true }
+  | { openScreen: { route: string; params?: Record<string, unknown> } }
   | { toggleWallet: boolean }
   | { voiceUnavailable: true }
 export type Scenario = {
