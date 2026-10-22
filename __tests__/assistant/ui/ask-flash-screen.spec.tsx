@@ -34,6 +34,10 @@ jest.mock("react-native-secure-key-store", () => ({
   ACCESSIBLE: {},
 }))
 const mockNavigate = jest.fn()
+const mockOpenSupportChat = jest.fn()
+jest.mock("@app/hooks/use-open-support-chat", () => ({
+  useOpenSupportChat: () => mockOpenSupportChat,
+}))
 jest.mock("@react-navigation/native", () => {
   const actual = jest.requireActual("@react-navigation/native")
   const { useEffect } = jest.requireActual("react")
@@ -220,6 +224,46 @@ describe("AskFlashScreen", () => {
     expect(mockNavigate).not.toHaveBeenCalled()
     fireEvent.press(screen.getByTestId("ask-flash-help-action"))
     expect(mockNavigate).toHaveBeenCalledWith("scanningQRCode")
+  })
+  it("opens a named screen only after its answer button is tapped, even offline", async () => {
+    mockOffline = true
+    const { screen, runTool } = show()
+    await ask(screen, "Where is the map?")
+    expect(
+      screen.getByText(en.AskFlashHelp.screenLocation({ screen: en.MapScreen.title() })),
+    ).toBeTruthy()
+    expect(mockNavigate).not.toHaveBeenCalled()
+    fireEvent.press(screen.getByTestId("ask-flash-screen-action"))
+    expect(mockNavigate).toHaveBeenCalledWith("Primary", { screen: "Map" })
+    expect(runTool).not.toHaveBeenCalled()
+  })
+  it("routes a chat profile request to the existing profile editor", async () => {
+    const { screen } = show()
+    await ask(screen, "Where is my chat profile?")
+    fireEvent.press(screen.getByTestId("ask-flash-screen-action"))
+    expect(mockNavigate).toHaveBeenCalledWith("EditNostrProfile")
+  })
+  it("asks for the missing swap amount in the thread and routes the follow-up", async () => {
+    const { screen, runTool } = show()
+    await ask(screen, "Convert BTC to USD")
+    expect(screen.getByTestId("ask-flash-conversion-amount")).toBeTruthy()
+    expect(runTool).not.toHaveBeenCalled()
+    runTool.mockResolvedValue({
+      kind: "error",
+      userMessage: "Assistant.invalidArguments",
+    } as ToolResult<unknown>)
+    await ask(screen, "20000 sats")
+    expect(runTool.mock.calls[0][0]).toEqual({
+      intent: "prepareConversion",
+      args: { from: "BTC", to: "USD", amount: "0.00020000", currency: "BTC" },
+    })
+  })
+  it("opens the existing in-app support chat from help", async () => {
+    const { screen } = show()
+    await ask(screen, "How do I contact support?")
+    expect(mockOpenSupportChat).not.toHaveBeenCalled()
+    fireEvent.press(screen.getByTestId("ask-flash-help-action"))
+    expect(mockOpenSupportChat).toHaveBeenCalledTimes(1)
   })
   it("offers offline guidance without opening a network-backed screen", async () => {
     mockOffline = true

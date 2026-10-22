@@ -151,7 +151,12 @@ export type RootStackParamList = {
   /** The owner's limits on a Cashu card this phone owns (ENG-675). */
   FlashcardV2Limits: undefined
   /** A saved top-up to resume, or none to start one. */
-  FlashcardV2TopUp: { topUpId?: string } | undefined
+  FlashcardV2TopUp:
+    | {
+        topUpId?: string
+        suggestedAmount?: MoneyAmount<WalletOrDisplayCurrency>
+      }
+    | undefined
   Map: undefined
   accountScreen: undefined
   notificationSettingsScreen: undefined

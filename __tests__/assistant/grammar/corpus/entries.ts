@@ -79,6 +79,15 @@ export const receive = (
   } = {},
 ): ToolCall => ({ intent: "prepareReceive", args })
 
+export const conversion = (
+  from: "USD" | "BTC",
+  to: "USD" | "BTC",
+  amount: string,
+): ToolCall => ({
+  intent: "prepareConversion",
+  args: { from, to, amount, currency: from },
+})
+
 /** The intent an entry is about, for the per-intent snapshots; undefined for a miss or a question. */
 export const intentOf = (expected: Expected): string | undefined =>
   typeof expected === "string" ? undefined : expected.intent

@@ -32,6 +32,7 @@ export type AmountClarifyReason =
 export type GrammarMatch =
   | { kind: "call"; call: ToolCall }
   | { kind: "clarifyAmount"; reason: AmountClarifyReason }
+  | { kind: "conversionAmount"; from: "USD" | "BTC"; to: "USD" | "BTC" }
 
 /**
  * What one rule says:

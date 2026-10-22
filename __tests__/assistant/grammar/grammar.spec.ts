@@ -552,6 +552,7 @@ describe("matchGrammar", () => {
 
   it("orders its rules most specific first, one block per intent", () => {
     expect([...new Set(GRAMMAR_RULES.map(({ intent }) => intent))]).toEqual([
+      "prepareConversion",
       "prepareSend",
       "prepareReceive",
       "getTransactions",
@@ -704,21 +705,45 @@ describe("readGrammar (ENG-690)", () => {
     expect(readGrammar("whats lightning", USD)).toEqual({ kind: "refused" })
   })
 
-  it("refuses a conversion or a contacts ask once no rule reads it, so the model is never asked (ENG-753)", () => {
+  it("prepares a reviewed conversion or asks for its amount without using the model", () => {
+    expect(readGrammar("swap 20 USD to BTC", USD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "prepareConversion",
+        args: { from: "USD", to: "BTC", amount: "20", currency: "USD" },
+      },
+    })
+    expect(readGrammar("convert 20000 sats to USD", USD)).toEqual({
+      kind: "call",
+      call: {
+        intent: "prepareConversion",
+        args: { from: "BTC", to: "USD", amount: "0.00020000", currency: "BTC" },
+      },
+    })
+    expect(readGrammar("change my dollars to bitcoin", USD)).toEqual({
+      kind: "conversionAmount",
+      from: "USD",
+      to: "BTC",
+    })
+    expect(readGrammar("can i swap btc to usd", USD)).toEqual({
+      kind: "conversionAmount",
+      from: "BTC",
+      to: "USD",
+    })
+    expect(readGrammar("How do I convert USD to BTC?", USD)).toEqual({
+      kind: "conversionAmount",
+      from: "USD",
+      to: "BTC",
+    })
+  })
+
+  it("refuses unsafe conversion wording and contacts asks, so the model never guesses", () => {
     const refused = [
-      // Conversions: a word for one, or exchange/change into another currency.
-      "swap 0.01 usd to bitcoin",
+      // Conversion direction/amount is incomplete or contradictory.
       "swap to bitcoin",
-      "convert 20 dollars to btc",
-      "convert my bitcoin to usd",
-      "exchange 20 usd for btc",
-      "exchange my dollars into bitcoin",
-      "change my dollars to bitcoin",
-      "can i swap usd to btc",
-      // Patois.
-      "change mi dolla dem to bitcoin",
-      "swap mi usd fi bitcoin",
-      "swap mi bitcoin fi usd",
+      "swap 20 USD from BTC to USD",
+      "convert 20 USD to BTC and send it to Bob",
+      "change my PIN to 1234",
       // Contacts.
       "show my contacts",
       "my contacts",
@@ -733,6 +758,9 @@ describe("readGrammar (ENG-690)", () => {
         { kind: "refused" },
       ]),
     )
+    expect(readGrammar("change mi dolla dem to bitcoin", JMD)).toEqual({
+      kind: "refused",
+    })
   })
 
   it("keeps the asks a rule reads that hold a conversion's or a contact's word (ENG-753)", () => {

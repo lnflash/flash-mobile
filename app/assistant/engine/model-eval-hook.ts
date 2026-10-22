@@ -144,7 +144,10 @@ const grammarOutcome = (
   if (verdict === undefined) return { grammar: "miss", refused: false }
   if (verdict.kind === "refused") return { grammar: "miss", refused: true }
   return {
-    grammar: verdict.kind === "clarifyAmount" ? "clarifyAmount" : verdict.call,
+    grammar:
+      verdict.kind === "clarifyAmount" || verdict.kind === "conversionAmount"
+        ? "clarifyAmount"
+        : verdict.call,
     refused: false,
   }
 }

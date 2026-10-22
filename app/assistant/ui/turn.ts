@@ -16,12 +16,17 @@ import type {
   TransactionDetailsProjection,
   BalancesProjection,
   PricePayload,
+  MerchantsPayload,
   TransactionsProjection,
 } from "../registry/projections"
 import { DisplayFormatter, isIntent, tierOf, ToolResult } from "../registry/types"
 import type { AssistantRuntime } from "./assistant-runtime"
 import { ownFlashAddress } from "./own-flash-address"
 import { readFirstUseQuestion } from "./first-use-help"
+import { conversionFollowup } from "../grammar/prepare-conversion"
+import { readScreenDestination } from "./screen-destinations"
+import { readQuickAction } from "./quick-actions"
+import { readAmountPhrase } from "../engine/amount-phrase"
 import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 
 // One turn of the Ask Flash thread (ENG-689, spec §7, §7.2): the grammar
@@ -96,7 +101,10 @@ export const originOf = (entry: CallOrigin): CallOrigin => ({
  * Assistant.actionsOffline and runs nothing.
  */
 export const needsNetwork = (call: ToolCall): boolean =>
-  !isIntent(call.intent) || tierOf(call.intent) === "action" || call.intent === "getPrice"
+  !isIntent(call.intent) ||
+  tierOf(call.intent) === "action" ||
+  call.intent === "getPrice" ||
+  call.intent === "searchMerchants"
 
 /** The payments the projection lists, as their rails handed them to the tool. */
 const listedFor = (
@@ -163,6 +171,8 @@ export const entriesFor = (
           ]
         case "getPrice":
           return [{ kind: "price", payload: result.payload as PricePayload }]
+        case "searchMerchants":
+          return [{ kind: "merchants", payload: result.payload as MerchantsPayload }]
         default:
           // An answer that is a card (prepareReceive's invoice) shows as one.
           return validateCard(result.payload).valid
@@ -288,6 +298,35 @@ export const answerUtterance = async (
     displayCurrency: env.displayCurrency,
     displaySymbol: env.displaySymbol,
   }
+  const previous = runtime.transcript.get().entries
+  const last = previous[previous.length - 1]
+  const prior = last?.kind === "user" ? previous[previous.length - 2] : last
+  if (prior?.kind === "conversionAmount") {
+    const followup = conversionFollowup(utterance, prior.from, prior.to)
+    if (followup?.kind === "call") {
+      if (env.isOffline) return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      return runCall(runtime, followup.call, env)
+    }
+    if (followup?.kind === "clarifyAmount" || followup?.kind === "refuse")
+      return [{ kind: "conversionAmount", from: prior.from, to: prior.to }]
+  }
+  if (prior?.kind === "cashoutAmount") {
+    const amount = readAmountPhrase(utterance, account)
+    if (amount.kind === "amount") {
+      if (env.isOffline) return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      return runCall(
+        runtime,
+        {
+          intent: "prepareCashout",
+          args: {
+            amount: amount.amount,
+            ...(amount.currency ? { currency: amount.currency } : {}),
+          },
+        },
+        env,
+      )
+    }
+  }
   const firstUse = readFirstUseQuestion(utterance)
   if (firstUse?.topic === "address") {
     try {
@@ -357,6 +396,67 @@ export const answerUtterance = async (
       ? [...help, ...(await runCall(runtime, firstUse.call, env))]
       : help
   }
+  const quick = readQuickAction(utterance, account)
+  if (quick?.kind === "cashout") {
+    if (!quick.amount)
+      return [{ kind: "cashoutAmount", displayCurrency: env.displayCurrency }]
+    return env.isOffline
+      ? [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      : runCall(
+          runtime,
+          {
+            intent: "prepareCashout",
+            args: {
+              amount: quick.amount,
+              ...(quick.currency ? { currency: quick.currency } : {}),
+            },
+          },
+          env,
+        )
+  }
+  if (quick?.kind === "merchants")
+    return env.isOffline
+      ? [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      : runCall(
+          runtime,
+          { intent: "searchMerchants", args: quick.query ? { query: quick.query } : {} },
+          env,
+        )
+  if (quick?.kind === "payment")
+    return runCall(
+      runtime,
+      {
+        intent: "getTransactions",
+        args: {
+          direction: "SEND",
+          first: quick.query ? 10 : 5,
+          ...(quick.query ? { query: quick.query } : {}),
+        },
+      },
+      env,
+    )
+  if (quick?.kind === "cardTopUp")
+    return [
+      {
+        kind: "cardTopUp",
+        amount: quick.amount,
+        currency: quick.currency,
+        displayCurrency: env.displayCurrency,
+      },
+    ]
+  if (quick?.kind === "contact")
+    return env.isOffline
+      ? [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]
+      : [
+          {
+            kind: "contactAction",
+            operation: quick.operation,
+            username: quick.username,
+            hostname: env.lnAddressHostname,
+          },
+        ]
+  const destination = readScreenDestination(utterance)
+  if (destination) return [{ kind: "screen", destination }]
   const match = readGrammar(utterance, account)
   if (match === undefined || match.kind === "refused") {
     // Only a miss goes to the model: what the grammar refused (readGrammar
@@ -406,6 +506,9 @@ export const answerUtterance = async (
         params: { currency: env.displayCurrency },
       },
     ]
+  }
+  if (match.kind === "conversionAmount") {
+    return [{ kind: "conversionAmount", from: match.from, to: match.to }]
   }
   if (env.isOffline && needsNetwork(match.call)) {
     return [{ kind: "reply", replyKey: "Assistant.actionsOffline" }]

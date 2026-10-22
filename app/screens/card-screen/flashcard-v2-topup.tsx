@@ -323,9 +323,15 @@ export const FlashcardV2TopUpScreen = () => {
     return { name: "amount" }
   })
   const [unit, setUnit] = useState<CardUnit>(
-    eligibility?.ok && eligibility.unit !== "choose" ? eligibility.unit : "sat",
+    eligibility?.ok && eligibility.unit !== "choose"
+      ? eligibility.unit
+      : params?.suggestedAmount?.currency === WalletCurrency.Usd
+      ? "usd"
+      : "sat",
   )
-  const [amount, setAmount] = useState<MoneyAmount<WalletOrDisplayCurrency>>()
+  const [amount, setAmount] = useState<MoneyAmount<WalletOrDisplayCurrency> | undefined>(
+    () => (resumeId ? undefined : params?.suggestedAmount),
+  )
   // An empty card with USD on offers a choice of unit above the amount.
   const offersUnitChoice = Boolean(
     eligibility?.ok && eligibility.unit === "choose" && cashuCardUsdEnabled,

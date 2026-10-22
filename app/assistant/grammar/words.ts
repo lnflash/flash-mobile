@@ -222,12 +222,11 @@ const MONEY_WORDS = set("bitcoin btc sats usd usdt jmd dollar dollars cash")
 /**
  * Asks for a conversion between the user's own currencies (ENG-753): a
  * word for one ("swap", "convert"), or "exchange" or "change" with another
- * currency after a "to", "into" or "for" ("change my dollars to bitcoin",
- * patois "change mi dolla dem to bitcoin"). The model tier has no tool for
- * one (prepareConversion is not among its five), so the model can only
- * answer with a call for another ask. readGrammar asks only once no rule
- * has read the words: "what is the exchange rate" is a price, and "send bob
- * 5 for swap meet" a send with its memo.
+ * currency after a "to", "into" or "for". The explicit, safe subset is
+ * handled by prepareConversion's grammar rule. This catches the remainder
+ * before the five-intent model tier can guess another action. readGrammar
+ * asks only once no rule has read the words: "what is the exchange rate"
+ * is a price, and "send bob 5 for swap meet" a send with its memo.
  */
 export const asksConversion = (tokens: readonly Token[]): boolean => {
   if (hasWord(tokens, CONVERSION_WORDS)) return true

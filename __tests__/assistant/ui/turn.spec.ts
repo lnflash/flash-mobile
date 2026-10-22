@@ -42,6 +42,7 @@ describe("needsNetwork", () => {
     expect(needsNetwork({ intent: "prepareReceive", args: {} })).toBe(true)
     expect(needsNetwork({ intent: "prepareCashout", args: {} })).toBe(true)
     expect(needsNetwork({ intent: "getPrice", args: {} })).toBe(true)
+    expect(needsNetwork({ intent: "searchMerchants", args: {} })).toBe(true)
     expect(needsNetwork({ intent: "getBalances", args: {} })).toBe(false)
     expect(needsNetwork({ intent: "getTransactions", args: {} })).toBe(false)
   })
@@ -319,6 +320,68 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
   /** A runtime whose model is there and decides `decision`. */
   const withModel = (decision: ModelDecision) =>
     fakeRuntime({ modelAdapter: fakeModelAdapter(decision) })
+
+  it("routes merchant and payment searches through their existing read tools", async () => {
+    const { runtime, runTool } = fakeRuntime()
+    await answerUtterance(runtime, "Find merchants named Cafe", env())
+    expect(runTool).toHaveBeenCalledWith(
+      { intent: "searchMerchants", args: { query: "cafe" } },
+      expect.anything(),
+    )
+    await answerUtterance(runtime, "Show my last payment to Alex", env())
+    expect(runTool).toHaveBeenCalledWith(
+      {
+        intent: "getTransactions",
+        args: { direction: "SEND", first: 10, query: "alex" },
+      },
+      expect.anything(),
+    )
+  })
+
+  it("keeps profile and contact requests as explicit in-thread actions", async () => {
+    const { runtime, runTool } = fakeRuntime()
+    expect(await answerUtterance(runtime, "Add alice to my contacts", env())).toEqual([
+      {
+        kind: "contactAction",
+        operation: "add",
+        username: "alice",
+        hostname: "flashapp.me",
+      },
+    ])
+    expect(await answerUtterance(runtime, "Show me Alice's profile", env())).toEqual([
+      {
+        kind: "contactAction",
+        operation: "profile",
+        username: "alice",
+        hostname: "flashapp.me",
+      },
+    ])
+    expect(
+      await answerUtterance(runtime, "Remove alice from my contacts", env()),
+    ).toEqual([
+      {
+        kind: "contactAction",
+        operation: "remove",
+        username: "alice",
+        hostname: "flashapp.me",
+      },
+    ])
+    expect(runTool).not.toHaveBeenCalled()
+    expect(
+      await answerUtterance(
+        runtime,
+        "Remove alice from my contacts",
+        env({ isOffline: true }),
+      ),
+    ).toEqual([{ kind: "reply", replyKey: "Assistant.actionsOffline" }])
+  })
+
+  it("opens the card top-up flow with the requested amount", async () => {
+    const { runtime } = fakeRuntime()
+    expect(await answerUtterance(runtime, "Add $20 to my card", env())).toEqual([
+      { kind: "cardTopUp", amount: "20", currency: "USD", displayCurrency: "USD" },
+    ])
+  })
 
   it("is asked only about what the grammar misses", () => {
     // The specs below rely on the grammar missing these words.
@@ -642,27 +705,16 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ])
   })
 
-  it('answers "withdraw $50" as a refusal before the model, whatever the model calls it (ENG-749, ENG-753)', async () => {
-    // What the macOS model answered for it (ENG-690 proxy run): an intent
-    // outside the model tier's five, which the pre-check refuses. Since
-    // ENG-753 the grammar refuses the ask before the model is asked at all
-    // (asksCashout: a cashout is not shipped, and the model answered this
-    // one with a send to a payee it invented); the pre-check's refusal of
-    // prepareConversion is model-tier.spec.ts's.
-    const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
-      ["withdraw $50", { intent: "prepareCashout", args: { amount: "50" } }],
-    ]
-    for (const [utterance, call] of answers) {
-      // Refused by the grammar (asksCashout): the model is never asked.
-      expect(
-        matchGrammar(utterance, { displayCurrency: "USD", displaySymbol: "$" }),
-      ).toBe(undefined)
-      const { runtime, modelAdapter, runTool } = withModel(modelCall(call))
-      const refused = await answerUtterance(runtime, utterance, env(ON))
-      expect(modelAdapter.decide).not.toHaveBeenCalled()
-      expect(runTool).not.toHaveBeenCalled()
-      expect(refused).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
-    }
+  it('prepares "withdraw $50" through the reviewed cash-out action, not the model', async () => {
+    const { runtime, modelAdapter, runTool } = withModel(
+      modelCall({ intent: "prepareSend", args: { payee: "your bank", amount: "50" } }),
+    )
+    await answerUtterance(runtime, "withdraw $50", env(ON))
+    expect(modelAdapter.decide).not.toHaveBeenCalled()
+    expect(runTool).toHaveBeenCalledWith(
+      { intent: "prepareCashout", args: { amount: "50", currency: "USD" } },
+      expect.anything(),
+    )
   })
 
   it("asks the model on a plain miss, which a refused feature never is (ENG-753)", async () => {
@@ -698,13 +750,12 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
     ])
   })
 
-  it("refuses a conversion or a contacts ask before the model, with the miss reply and no model call (ENG-753)", async () => {
-    // What the macOS model answered for the dogfood asks: a send for a swap
-    // and a history search for the contacts, each with words the person
-    // never typed. Neither reaches the model now.
+  it("refuses an unsafe conversion or a contacts ask before the model", async () => {
+    // A conversion naming another person cannot become a payment to them.
+    // The model also cannot invent a contacts history search.
     const answers: [string, { intent: string; args: Record<string, unknown> }][] = [
       [
-        "swap 0.01 usd to bitcoin",
+        "swap 0.01 usd to bitcoin and send Bob",
         {
           intent: "prepareSend",
           args: {
@@ -717,7 +768,7 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
         },
       ],
       [
-        "convert 20 dollars to btc",
+        "convert 20 dollars to btc for Alice",
         { intent: "prepareConversion", args: { from: "USD", to: "BTC", amount: "20" } },
       ],
       [

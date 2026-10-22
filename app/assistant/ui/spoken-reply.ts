@@ -3,6 +3,7 @@ import { loadLocale } from "@app/i18n/i18n-util.sync"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
 import { replyText } from "../cards/card-parts"
 import { helpAnswerText } from "./reply-presentation"
+import { screenDestinationTitle } from "./screen-destinations"
 import { pricePresentation, PriceDisplay } from "./price-presentation"
 import type { ThreadEntry } from "./thread-store"
 loadLocale("en")
@@ -46,6 +47,47 @@ export const spokenReplyFor = (
           entry.topic !== "address",
       }
     }
+    case "screen": {
+      const title = screenDestinationTitle(LL, entry.destination)
+      return {
+        text: LL.AskFlashHelp.screenLocation({ screen: title }),
+        // The navigation sentence currently falls back to English in other locales.
+        locale: "en-US",
+        automatic: true,
+      }
+    }
+    case "conversionAmount":
+      return {
+        text: LL.AskFlashHelp.conversionAmount({ from: entry.from, to: entry.to }),
+        locale: "en-US",
+        automatic: true,
+      }
+    case "cashoutAmount":
+      return {
+        text: LL.AskFlashActions.cashoutAmount({ currency: entry.displayCurrency }),
+        locale: "en-US",
+        automatic: true,
+      }
+    case "merchants":
+      return {
+        text: LL.AskFlashActions.merchantsTitle(),
+        locale: "en-US",
+        automatic: true,
+      }
+    case "contactAction":
+      // The NIP-05 lookup happens in the view; don't speak a verification before it finishes.
+      return undefined
+    case "cardTopUp":
+      return {
+        text: entry.amount
+          ? LL.AskFlashActions.cardTopUpAmount({
+              amount: entry.amount,
+              currency: entry.currency ?? entry.displayCurrency,
+            })
+          : LL.AskFlashActions.cardTopUpPrompt(),
+        locale: "en-US",
+        automatic: true,
+      }
     case "reply": {
       if (entry.replyKey === "Assistant.amountUnclear") return undefined
       const text = replyText(LL, entry.replyKey)

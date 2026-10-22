@@ -22,6 +22,30 @@ it("uses the exact displayed help and marks sensitive guidance manual", () => {
       ?.automatic,
   ).toBe(false)
 })
+it("speaks a named screen answer without pretending to read account data", () => {
+  expect(
+    spokenReplyFor(
+      { id: "map", kind: "screen", destination: "map" },
+      { LL, locale: "en", display },
+    ),
+  ).toEqual({
+    text: LL.AskFlashHelp.screenLocation({ screen: LL.MapScreen.title() }),
+    locale: "en-US",
+    automatic: true,
+  })
+})
+it("asks for a conversion amount aloud without speaking a quote or sending money", () => {
+  expect(
+    spokenReplyFor(
+      { id: "swap", kind: "conversionAmount", from: "USD", to: "BTC" },
+      { LL, locale: "en", display },
+    ),
+  ).toEqual({
+    text: LL.AskFlashHelp.conversionAmount({ from: "USD", to: "BTC" }),
+    locale: "en-US",
+    automatic: true,
+  })
+})
 it("includes the real saved time, currency and unavailable state rather than speaking zero", () => {
   const entry: ThreadEntry = {
     id: "balances",

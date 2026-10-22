@@ -47,8 +47,9 @@ import { isPlainObject, JsonSchema } from "./schema-validator"
 //    non-object, an intent outside the closed set, outside the model tier's
 //    five or with no tool, an extra envelope key, arguments the schema
 //    refuses and an amount that does not parse are all refused here. So
-//    "convert 20 dollars to btc" is never a conversion, whatever the model
-//    answers on a platform that does not hold it to its tool list.
+//    the model can never invent a conversion, whatever it answers on a
+//    platform that does not hold it to its tool list. The grammar alone
+//    reads the reviewed USD/BTC conversion phrases.
 // 4. The guards (ENG-751), each a none with its reason: a send to one payee
 //    for an ask about more than one person (groupSend); a history read for
 //    an ask that names a date, which no read can filter by (timeFilter), or
