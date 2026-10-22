@@ -31,10 +31,12 @@ export const useVoiceInput = ({
   busy,
   onSubmit,
   beforeCapture,
+  contextualStrings,
 }: {
   enabled: boolean
   busy: boolean
   beforeCapture?: () => Promise<void>
+  contextualStrings?: readonly string[]
   onSubmit: (text: string) => boolean
 }) => {
   const [phase, setPhase] = useState<VoicePhase>("idle")
@@ -43,8 +45,8 @@ export const useVoiceInput = ({
   const [problem, setProblem] = useState<VoiceProblem>()
   const [showFinishing, setShowFinishing] = useState(false)
   const session = useRef<Session>()
-  const latest = useRef({ enabled, busy, onSubmit, beforeCapture })
-  latest.current = { enabled, busy, onSubmit, beforeCapture }
+  const latest = useRef({ enabled, busy, onSubmit, beforeCapture, contextualStrings })
+  latest.current = { enabled, busy, onSubmit, beforeCapture, contextualStrings }
   const mounted = useRef(true)
   const focused = useRef(false)
   const deadline = useRef<ReturnType<typeof setTimeout>>()
@@ -279,7 +281,7 @@ export const useVoiceInput = ({
     // Native also enforces its own recording/finalization deadlines.
     deadline.current = setTimeout(cancel, 65000)
     try {
-      nativeVoiceInput.start(current.id)
+      nativeVoiceInput.start(current.id, latest.current.contextualStrings)
     } catch {
       setAvailable(false)
       setProblem("unavailable")

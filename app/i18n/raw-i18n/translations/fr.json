@@ -1534,6 +1534,7 @@
     "total": " Total  Total  Total "
   },
   "support": {
+      "chatTitle": "Support Chat",
     "contactUs": "Besoin d’aide ? Contactez-nous.",
     "appChat": "App chat",
     "chatUnavailableTitle": "Chat Unavailable",

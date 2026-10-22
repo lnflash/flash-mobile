@@ -27,15 +27,26 @@ export const readQuickAction = (
     .trim()
     .replace(/^(?:please )?(?:can|could|would) you (?:please )?/i, "")
   const contact = new RegExp(
-    `^(?:please )?(add|remove) @?${usernameHint} (?:to|from) my contacts(?: again)?[?.!]*$`,
+    `^(?:please )?(add|save|remove|delete) @?${usernameHint} (?:to|from) (?:my )?contacts(?: again)?[?.!]*$`,
     "iu",
   ).exec(raw)
   if (contact && isNameHint(contact[2]))
     return {
       kind: "contact",
-      operation: contact[1].toLowerCase() as "add" | "remove",
+      operation: /^(remove|delete)$/i.test(contact[1]) ? "remove" : "add",
       username: cleanNameHint(contact[2]),
     }
+  // A dropped verb can still open an add-contact preview; saving requires a tap.
+  const asContact = new RegExp(
+    `^(?:please )?(?:(?:add|save) )?@?${usernameHint} as (?:a |my )?contact(?: again)?[?.!]*$`,
+    "iu",
+  ).exec(raw)
+  if (
+    asContact &&
+    isNameHint(asContact[1]) &&
+    !/\b(?:remove|delete|not|never|pay|send)\b/i.test(asContact[1])
+  )
+    return { kind: "contact", operation: "add", username: cleanNameHint(asContact[1]) }
   const profile = new RegExp(
     `^(?:(?:please )?show me|open|show) @?${usernameHint} profile(?: again)?[?.!]*$`,
     "iu",

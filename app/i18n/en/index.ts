@@ -1991,6 +1991,7 @@ const en: BaseTranslation = {
     total: "Total",
   },
   support: {
+    chatTitle: "Support Chat",
     contactUs: "Need help? Contact us.",
     appChat: "App chat",
     chatUnavailableTitle: "Chat Unavailable",

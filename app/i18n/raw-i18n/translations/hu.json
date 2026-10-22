@@ -1534,6 +1534,7 @@
     "total": "Összesen, teljesen, teljesen."
   },
   "support": {
+      "chatTitle": "Support Chat",
     "contactUs": "Segítségre van szükséged? Írj nekünk.",
     "appChat": "App chat",
     "chatUnavailableTitle": "Chat Unavailable",

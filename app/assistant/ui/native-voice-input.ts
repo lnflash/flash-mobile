@@ -16,7 +16,7 @@ export type VoiceEvent = {
 type NativeVoice = {
   capability: (locale: string) => Promise<boolean>
   requestPermission: () => Promise<VoicePermission>
-  start: (sessionId: string, locale: string) => void
+  start: (sessionId: string, locale: string, contextualStrings: string[]) => void
   stop: (sessionId: string) => void
   abort: (sessionId: string) => void
   addListener: (event: string) => void
@@ -60,10 +60,10 @@ export const nativeVoiceInput = {
     )
     return () => subscription.remove()
   },
-  start(id: string): void {
+  start(id: string, contextualStrings: readonly string[] = []): void {
     const native = bridge()
     if (!native) throw new Error("Voice unavailable")
-    native.start(id, VOICE_LOCALE)
+    native.start(id, VOICE_LOCALE, [...contextualStrings].slice(0, 100))
   },
   stop(id: string): void {
     bridge()?.stop(id)

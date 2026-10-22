@@ -6522,6 +6522,10 @@ type RootTranslation = {
 	}
 	support: {
 		/**
+		 * S​u​p​p​o​r​t​ ​C​h​a​t
+		 */
+		chatTitle: string
+		/**
 		 * N​e​e​d​ ​h​e​l​p​?​ ​C​o​n​t​a​c​t​ ​u​s​.
 		 */
 		contactUs: string
@@ -15087,6 +15091,10 @@ export type TranslationFunctions = {
 		total: () => LocalizedString
 	}
 	support: {
+		/**
+		 * Support Chat
+		 */
+		chatTitle: () => LocalizedString
 		/**
 		 * Need help? Contact us.
 		 */

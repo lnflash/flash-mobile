@@ -18,7 +18,7 @@ import {
   sendNip17Message,
   sendReaction,
 } from "@app/utils/nostr"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useChatContext } from "./chatContext"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { updateLastSeen } from "./utils"
@@ -40,6 +40,8 @@ import {
 import { breezSDKInitialized, payLightningBreez } from "@app/utils/breez-sdk/spark"
 import { toastShow } from "@app/utils/toast"
 import { CHECK_TRANSACTION_HISTORY_MESSAGE } from "@app/screens/send-bitcoin-screen/payment-details/idempotency-support"
+import { SUPPORT_CHAT_PUBKEY } from "@app/config"
+import { useI18nContext } from "@app/i18n/i18n-react"
 
 export type DeliveryInfo = {
   pending: boolean
@@ -69,7 +71,9 @@ function readProfilesFromStore(pubkeys: string[]): Map<string, NostrProfile> {
     if (event) {
       try {
         map.set(pubkey, JSON.parse(event.content))
-      } catch {}
+      } catch {
+        /* Ignore malformed remote profiles. */
+      }
     }
   }
   return map
@@ -79,6 +83,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
   userPubkey,
   groupId,
 }) => {
+  const { LL } = useI18nContext()
   const {
     theme: { colors, mode },
   } = useTheme()
@@ -279,7 +284,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     )
 
     if (result.outputs.filter((o) => o.acceptedRelays.length > 0).length === 0) {
-      const failed = { ...result.rumor, metadata: { errors: true } } as any
+      const failed = { ...result.rumor, metadata: { errors: true } }
       setRumors((prev) => {
         if (prev.some((r) => r.id === failed.id)) return prev
         return [...prev, failed]
@@ -294,15 +299,19 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
     )
   }
 
-  const headerTitle = recipientPubkeys
-    .map(
-      (p) =>
-        profileMap.get(p)?.name ||
-        profileMap.get(p)?.username ||
-        profileMap.get(p)?.lud16 ||
-        nip19.npubEncode(p).slice(0, 9) + "..",
-    )
-    .join(", ")
+  const isSupportChat =
+    recipientPubkeys.length === 1 && recipientPubkeys[0] === SUPPORT_CHAT_PUBKEY
+  const headerTitle = isSupportChat
+    ? LL.support.chatTitle()
+    : recipientPubkeys
+        .map(
+          (p) =>
+            profileMap.get(p)?.name ||
+            profileMap.get(p)?.username ||
+            profileMap.get(p)?.lud16 ||
+            nip19.npubEncode(p).slice(0, 9) + "..",
+        )
+        .join(", ")
 
   const chatBg = mode === "dark" ? "#0e1a16" : "#eef5f2"
 
@@ -312,7 +321,11 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
       {/* Status-bar offset comes from Screen's SafeAreaView on both platforms
           now (ENG-605); padding insets.top here as well would double it. */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={8}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+          hitSlop={8}
+        >
           <Icon name="arrow-back-outline" size={24} color={colors.primary3} />
         </TouchableOpacity>
 
@@ -330,7 +343,7 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
             <Text style={styles.headerName} numberOfLines={1}>
               {headerTitle}
             </Text>
-            {recipientProfile?.nip05 && (
+            {!isSupportChat && recipientProfile?.nip05 && (
               <Text style={styles.headerSubtitle} numberOfLines={1}>
                 {recipientProfile.nip05}
               </Text>
@@ -342,7 +355,9 @@ export const MessagesScreen: React.FC<MessagesScreenProps> = ({
         <TouchableOpacity
           style={[
             styles.lightningBtn,
-            { backgroundColor: isZapping ? colors.primary + "40" : colors.primary + "18" },
+            {
+              backgroundColor: isZapping ? colors.primary + "40" : colors.primary + "18",
+            },
           ]}
           onPress={handleQuickZapPress}
           onLongPress={() => !isZapping && setQuickZapVisible(true)}

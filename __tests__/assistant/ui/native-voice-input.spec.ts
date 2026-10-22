@@ -37,10 +37,13 @@ it("missing or failing bridges leave typing available without a native crash", a
 it("selects an explicit English model and forwards immutable session identities", async () => {
   await expect(nativeVoiceInput.available()).resolves.toBe(true)
   expect(NativeModules.VoiceInputBridge.capability).toHaveBeenCalledWith(VOICE_LOCALE)
-  nativeVoiceInput.start("hold-1")
+  nativeVoiceInput.start("hold-1", ["What's my balance", "Add dreadmax as a contact"])
   nativeVoiceInput.stop("hold-1")
   nativeVoiceInput.abort("hold-1")
-  expect(NativeModules.VoiceInputBridge.start).toHaveBeenCalledWith("hold-1", "en-US")
+  expect(NativeModules.VoiceInputBridge.start).toHaveBeenCalledWith("hold-1", "en-US", [
+    "What's my balance",
+    "Add dreadmax as a contact",
+  ])
   expect(NativeModules.VoiceInputBridge.stop).toHaveBeenCalledWith("hold-1")
   expect(NativeModules.VoiceInputBridge.abort).toHaveBeenCalledWith("hold-1")
 })

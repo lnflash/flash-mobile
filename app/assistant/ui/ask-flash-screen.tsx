@@ -63,6 +63,7 @@ import { ScreenDestination, screenDestinationTitle } from "./screen-destinations
 import { pricePresentation } from "./price-presentation"
 import { useVoiceInput } from "./use-voice-input"
 import { useKnownFlashUsers } from "./use-known-flash-users"
+import { voiceContext } from "./voice-context"
 import {
   CardTopUpAnswer,
   ContactActionAnswer,
@@ -899,7 +900,6 @@ export const AskFlashScreen: React.FC = () => {
   const { colors } = useTheme().theme
   const { isOffline } = useConnectivity()
   const { appConfig } = useAppConfig()
-  const knownUsernames = useKnownFlashUsers(appConfig.galoyInstance.lnAddressHostname)
   const {
     assistantEnabled,
     assistantOnDeviceModel,
@@ -925,6 +925,10 @@ export const AskFlashScreen: React.FC = () => {
       ? sha256(`${appConfig.galoyInstance.graphqlUri}\n${appConfig.token}`)
       : undefined,
   })
+  const knownUsernames = useKnownFlashUsers(
+    appConfig.galoyInstance.lnAddressHostname,
+    runtime.recentUsers,
+  )
   const suggestions = useSyncExternalStore(
     runtime.suggestions.subscribe,
     runtime.suggestions.get,
@@ -1011,6 +1015,7 @@ export const AskFlashScreen: React.FC = () => {
     enabled: voiceEnabled,
     busy: thread.busy,
     beforeCapture: speech.stop,
+    contextualStrings: voiceContext(knownUsernames),
     onSubmit: (utterance) => submitUtterance(utterance, "voice"),
   })
   const canSend = !thread.busy && !voice.active && text.trim().length > 0
@@ -1123,7 +1128,10 @@ export const AskFlashScreen: React.FC = () => {
                   actions={thread.cardActions}
                   onPick={thread.pick}
                   knownUsernames={knownUsernames}
-                  onContactResolved={runtime.transcript.rememberContact}
+                  onContactResolved={(id, username) => {
+                    runtime.recentUsers.remember([username])
+                    runtime.transcript.rememberContact(id, username)
+                  }}
                 />
                 {spoken ? (
                   <TouchableOpacity
