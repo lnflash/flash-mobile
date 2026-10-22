@@ -5,19 +5,18 @@ import { defineRead } from "../define"
 import { ContactPayload, projectContact } from "../projections"
 import { prepareRefusalResult } from "../refusals"
 import type { ClarificationOption, ReadToolCtx, ToolResult } from "../types"
+import { similarUsernames } from "./similar-usernames"
 
 // resolveContact (docs/ai-assistant-tool-registry.md §4): turn what the user
 // called someone ("mom", "bob") into one Flash contact, or ask. It never
 // guesses: several matches, or one match the hint does not name exactly,
 // come back as a picker, so a payee is only ever named by the user's own
 // words for them or by the user's own pick. Only when no contact looks like
-// the hint at all is it looked up as a Flash username (ENG-730): a Flash
-// user of that name is a picker of one, with neutral wording because Chat
-// contacts and payment-history contacts are separate. The user's own username
-// is the self-payment reply, and
-// no one of that name is the payeeNotFound refusal card. So a question from
-// here always offers at least one option, and one that can be paid. A
-// lookup that fails is a failed read, never "no one of that name".
+// the hint at all is it looked up as a Flash username. An exact, verified
+// username can proceed to payment review; similar known usernames are offered
+// as choices. The user's own username is the self-payment reply, and no
+// verified match is the payeeNotFound refusal card. A lookup that fails is a
+// failed read, never "no one of that name".
 // It never prepares anything either.
 
 /**
@@ -113,31 +112,55 @@ export const flashUserWallet = async (
   FLASH_USERNAME.test(username) ? graphql.accountDefaultWallet(username) : null
 
 /**
- * No contact looks like the hint: the Flash user it names, as a picker of
- * one, or the refusal card (ENG-730). The option is data only, the username
- * as the user typed it; the prompt is the copy. A pick of it is looked up
- * again at the tap (payee.ts, fromPick), never taken from this answer. The
- * user's own username is the self-payment reply, never a question: the send
- * screen refuses a typed one at lookup time (intraledger.ts:39-45), and the
- * one option would be refused at the tap.
+ * No payment-history contact matches. An exact, server-verified Flash
+ * username can go straight to the payment review; that review still requires
+ * Confirm before money moves. When speech got the name wrong, offer similar
+ * known contacts as choices and verify each username with the server.
  */
 const flashUserOrRefusal = async (
   hint: string,
   ctx: ReadToolCtx,
+  contacts: readonly ContactRow[],
 ): Promise<ToolResult<ContactPayload>> => {
   const username = hint.trim()
   const userWallet = await flashUserWallet(username, ctx.graphql)
-  if (!userWallet) return prepareRefusalResult("payeeNotFound")
-  const myWallets = await ctx.graphql.wallets()
-  if (myWallets.some(({ id }) => id === userWallet.id)) {
-    return { kind: "error", userMessage: "Assistant.selfPayment" }
+  if (userWallet) {
+    const myWallets = await ctx.graphql.wallets()
+    if (myWallets.some(({ id }) => id === userWallet.id)) {
+      return { kind: "error", userMessage: "Assistant.selfPayment" }
+    }
+    return {
+      kind: "answer",
+      payload: {
+        username,
+        alias: null,
+        defaultWallet: { id: userWallet.id, walletCurrency: userWallet.walletCurrency },
+        source: "flashUser",
+      },
+    }
   }
+  const known = [
+    ...new Set([
+      ...contacts.map(({ username }) => username),
+      ...(ctx.knownUsernames ?? []),
+    ]),
+  ]
+  const similar = similarUsernames(username, known, CONTACT_PICKER_LIMIT)
+  const verified = (
+    await Promise.all(
+      similar.map(async (name) => ({
+        name,
+        wallet: await flashUserWallet(name, ctx.graphql),
+      })),
+    )
+  ).filter(({ wallet }) => wallet !== null)
+  if (verified.length === 0) return prepareRefusalResult("payeeNotFound")
   return {
     kind: "clarification",
     card: {
       type: "clarification",
       prompt: "Assistant.pickContact",
-      options: [{ id: username, label: username, sublabel: username }],
+      options: verified.map(({ name }) => ({ id: name, label: name, sublabel: name })),
     },
   }
 }
@@ -146,9 +169,10 @@ const run = async (
   { hint }: Args,
   ctx: ReadToolCtx,
 ): Promise<ToolResult<ContactPayload>> => {
-  const candidates = findCandidates(await ctx.graphql.contacts(), hint)
+  const contacts = await ctx.graphql.contacts()
+  const candidates = findCandidates(contacts, hint)
 
-  if (candidates.length === 0) return flashUserOrRefusal(hint, ctx)
+  if (candidates.length === 0) return flashUserOrRefusal(hint, ctx, contacts)
   const [only] = candidates
   if (candidates.length > 1 || !namesContact(hint, only)) {
     // Several matches, or one the hint does not name, however close it
@@ -179,7 +203,7 @@ const run = async (
 export const resolveContact = defineRead({
   intent: "resolveContact",
   description:
-    "Find one of the user's contacts by what the user called them; asks when unsure, and offers the Flash user of that username when no contact matches.",
+    "Find a contact or verified Flash username by what the user called them; ask when only similar known usernames match.",
   input: {
     type: "object",
     properties: {

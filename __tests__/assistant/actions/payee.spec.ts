@@ -103,19 +103,15 @@ describe("resolvePayee: a contact the user names", () => {
     expect(graphql.accountDefaultWallet.mock.calls).toEqual([["mallory"]])
   })
 
-  it("asks about a Flash user who is not a contact, never paying them straight away", async () => {
+  it("uses an exact verified username without a second recipient picker", async () => {
     const { ctx, graphql } = setup()
 
-    await expect(resolvePayee(NOT_A_CONTACT, ctx, MINE)).resolves.toEqual({
-      kind: "clarification",
-      card: {
-        type: "clarification",
-        prompt: "Assistant.pickContact",
-        // The one option re-issues the pick, as a contact's does.
-        options: [
-          { id: contactPick("dreadmax"), label: "dreadmax", sublabel: "dreadmax" },
-        ],
-        about: "dreadmax",
+    await expect(resolvePayee(NOT_A_CONTACT, ctx, MINE)).resolves.toMatchObject({
+      kind: "payee",
+      payee: {
+        kind: "flashUser",
+        username: "dreadmax",
+        recipientWalletId: "dreadmax-wallet",
       },
     })
     expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"]])
@@ -224,8 +220,10 @@ describe("resolvePayee: a picked contact", () => {
 
   it("looks a picked Flash user up again at the tap, refusing one who is gone since the question", async () => {
     const { ctx, graphql } = setup()
-    // The account answers the question's lookup, and is gone by the tap.
+    ctx.knownUsernames = ["dreadmax"]
+    // The spoken name is absent, the suggestion exists, then disappears by the tap.
     graphql.accountDefaultWallet
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         __typename: "PublicWallet",
         id: "dreadmax-wallet",
@@ -233,12 +231,16 @@ describe("resolvePayee: a picked contact", () => {
       })
       .mockResolvedValueOnce(null)
 
-    const asked = await resolvePayee(NOT_A_CONTACT, ctx, MINE)
+    const asked = await resolvePayee("dreadlocks", ctx, MINE)
     if (asked.kind !== "clarification") throw new Error("expected a question")
     const picked = await resolvePayee(asked.card.options[0].id, ctx, MINE)
 
     expect(picked).toEqual(NOT_FOUND)
-    expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"], ["dreadmax"]])
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([
+      ["dreadlocks"],
+      ["dreadmax"],
+      ["dreadmax"],
+    ])
   })
 
   it("never looks up a pick with a space in it: no username has one", async () => {

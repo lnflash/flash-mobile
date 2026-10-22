@@ -27,11 +27,9 @@ import type {
 // - A person the user names ("mom", "Alice Smith"): resolveContact
 //   (ENG-687) finds the contact, and asks when it is not sure. A bare word is
 //   looked up as a Flash username only once resolveContact finds no contact
-//   like it at all, and only as a question (ENG-730, narrowing ENG-688
-//   decision 2): "mom" may be a stranger's username, so that user is a
-//   picker of one with neutral wording about the separate Chat contacts, never a
-//   payee straight away. The user's own username is the self-payment reply,
-//   and no contact and no Flash user is a refusal card.
+//   like it at all. An exact, verified username goes to payment review;
+//   similar known usernames require a pick. The user's own username is the
+//   self-payment reply, and no contact and no Flash user is a refusal card.
 // - A person the user picked from that question: `contact:<username>`, the
 //   id of every option such a question offers. A pick is re-issued in the
 //   same call, and resolves to exactly that contact, or else to the Flash
@@ -189,7 +187,11 @@ const fromContactName = async (
   if (hint.length > CONTACT_HINT_MAX) return error("Assistant.invalidDestination")
   const result = await resolveContact.run(
     { hint },
-    createReadToolCtx({ ...ctx, lnAddressHostname: ctx.send.lnAddressHostname }),
+    createReadToolCtx({
+      ...ctx,
+      lnAddressHostname: ctx.send.lnAddressHostname,
+      knownUsernames: ctx.knownUsernames,
+    }),
   )
   switch (result.kind) {
     case "clarification":
@@ -210,7 +212,7 @@ const fromContactName = async (
     case "answer": {
       const contact = result.payload as ContactPayload
       return flashUser(
-        "contact",
+        contact.source === "flashUser" ? "flashUser" : "contact",
         {
           username: contact.username,
           alias: contact.alias,

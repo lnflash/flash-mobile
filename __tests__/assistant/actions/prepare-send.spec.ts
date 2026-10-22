@@ -412,24 +412,10 @@ describe("prepareSend to someone who is not a contact (ENG-730)", () => {
     })
   })
 
-  it("asks which Flash user before asking for an amount, and asks for the amount once the user picks", async () => {
+  it("asks for the amount after resolving an exact Flash username", async () => {
     const fake = setup()
 
-    const asked = await run({ payee: NOT_A_CONTACT }, fake)
-
-    expect(asked).toEqual({
-      kind: "clarification",
-      card: {
-        type: "clarification",
-        prompt: "Assistant.pickContact",
-        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
-        about: "dreadmax",
-      },
-    })
-    if (asked.kind !== "clarification") throw new Error("expected a question")
-
-    // The tap re-issues the call with the pick, still with no amount.
-    await expect(run({ payee: asked.card.options[0].id }, fake)).resolves.toEqual({
+    await expect(run({ payee: NOT_A_CONTACT }, fake)).resolves.toEqual({
       kind: "clarification",
       card: { type: "clarification", prompt: "Assistant.amountRequired", options: [] },
     })
@@ -454,29 +440,13 @@ describe("prepareSend to someone who is not a contact (ENG-730)", () => {
     )
   })
 
-  it("asks with a picker of one for a Flash user, then prepares the pick's card for that user", async () => {
+  it("prepares one review card for an exact Flash username", async () => {
     // The dogfood ask: "Send 0.05 usd to dreadmax", dreadmax being a Flash
     // user the user has not added.
     const fake = setup()
     const args: PrepareSendArgs = { payee: "dreadmax", amount: "0.05", currency: "USD" }
 
-    const asked = await run(args, fake)
-
-    expect(asked).toEqual({
-      kind: "clarification",
-      card: {
-        type: "clarification",
-        prompt: "Assistant.pickContact",
-        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
-        about: "dreadmax",
-      },
-    })
-    // A question prices nothing and probes nothing.
-    expect(fake.graphql.realtimePrice).not.toHaveBeenCalled()
-    if (asked.kind !== "clarification") throw new Error("expected a question")
-
-    // The tap re-issues the call with the pick in place of the name.
-    const action = prepared(await run({ ...args, payee: asked.card.options[0].id }, fake))
+    const action = prepared(await run(args, fake))
 
     expect(action.summary).toEqual({
       type: "confirmPayment",

@@ -35,6 +35,20 @@ jest.mock("react-native-secure-key-store", () => ({
 }))
 const mockNavigate = jest.fn()
 const mockOpenSupportChat = jest.fn()
+const mockWalletRequest = jest.fn(async (_enabled: boolean) => undefined)
+jest.mock("@app/hooks/use-bitcoin-wallet-mode", () => ({
+  useBitcoinWalletMode: () => ({
+    enabled: true,
+    available: true,
+    hasRecoveryPhrase: true,
+    setupVisible: false,
+    setSetupVisible: jest.fn(),
+    request: mockWalletRequest,
+  }),
+}))
+jest.mock("@app/components/advanced-mode-modal", () => ({
+  AdvancedModeModal: () => null,
+}))
 jest.mock("@app/hooks/use-open-support-chat", () => ({
   useOpenSupportChat: () => mockOpenSupportChat,
 }))
@@ -236,6 +250,14 @@ describe("AskFlashScreen", () => {
     fireEvent.press(screen.getByTestId("ask-flash-screen-action"))
     expect(mockNavigate).toHaveBeenCalledWith("Primary", { screen: "Map" })
     expect(runTool).not.toHaveBeenCalled()
+  })
+  it("offers the Bitcoin account switch directly without navigating to Settings", async () => {
+    const { screen } = show()
+    await ask(screen, "Turn off the Bitcoin wallet")
+    expect(mockWalletRequest).not.toHaveBeenCalled()
+    fireEvent.press(screen.getByTestId("ask-flash-bitcoin-wallet-toggle"))
+    expect(mockWalletRequest).toHaveBeenCalledWith(false)
+    expect(mockNavigate).not.toHaveBeenCalled()
   })
   it("routes a chat profile request to the existing profile editor", async () => {
     const { screen } = show()

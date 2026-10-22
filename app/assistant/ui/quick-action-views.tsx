@@ -19,6 +19,8 @@ import type { MerchantsPayload } from "../registry/projections"
 import type { ThreadEntry } from "./thread-store"
 import { parseAmount, parseDisplayAmount } from "../engine/parse-amount"
 import { contactTagsFor } from "./contact-tags"
+import { knownFlashUsernames } from "./known-flash-users"
+import { similarUsernames } from "../registry/read/similar-usernames"
 
 const useStyles = makeStyles(({ colors }) => ({
   card: {
@@ -140,15 +142,28 @@ export const ContactActionAnswer: React.FC<{
   const styles = useStyles()
   const { isOffline } = useConnectivity()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
-  const { contactsEvent, setContactsEvent, userPublicKey, addEventToProfiles } =
-    useChatContext()
+  const {
+    contactsEvent,
+    setContactsEvent,
+    userPublicKey,
+    addEventToProfiles,
+    profileMap,
+  } = useChatContext()
   const addProfileRef = useRef(addEventToProfiles)
   addProfileRef.current = addEventToProfiles
   const [pubkey, setPubkey] = useState<string>()
+  const [username, setUsername] = useState(entry.username)
   const [state, setState] = useState<
     "loading" | "missing" | "ready" | "working" | "done" | "error"
   >("loading")
-  const handle = `${entry.username}@${entry.hostname}`
+  const handle = `${username}@${entry.hostname}`
+  const suggestions =
+    state === "missing"
+      ? similarUsernames(
+          username,
+          knownFlashUsernames(contactsEvent?.tags, profileMap, entry.hostname),
+        ).filter((name) => name !== username)
+      : []
   useEffect(() => {
     let live = true
     nip05
@@ -211,7 +226,7 @@ export const ContactActionAnswer: React.FC<{
   }
   const confirmRemove = () =>
     Alert.alert(
-      LL.AskFlashActions.removeContactTitle({ username: entry.username }),
+      LL.AskFlashActions.removeContactTitle({ username }),
       LL.AskFlashActions.removeContactBody(),
       [
         { text: LL.common.cancel(), style: "cancel" },
@@ -258,12 +273,29 @@ export const ContactActionAnswer: React.FC<{
   return (
     <View style={styles.card} testID={`ask-flash-contact-${entry.operation}`}>
       <Text type="p1" bold>
-        @{entry.username}
+        @{username}
       </Text>
       {pubkey ? (
         <Text type="p2">{LL.AskFlashActions.verifiedProfile({ handle })}</Text>
       ) : null}
       {unavailable ? <Text type="p2">{unavailable}</Text> : null}
+      {suggestions.map((name) => (
+        <TouchableOpacity
+          key={name}
+          accessibilityRole="button"
+          style={styles.button}
+          testID="ask-flash-contact-suggestion"
+          onPress={() => {
+            setPubkey(undefined)
+            setState("loading")
+            setUsername(name)
+          }}
+        >
+          <Text type="p2" bold style={styles.buttonText}>
+            @{name}
+          </Text>
+        </TouchableOpacity>
+      ))}
       {available ? (
         <TouchableOpacity
           accessibilityRole="button"

@@ -25,6 +25,7 @@ import { useApolloClient } from "@apollo/client"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
+import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
 import { Screen } from "@app/components/screen"
 import { TxItem } from "@app/components/transaction-item"
 import { useFeatureFlags } from "@app/config/feature-flags-context"
@@ -32,7 +33,9 @@ import { useAppConfig } from "@app/hooks/use-app-config"
 import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useOpenSupportChat } from "@app/hooks/use-open-support-chat"
 import { usePersistentStateContext } from "@app/store/persistent-state"
+import { useChatContext } from "@app/screens/chat/chatContext"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { useBitcoinWalletMode } from "@app/hooks/use-bitcoin-wallet-mode"
 import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { usePriceConversion } from "@app/hooks/use-price-conversion"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -60,6 +63,7 @@ import { helpAnswerText } from "./reply-presentation"
 import { ScreenDestination, screenDestinationTitle } from "./screen-destinations"
 import { pricePresentation } from "./price-presentation"
 import { useVoiceInput } from "./use-voice-input"
+import { knownFlashUsernames } from "./known-flash-users"
 import {
   CardTopUpAnswer,
   ContactActionAnswer,
@@ -436,9 +440,80 @@ const ChatAction: React.FC = () => {
   )
 }
 
-const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destination }) => {
+const BitcoinWalletAction: React.FC<{ enabled: boolean }> = ({ enabled }) => {
+  const { LL } = useI18nContext()
+  const styles = useStyles()
+  const mode = useBitcoinWalletMode()
+  const label = enabled
+    ? LL.SettingsScreen.advanceMode()
+    : LL.SettingsScreen.beginnerMode()
+  return (
+    <View style={styles.answer} testID="ask-flash-bitcoin-wallet-action">
+      {mode.available && mode.enabled !== enabled ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.helpAction}
+          testID="ask-flash-bitcoin-wallet-toggle"
+          onPress={() =>
+            mode
+              .request(enabled)
+              .catch(() => Alert.alert(LL.common.warning(), LL.Assistant.toolFailed()))
+          }
+        >
+          <Text type="p2" bold>
+            {label}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <Text type="p2">
+          {mode.enabled
+            ? LL.AskFlashHelp.screenLocation({ screen: LL.common.btcAccount() })
+            : LL.Assistant.btcDisabled()}
+        </Text>
+      )}
+      <AdvancedModeModal
+        hasRecoveryPhrase={mode.hasRecoveryPhrase}
+        isVisible={mode.setupVisible}
+        setIsVisible={mode.setSetupVisible}
+      />
+    </View>
+  )
+}
+
+const BitcoinWalletScreenAnswer: React.FC = () => {
   const { LL } = useI18nContext()
   const { persistentState } = usePersistentStateContext()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const styles = useStyles()
+  const enabled = Boolean(persistentState.isAdvanceMode)
+  const title = enabled ? LL.common.btcAccount() : LL.SettingsScreen.title()
+  return (
+    <View style={styles.answer} testID="ask-flash-screen-bitcoinWallet">
+      <Text type="p2">
+        {enabled
+          ? LL.AskFlashHelp.screenLocation({ screen: LL.common.btcAccount() })
+          : LL.Assistant.btcDisabled()}
+      </Text>
+      <TouchableOpacity
+        accessibilityRole="button"
+        style={styles.helpAction}
+        testID="ask-flash-screen-action"
+        onPress={() =>
+          enabled
+            ? navigation.navigate("Primary", { screen: "Home" })
+            : navigation.navigate("settings")
+        }
+      >
+        <Text type="p2" bold>
+          {LL.AskFlashHelp.screenAction({ screen: title })}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destination }) => {
+  const { LL } = useI18nContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const title = screenDestinationTitle(LL, destination)
@@ -460,11 +535,6 @@ const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destinatio
         break
       case "settings":
         navigation.navigate("settings")
-        break
-      case "bitcoinWallet":
-        if (persistentState.isAdvanceMode)
-          navigation.navigate("Primary", { screen: "Home" })
-        else navigation.navigate("settings")
         break
       case "account":
         navigation.navigate("accountScreen")
@@ -532,8 +602,6 @@ const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destinatio
       <Text type="p2">
         {destination === "chat"
           ? LL.AskFlashHelp.chatSetupLocation()
-          : destination === "bitcoinWallet" && !persistentState.isAdvanceMode
-          ? LL.Assistant.btcDisabled()
           : destination === "security"
           ? LL.AskFlashHelp.settingsSectionLocation({ screen: title })
           : LL.AskFlashHelp.screenLocation({ screen: title })}
@@ -551,11 +619,7 @@ const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destinatio
         >
           <Text type="p2" bold>
             {LL.AskFlashHelp.screenAction({
-              screen:
-                destination === "security" ||
-                (destination === "bitcoinWallet" && !persistentState.isAdvanceMode)
-                  ? LL.SettingsScreen.title()
-                  : title,
+              screen: destination === "security" ? LL.SettingsScreen.title() : title,
             })}
           </Text>
         </TouchableOpacity>
@@ -639,7 +703,14 @@ const EntryView: React.FC<{
     case "help":
       return <HelpAnswer topic={entry.topic} />
     case "screen":
-      return <ScreenAnswer destination={entry.destination} />
+      return entry.destination === "bitcoinWallet" ? (
+        <BitcoinWalletScreenAnswer />
+      ) : entry.destination === "bitcoinWalletOn" ||
+        entry.destination === "bitcoinWalletOff" ? (
+        <BitcoinWalletAction enabled={entry.destination === "bitcoinWalletOn"} />
+      ) : (
+        <ScreenAnswer destination={entry.destination} />
+      )
     case "merchants":
       return <MerchantsAnswer payload={entry.payload} />
     case "contactAction":
@@ -774,6 +845,7 @@ const EntryView: React.FC<{
 
 export const AskFlashScreen: React.FC = () => {
   const client = useApolloClient()
+  const { contactsEvent, profileMap } = useChatContext()
   const { LL, locale } = useI18nContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
@@ -812,6 +884,11 @@ export const AskFlashScreen: React.FC = () => {
   const onDeviceModel = assistantEnabled && assistantOnDeviceModel
   const env: TurnEnv = {
     isOffline,
+    knownUsernames: knownFlashUsernames(
+      contactsEvent?.tags,
+      profileMap,
+      appConfig.galoyInstance.lnAddressHostname,
+    ),
     displayCurrency,
     displaySymbol: fiatSymbol,
     display: { formatMoneyAmount, formatDisplayAndWalletAmount, fractionDigits },

@@ -60,6 +60,7 @@ import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 /** What a turn needs from the screen: the connection, and the account's display currency. */
 export type TurnEnv = {
   isOffline: boolean
+  knownUsernames?: readonly string[]
   /** The display currency's code, as realtimePrice takes it ("JMD"). */
   displayCurrency: string
   /** Its symbol ("J$"), so the grammar can tell a "$" it cannot read. */
@@ -257,6 +258,7 @@ export const runCall = async (
     btcRail: listing?.btcRail ?? runtime.btcRail,
     displayCurrency: env.displayCurrency,
     lnAddressHostname: env.lnAddressHostname,
+    knownUsernames: env.knownUsernames,
     now: runtime.now,
     telemetry: runtime.telemetry,
     ...originOf(env),

@@ -448,26 +448,11 @@ describe("prepareGroupSend", () => {
     expect(fake.mutations.intraLedgerUsdPaymentSend).not.toHaveBeenCalled()
   })
 
-  it("asks about a payee who is a Flash user but no contact, then pays the pick as a leg (ENG-730)", async () => {
+  it("prepares an exact Flash username as a leg for review", async () => {
     const fake = setup()
     const args = { payees: ["Bob", "dreadmax"], total: "10", currency: "USD" as const }
 
-    const asked = await run(args, fake)
-
-    expect(asked).toEqual({
-      kind: "clarification",
-      card: {
-        type: "clarification",
-        prompt: "Assistant.pickContact",
-        options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
-        about: "dreadmax",
-      },
-    })
-    if (asked.kind !== "clarification") throw new Error("expected a question")
-
-    const action = prepared(
-      await run({ ...args, payees: ["Bob", asked.card.options[0].id] }, fake),
-    )
+    const action = prepared(await run(args, fake))
     await confirm(action)
 
     expect(dispatches(fake).map(({ to, amount }) => ({ to, amount }))).toEqual([

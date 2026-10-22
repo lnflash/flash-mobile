@@ -179,6 +179,7 @@ export type ContactPayload = {
   username: string
   alias: string | null
   defaultWallet: { id: string; walletCurrency: WalletCurrency }
+  source?: "flashUser"
 }
 
 export type ContactProjection = {
