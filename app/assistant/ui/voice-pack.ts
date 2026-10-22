@@ -33,6 +33,7 @@ export const voicePackSource = (): string | undefined => {
 }
 let snapshot: VoicePackState = { phase: "missing", receivedBytes: 0, totalBytes: 0 }
 const listeners = new Set<() => void>()
+let lastProgressAt = 0
 const publish = (value: VoicePackState) => {
   if (
     !["missing", "downloading", "ready", "failed"].includes(value.phase) ||
@@ -40,7 +41,13 @@ const publish = (value: VoicePackState) => {
     !Number.isFinite(value.receivedBytes)
   )
     return
+  if (value.phase === "downloading" && snapshot.phase === "downloading") {
+    const percent = (state: VoicePackState) =>
+      Math.round((state.receivedBytes / Math.max(1, state.totalBytes)) * 100)
+    if (percent(value) === percent(snapshot) || Date.now() - lastProgressAt < 200) return
+  }
   snapshot = value
+  if (value.phase === "downloading") lastProgressAt = Date.now()
   listeners.forEach((listener) => listener())
 }
 const run = async (work?: Promise<VoicePackState>) => {

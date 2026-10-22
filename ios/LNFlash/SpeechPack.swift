@@ -51,6 +51,15 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
   private var received: Int64 = 0
   private var failure = false
   private var completion: ((Bool) -> Void)?
+  private let progressLock = NSLock()
+  private var lastProgressTick: TimeInterval = 0
+  private func shouldPublishProgress() -> Bool {
+    progressLock.lock(); defer { progressLock.unlock() }
+    let now = ProcessInfo.processInfo.systemUptime
+    if now - lastProgressTick < 0.2 { return false }
+    lastProgressTick = now
+    return true
+  }
   func state() -> [String: Any] { ["phase": active != nil ? "downloading" : isInstalled ? "ready" : failure ? "failed" : "missing", "receivedBytes": active != nil ? received : isInstalled ? byteCount : 0, "totalBytes": byteCount] }
   private func publish() { update?(state()) }
   func download(_ url: String, done: @escaping (Bool) -> Void) {
@@ -117,6 +126,9 @@ final class SpeechPack: NSObject, URLSessionDownloadDelegate {
   }
   func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
   func urlSession(_ session: URLSession, downloadTask task: URLSessionDownloadTask, didWriteData: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+    // A fast transfer can produce hundreds of callbacks per second. Keep the
+    // main queue free for taps while the sheet displays download progress.
+    guard shouldPublishProgress() else { return }
     DispatchQueue.main.async { [weak self] in
       guard let self = self, let active = self.active, self.index < self.entries.count, task.taskDescription == active.uuidString + "|" + self.entries[self.index].name else { return }
       if totalBytesWritten > self.entries[self.index].bytes || (totalBytesExpectedToWrite > 0 && totalBytesExpectedToWrite != self.entries[self.index].bytes) { self.finish(false); return }

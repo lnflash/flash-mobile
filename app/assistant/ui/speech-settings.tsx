@@ -195,7 +195,9 @@ export const SpeechSettings = ({
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                testID="ask-flash-voice-settings-done"
                 accessibilityRole="button"
+                accessibilityLabel={LL.AskFlashSpeech.done()}
                 style={styles.done}
                 onPress={onClose}
               >
@@ -422,7 +424,13 @@ const useStyles = makeStyles(({ colors }) => ({
     alignItems: "center",
     justifyContent: "center",
   },
-  done: { minHeight: 48, paddingLeft: 8, justifyContent: "center" },
+  done: {
+    minWidth: 72,
+    minHeight: 52,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   controls: { backgroundColor: colors.grey5, borderRadius: 16, paddingHorizontal: 14 },
   controlRow: {
     flexDirection: "row",
