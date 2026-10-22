@@ -11,6 +11,8 @@ describe("named Ask Flash destinations", () => {
     ["Show me notification settings", "notifications"],
     ["Open wallet backup", "backup"],
     ["Go to payment history", "history"],
+    ["Turn on my Bitcoin wallet", "bitcoinWallet"],
+    ["Enable BTC wallet", "bitcoinWallet"],
   ] as const
   destinations.forEach(([question, expected]) =>
     it(`resolves ${question} locally`, () => {

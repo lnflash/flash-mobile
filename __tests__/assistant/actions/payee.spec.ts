@@ -110,7 +110,7 @@ describe("resolvePayee: a contact the user names", () => {
       kind: "clarification",
       card: {
         type: "clarification",
-        prompt: "Assistant.pickFlashUser",
+        prompt: "Assistant.pickContact",
         // The one option re-issues the pick, as a contact's does.
         options: [
           { id: contactPick("dreadmax"), label: "dreadmax", sublabel: "dreadmax" },

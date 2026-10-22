@@ -78,9 +78,9 @@ describe("resolveContact", () => {
       kind: "clarification",
       card: {
         type: "clarification",
-        // The prompt says the person is not in the contacts; the option is
-        // the username alone, data and no copy.
-        prompt: "Assistant.pickFlashUser",
+        // The prompt is neutral about Chat contacts; the option is the
+        // username alone, data and no copy.
+        prompt: "Assistant.pickContact",
         options: [{ id: "dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
       },
     })
@@ -252,14 +252,7 @@ describe("resolveContact", () => {
         "Assistant.noContactMatch",
       ])
     })
-    // Both kinds of question are among them: a contact picker and a Flash user's.
-    expect(
-      results.flatMap(({ result }) =>
-        result.kind === "clarification" ? [result.card.prompt] : [],
-      ),
-    ).toEqual(
-      expect.arrayContaining(["Assistant.pickContact", "Assistant.pickFlashUser"]),
-    )
+    expect(results.some(({ result }) => result.kind === "clarification")).toBe(true)
   })
 
   it("answers a single strong match with its full username and default wallet", async () => {

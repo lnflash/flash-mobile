@@ -29,7 +29,7 @@ import type {
 //   looked up as a Flash username only once resolveContact finds no contact
 //   like it at all, and only as a question (ENG-730, narrowing ENG-688
 //   decision 2): "mom" may be a stranger's username, so that user is a
-//   picker of one whose prompt says they are not in the contacts, never a
+//   picker of one with neutral wording about the separate Chat contacts, never a
 //   payee straight away. The user's own username is the self-payment reply,
 //   and no contact and no Flash user is a refusal card.
 // - A person the user picked from that question: `contact:<username>`, the

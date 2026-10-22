@@ -458,7 +458,7 @@ describe("prepareGroupSend", () => {
       kind: "clarification",
       card: {
         type: "clarification",
-        prompt: "Assistant.pickFlashUser",
+        prompt: "Assistant.pickContact",
         options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
         about: "dreadmax",
       },

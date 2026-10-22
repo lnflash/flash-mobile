@@ -12,8 +12,9 @@ import type { ClarificationOption, ReadToolCtx, ToolResult } from "../types"
 // come back as a picker, so a payee is only ever named by the user's own
 // words for them or by the user's own pick. Only when no contact looks like
 // the hint at all is it looked up as a Flash username (ENG-730): a Flash
-// user of that name is a picker of one, whose prompt says the person is not
-// in the contacts, the user's own username is the self-payment reply, and
+// user of that name is a picker of one, with neutral wording because Chat
+// contacts and payment-history contacts are separate. The user's own username
+// is the self-payment reply, and
 // no one of that name is the payeeNotFound refusal card. So a question from
 // here always offers at least one option, and one that can be paid. A
 // lookup that fails is a failed read, never "no one of that name".
@@ -135,7 +136,7 @@ const flashUserOrRefusal = async (
     kind: "clarification",
     card: {
       type: "clarification",
-      prompt: "Assistant.pickFlashUser",
+      prompt: "Assistant.pickContact",
       options: [{ id: username, label: username, sublabel: username }],
     },
   }

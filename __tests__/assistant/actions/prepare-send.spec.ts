@@ -421,7 +421,7 @@ describe("prepareSend to someone who is not a contact (ENG-730)", () => {
       kind: "clarification",
       card: {
         type: "clarification",
-        prompt: "Assistant.pickFlashUser",
+        prompt: "Assistant.pickContact",
         options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
         about: "dreadmax",
       },
@@ -466,7 +466,7 @@ describe("prepareSend to someone who is not a contact (ENG-730)", () => {
       kind: "clarification",
       card: {
         type: "clarification",
-        prompt: "Assistant.pickFlashUser",
+        prompt: "Assistant.pickContact",
         options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
         about: "dreadmax",
       },

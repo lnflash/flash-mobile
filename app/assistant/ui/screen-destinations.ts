@@ -30,6 +30,7 @@ export const SCREEN_DESTINATIONS = {
   defaultWallet: ["default wallet", "wallet settings"],
   socialSettings: ["chat settings", "social settings"],
   bitcoinPrice: ["bitcoin price", "price chart"],
+  bitcoinWallet: ["bitcoin wallet", "btc wallet"],
 } as const
 
 export type ScreenDestination = keyof typeof SCREEN_DESTINATIONS
@@ -41,6 +42,8 @@ export const readScreenDestination = (
   const text = textOf(normalize(utterance).tokens).replace(/ please$/, "")
   // Bare "bitcoin price" is an existing live-price read, not a request to open a chart.
   if (text === "bitcoin price") return undefined
+  if (/^(?:turn on|enable|activate|show) (?:my |the )?(?:bitcoin|btc) wallet$/.test(text))
+    return "bitcoinWallet"
   const match =
     /^(?:please )?(?:(?:can you|could you|would you) )?(?:(?:open|go to|navigate to|take me to|bring me to|show me|find|where is|where are|where do i find|how do i find|how can i find|where can i find|how do i get to|i want to see) )?(.+?)(?: screen| page| tab)?$/.exec(
       text,
@@ -112,5 +115,7 @@ export const screenDestinationTitle = (
       return LL.SettingsScreen.showNostrSecret()
     case "bitcoinPrice":
       return LL.common.bitcoinPrice()
+    case "bitcoinWallet":
+      return LL.common.btcAccount()
   }
 }

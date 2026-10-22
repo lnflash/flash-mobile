@@ -146,7 +146,7 @@ const resolvePayee = async (hint: string): Promise<Resolution> => {
   }
   if (result.kind === "clarification" && result.card.options.length > 0) {
     const usernames = result.card.options.map(({ id }) => id)
-    return result.card.prompt === "Assistant.pickFlashUser"
+    return NOT_IN_BOOK[hint] === usernames[0]
       ? { kind: "flashUser", usernames }
       : { kind: "picker", usernames }
   }

@@ -438,6 +438,7 @@ const ChatAction: React.FC = () => {
 
 const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destination }) => {
   const { LL } = useI18nContext()
+  const { persistentState } = usePersistentStateContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const title = screenDestinationTitle(LL, destination)
@@ -459,6 +460,11 @@ const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destinatio
         break
       case "settings":
         navigation.navigate("settings")
+        break
+      case "bitcoinWallet":
+        if (persistentState.isAdvanceMode)
+          navigation.navigate("Primary", { screen: "Home" })
+        else navigation.navigate("settings")
         break
       case "account":
         navigation.navigate("accountScreen")
@@ -526,6 +532,8 @@ const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destinatio
       <Text type="p2">
         {destination === "chat"
           ? LL.AskFlashHelp.chatSetupLocation()
+          : destination === "bitcoinWallet" && !persistentState.isAdvanceMode
+          ? LL.Assistant.btcDisabled()
           : destination === "security"
           ? LL.AskFlashHelp.settingsSectionLocation({ screen: title })
           : LL.AskFlashHelp.screenLocation({ screen: title })}
@@ -543,7 +551,11 @@ const ScreenAnswer: React.FC<{ destination: ScreenDestination }> = ({ destinatio
         >
           <Text type="p2" bold>
             {LL.AskFlashHelp.screenAction({
-              screen: destination === "security" ? LL.SettingsScreen.title() : title,
+              screen:
+                destination === "security" ||
+                (destination === "bitcoinWallet" && !persistentState.isAdvanceMode)
+                  ? LL.SettingsScreen.title()
+                  : title,
             })}
           </Text>
         </TouchableOpacity>
