@@ -14,6 +14,7 @@ import type { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { toBtcMoneyAmount, toSpendableBalance } from "@app/types/amounts"
 import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk"
+import { bitcoinWalletAvailable } from "./bitcoin-wallet-availability"
 
 /** The same guarded Bitcoin-account switch for Settings and Ask Flash. */
 export const useBitcoinWalletMode = () => {
@@ -26,7 +27,7 @@ export const useBitcoinWalletMode = () => {
   const [setupVisible, setSetupVisible] = useState(false)
   const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
   const enabled = Boolean(persistentState.isAdvanceMode)
-  const available = Platform.OS !== "ios" || Number(Platform.Version) >= 13
+  const available = bitcoinWalletAvailable(Platform.OS, Platform.Version)
   const { data } = useSettingsScreenQuery({
     fetchPolicy: "cache-first",
     returnPartialData: true,
