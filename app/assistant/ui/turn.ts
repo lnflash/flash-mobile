@@ -27,6 +27,7 @@ import { conversionFollowup } from "../grammar/prepare-conversion"
 import { readScreenDestination } from "./screen-destinations"
 import { readQuickAction } from "./quick-actions"
 import { readAmountPhrase } from "../engine/amount-phrase"
+import { readConversationFollowup } from "./conversation-context"
 import { ListedTransaction, listedKey, NewEntry } from "./thread-store"
 
 // One turn of the Ask Flash thread (ENG-689, spec §7, §7.2): the grammar
@@ -286,14 +287,25 @@ export const runCall = async (
     listed: listing?.listed,
     ...originOf(env),
   })
-  if (result.kind === "answer") runtime.savedReads.write(call, entries, runtime.now())
+  if (result.kind === "answer") {
+    runtime.savedReads.write(call, entries, runtime.now())
+    if (
+      env.servedByOnDeviceModel &&
+      isIntent(call.intent) &&
+      tierOf(call.intent) === "read"
+    ) {
+      const user = runtime.transcript.get().entries.slice(-1)[0]
+      if (user?.kind === "user")
+        runtime.transcript.rememberRequest(user.id, user.text, call)
+    }
+  }
   return entries
 }
 
 /** The thread's answer to what the user typed. */
 export const answerUtterance = async (
   runtime: AssistantRuntime,
-  utterance: string,
+  inputText: string,
   env: TurnEnv,
 ): Promise<NewEntry[]> => {
   const account = {
@@ -301,6 +313,20 @@ export const answerUtterance = async (
     displaySymbol: env.displaySymbol,
   }
   const previous = runtime.transcript.get().entries
+  const followup = readConversationFollowup(inputText, previous, account)
+  if (followup?.kind === "answer") return followup.entries
+  if (followup?.kind === "read") {
+    const user = previous[previous.length - 1]
+    if (user?.kind === "user")
+      runtime.transcript.rememberRequest(user.id, inputText, followup.call)
+    return runCall(runtime, followup.call, env)
+  }
+  const utterance = followup?.kind === "request" ? followup.text : inputText
+  if (followup?.kind === "request") {
+    const currentUser = previous[previous.length - 1]
+    if (currentUser?.kind === "user")
+      runtime.transcript.rememberRequest(currentUser.id, utterance)
+  }
   const last = previous[previous.length - 1]
   const prior = last?.kind === "user" ? previous[previous.length - 2] : last
   if (prior?.kind === "conversionAmount") {
@@ -399,6 +425,9 @@ export const answerUtterance = async (
       : help
   }
   const quick = readQuickAction(utterance, account)
+  const destination = readScreenDestination(utterance)
+  // Personal named screens such as "my chat profile" are not another user's profile.
+  if (destination && quick?.kind === "contact") return [{ kind: "screen", destination }]
   if (quick?.kind === "cashout") {
     if (!quick.amount)
       return [{ kind: "cashoutAmount", displayCurrency: env.displayCurrency }]
@@ -457,7 +486,6 @@ export const answerUtterance = async (
             hostname: env.lnAddressHostname,
           },
         ]
-  const destination = readScreenDestination(utterance)
   if (destination) return [{ kind: "screen", destination }]
   const match = readGrammar(utterance, account)
   if (match === undefined || match.kind === "refused") {
@@ -465,7 +493,7 @@ export const answerUtterance = async (
     // names it: an invoice, a question, a send it cannot read) is the v1
     // boundary.
     const model: ModelTierResult =
-      env.onDeviceModel && match === undefined
+      env.onDeviceModel && match === undefined && !followup
         ? await tryOnDeviceModel(runtime, utterance, account)
         : { kind: "none", reason: "unavailable" }
     if (model.kind === "call") {

@@ -2314,7 +2314,9 @@ const en: BaseTranslation = {
   Assistant: {
     noSavedData: "No saved information is available for this ask. Connect to the internet and ask again to save a copy.",
     paymentStatusUncertain: "A payment attempt is still unresolved. Check your payment history or contact support before sending again.",
-    unknownIntent: "I can't help with that yet.",
+    unknownIntent: "I couldn't answer that. Open in-app support to ask Pulse or a support agent.",
+    contextPersonUnclear: "Who do you mean? Say their Flash username, or select a person from the choices above.",
+    contextActionReview: "Use the action above to continue. To start a new action, say the full request and its details.",
     notYetAvailable: "I can't do that here yet. Use the home screen for now.",
     invalidArguments: "I didn't catch the details. Try asking another way.",
     toolFailed: "Something went wrong. Try again in a moment.",
@@ -2438,6 +2440,7 @@ const en: BaseTranslation = {
     settingsSectionLocation: "Find {screen: string} in Settings.",
     supportChat: "Open in-app support chat to contact Flash. You need internet to send a message. If chat isn't available on this device, you can email {email: string}. Never include a PIN, recovery phrase, or private key.",
     supportChatAction: "Open support chat",
+    supportOffline: "You can open support now. Connect to the internet to send messages and receive replies.",
     addressTitle: "Your Flash address",
     addressSaved: "Saved Flash address. Reconnect to check whether it has changed.",
     addressNotSet: "Set a username to get your Flash address.",

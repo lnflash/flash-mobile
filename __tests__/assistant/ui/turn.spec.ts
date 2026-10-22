@@ -483,13 +483,28 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
       )
       const entries = await answerUtterance(runtime, utterance, env(ON))
 
-      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(entries).toEqual([
+        {
+          kind: "reply",
+          replyKey:
+            utterance === "send her $5"
+              ? "Assistant.contextPersonUnclear"
+              : "Assistant.unknownIntent",
+        },
+      ])
       expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
       expect(modelAdapter.decide).not.toHaveBeenCalled()
       expect(runTool).not.toHaveBeenCalled()
-      expect(toolEvents()).toEqual([
-        expect.objectContaining({ outcome: "rejected", onDeviceModelAvailable: false }),
-      ])
+      expect(toolEvents()).toEqual(
+        utterance === "send her $5"
+          ? []
+          : [
+              expect.objectContaining({
+                outcome: "rejected",
+                onDeviceModelAvailable: false,
+              }),
+            ],
+      )
     }
   })
 

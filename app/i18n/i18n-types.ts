@@ -7651,9 +7651,17 @@ type RootTranslation = {
 		 */
 		paymentStatusUncertain: string
 		/**
-		 * I​ ​c​a​n​'​t​ ​h​e​l​p​ ​w​i​t​h​ ​t​h​a​t​ ​y​e​t​.
+		 * I​ ​c​o​u​l​d​n​'​t​ ​a​n​s​w​e​r​ ​t​h​a​t​.​ ​O​p​e​n​ ​i​n​-​a​p​p​ ​s​u​p​p​o​r​t​ ​t​o​ ​a​s​k​ ​P​u​l​s​e​ ​o​r​ ​a​ ​s​u​p​p​o​r​t​ ​a​g​e​n​t​.
 		 */
 		unknownIntent: string
+		/**
+		 * W​h​o​ ​d​o​ ​y​o​u​ ​m​e​a​n​?​ ​S​a​y​ ​t​h​e​i​r​ ​F​l​a​s​h​ ​u​s​e​r​n​a​m​e​,​ ​o​r​ ​s​e​l​e​c​t​ ​a​ ​p​e​r​s​o​n​ ​f​r​o​m​ ​t​h​e​ ​c​h​o​i​c​e​s​ ​a​b​o​v​e​.
+		 */
+		contextPersonUnclear: string
+		/**
+		 * U​s​e​ ​t​h​e​ ​a​c​t​i​o​n​ ​a​b​o​v​e​ ​t​o​ ​c​o​n​t​i​n​u​e​.​ ​T​o​ ​s​t​a​r​t​ ​a​ ​n​e​w​ ​a​c​t​i​o​n​,​ ​s​a​y​ ​t​h​e​ ​f​u​l​l​ ​r​e​q​u​e​s​t​ ​a​n​d​ ​i​t​s​ ​d​e​t​a​i​l​s​.
+		 */
+		contextActionReview: string
 		/**
 		 * I​ ​c​a​n​'​t​ ​d​o​ ​t​h​a​t​ ​h​e​r​e​ ​y​e​t​.​ ​U​s​e​ ​t​h​e​ ​h​o​m​e​ ​s​c​r​e​e​n​ ​f​o​r​ ​n​o​w​.
 		 */
@@ -8132,6 +8140,10 @@ type RootTranslation = {
 		 * O​p​e​n​ ​s​u​p​p​o​r​t​ ​c​h​a​t
 		 */
 		supportChatAction: string
+		/**
+		 * Y​o​u​ ​c​a​n​ ​o​p​e​n​ ​s​u​p​p​o​r​t​ ​n​o​w​.​ ​C​o​n​n​e​c​t​ ​t​o​ ​t​h​e​ ​i​n​t​e​r​n​e​t​ ​t​o​ ​s​e​n​d​ ​m​e​s​s​a​g​e​s​ ​a​n​d​ ​r​e​c​e​i​v​e​ ​r​e​p​l​i​e​s​.
+		 */
+		supportOffline: string
 		/**
 		 * Y​o​u​r​ ​F​l​a​s​h​ ​a​d​d​r​e​s​s
 		 */
@@ -16187,9 +16199,17 @@ export type TranslationFunctions = {
 		 */
 		paymentStatusUncertain: () => LocalizedString
 		/**
-		 * I can't help with that yet.
+		 * I couldn't answer that. Open in-app support to ask Pulse or a support agent.
 		 */
 		unknownIntent: () => LocalizedString
+		/**
+		 * Who do you mean? Say their Flash username, or select a person from the choices above.
+		 */
+		contextPersonUnclear: () => LocalizedString
+		/**
+		 * Use the action above to continue. To start a new action, say the full request and its details.
+		 */
+		contextActionReview: () => LocalizedString
 		/**
 		 * I can't do that here yet. Use the home screen for now.
 		 */
@@ -16654,6 +16674,10 @@ export type TranslationFunctions = {
 		 * Open support chat
 		 */
 		supportChatAction: () => LocalizedString
+		/**
+		 * You can open support now. Connect to the internet to send messages and receive replies.
+		 */
+		supportOffline: () => LocalizedString
 		/**
 		 * Your Flash address
 		 */

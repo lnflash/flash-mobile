@@ -387,7 +387,7 @@ const HelpAnswer: React.FC<{ topic: HelpTopic }> = ({ topic }) => {
   )
 }
 
-const SupportAction: React.FC = () => {
+const SupportAction: React.FC<{ prominent?: boolean }> = ({ prominent }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const openSupportChat = useOpenSupportChat()
@@ -396,12 +396,29 @@ const SupportAction: React.FC = () => {
       accessibilityRole="button"
       onPress={openSupportChat}
       testID="ask-flash-help-action"
-      style={styles.helpAction}
+      style={
+        prominent ? [styles.walletActionButton, styles.supportAction] : styles.helpAction
+      }
     >
-      <Text type="p2" bold>
+      <Text type="p2" bold style={prominent ? styles.supportActionLabel : undefined}>
         {LL.AskFlashHelp.supportChatAction()}
       </Text>
     </TouchableOpacity>
+  )
+}
+
+const SupportFallback: React.FC<{
+  replyKey: "Assistant.unknownIntent" | "Assistant.notYetAvailable"
+}> = ({ replyKey }) => {
+  const { LL } = useI18nContext()
+  const { isOffline } = useConnectivity()
+  const styles = useStyles()
+  return (
+    <View style={styles.answer} testID="ask-flash-support-fallback">
+      <Text type="p2">{replyText(LL, replyKey)}</Text>
+      {isOffline ? <Text type="p3">{LL.AskFlashHelp.supportOffline()}</Text> : null}
+      <SupportAction prominent />
+    </View>
   )
 }
 
@@ -711,7 +728,8 @@ const EntryView: React.FC<{
   actions: CardActions
   onPick: (entryId: string, optionId: string) => void
   knownUsernames: readonly string[]
-}> = ({ entry, actions, onPick, knownUsernames }) => {
+  onContactResolved: (entryId: string, username: string) => void
+}> = ({ entry, actions, onPick, knownUsernames, onContactResolved }) => {
   const { LL } = useI18nContext()
   const { displayCurrency } = useDisplayCurrency()
   const { formatMoneyAmount } = useDisplayCurrency()
@@ -732,7 +750,13 @@ const EntryView: React.FC<{
     case "merchants":
       return <MerchantsAnswer payload={entry.payload} />
     case "contactAction":
-      return <ContactActionAnswer entry={entry} knownUsernames={knownUsernames} />
+      return (
+        <ContactActionAnswer
+          entry={entry}
+          knownUsernames={knownUsernames}
+          onResolved={onContactResolved}
+        />
+      )
     case "cardTopUp":
       return <CardTopUpAnswer entry={entry} />
     case "cashoutAmount":
@@ -820,6 +844,11 @@ const EntryView: React.FC<{
     case "user":
       return <Bubble from="user" text={entry.text} testID="ask-flash-user-bubble" />
     case "reply":
+      if (
+        entry.replyKey === "Assistant.unknownIntent" ||
+        entry.replyKey === "Assistant.notYetAvailable"
+      )
+        return <SupportFallback replyKey={entry.replyKey} />
       return (
         <Bubble
           from="assistant"
@@ -1094,6 +1123,7 @@ export const AskFlashScreen: React.FC = () => {
                   actions={thread.cardActions}
                   onPick={thread.pick}
                   knownUsernames={knownUsernames}
+                  onContactResolved={runtime.transcript.rememberContact}
                 />
                 {spoken ? (
                   <TouchableOpacity
@@ -1367,6 +1397,8 @@ const useStyles = makeStyles(({ colors }) => ({
     gap: 10,
   },
   walletActionLabel: { flexShrink: 1, textAlign: "center" },
+  supportActionLabel: { color: colors.textInverse, textAlign: "center" },
+  supportAction: { marginTop: 12 },
   speechSetting: {
     flexDirection: "row",
     gap: 6,

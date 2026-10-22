@@ -35,6 +35,21 @@ jest.mock("react-native-secure-key-store", () => ({
 }))
 const mockNavigate = jest.fn()
 const mockOpenSupportChat = jest.fn()
+let mockKnownUsernames: string[] = []
+jest.mock("@app/assistant/ui/use-known-flash-users", () => ({
+  useKnownFlashUsers: () => mockKnownUsernames,
+}))
+jest.mock("@app/utils/nostr", () => ({
+  ...jest.requireActual("@app/utils/nostr"),
+  fetchNostrUsers: jest.fn(),
+}))
+jest.mock("nostr-tools", () => {
+  const actual = jest.requireActual("nostr-tools")
+  return {
+    ...actual,
+    nip05: { ...actual.nip05, queryProfile: jest.fn(async () => null) },
+  }
+})
 const mockWalletRequest = jest.fn(async (_enabled: boolean) => undefined)
 jest.mock("@app/hooks/use-bitcoin-wallet-mode", () => ({
   useBitcoinWalletMode: () => ({
@@ -142,6 +157,7 @@ jest.mock("@app/assistant/ui/assistant-runtime", () => ({
 }))
 
 import { MockedProvider } from "@apollo/client/testing"
+import { nip05 } from "nostr-tools"
 
 import { confirmPaymentFixture } from "@app/assistant/cards/fixtures"
 import type { ModelAdapter } from "@app/assistant/engine/model-adapter"
@@ -214,6 +230,7 @@ const ask = async (screen: ReturnType<typeof render>, text: string) => {
 }
 
 afterEach(() => {
+  mockKnownUsernames = []
   mockOffline = false
   mockDisplay = { displayCurrency: "USD", fiatSymbol: "$" }
   jest.clearAllMocks()
@@ -293,6 +310,62 @@ describe("AskFlashScreen", () => {
     expect(mockOpenSupportChat).not.toHaveBeenCalled()
     fireEvent.press(screen.getByTestId("ask-flash-help-action"))
     expect(mockOpenSupportChat).toHaveBeenCalledTimes(1)
+  })
+  ;[
+    "Add dread mask to my contacts",
+    "Remove dread mask from my contacts",
+    "Show me dread mask's profile",
+  ].forEach((question) => {
+    it(`selects a verified similar username and remembers it after: ${question}`, async () => {
+      mockKnownUsernames = ["dreadmax"]
+      const lookup = jest
+        .mocked(nip05.queryProfile)
+        .mockImplementation(async (handle) =>
+          handle === "dreadmax@flashapp.me" ? { pubkey: "a".repeat(64) } : null,
+        )
+      try {
+        const { screen, runtime } = show()
+        await ask(screen, question)
+        await waitFor(() =>
+          expect(screen.getByTestId("ask-flash-contact-suggestion")).toBeTruthy(),
+        )
+        fireEvent.press(screen.getByTestId("ask-flash-contact-suggestion"))
+        await waitFor(() =>
+          expect(
+            screen.getByText(
+              en.AskFlashActions.verifiedProfile({ handle: "dreadmax@flashapp.me" }),
+            ),
+          ).toBeTruthy(),
+        )
+        expect(runtime.transcript.get().entries.slice(-1)[0]).toMatchObject({
+          kind: "contactAction",
+          resolvedUsername: "dreadmax",
+        })
+        await ask(screen, "Show their profile")
+        expect(runtime.transcript.get().entries.slice(-1)[0]).toMatchObject({
+          kind: "contactAction",
+          username: "dreadmax",
+          operation: "profile",
+        })
+      } finally {
+        lookup.mockReset()
+      }
+    })
+  })
+  ;[false, true].forEach((offline) => {
+    it(`offers Pulse/agent support after an unanswered question (${
+      offline ? "offline" : "online"
+    })`, async () => {
+      mockOffline = offline
+      const { screen } = show()
+      await ask(screen, "My card was stolen")
+      expect(screen.getByTestId("ask-flash-support-fallback")).toBeTruthy()
+      expect(screen.getByText(en.Assistant.unknownIntent())).toBeTruthy()
+      expect(Boolean(screen.queryByText(en.AskFlashHelp.supportOffline()))).toBe(offline)
+      expect(mockOpenSupportChat).not.toHaveBeenCalled()
+      fireEvent.press(screen.getByTestId("ask-flash-help-action"))
+      expect(mockOpenSupportChat).toHaveBeenCalledTimes(1)
+    })
   })
   it("offers offline guidance without opening a network-backed screen", async () => {
     mockOffline = true

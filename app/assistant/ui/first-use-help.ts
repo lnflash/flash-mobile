@@ -103,7 +103,7 @@ const topics: readonly [HelpTopic, RegExp][] = [
 export const readFirstUseQuestion = (utterance: string): FirstUseMatch | undefined => {
   const tokens = stripFrame(normalize(utterance).tokens)
   if (namesPaymentRequest(tokens)) return undefined
-  const text = textOf(tokens)
+  const text = textOf(tokens).replace(/(?: again)+$/, "")
   if (/^how much money (?:do i|i|my) have$/.test(text))
     return { call: { intent: "getBalances", args: {} } }
   if (/^how much is bitcoin worth in jmd$/.test(text))

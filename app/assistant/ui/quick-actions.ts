@@ -11,7 +11,7 @@ export type QuickAction =
 
 // Capture what speech heard, including spaces; username lookup resolves it later.
 const usernameHint = "([\\p{L}0-9_][\\p{L}0-9_. -]{0,79}?)"
-const SELF_WORDS = new Set(["my", "your", "the", "his", "her", "their"])
+const SELF_WORDS = new Set(["my", "your", "the", "his", "her", "their", "him", "them"])
 const isNameHint = (hint: string) =>
   !SELF_WORDS.has(hint.toLowerCase()) && !/\b(?:and|then|also|or)\b/i.test(hint)
 const cleanNameHint = (hint: string) => hint.toLowerCase().trim().replace(/\s+/g, " ")
@@ -23,7 +23,9 @@ export const readQuickAction = (
   amountContext: AmountPhraseContext,
 ): QuickAction | undefined => {
   const text = clean(utterance)
-  const raw = utterance.trim()
+  const raw = utterance
+    .trim()
+    .replace(/^(?:please )?(?:can|could|would) you (?:please )?/i, "")
   const contact = new RegExp(
     `^(?:please )?(add|remove) @?${usernameHint} (?:to|from) my contacts(?: again)?[?.!]*$`,
     "iu",

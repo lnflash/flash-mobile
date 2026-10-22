@@ -14,6 +14,8 @@ const automaticReplies = new Set([
   "Assistant.actionsOffline",
   "Assistant.toolFailed",
   "Assistant.noSavedData",
+  "Assistant.contextPersonUnclear",
+  "Assistant.contextActionReview",
 ])
 export const spokenReplyFor = (
   entry: ThreadEntry,

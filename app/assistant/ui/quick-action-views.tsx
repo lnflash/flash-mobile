@@ -137,7 +137,8 @@ const RELAYS = [
 export const ContactActionAnswer: React.FC<{
   entry: Extract<ThreadEntry, { kind: "contactAction" }>
   knownUsernames: readonly string[]
-}> = ({ entry, knownUsernames }) => {
+  onResolved: (entryId: string, username: string) => void
+}> = ({ entry, knownUsernames, onResolved }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const { isOffline } = useConnectivity()
@@ -154,6 +155,8 @@ export const ContactActionAnswer: React.FC<{
   >("loading")
   const handle = `${username}@${entry.hostname}`
   const verifiedHandle = useRef<string>()
+  const remember = useRef(onResolved)
+  remember.current = onResolved
   useEffect(() => {
     // Newly loaded contact names can improve a miss, but must not reset a finished action.
     if (verifiedHandle.current === handle) return
@@ -169,6 +172,7 @@ export const ContactActionAnswer: React.FC<{
         if (!live) return
         if (result.kind === "exact") {
           verifiedHandle.current = handle
+          remember.current(entry.id, result.match.username)
           setPubkey(result.match.value)
           setState("ready")
           fetchNostrUsers([result.match.value], (event, closer) => {
@@ -186,7 +190,7 @@ export const ContactActionAnswer: React.FC<{
     return () => {
       live = false
     }
-  }, [handle, username, entry.hostname, knownUsernames])
+  }, [handle, username, entry.id, entry.hostname, knownUsernames])
   const saved = Boolean(
     pubkey && contactsEvent?.tags.some((tag) => tag[0] === "p" && tag[1] === pubkey),
   )
