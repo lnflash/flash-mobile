@@ -72,6 +72,10 @@ describe("Ask Flash quick actions", () => {
     ["Show me dread marks's profile", "profile", "dread marks"],
     ["Open dread Max profile", "profile", "dread max"],
     ["Show me José’s profile", "profile", "josé"],
+    ["Remove dread marks from my contacts again", "remove", "dread marks"],
+    ["Show me dread marks's profile again", "profile", "dread marks"],
+    ["Add again to my contacts", "add", "again"],
+    ["Show me again's profile", "profile", "again"],
   ]) {
     it(`passes the spoken name in ${utterance} to shared username lookup`, () => {
       expect(readQuickAction(utterance, ctx)).toEqual({

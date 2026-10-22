@@ -321,6 +321,14 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
   const withModel = (decision: ModelDecision) =>
     fakeRuntime({ modelAdapter: fakeModelAdapter(decision) })
 
+  it("understands again in a named navigation request without changing the destination", async () => {
+    const { runtime, runTool } = fakeRuntime()
+    expect(await answerUtterance(runtime, "Show me my contacts again", env())).toEqual([
+      { kind: "screen", destination: "contacts" },
+    ])
+    expect(runTool).not.toHaveBeenCalled()
+  })
+
   it("routes merchant and payment searches through their existing read tools", async () => {
     const { runtime, runTool } = fakeRuntime()
     await answerUtterance(runtime, "Find merchants named Cafe", env())

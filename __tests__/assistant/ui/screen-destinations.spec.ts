@@ -5,6 +5,11 @@ describe("named Ask Flash destinations", () => {
     ["Where is the map?", "map"],
     ["Can you open the map, please?", "map"],
     ["Open my contacts", "contacts"],
+    ["Show me my contacts again", "contacts"],
+    ["Show me my contacts again, please!", "contacts"],
+    ["Open the map again", "map"],
+    ["Go to payment history again", "history"],
+    ["Turn off the Bitcoin wallet again", "bitcoinWalletOff"],
     ["Take me to in-app support", "support"],
     ["Where is my chat profile?", "chatProfile"],
     ["How do I get to bank accounts?", "bankAccounts"],
@@ -29,6 +34,8 @@ describe("named Ask Flash destinations", () => {
     "What's my Flash address?",
     "How do I cash out to my account?",
     "Open https://example.com/map",
+    "Send 2 cents to contacts again",
+    "Show me again's profile",
   ]
   unmatched.forEach((question) =>
     it(`does not route a financial or parameterized request: ${question}`, () => {

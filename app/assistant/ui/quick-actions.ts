@@ -25,7 +25,7 @@ export const readQuickAction = (
   const text = clean(utterance)
   const raw = utterance.trim()
   const contact = new RegExp(
-    `^(?:please )?(add|remove) @?${usernameHint} (?:to|from) my contacts[?.!]*$`,
+    `^(?:please )?(add|remove) @?${usernameHint} (?:to|from) my contacts(?: again)?[?.!]*$`,
     "iu",
   ).exec(raw)
   if (contact && isNameHint(contact[2]))
@@ -35,11 +35,11 @@ export const readQuickAction = (
       username: cleanNameHint(contact[2]),
     }
   const profile = new RegExp(
-    `^(?:(?:please )?show me|open|show) @?${usernameHint} profile[?.!]*$`,
+    `^(?:(?:please )?show me|open|show) @?${usernameHint} profile(?: again)?[?.!]*$`,
     "iu",
   ).exec(raw)
   const possessive = new RegExp(
-    `^(?:(?:please )?show me|open|show) @?${usernameHint}['’]s profile[?.!]*$`,
+    `^(?:(?:please )?show me|open|show) @?${usernameHint}['’]s profile(?: again)?[?.!]*$`,
     "iu",
   ).exec(raw)
   const profileMatch = possessive ?? profile
