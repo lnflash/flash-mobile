@@ -4265,6 +4265,10 @@ type RootTranslation = {
 		 */
 		onchainBtcAmountCashWallet: string
 		/**
+		 * E​n​a​b​l​e​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​A​c​c​o​u​n​t​ ​(​A​d​v​a​n​c​e​d​ ​M​o​d​e​)​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​p​a​y​ ​t​h​e​ ​e​x​a​c​t​ ​B​i​t​c​o​i​n​ ​a​m​o​u​n​t​ ​i​n​ ​t​h​i​s​ ​r​e​q​u​e​s​t​.
+		 */
+		onchainBtcAmountCashWalletBeginner: string
+		/**
 		 * F​o​r​ ​s​m​a​l​l​e​r​ ​p​a​y​m​e​n​t​s​,​ ​a​s​k​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​ ​f​o​r​ ​a​ ​L​i​g​h​t​n​i​n​g​ ​i​n​v​o​i​c​e​.
 		 */
 		onchainSmallPaymentHint: string
@@ -12864,6 +12868,10 @@ export type TranslationFunctions = {
 		 * Use your Bitcoin Account to pay the exact Bitcoin amount in this request.
 		 */
 		onchainBtcAmountCashWallet: () => LocalizedString
+		/**
+		 * Enable your Bitcoin Account (Advanced Mode) in Settings to pay the exact Bitcoin amount in this request.
+		 */
+		onchainBtcAmountCashWalletBeginner: () => LocalizedString
 		/**
 		 * For smaller payments, ask the recipient for a Lightning invoice.
 		 */

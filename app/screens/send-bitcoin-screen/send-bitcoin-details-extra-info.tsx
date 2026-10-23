@@ -9,6 +9,7 @@ import { useNavigation } from "@react-navigation/native"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { StackNavigationProp } from "@react-navigation/stack"
 import { toSpendableBalance } from "@app/types/amounts"
+import { usePersistentStateContext } from "@app/store/persistent-state"
 
 export type SendBitcoinDetailsExtraInfoProps = {
   errorMessage?: string
@@ -23,6 +24,7 @@ export const SendBitcoinDetailsExtraInfo = ({
 }: SendBitcoinDetailsExtraInfoProps) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
+  const { persistentState } = usePersistentStateContext()
   const { formatMoneyAmount } = useDisplayCurrency()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
 
@@ -79,7 +81,13 @@ export const SendBitcoinDetailsExtraInfo = ({
       )
     case AmountInvalidReason.OnChainBtcAmountCashWallet:
       return (
-        <GaloyErrorBox errorMessage={LL.SendBitcoinScreen.onchainBtcAmountCashWallet()} />
+        <GaloyErrorBox
+          errorMessage={`${
+            persistentState.isAdvanceMode
+              ? LL.SendBitcoinScreen.onchainBtcAmountCashWallet()
+              : LL.SendBitcoinScreen.onchainBtcAmountCashWalletBeginner()
+          } ${LL.SendBitcoinScreen.onchainSmallPaymentHint()}`}
+        />
       )
     case AmountInvalidReason.MinFlashcardLimit:
       return <GaloyErrorBox errorMessage={LL.SendBitcoinScreen.MinFlashcardLimit()} />
