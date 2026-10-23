@@ -68,6 +68,44 @@ for mode in ["hash", "secondhash", "size", "truncated", "oversize", "redirect", 
   clean(dir)
 }
 
+// A burst of real delegate calls must not enqueue one main-thread publication per
+// chunk. Terminal cancellation and the following successful retry bypass the cap.
+do {
+  let (pack, dir) = make("progress-burst")
+  var canceled: Bool?
+  var retried: Bool?
+  var progress = 0
+  var phases: [String] = []
+  pack.update = { state in
+    let statePhase = state["phase"] as! String
+    phases.append(statePhase)
+    let bytes = (state["receivedBytes"] as! NSNumber).int64Value
+    if statePhase == "downloading" && bytes > 0 && bytes < assets[0].bytes { progress += 1 }
+  }
+  pack.download(server + "/burst") { canceled = $0 }
+  wait("burst transfer begins") { progress > 0 }
+  let runID = staging(dir).first!.lastPathComponent.replacingOccurrences(of: "staging-", with: "")
+  let callback = URLSession.shared.downloadTask(with: URL(string: server + "/good/one.bin")!)
+  callback.taskDescription = runID + "|one.bin"
+  let before = progress
+  let started = ProcessInfo.processInfo.systemUptime
+  for chunk in 1...5000 {
+    pack.urlSession(.shared, downloadTask: callback, didWriteData: 1, totalBytesWritten: Int64(4096 + chunk), totalBytesExpectedToWrite: assets[0].bytes)
+  }
+  settle(0.05)
+  // Allow the cadence boundary and a real URLSession callback during the burst.
+  let limit = Int(ceil((ProcessInfo.processInfo.systemUptime - started) / 0.2)) + 2
+  require(progress - before <= limit, "Delegate burst flooded progress publications")
+  pack.cancel()
+  require(canceled == false && phases.last == "missing", "Cancellation was delayed by progress throttling")
+  pack.download(server + "/good") { retried = $0 }
+  wait("burst retry installation") { retried != nil }
+  require(retried == true && phases.last == "ready", "Completion was delayed by progress throttling")
+  settle(1.2)
+  require(phase(pack) == "ready", "Canceled burst overwrote completed retry")
+  clean(dir)
+}
+
 // Cancel after transfer begins, immediately retry, and deliver old native delegate
 // callbacks while the new run exists. They must not alter the retry or its files.
 do {
@@ -128,4 +166,4 @@ do {
   wait("post-cleanup installation") { result != nil }
   require(result == true, "Startup cleanup affected new download")
 }
-print("PASS native iOS pack: verified install, corrupt/size/truncated/oversized rejection, redirects/status, cancel/retry/stale callbacks, background, removal and cleanup")
+print("PASS native iOS pack: verified install, corrupt/size/truncated/oversized rejection, redirects/status, bounded progress bursts, cancel/retry/stale callbacks, background, removal and cleanup")

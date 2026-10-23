@@ -8,6 +8,7 @@ import { SpeechSettings } from "@app/assistant/ui/speech-settings"
 import { createSpeechPreference } from "@app/assistant/ui/speech-preference"
 import { useVoicePack, voicePack } from "@app/assistant/ui/voice-pack"
 import { nativeSpeechOutput } from "@app/assistant/ui/native-speech-output"
+import theme from "@app/rne-theme/theme"
 jest.mock("@app/assistant/ui/native-speech-output", () => ({
   nativeSpeechOutput: {
     voices: jest.fn(async () => [
@@ -198,5 +199,49 @@ it("shows only curated voices and migrates a saved system choice without changin
   expect(preference.get()).toBe(true)
   fireEvent.press(view.getByLabelText("Emma, United Kingdom"))
   expect(preference.settings()).toEqual({ voiceId: "flash:bf_emma", rate: 1.2 })
+  view.unmount()
+})
+
+it("keeps Done usable during progress updates without cancelling the download", async () => {
+  const preference = createSpeechPreference(
+    new ApolloClient({ cache: new InMemoryCache(), connectToDevTools: false }),
+    "downloading-sheet",
+  )
+  const onClose = jest.fn()
+  const sheet = () => (
+    <ThemeProvider theme={theme}>
+      <SpeechSettings
+        preference={preference}
+        locale="en-US"
+        LL={LL}
+        previewing={false}
+        onPreview={jest.fn()}
+        onChange={jest.fn()}
+        onClose={onClose}
+      />
+    </ThemeProvider>
+  )
+  const progress = (receivedBytes: number) =>
+    jest.mocked(useVoicePack).mockReturnValue({
+      phase: "downloading",
+      supported: true,
+      sourceAvailable: true,
+      receivedBytes,
+      totalBytes: 102466705,
+    })
+  progress(1)
+  const view = render(sheet())
+  await act(async () => undefined)
+  for (const received of [1000, 500000, 1000000]) {
+    progress(received)
+    view.rerender(sheet())
+    const done = view.getByTestId("ask-flash-voice-settings-done")
+    expect(done.props.accessibilityRole).toBe("button")
+    expect(done.props.disabled).not.toBe(true)
+    fireEvent.press(done)
+  }
+  expect(onClose).toHaveBeenCalledTimes(3)
+  expect(voicePack.cancel).not.toHaveBeenCalled()
+  expect(voicePack.remove).not.toHaveBeenCalled()
   view.unmount()
 })
