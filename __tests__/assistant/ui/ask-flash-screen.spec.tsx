@@ -43,12 +43,14 @@ jest.mock("@app/utils/nostr", () => ({
   ...jest.requireActual("@app/utils/nostr"),
   fetchNostrUsers: jest.fn(),
 }))
+// Preserve nostr-tools' real error-swallowing behavior while keeping its
+// transport behind the same scripted fetch boundary as production verification.
 jest.mock("nostr-tools", () => {
   const actual = jest.requireActual("nostr-tools")
-  return {
-    ...actual,
-    nip05: { ...actual.nip05, queryProfile: jest.fn(async () => null) },
-  }
+  actual.nip05.useFetchImplementation((...args: Parameters<typeof fetch>) =>
+    globalThis.fetch(...args),
+  )
+  return actual
 })
 const mockWalletRequest = jest.fn(async (_enabled: boolean) => undefined)
 jest.mock("@app/hooks/use-bitcoin-wallet-mode", () => ({
@@ -160,7 +162,6 @@ jest.mock("@app/assistant/ui/assistant-runtime", () => ({
 }))
 
 import { MockedProvider } from "@apollo/client/testing"
-import { nip05 } from "nostr-tools"
 
 import { confirmPaymentFixture } from "@app/assistant/cards/fixtures"
 import type { ModelAdapter } from "@app/assistant/engine/model-adapter"
@@ -213,16 +214,18 @@ const show = <M extends ModelAdapter>(
   mockRuntime = harness.runtime
   // The app's transaction row reads the hidden-balance flag and the price
   // from the Apollo cache, as it does on the home screen.
-  const screen = render(
+  const cache = createCache()
+  const content = () => (
     <FeatureFlagContext.Provider value={{ ...FLAGS_OFF, ...options.flags }}>
-      <MockedProvider mocks={[]} cache={createCache()}>
+      <MockedProvider mocks={[]} cache={cache}>
         <ThemeProvider theme={theme}>
           <AskFlashScreen />
         </ThemeProvider>
       </MockedProvider>
-    </FeatureFlagContext.Provider>,
+    </FeatureFlagContext.Provider>
   )
-  return { ...harness, screen }
+  const screen = render(content())
+  return { ...harness, screen, refresh: () => screen.rerender(content()) }
 }
 
 const ask = async (screen: ReturnType<typeof render>, text: string) => {
@@ -232,7 +235,15 @@ const ask = async (screen: ReturnType<typeof render>, text: string) => {
   })
 }
 
+beforeEach(() => {
+  jest
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(
+      new Response(JSON.stringify({ error: "User not found" }), { status: 404 }),
+    )
+})
 afterEach(() => {
+  jest.restoreAllMocks()
   mockKnownUsernames = []
   mockOffline = false
   mockDisplay = { displayCurrency: "USD", fiatSymbol: "$" }
@@ -321,11 +332,15 @@ describe("AskFlashScreen", () => {
   ].forEach((question) => {
     it(`selects a verified similar username and remembers it after: ${question}`, async () => {
       mockKnownUsernames = ["dreadmax"]
-      const lookup = jest
-        .mocked(nip05.queryProfile)
-        .mockImplementation(async (handle) =>
-          handle === "dreadmax@flashapp.me" ? { pubkey: "a".repeat(64) } : null,
+      const lookup = jest.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+        const name = new URL(String(url)).searchParams.get("name")
+        return new Response(
+          JSON.stringify({
+            names: name === "dreadmax" ? { dreadmax: "a".repeat(64) } : {},
+          }),
+          { status: 200 },
         )
+      })
       try {
         const { screen, runtime } = show()
         await ask(screen, question)
@@ -820,4 +835,103 @@ it("keeps typing usable when on-device voice is unavailable", async () => {
       text: "what's my balance",
     }),
   )
+})
+
+// Exercise the actual verification helper: only HTTP transport is scripted.
+// nostr-tools queryProfile would swallow these failures before the UI sees them.
+describe("contact verification failure and offline recovery", () => {
+  const cases = [
+    ["Add alice to my contacts", "add"],
+    ["Remove alice from my contacts", "remove"],
+    ["Show me alice's profile", "profile"],
+  ] as const
+
+  cases.forEach(([question]) => {
+    it(`shows verification errors and retries after ${question}`, async () => {
+      const transfer = jest
+        .spyOn(globalThis, "fetch")
+        .mockRejectedValueOnce(new Error("Transport unavailable"))
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ names: { alice: "a".repeat(64) } }), {
+            status: 200,
+          }),
+        )
+      const { screen } = show()
+      await ask(screen, question)
+      await waitFor(() =>
+        expect(screen.getByText(en.AskFlashActions.contactError())).toBeTruthy(),
+      )
+      expect(screen.queryByText(en.AskFlashActions.contactNotFound())).toBeNull()
+      expect(screen.queryAllByTestId("ask-flash-contact-suggestion")).toHaveLength(0)
+      fireEvent.press(screen.getByTestId("ask-flash-contact-search"))
+      await waitFor(() =>
+        expect(
+          screen.getByText(
+            en.AskFlashActions.verifiedProfile({ handle: "alice@flashapp.me" }),
+          ),
+        ).toBeTruthy(),
+      )
+      expect(transfer).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  cases.forEach(([question, operation]) => {
+    it(`reopens an unresolved offline ${question} card and recovers online`, async () => {
+      mockOffline = true
+      const transfer = jest.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({ names: { alice: "a".repeat(64) } }), {
+          status: 200,
+        }),
+      )
+      const { screen, refresh, runtime } = show()
+      // The session transcript survives closing/reopening Ask Flash. A fresh
+      // offline utterance is already refused by the turn router before this UI.
+      act(() => {
+        runtime.transcript.append([
+          { kind: "user", text: question },
+          {
+            kind: "contactAction",
+            operation,
+            username: "alice",
+            hostname: "flashapp.me",
+          },
+        ])
+      })
+      expect(screen.getByText(en.Assistant.actionsOffline())).toBeTruthy()
+      expect(screen.queryByText(en.AskFlashActions.findingContact())).toBeNull()
+      expect(screen.queryByTestId("ask-flash-contact-action")).toBeNull()
+      expect(transfer).not.toHaveBeenCalled()
+      mockOffline = false
+      refresh()
+      await waitFor(() =>
+        expect(
+          screen.getByText(
+            en.AskFlashActions.verifiedProfile({ handle: "alice@flashapp.me" }),
+          ),
+        ).toBeTruthy(),
+      )
+      expect(transfer).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it("keeps an already verified profile usable offline without another lookup", async () => {
+    const transfer = jest.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ names: { alice: "a".repeat(64) } }), {
+        status: 200,
+      }),
+    )
+    const { screen, refresh } = show()
+    await ask(screen, "Show me alice's profile")
+    await waitFor(() =>
+      expect(screen.getByTestId("ask-flash-contact-action")).toBeTruthy(),
+    )
+    mockOffline = true
+    refresh()
+    expect(screen.queryByText(en.AskFlashActions.findingContact())).toBeNull()
+    fireEvent.press(screen.getByTestId("ask-flash-contact-action"))
+    expect(mockNavigate).toHaveBeenCalledWith("contactDetails", {
+      contactPubkey: "a".repeat(64),
+    })
+    expect(transfer).toHaveBeenCalledTimes(1)
+  })
 })

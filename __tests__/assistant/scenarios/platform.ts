@@ -29,13 +29,6 @@ jest.mock("@app/utils/nostr", () => ({
   ...jest.requireActual("@app/utils/nostr"),
   fetchNostrUsers: jest.fn(),
 }))
-jest.mock("nostr-tools", () => {
-  const actual = jest.requireActual("nostr-tools")
-  return {
-    ...actual,
-    nip05: { ...actual.nip05, queryProfile: jest.fn(async () => null) },
-  }
-})
 let mockWalletEnabled = false
 const mockWalletRequest = jest.fn(async (enabled: boolean) => {
   mockWalletEnabled = enabled

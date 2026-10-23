@@ -6,6 +6,8 @@ import { useChatContext } from "@app/screens/chat/chatContext"
 import { knownFlashUsernames } from "./known-flash-users"
 import type { RecentFlashUsers } from "./recent-flash-users"
 
+const EMPTY_NAMES: readonly string[] = []
+
 /** One set of Chat and payment usernames for every Ask Flash username action. */
 export const useKnownFlashUsers = (
   hostname: string,
@@ -18,7 +20,13 @@ export const useKnownFlashUsers = (
   const { contactsEvent, profileMap, addEventToProfiles } = useChatContext()
   const addProfile = useRef(addEventToProfiles)
   addProfile.current = addEventToProfiles
-  const [names, setNames] = useState<string[]>([])
+  const [collected, setCollected] = useState({ recent, hostname, names: [] as string[] })
+  // A live account/host switch reuses this hook. Never publish its previous
+  // scope's state while the new scope's subscription is being established.
+  const names =
+    collected.recent === recent && collected.hostname === hostname
+      ? collected.names
+      : EMPTY_NAMES
 
   useEffect(() => {
     const tags = contactsEvent?.tags
@@ -36,10 +44,13 @@ export const useKnownFlashUsers = (
         }
       }
       const next = knownFlashUsernames(tags, profileMap, hostname)
-      setNames((previous) =>
-        previous.length === next.length && previous.every((name, i) => name === next[i])
+      setCollected((previous) =>
+        previous.recent === recent &&
+        previous.hostname === hostname &&
+        previous.names.length === next.length &&
+        previous.names.every((name, i) => name === next[i])
           ? previous
-          : next,
+          : { recent, hostname, names: next },
       )
     }
     refresh()
@@ -52,7 +63,7 @@ export const useKnownFlashUsers = (
       unsubscribe()
       nostrRuntime.releaseSubscription(key)
     }
-  }, [contactsEvent, profileMap, hostname])
+  }, [contactsEvent, profileMap, hostname, recent])
 
   const current = useMemo(
     () => [

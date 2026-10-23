@@ -4,7 +4,6 @@ import { Alert, TextInput, TouchableOpacity, View } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import { makeStyles, Text } from "@rneui/themed"
-import { nip05 } from "nostr-tools"
 
 import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
@@ -23,6 +22,7 @@ import { parseAmount, parseDisplayAmount } from "../engine/parse-amount"
 import { contactTagsFor } from "./contact-tags"
 import { searchFlashUsernames } from "../rails/username-search"
 import { lookupFlashUsername } from "../registry/read/lookup-flash-username"
+import { verifyFlashProfile } from "../rails/verify-flash-profile"
 
 const useStyles = makeStyles(({ colors }) => ({
   card: {
@@ -196,10 +196,7 @@ export const ContactActionAnswer: React.FC<{
     remember.current(entry.id, undefined)
     lookupFlashUsername(username, knownUsernames, {
       search: (hint) => searchFlashUsernames(client, hint),
-      verify: async (name) => {
-        const found = await nip05.queryProfile(`${name}@${entry.hostname}`.toLowerCase())
-        return found?.pubkey && /^[0-9a-f]{64}$/i.test(found.pubkey) ? found.pubkey : null
-      },
+      verify: (name) => verifyFlashProfile(name, entry.hostname),
     })
       .then((result) => {
         if (!live) return
@@ -300,7 +297,9 @@ export const ContactActionAnswer: React.FC<{
       ? LL.AskFlashActions.addContact()
       : LL.AskFlashActions.removeContact()
   const unavailable =
-    state === "loading"
+    isOffline && !pubkey
+      ? LL.Assistant.actionsOffline()
+      : state === "loading"
       ? LL.AskFlashActions.findingContact()
       : isOffline && entry.operation !== "profile"
       ? LL.Assistant.actionsOffline()
@@ -341,7 +340,9 @@ export const ContactActionAnswer: React.FC<{
         <TouchableOpacity
           key={name}
           accessibilityRole="button"
-          style={styles.button}
+          style={[styles.button, isOffline && styles.disabled]}
+          disabled={isOffline}
+          accessibilityState={{ disabled: isOffline }}
           testID="ask-flash-contact-suggestion"
           onPress={() => {
             setPubkey(undefined)

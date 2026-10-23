@@ -68,3 +68,30 @@ it("collects Chat and payment-history names, retaining them when contacts are re
   )
   reopened.unmount()
 })
+;["first.example", "second.example"].forEach((hostname) => {
+  it(`does not copy Chat hints into a live account switch on ${hostname}`, () => {
+    const client = new ApolloClient({
+      cache: new InMemoryCache(),
+      connectToDevTools: false,
+    })
+    const first = createRecentFlashUsers(client, "account-a")
+    const second = createRecentFlashUsers(client, "account-b")
+    mockContacts = []
+    mockHistory = []
+    mockTags = [["p", "alice-key"]]
+    mockProfileMap.clear()
+    mockProfileMap.set("alice-key", { nip05: "alice@first.example" })
+    const hook = renderHook(({ host, recent }) => useKnownFlashUsers(host, recent), {
+      initialProps: { host: "first.example", recent: first },
+    })
+    expect(hook.result.current).toEqual(["alice"])
+    expect(first.get()).toEqual(["alice"])
+    mockTags = []
+    // Apollo replaces the client/runtime without remounting the screen or hook.
+    hook.rerender({ host: hostname, recent: second })
+    expect(second.get()).toEqual([])
+    expect(hook.result.current).toEqual([])
+    expect(first.get()).toEqual(["alice"])
+    hook.unmount()
+  })
+})

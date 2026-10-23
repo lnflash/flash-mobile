@@ -13,7 +13,7 @@ import {
 } from "@testing-library/react-native"
 import { ApolloClient, ApolloLink, ApolloProvider, gql, Observable } from "@apollo/client"
 import { ThemeProvider } from "@rneui/themed"
-import { nip05, type Event } from "nostr-tools"
+import type { Event } from "nostr-tools"
 import {
   ContactsDocument,
   HomeAuthedDocument,
@@ -25,6 +25,7 @@ import { FeatureFlagContext } from "@app/config/feature-flags-context"
 import { answerUtterance } from "@app/assistant/ui/turn"
 import { useKnownFlashUsers } from "@app/assistant/ui/use-known-flash-users"
 import { searchFlashUsernames } from "@app/assistant/rails/username-search"
+import { verifyFlashProfile } from "@app/assistant/rails/verify-flash-profile"
 import { lookupFlashUsername } from "@app/assistant/registry/read/lookup-flash-username"
 import { nativeVoiceInput, type VoiceEvent } from "@app/assistant/ui/native-voice-input"
 import type { ToolCall } from "@app/assistant/engine/intent-router"
@@ -104,9 +105,11 @@ const makeClient = (search: () => readonly string[]) =>
 const preparePlatform = () => {
   platform.reset()
   jest.spyOn(Date, "now").mockReturnValue(NOW_MS)
-  return jest
-    .spyOn(global, "fetch")
-    .mockRejectedValue(new Error("Scenario attempted an unscripted network request"))
+  const unscripted = jest.fn(async (): Promise<Response> => {
+    throw new Error("Scenario attempted an unscripted network request")
+  })
+  jest.spyOn(global, "fetch").mockImplementation(unscripted)
+  return unscripted
 }
 const openScreen = (
   view: ReturnType<typeof render> | undefined,
@@ -293,15 +296,30 @@ export async function replay(
       })
     }
   }
-  const verify = async (name: string) => {
+  jest.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    let url: URL
+    try {
+      url = new URL(String(input))
+    } catch {
+      return network()
+    }
+    if (
+      url.origin !== "https://flashapp.me" ||
+      url.pathname !== "/.well-known/nostr.json"
+    )
+      return network()
     verificationReads += 1
     if (state.lookupFails) throw new Error("Scripted lookup outage")
-    return state.unverifiedUsers?.includes(name) ? null : users[name]?.pubkey ?? null
-  }
-  jest.mocked(nip05.queryProfile).mockImplementation(async (handle) => {
-    const pubkey = await verify(handle.split("@")[0])
-    return pubkey ? { pubkey, relays: [] } : null
+    const name = url.searchParams.get("name") ?? ""
+    const pubkey = state.unverifiedUsers?.includes(name) ? null : users[name]?.pubkey
+    return new Response(
+      JSON.stringify(
+        pubkey ? { names: { [name]: pubkey } } : { error: "User not found" },
+      ),
+      { status: pubkey ? 200 : 404 },
+    )
   })
+  const verify = (name: string) => verifyFlashProfile(name, "flashapp.me")
   const mount = () => {
     jest.mocked(nativeVoiceInput.permission).mockResolvedValue("granted")
     jest
