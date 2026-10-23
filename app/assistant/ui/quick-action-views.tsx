@@ -1,14 +1,15 @@
+import { useApolloClient } from "@apollo/client"
 import React, { useEffect, useRef, useState } from "react"
-import { Alert, TouchableOpacity, View } from "react-native"
+import { Alert, TextInput, TouchableOpacity, View } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import { makeStyles, Text } from "@rneui/themed"
-import { nip05 } from "nostr-tools"
 
 import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
 import { useFlashcard } from "@app/hooks/useFlashcard"
 import { useI18nContext } from "@app/i18n/i18n-react"
+import { useOpenSupportChat } from "@app/hooks/use-open-support-chat"
 import type { RootStackParamList } from "@app/navigation/stack-param-lists"
 import { useChatContext } from "@app/screens/chat/chatContext"
 import { getSigner } from "@app/nostr/signer"
@@ -19,6 +20,9 @@ import type { MerchantsPayload } from "../registry/projections"
 import type { ThreadEntry } from "./thread-store"
 import { parseAmount, parseDisplayAmount } from "../engine/parse-amount"
 import { contactTagsFor } from "./contact-tags"
+import { searchFlashUsernames } from "../rails/username-search"
+import { lookupFlashUsername } from "../registry/read/lookup-flash-username"
+import { verifyFlashProfile } from "../rails/verify-flash-profile"
 
 const useStyles = makeStyles(({ colors }) => ({
   card: {
@@ -37,6 +41,27 @@ const useStyles = makeStyles(({ colors }) => ({
     marginTop: 12,
   },
   buttonText: { color: colors.white },
+  correction: { flexDirection: "row", gap: 8, marginTop: 12 },
+  usernameInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.grey3,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    color: colors.black,
+    fontSize: 16,
+  },
+  searchButton: { marginTop: 0, paddingHorizontal: 16 },
+  disabled: { opacity: 0.45 },
+  supportButton: {
+    minHeight: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  supportText: { color: colors.primary },
 }))
 
 export const MerchantsAnswer: React.FC<{ payload: MerchantsPayload }> = ({ payload }) => {
@@ -135,34 +160,59 @@ const RELAYS = [
 
 export const ContactActionAnswer: React.FC<{
   entry: Extract<ThreadEntry, { kind: "contactAction" }>
-}> = ({ entry }) => {
+  knownUsernames: readonly string[]
+  onResolved: (entryId: string, username?: string) => void
+}> = ({ entry, knownUsernames, onResolved }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const { isOffline } = useConnectivity()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const openSupport = useOpenSupportChat()
+  const client = useApolloClient()
   const { contactsEvent, setContactsEvent, userPublicKey, addEventToProfiles } =
     useChatContext()
   const addProfileRef = useRef(addEventToProfiles)
   addProfileRef.current = addEventToProfiles
   const [pubkey, setPubkey] = useState<string>()
+  const [username, setUsername] = useState(entry.username)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [draft, setDraft] = useState(entry.username)
+  const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<
     "loading" | "missing" | "ready" | "working" | "done" | "error"
   >("loading")
-  const handle = `${entry.username}@${entry.hostname}`
+  const handle = `${username}@${entry.hostname}`
+  const verifiedHandle = useRef<string>()
+  const remember = useRef(onResolved)
+  remember.current = onResolved
   useEffect(() => {
+    // Newly loaded contact names can improve a miss, but must not reset a finished action.
+    if (verifiedHandle.current === handle) return
+    if (isOffline) return
     let live = true
-    nip05
-      .queryProfile(handle.toLowerCase())
-      .then((found) => {
+    setPubkey(undefined)
+    setSuggestions([])
+    setState("loading")
+    remember.current(entry.id, undefined)
+    lookupFlashUsername(username, knownUsernames, {
+      search: (hint) => searchFlashUsernames(client, hint),
+      verify: (name) => verifyFlashProfile(name, entry.hostname),
+    })
+      .then((result) => {
         if (!live) return
-        if (found?.pubkey && /^[0-9a-f]{64}$/i.test(found.pubkey)) {
-          setPubkey(found.pubkey)
+        if (result.kind === "exact") {
+          verifiedHandle.current = handle
+          remember.current(entry.id, result.match.username)
+          setPubkey(result.match.value)
           setState("ready")
-          fetchNostrUsers([found.pubkey], (event, closer) => {
+          fetchNostrUsers([result.match.value], (event, closer) => {
             if (live) addProfileRef.current(event)
             closer.close()
           })
-        } else setState("missing")
+        } else {
+          setSuggestions(result.matches.map((match) => match.username))
+          setState("missing")
+        }
       })
       .catch(() => {
         if (live) setState("error")
@@ -170,7 +220,25 @@ export const ContactActionAnswer: React.FC<{
     return () => {
       live = false
     }
-  }, [handle])
+  }, [
+    handle,
+    username,
+    entry.id,
+    entry.hostname,
+    knownUsernames,
+    attempt,
+    client,
+    isOffline,
+  ])
+  const search = () => {
+    const name = draft.trim().replace(/^@/, "").toLowerCase()
+    if (!name || isOffline) return
+    verifiedHandle.current = undefined
+    setState("loading")
+    setDraft(name)
+    setUsername(name)
+    setAttempt((value) => value + 1)
+  }
   const saved = Boolean(
     pubkey && contactsEvent?.tags.some((tag) => tag[0] === "p" && tag[1] === pubkey),
   )
@@ -211,7 +279,7 @@ export const ContactActionAnswer: React.FC<{
   }
   const confirmRemove = () =>
     Alert.alert(
-      LL.AskFlashActions.removeContactTitle({ username: entry.username }),
+      LL.AskFlashActions.removeContactTitle({ username }),
       LL.AskFlashActions.removeContactBody(),
       [
         { text: LL.common.cancel(), style: "cancel" },
@@ -229,12 +297,16 @@ export const ContactActionAnswer: React.FC<{
       ? LL.AskFlashActions.addContact()
       : LL.AskFlashActions.removeContact()
   const unavailable =
-    state === "loading"
+    isOffline && !pubkey
+      ? LL.Assistant.actionsOffline()
+      : state === "loading"
       ? LL.AskFlashActions.findingContact()
       : isOffline && entry.operation !== "profile"
       ? LL.Assistant.actionsOffline()
       : state === "missing"
-      ? LL.AskFlashActions.contactNotFound()
+      ? suggestions.length
+        ? LL.Assistant.pickContact()
+        : LL.AskFlashActions.contactNotFound()
       : state === "error"
       ? LL.AskFlashActions.contactError()
       : state === "done"
@@ -258,12 +330,78 @@ export const ContactActionAnswer: React.FC<{
   return (
     <View style={styles.card} testID={`ask-flash-contact-${entry.operation}`}>
       <Text type="p1" bold>
-        @{entry.username}
+        @{username}
       </Text>
       {pubkey ? (
         <Text type="p2">{LL.AskFlashActions.verifiedProfile({ handle })}</Text>
       ) : null}
       {unavailable ? <Text type="p2">{unavailable}</Text> : null}
+      {suggestions.map((name) => (
+        <TouchableOpacity
+          key={name}
+          accessibilityRole="button"
+          style={[styles.button, isOffline && styles.disabled]}
+          disabled={isOffline}
+          accessibilityState={{ disabled: isOffline }}
+          testID="ask-flash-contact-suggestion"
+          onPress={() => {
+            setPubkey(undefined)
+            setState("loading")
+            setUsername(name)
+            setDraft(name)
+          }}
+        >
+          <Text type="p2" bold style={styles.buttonText}>
+            @{name}
+          </Text>
+        </TouchableOpacity>
+      ))}
+      {(state === "missing" && !suggestions.length) || state === "error" ? (
+        <View>
+          <View style={styles.correction}>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={search}
+              placeholder={LL.common.username()}
+              accessibilityLabel={LL.common.username()}
+              autoCapitalize="none"
+              autoCorrect={false}
+              selectTextOnFocus
+              maxLength={80}
+              returnKeyType="search"
+              style={styles.usernameInput}
+              testID="ask-flash-contact-input"
+            />
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={!draft.trim() || isOffline}
+              accessibilityState={{ disabled: !draft.trim() || isOffline }}
+              onPress={search}
+              style={[
+                styles.button,
+                styles.searchButton,
+                (!draft.trim() || isOffline) && styles.disabled,
+              ]}
+              testID="ask-flash-contact-search"
+            >
+              <Text type="p2" bold style={styles.buttonText}>
+                {LL.common.search()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={openSupport}
+            style={styles.supportButton}
+            testID="ask-flash-contact-support"
+          >
+            <Text type="p3" bold style={styles.supportText}>
+              {LL.AskFlashHelp.supportChatAction()}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       {available ? (
         <TouchableOpacity
           accessibilityRole="button"

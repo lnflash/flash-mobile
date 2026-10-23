@@ -30,6 +30,9 @@ export const SCREEN_DESTINATIONS = {
   defaultWallet: ["default wallet", "wallet settings"],
   socialSettings: ["chat settings", "social settings"],
   bitcoinPrice: ["bitcoin price", "price chart"],
+  bitcoinWallet: ["bitcoin wallet", "btc wallet"],
+  bitcoinWalletOn: [],
+  bitcoinWalletOff: [],
 } as const
 
 export type ScreenDestination = keyof typeof SCREEN_DESTINATIONS
@@ -38,11 +41,32 @@ export type ScreenDestination = keyof typeof SCREEN_DESTINATIONS
 export const readScreenDestination = (
   utterance: string,
 ): ScreenDestination | undefined => {
-  const text = textOf(normalize(utterance).tokens).replace(/ please$/, "")
+  const text = textOf(normalize(utterance).tokens)
+    .replace(/^(?:please )?(?:(?:can|could|would) you )?(?:please )?/, "")
+    .replace(/(?: (?:please|again))+$/, "")
   // Bare "bitcoin price" is an existing live-price read, not a request to open a chart.
   if (text === "bitcoin price") return undefined
+  if (
+    /^(?:(?:i want|i need|id like) to )?(?:talk|speak|chat) (?:to|with) (?:pulse|a human|an agent|a support agent|someone from support)$|^(?:get me support|escalate this|human support)$/.test(
+      text,
+    )
+  )
+    return "support"
+  if (
+    /^(?:turn on|enable|activate) (?:my |the )?(?:bitcoin|btc) (?:wallet|account)$|^(?:turn on|enable) (?:my |the )?advance(?:d)? mode$/.test(
+      text,
+    )
+  )
+    return "bitcoinWalletOn"
+  if (
+    /^(?:turn off|disable|deactivate) (?:my |the )?(?:bitcoin|btc) (?:wallet|account)$|^(?:turn off|disable) (?:my |the )?advance(?:d)? mode$/.test(
+      text,
+    )
+  )
+    return "bitcoinWalletOff"
+  if (/^show (?:my |the )?(?:bitcoin|btc) wallet$/.test(text)) return "bitcoinWallet"
   const match =
-    /^(?:please )?(?:(?:can you|could you|would you) )?(?:(?:open|go to|navigate to|take me to|bring me to|show me|find|where is|where are|where do i find|how do i find|how can i find|where can i find|how do i get to|i want to see) )?(.+?)(?: screen| page| tab)?$/.exec(
+    /^(?:please )?(?:(?:can you|could you|would you) (?:please )?)?(?:(?:open|go to|navigate to|take me to|bring me to|show me|find|where is|where are|where do i find|how do i find|how can i find|where can i find|how do i get to|i want to see) )?(.+?)(?: screen| page| tab)?$/.exec(
       text,
     )
   if (!match) return undefined
@@ -112,5 +136,9 @@ export const screenDestinationTitle = (
       return LL.SettingsScreen.showNostrSecret()
     case "bitcoinPrice":
       return LL.common.bitcoinPrice()
+    case "bitcoinWallet":
+    case "bitcoinWalletOn":
+    case "bitcoinWalletOff":
+      return LL.common.btcAccount()
   }
 }

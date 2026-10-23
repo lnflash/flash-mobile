@@ -71,17 +71,16 @@ describe("resolveContact", () => {
     expect(graphql.accountDefaultWallet.mock.calls).toEqual([["zzzz"]])
   })
 
-  it("offers a Flash user who is not a contact as a picker of one, never as an answer", async () => {
+  it("resolves an exact Flash username directly for the payment review", async () => {
     const { result, graphql } = await resolve("dreadmax")
 
     expect(result).toEqual({
-      kind: "clarification",
-      card: {
-        type: "clarification",
-        // The prompt says the person is not in the contacts; the option is
-        // the username alone, data and no copy.
-        prompt: "Assistant.pickFlashUser",
-        options: [{ id: "dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+      kind: "answer",
+      payload: {
+        username: "dreadmax",
+        alias: null,
+        defaultWallet: { id: "dreadmax-wallet", walletCurrency: "USD" },
+        source: "flashUser",
       },
     })
     expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"]])
@@ -91,10 +90,30 @@ describe("resolveContact", () => {
     const { result, graphql } = await resolve("  dreadmax ")
 
     expect(result).toMatchObject({
-      kind: "clarification",
-      card: { options: [{ id: "dreadmax", label: "dreadmax", sublabel: "dreadmax" }] },
+      kind: "answer",
+      payload: { username: "dreadmax", source: "flashUser" },
     })
     expect(graphql.accountDefaultWallet.mock.calls).toEqual([["dreadmax"]])
+  })
+
+  it("offers a verified known username when speech transcribes a similar name", async () => {
+    const { ctx, graphql } = fakeCtx()
+    ctx.knownUsernames = ["dreadmax"]
+    graphql.contacts.mockResolvedValue([])
+    graphql.accountDefaultWallet.mockImplementation(accountsOf(["dreadmax"]))
+
+    await expect(resolveContact.run({ hint: "dreadlocks" }, ctx)).resolves.toEqual({
+      kind: "clarification",
+      card: {
+        type: "clarification",
+        prompt: "Assistant.pickContact",
+        options: [{ id: "dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
+      },
+    })
+    expect(graphql.accountDefaultWallet.mock.calls).toEqual([
+      ["dreadlocks"],
+      ["dreadmax"],
+    ])
   })
 
   it("never looks up words with a space in them as a username: no username has one", async () => {
@@ -252,14 +271,7 @@ describe("resolveContact", () => {
         "Assistant.noContactMatch",
       ])
     })
-    // Both kinds of question are among them: a contact picker and a Flash user's.
-    expect(
-      results.flatMap(({ result }) =>
-        result.kind === "clarification" ? [result.card.prompt] : [],
-      ),
-    ).toEqual(
-      expect.arrayContaining(["Assistant.pickContact", "Assistant.pickFlashUser"]),
-    )
+    expect(results.some(({ result }) => result.kind === "clarification")).toBe(true)
   })
 
   it("answers a single strong match with its full username and default wallet", async () => {

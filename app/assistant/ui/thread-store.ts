@@ -80,6 +80,8 @@ export type ThreadEntry =
       operation: "add" | "remove" | "profile"
       username: string
       hostname: string
+      /** Set only after the profile lookup verified the user's selected name. */
+      resolvedUsername?: string
     }
   | {
       id: string
@@ -104,7 +106,7 @@ export type ThreadEntry =
       stale: boolean
       asOf?: number
     }
-  | { id: string; kind: "user"; text: string }
+  | { id: string; kind: "user"; text: string; resolvedText?: string; readCall?: ToolCall }
   | { id: string; kind: "reply"; replyKey: AssistantReplyKey; params?: ReplyParams }
   | {
       id: string
@@ -159,6 +161,8 @@ export type ThreadStore = {
   replace: (id: string, entries: readonly NewEntry[]) => boolean
   /** A card entry's payload, changed in place: the card keeps its id and state. */
   setCard: (id: string, card: unknown) => void
+  rememberRequest: (id: string, resolvedText: string, readCall?: ToolCall) => void
+  rememberContact: (id: string, username?: string) => void
   entry: (id: string) => ThreadEntry | undefined
   /** The card entry whose card was prepared under `preparedActionId`. */
   cardEntry: (preparedActionId: string) => CardEntry | undefined
@@ -219,6 +223,24 @@ export const createThreadStore = (): ThreadStore => {
         ...state,
         entries: state.entries.map((entry) =>
           entry.id === id && entry.kind === "card" ? { ...entry, card } : entry,
+        ),
+      }),
+    rememberRequest: (id, resolvedText, readCall) =>
+      set({
+        ...state,
+        entries: state.entries.map((entry) =>
+          entry.id === id && entry.kind === "user"
+            ? { ...entry, resolvedText, ...(readCall ? { readCall } : {}) }
+            : entry,
+        ),
+      }),
+    rememberContact: (id, resolvedUsername) =>
+      set({
+        ...state,
+        entries: state.entries.map((entry) =>
+          entry.id === id && entry.kind === "contactAction"
+            ? { ...entry, resolvedUsername }
+            : entry,
         ),
       }),
     entry: (id) => state.entries.find((entry) => entry.id === id),

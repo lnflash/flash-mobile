@@ -39,6 +39,7 @@ export type FakeGraphqlRail = { [K in keyof GraphqlRail]: jest.Mock }
  * an empty list proves nothing, and a case says what the list shows.
  */
 export const fakeGraphqlRail = (): FakeGraphqlRail => ({
+  searchUsernames: jest.fn(async () => []),
   wallets: jest.fn(async () => []),
   transactions: jest.fn(async () => {
     throw new Error("transactions not stubbed")

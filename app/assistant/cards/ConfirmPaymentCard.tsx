@@ -36,7 +36,14 @@ const ConfirmPaymentCardBody: React.FC<{
     )
   }
   return (
-    <CardFrame title={LL.AssistantCards.confirmTitle()} testID="assistant-card-confirm">
+    <CardFrame
+      title={
+        card.toWallet
+          ? LL.ConversionConfirmationScreen.title()
+          : LL.AssistantCards.confirmTitle()
+      }
+      testID="assistant-card-confirm"
+    >
       <CardRow
         label={LL.common.to()}
         value={card.toWallet ? walletName(LL, card.toWallet) : card.payeeLabel}

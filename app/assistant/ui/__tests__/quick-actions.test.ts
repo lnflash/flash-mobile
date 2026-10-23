@@ -64,5 +64,45 @@ describe("Ask Flash quick actions", () => {
       username: "alice-b",
     })
     expect(readQuickAction("Remove my contacts", ctx)).toBeUndefined()
+    expect(readQuickAction("Do not add alice as a contact", ctx)).toBeUndefined()
+    expect(readQuickAction("Remove alice as a contact", ctx)).toBeUndefined()
+    expect(readQuickAction("Remove alice to my contacts", ctx)).toBeUndefined()
+    expect(readQuickAction("Add alice from my contacts", ctx)).toBeUndefined()
+  })
+
+  for (const [utterance, operation, username] of [
+    ["Add dreadlocks of the contacts", "add", "dreadlocks"],
+    ["Add dreadmax as a contact", "add", "dreadmax"],
+    ["Add dreadlocks as a contact", "add", "dreadlocks"],
+    ["Drug Max as a contact", "add", "drug max"],
+    ["Save dread Max as my contact", "add", "dread max"],
+    ["Add dread marks to contacts", "add", "dread marks"],
+    ["Remove dread marks from contacts", "remove", "dread marks"],
+    ["Remove dread marks from my contacts", "remove", "dread marks"],
+    ["Add dread Max to my contacts", "add", "dread max"],
+    ["Show me dread marks's profile", "profile", "dread marks"],
+    ["Open dread Max profile", "profile", "dread max"],
+    ["Show me José’s profile", "profile", "josé"],
+    ["Remove dread marks from my contacts again", "remove", "dread marks"],
+    ["Show me dread marks's profile again", "profile", "dread marks"],
+    ["Add again to my contacts", "add", "again"],
+    ["Show me again's profile", "profile", "again"],
+  ]) {
+    it(`passes the spoken name in ${utterance} to shared username lookup`, () => {
+      expect(readQuickAction(utterance, ctx)).toEqual({
+        kind: "contact",
+        operation,
+        username,
+      })
+    })
+  }
+
+  it("accepts spoken names in payment-history searches without joining separate commands", () => {
+    expect(readQuickAction("Show me my last payment to dread marks", ctx)).toEqual({
+      kind: "payment",
+      query: "dread marks",
+    })
+    expect(readQuickAction("Add alice and bob to my contacts", ctx)).toBeUndefined()
+    expect(readQuickAction("Remove alice then bob from my contacts", ctx)).toBeUndefined()
   })
 })

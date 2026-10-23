@@ -50,7 +50,7 @@ const wordOf = (raw: string): string => {
 }
 
 /** Whether a word is one the rules can match: it holds a letter, a digit or a currency sign. */
-const isWord = (word: string): boolean => /[\p{L}\p{N}$₿]/u.test(word)
+const isWord = (word: string): boolean => /[\p{L}\p{N}\p{Sc}]/u.test(word)
 
 export const normalize = (utterance: string): Utterance => {
   const pieces: Token[] = []

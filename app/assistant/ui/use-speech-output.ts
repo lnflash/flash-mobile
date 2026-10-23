@@ -14,6 +14,7 @@ export const useSpeechOutput = (options: {
   LL: TranslationFunctions
   locale: string
   display: PriceDisplay
+  bitcoinWalletEnabled: boolean
 }) => {
   const latest = useRef(options)
   latest.current = options
@@ -49,9 +50,10 @@ export const useSpeechOutput = (options: {
   }, [clear])
   const play = useCallback(
     async (entry: ThreadEntry, automatic?: boolean, prepared?: SpokenReply) => {
-      const { enabled, LL, locale, display } = latest.current
+      const { enabled, LL, locale, display, bitcoinWalletEnabled } = latest.current
       if (!enabled || !focused.current || AppState.currentState !== "active") return
-      const reply = prepared ?? spokenReplyFor(entry, { LL, locale, display })
+      const reply =
+        prepared ?? spokenReplyFor(entry, { LL, locale, display, bitcoinWalletEnabled })
       if (!reply || (automatic && (!reply.automatic || screenReader.current))) return
       generation.current += 1
       const epoch = generation.current
@@ -126,10 +128,16 @@ export const useSpeechOutput = (options: {
     useCallback(() => {
       focused.current = true
       const unsubscribe = options.runtime.completedTurns.subscribe((turn) => {
-        const { enabled, runtime, LL, locale, display } = latest.current
+        const { enabled, runtime, LL, locale, display, bitcoinWalletEnabled } =
+          latest.current
         if (!enabled || !runtime.speechPreference.get() || screenReader.current) return
         const candidates = turn.entries.flatMap((entry) => {
-          const spoken = spokenReplyFor(entry, { LL, locale, display })
+          const spoken = spokenReplyFor(entry, {
+            LL,
+            locale,
+            display,
+            bitcoinWalletEnabled,
+          })
           return spoken?.automatic ? [{ entry, spoken }] : []
         })
         const first = candidates[0]

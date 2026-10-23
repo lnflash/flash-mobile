@@ -321,6 +321,14 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
   const withModel = (decision: ModelDecision) =>
     fakeRuntime({ modelAdapter: fakeModelAdapter(decision) })
 
+  it("understands again in a named navigation request without changing the destination", async () => {
+    const { runtime, runTool } = fakeRuntime()
+    expect(await answerUtterance(runtime, "Show me my contacts again", env())).toEqual([
+      { kind: "screen", destination: "contacts" },
+    ])
+    expect(runTool).not.toHaveBeenCalled()
+  })
+
   it("routes merchant and payment searches through their existing read tools", async () => {
     const { runtime, runTool } = fakeRuntime()
     await answerUtterance(runtime, "Find merchants named Cafe", env())
@@ -374,6 +382,37 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
         env({ isOffline: true }),
       ),
     ).toEqual([{ kind: "reply", replyKey: "Assistant.actionsOffline" }])
+  })
+
+  it("routes spaced voice names to contact and profile lookup instead of unknown intent", async () => {
+    const { runtime } = fakeRuntime()
+    for (const [utterance, operation] of [
+      ["Remove dread marks from my contacts", "remove"],
+      ["Add dread marks to my contacts", "add"],
+      ["Show me dread marks's profile", "profile"],
+    ]) {
+      expect(await answerUtterance(runtime, utterance, env())).toEqual([
+        {
+          kind: "contactAction",
+          operation,
+          username: "dread marks",
+          hostname: "flashapp.me",
+        },
+      ])
+    }
+    expect(
+      reissue(
+        {
+          intent: "getTransactions",
+          args: { query: "dread marks", direction: "SEND", first: 10 },
+        },
+        "dread marks",
+        "dreadmax",
+      ),
+    ).toEqual({
+      intent: "getTransactions",
+      args: { query: "dreadmax", direction: "SEND", first: 10 },
+    })
   })
 
   it("opens the card top-up flow with the requested amount", async () => {
@@ -444,13 +483,28 @@ describe("answerUtterance and the on-device model (ENG-690)", () => {
       )
       const entries = await answerUtterance(runtime, utterance, env(ON))
 
-      expect(entries).toEqual([{ kind: "reply", replyKey: "Assistant.unknownIntent" }])
+      expect(entries).toEqual([
+        {
+          kind: "reply",
+          replyKey:
+            utterance === "send her $5"
+              ? "Assistant.contextPersonUnclear"
+              : "Assistant.unknownIntent",
+        },
+      ])
       expect(modelAdapter.isAvailable).not.toHaveBeenCalled()
       expect(modelAdapter.decide).not.toHaveBeenCalled()
       expect(runTool).not.toHaveBeenCalled()
-      expect(toolEvents()).toEqual([
-        expect.objectContaining({ outcome: "rejected", onDeviceModelAvailable: false }),
-      ])
+      expect(toolEvents()).toEqual(
+        utterance === "send her $5"
+          ? []
+          : [
+              expect.objectContaining({
+                outcome: "rejected",
+                onDeviceModelAvailable: false,
+              }),
+            ],
+      )
     }
   })
 

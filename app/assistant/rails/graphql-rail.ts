@@ -24,6 +24,8 @@ import {
   WalletOverviewScreenQuery,
 } from "@app/graphql/generated"
 
+import { searchFlashUsernames } from "./username-search"
+
 // The custodial rail (USD and USDT wallets) as the assistant's read tools see
 // it: the queries the screens already make, with the session's own auth
 // (docs/ai-assistant-tool-registry.md §1, rule 4, "No new powers"). There is
@@ -69,6 +71,8 @@ export type AccountLimitsRow = NonNullable<
 >["defaultAccount"]["limits"]
 
 export type GraphqlRail = {
+  /** Similar public usernames, including people outside the caller's contacts. */
+  searchUsernames: (hint: string) => Promise<readonly string[]>
   /** The account's wallets with their balances (`Wallet.balance`, fractional cents). */
   wallets: () => Promise<readonly WalletRow[]>
   /** One page of the account's transactions, all wallets, newest first. */
@@ -276,6 +280,11 @@ export const createGraphqlRail = (
   }
 
   return {
+    searchUsernames: async (hint) => {
+      if (fetchPolicy === "cache-only")
+        throw new GraphqlRailError("Search needs internet")
+      return searchFlashUsernames(client, hint)
+    },
     wallets: async () => {
       const data = await read<WalletOverviewScreenQuery>(WalletOverviewScreenDocument)
       return signedInUser(data.me).defaultAccount.wallets

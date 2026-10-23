@@ -73,6 +73,16 @@ export const useThread = (runtime: AssistantRuntime, env: TurnEnv): Thread => {
           currentTranslation: LLRef.current,
         })
       } finally {
+        const verifiedNames = runtime.transcript.get().entries.flatMap((entry) => {
+          if (entry.kind !== "card") return []
+          const card = validateCard(entry.card)
+          return card.valid &&
+            card.card.type === "confirmPayment" &&
+            card.card.payeeUsername
+            ? [card.card.payeeUsername]
+            : []
+        })
+        runtime.recentUsers.remember(verifiedNames)
         runtime.transcript.end()
       }
     },

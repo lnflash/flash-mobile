@@ -16,8 +16,8 @@ import { TUNING } from "./corpus/tuning"
 // review's near misses ("gas" beside Vargas, "andrea" beside Andre), are
 // never answered: each is a picker offering the contact it looks like. A
 // payee the book holds under no name and nothing like one is a Flash user
-// the user has not added (NOT_IN_BOOK, ENG-730): a picker of one offering
-// that user, never a contact. The counts go to the log for the PR. A change
+// the user has not added (NOT_IN_BOOK): an exact server-verified username
+// reaches the payment review directly. The counts go to the log for the PR. A change
 // to the threshold changes read/resolve-contact.spec.ts in the same PR.
 
 const contact = (username: string, alias: string | null = null): ContactRow =>
@@ -125,11 +125,10 @@ const PAYEES = [
   ),
 ].sort()
 
-/** A contact picker, or (flashUser) the picker of a Flash user who is no contact. */
+/** A contact match or picker, including exact Flash usernames. */
 type Resolution =
   | { kind: "match"; username: string }
   | { kind: "picker"; usernames: string[] }
-  | { kind: "flashUser"; usernames: string[] }
   | { kind: "none" }
 
 const resolvePayee = async (hint: string): Promise<Resolution> => {
@@ -146,9 +145,7 @@ const resolvePayee = async (hint: string): Promise<Resolution> => {
   }
   if (result.kind === "clarification" && result.card.options.length > 0) {
     const usernames = result.card.options.map(({ id }) => id)
-    return result.card.prompt === "Assistant.pickFlashUser"
-      ? { kind: "flashUser", usernames }
-      : { kind: "picker", usernames }
+    return { kind: "picker", usernames }
   }
   return { kind: "none" }
 }
@@ -249,7 +246,7 @@ describe("contact resolution over the tuning corpus's payees", () => {
     })
   })
 
-  it("offers a payee the book does not hold as the Flash user of that username, a picker of one (ENG-730)", async () => {
+  it("resolves an exact Flash username outside the payment-history book", async () => {
     const notInBook = PAYEES.filter((payee) => NOT_IN_BOOK[payee] !== undefined)
     const resolutions = await Promise.all(
       notInBook.map(async (payee) => ({ payee, resolution: await resolvePayee(payee) })),
@@ -263,7 +260,7 @@ describe("contact resolution over the tuning corpus's payees", () => {
     resolutions.forEach(({ payee, resolution }) => {
       expect([payee, resolution]).toEqual([
         payee,
-        { kind: "flashUser", usernames: [NOT_IN_BOOK[payee]] },
+        { kind: "match", username: NOT_IN_BOOK[payee] },
       ])
     })
     // Words that are no contact's and no Flash user's are refused: nothing

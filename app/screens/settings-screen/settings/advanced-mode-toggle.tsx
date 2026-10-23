@@ -1,136 +1,43 @@
+import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
+import { useBitcoinWalletMode } from "@app/hooks/use-bitcoin-wallet-mode"
 import { useI18nContext } from "@app/i18n/i18n-react"
-import { RootStackParamList } from "@app/navigation/stack-param-lists"
-import { useNavigation } from "@react-navigation/native"
-import { StackNavigationProp } from "@react-navigation/stack"
 
 import { SettingsRow } from "../row"
-import { toBtcMoneyAmount, toSpendableBalance } from "@app/types/amounts"
-import { useDisplayCurrency } from "@app/hooks/use-display-currency"
-import { Alert, Platform } from "react-native"
-import { useSettingsScreenQuery } from "@app/graphql/generated"
-import { getCashWallet } from "@app/graphql/wallets-utils"
-import { useLevel } from "@app/graphql/level-context"
-import { usePersistentStateContext } from "@app/store/persistent-state"
-import { useBreez } from "@app/hooks"
-import { useEffect, useState } from "react"
-import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
-import * as Keychain from "react-native-keychain"
-import { KEYCHAIN_MNEMONIC_KEY } from "@app/utils/breez-sdk"
 
 export const AdvancedModeToggle: React.FC = () => {
   const { LL } = useI18nContext()
-  const { isAtLeastLevelZero } = useLevel()
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const mode = useBitcoinWalletMode()
+  if (!mode.available) return null
 
-  const { persistentState, updateState } = usePersistentStateContext()
-  const { btcWallet } = useBreez()
-  const { moneyAmountToDisplayCurrencyString } = useDisplayCurrency()
-
-  const [advanceModalVisible, setAdvanceModalVisible] = useState(false)
-  const [hasRecoveryPhrase, setHasRecoveryPhrase] = useState(false)
-
-  const isAdvanceMode = persistentState.isAdvanceMode
-
-  const { data } = useSettingsScreenQuery({
-    fetchPolicy: "cache-first",
-    returnPartialData: true,
-    skip: !isAtLeastLevelZero,
-  })
-
-  const usdWallet = getCashWallet(data?.me?.defaultAccount?.wallets)
-
-  useEffect(() => {
-    checkRecoveryPhrase()
-  }, [])
-
-  const checkRecoveryPhrase = async () => {
-    const credentials = await Keychain.getInternetCredentials(KEYCHAIN_MNEMONIC_KEY)
-    if (credentials) {
-      setHasRecoveryPhrase(true)
-    }
-  }
-
-  const onUpdateState = (isAdvanceMode: boolean) => {
-    updateState((state: any) => {
-      if (state)
-        return {
-          ...state,
-          defaultWallet: isAdvanceMode ? state.defaultWallet : usdWallet,
-          isAdvanceMode,
-        }
-      return undefined
-    })
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Primary" }],
-    })
-  }
-
-  const toggleAdvanceMode = async () => {
-    if (isAdvanceMode) {
-      if (btcWallet.balance && btcWallet.balance > 0) {
-        // Display-only: floor the balance shown in the warning (#690)
-        const btcWalletBalance = toSpendableBalance(
-          toBtcMoneyAmount(btcWallet.balance || 0),
-        )
-        const convertedBalance =
-          moneyAmountToDisplayCurrencyString({
-            moneyAmount: btcWalletBalance,
-            isApproximate: true,
-          }) || "0"
-        const btcBalanceWarning = LL.AccountScreen.btcBalanceWarning({
-          balance: convertedBalance,
-        })
-
-        const fullMessage = btcBalanceWarning + "\n" + LL.support.switchToBeginnerMode()
-
-        Alert.alert(LL.common.warning(), fullMessage, [
-          { text: LL.common.cancel(), onPress: () => {} },
-          {
-            text: LL.common.yes(),
-            onPress: () => onUpdateState(false),
-          },
-        ])
-      } else {
-        onUpdateState(false)
-      }
-    } else {
-      if (hasRecoveryPhrase) {
-        onUpdateState(true)
-      } else {
-        setAdvanceModalVisible(true)
-      }
-    }
-  }
-
-  let leftIcon = isAdvanceMode ? "invert-mode-outline" : "invert-mode"
-  let title = isAdvanceMode
-    ? LL.SettingsScreen.beginnerMode()
-    : LL.SettingsScreen.advanceMode()
-  if (hasRecoveryPhrase) {
-    leftIcon = isAdvanceMode ? "eye" : "eye-off"
-    title = isAdvanceMode
+  const title = mode.hasRecoveryPhrase
+    ? mode.enabled
       ? LL.SettingsScreen.hideBtcAccount()
       : LL.SettingsScreen.showBtcAccount()
-  }
+    : mode.enabled
+    ? LL.SettingsScreen.beginnerMode()
+    : LL.SettingsScreen.advanceMode()
 
-  if (Platform.OS === "ios" && Number(Platform.Version) < 13) {
-    return null
-  } else {
-    return (
-      <>
-        <SettingsRow
-          title={title}
-          leftIcon={leftIcon}
-          action={toggleAdvanceMode}
-          rightIcon={"sync-outline"}
-        />
-        <AdvancedModeModal
-          hasRecoveryPhrase={hasRecoveryPhrase}
-          isVisible={advanceModalVisible}
-          setIsVisible={setAdvanceModalVisible}
-        />
-      </>
-    )
-  }
+  return (
+    <>
+      <SettingsRow
+        title={title}
+        leftIcon={
+          mode.hasRecoveryPhrase
+            ? mode.enabled
+              ? "eye"
+              : "eye-off"
+            : mode.enabled
+            ? "invert-mode-outline"
+            : "invert-mode"
+        }
+        action={() => mode.request(!mode.enabled)}
+        rightIcon="sync-outline"
+      />
+      <AdvancedModeModal
+        hasRecoveryPhrase={mode.hasRecoveryPhrase}
+        isVisible={mode.setupVisible}
+        setIsVisible={mode.setSetupVisible}
+      />
+    </>
+  )
 }

@@ -37,6 +37,7 @@ export type RunToolDeps = {
   displayCurrency: string
   /** The instance's Lightning-address host, for the read tools (ReadToolCtx). */
   lnAddressHostname: string
+  knownUsernames?: readonly string[]
   /** Epoch milliseconds. */
   now: () => number
   telemetry: AssistantTelemetry
@@ -72,10 +73,16 @@ export const createReadToolCtx = ({
   btcRail,
   displayCurrency,
   lnAddressHostname,
+  knownUsernames,
   now,
 }: Pick<
   RunToolDeps,
-  "graphql" | "btcRail" | "displayCurrency" | "lnAddressHostname" | "now"
+  | "graphql"
+  | "btcRail"
+  | "displayCurrency"
+  | "lnAddressHostname"
+  | "knownUsernames"
+  | "now"
 >): ReadToolCtx => ({
   graphql,
   btcRail: {
@@ -84,6 +91,7 @@ export const createReadToolCtx = ({
   },
   displayCurrency,
   lnAddressHostname,
+  ...(knownUsernames ? { knownUsernames } : {}),
   now,
 })
 
@@ -92,10 +100,17 @@ export const createActionToolCtx = (
   {
     graphql,
     displayCurrency,
+    knownUsernames,
     now,
-  }: Pick<RunToolDeps, "graphql" | "displayCurrency" | "now">,
+  }: Pick<RunToolDeps, "graphql" | "displayCurrency" | "knownUsernames" | "now">,
   actionDeps: ActionDeps,
-): ActionToolCtx => ({ ...actionDeps, graphql, displayCurrency, now })
+): ActionToolCtx => ({
+  ...actionDeps,
+  graphql,
+  displayCurrency,
+  ...(knownUsernames ? { knownUsernames } : {}),
+  now,
+})
 
 /** Run a routed tool with its own tier's context, and nothing more. */
 const runRouted = (

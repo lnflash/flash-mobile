@@ -25,6 +25,7 @@ import { useApolloClient } from "@apollo/client"
 import { Icon, makeStyles, Text, useTheme } from "@rneui/themed"
 
 import { GaloyErrorBox } from "@app/components/atomic/galoy-error-box"
+import { AdvancedModeModal } from "@app/components/advanced-mode-modal"
 import { Screen } from "@app/components/screen"
 import { TxItem } from "@app/components/transaction-item"
 import { useFeatureFlags } from "@app/config/feature-flags-context"
@@ -33,6 +34,7 @@ import { useConnectivity } from "@app/hooks/use-connectivity"
 import { useOpenSupportChat } from "@app/hooks/use-open-support-chat"
 import { usePersistentStateContext } from "@app/store/persistent-state"
 import { useDisplayCurrency } from "@app/hooks/use-display-currency"
+import { useBitcoinWalletMode } from "@app/hooks/use-bitcoin-wallet-mode"
 import { Animated, useKeyboardPaddingStyle } from "@app/hooks/use-keyboard-padding"
 import { usePriceConversion } from "@app/hooks/use-price-conversion"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -60,6 +62,8 @@ import { helpAnswerText } from "./reply-presentation"
 import { ScreenDestination, screenDestinationTitle } from "./screen-destinations"
 import { pricePresentation } from "./price-presentation"
 import { useVoiceInput } from "./use-voice-input"
+import { useKnownFlashUsers } from "./use-known-flash-users"
+import { voiceContext } from "./voice-context"
 import {
   CardTopUpAnswer,
   ContactActionAnswer,
@@ -384,7 +388,7 @@ const HelpAnswer: React.FC<{ topic: HelpTopic }> = ({ topic }) => {
   )
 }
 
-const SupportAction: React.FC = () => {
+const SupportAction: React.FC<{ prominent?: boolean }> = ({ prominent }) => {
   const { LL } = useI18nContext()
   const styles = useStyles()
   const openSupportChat = useOpenSupportChat()
@@ -393,12 +397,29 @@ const SupportAction: React.FC = () => {
       accessibilityRole="button"
       onPress={openSupportChat}
       testID="ask-flash-help-action"
-      style={styles.helpAction}
+      style={
+        prominent ? [styles.walletActionButton, styles.supportAction] : styles.helpAction
+      }
     >
-      <Text type="p2" bold>
+      <Text type="p2" bold style={prominent ? styles.supportActionLabel : undefined}>
         {LL.AskFlashHelp.supportChatAction()}
       </Text>
     </TouchableOpacity>
+  )
+}
+
+const SupportFallback: React.FC<{
+  replyKey: "Assistant.unknownIntent" | "Assistant.notYetAvailable"
+}> = ({ replyKey }) => {
+  const { LL } = useI18nContext()
+  const { isOffline } = useConnectivity()
+  const styles = useStyles()
+  return (
+    <View style={styles.answer} testID="ask-flash-support-fallback">
+      <Text type="p2">{replyText(LL, replyKey)}</Text>
+      {isOffline ? <Text type="p3">{LL.AskFlashHelp.supportOffline()}</Text> : null}
+      <SupportAction prominent />
+    </View>
   )
 }
 
@@ -433,6 +454,96 @@ const ChatAction: React.FC = () => {
         {LL.AskFlashHelp.screenAction({ screen: LL.ChatScreen.title() })}
       </Text>
     </TouchableOpacity>
+  )
+}
+
+const BitcoinWalletAction: React.FC<{ enabled: boolean }> = ({ enabled }) => {
+  const { LL } = useI18nContext()
+  const styles = useStyles()
+  const { colors } = useTheme().theme
+  const mode = useBitcoinWalletMode()
+  const label = enabled
+    ? LL.SettingsScreen.advanceMode()
+    : LL.SettingsScreen.beginnerMode()
+  return (
+    <View style={styles.answer} testID="ask-flash-bitcoin-wallet-action">
+      {mode.available && mode.enabled !== enabled ? (
+        <>
+          <Text type="p3" bold style={styles.walletActionTitle}>
+            {LL.common.btcAccount()}
+          </Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            style={styles.walletActionButton}
+            testID="ask-flash-bitcoin-wallet-toggle"
+            onPress={() =>
+              mode
+                .request(enabled)
+                .catch(() => Alert.alert(LL.common.warning(), LL.Assistant.toolFailed()))
+            }
+          >
+            <Icon
+              type="ionicon"
+              name="power-outline"
+              size={22}
+              color={colors.textInverse}
+            />
+            <Text
+              type="p2"
+              bold
+              color={colors.textInverse}
+              style={styles.walletActionLabel}
+            >
+              {label}
+            </Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <Text type="p2">
+          {mode.enabled
+            ? LL.AskFlashHelp.screenLocation({ screen: LL.common.btcAccount() })
+            : LL.Assistant.btcDisabled()}
+        </Text>
+      )}
+      <AdvancedModeModal
+        hasRecoveryPhrase={mode.hasRecoveryPhrase}
+        isVisible={mode.setupVisible}
+        setIsVisible={mode.setSetupVisible}
+      />
+    </View>
+  )
+}
+
+const BitcoinWalletScreenAnswer: React.FC = () => {
+  const { LL } = useI18nContext()
+  const { persistentState } = usePersistentStateContext()
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
+  const styles = useStyles()
+  const enabled = Boolean(persistentState.isAdvanceMode)
+  const title = enabled ? LL.common.btcAccount() : LL.SettingsScreen.title()
+  return (
+    <View style={styles.answer} testID="ask-flash-screen-bitcoinWallet">
+      <Text type="p2">
+        {enabled
+          ? LL.AskFlashHelp.screenLocation({ screen: LL.common.btcAccount() })
+          : LL.Assistant.btcDisabled()}
+      </Text>
+      <TouchableOpacity
+        accessibilityRole="button"
+        style={styles.helpAction}
+        testID="ask-flash-screen-action"
+        onPress={() =>
+          enabled
+            ? navigation.navigate("Primary", { screen: "Home" })
+            : navigation.navigate("settings")
+        }
+      >
+        <Text type="p2" bold>
+          {LL.AskFlashHelp.screenAction({ screen: title })}
+        </Text>
+      </TouchableOpacity>
+    </View>
   )
 }
 
@@ -617,7 +728,9 @@ const EntryView: React.FC<{
   entry: ThreadEntry
   actions: CardActions
   onPick: (entryId: string, optionId: string) => void
-}> = ({ entry, actions, onPick }) => {
+  knownUsernames: readonly string[]
+  onContactResolved: (entryId: string, username?: string) => void
+}> = ({ entry, actions, onPick, knownUsernames, onContactResolved }) => {
   const { LL } = useI18nContext()
   const { displayCurrency } = useDisplayCurrency()
   const { formatMoneyAmount } = useDisplayCurrency()
@@ -627,11 +740,24 @@ const EntryView: React.FC<{
     case "help":
       return <HelpAnswer topic={entry.topic} />
     case "screen":
-      return <ScreenAnswer destination={entry.destination} />
+      return entry.destination === "bitcoinWallet" ? (
+        <BitcoinWalletScreenAnswer />
+      ) : entry.destination === "bitcoinWalletOn" ||
+        entry.destination === "bitcoinWalletOff" ? (
+        <BitcoinWalletAction enabled={entry.destination === "bitcoinWalletOn"} />
+      ) : (
+        <ScreenAnswer destination={entry.destination} />
+      )
     case "merchants":
       return <MerchantsAnswer payload={entry.payload} />
     case "contactAction":
-      return <ContactActionAnswer entry={entry} />
+      return (
+        <ContactActionAnswer
+          entry={entry}
+          knownUsernames={knownUsernames}
+          onResolved={onContactResolved}
+        />
+      )
     case "cardTopUp":
       return <CardTopUpAnswer entry={entry} />
     case "cashoutAmount":
@@ -719,6 +845,11 @@ const EntryView: React.FC<{
     case "user":
       return <Bubble from="user" text={entry.text} testID="ask-flash-user-bubble" />
     case "reply":
+      if (
+        entry.replyKey === "Assistant.unknownIntent" ||
+        entry.replyKey === "Assistant.notYetAvailable"
+      )
+        return <SupportFallback replyKey={entry.replyKey} />
       return (
         <Bubble
           from="assistant"
@@ -762,6 +893,7 @@ const EntryView: React.FC<{
 
 export const AskFlashScreen: React.FC = () => {
   const client = useApolloClient()
+  const { persistentState } = usePersistentStateContext()
   const { LL, locale } = useI18nContext()
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
@@ -793,6 +925,10 @@ export const AskFlashScreen: React.FC = () => {
       ? sha256(`${appConfig.galoyInstance.graphqlUri}\n${appConfig.token}`)
       : undefined,
   })
+  const knownUsernames = useKnownFlashUsers(
+    appConfig.galoyInstance.lnAddressHostname,
+    runtime.recentUsers,
+  )
   const suggestions = useSyncExternalStore(
     runtime.suggestions.subscribe,
     runtime.suggestions.get,
@@ -800,6 +936,7 @@ export const AskFlashScreen: React.FC = () => {
   const onDeviceModel = assistantEnabled && assistantOnDeviceModel
   const env: TurnEnv = {
     isOffline,
+    knownUsernames,
     displayCurrency,
     displaySymbol: fiatSymbol,
     display: { formatMoneyAmount, formatDisplayAndWalletAmount, fractionDigits },
@@ -819,12 +956,14 @@ export const AskFlashScreen: React.FC = () => {
     runtime.speechPreference.get,
   )
   const speechDisplay = { displayCurrency, formatMoneyAmount, formatCurrency }
+  const bitcoinWalletEnabled = Boolean(persistentState.isAdvanceMode)
   const speech = useSpeechOutput({
     enabled: speechEnabled,
     runtime,
     LL,
     locale,
     display: speechDisplay,
+    bitcoinWalletEnabled,
   })
   const stopSpeech = speech.stop
   const thread = useThread(runtime, env)
@@ -876,6 +1015,7 @@ export const AskFlashScreen: React.FC = () => {
     enabled: voiceEnabled,
     busy: thread.busy,
     beforeCapture: speech.stop,
+    contextualStrings: voiceContext(knownUsernames),
     onSubmit: (utterance) => submitUtterance(utterance, "voice"),
   })
   const canSend = !thread.busy && !voice.active && text.trim().length > 0
@@ -974,7 +1114,12 @@ export const AskFlashScreen: React.FC = () => {
           keyExtractor={(entry) => entry.id}
           renderItem={({ item }) => {
             const spoken = speechEnabled
-              ? spokenReplyFor(item, { LL, locale, display: speechDisplay })
+              ? spokenReplyFor(item, {
+                  LL,
+                  locale,
+                  display: speechDisplay,
+                  bitcoinWalletEnabled,
+                })
               : undefined
             return (
               <View>
@@ -982,6 +1127,11 @@ export const AskFlashScreen: React.FC = () => {
                   entry={item}
                   actions={thread.cardActions}
                   onPick={thread.pick}
+                  knownUsernames={knownUsernames}
+                  onContactResolved={(id, username) => {
+                    if (username) runtime.recentUsers.remember([username])
+                    runtime.transcript.rememberContact(id, username)
+                  }}
                 />
                 {spoken ? (
                   <TouchableOpacity
@@ -1241,6 +1391,22 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.grey5,
   },
   helpAction: { minHeight: 48, justifyContent: "center" },
+  walletActionTitle: { marginBottom: 12 },
+  walletActionButton: {
+    minHeight: 56,
+    width: "100%",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: colors.button01,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  walletActionLabel: { flexShrink: 1, textAlign: "center" },
+  supportActionLabel: { color: colors.textInverse, textAlign: "center" },
+  supportAction: { marginTop: 12 },
   speechSetting: {
     flexDirection: "row",
     gap: 6,

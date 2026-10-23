@@ -376,7 +376,7 @@ describe("useThread", () => {
     })
   })
 
-  it("asks about a Flash user who is not a contact, and the tap on them prepares their card (ENG-730)", async () => {
+  it("shows one payment review for an exact verified Flash username", async () => {
     // The dogfood ask, through the real grammar, router, tool and executor.
     const { runtime, graphql, runTool } = fakeRuntime()
     graphql.wallets.mockResolvedValue(CASH_WALLETS)
@@ -391,27 +391,7 @@ describe("useThread", () => {
 
     await submit(hook, "Send 0.05 usd to dreadmax")
 
-    expect(lines(hook)).toEqual([
-      { kind: "user", text: "Send 0.05 usd to dreadmax" },
-      {
-        kind: "card",
-        card: {
-          type: "clarification",
-          prompt: "Assistant.pickFlashUser",
-          options: [{ id: "contact:dreadmax", label: "dreadmax", sublabel: "dreadmax" }],
-          about: "dreadmax",
-        },
-        call,
-      },
-    ])
-
-    await act(() =>
-      hook.result.current.pick(hook.result.current.entries[1].id, "contact:dreadmax"),
-    )
-
-    const picked = { ...call, args: { ...call.args, payee: "contact:dreadmax" } }
-    expect(runTool.mock.calls.map(([sent]) => sent)).toEqual([call, picked])
-    // The confirm card takes the question's place, naming the full username.
+    expect(runTool.mock.calls.map(([sent]) => sent)).toEqual([call])
     expect(lines(hook)).toEqual([
       { kind: "user", text: "Send 0.05 usd to dreadmax" },
       {
@@ -422,7 +402,7 @@ describe("useThread", () => {
           payeeUsername: "dreadmax",
           amountText: "USD 5",
         }),
-        call: picked,
+        call,
       },
     ])
   })

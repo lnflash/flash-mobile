@@ -54,8 +54,8 @@ final class VoiceInputBridge: RCTEventEmitter {
     }
   }
 
-  @objc(start:locale:)
-  func start(_ id: String, locale: String) {
+  @objc(start:locale:contextualStrings:)
+  func start(_ id: String, locale: String, contextualStrings: [String]) {
     guard session == nil else {
       emit(id, "error", text: "unavailable"); emit(id, "end"); return
     }
@@ -83,6 +83,8 @@ final class VoiceInputBridge: RCTEventEmitter {
       let request = SFSpeechAudioBufferRecognitionRequest()
       request.requiresOnDeviceRecognition = true
       request.shouldReportPartialResults = true
+      request.contextualStrings = Array(contextualStrings.prefix(100))
+        .filter { !$0.isEmpty && $0.count <= 100 }
       self.engine = engine
       self.request = request
       let input = engine.inputNode

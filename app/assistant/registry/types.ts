@@ -308,6 +308,7 @@ export type BtcReadRail = Pick<BtcRail, "getBalanceSats" | "listPayments">
  */
 export type ReadToolCtx = {
   graphql: GraphqlRail
+  knownUsernames?: readonly string[]
   btcRail: BtcReadRail
   /** The account's display currency, as `realtimePrice` takes it ("USD", "JMD"). */
   displayCurrency: string
@@ -343,6 +344,7 @@ export type ActionToolCtx = {
   /** The thread the prepared action belongs to. */
   threadId: string
   graphql: GraphqlRail
+  knownUsernames?: readonly string[]
   /** The custodial rail's fee probes, invoices, addresses and settlement calls. */
   graphqlActions: GraphqlActionRail
   /** The whole BTC rail: its reads, its prepare members and its sends. */

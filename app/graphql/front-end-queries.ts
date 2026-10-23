@@ -279,6 +279,10 @@ gql`
       denominatorCurrency
     }
   }
+  query searchUsernames($query: String!) {
+    searchUsernames(query: $query)
+  }
+
   query npubByUsername($username: Username!) {
     npubByUsername(username: $username) {
       npub

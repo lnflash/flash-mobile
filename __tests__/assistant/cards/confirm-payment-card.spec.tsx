@@ -42,6 +42,7 @@ describe("ConfirmPaymentCard", () => {
   it("shows every figure as the tool wrote it, and the payee's full username", async () => {
     const { screen } = show(confirmPaymentFixture)
     await flush()
+    expect(screen.getByText(en.AssistantCards.confirmTitle())).toBeTruthy()
 
     for (const text of [
       "Mom",
@@ -276,6 +277,9 @@ describe("ConfirmPaymentCard", () => {
       toWallet: "BTC",
     })
     await flush()
+
+    expect(screen.getByText(en.ConversionConfirmationScreen.title())).toBeTruthy()
+    expect(screen.queryByText(en.AssistantCards.confirmTitle())).toBeNull()
 
     expect(screen.getByTestId("assistant-card-payee").props.accessibilityLabel).toBe(
       `${en.common.to()}, ${en.common.btcAccount()}`,

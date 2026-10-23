@@ -256,7 +256,7 @@ describe("runTool", () => {
     it("reports clarifications and failures as such", async () => {
       const { deps, graphql, toolEvents } = setup()
       graphql.contacts.mockResolvedValue([])
-      // No contact is called "mom", but a Flash user is: a question (ENG-730).
+      // No contact is called "mom", but an exact Flash username resolves.
       graphql.accountDefaultWallet.mockImplementation(accountsOf(["mom"]))
       graphql.accountLimits.mockRejectedValue(new Error("down"))
 
@@ -266,7 +266,7 @@ describe("runTool", () => {
       await runTool({ intent: "resolveContact", args: { hint: "mallory" } }, deps)
 
       expect(toolEvents().map(({ outcome }) => outcome)).toEqual([
-        "clarification",
+        "answered",
         "error",
         "error",
       ])

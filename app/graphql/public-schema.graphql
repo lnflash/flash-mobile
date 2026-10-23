@@ -2147,6 +2147,11 @@ type PublicWallet {
 }
 
 type Query {
+  """
+  Up to five similar public Flash usernames, including people outside your contacts. Requires 3–50 letters, digits or underscores after removing spaces. Uses bounded prefix and spelling searches; results require recipient verification and selection.
+  """
+  searchUsernames(query: String!): [Username!]!
+
   accountDefaultWallet(username: Username!, walletCurrency: WalletCurrency): PublicWallet!
 
   """

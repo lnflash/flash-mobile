@@ -78,7 +78,10 @@ class VoiceInputBridgeModule(private val context: ReactApplicationContext) :
     }
   }
 
-  @ReactMethod fun start(id: String, locale: String) {
+  @ReactMethod fun start(id: String, locale: String, contextualStrings: ReadableArray) {
+    val hints = (0 until minOf(contextualStrings.size(), 100))
+      .mapNotNull { if (contextualStrings.getType(it) == ReadableType.String) contextualStrings.getString(it) else null }
+      .filter { it.isNotBlank() && it.length <= 100 }
     main.post {
       if (session != null) { emit(id, "error", "unavailable"); emit(id, "end"); return@post }
       session = id
@@ -115,7 +118,12 @@ class VoiceInputBridgeModule(private val context: ReactApplicationContext) :
           override fun onEndOfSpeech() {} // A final result/error must still arrive.
           override fun onEvent(eventType: Int, params: Bundle?) {}
         })
-        native.startListening(intent(locale))
+        val captureIntent = intent(locale).apply {
+          if (Build.VERSION.SDK_INT >= 33) {
+            putStringArrayListExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, ArrayList(hints))
+          }
+        }
+        native.startListening(captureIntent)
         scheduleTimeout(id, 60000)
       } catch (_: Exception) { finish("failure") }
     }

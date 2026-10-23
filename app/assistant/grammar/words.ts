@@ -352,7 +352,7 @@ export const namesPaymentRequest = (tokens: readonly Token[]): boolean =>
  * and one with a sign, "-5" or "+5", which readAmountPhrase makes a
  * question rather than the grammar dropping the sign.
  */
-const NUMBER_START = /^[-+]?(?:us\$|j\$|\$|₿|usd|usdt|jmd|btc)?(?:\d|\.\d)/
+const NUMBER_START = /^[-+]?(?:us\$|j\$|\p{Sc}|usd|usdt|jmd|btc)?(?:\d|\.\d)/u
 
 /** Words that name a unit, a symbol or a multiplier beside a number. */
 const UNIT_WORDS = set(
@@ -387,7 +387,9 @@ type Kind = "number" | "unit" | "numberWord" | "other"
  * gives that code as its example, so the example is always one this reads.
  */
 const isUnit = (word: string, ctx: GrammarContext): boolean =>
-  UNIT_WORDS.has(word) || word === ctx.displayCurrency.toLowerCase()
+  UNIT_WORDS.has(word) ||
+  /^\p{Sc}$/u.test(word) ||
+  word === ctx.displayCurrency.toLowerCase()
 
 /** What a word's kind depends on around it: the kind before it, and the word after it. */
 type Neighbours = { previous: Kind | undefined; next: Token | undefined }

@@ -8,6 +8,7 @@ import {
   BusinessMapMarkersDocument,
   ContactsDocument,
   RealtimePriceUnauthedDocument,
+  SearchUsernamesDocument,
   TransactionDetailsDocument,
   TransactionListForDefaultAccountDocument,
   WalletOverviewScreenDocument,
@@ -50,7 +51,7 @@ describe("createGraphqlRail", () => {
     )
   })
 
-  it("has the eight reads and no way to send", () => {
+  it("has the nine reads and no way to send", () => {
     const { mutate, client } = fakeClient()
 
     const rail = createGraphqlRail(client)
@@ -62,12 +63,32 @@ describe("createGraphqlRail", () => {
         "businessMapMarkers",
         "contacts",
         "realtimePrice",
+        "searchUsernames",
         "transactionDetails",
         "transactions",
         "wallets",
       ].sort(),
     )
     expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it("searches the public directory online and never starts a search offline", async () => {
+    const { query, client } = fakeClient()
+    query.mockResolvedValue({ data: { searchUsernames: ["dreadmax"] } })
+    await expect(createGraphqlRail(client).searchUsernames("dread ma")).resolves.toEqual([
+      "dreadmax",
+    ])
+    expect(query).toHaveBeenCalledWith({
+      query: SearchUsernamesDocument,
+      variables: { query: "dreadma" },
+      fetchPolicy: "network-only",
+      errorPolicy: "none",
+    })
+    query.mockClear()
+    await expect(
+      createGraphqlRail(client, { fetchPolicy: "cache-only" }).searchUsernames("dreadma"),
+    ).rejects.toThrow("Search needs internet")
+    expect(query).not.toHaveBeenCalled()
   })
 
   it("answers the wallets with their balances", async () => {

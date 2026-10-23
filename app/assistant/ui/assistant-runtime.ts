@@ -21,6 +21,7 @@ import { createOwnUsernameReader } from "./own-flash-address"
 import { createSuggestionStore, SuggestionStore } from "./question-suggestions"
 import { createSavedReads, SavedReads } from "./saved-reads"
 import { createThreadStore, ThreadStore } from "./thread-store"
+import { createRecentFlashUsers, RecentFlashUsers } from "./recent-flash-users"
 
 // What the Ask Flash thread runs on (ENG-689): the rails over the app's
 // Apollo client, the dispatch journal, the reconciler, the executor, and
@@ -36,6 +37,7 @@ export type AssistantRuntime = {
   threadId: string
   getOwnUsername: (isOffline: boolean) => Promise<string | null | undefined>
   speechPreference: SpeechPreference
+  recentUsers: RecentFlashUsers
   completedTurns: ReturnType<typeof createCompletedTurns>
   suggestions: SuggestionStore
   savedReads: SavedReads
@@ -113,6 +115,7 @@ export const createAssistantRuntime = (
     savedReads: createSavedReads(client, options.cacheScope),
     suggestions: createSuggestionStore(),
     speechPreference: createSpeechPreference(client, options.cacheScope),
+    recentUsers: createRecentFlashUsers(client, options.cacheScope),
     completedTurns: createCompletedTurns(),
     getOwnUsername: createOwnUsernameReader(client, Boolean(options.cacheScope)),
     pendingDispatches: journal.pending,

@@ -47,6 +47,7 @@ const make = () => {
     runtime,
     LL,
     locale: "en",
+    bitcoinWalletEnabled: false,
     display: {
       displayCurrency: "USD",
       formatMoneyAmount: jest.fn(() => "amount"),
@@ -116,6 +117,21 @@ it("auto-reads new opted-in guidance for voice, typed and suggestion turns", asy
   expect(nativeSpeechOutput.speak).toHaveBeenCalledTimes(1)
   await act(async () => runtime.completedTurns.complete("text", [help]))
   expect(nativeSpeechOutput.speak).toHaveBeenCalledTimes(2)
+})
+it("auto-reads the Bitcoin account action visible in Ask Flash", async () => {
+  const { runtime } = make()
+  act(() => runtime.speechPreference.set(true))
+  await act(async () => undefined)
+  await act(async () =>
+    runtime.completedTurns.complete("voice", [
+      { id: "wallet", kind: "screen", destination: "bitcoinWalletOn" },
+    ]),
+  )
+  expect(nativeSpeechOutput.speak).toHaveBeenCalledWith(
+    expect.any(String),
+    LL.SettingsScreen.advanceMode(),
+    expect.any(Object),
+  )
 })
 it("does not replay a previous completion on remount and releases the engine on leaving", async () => {
   const { hook, runtime, options } = make()

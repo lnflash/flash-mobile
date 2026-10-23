@@ -1537,6 +1537,7 @@
     "total": "Total Total Total"
   },
   "support": {
+      "chatTitle": "Support Chat",
     "contactUs": "Brug for hjælp? Kontakt os.",
     "appChat": "App chat",
     "chatUnavailableTitle": "Chat Unavailable",
@@ -2088,7 +2089,7 @@
     "loadFailed": "Couldn't load your referrals. Pull to retry."
   },
   "Assistant": {
-    "unknownIntent": "I can't help with that yet.",
+    "unknownIntent": "I couldn't answer that. Open in-app support to ask Pulse or a support agent.",
     "notYetAvailable": "I can't do that here yet. Use the home screen for now.",
     "invalidArguments": "I didn't catch the details. Try asking another way.",
     "toolFailed": "Something went wrong. Try again in a moment.",
@@ -2137,7 +2138,9 @@
     "actionsOffline": "You're offline. Sending, requesting and the live price need a connection. Try again when you're back online.",
     "amountUnclear": "I couldn't tell the amount. Say it again with the number and its currency, like 100 {currency:string}.",
     "noSavedData": "No saved information is available for this ask. Connect to the internet and ask again to save a copy.",
-    "paymentStatusUncertain": "A payment attempt is still unresolved. Check your payment history or contact support before sending again."
+    "paymentStatusUncertain": "A payment attempt is still unresolved. Check your payment history or contact support before sending again.",
+    "contextPersonUnclear": "Who do you mean? Say their Flash username, or select a person from the choices above.",
+    "contextActionReview": "Use the action above to continue. To start a new action, say the full request and its details."
   },
   "AssistantCards": {
     "confirmTitle": "Review payment",
@@ -2166,7 +2169,7 @@
     "releaseToSend": "Release to send",
     "finishing": "Finishing…",
     "listening": "Listening…",
-    "voiceUnavailable": "Voice isn't available on this phone.",
+    "voiceUnavailable": "Offline speech recognition isn't available on this phone. You can still type.",
     "voicePermission": "Flash needs microphone access to hear your asks.",
     "voiceFailed": "I couldn't hear that. Try again or type it.",
     "voiceSettings": "Open Settings",
@@ -2294,7 +2297,8 @@
     "failure": "Failed",
     "unknown": "Unverified",
     "savedAt": "Last saved {time: string}. It may be out of date.",
-    "incompleteHistory": "Saved history may be incomplete. Current payment status cannot be verified offline."
+    "incompleteHistory": "Saved history may be incomplete. Current payment status cannot be verified offline.",
+    "supportOffline": "You can open support now. Connect to the internet to send messages and receive replies."
   },
   "AskFlashSpeech": {
     "packTitle": "Flash voices",

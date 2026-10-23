@@ -15,6 +15,7 @@
     "check:translation-drift": "node utils/check-translation-drift.js",
     "check:codegen": "yarn dev:codegen && if ! git diff --quiet -- app/graphql/generated.ts app/graphql/generated.gql; then echo 'Error: generated GraphQL files have changes, run `yarn dev:codegen` and re-commit' >&2; git diff --name-only -- app/graphql/generated.ts app/graphql/generated.gql >&2; exit 1; fi",
     "test": "LOGLEVEL=warn jest --runInBand",
+    "test:assistant-scenarios": "node scripts/assistant-scenarios/run.cjs",
     "graphql-check": "graphql-inspector validate app/graphql/generated.gql \"app/graphql/{public-schema.graphql,local-schema.gql}\" --apollo --noStrictFragments",
     "coverage": "jest --runInBand --coverage",
     "fastlane-update": "(cd ios && bundle update fastlane && cd ../android && bundle update fastlane)",
