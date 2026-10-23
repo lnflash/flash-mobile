@@ -923,6 +923,9 @@
     "clipboardError": "Грешка приликом приступа копираним подацима"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainBtcAmountCashWalletBeginner": "Enable your Bitcoin Account (Advanced Mode) in Settings to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Износ",
     "MinOnChainLimit": "Минимални износ за ову трансакцију је 2.00 долара.",
     "MinOnChainSatLimit": "Минимални износ за ову трансакцију је 5.500 sats",

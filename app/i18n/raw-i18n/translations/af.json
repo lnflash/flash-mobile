@@ -686,6 +686,9 @@
     "clipboardError": "Fout - Kon nie die waarde van die knipbord kry nie. "
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainBtcAmountCashWalletBeginner": "Enable your Bitcoin Account (Advanced Mode) in Settings to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Bedrag",
     "amountExceed": "Bedrag oorskry jou saldo van {balance:string}",
     "amountExceedsLimit": "Bedrag oorskry jou oorblywende daaglikse limiet van {limit: string}",

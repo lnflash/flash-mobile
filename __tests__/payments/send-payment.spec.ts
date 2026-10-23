@@ -447,12 +447,22 @@ const table = wallets.flatMap(([walletName, wallet]) =>
   variants.map((variant) => ({ walletName, wallet, variant })),
 )
 
-describe("sendPayment: every USD and USDT variant reaches Apollo exactly once", () => {
+describe("sendPayment: supported cash variants dispatch once; fixed BTC cash requests stay blocked", () => {
   table.forEach(({ walletName, wallet, variant }) => {
     it(`${walletName} wallet, ${variant.name}`, async () => {
       const { mutate, rail, deps, state } = setup()
       mutate.mockResolvedValue(answer(variant.field, "SUCCESS"))
       const detail = variant.build(wallet)
+
+      if (variant.field === "onChainUsdPaymentSendAsBtcDenominated") {
+        expect(detail.canSendPayment).toBe(false)
+        expect(detail.sendPaymentMutation).toBeUndefined()
+        expect(detail.canGetFee).toBe(false)
+        expect(detail.getFee).toBeUndefined()
+        expect(mutate).not.toHaveBeenCalled()
+        Object.values(rail).forEach((method) => expect(method).not.toHaveBeenCalled())
+        return
+      }
 
       const outcome = await sendPayment(
         { sendPaymentMutation: sendable(detail), paymentDetail: detail },

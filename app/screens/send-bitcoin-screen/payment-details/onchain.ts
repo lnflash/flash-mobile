@@ -414,55 +414,11 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
       sendPaymentMutation,
       getFee,
     }
-  } else {
-    // sendingWalletDescriptor.currency === WalletCurrency.Usd or WalletCurrency.Usdt
-    sendPaymentMutation = async (paymentMutations) => {
-      const { data } = await paymentMutations.onChainUsdPaymentSendAsBtcDenominated({
-        variables: {
-          input: {
-            walletId: sendingWalletDescriptor.id,
-            address,
-            amount: destinationSpecifiedAmount.amount,
-          },
-        },
-      })
-
-      return {
-        status: data?.onChainUsdPaymentSendAsBtcDenominated.status,
-        errors: data?.onChainUsdPaymentSendAsBtcDenominated.errors,
-      }
-    }
-
-    getFee = async (getFeeFns) => {
-      const { data } = await getFeeFns.onChainUsdTxFeeAsBtcDenominated({
-        variables: {
-          walletId: sendingWalletDescriptor.id,
-          address,
-          amount: destinationSpecifiedAmount.amount,
-        },
-      })
-
-      const rawAmount = data?.onChainUsdTxFeeAsBtcDenominated.amount
-      const amount =
-        typeof rawAmount === "number"
-          ? toWalletAmount({
-              amount: rawAmount,
-              currency: sendingWalletDescriptor.currency,
-            })
-          : rawAmount
-
-      return {
-        amount,
-      }
-    }
-
-    sendPaymentAndGetFee = {
-      canSendPayment: true,
-      canGetFee: true,
-      sendPaymentMutation,
-      getFee,
-    }
   }
+  // Fixed-amount Bitcoin requests cannot use Cash Account's cents-denominated
+  // endpoint: a local conversion could pay a different number of sats. The
+  // BTC-denominated cash endpoint is disabled server-side, so expose neither
+  // a fee probe nor a send. Amount validation explains how to choose Bitcoin.
 
   const setMemo: PaymentDetailSetMemo<T> = destinationSpecifiedMemo
     ? {

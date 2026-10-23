@@ -923,6 +923,9 @@
     "clipboardError": "Erro ao receber conteúdo do clipboard"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainBtcAmountCashWalletBeginner": "Enable your Bitcoin Account (Advanced Mode) in Settings to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "quantidade",
     "MinOnChainLimit": "O valor mínimo para esta transação é de US$ 2,00.",
     "MinOnChainSatLimit": "O valor mínimo para esta transação é de 5.500 sats.",

@@ -65,11 +65,12 @@ env:
   # Nutshell 0.20.3, the public release nearest forge's 0.20.3.1 (architect's
   # decision 6). It pins a breez-sdk-spark range PyPI no longer has, which
   # FakeWallet never uses: it is installed without its dependencies, and they
-  # are installed beside it with the nearest breez-sdk-spark PyPI still has.
+  # are installed beside it with 0.18.0, which publishes Python 3.12 macOS
+  # universal wheels (including the ARM64 GitHub runner).
   # marshmallow and limits are capped because their current majors break its
   # startup.
   NUTSHELL_VERSION: "0.20.3"
-  NUTSHELL_BREEZ_SPARK: "0.17.0"
+  NUTSHELL_BREEZ_SPARK: "0.18.0"
   MAESTRO_VERSION: "2.10.0"
   BRIDGE_URL: http://localhost:9876
   MINT_URL: http://localhost:3338

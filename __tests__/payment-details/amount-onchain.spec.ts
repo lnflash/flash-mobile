@@ -105,58 +105,21 @@ describe("no amount onchain payment details", () => {
       })
     })
   })
-
-  describe("sending from a usd wallet", () => {
-    const usdSendingWalletParams = {
-      ...defaultParams,
-      sendingWalletDescriptor: usdSendingWalletDescriptor,
-    }
-    const paymentDetails = createAmountOnchainPaymentDetails(usdSendingWalletParams)
-
-    it("uses the correct fee mutations and args", async () => {
-      const feeParamsMocks = createGetFeeMocks()
-      if (!paymentDetails.canGetFee) {
-        throw new Error("Cannot get fee")
-      }
-
-      try {
-        await paymentDetails.getFee(feeParamsMocks)
-      } catch {
-        // do nothing as function is expected to throw since we are not mocking the fee response
-      }
-
-      expect(feeParamsMocks.onChainUsdTxFeeAsBtcDenominated).toHaveBeenCalledWith({
-        variables: {
-          address: defaultParams.address,
-          amount: usdSendingWalletParams.destinationSpecifiedAmount.amount,
-          walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
-        },
+  ;[WalletCurrency.Usd, WalletCurrency.Usdt].forEach((currency) => {
+    describe(`sending from a ${currency} cash wallet`, () => {
+      it("does not expose a fee or send for the disabled BTC-denominated cash endpoint", () => {
+        const detail = createAmountOnchainPaymentDetails({
+          ...defaultParams,
+          sendingWalletDescriptor: { ...usdSendingWalletDescriptor, currency },
+        })
+        expect(detail.canGetFee).toBe(false)
+        expect(detail.getFee).toBeUndefined()
+        expect(detail.canSendPayment).toBe(false)
+        expect(detail.sendPaymentMutation).toBeUndefined()
+        expect(detail.destinationSpecifiedAmount).toEqual(
+          defaultParams.destinationSpecifiedAmount,
+        )
       })
-    })
-
-    it("uses the correct send payment mutation and args", async () => {
-      const sendPaymentMocks = createSendPaymentMocks()
-      if (!paymentDetails.canSendPayment) {
-        throw new Error("Cannot send payment")
-      }
-
-      try {
-        await paymentDetails.sendPaymentMutation(sendPaymentMocks)
-      } catch {
-        // do nothing as function is expected to throw since we are not mocking the send payment response
-      }
-
-      expect(sendPaymentMocks.onChainUsdPaymentSendAsBtcDenominated).toHaveBeenCalledWith(
-        {
-          variables: {
-            input: {
-              address: defaultParams.address,
-              amount: usdSendingWalletParams.destinationSpecifiedAmount.amount,
-              walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
-            },
-          },
-        },
-      )
     })
   })
 
