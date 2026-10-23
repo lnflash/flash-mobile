@@ -37,11 +37,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             data += b"x" * 131072
         self.end_headers()
         try:
-            if mode == "slow":
-                self.wfile.write(data[:4096])
+            if mode in ("slow", "burst"):
+                chunk = 65536 if mode == "burst" else 4096
+                self.wfile.write(data[:chunk])
                 self.wfile.flush()
-                time.sleep(1)
-                self.wfile.write(data[4096:])
+                time.sleep(3 if mode == "burst" else 1)
+                self.wfile.write(data[chunk:])
             elif mode == "truncated":
                 self.wfile.write(data[:1024])
                 self.close_connection = True
