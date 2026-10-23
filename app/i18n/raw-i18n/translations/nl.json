@@ -923,6 +923,8 @@
     "clipboardError": "Fout bij ophalen waarde van klembord"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Bedrag",
     "MinOnChainLimit": "Het minimumbedrag voor deze transactie is US$ 2,00",
     "MinOnChainSatLimit": "Het minimumbedrag voor deze transactie is 5.500 sats",

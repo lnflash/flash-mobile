@@ -923,6 +923,8 @@
     "clipboardError": "Impazamo ekufumaneni ixabiso kwibhodi eqhotyoshwayo"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Isixa",
     "MinOnChainLimit": "Ubuncinane baloo ntengiselwano yi-US$2.00",
     "MinOnChainSatLimit": "Ubuncinane baloo ntengiselwano buyi-5 500 sats",

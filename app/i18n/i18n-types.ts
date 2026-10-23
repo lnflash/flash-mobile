@@ -4261,6 +4261,14 @@ type RootTranslation = {
 		 */
 		MinOnChainSatLimit: string
 		/**
+		 * U​s​e​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​A​c​c​o​u​n​t​ ​t​o​ ​p​a​y​ ​t​h​e​ ​e​x​a​c​t​ ​B​i​t​c​o​i​n​ ​a​m​o​u​n​t​ ​i​n​ ​t​h​i​s​ ​r​e​q​u​e​s​t​.
+		 */
+		onchainBtcAmountCashWallet: string
+		/**
+		 * F​o​r​ ​s​m​a​l​l​e​r​ ​p​a​y​m​e​n​t​s​,​ ​a​s​k​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​ ​f​o​r​ ​a​ ​L​i​g​h​t​n​i​n​g​ ​i​n​v​o​i​c​e​.
+		 */
+		onchainSmallPaymentHint: string
+		/**
 		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​w​h​e​n​ ​r​e​l​o​a​d​i​n​g​ ​f​r​o​m​ ​f​l​a​s​h​c​a​r​d​ ​i​s​ ​1​0​0​ ​s​a​t​s
 		 */
 		MinFlashcardLimit: string
@@ -12852,6 +12860,14 @@ export type TranslationFunctions = {
 		 * Minimum amount for this transaction is 5,500 sats
 		 */
 		MinOnChainSatLimit: () => LocalizedString
+		/**
+		 * Use your Bitcoin Account to pay the exact Bitcoin amount in this request.
+		 */
+		onchainBtcAmountCashWallet: () => LocalizedString
+		/**
+		 * For smaller payments, ask the recipient for a Lightning invoice.
+		 */
+		onchainSmallPaymentHint: () => LocalizedString
 		/**
 		 * Minimum amount when reloading from flashcard is 100 sats
 		 */

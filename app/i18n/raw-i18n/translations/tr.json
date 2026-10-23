@@ -923,6 +923,8 @@
     "clipboardError": "Panodan değeri alırken sorun yaşandı"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Miktar",
     "MinOnChainLimit": "Bu işlem için en az miktar 2.00 ABD Doları'dır.",
     "MinOnChainSatLimit": "Bu işlem için en az miktar 5,500 sats'dir.",

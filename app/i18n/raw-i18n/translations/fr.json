@@ -923,6 +923,8 @@
     "clipboardError": "Erreur pour obtenir de la valeur depuis le presse-papier"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Montant",
     "MinOnChainLimit": "Le montant minimum pour cette transaction est de 2,00 $ US",
     "MinOnChainSatLimit": "Le montant minimum pour cette transaction est de 5 500 sats",

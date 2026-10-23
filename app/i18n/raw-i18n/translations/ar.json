@@ -678,6 +678,8 @@
     "clipboardError": "خطأ في الحصول على القيمة من الحافظة"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "الكمية",
     "amountExceed": "المقدار أعلى من ميزانيتك التي تبلغ {balance}",
     "amountExceedsLimit": "Amount exceeds your remaining daily limit of {limit: string}",

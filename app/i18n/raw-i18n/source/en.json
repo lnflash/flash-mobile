@@ -1159,6 +1159,8 @@
         "amount": "Amount",
         "MinOnChainLimit": "Minimum amount for this transaction is US$2.00",
         "MinOnChainSatLimit": "Minimum amount for this transaction is 5,500 sats",
+        "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+        "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
         "MinFlashcardLimit": "Minimum amount when reloading from flashcard is 100 sats",
         "amountExceed": "Amount exceeds your balance of {balance: string}",
         "amountExceedsLimit": "Amount exceeds your remaining daily limit of {limit: string}",

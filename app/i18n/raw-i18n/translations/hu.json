@@ -923,6 +923,8 @@
     "clipboardError": "Hiba a vágólap tartalmának lekérésekor"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Összeg",
     "MinOnChainLimit": "Ennek a tranzakciónak a minimális összege 2,00 dollár.",
     "MinOnChainSatLimit": "Ennek a tranzakciónak a minimális összege 5 500 sats.",

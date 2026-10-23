@@ -923,6 +923,8 @@
     "clipboardError": "Չհաջողվեց արժեք ստանալ ժամանակավոր շտեմարանից"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "Չափ",
     "MinOnChainLimit": "Այս գործարքի համար նվազագույն գումարը 2.00 ԱՄՆ դոլար է:",
     "MinOnChainSatLimit": "Այս գործարքի համար նվազագույն գումարը 5.500 sats է:",

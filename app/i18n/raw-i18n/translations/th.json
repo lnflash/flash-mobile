@@ -923,6 +923,8 @@
     "clipboardError": "เกิดข้อผิดพลาดในการรับค่าจากคลิปบอร์ด"
   },
   "SendBitcoinScreen": {
+    "onchainBtcAmountCashWallet": "Use your Bitcoin Account to pay the exact Bitcoin amount in this request.",
+    "onchainSmallPaymentHint": "For smaller payments, ask the recipient for a Lightning invoice.",
     "amount": "จำนวนเงิน",
     "MinOnChainLimit": "เงินขั้นต่ําสําหรับธุรกิจนี้คือ 2.00 ดอลลาร์สหรัฐอเมริกัน",
     "MinOnChainSatLimit": "เงินขั้นต่ําสําหรับธุรกิจนี้คือ 5,500 sats",

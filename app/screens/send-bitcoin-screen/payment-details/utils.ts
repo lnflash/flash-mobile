@@ -48,7 +48,12 @@ export const isValidAmount = ({
       invalidReason: AmountInvalidReason.NoAmount,
     } as const
   }
-  const settlementAmount = paymentDetail.settlementAmount
+  // Both Cash Account currencies use cents. Keep the original currency on the
+  // payment detail for dispatch, but validate USD and USDT against the cash balance.
+  const settlementAmount =
+    paymentDetail.settlementAmount.currency === WalletCurrency.Usdt
+      ? toUsdMoneyAmount(paymentDetail.settlementAmount.amount)
+      : paymentDetail.settlementAmount
   if (
     moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
     greaterThan({
@@ -102,6 +107,17 @@ export const isValidAmount = ({
     return {
       validAmount: false,
       invalidReason: AmountInvalidReason.MinOnChainSatLimit,
+    }
+  }
+
+  if (
+    paymentDetail.paymentType === PaymentType.Onchain &&
+    paymentDetail.destinationSpecifiedAmount &&
+    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd)
+  ) {
+    return {
+      validAmount: false,
+      invalidReason: AmountInvalidReason.OnChainBtcAmountCashWallet,
     }
   }
 
