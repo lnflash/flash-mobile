@@ -1,4 +1,4 @@
-# Voice release readiness — 2026-10-20
+# Voice release readiness: 2026-10-20
 
 Source: PR #802, `fcd2e15a52c286bbd01f90fbd9e512f0612206f3`.
 These are release-preparation measurements, not approval to ship.
@@ -75,7 +75,7 @@ background/cancel behavior, sustained thermals and full-app audible latency.
 - The user subsequently made Max available; its separate native Release engine
   probe is complete (see follow-up below). Full-app listening/offline acceptance
   remains. Keep the provisioner installation/data and connections intact.
-- Full-app older-iPhone and genuinely lower-memory Android measurements: cold/warm start,
+- Full-app older-iPhone and lower-memory Android measurements: cold/warm start,
   peak and post-disposal memory, memory-pressure recovery and long answers.
 - Actual Android listening checks: all three previews, suggested/typed/voice
   answers, stop/hold arbitration, first-word preservation and backgrounding.
@@ -106,7 +106,7 @@ completion. The test app bundles assets solely to isolate synthesis measurements
 its size is not Flash's app-size overhead. It renders silently and never accesses
 Flash data. Preserve existing Metro processes and adb reverses during all checks.
 
-## Follow-up: Android acceleration and Max — 2026-10-20
+## Follow-up: Android acceleration and Max: 2026-10-20
 
 Follow-up branch `eng-754-android-speech-performance` is based on merged main
 `c0b4ddc45`. Detailed generic-only results are in `performance-follow-up.json`.
@@ -162,7 +162,7 @@ provider allocation. No store release, default-flag change or Max/provisioner da
 removal is part of this follow-up.
 
 Next gates are actual Android playback, listening quality, full-app audible onset
-and long-answer continuity, genuinely lower-memory Android hardware, and sustained
+and long-answer continuity, lower-memory Android hardware, and sustained
 unplugged measurements. In particular, engine throughput does not prove that the
 AudioTrack write/backpressure path keeps playback continuously supplied. Release
 download configuration remains off.
@@ -186,7 +186,7 @@ was starting up, so do not compare its cold timings to isolated Release engine
 measurements. Manual listening and full-app Release measurements remain open.
 
 
-## Simulator follow-up — 2026-10-21
+## Simulator follow-up: 2026-10-21
 
 Based on merged main `126c96f4c`. Apple M5 host, 24 GiB RAM; Android 15
 ARM64 emulator with 2 virtual CPUs, repeated with 4. The emulator raised the
@@ -334,7 +334,7 @@ installation (`adb install --no-incremental --no-streaming -r`) restored it whil
 retaining the existing account and app data. No uninstall or data clear was used.
 
 
-## iOS public delivery follow-up — 2026-10-21
+## iOS public delivery follow-up: 2026-10-21
 
 PR #804 is merged as `2ef98e644`. The remaining native iOS public-host delivery
 check now passes on iOS Simulator 18.6 and 26.5. The isolated Release app under
@@ -372,7 +372,7 @@ size/distribution measurements remain separate release work. Existing Android
 emulator, physical devices, Flash account data and Metro/provisioner connections
 were not modified by this follow-up.
 
-## Production build configuration — 2026-10-21
+## Production build configuration: 2026-10-21
 
 The Android, iOS and iOS Alt deploy workflows now run
 `scripts/ci/configure-voice-pack.py` after the `ASSISTANT_DEV_LINK` guard. It
@@ -391,7 +391,7 @@ by an authorized project member. Experimental model and server flags stay as
 they are. Store-mode full-app acceptance and hardware measurements listed above
 remain before release tags.
 
-## Physical tester builds from merged main — 2026-10-21
+## Physical tester builds from merged main: 2026-10-21
 
 From `d80022b42` (#806), isolated local Release builds used a store-guarded
 `.env` with the verified production voice URL and no `ASSISTANT_DEV_LINK`.

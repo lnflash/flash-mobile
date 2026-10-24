@@ -1,4 +1,4 @@
-# Flash iOS Widget — Xcode setup
+# Flash iOS Widget: Xcode setup
 
 All source files are scaffolded. The remaining steps create the WidgetKit
 extension target and wire the files into Xcode (these edit `project.pbxproj`, so
@@ -14,7 +14,7 @@ The native module that pushes price data lives in the **main app** target.
 3. Ensure **Target membership = LNFlash** (the app), **not** the widget.
    - The project already has a bridging header (`LNFlash-Bridging-Header.h`,
      Swift 5.2), so no new-header prompt should appear. If it does, **Don't
-     create** — the existing one is already configured.
+     create**; the existing one is already configured.
 
 ## 2. Create the widget extension target
 
@@ -24,7 +24,7 @@ The native module that pushes price data lives in the **main app** target.
 3. When asked to **Activate "FlashWidget" scheme?** → **Activate**.
 4. Xcode generates a `FlashWidget/` folder with a starter `FlashWidget.swift`,
    `Assets.xcassets`, and `Info.plist`. **Delete** the generated
-   `FlashWidget.swift` (Move to Trash) — we provide our own sources.
+   `FlashWidget.swift` (Move to Trash). We provide our own sources.
 
 ## 3. Add the scaffolded sources to the widget target
 
@@ -62,7 +62,7 @@ The App Group `group.com.lnflash` is how the app and widget share the price.
 
 Set the **FlashWidget** target's **iOS Deployment Target** to **15.1** (matches
 the app). WidgetKit needs iOS 14+, so this is fine. The Podfile post-install
-hook enforces 15.1 across pods and won't conflict — the widget target has no pod
+hook enforces 15.1 across pods and won't conflict, since the widget target has no pod
 dependencies.
 
 ## 6. Build & run
@@ -75,7 +75,7 @@ dependencies.
 4. Open the app once while authed so it pushes your display-currency price; the
    widget will also self-refresh from `https://api.flashapp.me/graphql` every
    ~15 min even with the app closed.
-5. Tap **Scan** / **Receive** on the medium/large widget — they deep-link via
+5. Tap **Scan** / **Receive** on the medium/large widget. They deep-link via
    `flash://widget/scan` and `flash://widget/receive` into the app.
 
 ## Notes
