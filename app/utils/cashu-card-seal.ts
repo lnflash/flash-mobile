@@ -24,7 +24,7 @@
  * Ported from getfoxy/iOS `build/wallet/08a-flashcard.js` (MIT), lines
  * 1039-1120 (`cardPinBlock`, `cardSealKey`, `cardSeal`), with the 2.0 labels
  * (`CashuCard/…` where Foxy's 1.x said `FoxyCard/…`). The applet's side is
- * `unseal` in lnflash/cashu-javacard `CashuApplet.java`; its transcript
+ * `unseal` in cashucard/javacard `CashuApplet.java`; its transcript
  * (spec/vectors/transcript.json) is what the spec holds this file to.
  *
  * Pure: no card, no transport. `cashu-card.ts` asks the card for its PIN key

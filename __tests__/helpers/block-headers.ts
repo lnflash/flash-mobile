@@ -1,7 +1,7 @@
 /**
  * Real Bitcoin mainnet block headers, 180 blocks apart (each more than a day
  * after the one before), as the network carries them: the newest three of
- * lnflash/cashu-javacard `spec/vectors/headers.json` at the ref the e2e
+ * cashucard/javacard `spec/vectors/headers.json` at the ref the e2e
  * workflow pins (`CASHU_JAVACARD_REF`), whose newest sets the applet's floor
  * (D24). A card takes them (SET_HEADER, REFRESH, SET_OWNER's anchor); a header
  * mined for a test it would refuse (6A93).
