@@ -3,7 +3,7 @@
 Maestro flows that drive the Flashcard v2 screens on an iOS simulator against
 a simulated card. The card is the real cashu-javacard applet, protocol 2.0,
 running in jCardSim behind a loopback HTTP bridge (`tools/cardsim` in
-[lnflash/cashu-javacard](https://github.com/lnflash/cashu-javacard), at the
+[cashucard/javacard](https://github.com/cashucard/javacard), at the
 ref the workflow pins in `CASHU_JAVACARD_REF`; its `tools/cardsim/README.md`
 is the bridge's contract); the mint is a local Nutshell 0.20.3 on FakeWallet.
 No NFC hardware, no phone and no production system is involved.

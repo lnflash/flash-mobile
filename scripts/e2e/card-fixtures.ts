@@ -8,7 +8,7 @@
  * flows and the developer screen call it), and `POST /spend/<amount>` with a
  * till's offline payment of exactly that much from the card (ENG-702); `load`
  * provisions one and exits.
- * The bridge is cardsim (lnflash/cashu-javacard tools/cardsim, default
+ * The bridge is cardsim (cashucard/javacard tools/cardsim, default
  * http://127.0.0.1:9876) and the mint a local Nutshell on FakeWallet
  * (default http://127.0.0.1:3338). The production mint is refused: its quotes
  * are only paid by real payments. See `card-fixtures-lib.ts` for what each

@@ -3,7 +3,7 @@
 /**
  * Cashu NFC card — APDU protocol layer, card protocol 2.0 (ENG-675).
  *
- * Talks to the shared Cashu card applet (lnflash/cashu-javacard, protocol 2.0:
+ * Talks to the shared Cashu card applet (cashucard/javacard, protocol 2.0:
  * the Foxy wallet project's software 1.20 under a neutral identity): an
  * offline bearer card that holds format-4 ecash pieces locked to a key it made
  * itself, signs one BIP-340 signature for a whole payment (NUT-11 SIG_ALL),

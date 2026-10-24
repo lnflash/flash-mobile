@@ -1,6 +1,6 @@
 /**
  * ENG-675: the PIN sealed to the card's PIN key (card protocol 2.0), held to
- * the applet's own transcript (lnflash/cashu-javacard
+ * the applet's own transcript (cashucard/javacard
  * spec/vectors/transcript.json at the pinned ref): the card's 113-byte PIN
  * key answer, the clear bytes, and the very APDU the applet took, sealed with
  * the one-message keys its tests use (0x11…, 0x22…, 0x33…). The construction

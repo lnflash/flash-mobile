@@ -1,6 +1,6 @@
 /**
  * Card fixtures for the Flashcard e2e flows (ENG-634; card protocol 2.0,
- * ENG-675): a simulated card (cardsim, lnflash/cashu-javacard tools/cardsim,
+ * ENG-675): a simulated card (cardsim, cashucard/javacard tools/cardsim,
  * at the ref the workflow pins) provisioned through the applet's own APDUs,
  * with format-4 SIG_ALL pieces minted at a real mint (a local Nutshell on
  * FakeWallet in CI), each with the mint's DLEQ proof.

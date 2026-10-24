@@ -658,7 +658,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       setVisible(true)
       if (!bridge) NfcManager.start()
       // One NFC session covers both card types. A Cashu card is an IsoDep
-      // JavaCard applet (lnflash/cashu-javacard); a BoltCard is an NDEF tag.
+      // JavaCard applet (cashucard/javacard); a BoltCard is an NDEF tag.
       // The request resolves with the tech the tapped card connected as, so
       // the Cashu read only runs on an IsoDep tag. A Type-4 tag that connected
       // as IsoDep still reports its NDEF message from getTag(), so a non-Cashu
