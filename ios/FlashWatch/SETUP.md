@@ -1,16 +1,16 @@
-# Flash watchOS app + complication — Xcode setup
+# Flash watchOS app + complication: Xcode setup
 
 All Swift sources, `Info.plist`s, and entitlements are scaffolded on disk. The
 remaining steps create the two watch targets and wire the files into Xcode
 (these edit `project.pbxproj`, so they're done in the GUI to avoid corrupting
-it — same approach as `ios/FlashWidget/SETUP.md`). Do everything in
+it, the same approach as `ios/FlashWidget/SETUP.md`). Do everything in
 `ios/LNFlash.xcworkspace`, **not** the `.xcodeproj`.
 
 > **What ships here**
-> - `ios/FlashWatch Watch App/` — the SwiftUI watch app (live BTC price, refresh, Scan/Receive hand-off).
-> - `ios/FlashWatchComplication/` — a WidgetKit complication (circular, inline, rectangular, corner).
-> - `ios/LNFlash/WatchConnectivityBridge.{swift,m}` — phone-side RN module that pushes the user's display currency to the watch and opens `flash://` deep links from watch quick-actions.
-> - `app/utils/watch.ts` + `app/components/watch-currency-sync/` — JS that calls the bridge (already mounted in `app/graphql/client.tsx`).
+> - `ios/FlashWatch Watch App/`: the SwiftUI watch app (live BTC price, refresh, Scan/Receive hand-off).
+> - `ios/FlashWatchComplication/`: a WidgetKit complication (circular, inline, rectangular, corner).
+> - `ios/LNFlash/WatchConnectivityBridge.{swift,m}`: phone-side RN module that pushes the user's display currency to the watch and opens `flash://` deep links from watch quick-actions.
+> - `app/utils/watch.ts` + `app/components/watch-currency-sync/`: JS that calls the bridge (already mounted in `app/graphql/client.tsx`).
 
 ## Architecture (why it's built this way)
 
@@ -18,7 +18,7 @@ it — same approach as `ios/FlashWidget/SETUP.md`). Do everything in
   `group.com.lnflash`. Instead the watch app and its complication share a
   **watch-local** App Group, `group.com.lnflash.watch`.
 - The watch **fetches the BTC price itself** from the public, unauthenticated
-  `realtimePrice` GraphQL query (`https://api.flashapp.me/graphql`) — the same
+  `realtimePrice` GraphQL query (`https://api.flashapp.me/graphql`), the same
   query the home-screen widget uses. So it shows a price even with the phone
   away and before the user logs in (defaults to USD).
 - **WatchConnectivity** carries only the user's *display currency* from phone →
@@ -46,14 +46,14 @@ target.
    Uncheck "Include Notification Scene". For "Include Complication", see step 3
    (we add our own WidgetKit extension, so you can leave it unchecked).
 3. Set the watch app's bundle id to **`com.lnflash.watchkitapp`** and confirm
-   its **WKCompanionAppBundleIdentifier** points at the app (`com.lnflash`) —
+   its **WKCompanionAppBundleIdentifier** points at the app (`com.lnflash`);
    the provided `Info.plist` already sets this. Team: your usual signing team.
    **Finish**.
 4. When asked to **Activate "FlashWatch" scheme?** → **Activate**.
 5. Xcode generates a `FlashWatch Watch App/` group with a starter
    `FlashWatchApp.swift`, `ContentView.swift`, `Assets.xcassets`, and
    `Info.plist`. **Delete** the generated `FlashWatchApp.swift` and
-   `ContentView.swift` (Move to Trash) — we provide our own. Keep the generated
+   `ContentView.swift` (Move to Trash). We provide our own. Keep the generated
    `Assets.xcassets` (add an `AccentColor` / app icon as desired).
 
 ## 3. Add the scaffolded watch-app sources
@@ -106,7 +106,7 @@ share the price snapshot. **Do not** reuse the iOS `group.com.lnflash`.
    `com.lnflash.watchkitapp.FlashWatchComplication`). Automatic signing handles
    the profiles; regenerate manually-managed profiles if you use them.
 
-> The phone-side `WatchConnectivityBridge` needs **no** App Group — it talks to
+> The phone-side `WatchConnectivityBridge` needs **no** App Group. It talks to
 > the watch over WatchConnectivity, not shared storage.
 
 ## 6. Deployment target
@@ -124,7 +124,7 @@ Set both watch targets' **watchOS Deployment Target** to **9.0** or later
    complication slot → choose **Flash**. Try the circular, rectangular, inline,
    and corner faces.
 4. Currency sync: run the **LNFlash** app on the paired phone while logged in
-   and change your display currency in Settings — `WatchCurrencySync` pushes it
+   and change your display currency in Settings. `WatchCurrencySync` pushes it
    over, and the watch reprices on its next refresh.
 5. Quick actions: tap **Scan** / **Receive** in the watch app. When the phone is
    reachable the bridge opens `flash://widget/scan` / `flash://widget/receive` on the phone (via a local notification when the app is backgrounded, since iOS blocks background self-foregrounding).
@@ -138,6 +138,6 @@ Set both watch targets' **watchOS Deployment Target** to **9.0** or later
 - The `flash://widget/scan` / `flash://widget/receive` deep links resolve via the app's
   existing React Navigation `linking` config (`PREFIX_LINKING` already includes
   `flash://`). If a given screen route isn't registered, the action simply opens
-  the app — no crash.
+  the app, with no crash.
 - Only the primary `com.lnflash` target gets the watch app. To attach it to
   `LNFlash-Alt`, repeat the embed + App Group wiring for that target.

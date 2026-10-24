@@ -1,4 +1,4 @@
-# NIP-29 ↔ Chatwoot Bridge — Implementation Plan
+# NIP-29 ↔ Chatwoot Bridge: Implementation Plan
 
 ## Overview
 
@@ -10,15 +10,15 @@ Standalone Node.js service that mirrors a NIP-29 Nostr group chat into a Chatwoo
 
 These need to be verified or decided before/during implementation:
 
-1. **Bridge key permissions** — The bridge has its own Nostr keypair. We assume it can be added as a group member (or admin) by an existing admin so it can publish kind 9 events. If the group relay enforces member-only writes, this is a hard prerequisite.
-2. **Chatwoot instance is already running** — We assume a Chatwoot instance exists and is accessible. The API Channel inbox and webhook still need to be configured (see Prerequisites).
-3. **Webhook is publicly reachable** — The bridge's `/webhook/chatwoot` endpoint must be reachable from the Chatwoot instance. How this is exposed (reverse proxy, port, etc.) is up to the server's existing setup.
-4. **nostr-tools v2.x** — The app uses nostr-tools v2.23.3; the bridge code below targets that same API. Verify the server's installed version matches.
-5. **In-memory store is acceptable initially** — Contact/conversation ID mappings are kept in memory. On restart, both are re-hydrated from Chatwoot: contacts via search by `identifier` (pubkey), conversations via `GET /contacts/{id}/conversations` filtered by `inbox_id`. No duplicates should be created on restart.
-6. **One conversation per group member** — Each Nostr pubkey gets its own Chatwoot conversation. Agents see individual threads, not a single shared group feed. If a shared feed is preferred, the conversation model needs to change.
-7. **Messages are plaintext** — NIP-29 kind 9 events are not encrypted. This is correct per the spec, but confirm the group relay isn't doing anything custom.
-8. **No historical backfill needed** — The bridge starts live from the moment it runs (with a 60-second startup buffer). If historical messages need importing, the `since` filter must be adjusted.
-9. **Chatwoot webhook payload shape** — The webhook handler assumes the standard Chatwoot `message_created` payload structure. Verify against the actual Chatwoot version running on the server, as payload fields have changed across versions.
+1. **Bridge key permissions**: The bridge has its own Nostr keypair. We assume it can be added as a group member (or admin) by an existing admin so it can publish kind 9 events. If the group relay enforces member-only writes, this is a hard prerequisite.
+2. **Chatwoot instance is already running**: We assume a Chatwoot instance exists and is accessible. The API Channel inbox and webhook still need to be configured (see Prerequisites).
+3. **Webhook is publicly reachable**: The bridge's `/webhook/chatwoot` endpoint must be reachable from the Chatwoot instance. How this is exposed (reverse proxy, port, etc.) is up to the server's existing setup.
+4. **nostr-tools v2.x**: The app uses nostr-tools v2.23.3; the bridge code below targets that same API. Verify the server's installed version matches.
+5. **In-memory store is acceptable initially**: Contact/conversation ID mappings are kept in memory. On restart, both are re-hydrated from Chatwoot: contacts via search by `identifier` (pubkey), conversations via `GET /contacts/{id}/conversations` filtered by `inbox_id`. No duplicates should be created on restart.
+6. **One conversation per group member**: Each Nostr pubkey gets its own Chatwoot conversation. Agents see one thread per member. If a shared feed is preferred, the conversation model needs to change.
+7. **Messages are plaintext**: NIP-29 kind 9 events are not encrypted. This is correct per the spec, but confirm the group relay isn't doing anything custom.
+8. **No historical backfill needed**: The bridge starts live from the moment it runs (with a 60-second startup buffer). If historical messages need importing, the `since` filter must be adjusted.
+9. **Chatwoot webhook payload shape**: The webhook handler assumes the standard Chatwoot `message_created` payload structure. Verify against the actual Chatwoot version running on the server, as payload fields have changed across versions.
 
 ---
 
