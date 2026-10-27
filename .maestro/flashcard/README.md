@@ -49,7 +49,7 @@ it).
 | `limited`       | `loaded`, with the owner's limits (5,000 a day, 1,000 a payment, 250 without the PIN)   |
 | `missing-small` | `owned`, no PIN, 12 sat as 8 + 4: no 1 or 2, so a till offline can take only 4, 8 or 12 |
 
-There is no `legacy` fixture: cardsim serves only the 2.0 applet, so "This
+There is no `legacy` fixture: the pinned cardsim serves the 2.1 applet, so "This
 card needs an update" (a 0.x or Foxy 1.x card) is pinned by the unit specs
 (`__tests__/utils/cashu-card.spec.ts`, `__tests__/contexts/flashcard-cashu-card.spec.tsx`).
 
@@ -139,3 +139,15 @@ payment is skipped and the amount check against the Cash balance is lifted
 with it (`topUpAmountProblem`). A release build has no stub and always checks
 the balance; `__tests__/utils/cashu-card-topup-amount-problem.spec.ts` pins
 that.
+
+## Settlement evidence before cleanup
+
+A load tap clears spent slots only when every slot matches its complete,
+previously checked NUT-07 SPENT snapshot. Evidence is scoped to the mint URL,
+card key, slot number, keyset prefix, amount, nonce, commitment and date. The tap
+rechecks the card key and configured mint before sending CLEAR_SPENT.
+
+Malformed spent data and dated proofs remain occupied. This wallet cannot yet
+resume a partly erased slot from a durable cleanup checkpoint, so an interrupted
+clear can require supervised recovery. Keep its existing paid top-up record;
+do not fund a replacement top-up to work around the blocked space.

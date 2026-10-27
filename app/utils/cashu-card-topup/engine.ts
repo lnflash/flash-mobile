@@ -20,6 +20,8 @@ import {
   Transceiver,
   clearSpent,
   getProof,
+  getPubkey,
+  getCardRecord,
   getSlotStatuses,
   isProofShaped,
   loadProof,
@@ -71,7 +73,7 @@ import type {
  *   proof twice and cannot tell a proof the mint has already paid out;
  * - a spent slot is owed until it settles: CLEAR_SPENT is sent only by
  *   `reclaimSpentSlots`, on the load tap, and only once the mint has settled
- *   every spent slot on the card (NUT-07 SPENT) or the slot holds no proof.
+ *   every reconstructable spent proof in the same card/mint snapshot (NUT-07 SPENT).
  *
  * Card protocol 2.0 (ENG-675): every output is a format-4 SIG_ALL piece, and
  * each goes on the card with the mint's DLEQ proof beside it (LOAD_PROOF
@@ -959,39 +961,69 @@ export const proofY = (nonce: string, cardPubkey: string): string =>
     ),
   )
 
-/** The mint's NUT-07 verdict on each of a card's spent slots, by nonce. */
+/** Mint verdicts keyed by the complete card, mint and proof snapshot. */
 export type ReclaimVerdicts = ReadonlyMap<string, ProofState>
+export type ReclaimContext = { mintUrl: string; cardPubkey: string }
+type ReclaimProof = Pick<
+  CardProofSlot,
+  "slot" | "keysetId" | "amount" | "nonce" | "C" | "date"
+>
 
-/**
- * Before a load's tap: the mint's NUT-07 state of each proof-shaped spent
- * slot the last card read found, by nonce, asked here so the card session
- * never waits on the network. A CLEAR_SPENT remnant (`isProofShaped` false)
- * holds no proof to ask about. Safe to ask ahead of the tap because SPENT is
- * terminal: a verdict can go stale only from UNSPENT or PENDING to SPENT,
- * never the other way, so a stale map withholds a clear, never grants one.
- */
+const reclaimMintKey = (url: string): string => {
+  try {
+    const parsed = new URL(url)
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "")
+    return parsed.href
+  } catch {
+    return url
+  }
+}
+
+export const reclaimProofKey = (
+  mintUrl: string,
+  cardPubkey: string,
+  slot: ReclaimProof,
+): string =>
+  JSON.stringify([
+    reclaimMintKey(mintUrl),
+    cardPubkey.toLowerCase(),
+    slot.slot,
+    slot.keysetId.slice(0, 16).toLowerCase(),
+    slot.amount,
+    slot.nonce.toLowerCase(),
+    slot.C.toLowerCase(),
+    slot.date,
+  ])
+
+/** Query only exactly reconstructable date-zero proofs before the NFC tap. */
 export async function reclaimVerdicts(
   deps: Pick<TopUpDeps, "mint">,
   cardPubkey: string,
   spentSlots: readonly CardProofSlot[],
 ): Promise<ReclaimVerdicts> {
-  const proofs = spentSlots.filter(isProofShaped)
+  const proofs = spentSlots.filter((slot) => isProofShaped(slot) && slot.date === 0)
   if (proofs.length === 0) return new Map()
   const states = await deps.mint.proofStates(
     proofs.map((slot) => proofY(slot.nonce, cardPubkey)),
   )
-  return new Map(proofs.map((slot, i) => [slot.nonce, states[i]]))
+  if (states.length !== proofs.length) return new Map()
+  return new Map(
+    proofs.map((slot, i) => [
+      reclaimProofKey(deps.mint.url, cardPubkey, slot),
+      states[i],
+    ]),
+  )
 }
 
-/**
- * Whether CLEAR_SPENT may free this spent slot: its data is not a proof (a
- * CLEAR_SPENT remnant, which owes nothing), or the mint has settled the proof
- * it holds. A proof the mint has as UNSPENT (a burn whose signature never
- * left the card, which only its slot can recover) or PENDING (being redeemed
- * right now) is owed, and holds the clear back.
- */
-const clearable = (slot: CardProofSlot, verdicts: ReclaimVerdicts | undefined): boolean =>
-  !isProofShaped(slot) || verdicts?.get(slot.nonce) === "SPENT"
+/** Unreadable data supplies no evidence of a previously verified cleanup. */
+const clearable = (
+  slot: CardProofSlot,
+  verdicts: ReclaimVerdicts | undefined,
+  context: ReclaimContext,
+): boolean =>
+  isProofShaped(slot) &&
+  slot.date === 0 &&
+  verdicts?.get(reclaimProofKey(context.mintUrl, context.cardPubkey, slot)) === "SPENT"
 
 export type ReclaimPlan = {
   /** Spent slots the load tap will free: every one of them, or none. */
@@ -1004,13 +1036,14 @@ export type ReclaimPlan = {
  * What a load tap's reclaim will do with these spent slots, given the mint's
  * verdicts. CLEAR_SPENT frees every spent slot or none, so one slot still
  * settling makes none reclaimable. No verdicts (the mint could not be asked)
- * leaves every proof-shaped slot settling.
+ * leaves every spent slot unverified, including malformed data.
  */
 export const reclaimPlan = (
   spentSlots: readonly CardProofSlot[],
   verdicts: ReclaimVerdicts | undefined,
+  context: ReclaimContext,
 ): ReclaimPlan => {
-  const settling = spentSlots.filter((slot) => !clearable(slot, verdicts)).length
+  const settling = spentSlots.filter((slot) => !clearable(slot, verdicts, context)).length
   return { reclaimable: settling === 0 ? spentSlots.length : 0, settling }
 }
 
@@ -1044,7 +1077,7 @@ export type ReclaimResult = ReclaimPlan & {
  * Inside the load tap, before `loadTopUp`: free the card's spent slots when
  * every one of them may go. GET_SLOT_STATUS, then GET_PROOF for each spent
  * slot, checked against `verdicts` (`reclaimVerdicts`, asked before the tap):
- * CLEAR_SPENT goes out only when each spent slot is a remnant or mint-SPENT,
+ * CLEAR_SPENT goes out only with complete mint-SPENT snapshot coverage,
  * and otherwise nothing is sent and the owed slots are counted (`settling`).
  * A card with no spent slots gets no GET_PROOF and no CLEAR_SPENT.
  *
@@ -1052,8 +1085,8 @@ export type ReclaimResult = ReclaimPlan & {
  * signature never left the card keeps every settled slot occupied until it
  * is redeemed or recovered. The card's own count of what it freed is logged;
  * a count other than the spent slots read is a tap cut short or a change
- * under the read, and logged as such. The slot a cut tap leaves (`02` with
- * zeroed data) is a remnant the next reclaim frees.
+ * under the read, and logged as such. A partly zeroed slot remains blocked
+ * until a separate recovery path can supply its durable verified scope.
  *
  * What was read is handed on (`inventory`) when nothing was cleared, so the
  * load that follows in the same tap need not read it again: on a resumed
@@ -1062,16 +1095,31 @@ export type ReclaimResult = ReclaimPlan & {
  */
 export async function reclaimSpentSlots(
   transceive: Transceiver,
-  { maxSlots, verdicts }: { maxSlots: number; verdicts?: ReclaimVerdicts },
+  {
+    maxSlots,
+    verdicts,
+    ...context
+  }: ReclaimContext & { maxSlots: number; verdicts?: ReclaimVerdicts },
 ): Promise<ReclaimResult> {
   const statuses = await getSlotStatuses(transceive, maxSlots)
   const spent: CardProofSlot[] = []
   for (let slot = 0; slot < statuses.length; slot += 1) {
     if (statuses[slot] === "spent") spent.push(await getProof(transceive, slot))
   }
-  const plan = reclaimPlan(spent, verdicts)
+  const plan = reclaimPlan(spent, verdicts, context)
   if (spent.length === 0 || plan.reclaimable === 0) {
     return { ...plan, cleared: 0, spent: spent.length, inventory: { statuses, spent } }
+  }
+  const actualKey = toHex(await getPubkey(transceive))
+  if (actualKey.toLowerCase() !== context.cardPubkey.toLowerCase()) {
+    throw new TopUpError("state", "the card changed before cleanup")
+  }
+  const record = await getCardRecord(transceive)
+  if (
+    !record.recordSet ||
+    reclaimMintKey(record.mint) !== reclaimMintKey(context.mintUrl)
+  ) {
+    throw new TopUpError("mint-mismatch", "the card's mint changed before cleanup")
   }
   const cleared = await clearSpent(transceive)
   if (cleared === spent.length) {
@@ -1130,15 +1178,12 @@ export async function proofStatesForLoad(
  *
  * Only empty slots are written to, and `loadTopUp` itself never clears a
  * spent slot. CLEAR_SPENT is sent only by `reclaimSpentSlots`, which the load
- * tap runs before this, and only when every spent slot is a CLEAR_SPENT
- * remnant or mint-SPENT (NUT-07): a burn whose signature never left the card
+ * tap runs before this, and only when every spent slot matches its complete
+ * mint-SPENT snapshot (NUT-07): a burn whose signature never left the card
  * can be recovered only from its slot (flash-pos `hasUnsettledForCard`), and
  * a swap not yet made is UNSPENT or PENDING at the mint; either holds the
- * clear back. That is narrower than the cashu-javacard spec's top-up flow,
- * which clears before the loads unconditionally (spec/NUT-XX.md:193,
- * spec/APDU.md "Called after a top-up cycle to reclaim slot space"), and
- * narrower than flash-pos and cashu-client, which never clear. A card without
- * the empty slots is refused before anything is written: with every spent
+ * clear back. Malformed data without a durable verified cleanup scope stays
+ * occupied. A card without enough empty slots is refused before writing: with every spent
  * slot still owed, nothing frees them, and the record stays minted.
  */
 export type LoadArgs = {

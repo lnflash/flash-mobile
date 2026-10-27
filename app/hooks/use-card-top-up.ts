@@ -260,7 +260,11 @@ export const useCardTopUp = () => {
    */
   const reclaimPlanFor = async (
     card: Pick<CashuCardInfo, "pubkey" | "spentSlots">,
-  ): Promise<ReclaimPlan> => reclaimPlan(card.spentSlots ?? [], await verdictsFor(card))
+  ): Promise<ReclaimPlan> =>
+    reclaimPlan(card.spentSlots ?? [], await verdictsFor(card), {
+      mintUrl: deps.mint.url,
+      cardPubkey: card.pubkey,
+    })
 
   /**
    * Opens the tap for loading, the way this card and phone allow (spec/APDU.md,
@@ -347,6 +351,8 @@ export const useCardTopUp = () => {
       await openForLoading(transceive, card, { pin, owner })
       const reclaim = await reclaimSpentSlots(transceive, {
         maxSlots: card.maxSlots,
+        cardPubkey: record.cardPubkey,
+        mintUrl: record.mintUrl,
         verdicts,
       })
       try {
