@@ -79,7 +79,9 @@ jobs:
   flashcard-e2e:
     name: Flashcard flows (iOS simulator)
     runs-on: macos-15
-    timeout-minutes: 90
+    # Native setup/build plus passing flows took about 90 minutes in #817.
+    # Allow time for token revocation and post-job cleanup as well.
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
