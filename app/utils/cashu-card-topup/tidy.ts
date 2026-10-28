@@ -36,6 +36,7 @@ import {
 } from "../cashu-card-spend"
 import {
   ReclaimVerdicts,
+  reclaimProofKey,
   cardCommitments,
   loadPieces,
   proofY,
@@ -531,8 +532,22 @@ const finishSigned = async (
   // The swap spent the inputs at the mint: their slots are settled, and free
   // with every other spent slot the mint has settled (all or none).
   const verdicts = new Map(args.verdicts ?? [])
-  loaded.inputs.forEach((input) => verdicts.set(input.nonce, "SPENT"))
-  await reclaimSpentSlots(transceive, { maxSlots: args.card.maxSlots, verdicts })
+  loaded.inputs.forEach((input) =>
+    verdicts.set(
+      reclaimProofKey(loaded.mintUrl, loaded.cardPubkey, {
+        ...input,
+        keysetId: loaded.keysetId,
+        date: 0,
+      }),
+      "SPENT",
+    ),
+  )
+  await reclaimSpentSlots(transceive, {
+    maxSlots: args.card.maxSlots,
+    cardPubkey: loaded.cardPubkey,
+    mintUrl: loaded.mintUrl,
+    verdicts,
+  })
   if (held > 0) return { status: "unfinished", record: loaded }
   report({ stage: "done" })
   return { status: "tidied", record: await update(deps, loaded, { state: "loaded" }) }

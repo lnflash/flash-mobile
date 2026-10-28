@@ -25,6 +25,7 @@ import type { CardProofSlot } from "../../app/utils/cashu-card"
 import {
   PayArgs,
   ReclaimResult,
+  reclaimProofKey,
   TopUpError,
   TopUpMintError,
   TopUpRecord,
@@ -431,7 +432,11 @@ describe("useCardTopUp feeFor", () => {
 })
 
 describe("useCardTopUp load", () => {
-  const record = { id: "t1", cardPubkey: "02ab" } as TopUpRecord
+  const record = {
+    id: "t1",
+    cardPubkey: "02ab",
+    mintUrl: "https://mint.test",
+  } as TopUpRecord
   const tapRuns = () =>
     mockRunCardOperation.mockImplementation(async (op) => op("transceive"))
 
@@ -467,6 +472,8 @@ describe("useCardTopUp load", () => {
     })
     expect(mockReclaimSpentSlots).toHaveBeenCalledWith("transceive", {
       maxSlots: 32,
+      cardPubkey: record.cardPubkey,
+      mintUrl: record.mintUrl,
       verdicts: new Map(),
     })
     expect(mockLoadTopUp).toHaveBeenCalledWith(expect.anything(), {
@@ -547,6 +554,8 @@ describe("useCardTopUp load", () => {
     )
     expect(mockReclaimSpentSlots).toHaveBeenCalledWith("transceive", {
       maxSlots: 32,
+      cardPubkey: record.cardPubkey,
+      mintUrl: record.mintUrl,
       verdicts,
     })
     expect(order).toEqual(["verdicts", "tap"])
@@ -565,6 +574,8 @@ describe("useCardTopUp load", () => {
     expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
     expect(mockReclaimSpentSlots).toHaveBeenCalledWith("transceive", {
       maxSlots: 32,
+      cardPubkey: record.cardPubkey,
+      mintUrl: record.mintUrl,
       verdicts: undefined,
     })
     expect(mockLoadTopUp).toHaveBeenCalledTimes(1)
@@ -634,7 +645,11 @@ describe("useCardTopUp load", () => {
 })
 
 describe("useCardTopUp load, card protocol 2.0: the owner's grant (ENG-675)", () => {
-  const record = { id: "t1", cardPubkey: "02ab" } as TopUpRecord
+  const record = {
+    id: "t1",
+    cardPubkey: "02ab",
+    mintUrl: "https://mint.test",
+  } as TopUpRecord
   const OWNER = { privateKey: "42".repeat(32), source: "seed", saved: false }
 
   beforeEach(() => {
@@ -771,8 +786,8 @@ describe("useCardTopUp reclaimPlanFor", () => {
     const [a, b] = card.spentSlots ?? []
     mockReclaimVerdicts.mockResolvedValueOnce(
       new Map([
-        [a.nonce, "SPENT"],
-        [b.nonce, "SPENT"],
+        [reclaimProofKey(hook().deps.mint.url, "02ab", a), "SPENT"],
+        [reclaimProofKey(hook().deps.mint.url, "02ab", b), "SPENT"],
       ]),
     )
     await expect(hook().reclaimPlanFor(card)).resolves.toEqual({
@@ -787,8 +802,8 @@ describe("useCardTopUp reclaimPlanFor", () => {
 
     mockReclaimVerdicts.mockResolvedValueOnce(
       new Map([
-        [a.nonce, "SPENT"],
-        [b.nonce, "PENDING"],
+        [reclaimProofKey(hook().deps.mint.url, "02ab", a), "SPENT"],
+        [reclaimProofKey(hook().deps.mint.url, "02ab", b), "PENDING"],
       ]),
     )
     await expect(hook().reclaimPlanFor(card)).resolves.toEqual({

@@ -59,9 +59,8 @@ permissions:
   contents: read
 
 env:
-  # lnflash/cashu-javacard main at #35 (ENG-681): the 2.0 applet, and a cardsim
-  # that puts a package-AID SELECT on the opener, as the J3R180 does.
-  CASHU_JAVACARD_REF: bced1c41726ef23e733cb228fd46f6fba568467d
+  # Shared 2.1 applet and safe-clear contract at cashucard/cashucard #188.
+  CASHU_JAVACARD_REF: f435f1f9362341cfe8963c0192e4c08f5b2413a6
   # Nutshell 0.20.3, the public release nearest forge's 0.20.3.1 (architect's
   # decision 6). It pins a breez-sdk-spark range PyPI no longer has, which
   # FakeWallet never uses: it is installed without its dependencies, and they
@@ -80,7 +79,9 @@ jobs:
   flashcard-e2e:
     name: Flashcard flows (iOS simulator)
     runs-on: macos-15
-    timeout-minutes: 90
+    # Native setup/build plus passing flows took about 90 minutes in #817.
+    # Allow time for token revocation and post-job cleanup as well.
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,7 +101,7 @@ jobs:
       - name: Checkout cashu-javacard (cardsim)
         uses: actions/checkout@v4
         with:
-          repository: lnflash/cashu-javacard
+          repository: cashucard/cashucard
           ref: ${{ env.CASHU_JAVACARD_REF }}
           path: .e2e/cashu-javacard
 

@@ -228,6 +228,8 @@ describe("runTidy", () => {
       // The reclaim of the burned 16.
       INS.GET_SLOT_STATUS,
       INS.GET_PROOF,
+      INS.GET_PUBKEY,
+      INS.GET_CARD,
       INS.CLEAR_SPENT,
     ])
     // The swap carried the card's one witness, which the mint checked.
@@ -995,6 +997,8 @@ describe("runTidy progress (ENG-706)", () => {
     ...new Array(5).fill(INS.LOAD_PROOF),
     INS.GET_SLOT_STATUS,
     INS.GET_PROOF,
+    INS.GET_PUBKEY,
+    INS.GET_CARD,
     INS.CLEAR_SPENT,
   ]
 

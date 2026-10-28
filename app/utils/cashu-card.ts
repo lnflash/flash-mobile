@@ -1163,13 +1163,10 @@ const ALL_ZERO_HEX = /^0+$/
  * compressed point on secp256k1 (a prefix check alone passes half of all
  * random bytes), and neither the nonce nor the keyset id is all zero.
  *
- * What fails these is a CLEAR_SPENT remnant: the applet zeroes a spent slot's
- * data before it marks the slot empty, so a tap cut short there leaves a slot
- * still `02` whose data is not a proof. A remnant owes nothing at the mint. A
- * tear that zeroed only part of `C` whose x still lands on the curve passes;
- * the mint, asked about the Y such a slot rebuilds, has never seen it
- * (UNSPENT), which blocks a reclaim rather than clearing a slot the checks
- * cannot vouch for.
+ * An interrupted CLEAR_SPENT can leave partly zeroed data. Shape checks
+ * cannot establish that cleanup was authorized or that the original proof
+ * settled. Even a valid shape needs an exact, verified settlement snapshot
+ * before its slot can be cleared.
  */
 export function isProofShaped(
   slot: Pick<CardProofSlot, "keysetId" | "amount" | "nonce" | "C">,
@@ -1233,7 +1230,7 @@ export type CardSlotRead = {
    * the mint has settled it (NUT-07 SPENT), and only then may CLEAR_SPENT
    * free it: these are what the top-up asks the mint about before its load
    * tap (`reclaimVerdicts`). A CLEAR_SPENT remnant (`isProofShaped` false)
-   * is listed too; it owes nothing.
+   * is listed too; it cannot establish settlement.
    */
   spentSlots: CardProofSlot[]
 }
