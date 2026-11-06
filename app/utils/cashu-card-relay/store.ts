@@ -25,9 +25,11 @@ import type { RelayJournal } from "./relay"
  * Beside the entries, `unknownMints` notes the records whose packet named a
  * mint this app does not know (ENG-822), by card and scope, so the tap that
  * met one says so and the next taps of the same record are quiet. A note is
- * not an entry and not a refusal: nothing was captured, and once the mint is
- * known the next tap captures the record as usual (its entry replaces the
- * note). The newest `KEEP_TERMINAL` notes are kept. The field is optional,
+ * not a refusal. It is written when a tap meets an unknown mint before
+ * capture (nothing captured), or when a captured entry's mint is no longer
+ * known at settle (the note then sits beside that entry, under the same key).
+ * The next put of that record (capture or settle) replaces the note. The
+ * newest `KEEP_TERMINAL` notes are kept. The field is optional,
  * so a value saved without it reads as it did: the format is unchanged.
  */
 const SERVER = "flashcard-v2-relay"

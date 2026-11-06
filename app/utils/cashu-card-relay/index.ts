@@ -226,7 +226,10 @@ export const createRelay = (deps: RelayDeps) => {
    *   already saw settled (same scope): `already`, with no page read.
    * - The packet's mint is checked before anything is captured or sent. An
    *   unknown one is noted (`noteUnknownMint`): a later tap of the same record
-   *   is `unknown-mint` with `seen`, until the mint is known.
+   *   is `unknown-mint` with `seen`, until the mint is known. `settlePending`
+   *   notes it the same way when a captured entry's mint has left
+   *   `knownMints()`: the note sits beside the kept entry, and the entry's
+   *   next put (once the mint is known and it settles) replaces the note.
    * - A card whose pieces are in a unit other than sat (`card.unit`, as the
    *   mint named it): `nothing`, with no GET_OUTBOX. The packet's unit is
    *   always sat (spec/APDU.md, GET_OUTBOX), so its keysets would be refused.

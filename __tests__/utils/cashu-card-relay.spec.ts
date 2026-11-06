@@ -381,10 +381,18 @@ describe("createRelay", () => {
     // The captured entry is kept, still open, for when the mint is known again.
     const [entry] = await savedEntries()
     expect(entry.journal.state).not.toBe("outputs-confirmed")
+    // The settle path's note shares the captured entry's key.
+    const noted = await Keychain.getInternetCredentials(SERVER)
+    expect(noted ? JSON.parse(noted.password).unknownMints : []).toEqual([
+      expect.objectContaining({ cardPubkey: pubkey, scopeHex: entry.scopeHex }),
+    ])
 
     known = [MINT]
     expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
     expect(double.calls["/v1/swap"]).toBe(1)
+    // The settle's put of that record replaced the note.
+    const settled = await Keychain.getInternetCredentials(SERVER)
+    expect(settled ? JSON.parse(settled.password).unknownMints ?? [] : []).toEqual([])
   })
 
   it("degrades a failed unknown-mint note to the plain warning, never to failed", async () => {
