@@ -19,6 +19,7 @@ import {
 } from "../../app/screens/card-screen/flashcard-v2-topup"
 import { CardError, CardProofSlot } from "../../app/utils/cashu-card"
 import { setCardBridge } from "../../app/utils/cashu-card-bridge"
+import { RelayUnsettledError } from "../../app/utils/cashu-card-relay"
 import {
   ReclaimPlan,
   ReclaimResult,
@@ -771,6 +772,20 @@ describe("FlashcardV2TopUpScreen", () => {
     await act(async () => press(LL.FlashcardV2.topUpCheckPin()))
 
     expect(errorText()).toBe(LL.FlashcardV2.wrongPin({ tries: 2 }))
+    expect(mockPrepare).not.toHaveBeenCalled()
+    expect(mockPay).not.toHaveBeenCalled()
+  })
+
+  it("a card whose last payment could not be settled first says so, and nothing is paid (ENG-820)", async () => {
+    mockCard = card({ pinState: "set" })
+    mockCheckPin.mockRejectedValueOnce(new RelayUnsettledError({ kind: "pending" }))
+    await renderSettled()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+    typePin("1234")
+    await act(async () => press(LL.FlashcardV2.topUpCheckPin()))
+
+    expect(errorText()).toBe(LL.FlashcardV2.relayPending())
     expect(mockPrepare).not.toHaveBeenCalled()
     expect(mockPay).not.toHaveBeenCalled()
   })

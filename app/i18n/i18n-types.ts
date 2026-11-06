@@ -596,6 +596,27 @@ type RootTranslation = {
 		 */
 		tidyKeepHolding: string
 		/**
+		 * S​e​t​t​l​i​n​g​ ​a​ ​p​a​y​m​e​n​t​ ​f​r​o​m​ ​t​h​i​s​ ​c​a​r​d
+		 */
+		relaySettling: string
+		/**
+		 * S​e​t​t​l​e​d​ ​{​s​a​t​s​}​ ​s​a​t​ ​t​o​ ​t​h​e​ ​m​e​r​c​h​a​n​t
+		 * @param {number} sats
+		 */
+		relaySettled: RequiredParams<'sats'>
+		/**
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​l​a​s​t​ ​p​a​y​m​e​n​t​ ​i​s​ ​a​l​r​e​a​d​y​ ​s​e​t​t​l​e​d​.
+		 */
+		relayAlreadySettled: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​l​a​s​t​ ​p​a​y​m​e​n​t​ ​i​s​ ​f​o​r​ ​a​ ​m​i​n​t​ ​t​h​i​s​ ​a​p​p​ ​d​o​e​s​n​'​t​ ​k​n​o​w​,​ ​s​o​ ​i​t​ ​w​a​s​n​'​t​ ​s​e​t​t​l​e​d​.
+		 */
+		relayUnknownMint: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​s​e​t​t​l​e​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​y​e​t​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​l​a​t​e​r​.
+		 */
+		relayPending: string
+		/**
 		 * U​s​e​s​ ​{​n​e​e​d​e​d​}​ ​o​f​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​s​l​o​t​s​,​ ​{​r​e​c​l​a​i​m​}​ ​o​f​ ​t​h​e​m​ ​f​r​e​e​d​ ​f​r​o​m​ ​s​e​t​t​l​e​d​ ​s​p​e​n​d​s​ ​o​n​ ​l​o​a​d
 		 * @param {number} free
 		 * @param {number} needed
@@ -9291,6 +9312,26 @@ export type TranslationFunctions = {
 		 * Keep holding the card
 		 */
 		tidyKeepHolding: () => LocalizedString
+		/**
+		 * Settling a payment from this card
+		 */
+		relaySettling: () => LocalizedString
+		/**
+		 * Settled {sats} sat to the merchant
+		 */
+		relaySettled: (arg: { sats: number }) => LocalizedString
+		/**
+		 * This card's last payment is already settled.
+		 */
+		relayAlreadySettled: () => LocalizedString
+		/**
+		 * This card's last payment is for a mint this app doesn't know, so it wasn't settled.
+		 */
+		relayUnknownMint: () => LocalizedString
+		/**
+		 * Could not settle the payment yet. Tap the card again later.
+		 */
+		relayPending: () => LocalizedString
 		/**
 		 * Uses {needed} of {free} free slots, {reclaim} of them freed from settled spends on load
 		 */

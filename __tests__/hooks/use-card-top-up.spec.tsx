@@ -465,7 +465,10 @@ describe("useCardTopUp load", () => {
     const result = await hook().load(record, card, "1234")
 
     expect(mockProofStates).toHaveBeenCalledWith(expect.anything(), "t1")
-    expect(mockRunCardOperation).toHaveBeenCalledWith(expect.any(Function), "02ab")
+    // A slot-changing tap: the card's last payment is relayed first (ENG-820).
+    expect(mockRunCardOperation).toHaveBeenCalledWith(expect.any(Function), "02ab", {
+      changesSlots: true,
+    })
     expect(mockVerifyCardPin).toHaveBeenCalledWith("transceive", "1234", {
       sealed: false,
       cardPubkey: "02ab",
@@ -765,7 +768,11 @@ describe("useCardTopUp load, card protocol 2.0: the owner's grant (ENG-675)", ()
       sealed: true,
       cardPubkey: "02ab",
     })
-    expect(mockRunCardOperation).toHaveBeenCalledWith(expect.any(Function), "02ab")
+    // Before anything is paid, a card whose last payment cannot be settled
+    // takes no top-up (ENG-820).
+    expect(mockRunCardOperation).toHaveBeenCalledWith(expect.any(Function), "02ab", {
+      changesSlots: true,
+    })
   })
 })
 

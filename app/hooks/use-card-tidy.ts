@@ -218,7 +218,7 @@ export const useCardTidy = (card: TidyCard | undefined) => {
               },
             }),
           card.pubkey,
-          { rereadSlots: true },
+          { rereadSlots: true, changesSlots: true },
         )
       } catch (err) {
         threw = true

@@ -44,6 +44,7 @@ import {
 } from "../../app/utils/cashu-card-topup"
 import { CardError } from "../../app/utils/cashu-card"
 import { CardSpendError } from "../../app/utils/cashu-card-spend"
+import { RelayUnsettledError } from "../../app/utils/cashu-card-relay"
 import { ownerKeyStore } from "../../app/utils/cashu-card-owner-store"
 
 loadLocale("en")
@@ -1396,8 +1397,12 @@ describe("FlashcardV2Screen card tidy (ENG-702)", () => {
     )
     expect(mockRunCardOperation).toHaveBeenCalledTimes(1)
     expect(mockRunCardOperation.mock.calls[0][1]).toBe(PUBKEY)
-    // The re-read reads the pieces again: a tidy moves no balance.
-    expect(mockRunCardOperation.mock.calls[0][2]).toEqual({ rereadSlots: true })
+    // The re-read reads the pieces again: a tidy moves no balance. And it
+    // changes the slots, so a 2.2 card's last payment is relayed first (ENG-820).
+    expect(mockRunCardOperation.mock.calls[0][2]).toEqual({
+      rereadSlots: true,
+      changesSlots: true,
+    })
   })
 
   it("asks for the PIN before the tap where the no-PIN allowance does not cover the tidy", async () => {
@@ -1492,6 +1497,22 @@ describe("FlashcardV2Screen card tidy (ENG-702)", () => {
       () => LL.FlashcardV2.tidyNothing(),
     ],
   ]
+  it("says a card whose last payment could not be settled first is not tidied yet (ENG-820)", async () => {
+    mockRunCardOperation.mockRejectedValue(new RelayUnsettledError({ kind: "failed" }))
+    mockCashuCard = card({ tidyOffer: offer() })
+    renderScreen()
+    await waitFor(() => expect(screen.getByTestId("flashcard-v2-tidy")).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId("flashcard-v2-tidy"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("flashcard-v2-tidy-notice").props.children).toBe(
+        LL.FlashcardV2.relayPending(),
+      ),
+    )
+    expect(screen.queryByText(LL.FlashcardV2.tidyFailed())).toBeNull()
+  })
+
   outcomes.forEach(([what, result, text]) => {
     it(`says what ${what} means, never to try again`, async () => {
       mockRunCardOperation.mockResolvedValue(result)
