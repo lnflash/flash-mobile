@@ -110,8 +110,9 @@ const relayFailureCode = (err: unknown): string | undefined =>
  * packet and mint (relay.js): a unit other than sat (`unit`, a packet's
  * header; `input-keyset` and `output-keyset`, a keyset the mint lists in
  * another unit, or not at all), the mint's fees (`fee-policy`), an output
- * keyset the mint has retired (`inactive-output-keyset`), and a packet that
- * does not match the entry it was captured for (`context`).
+ * keyset the mint has retired (`inactive-output-keyset`), a packet keyset
+ * prefix that two of the mint's v2 keysets share (`keyset-ambiguous`), and a
+ * packet that does not match the entry it was captured for (`context`).
  * `settlement-unresolved` joins them only after a swap the mint refused
  * (`mintRefused`): sending the same swap again would be refused again.
  */
@@ -121,6 +122,7 @@ export const PERMANENT_REFUSALS: ReadonlySet<string> = new Set([
   "output-keyset",
   "fee-policy",
   "inactive-output-keyset",
+  "keyset-ambiguous",
   "context",
 ])
 

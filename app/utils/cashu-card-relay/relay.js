@@ -326,9 +326,56 @@ async function reconcilePayment({ journal, policy, crypto, request, save }) {
     if (sets.has(k.id)) fail("duplicate-keyset");
     sets.set(k.id, k);
   }
+  // A 2.2 packet names each keyset by its 8-byte prefix; a mint that serves
+  // v2 (33-byte) ids knows the keyset only by its full id. Resolve each packet
+  // id to the one catalogue id it names, and keep that map in the journal so
+  // that a resumed attempt submits and restores exactly what the first did.
+  const packetIds = new Set([
+    ...p.inputs.map((i) => i.id),
+    ...p.outputs.map((o) => o.id),
+  ]);
+  const resolve = (id) => {
+    if (sets.has(id) || !/^[0-9a-f]{16}$/.test(id)) return id;
+    const found = [...sets.keys()].filter(
+      (k) =>
+        typeof k === "string" && /^[0-9a-f]{66}$/.test(k) && k.startsWith(id),
+    );
+    if (found.length > 1) fail("keyset-ambiguous");
+    return found.length ? found[0] : id;
+  };
+  let keysetIds = {};
+  if (j.keysetIds !== undefined) {
+    const m = j.keysetIds;
+    if (
+      !m ||
+      typeof m !== "object" ||
+      Array.isArray(m) ||
+      !Object.keys(m).length ||
+      Object.entries(m).some(
+        ([short, full]) =>
+          !packetIds.has(short) ||
+          !/^[0-9a-f]{16}$/.test(short) ||
+          typeof full !== "string" ||
+          !/^[0-9a-f]{66}$/.test(full) ||
+          !full.startsWith(short) ||
+          sets.get(full)?.unit !== "sat",
+      )
+    )
+      fail("journal");
+    keysetIds = { ...m };
+  } else if (j.state === "captured") {
+    for (const id of packetIds) {
+      const full = resolve(id);
+      if (full !== id) keysetIds[id] = full;
+    }
+  }
+  // A journal past "captured" with no map predates it or needed none: identity.
+  const full = (id) => keysetIds[id] ?? id;
+  if (Object.keys(keysetIds).length) j.keysetIds = keysetIds;
+  const submitted = p.outputs.map((o) => ({ ...o, id: full(o.id) }));
   let fees = 0;
   for (const input of p.inputs) {
-    const k = sets.get(input.id);
+    const k = sets.get(full(input.id));
     if (
       !k ||
       k.unit !== "sat" ||
@@ -344,7 +391,7 @@ async function reconcilePayment({ journal, policy, crypto, request, save }) {
   )
     fail("fee-policy");
   const keys = {};
-  for (const id of new Set(p.outputs.map((o) => o.id))) {
+  for (const id of new Set(submitted.map((o) => o.id))) {
     if (sets.get(id)?.unit !== "sat") fail("output-keyset");
     const r = await request("/v1/keys/" + id);
     if (
@@ -358,8 +405,13 @@ async function reconcilePayment({ journal, policy, crypto, request, save }) {
   }
   const persist = () => save(snapshot(j));
   const observe = async () => {
-    const restore = await request("/v1/restore", { outputs: p.outputs });
-    const signatures = completeRestore(p, restore, keys, crypto);
+    const restore = await request("/v1/restore", { outputs: submitted });
+    const signatures = completeRestore(
+      { outputs: submitted },
+      restore,
+      keys,
+      crypto,
+    );
     const Ys = p.inputs.map((i) => crypto.proofY(i.secret));
     if (new Set(Ys).size !== Ys.length) fail("input-identities");
     const r = await request("/v1/checkstate", { Ys });
@@ -382,13 +434,13 @@ async function reconcilePayment({ journal, policy, crypto, request, save }) {
     !observation.signatures &&
     observation.states.every((s) => s === "UNSPENT")
   ) {
-    if (p.outputs.some((o) => sets.get(o.id).active !== true))
+    if (submitted.some((o) => sets.get(o.id).active !== true))
       fail("inactive-output-keyset");
     j.state = "submitted";
     delete j.evidence;
     await persist();
     const inputs = p.inputs.map(({ id, amount, secret, C }, i) => ({
-      id,
+      id: full(id),
       amount,
       secret,
       C,
@@ -397,9 +449,11 @@ async function reconcilePayment({ journal, policy, crypto, request, save }) {
         : {}),
     }));
     try {
-      await request("/v1/swap", { inputs, outputs: p.outputs });
+      await request("/v1/swap", { inputs, outputs: submitted });
     } catch {
-      /* The exact attempt may have succeeded. Reconcile; never substitute outputs. */
+      /* The exact attempt may have succeeded. Reconcile; never substitute
+       * outputs. `submitted` is not a substitute: its amounts and B_ are the
+       * packet's, and each id names the same keyset as the packet's prefix. */
     }
     observation = await observe();
   }
@@ -413,13 +467,17 @@ async function reconcilePayment({ journal, policy, crypto, request, save }) {
       outputs: p.outputs,
       signatures: observation.signatures,
       inputsSpent: true,
+      ...(Object.keys(keysetIds).length ? { keysetIds } : {}),
     };
     await persist();
     return snapshot(j);
   }
+  // Inputs still PENDING are settling: wait, with or without signatures. Signatures
+  // beside an UNSPENT input contradict each other and stay unresolved.
   if (
-    !observation.signatures &&
-    observation.states.some((s) => s === "PENDING")
+    observation.states.some((s) => s === "PENDING") &&
+    (!observation.signatures ||
+      !observation.states.some((s) => s === "UNSPENT"))
   ) {
     j.state = "pending";
     delete j.evidence;

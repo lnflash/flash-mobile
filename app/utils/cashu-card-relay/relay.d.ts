@@ -58,6 +58,13 @@ export type RelayJournal = {
   pending?: { offset: number; count: number }
   /** The whole packet, as hex, once captured. */
   packet?: string
+  /**
+   * The packet's 8-byte keyset prefixes (16 hex) mapped to the mint's full
+   * v2 ids (66 hex) they name, fixed when reconciliation starts so a resumed
+   * attempt submits what the first did. Absent when no id needed resolving,
+   * and in journals saved before it, which read as the identity map.
+   */
+  keysetIds?: Record<string, string>
   evidence?: {
     packetId: string
     outputs: { amount: number; id: string; B_: string }[]
@@ -97,6 +104,10 @@ export type DecodedPacket = {
 /** An approved mint call: a route under the caller's mint and an optional JSON body. */
 export type RelayRequest = (route: string, body?: unknown) => Promise<any> // eslint-disable-line @typescript-eslint/no-explicit-any
 
+/**
+ * A refusal by the engine. `code` names it (e.g. `context`, `unit`,
+ * `keyset-ambiguous`, `settlement-unresolved`); see relay.js.
+ */
 export class RelayFailure extends Error {
   code: string
 }

@@ -9,6 +9,7 @@
  *     killed between pages resumes at the saved offset
  *   - a record replaced on the card restarts the capture
  *   - an unknown mint is never called, and nothing is captured for it
+ *   - a packet keyset prefix two v2 keysets share is refused for good
  *   - two settles at once make one swap between them
  *   - a PENDING answer leaves the journal open, never terminal
  *   - a refusal that repeats (a usd keyset, a swap the mint refused) is stored
@@ -289,6 +290,42 @@ describe("createRelay", () => {
       }),
     ).toEqual({ kind: "unknown-mint" })
     expect(request).not.toHaveBeenCalled()
+  })
+
+  it("stores a packet keyset two of the mint's v2 keysets share as refused (keyset-ambiguous): no swap, not retried", async () => {
+    const { card, relay, double, pubkey } = setup()
+    const v2 = (tail: string) => `${KEYSET}${tail.repeat(50)}`
+    const ambiguous = async (route: string, body?: unknown) => {
+      if (route !== "/v1/keysets") return double.request(route, body)
+      await double.request(route, body)
+      return {
+        keysets: [
+          { id: v2("a"), unit: "sat", active: true },
+          { id: v2("b"), unit: "sat", active: true },
+        ],
+      }
+    }
+    const relayAmbiguous = createRelay({
+      store: createRelayStore(),
+      crypto: relayCrypto,
+      knownMints: () => [MINT],
+      request: () => ambiguous,
+    })
+    await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } })
+
+    expect(await relayAmbiguous.settlePending(pubkey)).toEqual({
+      kind: "refused",
+      code: "keyset-ambiguous",
+    })
+    expect(double.calls["/v1/swap"]).toBeUndefined()
+    const [entry] = await savedEntries()
+    expect(entry.refused).toBe("keyset-ambiguous")
+    expect(await relayAmbiguous.settlePending(pubkey)).toEqual({
+      kind: "refused",
+      code: "keyset-ambiguous",
+      seen: true,
+    })
+    expect(double.calls["/v1/keysets"]).toBe(1)
   })
 
   it("makes one swap between two settles at once", async () => {
