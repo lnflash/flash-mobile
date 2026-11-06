@@ -126,9 +126,15 @@ const bolt11 = ({
  */
 export const createFakeMint = ({
   now = Date.now,
-}: { now?: () => number } = {}): FakeMint => {
+  satKeysetId,
+}: {
+  now?: () => number
+  /** The sat keyset's id in place of the one its keys derive (a recorded packet's keyset). */
+  satKeysetId?: string
+} = {}): FakeMint => {
   const keysetFor = (unit: CardUnit) => {
     const pair = createNewMintKeys(21, undefined, { unit, versionByte: 0 })
+    if (unit === "sat" && satKeysetId) pair.keysetId = satKeysetId
     const keys: Record<string, string> = {}
     Object.entries(pair.pubKeys).forEach(([amount, key]) => {
       keys[amount] = toHex(key)
@@ -383,6 +389,8 @@ export type FakeCard = {
   spentToday: () => number
   /** What has been signed for with no PIN, on a card with one. */
   nopinSpent: () => number
+  /** Replaces the card's payment record (GET_OUTBOX), or drops it with undefined. */
+  setOutbox: (packet: number[] | undefined) => void
 }
 
 export type FakeCardOptions = {
@@ -424,6 +432,13 @@ export type FakeCardOptions = {
    * open to a locked card (spec/APDU.md, REFRESH), works as ever. Off by default.
    */
   locked?: boolean
+  /**
+   * A 2.2 card's payment record (ENG-819): the assisted-settlement packet
+   * GET_OUTBOX (INS 1B) serves, `setOutbox` replaces. The card answers INS 1B
+   * whatever its version (a 2.1 card's 6D00 is the default case with no
+   * `outbox` option), so a spec can see that the app sends it to 2.2 only.
+   */
+  outbox?: { packet?: number[] }
   /** The owner's limits the card ships with; all off, budget 7, by default. */
   limits?: Partial<{
     day: number
@@ -484,6 +499,7 @@ export const createFakeCard = (
     rolls: initialRolls = 0,
     limits: initialLimits = {},
     locked = false,
+    outbox: outboxOption,
   }: FakeCardOptions = {},
 ): FakeCard => {
   const slots: number[][] = Array.from({ length: maxSlots }, () =>
@@ -530,6 +546,7 @@ export const createFakeCard = (
   }))
   let spentToday = 0
   let nopinSpent = 0
+  let outbox = outboxOption?.packet
   let lastSig: { signature: number[]; noPin: boolean } | undefined
   /** The payment in hand is given up: its drafts go with it. */
   const dropPayment = () => {
@@ -1107,6 +1124,22 @@ export const createFakeCard = (
           ...SW_OK,
         ]
       }
+      case 0x1b: {
+        // GET_OUTBOX (cashucard spec/APDU.md): P1 00 the scope, P1 01 a page.
+        if (!outboxOption) return sw(0x6d00)
+        if (p2 !== 0x00 || (p1 !== 0x00 && p1 !== 0x01)) return sw(0x6a86)
+        if (!outbox) return sw(0x6a88)
+        if (p1 === 0x00) {
+          if (lc !== 0) return sw(0x6700)
+          return [...outboxScope(outbox), ...SW_OK]
+        }
+        if (lc !== 3) return sw(0x6700)
+        const offset = (data[0] << 8) | data[1]
+        const count = data[2]
+        if (count === 0) return sw(0x6700)
+        if (offset >= outbox.length) return sw(0x6a83)
+        return [...outbox.slice(offset, offset + count), ...SW_OK]
+      }
       default:
         return sw(0x6d00)
     }
@@ -1140,8 +1173,23 @@ export const createFakeCard = (
         })),
     spentToday: () => spentToday,
     nopinSpent: () => nopinSpent,
+    setOutbox: (packet) => {
+      outbox = packet
+    },
   }
 }
+
+/**
+ * A packet's GET_OUTBOX scope (45 bytes): the index (offset 80), the payment
+ * id (72-80), the generation (81-85) and SHA-256 of the body, everything
+ * before the 64-byte descriptor.
+ */
+export const outboxScope = (packet: number[]): number[] => [
+  packet[80],
+  ...packet.slice(72, 80),
+  ...packet.slice(81, 85),
+  ...Array.from(sha256(Uint8Array.from(packet.slice(0, packet.length - 64)))),
+]
 
 /** A Transceiver type check for the fake, so specs can pass it as one. */
 export const asTransceiver = (card: FakeCard): Transceiver => card.transceive

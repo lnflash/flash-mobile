@@ -14,6 +14,7 @@ import {
   isValidCardPin,
   triesLeft,
 } from "@app/utils/cashu-card"
+import { RelayUnsettledError } from "@app/utils/cashu-card-relay"
 import { CardSpendError } from "@app/utils/cashu-card-spend"
 import { TidyError, TidyRecord, TidyResult } from "@app/utils/cashu-card-topup"
 
@@ -277,6 +278,8 @@ const resultText = (result: TidyResult, LL: LLType): string => {
  * support), a wrong PIN with the tries left, or try again.
  */
 const failureText = (err: unknown, LL: LLType): string => {
+  // The card's last payment could not be settled first (ENG-820): no tidy ran.
+  if (err instanceof RelayUnsettledError) return LL.FlashcardV2.relayPending()
   if (err instanceof TidyError && err.reason === "needs-card") {
     return LL.FlashcardV2.tidyNeedsCard()
   }

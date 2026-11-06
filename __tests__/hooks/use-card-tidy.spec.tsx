@@ -190,7 +190,8 @@ describe("useCardTidy", () => {
     expect(mockRunCardOperation).toHaveBeenCalledWith(
       expect.any(Function),
       cashuCard.pubkey,
-      { rereadSlots: true },
+      // A slot-changing tap: the card's last payment is relayed first (ENG-820).
+      { rereadSlots: true, changesSlots: true },
     )
     const [, args] = mockRunTidy.mock.calls[0]
     expect(args).toMatchObject({

@@ -176,3 +176,160 @@ export const createTopUpMint = (url: string): TopUpMint => {
     },
   }
 }
+
+/**
+ * A mint call the assisted-settlement relay makes (ENG-820): a route under
+ * the approved mint and an optional JSON body. Resolves the mint's JSON as it
+ * came, snake_case fields and all, which the vendored engine reads directly.
+ */
+export type RelayMintRequest = (route: string, body?: unknown) => Promise<unknown>
+
+/**
+ * The keyset ids a relay may ask keys for: NUT-02 v1 (8 bytes, `00` ‖ 14
+ * hex) and v2 (33 bytes, `01` ‖ 64 hex). Wider than `CARD_KEYSET_ID`, which
+ * only a top-up's `activeKeyset` applies: the relay reads keys and never
+ * writes a slot.
+ */
+export const RELAY_KEYSET_ID = /^(00[0-9a-f]{14}|01[0-9a-f]{64})$/
+
+/** The longest a relay's mint call waits, and the most it reads back. */
+export const RELAY_TIMEOUT_MS = 15000
+export const RELAY_MAX_RESPONSE_BYTES = 1024 * 1024
+
+const RELAY_GET = /^\/v1\/(keysets|keys\/([0-9a-f]+))$/
+const RELAY_POST = ["/v1/restore", "/v1/checkstate", "/v1/swap"]
+
+/**
+ * A relay's mint call that did not come back as JSON from a 2xx. `status` is
+ * the mint's HTTP status when it answered (a non-2xx); absent when it could
+ * not be reached, timed out, or its answer could not be read.
+ */
+export class RelayNetworkError extends Error {
+  constructor(message: string, readonly status?: number) {
+    super(message)
+    this.name = "RelayNetworkError"
+  }
+}
+
+/** A relay's mint call refused before anything was sent: a route, id or URL not allowed. */
+export class RelayRouteError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "RelayRouteError"
+  }
+}
+
+/** Which call `route` (with or without a body) is, or a `RelayRouteError`. */
+const relayMethod = (route: string, body: unknown): "GET" | "POST" => {
+  if (typeof route !== "string") throw new RelayRouteError("the route is not a string")
+  const get = RELAY_GET.exec(route)
+  if (get) {
+    if (body !== undefined) throw new RelayRouteError(`${route} takes no body`)
+    if (get[2] !== undefined && !RELAY_KEYSET_ID.test(get[2])) {
+      throw new RelayRouteError(`keyset id ${get[2]} is not a NUT-02 id`)
+    }
+    return "GET"
+  }
+  if (RELAY_POST.includes(route)) {
+    if (body === undefined || body === null || typeof body !== "object") {
+      throw new RelayRouteError(`${route} needs a JSON body`)
+    }
+    return "POST"
+  }
+  throw new RelayRouteError(`${route} is not a route the relay may call`)
+}
+
+/**
+ * The relay's mint transport: a raw-JSON fetch client bound to `url`, an
+ * approved mint (`knownRelayMint`), never one a packet names. Raw JSON, not
+ * cashu-ts: the engine reads the mint's own field names and `Y`, and cashu-ts
+ * may rewrite a 33-byte keyset id.
+ *
+ * Only `GET /v1/keysets`, `GET /v1/keys/{id}` (a NUT-02 id) and `POST
+ * /v1/restore`, `/v1/checkstate`, `/v1/swap`: any other route or id throws
+ * before a request is made. https only; `allowInsecure` admits http for the
+ * dev bridge's local mint. Every call has a `RELAY_TIMEOUT_MS` timeout and a
+ * `RELAY_MAX_RESPONSE_BYTES` cap, and a non-2xx or non-JSON answer is a
+ * `RelayNetworkError`. `createTopUpMint` and its `CARD_KEYSET_ID` are not
+ * touched by any of this.
+ */
+export const createRelayRequest = (
+  url: string,
+  {
+    allowInsecure = false,
+    fetchImpl = (input: string, init: RequestInit) => fetch(input, init),
+    timeoutMs = RELAY_TIMEOUT_MS,
+  }: {
+    allowInsecure?: boolean
+    fetchImpl?: (input: string, init: RequestInit) => Promise<Response>
+    timeoutMs?: number
+  } = {},
+): RelayMintRequest => {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new RelayRouteError(`${url} is not a URL`)
+  }
+  const schemeOk =
+    parsed.protocol === "https:" || (allowInsecure && parsed.protocol === "http:")
+  if (!schemeOk || parsed.username || parsed.password || parsed.search || parsed.hash) {
+    throw new RelayRouteError(`${url} is not a mint URL the relay may call`)
+  }
+  const base = url.replace(/\/+$/, "")
+  return async (route, body) => {
+    const method = relayMethod(route, body)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    let text: string
+    try {
+      let response: Response
+      try {
+        response = await fetchImpl(base + route, {
+          method,
+          headers:
+            method === "POST"
+              ? { "Accept": "application/json", "Content-Type": "application/json" }
+              : { Accept: "application/json" },
+          ...(method === "POST" ? { body: JSON.stringify(body) } : {}),
+          signal: controller.signal,
+        })
+      } catch (err) {
+        throw new RelayNetworkError(
+          `${route}: the mint could not be reached (${
+            err instanceof Error ? err.message : err
+          })`,
+        )
+      }
+      if (!response.ok) {
+        throw new RelayNetworkError(
+          `${route}: the mint answered ${response.status}`,
+          response.status,
+        )
+      }
+      const declared = Number(response.headers?.get?.("content-length") ?? NaN)
+      if (Number.isFinite(declared) && declared > RELAY_MAX_RESPONSE_BYTES) {
+        throw new RelayNetworkError(`${route}: the mint's answer is too large`)
+      }
+      try {
+        text = await response.text()
+      } catch (err) {
+        throw new RelayNetworkError(
+          `${route}: the mint's answer was cut off (${
+            err instanceof Error ? err.message : err
+          })`,
+        )
+      }
+    } finally {
+      clearTimeout(timer)
+    }
+    if (text.length > RELAY_MAX_RESPONSE_BYTES) {
+      throw new RelayNetworkError(`${route}: the mint's answer is too large`)
+    }
+    try {
+      return JSON.parse(text)
+    } catch {
+      throw new RelayNetworkError(`${route}: the mint's answer is not JSON`)
+    }
+  }
+}

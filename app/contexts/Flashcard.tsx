@@ -77,6 +77,14 @@ import { cardCommitments, tidyOwed } from "../utils/cashu-card-topup/engine"
 import { tidyKeyset } from "../utils/cashu-card-topup/ladder"
 import { TidyOffer, tidyOfferFor } from "../utils/cashu-card-topup/offer"
 import { topUpMint, topUpStore } from "../utils/cashu-card-topup/connected"
+import {
+  CaptureOutcome,
+  RelayOutcome,
+  RelayUnsettledError,
+  appRelay,
+  supportsOutbox,
+  versionSupportsOutbox,
+} from "../utils/cashu-card-relay"
 
 // assets
 import NfcScan from "@app/assets/icons/nfc-scan.svg"
@@ -114,6 +122,131 @@ const cardUnitTotals = async (
     console.warn("Cashu mint keyset lookup failed:", describeError(err))
     return undefined
   }
+}
+
+/**
+ * A relay's outcome as a toast (ENG-820). Nothing for a card with nothing to
+ * settle, nor for one whose record this phone already saw settled (`already`
+ * from the capture, `quietAlready`): every tap of such a card would say so.
+ * A refusal is said once, on the tap that met it: a refusal this phone had
+ * already stored (`seen`) is quiet.
+ */
+const toastRelay = (
+  LL: TranslationFunctions,
+  outcome: RelayOutcome | CaptureOutcome,
+  quietAlready = false,
+) => {
+  const toast = (message: string, type: "success" | "warning") =>
+    toastShow({ position: "top", message, type })
+  if (outcome.kind === "settled") {
+    toast(LL.FlashcardV2.relaySettled(), "success")
+  } else if (outcome.kind === "already" && !quietAlready) {
+    toast(LL.FlashcardV2.relayAlreadySettled(), "success")
+  } else if (outcome.kind === "unknown-mint") {
+    toast(LL.FlashcardV2.relayUnknownMint(), "warning")
+  } else if (outcome.kind === "refused" && !outcome.seen) {
+    toast(LL.FlashcardV2.relayRefused(), "warning")
+  } else if (outcome.kind === "pending" || outcome.kind === "failed") {
+    toast(LL.FlashcardV2.relayPending(), "warning")
+  }
+}
+
+/**
+ * The unit the relay goes by: the one the mint named for every piece on the
+ * card, as this phone knows it now (`known`), else as it last recorded it
+ * (`KnownCard.unit`). Undefined when neither knows: the relay goes on.
+ */
+const relayUnit = (known?: CardUnitTotals, recorded?: KnownCard): string | undefined =>
+  (known && soleUnit(known)) ?? recorded?.unit
+
+/** The relay's card half on this tap's transceiver; a failure of its own (the store) is `failed`. */
+const captureOutbox = async (
+  transceive: Transceiver,
+  card: { pubkey: string; recordMint?: string; unit?: string },
+  onSettling?: () => void,
+): Promise<CaptureOutcome> => {
+  try {
+    return await appRelay().captureOutbox({ transceive, card, onSettling })
+  } catch (err) {
+    console.warn("Cashu card relay capture failed:", describeError(err))
+    return { kind: "failed", error: err }
+  }
+}
+
+/**
+ * A read tap of a 2.2 card (ENG-820): the packet is read in this tap, on its
+ * transceiver, and taken to the mint after it, never awaited by the tap.
+ */
+const relayOnRead = async (
+  LL: TranslationFunctions,
+  {
+    transceive,
+    info,
+    bridged,
+    unit,
+  }: {
+    transceive: Transceiver
+    info: CashuCardInfo
+    bridged: boolean
+    unit?: string
+  },
+) => {
+  const { pubkey } = info
+  const captured = await captureOutbox(
+    transceive,
+    { pubkey, recordMint: info.record.recordSet ? info.record.mint : undefined, unit },
+    bridged
+      ? undefined
+      : () => setCardAlertMessage(LL.FlashcardV2.relaySettling()).catch(() => undefined),
+  )
+  if (captured.kind !== "captured") {
+    toastRelay(LL, captured, true)
+    return
+  }
+  appRelay()
+    .settlePending(pubkey)
+    .then((outcome) => toastRelay(LL, outcome))
+    .catch((err) => {
+      console.warn("Cashu card relay failed:", describeError(err))
+      toastRelay(LL, { kind: "failed" })
+    })
+}
+
+/**
+ * An operation tap of a 2.2 card (ENG-820), before `op`: the packet in this
+ * tap, then the mint within RELAY_SESSION_CAP_MS. A slot-changing op
+ * (`changesSlots`) is not run after a relay that could not settle
+ * (`RelayUnsettledError`); any other op goes on after a toast.
+ */
+const relayBeforeOp = async (
+  LL: TranslationFunctions,
+  {
+    transceive,
+    pubkey,
+    report,
+    changesSlots,
+    unit,
+  }: {
+    transceive: Transceiver
+    pubkey: string
+    report: (text: string) => void
+    changesSlots?: boolean
+    unit?: string
+  },
+) => {
+  const captured = await captureOutbox(transceive, { pubkey, unit }, () =>
+    report(LL.FlashcardV2.relaySettling()),
+  )
+  const outcome: RelayOutcome | CaptureOutcome =
+    captured.kind === "captured"
+      ? await appRelay()
+          .settleWithin(pubkey)
+          .catch((err): RelayOutcome => ({ kind: "failed", error: err }))
+      : captured
+  if (changesSlots && (outcome.kind === "pending" || outcome.kind === "failed")) {
+    throw new RelayUnsettledError(outcome)
+  }
+  toastRelay(LL, outcome, captured.kind !== "captured")
 }
 
 /**
@@ -413,6 +546,14 @@ export type CardOperationOptions<T = unknown> = {
    * the screen and the next top-up see the pieces as they are now.
    */
   rereadSlots?: boolean
+  /**
+   * The operation changes the card's slots (a top-up, a tidy; ENG-820). On a
+   * 2.2 card the tap first relays the card's last payment to its mint, and
+   * when that payment cannot be settled now (`pending`, `failed`) the
+   * operation is not run: `RelayUnsettledError`, before `op`. Without it an
+   * unsettled relay is a toast and the operation goes on (a limit, a PIN).
+   */
+  changesSlots?: boolean
 }
 
 export interface FlashcardInterface {
@@ -552,6 +693,7 @@ type Props = {
 export const FlashcardProvider = ({ children }: Props) => {
   const isAuthed = useIsAuthed()
   const { LL } = useI18nContext()
+
   const styles = useStyles()
   const { mode } = useTheme().theme
 
@@ -684,25 +826,23 @@ export const FlashcardProvider = ({ children }: Props) => {
         let info: CashuCardInfo | null
         // Whose card it is, as the card said in this tap (`tendCard`).
         const ownership: TapOwnership = {}
+        const cardTransceive: Transceiver = bridge
+          ? bridgeTransceiver(bridge.url)
+          : (bytes) => NfcManager.isoDepHandler.transceive(bytes)
         try {
-          info = await readCashuCard(
-            bridge
-              ? bridgeTransceiver(bridge.url)
-              : (bytes) => NfcManager.isoDepHandler.transceive(bytes),
-            {
-              afterAuth: (tap) => tendCard(tap, ownership),
-              // Nothing proven yet: shown as "Verifying…", never stored.
-              onUnverified: (read) => {
-                const preview = previewWithKnownUnit(read, knownCardsRef.current)
-                setCashuCardPreview(preview)
-                // iOS's own NFC sheet says it (iOS only, never awaited: the
-                // helper ENG-706 added); Android's in-app sheet is below.
-                if (!bridge)
-                  setCardAlertMessage(verifyingText(preview)).catch(() => undefined)
-                onUnverified?.()
-              },
+          info = await readCashuCard(cardTransceive, {
+            afterAuth: (tap) => tendCard(tap, ownership),
+            // Nothing proven yet: shown as "Verifying…", never stored.
+            onUnverified: (read) => {
+              const preview = previewWithKnownUnit(read, knownCardsRef.current)
+              setCashuCardPreview(preview)
+              // iOS's own NFC sheet says it (iOS only, never awaited: the
+              // helper ENG-706 added); Android's in-app sheet is below.
+              if (!bridge)
+                setCardAlertMessage(verifyingText(preview)).catch(() => undefined)
+              onUnverified?.()
             },
-          )
+          })
         } catch (err) {
           // A card of an older protocol: nothing more was sent to it, and it
           // is not a BoltCard either. The notice, then the tap is over.
@@ -782,6 +922,16 @@ export const FlashcardProvider = ({ children }: Props) => {
           const owner = ownership.granted || ownership.key?.source === "dev"
           if (isAuthed && owner && info.unspentSlots) {
             resolveTidyOffer(info, cashuGeneration.current)
+          }
+          // A 2.2 card's last payment (ENG-820): its packet is read in this
+          // tap, and taken to the mint off the session, never awaited here.
+          if (supportsOutbox(info.major, info.minor)) {
+            await relayOnRead(LL, {
+              transceive: cardTransceive,
+              info,
+              bridged: Boolean(bridge),
+              unit: relayUnit(known, knownCardsRef.current[info.pubkey]),
+            })
           }
           return { cashuCard: info }
         }
@@ -1014,7 +1164,13 @@ export const FlashcardProvider = ({ children }: Props) => {
   const runCardOperation = async <T,>(
     op: (transceive: Transceiver, report: (text: string) => void) => Promise<T>,
     expectedPubkey: string,
-    { assume, onReread, learned, rereadSlots }: CardOperationOptions<T> = {},
+    {
+      assume,
+      onReread,
+      learned,
+      rereadSlots,
+      changesSlots,
+    }: CardOperationOptions<T> = {},
   ): Promise<T> => {
     // Development builds only: the card is cardsim, over HTTP (ENG-634).
     const bridge = getCardBridge()
@@ -1041,9 +1197,21 @@ export const FlashcardProvider = ({ children }: Props) => {
       // Android answers every command with 6E00 (flash-pos found this). On
       // the bridge, SELECT is what ends the previous "tap": it drops a
       // verified PIN as a new NFC session does.
-      await selectApplet(transceive)
+      const version = await selectApplet(transceive)
       const pubkey = toHex(await getPubkey(transceive))
       if (pubkey !== expectedPubkey) throw new WrongCardError(pubkey)
+
+      // A 2.2 card's last payment goes to the mint before anything that
+      // changes its slots (ENG-820).
+      if (versionSupportsOutbox(version)) {
+        await relayBeforeOp(LL, {
+          transceive,
+          pubkey,
+          report,
+          changesSlots,
+          unit: relayUnit(undefined, knownCardsRef.current[pubkey]),
+        })
+      }
 
       // After a refusal nothing the operation would prove holds, so a lost
       // GET_CARD keeps the record the card said before.

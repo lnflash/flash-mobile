@@ -93,6 +93,8 @@ export const INS = {
   GET_PIECES: 0x17,
   GET_CHANGE: 0x19,
   GET_DLEQ: 0x1a,
+  /** 2.2 (ENG-819): the last SIG_ALL payment's assisted-settlement packet (cashu-card-relay/outbox.ts). */
+  GET_OUTBOX: 0x1b,
   SPEND_ALL_BEGIN: 0x22,
   SPEND_ALL_SIGN: 0x24,
   SPEND_ALL_AGAIN: 0x25,

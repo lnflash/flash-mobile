@@ -240,6 +240,9 @@ export const useCardTopUp = () => {
       (transceive) =>
         verifyCardPin(transceive, pin, { sealed: card.sealed, cardPubkey: card.pubkey }),
       card.pubkey,
+      // Before anything is paid: a card whose last payment cannot be settled
+      // takes no top-up (ENG-820).
+      { changesSlots: true },
     )
 
   /**
@@ -347,32 +350,36 @@ export const useCardTopUp = () => {
     const owner = card.hasOwner
       ? await ownerKeyFor(card.pubkey).catch(() => undefined)
       : undefined
-    return runCardOperation(async (transceive) => {
-      await openForLoading(transceive, card, { pin, owner })
-      const reclaim = await reclaimSpentSlots(transceive, {
-        maxSlots: card.maxSlots,
-        cardPubkey: record.cardPubkey,
-        mintUrl: record.mintUrl,
-        verdicts,
-      })
-      try {
-        const loaded = await loadTopUp(deps, {
-          id: record.id,
-          transceive,
-          card,
-          mintStates,
-          // The reclaim's read of the card, when it still holds (no
-          // CLEAR_SPENT went out): the load reads nothing twice.
-          inventory: reclaim.inventory,
+    return runCardOperation(
+      async (transceive) => {
+        await openForLoading(transceive, card, { pin, owner })
+        const reclaim = await reclaimSpentSlots(transceive, {
+          maxSlots: card.maxSlots,
+          cardPubkey: record.cardPubkey,
+          mintUrl: record.mintUrl,
+          verdicts,
         })
-        return { record: loaded, reclaim }
-      } catch (err) {
-        // The engine's own error, so its stack still points at the check
-        // that refused; the reclaim rides along for the `slots` message.
-        if (err instanceof TopUpError) err.reclaim = reclaim
-        throw err
-      }
-    }, record.cardPubkey)
+        try {
+          const loaded = await loadTopUp(deps, {
+            id: record.id,
+            transceive,
+            card,
+            mintStates,
+            // The reclaim's read of the card, when it still holds (no
+            // CLEAR_SPENT went out): the load reads nothing twice.
+            inventory: reclaim.inventory,
+          })
+          return { record: loaded, reclaim }
+        } catch (err) {
+          // The engine's own error, so its stack still points at the check
+          // that refused; the reclaim rides along for the `slots` message.
+          if (err instanceof TopUpError) err.reclaim = reclaim
+          throw err
+        }
+      },
+      record.cardPubkey,
+      { changesSlots: true },
+    )
   }
 
   return { deps, feeFor, checkPin, load, reclaimPlanFor }

@@ -38,6 +38,7 @@ import {
 } from "@app/utils/cashu-card"
 import { stubbedPayOutcome } from "@app/utils/cashu-card-bridge"
 import { formatUnitAmount } from "@app/utils/cashu-card-format"
+import { RelayUnsettledError } from "@app/utils/cashu-card-relay"
 import {
   CardUnit,
   MAX_TOPUP_AMOUNT,
@@ -231,6 +232,10 @@ const loadFailure = (err: TopUpError, LL: LLType): string => {
  * left, a PIN now blocked (2.0: the owner's phone unblocks it), or no card.
  */
 const pinFailure = (err: unknown, LL: LLType): { message: string; final: boolean } => {
+  // The card's last payment could not be settled first (ENG-820): nothing was written.
+  if (err instanceof RelayUnsettledError) {
+    return { message: LL.FlashcardV2.relayPending(), final: false }
+  }
   if (err instanceof WrongCardError) {
     return { message: LL.FlashcardV2.wrongCard(), final: false }
   }
