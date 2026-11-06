@@ -93,7 +93,7 @@ export const limitsFromFields = (fields: {
  * here is the one the field reopens at): the daily
  * limit and the allowance from GET_INFO, the budget from GET_CARD, and the
  * payment limit from the GET_INFO the read tap asked under the owner's grant
- * (`ownerPaymentLimit`), the only time the card says it (cashu-javacard
+ * (`ownerPaymentLimit`), the only time the card says it (cashucard/cashucard
  * spec/APDU.md, GET_INFO bytes 30-33, and ALLOW_LOAD). What this phone
  * stored is not always what the card holds: another phone with the same
  * owner key (the same seed, decision 14) may have changed it since. So the

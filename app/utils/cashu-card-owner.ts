@@ -89,7 +89,7 @@ export const randomOwnerKey = (): string => toHex(p256.utils.randomPrivateKey())
 
 /**
  * The deterministic TEST owner key, SHA-256("cashu-javacard/cardctl test owner
- * key") mod n: cashu-javacard's cardctl, cardsim and its client all hold it.
+ * key") mod n: cashucard/cashucard's cardctl, cardsim and its client all hold it.
  * Anyone with that repository has it, so it is for simulated cards only: the
  * e2e fixtures and the development bridge (`cashu-card-bridge.ts`).
  */

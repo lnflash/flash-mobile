@@ -11,7 +11,7 @@
  * signs for and the mint refuses.
  *
  * Byte-exact to getfoxy/iOS `08a-flashcard.js` `cardSecret` (MIT) with format
- * 4 and date 0, and to cashu-javacard's spec/vectors/secret.json; the spec
+ * 4 and date 0, and to cashucard/cashucard's spec/vectors/secret.json; the spec
  * holds this module to both.
  */
 import { Amount, OutputData, Proof, blindMessage } from "@cashu/cashu-ts"

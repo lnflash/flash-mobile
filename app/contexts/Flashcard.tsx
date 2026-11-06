@@ -380,7 +380,7 @@ type TapOwnership = {
 
 /**
  * Why a read tap left the card's owner unsettled. `locked`: the card is
- * locked for good (cashu-javacard spec/APDU.md, LOCK_CARD), answers
+ * locked for good (cashucard/cashucard spec/APDU.md, LOCK_CARD), answers
  * ALLOW_LOAD `6986`, and is asked by REFRESH only once one is due and this
  * phone holds a header, so tapping it again settles nothing until then.
  * `failed`: the question itself failed (a Keychain that cannot be read, a
@@ -800,7 +800,7 @@ export const FlashcardProvider = ({ children }: Props) => {
       setVisible(true)
       if (!bridge) NfcManager.start()
       // One NFC session covers both card types. A Cashu card is an IsoDep
-      // JavaCard applet (lnflash/cashu-javacard); a BoltCard is an NDEF tag.
+      // JavaCard applet (cashucard/cashucard); a BoltCard is an NDEF tag.
       // The request resolves with the tech the tapped card connected as, so
       // the Cashu read only runs on an IsoDep tag. A Type-4 tag that connected
       // as IsoDep still reports its NDEF message from getTag(), so a non-Cashu
