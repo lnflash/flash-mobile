@@ -296,7 +296,11 @@ export const createRelay = (deps: RelayDeps) => {
         }
       }
       if (!knownRelayMint(header.mint, card.recordMint, deps.knownMints())) {
-        const seen = await deps.store.noteUnknownMint(card.pubkey, scopeHex)
+        // Best effort: a failed note degrades to the once-per-tap warning,
+        // never to a "failed" outcome the UI would read as pending.
+        const seen = await deps.store
+          .noteUnknownMint(card.pubkey, scopeHex)
+          .catch(() => false)
         return seen ? { kind: "unknown-mint", seen: true } : { kind: "unknown-mint" }
       }
       onSettling?.()
@@ -337,7 +341,12 @@ export const createRelay = (deps: RelayDeps) => {
         return last ? { kind: "already" } : { kind: "nothing" }
       }
       const approved = knownRelayMint(entry.mintUrl, undefined, deps.knownMints())
-      if (!approved) return { kind: "unknown-mint" }
+      if (!approved) {
+        const seen = await deps.store
+          .noteUnknownMint(cardPubkey, entry.scopeHex)
+          .catch(() => false)
+        return seen ? { kind: "unknown-mint", seen: true } : { kind: "unknown-mint" }
+      }
       const policy = policyOf(entry)
       let swaps = entry.swaps
       let journal = entry.journal

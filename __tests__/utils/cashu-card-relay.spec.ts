@@ -9,7 +9,9 @@
  *     killed between pages resumes at the saved offset
  *   - a record replaced on the card restarts the capture
  *   - an unknown mint is never called, and nothing is captured for it; it
- *     is said once per record (`seen` after), and relayed once it is known
+ *     is said once per record (`seen` after), and relayed once it is known;
+ *     a captured entry whose mint is later removed is said once per record
+ *     too, and a note the store cannot write degrades to the plain warning
  *   - a packet keyset prefix two v2 keysets share is refused for good
  *   - two settles at once make one swap between them
  *   - a PENDING answer leaves the journal open, never terminal
@@ -346,6 +348,81 @@ describe("createRelay", () => {
     const after = await Keychain.getInternetCredentials(SERVER)
     const left = after ? JSON.parse(after.password).unknownMints ?? [] : []
     expect(left.some((n: { scopeHex: string }) => n.scopeHex === scopeHex)).toBe(false)
+  })
+
+  it("says a captured entry's mint that is no longer known once too: the next settle is seen", async () => {
+    let known = [MINT]
+    const mint = createFakeMint({ satKeysetId: KEYSET })
+    const double = relayMintFor(mint)
+    const card = createFakeCard(128, {
+      version: [2, 2],
+      outbox: { packet: RECORDED_PACKET },
+    })
+    const request = jest.fn((_url: string) => double.request)
+    const relay = createRelay({
+      store: createRelayStore(),
+      crypto: relayCrypto,
+      knownMints: () => known,
+      request,
+    })
+    const pubkey = RECORDED.cardKey
+
+    expect(
+      await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
+    ).toEqual({ kind: "captured" })
+    // The mint is removed from the app's list after the capture.
+    known = ["https://forge.test"]
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "unknown-mint" })
+    expect(await relay.settlePending(pubkey)).toEqual({
+      kind: "unknown-mint",
+      seen: true,
+    })
+    expect(request).not.toHaveBeenCalled()
+    // The captured entry is kept, still open, for when the mint is known again.
+    const [entry] = await savedEntries()
+    expect(entry.journal.state).not.toBe("outputs-confirmed")
+
+    known = [MINT]
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
+    expect(double.calls["/v1/swap"]).toBe(1)
+  })
+
+  it("degrades a failed unknown-mint note to the plain warning, never to failed", async () => {
+    const { card, relay, pubkey, request } = setup({ known: ["https://forge.test"] })
+    ;(Keychain.setInternetCredentials as jest.Mock).mockRejectedValueOnce(
+      new Error("keychain write failed"),
+    )
+    expect(
+      await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
+    ).toEqual({ kind: "unknown-mint" })
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it("degrades a failed unknown-mint note on settle to the plain warning, never to failed", async () => {
+    let known = [MINT]
+    const mint = createFakeMint({ satKeysetId: KEYSET })
+    const double = relayMintFor(mint)
+    const card = createFakeCard(128, {
+      version: [2, 2],
+      outbox: { packet: RECORDED_PACKET },
+    })
+    const request = jest.fn((_url: string) => double.request)
+    const relay = createRelay({
+      store: createRelayStore(),
+      crypto: relayCrypto,
+      knownMints: () => known,
+      request,
+    })
+    const pubkey = RECORDED.cardKey
+    await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } })
+    known = ["https://forge.test"]
+    const write = Keychain.setInternetCredentials as jest.Mock
+    write.mockRejectedValueOnce(new Error("keychain write failed"))
+    const writesBefore = write.mock.calls.length
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "unknown-mint" })
+    // The note was attempted, and its rejection consumed.
+    expect(write.mock.calls).toHaveLength(writesBefore + 1)
+    expect(request).not.toHaveBeenCalled()
   })
 
   it("stores a packet keyset two of the mint's v2 keysets share as refused (keyset-ambiguous): no swap, not retried", async () => {
