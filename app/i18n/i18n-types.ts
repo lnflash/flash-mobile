@@ -616,7 +616,7 @@ type RootTranslation = {
 		 */
 		relayPending: string
 		/**
-		 * T​h​e​ ​m​i​n​t​ ​r​e​f​u​s​e​d​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​l​a​s​t​ ​p​a​y​m​e​n​t​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​t​l​e​d​ ​f​r​o​m​ ​t​h​i​s​ ​p​h​o​n​e​.
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​l​a​s​t​ ​p​a​y​m​e​n​t​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​t​l​e​d​ ​f​r​o​m​ ​t​h​i​s​ ​p​h​o​n​e​.
 		 */
 		relayRefused: string
 		/**
@@ -9336,7 +9336,7 @@ export type TranslationFunctions = {
 		 */
 		relayPending: () => LocalizedString
 		/**
-		 * The mint refused this card's last payment, so it can't be settled from this phone.
+		 * This card's last payment can't be settled from this phone.
 		 */
 		relayRefused: () => LocalizedString
 		/**

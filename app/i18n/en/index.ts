@@ -173,7 +173,7 @@ const en: BaseTranslation = {
     relayUnknownMint: "This card's last payment is for a mint this app doesn't know, so it wasn't settled.",
     relayPending: "Could not settle the payment yet. Tap the card again later.",
     relayRefused:
-      "The mint refused this card's last payment, so it can't be settled from this phone.",
+      "This card's last payment can't be settled from this phone.",
     topUpSlotsReclaim:
       "Uses {needed:number} of {free:number} free slots, {reclaim:number} of them freed from settled spends on load",
     topUpReclaimed: "{count:number} spent slots freed.",

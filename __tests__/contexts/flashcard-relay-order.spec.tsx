@@ -258,9 +258,11 @@ describe("FlashcardProvider relays a 2.2 card's last payment first", () => {
       ).toBeUndefined()
       expect(slotOp).toHaveBeenCalledTimes(1)
       expect(double.calls["/v1/swap"] ?? 0).toBe(swaps)
-      const refused =
-        "The mint refused this card's last payment, so it can't be settled from this phone."
+      const refused = "This card's last payment can't be settled from this phone."
       expect(toastMessages().filter((m) => m === refused)).toHaveLength(1)
+      // A refusal raised at capture (unit, context) never reached a mint, so
+      // no toast may say a mint refused it.
+      expect(toastMessages().some((m) => /mint refused/i.test(m))).toBe(false)
 
       // The next tap: not blocked, no second swap, and no second toast.
       double.refuseSwaps(undefined)
