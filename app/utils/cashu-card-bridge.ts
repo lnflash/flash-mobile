@@ -1,7 +1,7 @@
 /**
  * A simulated Cashu card for development builds (ENG-634).
  *
- * The cashu-javacard repo serves the real applet in jCardSim over loopback
+ * The cashucard/cashucard repo serves the real applet in jCardSim over loopback
  * HTTP (`tools/cardsim`, "cardsim"): `POST /apdu {hex}` answers `{hex}`, the
  * applet's data ‖ SW. A simulator has no NFC, so with a bridge set the card
  * flows in `app/contexts/Flashcard.tsx` send their APDUs there instead of to

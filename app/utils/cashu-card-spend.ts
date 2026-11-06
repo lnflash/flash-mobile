@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise -- a byte-level APDU codec, as cashu-card.ts is. */
 /**
- * The card's spend commands (cashu-javacard spec/APDU.md, "Category 0x2x —
+ * The card's spend commands (cashucard/cashucard spec/APDU.md, "Category 0x2x —
  * Spend", and GET_CHANGE), as a card tidy (ENG-702) sends them: one SIG_ALL
  * signature over pieces the card names and change the card makes for itself.
  *

@@ -3,7 +3,7 @@
 /**
  * Cashu NFC card — APDU protocol layer, card protocol 2.0 (ENG-675).
  *
- * Talks to the shared Cashu card applet (lnflash/cashu-javacard, protocol 2.0:
+ * Talks to the shared Cashu card applet (cashucard/cashucard, protocol 2.0:
  * the Foxy wallet project's software 1.20 under a neutral identity): an
  * offline bearer card that holds format-4 ecash pieces locked to a key it made
  * itself, signs one BIP-340 signature for a whole payment (NUT-11 SIG_ALL),
@@ -15,7 +15,7 @@
  * about NFC, so the whole protocol is unit-testable without a card. The
  * IsoDep transport is the one shared session in `app/contexts/Flashcard.tsx`.
  *
- * Command reference: cashu-javacard `spec/APDU.md` at the ref
+ * Command reference: cashucard/cashucard `spec/APDU.md` at the ref
  * `.github/workflows/ios-e2e-card.yml` pins (`CASHU_JAVACARD_REF`). Where the
  * owner's proof is needed, `cashu-card-owner.ts` signs it; where the PIN is
  * sealed, `cashu-card-seal.ts` builds the envelope.
@@ -30,7 +30,7 @@ import { cardPinBlock, cardSeal, parseCardPinKey } from "./cashu-card-seal"
 /**
  * The 2.0 package AID: "CASHUCARD" after the proprietary RID byte F0. Sent
  * only after the applet AID fails (ENG-681): on a card installed as
- * cashu-javacard documents it, the opener (`F0 CASHUCARD 4D`) goes on first,
+ * cashucard/cashucard documents it, the opener (`F0 CASHUCARD 4D`) goes on first,
  * and a SELECT by this partial name reaches the opener, not the applet. It
  * answers 9000 with no version, and the next command 6D00.
  */
@@ -147,7 +147,7 @@ export class CardProtocolError extends Error {
  * AID reporting another major version (`older`, `newer`), or one that answered
  * a 2.0 SELECT with anything but `9000` or `6A82` (`refused`: jCardSim's
  * `6999` or `6E00`, a locked instance's `6283`). "This card needs an update"
- * (cashu-javacard tools/cardsim/README.md, Old cards: any SELECT answer that
+ * (cashucard/cashucard tools/cardsim/README.md, Old cards: any SELECT answer that
  * is not `02xx 9000`): nothing is written to it and nothing is spent from it,
  * and nothing further is sent in this tap.
  */
@@ -368,7 +368,7 @@ export const readU32 = (bytes: number[], at: number): number =>
  * selected either: a tag with no Cashu applet on it, an NTAG 424 BoltCard
  * among them. The applet AID answered `6A82` (the card's runtime: no such
  * application), and the package AID `6A82` too, or 9000 with no `02 xx`
- * version (a cashu-javacard opener, or whatever else answers to the partial
+ * version (a Cashu Card opener, or whatever else answers to the partial
  * name). The caller may read it as another kind of card. A 2.0 SELECT
  * answered with any other status word is a card that knows the AID and still
  * refused, and is `CardNeedsUpdateError` instead (`selectApplet`). `sw` is
@@ -387,7 +387,7 @@ export class AppletNotSelectedError extends CardError {
 /**
  * A 2.0 SELECT's answer: the applet version, `02 xx`. Any other major needs
  * an update: an older card speaks another wire, and a newer one is not the
- * wire this app speaks (cashu-javacard tools/cardsim/README.md, Old cards).
+ * wire this app speaks (cashucard/cashucard tools/cardsim/README.md, Old cards).
  */
 const checkVersion = (body: number[]): number[] => {
   if (body.length < 2) {
@@ -407,7 +407,7 @@ const isProtocolVersion = (body: number[]): boolean =>
  * any refusal of the first (ENG-681). Resolves the version body (`02 00`).
  *
  * The instance AID goes first because the package AID is a partial name: on
- * a card installed as cashu-javacard documents it (the opener `F0 CASHUCARD
+ * a card installed as cashucard/cashucard documents it (the opener `F0 CASHUCARD
  * 4D`, then the applet `F0 CASHUCARD 01`, then the tag), a SELECT by it
  * reaches the opener, which answers 9000 with no version body and 6D00 to
  * what follows. Foxy's wallet selects the full AID only.
@@ -420,7 +420,7 @@ const isProtocolVersion = (body: number[]): boolean =>
  *   body is not the applet (the opener, say): it is not a refusal and does
  *   not mean an update; the read goes on as if the package AID said `6A82`.
  *
- * The cardsim contract (cashu-javacard tools/cardsim/README.md, Old cards;
+ * The cardsim contract (cashucard/cashucard tools/cardsim/README.md, Old cards;
  * spec/NUT-XX.md, AID assignment; spec/APDU.md, the AID) treats any SELECT
  * answer that is not `02xx 9000` as "This card needs an update". So when
  * neither 2.0 form selects:
@@ -1160,7 +1160,7 @@ const ALL_ZERO_HEX = /^0+$/
 
 /**
  * Whether a slot's data is a proof at all: the card file's slot checks
- * (cashu-javacard spec/CARD-FILE.md, "Slot"). The amount is a positive power
+ * (cashucard/cashucard spec/CARD-FILE.md, "Slot"). The amount is a positive power
  * of two the 4-byte field can hold (a mint keyset has no key for 3), `C` is a
  * compressed point on secp256k1 (a prefix check alone passes half of all
  * random bytes), and neither the nonce nor the keyset id is all zero.
@@ -1587,7 +1587,7 @@ export const readCashuCard = async (
     ? await afterAuth({ transceive, info: read, pubkey, record: recordRead })
     : undefined
   // What the card said before a write in this tap is stale after it
-  // (cashu-javacard spec/APDU.md, SET_HEADER, REFRESH and GET_CARD): a
+  // (cashucard/cashucard spec/APDU.md, SET_HEADER, REFRESH and GET_CARD): a
   // REFRESH set the roll count to 0, a header taken changed the record's last
   // header, and a clock that moved changed what GET_INFO reports against it.
   // Under the owner's grant GET_INFO also says the limit on one payment, as

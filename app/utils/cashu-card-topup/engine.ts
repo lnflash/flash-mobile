@@ -432,7 +432,7 @@ export type PrepareArgs = {
    * unit of the value it holds (none when it is empty), and `reclaimable`,
    * the spent slots the load tap will free first (`reclaimPlan`: every one of
    * them, or none). Spent slots are never room by themselves: a spent slot is
-   * owed until it settles at the mint (cashu-javacard spec/CARD-FILE.md, "Why
+   * owed until it settles at the mint (cashucard/cashucard spec/CARD-FILE.md, "Why
    * `spent` is required"), and only the mint's word (NUT-07 SPENT) on all of
    * them makes them room. A card with no owner takes no load (LOAD_PROOF
    * answers 6A90), so it takes no top-up either.

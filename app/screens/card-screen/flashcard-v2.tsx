@@ -492,7 +492,7 @@ export const cardNotices = (
       notices.push({
         testID: "flashcard-v2-blocked",
         title: LL.FlashcardV2.blockedTitle(),
-        // A locked card refuses every PIN change (cashu-javacard
+        // A locked card refuses every PIN change (cashucard/cashucard
         // spec/APDU.md, CHANGE_PIN 6986 and LOCK_CARD): no one can unblock it.
         body: card.locked
           ? LL.FlashcardV2.blockedLockedBody()

@@ -50,7 +50,7 @@ export const PREFIX_LINKING = ["https://pay.getflash.io", "flash://"]
 export const LNURL_DOMAINS = ["getflash.io", "pay.flashapp.me", "flashapp.me"]
 
 /**
- * The Cashu mint Flashcard v2 proofs come from: the `mint` of cashu-javacard's
+ * The Cashu mint Flashcard v2 proofs come from: the `mint` of cashucard/cashucard's
  * card-file example (spec/CARD-FILE.md) and flash-pos's FLASH_CASHU_MINT_URL.
  * A card records no mint and no unit, only a keyset id per proof, so reading a
  * card asks this mint's public keyset list (NUT-02) what unit each id is in,

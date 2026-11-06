@@ -18,7 +18,7 @@ const cents = new Intl.NumberFormat("en-US", {
 /**
  * An amount in its keyset unit's own terms, never converted through a price.
  * Slot amounts are in the keyset's base unit, "sats or cents"
- * (cashu-javacard spec/NUT-XX.md:86), so `sat` reads as sats and `usd` as
+ * (cashucard/cashucard spec/NUT-XX.md:86), so `sat` reads as sats and `usd` as
  * dollars and cents. The spec is silent on any other unit, so those show the
  * mint's number with the mint's unit code.
  */
