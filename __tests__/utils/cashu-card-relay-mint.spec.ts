@@ -1,3 +1,4 @@
+/* eslint-disable camelcase -- the mint API's own field names */
 /**
  * ENG-820: the relay's mint transport and mint policy.
  *   - only GET /v1/keysets, GET /v1/keys/{NUT-02 id} and POST /v1/restore,

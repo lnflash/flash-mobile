@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise, no-plusplus -- APDU offsets, and a count of one dropped page */
 /**
  * ENG-820: the assisted-settlement relay's orchestrator. A tap of a 2.2 card
  * carries its last payment to the mint, at most once. These pin:

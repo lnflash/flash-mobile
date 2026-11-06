@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise -- the specs flip one bit of a signature, a DLEQ */
 /**
  * ENG-820: the cryptography the vendored relay engine is handed. Every check
  * answers strictly true or false, and refuses a bad point, a bad signature
