@@ -21,6 +21,16 @@ import type { RelayJournal } from "./relay"
  * refusal). A refused entry is never retried, and it no longer hides the
  * card's newer records. `refused` is optional, so entries saved before it
  * read as they did: the format is unchanged.
+ *
+ * Beside the entries, `unknownMints` notes the records whose packet named a
+ * mint this app does not know (ENG-822), by card and scope, so the tap that
+ * met one says so and the next taps of the same record are quiet. A note is
+ * not a refusal. It is written when a tap meets an unknown mint before
+ * capture (nothing captured), or when a captured entry's mint is no longer
+ * known at settle (the note then sits beside that entry, under the same key).
+ * The next put of that record (capture or settle) replaces the note. The
+ * newest `KEEP_TERMINAL` notes are kept. The field is optional,
+ * so a value saved without it reads as it did: the format is unchanged.
  */
 const SERVER = "flashcard-v2-relay"
 const USERNAME = "relay"
@@ -55,13 +65,22 @@ export class RelayStoreError extends Error {
   }
 }
 
+/** A record whose packet named a mint this app does not know: its card and scope. */
+export type UnknownMintNote = {
+  cardPubkey: string
+  scopeHex: string
+  updatedAt: number
+}
+
 export const isTerminal = (entry: RelayEntry): boolean =>
   entry.journal.state === "outputs-confirmed" || entry.refused !== undefined
 
-const readAll = async (): Promise<RelayEntry[]> => {
+type Saved = { entries: RelayEntry[]; unknownMints: UnknownMintNote[] }
+
+const readAll = async (): Promise<Saved> => {
   const credentials = await Keychain.getInternetCredentials(SERVER)
-  if (!credentials) return []
-  let stored: { format?: unknown; entries?: unknown }
+  if (!credentials) return { entries: [], unknownMints: [] }
+  let stored: { format?: unknown; entries?: unknown; unknownMints?: unknown }
   try {
     stored = JSON.parse(credentials.password)
   } catch {
@@ -72,19 +91,32 @@ const readAll = async (): Promise<RelayEntry[]> => {
       `the saved relays are in an unknown format (${stored?.format})`,
     )
   }
-  return stored.entries as RelayEntry[]
+  if (stored.unknownMints !== undefined && !Array.isArray(stored.unknownMints)) {
+    throw new RelayStoreError("the saved relays' unknown-mint notes cannot be read")
+  }
+  return {
+    entries: stored.entries as RelayEntry[],
+    unknownMints: (stored.unknownMints ?? []) as UnknownMintNote[],
+  }
 }
 
-const writeAll = async (entries: RelayEntry[]): Promise<void> => {
+const writeAll = async ({ entries, unknownMints }: Saved): Promise<void> => {
   const dropped = entries
     .filter(isTerminal)
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(KEEP_TERMINAL)
   const kept = entries.filter((entry) => !dropped.includes(entry))
+  const notes = [...unknownMints]
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, KEEP_TERMINAL)
   await Keychain.setInternetCredentials(
     SERVER,
     USERNAME,
-    JSON.stringify({ format: FORMAT, entries: kept }),
+    JSON.stringify({
+      format: FORMAT,
+      entries: kept,
+      ...(notes.length ? { unknownMints: notes } : {}),
+    }),
   )
 }
 
@@ -96,7 +128,9 @@ const serialized = <T>(work: () => Promise<T>): Promise<T> => {
   return run
 }
 
-const sameEntry = (a: Pick<RelayEntry, "cardPubkey" | "scopeHex">, b: RelayEntry) =>
+type Key = Pick<RelayEntry, "cardPubkey" | "scopeHex">
+
+const sameEntry = (a: Key, b: Key) =>
   a.cardPubkey === b.cardPubkey && a.scopeHex === b.scopeHex
 
 export type RelayStore = {
@@ -106,25 +140,49 @@ export type RelayStore = {
   put: (entry: Omit<RelayEntry, "updatedAt">) => Promise<RelayEntry>
   /** Drops the entry with this card and scope (a partial capture a newer record replaced). */
   remove: (cardPubkey: string, scopeHex: string) => Promise<void>
+  /**
+   * Notes that this card's record (`scopeHex`) named a mint this app does not
+   * know. Resolves `true` if it was noted already (a later tap of the same
+   * record), `false` if this call noted it.
+   */
+  noteUnknownMint: (cardPubkey: string, scopeHex: string) => Promise<boolean>
 }
 
 export const createRelayStore = (now: () => number = Date.now): RelayStore => ({
   forCard: (cardPubkey) =>
     serialized(async () =>
-      (await readAll())
+      (await readAll()).entries
         .filter((entry) => entry.cardPubkey === cardPubkey)
         .sort((a, b) => b.updatedAt - a.updatedAt),
     ),
   put: (entry) =>
     serialized(async () => {
-      const entries = await readAll()
+      const { entries, unknownMints } = await readAll()
       const next: RelayEntry = { ...entry, updatedAt: now() }
-      await writeAll([...entries.filter((e) => !sameEntry(entry, e)), next])
+      // An entry for the record supersedes its note: its mint is known now.
+      await writeAll({
+        entries: [...entries.filter((e) => !sameEntry(entry, e)), next],
+        unknownMints: unknownMints.filter((n) => !sameEntry(entry, n)),
+      })
       return next
     }),
   remove: (cardPubkey, scopeHex) =>
     serialized(async () => {
-      const entries = await readAll()
-      await writeAll(entries.filter((e) => !sameEntry({ cardPubkey, scopeHex }, e)))
+      const { entries, unknownMints } = await readAll()
+      await writeAll({
+        entries: entries.filter((e) => !sameEntry({ cardPubkey, scopeHex }, e)),
+        unknownMints,
+      })
+    }),
+  noteUnknownMint: (cardPubkey, scopeHex) =>
+    serialized(async () => {
+      const saved = await readAll()
+      const key = { cardPubkey, scopeHex }
+      if (saved.unknownMints.some((n) => sameEntry(key, n))) return true
+      await writeAll({
+        entries: saved.entries,
+        unknownMints: [...saved.unknownMints, { ...key, updatedAt: now() }],
+      })
+      return false
     }),
 })

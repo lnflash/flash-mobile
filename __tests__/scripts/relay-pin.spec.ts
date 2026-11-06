@@ -33,7 +33,7 @@ describe("check-relay-pin", () => {
     const pin = JSON.parse(
       fs.readFileSync(path.join(RELAY_DIR, "RELAY_PIN.json"), "utf8"),
     )
-    expect(pin.commit).toBe("2c954a97b1beedd443149005639d8321d6e06f8c")
+    expect(pin.commit).toBe("09e16b078afc1cf40e680c60783ee0d98f327a6e")
   })
 
   it("fails an edited relay.js, even by one byte", () => {

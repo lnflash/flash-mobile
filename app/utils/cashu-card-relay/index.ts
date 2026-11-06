@@ -68,7 +68,9 @@ export const RELAY_SESSION_CAP_MS = 15000
  * - `already`: the mint had settled it before (the till, or an earlier tap).
  * - `nothing`: the card holds no record, or answers no GET_OUTBOX.
  * - `unknown-mint`: the packet's mint is not one this app knows; nothing was
- *   sent anywhere.
+ *   sent anywhere. `seen`: this phone had already met the same record at an
+ *   unknown mint (a later tap), so nothing new happened. Not terminal: once
+ *   the mint is known, the next tap captures the record.
  * - `pending`: the mint holds the inputs PENDING, or did not answer in time.
  * - `refused`: the relay stopped on a refusal that repeats on every attempt
  *   (`code`, the engine's). Terminal: never retried, never blocks a top-up
@@ -81,7 +83,7 @@ export type RelayOutcome =
   | { kind: "settled" }
   | { kind: "already" }
   | { kind: "nothing" }
-  | { kind: "unknown-mint" }
+  | { kind: "unknown-mint"; seen?: boolean }
   | { kind: "pending" }
   | { kind: "refused"; code: string; seen?: boolean }
   | { kind: "failed"; error?: unknown }
@@ -110,8 +112,9 @@ const relayFailureCode = (err: unknown): string | undefined =>
  * packet and mint (relay.js): a unit other than sat (`unit`, a packet's
  * header; `input-keyset` and `output-keyset`, a keyset the mint lists in
  * another unit, or not at all), the mint's fees (`fee-policy`), an output
- * keyset the mint has retired (`inactive-output-keyset`), and a packet that
- * does not match the entry it was captured for (`context`).
+ * keyset the mint has retired (`inactive-output-keyset`), a packet keyset
+ * prefix that two of the mint's v2 keysets share (`keyset-ambiguous`), and a
+ * packet that does not match the entry it was captured for (`context`).
  * `settlement-unresolved` joins them only after a swap the mint refused
  * (`mintRefused`): sending the same swap again would be refused again.
  */
@@ -121,6 +124,7 @@ export const PERMANENT_REFUSALS: ReadonlySet<string> = new Set([
   "output-keyset",
   "fee-policy",
   "inactive-output-keyset",
+  "keyset-ambiguous",
   "context",
 ])
 
@@ -220,7 +224,12 @@ export const createRelay = (deps: RelayDeps) => {
    *   card (`capture-scope`) drops it and starts again.
    * - No record (6A88) or no GET_OUTBOX: `nothing`. The record this phone
    *   already saw settled (same scope): `already`, with no page read.
-   * - The packet's mint is checked before anything is captured or sent.
+   * - The packet's mint is checked before anything is captured or sent. An
+   *   unknown one is noted (`noteUnknownMint`): a later tap of the same record
+   *   is `unknown-mint` with `seen`, until the mint is known. `settlePending`
+   *   notes it the same way when a captured entry's mint has left
+   *   `knownMints()`: the note sits beside the kept entry, and the entry's
+   *   next put (once the mint is known and it settles) replaces the note.
    * - A card whose pieces are in a unit other than sat (`card.unit`, as the
    *   mint named it): `nothing`, with no GET_OUTBOX. The packet's unit is
    *   always sat (spec/APDU.md, GET_OUTBOX), so its keysets would be refused.
@@ -290,7 +299,12 @@ export const createRelay = (deps: RelayDeps) => {
         }
       }
       if (!knownRelayMint(header.mint, card.recordMint, deps.knownMints())) {
-        return { kind: "unknown-mint" }
+        // Best effort: a failed note degrades to the once-per-tap warning,
+        // never to a "failed" outcome the UI would read as pending.
+        const seen = await deps.store
+          .noteUnknownMint(card.pubkey, scopeHex)
+          .catch(() => false)
+        return seen ? { kind: "unknown-mint", seen: true } : { kind: "unknown-mint" }
       }
       onSettling?.()
       await capture(transceive, {
@@ -330,7 +344,12 @@ export const createRelay = (deps: RelayDeps) => {
         return last ? { kind: "already" } : { kind: "nothing" }
       }
       const approved = knownRelayMint(entry.mintUrl, undefined, deps.knownMints())
-      if (!approved) return { kind: "unknown-mint" }
+      if (!approved) {
+        const seen = await deps.store
+          .noteUnknownMint(cardPubkey, entry.scopeHex)
+          .catch(() => false)
+        return seen ? { kind: "unknown-mint", seen: true } : { kind: "unknown-mint" }
+      }
       const policy = policyOf(entry)
       let swaps = entry.swaps
       let journal = entry.journal
