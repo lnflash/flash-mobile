@@ -2,7 +2,7 @@
 /**
  * ENG-820: the assisted-settlement relay's orchestrator. A tap of a 2.2 card
  * carries its last payment to the mint, at most once. These pin:
- *   - the settled path makes exactly one `/v1/swap` and reports the outputs' sum
+ *   - the settled path makes exactly one `/v1/swap` and reports no amount
  *   - a payment the till settled first makes no swap (`already`)
  *   - a second tap of the same record reads no page and calls no mint
  *   - a relay killed after its capture settles from the journal alone, and one
@@ -11,6 +11,10 @@
  *   - an unknown mint is never called, and nothing is captured for it
  *   - two settles at once make one swap between them
  *   - a PENDING answer leaves the journal open, never terminal
+ *   - a refusal that repeats (a usd keyset, a swap the mint refused) is stored
+ *     terminal: never swapped again, and the card's next record is captured;
+ *     a swap the mint could not answer (5xx) stays open
+ *   - a card whose pieces are in another unit than sat is not relayed
  *   - a store that cannot be read throws, never reads as "nothing saved"
  * Against ENG-819's recorded packet (`__tests__/fixtures/relay-packet-494.hex`)
  * and the fake mint, which checks the packet's SIG_ALL witness as a mint does.
@@ -116,7 +120,7 @@ describe("the recorded packet and the test packet builder", () => {
 })
 
 describe("createRelay", () => {
-  it("settles a recorded packet with exactly one swap and reports the outputs' sum", async () => {
+  it("settles a recorded packet with exactly one swap, and reports no amount", async () => {
     const { card, relay, double, pubkey, mint } = setup()
 
     const captured = await relay.captureOutbox({
@@ -130,7 +134,7 @@ describe("createRelay", () => {
     expect(outboxReads(card)).toEqual(["scope", 0, "scope", 0, 255, "scope"])
 
     const outcome = await relay.settlePending(pubkey)
-    expect(outcome).toEqual({ kind: "settled", sats: 12 })
+    expect(outcome).toEqual({ kind: "settled" })
     expect(double.calls["/v1/swap"]).toBe(1)
     // Observed before the swap: restore and checkstate first.
     expect(double.log.indexOf("/v1/restore")).toBeLessThan(double.log.indexOf("/v1/swap"))
@@ -182,7 +186,7 @@ describe("createRelay", () => {
       await fresh.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
     ).toEqual({ kind: "captured" })
     expect(outboxReads(card)).toEqual([])
-    expect(await fresh.settlePending(pubkey)).toEqual({ kind: "settled", sats: 12 })
+    expect(await fresh.settlePending(pubkey)).toEqual({ kind: "settled" })
     expect(double.calls["/v1/swap"]).toBe(1)
   })
 
@@ -256,7 +260,7 @@ describe("createRelay", () => {
     expect(entries).toHaveLength(1)
     expect(entries[0].scopeHex).toBe(Buffer.from(outboxScope(second)).toString("hex"))
     expect(entries[0].journal.packet).toBe(Buffer.from(second).toString("hex"))
-    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled", sats: 12 })
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
     expect(double.calls["/v1/swap"]).toBe(1)
   })
 
@@ -296,7 +300,7 @@ describe("createRelay", () => {
       relay.settlePending(pubkey),
     ])
     expect(double.calls["/v1/swap"]).toBe(1)
-    expect(outcomes).toEqual([{ kind: "settled", sats: 12 }, { kind: "already" }])
+    expect(outcomes).toEqual([{ kind: "settled" }, { kind: "already" }])
   })
 
   it("leaves the journal open on a PENDING answer: pending, no swap, not terminal", async () => {
@@ -311,7 +315,7 @@ describe("createRelay", () => {
 
     // Once the mint lets go of the inputs, the next settle swaps.
     for (const Y of inputYs(RECORDED)) mint.proofStatesByY.delete(Y)
-    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled", sats: 12 })
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
   })
 
   it("keeps the journal submitted when the mint is unreachable, and the next settle observes before it swaps", async () => {
@@ -322,8 +326,128 @@ describe("createRelay", () => {
     const [entry] = await savedEntries()
     expect(entry.journal.state).toBe("captured")
     double.offline(false)
-    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled", sats: 12 })
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
     expect(double.calls["/v1/swap"]).toBe(1)
+  })
+
+  it("stores a usd-keyset packet as refused: no swap, not retried, and the card's next record is captured", async () => {
+    const mint = createFakeMint()
+    const double = relayMintFor(mint)
+    const usd = buildRelayPacket(FAKE_CARD_KEY, samplePayment(mint.usdKeysetId, MINT))
+    const card = createFakeCard(128, { version: [2, 2], outbox: { packet: usd } })
+    const relay = createRelay({
+      store: createRelayStore(),
+      crypto: relayCrypto,
+      knownMints: () => [MINT],
+      request: () => double.request,
+    })
+    const pubkey = packetFields(usd).cardKey
+
+    expect(
+      await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
+    ).toEqual({ kind: "captured" })
+    expect(await relay.settlePending(pubkey)).toEqual({
+      kind: "refused",
+      code: "input-keyset",
+    })
+    expect(double.calls["/v1/swap"]).toBeUndefined()
+    const [refused] = await savedEntries()
+    expect(refused.refused).toBe("input-keyset")
+
+    // The next tap of the same record: terminal, no page read, no mint call.
+    card.transceive.mockClear()
+    const callsBefore = double.log.length
+    expect(
+      await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
+    ).toEqual({ kind: "refused", code: "input-keyset", seen: true })
+    expect(outboxReads(card)).toEqual(["scope"])
+    expect(await relay.settlePending(pubkey)).toEqual({
+      kind: "refused",
+      code: "input-keyset",
+      seen: true,
+    })
+    expect(double.log).toHaveLength(callsBefore)
+
+    // A later sat payment's record is captured and settled.
+    const next = buildRelayPacket(
+      FAKE_CARD_KEY,
+      samplePayment(mint.keysetId, MINT, { paymentId: 2, seed: 2 }),
+    )
+    card.setOutbox(next)
+    expect(
+      await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
+    ).toEqual({ kind: "captured" })
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
+    expect(double.calls["/v1/swap"]).toBe(1)
+  })
+
+  it("stores a swap the mint refused as refused: the same swap is never sent again", async () => {
+    const { card, relay, double, pubkey } = setup({
+      packet: buildRelayPacket(FAKE_CARD_KEY, samplePayment(KEYSET, MINT)),
+    })
+    double.refuseSwaps(400)
+    await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } })
+
+    expect(await relay.settlePending(pubkey)).toEqual({
+      kind: "refused",
+      code: "settlement-unresolved",
+    })
+    expect(double.calls["/v1/swap"]).toBe(1)
+    const [entry] = await savedEntries()
+    expect(entry.refused).toBe("settlement-unresolved")
+    expect(entry.journal.state).toBe("submitted")
+    expect(entry.swaps).toBe(1)
+
+    // Even with the mint willing now, this phone does not resend it.
+    double.refuseSwaps(undefined)
+    expect(
+      await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
+    ).toEqual({ kind: "refused", code: "settlement-unresolved", seen: true })
+    expect(await relay.settlePending(pubkey)).toEqual({
+      kind: "refused",
+      code: "settlement-unresolved",
+      seen: true,
+    })
+    expect(double.calls["/v1/swap"]).toBe(1)
+
+    // The card's next record is captured as usual.
+    card.setOutbox(
+      buildRelayPacket(
+        FAKE_CARD_KEY,
+        samplePayment(KEYSET, MINT, { paymentId: 2, seed: 2 }),
+      ),
+    )
+    expect(
+      await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } }),
+    ).toEqual({ kind: "captured" })
+  })
+
+  it("keeps a swap the mint could not answer (503) open, and settles it on the next try", async () => {
+    const { card, relay, double, pubkey } = setup()
+    double.refuseSwaps(503)
+    await relay.captureOutbox({ transceive: card.transceive, card: { pubkey } })
+
+    expect((await relay.settlePending(pubkey)).kind).toBe("failed")
+    const [entry] = await savedEntries()
+    expect(entry.refused).toBeUndefined()
+    expect(entry.journal.state).toBe("submitted")
+
+    double.refuseSwaps(undefined)
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
+    expect(double.calls["/v1/swap"]).toBe(2)
+  })
+
+  it("does not relay a card whose pieces are in another unit than sat: no GET_OUTBOX", async () => {
+    const { card, relay, pubkey, request } = setup()
+    expect(
+      await relay.captureOutbox({
+        transceive: card.transceive,
+        card: { pubkey, unit: "usd" },
+      }),
+    ).toEqual({ kind: "nothing" })
+    expect(outboxReads(card)).toEqual([])
+    expect(request).not.toHaveBeenCalled()
+    expect(await savedEntries()).toEqual([])
   })
 
   it("throws when the store cannot be read, never reading it as nothing saved", async () => {

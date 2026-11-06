@@ -128,6 +128,8 @@ const cardUnitTotals = async (
  * A relay's outcome as a toast (ENG-820). Nothing for a card with nothing to
  * settle, nor for one whose record this phone already saw settled (`already`
  * from the capture, `quietAlready`): every tap of such a card would say so.
+ * A refusal is said once, on the tap that met it: a refusal this phone had
+ * already stored (`seen`) is quiet.
  */
 const toastRelay = (
   LL: TranslationFunctions,
@@ -137,20 +139,30 @@ const toastRelay = (
   const toast = (message: string, type: "success" | "warning") =>
     toastShow({ position: "top", message, type })
   if (outcome.kind === "settled") {
-    toast(LL.FlashcardV2.relaySettled({ sats: outcome.sats }), "success")
+    toast(LL.FlashcardV2.relaySettled(), "success")
   } else if (outcome.kind === "already" && !quietAlready) {
     toast(LL.FlashcardV2.relayAlreadySettled(), "success")
   } else if (outcome.kind === "unknown-mint") {
     toast(LL.FlashcardV2.relayUnknownMint(), "warning")
+  } else if (outcome.kind === "refused" && !outcome.seen) {
+    toast(LL.FlashcardV2.relayRefused(), "warning")
   } else if (outcome.kind === "pending" || outcome.kind === "failed") {
     toast(LL.FlashcardV2.relayPending(), "warning")
   }
 }
 
+/**
+ * The unit the relay goes by: the one the mint named for every piece on the
+ * card, as this phone knows it now (`known`), else as it last recorded it
+ * (`KnownCard.unit`). Undefined when neither knows: the relay goes on.
+ */
+const relayUnit = (known?: CardUnitTotals, recorded?: KnownCard): string | undefined =>
+  (known && soleUnit(known)) ?? recorded?.unit
+
 /** The relay's card half on this tap's transceiver; a failure of its own (the store) is `failed`. */
 const captureOutbox = async (
   transceive: Transceiver,
-  card: { pubkey: string; recordMint?: string },
+  card: { pubkey: string; recordMint?: string; unit?: string },
   onSettling?: () => void,
 ): Promise<CaptureOutcome> => {
   try {
@@ -171,12 +183,18 @@ const relayOnRead = async (
     transceive,
     info,
     bridged,
-  }: { transceive: Transceiver; info: CashuCardInfo; bridged: boolean },
+    unit,
+  }: {
+    transceive: Transceiver
+    info: CashuCardInfo
+    bridged: boolean
+    unit?: string
+  },
 ) => {
   const { pubkey } = info
   const captured = await captureOutbox(
     transceive,
-    { pubkey, recordMint: info.record.recordSet ? info.record.mint : undefined },
+    { pubkey, recordMint: info.record.recordSet ? info.record.mint : undefined, unit },
     bridged
       ? undefined
       : () => setCardAlertMessage(LL.FlashcardV2.relaySettling()).catch(() => undefined),
@@ -207,14 +225,16 @@ const relayBeforeOp = async (
     pubkey,
     report,
     changesSlots,
+    unit,
   }: {
     transceive: Transceiver
     pubkey: string
     report: (text: string) => void
     changesSlots?: boolean
+    unit?: string
   },
 ) => {
-  const captured = await captureOutbox(transceive, { pubkey }, () =>
+  const captured = await captureOutbox(transceive, { pubkey, unit }, () =>
     report(LL.FlashcardV2.relaySettling()),
   )
   const outcome: RelayOutcome | CaptureOutcome =
@@ -910,6 +930,7 @@ export const FlashcardProvider = ({ children }: Props) => {
               transceive: cardTransceive,
               info,
               bridged: Boolean(bridge),
+              unit: relayUnit(known, knownCardsRef.current[info.pubkey]),
             })
           }
           return { cashuCard: info }
@@ -1183,7 +1204,13 @@ export const FlashcardProvider = ({ children }: Props) => {
       // A 2.2 card's last payment goes to the mint before anything that
       // changes its slots (ENG-820).
       if (versionSupportsOutbox(version)) {
-        await relayBeforeOp(LL, { transceive, pubkey, report, changesSlots })
+        await relayBeforeOp(LL, {
+          transceive,
+          pubkey,
+          report,
+          changesSlots,
+          unit: relayUnit(undefined, knownCardsRef.current[pubkey]),
+        })
       }
 
       // After a refusal nothing the operation would prove holds, so a lost

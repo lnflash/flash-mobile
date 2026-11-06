@@ -600,10 +600,9 @@ type RootTranslation = {
 		 */
 		relaySettling: string
 		/**
-		 * S​e​t​t​l​e​d​ ​{​s​a​t​s​}​ ​s​a​t​ ​t​o​ ​t​h​e​ ​m​e​r​c​h​a​n​t
-		 * @param {number} sats
+		 * S​e​t​t​l​e​d​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​l​a​s​t​ ​p​a​y​m​e​n​t​.
 		 */
-		relaySettled: RequiredParams<'sats'>
+		relaySettled: string
 		/**
 		 * T​h​i​s​ ​c​a​r​d​'​s​ ​l​a​s​t​ ​p​a​y​m​e​n​t​ ​i​s​ ​a​l​r​e​a​d​y​ ​s​e​t​t​l​e​d​.
 		 */
@@ -616,6 +615,10 @@ type RootTranslation = {
 		 * C​o​u​l​d​ ​n​o​t​ ​s​e​t​t​l​e​ ​t​h​e​ ​p​a​y​m​e​n​t​ ​y​e​t​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​l​a​t​e​r​.
 		 */
 		relayPending: string
+		/**
+		 * T​h​e​ ​m​i​n​t​ ​r​e​f​u​s​e​d​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​l​a​s​t​ ​p​a​y​m​e​n​t​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​t​l​e​d​ ​f​r​o​m​ ​t​h​i​s​ ​p​h​o​n​e​.
+		 */
+		relayRefused: string
 		/**
 		 * U​s​e​s​ ​{​n​e​e​d​e​d​}​ ​o​f​ ​{​f​r​e​e​}​ ​f​r​e​e​ ​s​l​o​t​s​,​ ​{​r​e​c​l​a​i​m​}​ ​o​f​ ​t​h​e​m​ ​f​r​e​e​d​ ​f​r​o​m​ ​s​e​t​t​l​e​d​ ​s​p​e​n​d​s​ ​o​n​ ​l​o​a​d
 		 * @param {number} free
@@ -9317,9 +9320,9 @@ export type TranslationFunctions = {
 		 */
 		relaySettling: () => LocalizedString
 		/**
-		 * Settled {sats} sat to the merchant
+		 * Settled this card's last payment.
 		 */
-		relaySettled: (arg: { sats: number }) => LocalizedString
+		relaySettled: () => LocalizedString
 		/**
 		 * This card's last payment is already settled.
 		 */
@@ -9332,6 +9335,10 @@ export type TranslationFunctions = {
 		 * Could not settle the payment yet. Tap the card again later.
 		 */
 		relayPending: () => LocalizedString
+		/**
+		 * The mint refused this card's last payment, so it can't be settled from this phone.
+		 */
+		relayRefused: () => LocalizedString
 		/**
 		 * Uses {needed} of {free} free slots, {reclaim} of them freed from settled spends on load
 		 */

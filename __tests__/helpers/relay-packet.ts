@@ -20,6 +20,7 @@ import { schnorr, secp256k1 } from "@noble/curves/secp256k1"
 import { sha256 } from "@noble/hashes/sha256"
 
 import { toHex } from "../../app/utils/cashu-card"
+import { RelayNetworkError } from "../../app/utils/cashu-card-topup/mint"
 import type { FakeMint } from "./fake-cashu"
 
 const fromHex = (hex: string): number[] =>
@@ -216,6 +217,12 @@ export type RelayMintDouble = {
   log: string[]
   /** Makes every call throw, as an offline mint. */
   offline: (on: boolean) => void
+  /**
+   * Makes every `/v1/swap` answer `status` (a `RelayNetworkError`, as the
+   * app's transport throws for a non-2xx), with nothing swapped; undefined
+   * swaps again.
+   */
+  refuseSwaps: (status?: number) => void
 }
 
 /** The fake mint behind the relay's five routes, as Nutshell's JSON. */
@@ -223,10 +230,12 @@ export const relayMintFor = (mint: FakeMint): RelayMintDouble => {
   const calls: Record<string, number> = {}
   const log: string[] = []
   let down = false
-  const keysets = async () => {
-    const sat = await mint.keyset(mint.keysetId)
-    return [sat]
-  }
+  let swapStatus: number | undefined
+  // The sat keyset, and the usd one a usd card's pieces are in.
+  const keysets = async () => [
+    await mint.keyset(mint.keysetId),
+    await mint.keyset(mint.usdKeysetId),
+  ]
   const request = async (route: string, body?: unknown): Promise<unknown> => {
     const name = route.startsWith("/v1/keys/") ? "/v1/keys" : route
     calls[name] = (calls[name] ?? 0) + 1
@@ -258,6 +267,12 @@ export const relayMintFor = (mint: FakeMint): RelayMintDouble => {
         return { states: Ys.map((Y, i) => ({ Y, state: states[i] })) }
       }
       case "/v1/swap":
+        if (swapStatus !== undefined) {
+          throw new RelayNetworkError(
+            `/v1/swap: the mint answered ${swapStatus}`,
+            swapStatus,
+          )
+        }
         return {
           signatures: await mint.swap(
             b.inputs as Proof[],
@@ -268,7 +283,13 @@ export const relayMintFor = (mint: FakeMint): RelayMintDouble => {
         throw new Error(`no such route ${route}`)
     }
   }
-  return { request, calls, log, offline: (on) => (down = on) }
+  return {
+    request,
+    calls,
+    log,
+    offline: (on) => (down = on),
+    refuseSwaps: (status) => (swapStatus = status),
+  }
 }
 
 /** The Ys of a packet's inputs, as the mint knows them (NUT-07). */

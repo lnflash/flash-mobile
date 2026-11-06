@@ -199,9 +199,13 @@ export const RELAY_MAX_RESPONSE_BYTES = 1024 * 1024
 const RELAY_GET = /^\/v1\/(keysets|keys\/([0-9a-f]+))$/
 const RELAY_POST = ["/v1/restore", "/v1/checkstate", "/v1/swap"]
 
-/** A relay's mint call that did not come back as JSON from a 2xx. */
+/**
+ * A relay's mint call that did not come back as JSON from a 2xx. `status` is
+ * the mint's HTTP status when it answered (a non-2xx); absent when it could
+ * not be reached, timed out, or its answer could not be read.
+ */
 export class RelayNetworkError extends Error {
-  constructor(message: string) {
+  constructor(message: string, readonly status?: number) {
     super(message)
     this.name = "RelayNetworkError"
   }
@@ -298,7 +302,10 @@ export const createRelayRequest = (
         )
       }
       if (!response.ok) {
-        throw new RelayNetworkError(`${route}: the mint answered ${response.status}`)
+        throw new RelayNetworkError(
+          `${route}: the mint answered ${response.status}`,
+          response.status,
+        )
       }
       const declared = Number(response.headers?.get?.("content-length") ?? NaN)
       if (Number.isFinite(declared) && declared > RELAY_MAX_RESPONSE_BYTES) {

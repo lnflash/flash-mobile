@@ -7,6 +7,9 @@
  *   - a relay that could not settle blocks a slot-changing op (no op, no
  *     re-read) and lets any other op through, after a toast
  *   - a plain read tap relays too: the packet in the tap, the mint after it
+ *   - a refusal that repeats (a usd-keyset packet, a swap the mint refused)
+ *     blocks nothing: the op runs, one toast, no second swap on the next tap,
+ *     and the card's next record is relayed
  */
 import { act, waitFor } from "@testing-library/react-native"
 import NfcManager, { NfcTech } from "react-native-nfc-manager"
@@ -20,7 +23,11 @@ import { createRelayRequest } from "@app/utils/cashu-card-topup/mint"
 import { unitsForKeysets } from "@app/utils/cashu-mint"
 import { toastShow } from "@app/utils/toast"
 import { store } from "@app/store/redux"
-import { resetFlashcardV2 } from "@app/store/redux/slices/flashcardV2Slice"
+import {
+  cardSeen,
+  cardUnitResolved,
+  resetFlashcardV2,
+} from "@app/store/redux/slices/flashcardV2Slice"
 
 import { FAKE_CARD_KEY, createFakeCard, createFakeMint } from "../helpers/fake-cashu"
 import { buildRelayPacket, relayMintFor, samplePayment } from "../helpers/relay-packet"
@@ -66,12 +73,15 @@ let latest: FlashcardSnapshot | undefined
 /** Card APDUs (`card:<INS>`), mint calls (`mint:<route>`) and the release, in order. */
 let events: string[]
 
-const setup = ({ version = [2, 2] as [number, number] } = {}) => {
+const setup = ({
+  version = [2, 2] as [number, number],
+  unit = "sat" as "sat" | "usd",
+} = {}) => {
   const mint = createFakeMint()
   const double = relayMintFor(mint)
   const packet = buildRelayPacket(
     FAKE_CARD_KEY,
-    samplePayment(mint.keysetId, CASHU_MINT_URL),
+    samplePayment(unit === "usd" ? mint.usdKeysetId : mint.keysetId, CASHU_MINT_URL),
   )
   const card = createFakeCard(128, { owner: null, version, outbox: { packet } })
   transceive.mockImplementation(async (apdu: number[]) => {
@@ -167,7 +177,7 @@ describe("FlashcardProvider relays a 2.2 card's last payment first", () => {
     expect(swap).toBeLessThan(clear)
     expect(clear).toBeLessThan(load)
     await waitFor(() =>
-      expect(toastMessages()).toContain("Settled 12 sat to the merchant"),
+      expect(toastMessages()).toContain("Settled this card's last payment."),
     )
   })
 
@@ -227,6 +237,81 @@ describe("FlashcardProvider relays a 2.2 card's last payment first", () => {
     expect(double.calls["/v1/swap"]).toBe(1)
   })
 
+  const refusals: {
+    name: string
+    unit: "sat" | "usd"
+    refuse?: number
+    swaps: number
+  }[] = [
+    { name: "a usd-keyset packet", unit: "usd", swaps: 0 },
+    { name: "a swap the mint refused", unit: "sat", refuse: 400, swaps: 1 },
+  ]
+  refusals.forEach(({ name, unit, refuse, swaps }) =>
+    it(`lets a top-up or tidy through after ${name}, says so once, and never resends the swap`, async () => {
+      const { card, double, mint } = setup({ unit })
+      double.refuseSwaps(refuse)
+      await mount()
+      const slotOp = jest.fn(async () => "loaded")
+
+      expect(
+        await runAndCatch(slotOp, card.pubkey, { changesSlots: true }),
+      ).toBeUndefined()
+      expect(slotOp).toHaveBeenCalledTimes(1)
+      expect(double.calls["/v1/swap"] ?? 0).toBe(swaps)
+      const refused =
+        "The mint refused this card's last payment, so it can't be settled from this phone."
+      expect(toastMessages().filter((m) => m === refused)).toHaveLength(1)
+
+      // The next tap: not blocked, no second swap, and no second toast.
+      double.refuseSwaps(undefined)
+      expect(
+        await runAndCatch(slotOp, card.pubkey, { changesSlots: true }),
+      ).toBeUndefined()
+      expect(slotOp).toHaveBeenCalledTimes(2)
+      expect(double.calls["/v1/swap"] ?? 0).toBe(swaps)
+      expect(toastMessages().filter((m) => m === refused)).toHaveLength(1)
+
+      // The card's next payment is relayed as usual.
+      card.setOutbox(
+        buildRelayPacket(
+          FAKE_CARD_KEY,
+          samplePayment(mint.keysetId, CASHU_MINT_URL, { paymentId: 2, seed: 2 }),
+        ),
+      )
+      expect(
+        await runAndCatch(slotOp, card.pubkey, { changesSlots: true }),
+      ).toBeUndefined()
+      expect(double.calls["/v1/swap"]).toBe(swaps + 1)
+      await waitFor(() =>
+        expect(toastMessages()).toContain("Settled this card's last payment."),
+      )
+    }),
+  )
+
+  it("does not relay a card this phone knows holds usd: no GET_OUTBOX, and the op runs", async () => {
+    const { card } = setup({ unit: "usd" })
+    store.dispatch(
+      cardSeen({
+        pubkey: card.pubkey,
+        version: "2.2",
+        pinState: "unset",
+        lastBalance: 0,
+        owned: false,
+        needsUpdate: false,
+        limits: { day: 0, allowance: 0 },
+        at: 1,
+      }),
+    )
+    store.dispatch(cardUnitResolved({ pubkey: card.pubkey, unit: "usd" }))
+    await mount()
+    const slotOp = jest.fn(async () => "loaded")
+
+    expect(await runAndCatch(slotOp, card.pubkey, { changesSlots: true })).toBeUndefined()
+    expect(slotOp).toHaveBeenCalledTimes(1)
+    expect(cardEvents()).not.toContain(`card:${INS_GET_OUTBOX.toString(16)}`)
+    expect(relayRequest).not.toHaveBeenCalled()
+  })
+
   it("relays on a plain read tap: the packet in the tap, the mint after it is released", async () => {
     const { double } = setup()
     await mount()
@@ -237,7 +322,7 @@ describe("FlashcardProvider relays a 2.2 card's last payment first", () => {
 
     await waitFor(() => expect(double.calls["/v1/swap"]).toBe(1))
     await waitFor(() =>
-      expect(toastMessages()).toContain("Settled 12 sat to the merchant"),
+      expect(toastMessages()).toContain("Settled this card's last payment."),
     )
     const release = events.indexOf("release")
     expect(events.lastIndexOf(`card:${INS_GET_OUTBOX.toString(16)}`)).toBeLessThan(

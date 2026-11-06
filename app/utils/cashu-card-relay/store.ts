@@ -13,9 +13,14 @@ import type { RelayJournal } from "./relay"
  * a Keychain failure or an unreadable value throws, never reads as "nothing
  * saved", which would let the next tap start over.
  *
- * Terminal entries (`outputs-confirmed`) are kept, so a second tap of the same
- * record is answered from here with no page read and no mint call, up to
- * `KEEP_TERMINAL` of them, the newest first.
+ * Terminal entries are kept, so a second tap of the same record is answered
+ * from here with no page read and no mint call, up to `KEEP_TERMINAL` of them,
+ * the newest first. An entry is terminal once settled (`outputs-confirmed`)
+ * or once refused (`refused`): a refusal that would repeat on every attempt
+ * (a non-sat keyset, the mint's fee policy, a swap the mint answered with a
+ * refusal). A refused entry is never retried, and it no longer hides the
+ * card's newer records. `refused` is optional, so entries saved before it
+ * read as they did: the format is unchanged.
  */
 const SERVER = "flashcard-v2-relay"
 const USERNAME = "relay"
@@ -34,6 +39,12 @@ export type RelayEntry = {
   journal: RelayJournal
   /** How many `/v1/swap` calls this phone has sent for the entry. */
   swaps: number
+  /**
+   * The engine's refusal code (`RelayFailure.code`) when the relay stopped on
+   * a refusal that repeats on every attempt; the entry is then terminal and
+   * never retried. Absent for every other entry.
+   */
+  refused?: string
   updatedAt: number
 }
 
@@ -45,7 +56,7 @@ export class RelayStoreError extends Error {
 }
 
 export const isTerminal = (entry: RelayEntry): boolean =>
-  entry.journal.state === "outputs-confirmed"
+  entry.journal.state === "outputs-confirmed" || entry.refused !== undefined
 
 const readAll = async (): Promise<RelayEntry[]> => {
   const credentials = await Keychain.getInternetCredentials(SERVER)

@@ -12,14 +12,22 @@
  *   swap, the swap's intent is saved before it goes out, and at most one
  *   `/v1/swap` is sent per call, under a per-card lock. Network only.
  *
- * Nothing is marked done on a failure: the journal stays captured or
- * submitted, and the next tap observes before it swaps.
+ * A transient failure (offline, a timeout, PENDING, a card lost mid-read)
+ * marks nothing done: the journal stays captured or submitted, and the next
+ * tap observes before it swaps. A refusal that would repeat on every attempt
+ * (`PERMANENT_REFUSALS`, or a swap the mint answered with a refusal) is
+ * stored as a terminal `refused` entry: it is never retried, never blocks a
+ * top-up or tidy, and the card's next record is captured as usual.
  */
 import { CASHU_MINT_URL } from "@app/config/appinfo"
 
 import { Transceiver } from "../cashu-card"
 import { cardMintUrl, getCardBridge } from "../cashu-card-bridge"
-import { RelayMintRequest, createRelayRequest } from "../cashu-card-topup/mint"
+import {
+  RelayMintRequest,
+  RelayNetworkError,
+  createRelayRequest,
+} from "../cashu-card-topup/mint"
 import { knownRelayMint, sameMint } from "../cashu-card-topup/mint-url"
 import { relayCrypto } from "./crypto"
 import {
@@ -34,9 +42,7 @@ import {
   RelayCrypto,
   RelayFailure,
   RelayJournal,
-  RelayPolicy,
   capturePacket,
-  decodePacket,
   reconcilePayment,
 } from "./relay"
 import { RelayEntry, RelayStore, createRelayStore, isTerminal } from "./store"
@@ -56,22 +62,28 @@ export const RELAY_SESSION_CAP_MS = 15000
 
 /**
  * What a relay came to.
- * - `settled`: this phone's swap settled the payment; `sats` is the sum of
- *   the packet's outputs.
+ * - `settled`: this phone's swap settled the payment. No amount: the
+ *   packet's outputs include the card's own change, and nothing in the
+ *   packet says which outputs are the till's.
  * - `already`: the mint had settled it before (the till, or an earlier tap).
  * - `nothing`: the card holds no record, or answers no GET_OUTBOX.
  * - `unknown-mint`: the packet's mint is not one this app knows; nothing was
  *   sent anywhere.
  * - `pending`: the mint holds the inputs PENDING, or did not answer in time.
- * - `failed`: anything else (offline, a refusal, a bad packet). The journal
- *   keeps what was done, and the next tap goes on from there.
+ * - `refused`: the relay stopped on a refusal that repeats on every attempt
+ *   (`code`, the engine's). Terminal: never retried, never blocks a top-up
+ *   or tidy. `seen`: this phone had already stored the refusal (a later tap
+ *   of the same record), so nothing new happened.
+ * - `failed`: anything else (offline, a card lost mid-read, a bad packet).
+ *   The journal keeps what was done, and the next tap goes on from there.
  */
 export type RelayOutcome =
-  | { kind: "settled"; sats: number }
+  | { kind: "settled" }
   | { kind: "already" }
   | { kind: "nothing" }
   | { kind: "unknown-mint" }
   | { kind: "pending" }
+  | { kind: "refused"; code: string; seen?: boolean }
   | { kind: "failed"; error?: unknown }
 
 /** What a capture came to: a packet saved for `settlePending`, or an outcome already. */
@@ -93,6 +105,47 @@ export type RelayDeps = {
 const relayFailureCode = (err: unknown): string | undefined =>
   err instanceof RelayFailure ? err.code : undefined
 
+/**
+ * The engine's refusals that come out the same on every attempt for the same
+ * packet and mint (relay.js): a unit other than sat (`unit`, a packet's
+ * header; `input-keyset` and `output-keyset`, a keyset the mint lists in
+ * another unit, or not at all), the mint's fees (`fee-policy`), an output
+ * keyset the mint has retired (`inactive-output-keyset`), and a packet that
+ * does not match the entry it was captured for (`context`).
+ * `settlement-unresolved` joins them only after a swap the mint refused
+ * (`mintRefused`): sending the same swap again would be refused again.
+ */
+export const PERMANENT_REFUSALS: ReadonlySet<string> = new Set([
+  "unit",
+  "input-keyset",
+  "output-keyset",
+  "fee-policy",
+  "inactive-output-keyset",
+  "context",
+])
+
+/**
+ * The mint answered the call with a refusal: a 4xx other than a timeout
+ * (408) or a rate limit (429). Not reachable, a 5xx, or a timeout: not a
+ * refusal, as the same call may go through later.
+ */
+const mintRefused = (err: unknown): boolean =>
+  err instanceof RelayNetworkError &&
+  err.status !== undefined &&
+  err.status >= 400 &&
+  err.status < 500 &&
+  err.status !== 408 &&
+  err.status !== 429
+
+/** The refusal code to store as terminal, if `err` is one that would repeat. */
+const permanentRefusal = (err: unknown, swapRefused: boolean): string | undefined => {
+  const code = relayFailureCode(err)
+  if (code === undefined) return undefined
+  if (PERMANENT_REFUSALS.has(code)) return code
+  if (code === "settlement-unresolved" && swapRefused) return code
+  return undefined
+}
+
 /** The mints this app speaks to: `CASHU_MINT_URL` and the card mint (a dev bridge's, in development). */
 const defaultKnownMints = (): string[] => [CASHU_MINT_URL, cardMintUrl()]
 
@@ -103,13 +156,6 @@ const defaultRequest: RelayRequestFactory = (approvedUrl) => {
     allowInsecure: devMint !== undefined && sameMint(devMint, approvedUrl),
   })
 }
-
-const sumOutputs = (journal: RelayJournal, policy: RelayPolicy, crypto: RelayCrypto) =>
-  decodePacket(
-    (journal.packet?.match(/../g) ?? []).map((h) => parseInt(h, 16)),
-    policy,
-    crypto,
-  ).outputs.reduce((n, output) => n + output.amount, 0)
 
 const policyOf = (
   entry: Pick<RelayEntry, "mintUrl" | "cardPubkey" | "installation">,
@@ -146,6 +192,22 @@ export const createRelay = (deps: RelayDeps) => {
       ...(prior ? { journal: prior } : {}),
     })
 
+  /** Stores the entry of `cardPubkey`'s `scopeHex` as refused (`code`): terminal from now on. */
+  const refuse = async (
+    cardPubkey: string,
+    scopeHex: string,
+    code: string,
+  ): Promise<RelayOutcome> => {
+    const saved = (await deps.store.forCard(cardPubkey)).find(
+      (entry) => entry.scopeHex === scopeHex,
+    )
+    if (saved) {
+      const { updatedAt: _updatedAt, ...rest } = saved
+      await deps.store.put({ ...rest, refused: code })
+    }
+    return { kind: "refused", code }
+  }
+
   /**
    * Reads the card's payment record into the journal, card I/O only. Call it
    * on a 2.2 card (`supportsOutbox`) whose key this tap read (`card.pubkey`,
@@ -159,6 +221,11 @@ export const createRelay = (deps: RelayDeps) => {
    * - No record (6A88) or no GET_OUTBOX: `nothing`. The record this phone
    *   already saw settled (same scope): `already`, with no page read.
    * - The packet's mint is checked before anything is captured or sent.
+   * - A card whose pieces are in a unit other than sat (`card.unit`, as the
+   *   mint named it): `nothing`, with no GET_OUTBOX. The packet's unit is
+   *   always sat (spec/APDU.md, GET_OUTBOX), so its keysets would be refused.
+   * - A refused record (`refused`, stored): `refused` with `seen`, no page
+   *   read. A capture that stops on a repeating refusal stores it so.
    *
    * A store read failure throws: it never reads as "nothing saved".
    */
@@ -168,12 +235,15 @@ export const createRelay = (deps: RelayDeps) => {
     onSettling,
   }: {
     transceive: Transceiver
-    card: { pubkey: string; recordMint?: string }
+    card: { pubkey: string; recordMint?: string; unit?: string }
     onSettling?: () => void
   }): Promise<CaptureOutcome> => {
+    if (card.unit !== undefined && card.unit !== "sat") return { kind: "nothing" }
     const entries = await deps.store.forCard(card.pubkey)
     const open = entries.find((entry) => !isTerminal(entry))
     if (open && open.journal.state !== "capturing") return { kind: "captured" }
+    // The record this capture is reading, once known: a refusal is stored on it.
+    let reading: string | undefined = open?.scopeHex
     try {
       if (open) {
         onSettling?.()
@@ -201,9 +271,14 @@ export const createRelay = (deps: RelayDeps) => {
         throw err
       }
       const scopeHex = scope.map((b) => b.toString(16).padStart(2, "0")).join("")
-      if (entries.some((entry) => isTerminal(entry) && entry.scopeHex === scopeHex)) {
-        return { kind: "already" }
+      const done = entries.find(
+        (entry) => isTerminal(entry) && entry.scopeHex === scopeHex,
+      )
+      if (done?.refused !== undefined) {
+        return { kind: "refused", code: done.refused, seen: true }
       }
+      if (done) return { kind: "already" }
+      reading = scopeHex
       // The header, for the policy: the installation and the mint.
       const header = parseOutboxHeader(
         await readOutboxPage(transceive, 0, OUTBOX_PAGE_MAX),
@@ -227,6 +302,14 @@ export const createRelay = (deps: RelayDeps) => {
       })
       return { kind: "captured" }
     } catch (err) {
+      const code = permanentRefusal(err, false)
+      if (code !== undefined && reading !== undefined) {
+        try {
+          return await refuse(card.pubkey, reading, code)
+        } catch (storeErr) {
+          return { kind: "failed", error: storeErr }
+        }
+      }
       return { kind: "failed", error: err }
     }
   }
@@ -240,18 +323,34 @@ export const createRelay = (deps: RelayDeps) => {
       const entries = await deps.store.forCard(cardPubkey)
       const entry = entries.find((e) => !isTerminal(e) && e.journal.state !== "capturing")
       if (!entry) {
-        return entries.some(isTerminal) ? { kind: "already" } : { kind: "nothing" }
+        const last = entries.find(isTerminal)
+        if (last?.refused !== undefined) {
+          return { kind: "refused", code: last.refused, seen: true }
+        }
+        return last ? { kind: "already" } : { kind: "nothing" }
       }
       const approved = knownRelayMint(entry.mintUrl, undefined, deps.knownMints())
       if (!approved) return { kind: "unknown-mint" }
       const policy = policyOf(entry)
       let swaps = entry.swaps
-      const save = (journal: RelayJournal) => deps.store.put({ ...entry, journal, swaps })
+      let journal = entry.journal
+      // The mint answered this call's swap with a refusal (`mintRefused`).
+      let swapRefused = false
+      const save = (next: RelayJournal) => {
+        journal = next
+        return deps.store.put({ ...entry, journal: next, swaps })
+      }
       try {
         const request = deps.request(approved)
-        const counted: RelayMintRequest = (route, body) => {
-          if (route === "/v1/swap") swaps += 1
-          return request(route, body)
+        const counted: RelayMintRequest = async (route, body) => {
+          if (route !== "/v1/swap") return request(route, body)
+          swaps += 1
+          try {
+            return await request(route, body)
+          } catch (err) {
+            if (mintRefused(err)) swapRefused = true
+            throw err
+          }
         }
         const result = await reconcilePayment({
           journal: entry.journal,
@@ -261,9 +360,7 @@ export const createRelay = (deps: RelayDeps) => {
           save,
         })
         if (result.state === "outputs-confirmed") {
-          return swaps > 0
-            ? { kind: "settled", sats: sumOutputs(result, policy, deps.crypto) }
-            : { kind: "already" }
+          return swaps > 0 ? { kind: "settled" } : { kind: "already" }
         }
         if (result.state === "pending") return { kind: "pending" }
         return {
@@ -271,7 +368,15 @@ export const createRelay = (deps: RelayDeps) => {
           error: new Error(`the relay stopped at ${result.state}`),
         }
       } catch (err) {
-        return { kind: "failed", error: err }
+        const code = permanentRefusal(err, swapRefused)
+        if (code === undefined) return { kind: "failed", error: err }
+        try {
+          const { updatedAt: _updatedAt, ...rest } = entry
+          await deps.store.put({ ...rest, journal, swaps, refused: code })
+        } catch (storeErr) {
+          return { kind: "failed", error: storeErr }
+        }
+        return { kind: "refused", code }
       }
     })
 
@@ -308,7 +413,8 @@ export const appRelay = (): Relay => {
 
 /**
  * An operation that changes the card's slots (a top-up, a tidy) was not run:
- * the card's last payment could not be settled first (`pending` or `failed`).
+ * the card's last payment could not be settled first (`pending` or `failed`;
+ * a `refused` payment never blocks, as it would block for good).
  * Not a `CardError`: the card refused nothing, and no re-read follows.
  */
 export class RelayUnsettledError extends Error {
