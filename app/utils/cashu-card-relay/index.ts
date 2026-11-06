@@ -68,7 +68,9 @@ export const RELAY_SESSION_CAP_MS = 15000
  * - `already`: the mint had settled it before (the till, or an earlier tap).
  * - `nothing`: the card holds no record, or answers no GET_OUTBOX.
  * - `unknown-mint`: the packet's mint is not one this app knows; nothing was
- *   sent anywhere.
+ *   sent anywhere. `seen`: this phone had already met the same record at an
+ *   unknown mint (a later tap), so nothing new happened. Not terminal: once
+ *   the mint is known, the next tap captures the record.
  * - `pending`: the mint holds the inputs PENDING, or did not answer in time.
  * - `refused`: the relay stopped on a refusal that repeats on every attempt
  *   (`code`, the engine's). Terminal: never retried, never blocks a top-up
@@ -81,7 +83,7 @@ export type RelayOutcome =
   | { kind: "settled" }
   | { kind: "already" }
   | { kind: "nothing" }
-  | { kind: "unknown-mint" }
+  | { kind: "unknown-mint"; seen?: boolean }
   | { kind: "pending" }
   | { kind: "refused"; code: string; seen?: boolean }
   | { kind: "failed"; error?: unknown }
@@ -222,7 +224,9 @@ export const createRelay = (deps: RelayDeps) => {
    *   card (`capture-scope`) drops it and starts again.
    * - No record (6A88) or no GET_OUTBOX: `nothing`. The record this phone
    *   already saw settled (same scope): `already`, with no page read.
-   * - The packet's mint is checked before anything is captured or sent.
+   * - The packet's mint is checked before anything is captured or sent. An
+   *   unknown one is noted (`noteUnknownMint`): a later tap of the same record
+   *   is `unknown-mint` with `seen`, until the mint is known.
    * - A card whose pieces are in a unit other than sat (`card.unit`, as the
    *   mint named it): `nothing`, with no GET_OUTBOX. The packet's unit is
    *   always sat (spec/APDU.md, GET_OUTBOX), so its keysets would be refused.
@@ -292,7 +296,8 @@ export const createRelay = (deps: RelayDeps) => {
         }
       }
       if (!knownRelayMint(header.mint, card.recordMint, deps.knownMints())) {
-        return { kind: "unknown-mint" }
+        const seen = await deps.store.noteUnknownMint(card.pubkey, scopeHex)
+        return seen ? { kind: "unknown-mint", seen: true } : { kind: "unknown-mint" }
       }
       onSettling?.()
       await capture(transceive, {

@@ -10,6 +10,7 @@
  *   - a refusal that repeats (a usd-keyset packet, a swap the mint refused)
  *     blocks nothing: the op runs, one toast, no second swap on the next tap,
  *     and the card's next record is relayed
+ *   - a record at a mint this app does not know is said once, then quiet
  */
 import { act, waitFor } from "@testing-library/react-native"
 import NfcManager, { NfcTech } from "react-native-nfc-manager"
@@ -289,6 +290,29 @@ describe("FlashcardProvider relays a 2.2 card's last payment first", () => {
       )
     }),
   )
+
+  it("says a record at a mint this app does not know once, and is quiet on the next taps", async () => {
+    const mint = createFakeMint()
+    const packet = buildRelayPacket(
+      FAKE_CARD_KEY,
+      samplePayment(mint.keysetId, "https://unknown-mint.test"),
+    )
+    const card = createFakeCard(128, { owner: null, version: [2, 2], outbox: { packet } })
+    transceive.mockImplementation(async (apdu: number[]) => card.transceive(apdu))
+    await mount()
+    const slotOp = jest.fn(async () => "loaded")
+    const unknown =
+      "This card's last payment is for a mint this app doesn't know, so it wasn't settled."
+
+    for (let tap = 1; tap <= 3; tap += 1) {
+      expect(
+        await runAndCatch(slotOp, card.pubkey, { changesSlots: true }),
+      ).toBeUndefined()
+      expect(slotOp).toHaveBeenCalledTimes(tap)
+      expect(toastMessages().filter((m) => m === unknown)).toHaveLength(1)
+    }
+    expect(relayRequest).not.toHaveBeenCalled()
+  })
 
   it("does not relay a card this phone knows holds usd: no GET_OUTBOX, and the op runs", async () => {
     const { card } = setup({ unit: "usd" })

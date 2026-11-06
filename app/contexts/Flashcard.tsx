@@ -128,8 +128,8 @@ const cardUnitTotals = async (
  * A relay's outcome as a toast (ENG-820). Nothing for a card with nothing to
  * settle, nor for one whose record this phone already saw settled (`already`
  * from the capture, `quietAlready`): every tap of such a card would say so.
- * A refusal is said once, on the tap that met it: a refusal this phone had
- * already stored (`seen`) is quiet.
+ * A refusal, or a record at a mint this app does not know, is said once, on
+ * the tap that met it: one this phone had already stored (`seen`) is quiet.
  */
 const toastRelay = (
   LL: TranslationFunctions,
@@ -142,7 +142,7 @@ const toastRelay = (
     toast(LL.FlashcardV2.relaySettled(), "success")
   } else if (outcome.kind === "already" && !quietAlready) {
     toast(LL.FlashcardV2.relayAlreadySettled(), "success")
-  } else if (outcome.kind === "unknown-mint") {
+  } else if (outcome.kind === "unknown-mint" && !outcome.seen) {
     toast(LL.FlashcardV2.relayUnknownMint(), "warning")
   } else if (outcome.kind === "refused" && !outcome.seen) {
     toast(LL.FlashcardV2.relayRefused(), "warning")

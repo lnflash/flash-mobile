@@ -8,7 +8,8 @@
  *   - a relay killed after its capture settles from the journal alone, and one
  *     killed between pages resumes at the saved offset
  *   - a record replaced on the card restarts the capture
- *   - an unknown mint is never called, and nothing is captured for it
+ *   - an unknown mint is never called, and nothing is captured for it; it
+ *     is said once per record (`seen` after), and relayed once it is known
  *   - a packet keyset prefix two v2 keysets share is refused for good
  *   - two settles at once make one swap between them
  *   - a PENDING answer leaves the journal open, never terminal
@@ -28,6 +29,7 @@ import {
   createRelay,
   createRelayStore,
 } from "@app/utils/cashu-card-relay"
+import { KEEP_TERMINAL } from "@app/utils/cashu-card-relay/store"
 import { decodePacket } from "@app/utils/cashu-card-relay/relay"
 
 import {
@@ -292,6 +294,60 @@ describe("createRelay", () => {
     expect(request).not.toHaveBeenCalled()
   })
 
+  it("says an unknown mint once per record: a later tap is seen, and a mint known later is relayed", async () => {
+    let known = ["https://forge.test"]
+    const mint = createFakeMint({ satKeysetId: KEYSET })
+    const double = relayMintFor(mint)
+    const card = createFakeCard(128, {
+      version: [2, 2],
+      outbox: { packet: RECORDED_PACKET },
+    })
+    const request = jest.fn((_url: string) => double.request)
+    const relay = createRelay({
+      store: createRelayStore(),
+      crypto: relayCrypto,
+      knownMints: () => known,
+      request,
+    })
+    const pubkey = RECORDED.cardKey
+    const scopeHex = Buffer.from(outboxScope(RECORDED_PACKET)).toString("hex")
+    const tap = () =>
+      relay.captureOutbox({ transceive: card.transceive, card: { pubkey } })
+
+    expect(await tap()).toEqual({ kind: "unknown-mint" })
+    expect(await tap()).toEqual({ kind: "unknown-mint", seen: true })
+    expect(await tap()).toEqual({ kind: "unknown-mint", seen: true })
+    // A note, not an entry: nothing captured, nothing refused, no mint called.
+    expect(await savedEntries()).toEqual([])
+    const saved = await Keychain.getInternetCredentials(SERVER)
+    const notes = saved ? JSON.parse(saved.password).unknownMints : undefined
+    expect(notes).toEqual([expect.objectContaining({ cardPubkey: pubkey, scopeHex })])
+    expect(request).not.toHaveBeenCalled()
+
+    // The card's next record at the unknown mint is said once too.
+    const other = buildRelayPacket(
+      FAKE_CARD_KEY,
+      samplePayment(KEYSET, MINT, { paymentId: 2, seed: 2 }),
+    )
+    card.setOutbox(other)
+    const otherKey = packetFields(other).cardKey
+    const tapOther = () =>
+      relay.captureOutbox({ transceive: card.transceive, card: { pubkey: otherKey } })
+    expect(await tapOther()).toEqual({ kind: "unknown-mint" })
+    expect(await tapOther()).toEqual({ kind: "unknown-mint", seen: true })
+
+    // Once the mint is known, the next tap captures and settles the record.
+    card.setOutbox(RECORDED_PACKET)
+    known = [MINT]
+    expect(await tap()).toEqual({ kind: "captured" })
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
+    expect(double.calls["/v1/swap"]).toBe(1)
+    // The record's entry replaced its note.
+    const after = await Keychain.getInternetCredentials(SERVER)
+    const left = after ? JSON.parse(after.password).unknownMints ?? [] : []
+    expect(left.some((n: { scopeHex: string }) => n.scopeHex === scopeHex)).toBe(false)
+  })
+
   it("stores a packet keyset two of the mint's v2 keysets share as refused (keyset-ambiguous): no swap, not retried", async () => {
     const { card, relay, double, pubkey } = setup()
     const v2 = (tail: string) => `${KEYSET}${tail.repeat(50)}`
@@ -499,5 +555,30 @@ describe("createRelay", () => {
 
     await Keychain.setInternetCredentials(SERVER, "relay", "{not json")
     await expect(relay.settlePending(pubkey)).rejects.toBeInstanceOf(RelayStoreError)
+
+    await Keychain.setInternetCredentials(
+      SERVER,
+      "relay",
+      JSON.stringify({ format: 1, entries: [], unknownMints: "nope" }),
+    )
+    await expect(relay.settlePending(pubkey)).rejects.toBeInstanceOf(RelayStoreError)
+  })
+})
+
+describe("createRelayStore's unknown-mint notes", () => {
+  it("keeps the newest KEEP_TERMINAL notes, and keeps them across entry writes", async () => {
+    let clock = 0
+    const store = createRelayStore(() => (clock += 1))
+    for (let i = 0; i <= KEEP_TERMINAL; i += 1) {
+      expect(await store.noteUnknownMint("card", `scope${i}`)).toBe(false)
+    }
+    const saved = await Keychain.getInternetCredentials(SERVER)
+    const notes = saved ? JSON.parse(saved.password).unknownMints : []
+    expect(notes).toHaveLength(KEEP_TERMINAL)
+    // The oldest was dropped, so it reads as new again.
+    expect(notes.some((n: { scopeHex: string }) => n.scopeHex === "scope0")).toBe(false)
+    expect(await store.noteUnknownMint("card", `scope${KEEP_TERMINAL}`)).toBe(true)
+    await store.remove("card", "scope5")
+    expect(await store.noteUnknownMint("card", "scope5")).toBe(true)
   })
 })
