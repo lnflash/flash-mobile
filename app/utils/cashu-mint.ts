@@ -28,10 +28,17 @@ export type CardUnitTotals = {
 
 const KEYSETS_TIMEOUT_MS = 10_000
 
+const V2_KEYSET_ID = /^[0-9a-f]{66}$/
+
 /**
  * Reads a NUT-02 `/v1/keysets` body. Entries without a string id and unit are
  * skipped rather than trusted; a body with no keyset list at all is an error,
  * so a proxy's HTML page cannot pass for "the mint has no keysets".
+ *
+ * Each id is kept as the mint gives it. A card names a v2 keyset (33 bytes)
+ * by its first 8 (ENG-787), so a v2 id's 16-hex prefix maps to its unit too,
+ * unless another listed id starts the same way: that prefix stays absent, and
+ * what a card holds under it is "unit unknown" (ENG-619), never guessed.
  */
 export const parseKeysetUnits = (body: unknown): KeysetUnits => {
   const keysets = (body as { keysets?: unknown } | null | undefined)?.keysets
@@ -43,6 +50,22 @@ export const parseKeysetUnits = (body: unknown): KeysetUnits => {
     const { id, unit } = (keyset ?? {}) as { id?: unknown; unit?: unknown }
     if (typeof id === "string" && id && typeof unit === "string" && unit) {
       units[id.toLowerCase()] = unit.toLowerCase()
+    }
+  })
+  const ids = Object.keys(units)
+  const prefixCount = new Map<string, number>()
+  ids.forEach((id) => {
+    const prefix = id.slice(0, 16)
+    prefixCount.set(prefix, (prefixCount.get(prefix) ?? 0) + 1)
+  })
+  ids.forEach((id) => {
+    const prefix = id.slice(0, 16)
+    if (
+      V2_KEYSET_ID.test(id) &&
+      prefixCount.get(prefix) === 1 &&
+      units[prefix] === undefined
+    ) {
+      units[prefix] = units[id]
     }
   })
   return units
