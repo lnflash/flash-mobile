@@ -57,8 +57,8 @@ const simulator = () => {
   }
 }
 
-const setup = () => {
-  const mint: FakeMint = createFakeMint()
+const setup = ({ versionByte = 0 }: { versionByte?: 0 | 1 } = {}) => {
+  const mint: FakeMint = createFakeMint({ versionByte })
   // FakeWallet settles its own invoices: so does this one, on the first ask.
   ;(mint.quoteState as jest.Mock).mockImplementation(async (id: string) => {
     const quote = mint.quotes.get(id)
@@ -191,6 +191,18 @@ describe("card fixtures", () => {
       }),
     )
     expect(verdicts).toEqual(["UNSPENT", "SPENT", "SPENT"])
+  })
+
+  it("spent, at a mint that serves v2 keyset ids: the card holds 8 bytes of the id, the till's swap the full id (ENG-787)", async () => {
+    const { deps, sim, mint } = setup({ versionByte: 1 })
+    expect(mint.keysetId).toMatch(/^01[0-9a-f]{64}$/)
+    const summary = await loadFixture("spent", deps)
+    expect(summary).toMatchObject({ balance: 16, unspent: 1, spent: 2 })
+    const [inputs] = (mint.swap as jest.Mock).mock.calls[0]
+    expect(inputs.every((p: { id: string }) => p.id === mint.keysetId)).toBe(true)
+    const { transceive } = sim.card
+    await selectApplet(transceive)
+    expect((await getProof(transceive, 0)).keysetId).toBe(mint.keysetId.slice(0, 16))
   })
 
   it("missing-small: 12 sat as 8 + 4, owned, no PIN: a till offline can take only 4, 8 or 12 exactly (ENG-702)", async () => {

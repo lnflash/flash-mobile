@@ -77,8 +77,20 @@ env:
 
 jobs:
   flashcard-e2e:
-    name: Flashcard flows (iOS simulator)
+    name: Flashcard flows (iOS simulator, ${{ matrix.ids }} keyset ids, ${{ matrix.fee }} ppk)
     runs-on: macos-15
+    # ENG-787: one leg per mint keyset id shape, as flash-pos's card relay job
+    # runs them (ENG-824): v1 (8-byte ids, forge's) and v2 (33-byte ids, as
+    # Minibits and Macadamia serve; a card slot holds the first 8 bytes). The
+    # fee leg runs the engine against a mint charging 100 ppk on inputs, below
+    # the UI only: the flows' amounts are written for a mint with no fee.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { ids: v1, fee: 0, flows: true }
+          - { ids: v2, fee: 0, flows: true }
+          - { ids: v2, fee: 100, flows: false }
     # Native setup/build plus passing flows took about 90 minutes in #817.
     # Allow time for token revocation and post-job cleanup as well.
     timeout-minutes: 120
@@ -126,9 +138,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      # VERSION=0.19.2 makes Nutshell derive a v1 keyset id (8 bytes) on first
-      # start, as forge's keysets are: a card slot cannot hold a v2 id.
-      - name: Start the mint (Nutshell, FakeWallet)
+      # Nutshell 0.20.3 derives a v2 keyset id (33 bytes, "01" + 64 hex) on
+      # first start; VERSION=0.19.2 makes it derive a v1 id (8 bytes), as
+      # forge's keysets are. A card slot holds 8 bytes: a v1 id whole, a v2 id
+      # by its first 8, which the app maps to the mint's full id (ENG-787).
+      - name: Start the mint (Nutshell, FakeWallet, ${{ matrix.ids }} keyset ids)
+        env:
+          MINT_IDS: ${{ matrix.ids }}
+          MINT_FEE_PPK: ${{ matrix.fee }}
         run: |
           python -m pip install --no-deps "cashu==${NUTSHELL_VERSION}"
           python -c 'import importlib.metadata as m, re; print("\n".join(re.sub(r" \((.*)\)", r"\1", r) for r in m.requires("cashu") if not r.startswith("breez")))' > "$RUNNER_TEMP/nutshell-deps.txt"
@@ -136,12 +153,26 @@ jobs:
             "breez-sdk-spark==${NUTSHELL_BREEZ_SPARK}" "marshmallow<4" "limits<4"
           mkdir -p .e2e/mint
           cd .e2e/mint
-          VERSION=0.19.2 MINT_PRIVATE_KEY=ci-e2e-only \
+          if [ "$MINT_IDS" = v1 ]; then export VERSION=0.19.2; fi
+          MINT_PRIVATE_KEY=ci-e2e-only \
             MINT_BACKEND_BOLT11_SAT=FakeWallet MINT_LISTEN_PORT=3338 \
-            MINT_INPUT_FEE_PPK=0 MINT_RATE_LIMIT=FALSE FAKEWALLET_DELAY_INCOMING_PAYMENT=0 \
+            MINT_INPUT_FEE_PPK="$MINT_FEE_PPK" MINT_RATE_LIMIT=FALSE FAKEWALLET_DELAY_INCOMING_PAYMENT=0 \
             nohup mint > ../mint.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS "$MINT_URL/v1/keysets" > /dev/null && break; sleep 1; done
-          curl -fsS "$MINT_URL/v1/keysets"
+          keysets=$(curl -fsS "$MINT_URL/v1/keysets")
+          echo "$keysets"
+          # The leg's id shape and fee, or fail here rather than test the wrong mint.
+          # shellcheck disable=SC2016 # JavaScript, not shell: nothing to expand.
+          KEYSETS="$keysets" node -e '
+            const { keysets } = JSON.parse(process.env.KEYSETS);
+            const active = keysets.filter((k) => k.active && k.unit === "sat");
+            const want = process.env.MINT_IDS === "v2" ? /^01[0-9a-f]{64}$/ : /^00[0-9a-f]{14}$/;
+            const fee = Number(process.env.MINT_FEE_PPK);
+            if (active.length !== 1 || !want.test(active[0].id) || (active[0].input_fee_ppk ?? 0) !== fee) {
+              console.error(`expected one active sat keyset, ${process.env.MINT_IDS} id, ${fee} ppk: ` +
+                JSON.stringify(active));
+              process.exit(1);
+            }'
 
       - name: Start the fixture server and smoke every fixture
         run: |
@@ -153,7 +184,8 @@ jobs:
           done
 
       # The top-up engine and the dev card transport against the same card
-      # and mint, below the UI: no wallet, so no sign-in needed.
+      # and mint, below the UI: no wallet, so no sign-in needed. Every leg runs
+      # it; the UI steps below run only on the legs with `flows`.
       - name: Top-up against cardsim (jest, opt-in spec)
         env:
           CARDSIM_URL: ${{ env.BRIDGE_URL }}
@@ -162,14 +194,17 @@ jobs:
         run: yarn test __tests__/integration/card-topup-cardsim.spec.ts
 
       - name: Setup Ruby
+        if: matrix.flows
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.2"
 
       - name: Install Ruby dependencies
+        if: matrix.flows
         run: bundle install --jobs 4 --retry 3
 
       - name: Cache CocoaPods
+        if: matrix.flows
         uses: actions/cache@v4
         with:
           path: ios/Pods
@@ -183,10 +218,12 @@ jobs:
       # in Pods-LNFlash.*.xcconfig; left on, the app target fails with "using
       # bridging headers with module interfaces is unsupported".
       - name: Install CocoaPods
+        if: matrix.flows
         working-directory: ios
         run: bundle exec pod install
 
       - name: Setup Xcode
+        if: matrix.flows
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
@@ -205,6 +242,7 @@ jobs:
       # runs `"" replace_hermes_version.js`: exit 127, the build fails. Point
       # it at the node setup-node installed. .local is sourced last, so it wins.
       - name: Point Xcode's script phases at this job's node
+        if: matrix.flows
         run: echo "export NODE_BINARY=$(command -v node)" > ios/.xcode.env.local
 
       # The runner image varies: one had an iPhone 16, another had no simulator
@@ -213,6 +251,7 @@ jobs:
       # itself supports (picking them separately can pair a device the runtime
       # rejects). Same recipe as flash-pos's card e2e job.
       - name: Create a simulator
+        if: matrix.flows
         run: |
           read -r RUNTIME DEVICE_TYPE < <(xcrun simctl list runtimes available -j | node -e '
             const num = (a, b) => a.localeCompare(b, undefined, { numeric: true });
@@ -241,6 +280,7 @@ jobs:
       # build runs without the session token in its environment, so neither
       # the log nor anything the build embeds can carry it.
       - name: Build iOS (Debug, simulator, bundled)
+        if: matrix.flows
         run: |
           set -o pipefail
           mkdir -p build
@@ -265,12 +305,14 @@ jobs:
           fi
 
       - name: Boot the simulator and install the app
+        if: matrix.flows
         run: |
           xcrun simctl boot "$SIM_ID" || true
           xcrun simctl bootstatus "$SIM_ID" -b
           xcrun simctl install "$SIM_ID" build/Build/Products/Debug-iphonesimulator/Flash.app
 
       - name: Install Maestro
+        if: matrix.flows
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
@@ -282,6 +324,7 @@ jobs:
       # session token is masked in the log, kept out of the uploaded results,
       # and, when this run minted it, revoked at the end of the job.
       - name: Sign in on the Test instance
+        if: matrix.flows
         env:
           E2E_TOKEN_SECRET: ${{ secrets.E2E_TOKEN }}
           E2E_TEST_PHONE: ${{ secrets.E2E_TEST_PHONE }}
@@ -321,6 +364,7 @@ jobs:
       # hosted runner; its default startup timeout ended one run before any
       # flow started.
       - name: Run the Flashcard and Ask Flash flows
+        if: matrix.flows
         timeout-minutes: 90
         env:
           MAESTRO_DRIVER_STARTUP_TIMEOUT: "300000"
@@ -424,7 +468,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: flashcard-e2e
+          name: flashcard-e2e-${{ matrix.ids }}-${{ matrix.fee }}ppk
           path: |
             .e2e/*.log
             .e2e/maestro-*.xml
@@ -441,7 +485,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: xcodebuild-e2e-log
+          name: xcodebuild-e2e-log-${{ matrix.ids }}-${{ matrix.fee }}ppk
           path: build/xcodebuild-e2e.log
           if-no-files-found: ignore
           retention-days: 7
