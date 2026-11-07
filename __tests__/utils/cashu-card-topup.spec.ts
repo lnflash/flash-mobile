@@ -1194,7 +1194,11 @@ describe("at a mint that serves v2 keyset ids (ENG-787)", () => {
       })),
     )
 
-    await expect(mintTopUp(deps, record.id)).rejects.toBeInstanceOf(TopUpError)
+    // cashu-ts toProof refuses the id mismatch first, so the engine reports
+    // it as a failed signature check, before its own mint-mismatch guard.
+    const refused = mintTopUp(deps, record.id)
+    await expect(refused).rejects.toBeInstanceOf(TopUpError)
+    await expect(refused).rejects.toMatchObject({ reason: "dleq" })
     const saved = await deps.store.get(record.id)
     expect(saved?.proofs).toBeUndefined()
     expect(saved?.state).toBe("paid")
