@@ -170,12 +170,16 @@ export const useCardTidy = (card: TidyCard | undefined) => {
         await list()
         return { status: "skipped", reason: "at-target" }
       }
-      // No keyset, no new tidy: `runTidy` can then only finish one.
-      const keysetId =
+      // No keyset, no new tidy: `runTidy` can then only finish one. The
+      // pieces name the keyset by its card id (8 bytes); the mint's full id
+      // for it is resolved here, once, and kept in the tidy's record.
+      const cardKeysetId =
         !owed && !finishOnly && card.unspentSlots
           ? tidyKeyset(card.unspentSlots)
           : undefined
-      const feePpk = keysetId ? await mint.feePpk(keysetId) : 0
+      const { id: keysetId, feePpk } = cardKeysetId
+        ? await mint.resolveCardKeyset(cardKeysetId)
+        : { id: undefined, feePpk: 0 }
       const verdicts = card.spentSlots?.length
         ? await reclaimVerdicts(deps, card.pubkey, card.spentSlots).catch(() => undefined)
         : new Map()

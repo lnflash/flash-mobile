@@ -43,6 +43,7 @@ import {
   reclaimSpentSlots,
   tidyOwed,
 } from "./engine"
+import { cardPrefix } from "./keyset-id"
 import { TidySkip, planTidy } from "./ladder"
 import { sameMint } from "./mint-url"
 import type { TopUpMint } from "./mint"
@@ -142,11 +143,13 @@ export type RunTidyArgs = {
    * The keyset the owner was offered a tidy in (`tidyKeyset` of the read),
    * the one `feePpk` was asked for and checked active in, before the tap. A
    * new tidy plans in it alone, whatever the tap's own read favours, so the
-   * record's keyset and its fee are the same keyset's. Undefined (the read
-   * had no piece a tidy can spend): no new tidy starts.
+   * record's keyset and its fee are the same keyset's. The mint's full id
+   * (`TopUpMint.resolveCardKeyset`), which the record keeps and the swap
+   * sends; the plan picks the pieces by its card id (`cardPrefix`). Undefined
+   * (the read had no piece a tidy can spend): no new tidy starts.
    */
   keysetId: string | undefined
-  /** `keysetId`'s NUT-02 `input_fee_ppk`, asked before the tap (`TopUpMint.feePpk`). */
+  /** `keysetId`'s NUT-02 `input_fee_ppk`, asked before the tap (`TopUpMint.resolveCardKeyset`). */
   feePpk: number
   /**
    * Decision 1: VERIFY_PIN, sent before SPEND_ALL_BEGIN (any other command
@@ -689,7 +692,8 @@ const tidyInTap = async (
     // The keyset whose fee was asked, not the one this read favours: a till
     // that took pieces since may have tipped the card towards another keyset
     // (rotated out, or at another fee). No piece of it left: at its shape.
-    keysetId: args.keysetId,
+    // The card's pieces carry the keyset's card id, not the mint's full one.
+    keysetId: cardPrefix(args.keysetId),
   })
   if (plan.kind === "skip") return { status: "skipped", reason: plan.reason }
 
@@ -700,7 +704,9 @@ const tidyInTap = async (
     id: deps.newId(),
     cardPubkey,
     mintUrl: deps.mint.url,
-    keysetId: plan.keysetId,
+    // The full id, resolved once before the tap: a resumed tidy swaps and
+    // finishes under it and never asks the mint's catalogue again.
+    keysetId: args.keysetId,
     fee: plan.fee,
     inputs: plan.inputs.map(({ slot, nonce, C, amount }) => ({ slot, nonce, C, amount })),
     outputs: plan.outputs.map((amount) => ({ amount })),
