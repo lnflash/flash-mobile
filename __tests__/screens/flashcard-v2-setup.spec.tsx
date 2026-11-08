@@ -16,7 +16,8 @@ import appTheme from "../../app/rne-theme/theme"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import { FlashcardV2SetupScreen } from "../../app/screens/card-screen/flashcard-v2-setup"
-import { Transceiver } from "../../app/utils/cashu-card"
+import { CardProtocolError, CardTap, Transceiver } from "../../app/utils/cashu-card"
+import { RelayUnsettledError } from "../../app/utils/cashu-card-relay"
 import { ownerPublicKey } from "../../app/utils/cashu-card-owner"
 import { FAKE_OWNER_KEY, FakeCard, createFakeCard } from "../helpers/fake-cashu"
 import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
@@ -35,7 +36,12 @@ const mockRefreshTipHeader = jest.fn()
 const mockFetchKeysetUnits = jest.fn()
 let mockCard: CashuCardState | undefined
 let capturedOptions: CardOperationOptions | undefined
-let mockRunResult: (op: (t: Transceiver) => Promise<unknown>) => Promise<unknown>
+type Op = (
+  t: Transceiver,
+  report: (text: string) => void,
+  tap: CardTap,
+) => Promise<unknown>
+let mockRunResult: (op: Op) => Promise<unknown>
 
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -73,11 +79,7 @@ jest.mock("@app/utils/cashu-card-owner-store", () => ({
 jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
     cashuCard: mockCard,
-    runCardOperation: async (
-      op: (t: Transceiver) => Promise<unknown>,
-      _pubkey: string,
-      options?: CardOperationOptions,
-    ) => {
+    runCardOperation: async (op: Op, _pubkey: string, options?: CardOperationOptions) => {
       capturedOptions = options
       return mockRunResult(op)
     },
@@ -85,6 +87,13 @@ jest.mock("@app/hooks", () => ({
 }))
 
 const SEED_KEY = { privateKey: FAKE_OWNER_KEY, source: "seed", saved: false }
+/** The applet version setup writes to (ENG-825). */
+const V22: [number, number] = [2, 2]
+/** runCardOperation as the provider runs it: `op` on `card`, with the tap's SELECT and GET_PUBKEY. */
+const runOn =
+  (card: FakeCard, version: number[] = V22, pubkey = card.pubkey) =>
+  (op: Op) =>
+    op(card.transceive, () => undefined, { version, pubkey })
 const hex = (bytes: number[]) =>
   bytes.map((b) => b.toString(16).padStart(2, "0")).join("")
 
@@ -102,6 +111,20 @@ const renderScreen = async () => {
   )
   await waitFor(() => expect(screen.getByTestId("setup-intro")).toBeTruthy())
 }
+
+/** Renders with no wait for the intro: a card refused before it never shows one. */
+const renderPlain = () =>
+  render(
+    <ThemeProvider
+      theme={createTheme({
+        mode: "light",
+        lightColors: appTheme.lightColors,
+        darkColors: appTheme.darkColors,
+      })}
+    >
+      <FlashcardV2SetupScreen />
+    </ThemeProvider>,
+  )
 
 const type = (digits: string) => {
   for (const d of digits) fireEvent.press(screen.getByTestId(`pin-${d}`))
@@ -123,12 +146,20 @@ const chooseAndTap = async (pin: string, confirm = pin) => {
 describe("FlashcardV2SetupScreen", () => {
   let card: FakeCard
   let order: string[]
+  /** `c`'s own answers, each INS noted in `order`. */
+  const trace = (c: FakeCard) => {
+    const answer = c.transceive.getMockImplementation()!
+    return async (apdu: number[]) => {
+      order.push(apdu[1].toString(16))
+      return answer(apdu)
+    }
+  }
 
   beforeEach(() => {
     jest.clearAllMocks()
     capturedOptions = undefined
     order = []
-    card = createFakeCard(128, { owner: null, sealed: true })
+    card = createFakeCard(128, { owner: null, sealed: true, version: V22 })
     const answer = card.transceive.getMockImplementation()!
     card.transceive.mockImplementation(async (apdu) => {
       order.push(apdu[1].toString(16))
@@ -143,7 +174,7 @@ describe("FlashcardV2SetupScreen", () => {
       balance: 0,
       ownerKeySource: undefined,
     })
-    mockRunResult = (op) => op(card.transceive)
+    mockRunResult = runOn(card)
     mockOwnerKeyFor.mockResolvedValue(undefined)
     mockNewOwnerKey.mockResolvedValue(SEED_KEY)
     mockSaveOwnerKey.mockImplementation(async () => {
@@ -184,13 +215,15 @@ describe("FlashcardV2SetupScreen", () => {
 
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
     // The two sealed PIN commands each ask the card for its PIN key first.
-    expect(order).toEqual(["1", "44", "41", "44", "40", "32", "saved", "43"])
+    // GET_CARD is read with GET_INFO before anything is written (ENG-825).
+    expect(order).toEqual(["1", "16", "44", "41", "44", "40", "32", "saved", "43"])
     expect(mockSaveOwnerKey).toHaveBeenCalledWith(card.pubkey, SEED_KEY)
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(card.pin()).toBe("2468")
     expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
     expect(card.now()).toBe(HEADER_VECTORS[2].time)
     expect(capturedOptions).toEqual({
+      changesSlots: true,
       assume: {
         hasOwner: true,
         recordSet: true,
@@ -215,7 +248,7 @@ describe("FlashcardV2SetupScreen", () => {
       fireEvent.press(screen.getByTestId("setup-tap"))
     })
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
-    expect(order).toEqual(["1", "32", "saved", "43"])
+    expect(order).toEqual(["1", "16", "32", "saved", "43"])
     expect(card.pin()).toBeUndefined()
     expect(capturedOptions?.assume).toEqual({
       hasOwner: true,
@@ -239,12 +272,30 @@ describe("FlashcardV2SetupScreen", () => {
     expect(card.now()).toBe(0)
   })
 
-  it("an open card that has a PIN from before must be given a new one: no Continue without a PIN", async () => {
+  it("an open card that has a PIN from before is refused at the intro, before a PIN is typed: nothing is tapped", async () => {
     mockCard = { ...(mockCard as CashuCardState), pinState: "set" }
-    await renderScreen()
-    expect(screen.getByText(LL.FlashcardV2.setUpPinRequired())).toBeTruthy()
+    renderPlain()
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpPinSet()))
+    expect(screen.getByTestId("setup-close")).toBeTruthy()
+    expect(screen.queryByTestId("setup-choose-pin")).toBeNull()
     expect(screen.queryByTestId("setup-no-pin")).toBeNull()
+    expect(order).toEqual([])
   })
+
+  const refusedAtIntro = async (overrides: Partial<CashuCardState>, message: string) => {
+    mockCard = { ...(mockCard as CashuCardState), ...overrides }
+    renderPlain()
+    await waitFor(() => expect(errorText()).toBe(message))
+    expect(screen.getByTestId("setup-close")).toBeTruthy()
+    expect(order).toEqual([])
+  }
+  for (const [name, overrides, message] of [
+    ["owned", { hasOwner: true }, () => LL.FlashcardV2.setUpAlreadyOwned()],
+    ["funded", { unspent: 2, balance: 10 }, () => LL.FlashcardV2.setUpInUse()],
+  ] as [string, Partial<CashuCardState>, () => string][]) {
+    it(`a card already read as ${name} is refused at the intro`, () =>
+      refusedAtIntro(overrides, message()))
+  }
 
   it("a mismatched confirmation goes back to the new PIN and taps nothing", async () => {
     await renderScreen()
@@ -299,8 +350,8 @@ describe("FlashcardV2SetupScreen", () => {
   })
 
   it("a card another phone already owns says so and ends the setup: nothing is written", async () => {
-    card = createFakeCard(128, { owner: "11".repeat(32) })
-    mockRunResult = (op) => op(card.transceive)
+    card = createFakeCard(128, { owner: "11".repeat(32), version: V22 })
+    mockRunResult = runOn(card)
     await renderScreen()
     fireEvent.press(screen.getByTestId("setup-no-pin"))
     await act(async () => {
@@ -319,7 +370,169 @@ describe("FlashcardV2SetupScreen", () => {
       fireEvent.press(screen.getByTestId("setup-tap"))
     })
     await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpInUse()))
-    expect(order).toEqual(["1"])
+    expect(order).toEqual(["1", "16"])
+  })
+
+  // ENG-825: the guard before any write, as the holder sees it.
+  describe("the guard before any write (ENG-825)", () => {
+    const tapNoPin = async () => {
+      fireEvent.press(screen.getByTestId("setup-no-pin"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+    }
+    /** Every INS sent was a read. */
+    const onlyReads = () =>
+      expect(order.filter((ins) => !["1", "10", "16", "a4"].includes(ins))).toEqual([])
+
+    for (const [label, arrange, message] of [
+      [
+        "a used card",
+        () => {
+          card.slots[5] = [2, ...new Array(81).fill(1)]
+        },
+        () => LL.FlashcardV2.setUpUsed(),
+      ],
+      [
+        "a locked card",
+        () => {
+          card = createFakeCard(128, { owner: null, version: V22, locked: true })
+          card.transceive.mockImplementation(trace(card))
+          mockRunResult = runOn(card)
+        },
+        () => LL.FlashcardV2.setUpLocked(),
+      ],
+      [
+        "a card with limits",
+        () => {
+          card = createFakeCard(128, { owner: null, version: V22, limits: { day: 5000 } })
+          card.transceive.mockImplementation(trace(card))
+          mockRunResult = runOn(card)
+        },
+        () => LL.FlashcardV2.setUpLimitsSet(),
+      ],
+      [
+        "an applet older than 2.2",
+        () => {
+          card = createFakeCard(128, { owner: null, version: [2, 1] })
+          card.transceive.mockImplementation(trace(card))
+          mockRunResult = runOn(card, [2, 1])
+        },
+        () => LL.FlashcardV2.setUpNeedsApplet(),
+      ],
+    ] as [string, () => void, () => string][]) {
+      it(`${label} is refused inline, for good: Close, and nothing written`, async () => {
+        arrange()
+        await renderScreen()
+        await tapNoPin()
+        await waitFor(() => expect(errorText()).toBe(message()))
+        expect(screen.getByTestId("setup-close")).toBeTruthy()
+        expect(screen.queryByTestId("setup-tap")).toBeNull()
+        onlyReads()
+        expect(mockSaveOwnerKey).not.toHaveBeenCalled()
+      })
+    }
+
+    it("an applet version setup does not write to sends nothing at all", async () => {
+      mockRunResult = runOn(card, [2, 3])
+      await renderScreen()
+      await tapNoPin()
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpNeedsApplet()))
+      expect(order).toEqual([])
+    })
+
+    it("a card whose record names another mint says which, for good", async () => {
+      // The screen read the card with no record; its record names mint.test
+      // by the tap, and the holder chose Minibits.
+      card = createFakeCard(128, { owner: null, version: V22, record: true })
+      card.transceive.mockImplementation(trace(card))
+      mockRunResult = runOn(card)
+      await renderScreen()
+      fireEvent.press(screen.getByTestId("setup-mint-change"))
+      fireEvent.press(screen.getByTestId("setup-mint-option-Minibits"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-mint-next"))
+      })
+      await tapNoPin()
+      await waitFor(() =>
+        expect(errorText()).toBe(
+          LL.FlashcardV2.setUpOtherMint({ mint: isolatedMintName("https://mint.test") }),
+        ),
+      )
+      expect(screen.getByTestId("setup-close")).toBeTruthy()
+      onlyReads()
+      expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
+    })
+
+    it("an answer framed wrong says the card could not be read, and to tap again: not the uncertain copy", async () => {
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        // GET_INFO cut to 30 bytes.
+        return apdu[1] === 0x01 ? [...response.slice(0, 30), 0x90, 0x00] : response
+      })
+      await renderScreen()
+      await tapNoPin()
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUnreadable()))
+      expect(errorText()).not.toBe(LL.FlashcardV2.setUpUncertain())
+      expect(screen.getByTestId("setup-tap")).toBeTruthy()
+      expect(card.ins()).toEqual([0x01])
+    })
+
+    it("a CardProtocolError from the tap is the unreadable copy too", async () => {
+      mockRunResult = async () => {
+        throw new CardProtocolError("GET_PUBKEY: expected 33 bytes, got 2")
+      }
+      await renderScreen()
+      await tapNoPin()
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUnreadable()))
+      expect(screen.getByTestId("setup-tap")).toBeTruthy()
+    })
+
+    it("a 2.2 card's payment that could not be settled says so, and lets the holder tap again", async () => {
+      mockRunResult = async () => {
+        throw new RelayUnsettledError({ kind: "pending" } as never)
+      }
+      await renderScreen()
+      await tapNoPin()
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.relayPending()))
+      expect(screen.getByTestId("setup-tap")).toBeTruthy()
+    })
+
+    it("a tap that reaches another card than the one the sequence is for says so, and writes nothing", async () => {
+      mockRunResult = runOn(card, V22, "02" + "cd".repeat(32))
+      await renderScreen()
+      await tapNoPin()
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.wrongCard()))
+      expect(screen.getByTestId("setup-tap")).toBeTruthy()
+      onlyReads()
+    })
+
+    it("a retry reuses the frozen intent: a tap cut after SET_PIN is finished by the next, with the same PIN", async () => {
+      const answer = card.transceive.getMockImplementation()!
+      let cut = true
+      card.transceive.mockImplementation(async (apdu) => {
+        order.push(apdu[1].toString(16))
+        const response = await answer(apdu)
+        if (cut && apdu[1] === 0x41) {
+          cut = false
+          throw new Error("Tag was lost")
+        }
+        return response
+      })
+      await renderScreen()
+      await chooseAndTap("2468")
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+      expect(card.pin()).toBe("2468")
+
+      // Tap again: the card now says its PIN is set, by this sequence.
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+      expect(card.pin()).toBe("2468")
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    })
   })
 
   it("a cancelled sheet is no error, and nothing was written", async () => {
@@ -343,7 +556,7 @@ describe("FlashcardV2SetupScreen: the card's mint", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    card = createFakeCard(128, { owner: null, sealed: true })
+    card = createFakeCard(128, { owner: null, sealed: true, version: V22 })
     mockCard = cashuCardState({
       pubkey: card.pubkey,
       hasOwner: false,
@@ -354,7 +567,7 @@ describe("FlashcardV2SetupScreen: the card's mint", () => {
       balance: 0,
       ownerKeySource: undefined,
     })
-    mockRunResult = (op) => op(card.transceive)
+    mockRunResult = runOn(card)
     mockOwnerKeyFor.mockResolvedValue(undefined)
     mockNewOwnerKey.mockResolvedValue(SEED_KEY)
     mockSaveOwnerKey.mockResolvedValue(undefined)

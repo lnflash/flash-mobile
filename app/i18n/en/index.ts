@@ -292,7 +292,6 @@ const en: BaseTranslation = {
       "The owner key comes from your wallet's recovery phrase, so restoring the phrase on a new phone restores ownership.",
     setUpKeyDevice:
       "This card's owner key lives only on this phone. If you lose the phone, nobody can change the card's PIN or limits again.",
-    setUpPinRequired: "This card already has a PIN from before. Choose a new one to set it up.",
     setUpChoosePin: "Set a PIN",
     setUpNoPin: "Continue without a PIN",
     setUpNoPinNote:
@@ -302,6 +301,20 @@ const en: BaseTranslation = {
     setUpAlreadyMine: "This card is already set up, and this phone is its owner.",
     setUpAlreadyOwned: "This card already has an owner.",
     setUpInUse: "This card holds funds, so it can't be set up.",
+    setUpNeedsApplet:
+      "This card needs a newer applet before Flash can set it up. Nothing was written to it. Contact support to have it updated.",
+    setUpUnreadable:
+      "Flash couldn't read this card properly, so nothing was written. Hold it steady against the phone and tap again.",
+    setUpUsed:
+      "This card has been used before, so Flash can't set it up. Use a new card.",
+    setUpLocked:
+      "This card is locked against changes, so Flash can't set it up. Use a new card.",
+    setUpLimitsSet:
+      "This card already has spending limits, so Flash can't set it up. Use a new card.",
+    setUpPinSet:
+      "This card already has a PIN from before, so Flash can't set it up. Nothing was written to it. Use a new card.",
+    setUpOtherMint:
+      "This card was prepared for eCash from {mint: string}. Flash can't set it up for another mint. Use a new card.",
     setUpUncertain:
       "The tap was cut short while the card was being set up. Tap the card again to finish.",
     setUpFailed: "Couldn't set up the card. Try again.",

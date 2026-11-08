@@ -21,10 +21,17 @@ import * as Keychain from "react-native-keychain"
 import {
   CardError,
   CardInfo,
+  CardNeedsUpdateError,
+  CardProtocolError,
+  CardRecord,
+  CardTap,
   PinForm,
   SW_NO_OWNER,
   SW_OWNER_PROOF,
   Transceiver,
+  WrongCardError,
+  cardRecordValue,
+  getCardRecord,
   setCardPin,
   setOpenCardRecord,
   verifyCardPin,
@@ -38,6 +45,7 @@ import {
   refreshCard,
   setOwner,
 } from "./cashu-card-owner"
+import { sameMint } from "./cashu-card-topup/mint-url"
 
 const SERVER = "flashcard-v2-owner"
 const USERNAME = "owners"
@@ -330,34 +338,205 @@ export const refreshAsOwner = async (
   return { key: await keepTakenKey(cardPubkey, key, saveOwnerKey), now }
 }
 
-export type SetUpArgs = {
+/**
+ * The applet versions setup writes to (ENG-825), as SELECT's `[major, minor]`.
+ * Any other is refused before anything is written: older cards (2.0, 2.1)
+ * and newer ones alike, until a version is checked and added here.
+ */
+export const SETUP_APPLET_VERSIONS: readonly (readonly [number, number])[] = [[2, 2]]
+
+/**
+ * What a setup sets out to write, fixed at its first tap press (ENG-825) and
+ * kept for every retry tap of the same sequence: the card it is for (its key,
+ * the applet's only identity), and the record it writes. The PIN itself is
+ * never kept here, only whether one was chosen.
+ */
+export type SetupIntent = Readonly<{
   cardPubkey: string
-  /** The card as this tap's read found it: open (no owner) and empty. */
-  info: Pick<CardInfo, "hasOwner" | "unspent" | "pinState" | "sealed">
-  /** A PIN to set on the card, or none: a 2.0 card may have none. */
-  pin?: string
-  /** The mint the card's pieces come from (its record). */
   mint: string
+  /** The record's unit: 0, sat. */
+  unit: 0
+  /** The app's pieces carry no date, so its cards take no refund key. */
+  refundKey: null
+  design: null
+  pinChosen: boolean
+}>
+
+/**
+ * What this sequence has sent so far, set just BEFORE each write goes out: a
+ * write whose answer is lost may have landed, and the next tap may find it.
+ */
+export type SetupProgress = { pinSent: boolean; recordSent: boolean }
+
+/**
+ * Fixes the intent of a setup: the mint is checked as SET_CARD would take it
+ * (`cardRecordValue`) first, so a mint the card cannot hold fails before any
+ * APDU is sent.
+ */
+export const freezeSetupIntent = ({
+  cardPubkey,
+  mint,
+  pin,
+}: {
+  cardPubkey: string
+  mint: string
+  pin?: string
+}): SetupIntent => {
+  cardRecordValue({ mint })
+  return Object.freeze({
+    cardPubkey,
+    mint,
+    unit: 0,
+    refundKey: null,
+    design: null,
+    pinChosen: Boolean(pin),
+  })
+}
+
+/** A fresh sequence's progress: nothing sent. */
+export const newSetupProgress = (): SetupProgress => ({
+  pinSent: false,
+  recordSent: false,
+})
+
+/** Whether a sequence has sent any write: then its intent is not rebuilt. */
+export const setupWriteSent = (progress: SetupProgress) =>
+  progress.pinSent || progress.recordSent
+
+export type SetUpArgs = {
+  /** What this tap's SELECT and GET_PUBKEY said. */
+  tap: CardTap
+  /** This tap's GET_INFO. */
+  info: CardInfo
+  /** A PIN to set on the card, exactly when `intent.pinChosen`. */
+  pin?: string
+  /** What the sequence set out to write (`freezeSetupIntent`). */
+  intent: SetupIntent
+  /** What the sequence has sent; updated here before each write. */
+  progress: SetupProgress
   /** The tip block header, when the phone has one: the clock's anchor. */
   anchor?: number[]
   key: OwnerKey
 }
 
-/** The card already has an owner, or holds value: setup is not for it. */
+/** Why a card cannot be set up (ENG-825): nothing was written to it. */
+export type CardNotOpenReason =
+  /** It has an owner. */
+  | "owned"
+  /** It holds unspent value. */
+  | "in-use"
+  /** It has a PIN this sequence did not set, or a blocked one. */
+  | "pin-set"
+  /** It has spent slots: it has been used. */
+  | "used"
+  /** LOCK_CARD has run. */
+  | "locked"
+  /** A daily, payment or no-PIN limit is set, or something was signed for. */
+  | "limits-set"
+  /** Its record names another mint. */
+  | "other-mint"
+  /** Its answers do not add up: nothing they say is acted on. */
+  | "unreadable"
+
+/** The card is not one setup may write to: nothing was written. */
 export class CardNotOpenError extends Error {
-  constructor(readonly reason: "owned" | "in-use" | "pin-needed") {
+  constructor(readonly reason: CardNotOpenReason, readonly mint?: string) {
     super(`this card cannot be set up (${reason})`)
     this.name = "CardNotOpenError"
   }
 }
 
 /**
+ * Throws `CardNeedsUpdateError` for an applet version setup does not write to
+ * (`SETUP_APPLET_VERSIONS`): "older" below every one of them, else "newer".
+ */
+export const checkSetupVersion = (version: number[]): void => {
+  const supported =
+    version.length === 2 &&
+    SETUP_APPLET_VERSIONS.some(
+      ([major, minor]) => version[0] === major && version[1] === minor,
+    )
+  if (supported) return
+  const older = SETUP_APPLET_VERSIONS.every(
+    ([major, minor]) =>
+      version[0] < major || (version[0] === major && (version[1] ?? 0) < minor),
+  )
+  throw new CardNeedsUpdateError(older ? "older" : "newer")
+}
+
+/**
+ * The guard before any setup write (ENG-825): this tap's SELECT, GET_PUBKEY,
+ * GET_INFO and GET_CARD held to the sequence's intent. Throws on the first
+ * miss, in this order: another card (`WrongCardError`), an applet version
+ * setup does not write to (`CardNeedsUpdateError`), answers that do not add
+ * up (`unreadable`), then a card that is owned, locked, funded, used, has
+ * limits, has a PIN this sequence did not set, or a record for another mint.
+ * Pure: it sends nothing.
+ */
+export const checkSetupState = ({
+  tap,
+  info,
+  record,
+  intent,
+  progress,
+}: {
+  tap: CardTap
+  info: CardInfo
+  record: CardRecord
+  intent: SetupIntent
+  progress: SetupProgress
+}): void => {
+  if (tap.pubkey !== intent.cardPubkey) throw new WrongCardError(tap.pubkey)
+  checkSetupVersion(tap.version)
+  if (
+    info.major !== tap.version[0] ||
+    info.minor !== tap.version[1] ||
+    info.pinState === "unknown" ||
+    info.format !== 4 ||
+    info.unspent + info.spent + info.empty !== info.maxSlots ||
+    info.recordSet !== record.recordSet ||
+    (record.recordSet && record.unit !== 0)
+  ) {
+    throw new CardNotOpenError("unreadable")
+  }
+  if (info.hasOwner) throw new CardNotOpenError("owned")
+  if (info.locked) throw new CardNotOpenError("locked")
+  if (info.unspent > 0) throw new CardNotOpenError("in-use")
+  if (info.spent > 0) throw new CardNotOpenError("used")
+  // A PIN on the card is this sequence's own only when it chose one and sent
+  // SET_PIN: a resume after a lost answer finds it there.
+  const ownPin = info.pinState === "set" && progress.pinSent && intent.pinChosen
+  if (
+    info.dailyLimit > 0 ||
+    info.paymentLimit > 0 ||
+    info.allowance > 0 ||
+    info.nopinSpent > 0 ||
+    info.spentToday > 0 ||
+    record.dailyLimit > 0 ||
+    // VERIFY_PIN arms the no-PIN allowance (D20), so this sequence's own
+    // VERIFY_PIN arms it too; a PIN from before is told as such below.
+    (record.allowanceArmed && !ownPin && info.pinState === "unset")
+  ) {
+    throw new CardNotOpenError("limits-set")
+  }
+  if (info.pinState === "blocked" || (info.pinState === "set" && !ownPin)) {
+    throw new CardNotOpenError("pin-set")
+  }
+  if (record.recordSet && !sameMint(record.mint, intent.mint)) {
+    throw new CardNotOpenError("other-mint", record.mint)
+  }
+}
+
+/**
  * Personalisation, one tap, owner last (spec/APDU.md, Personalisation), so a
- * setup cut short is finished by the next: SET_PIN and VERIFY_PIN (when a PIN
- * is chosen), SET_CARD (the mint), then the key saved here, then SET_OWNER
- * with the tip header as its anchor. An open card with a PIN set by someone
- * else must be given a new one: without it SET_CARD would need a PIN nobody
- * here knows.
+ * setup cut short is finished by the next tap of the same sequence. First the
+ * guard (ENG-825): GET_CARD is read, and with this tap's SELECT, GET_PUBKEY
+ * and GET_INFO held to the sequence's intent (`checkSetupState`); a card that
+ * fails it is refused with nothing written. Then SET_PIN and VERIFY_PIN (when
+ * a PIN is chosen), SET_CARD (the mint), then the key saved here, then
+ * SET_OWNER with the tip header as its anchor. A card with a PIN this
+ * sequence did not set is refused: its record can't be written without a PIN
+ * nobody here knows.
  *
  * The key is saved BEFORE SET_OWNER is sent (the torn-write rule): a SET_OWNER
  * whose answer is lost may have landed, and a card owned by a key this phone
@@ -366,18 +545,32 @@ export class CardNotOpenError extends Error {
  */
 export async function setUpCard(
   transceive: Transceiver,
-  { cardPubkey, info, pin, mint, anchor, key }: SetUpArgs,
+  { tap, info, pin, intent, progress, anchor, key }: SetUpArgs,
   save: typeof saveOwnerKey = saveOwnerKey,
 ): Promise<void> {
-  if (info.hasOwner) throw new CardNotOpenError("owned")
-  if (info.unspent > 0) throw new CardNotOpenError("in-use")
-  if (!pin && info.pinState !== "unset") throw new CardNotOpenError("pin-needed")
+  if (Boolean(pin) !== intent.pinChosen) throw new CardNotOpenError("unreadable")
+  let record: CardRecord
+  try {
+    record = await getCardRecord(transceive)
+  } catch (err) {
+    // A malformed answer: nothing it says is acted on. A lost channel
+    // propagates as it is: the next tap reads the card again.
+    if (err instanceof CardProtocolError) throw new CardNotOpenError("unreadable")
+    throw err
+  }
+  checkSetupState({ tap, info, record, intent, progress })
+  const { cardPubkey } = intent
   const form: PinForm = { sealed: info.sealed, cardPubkey }
   if (pin) {
+    progress.pinSent = true
     await setCardPin(transceive, pin, form)
     await verifyCardPin(transceive, pin, form)
   }
-  await setOpenCardRecord(transceive, { mint })
+  // One tap at a time writes this sequence's progress, in order: marked
+  // before the write, as a lost answer may still have landed.
+  // eslint-disable-next-line require-atomic-updates
+  progress.recordSent = true
+  await setOpenCardRecord(transceive, { mint: intent.mint })
   await save(cardPubkey, key)
   await setOwner(transceive, key.privateKey, anchor)
 }

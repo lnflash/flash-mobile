@@ -17,7 +17,11 @@ import axios from "axios"
 import { bridgeTransceiver, setCardBridge } from "@app/utils/cashu-card-bridge"
 import { getInfo, readCashuCard, selectApplet } from "@app/utils/cashu-card"
 import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
-import { setUpCard } from "@app/utils/cashu-card-owner-store"
+import {
+  freezeSetupIntent,
+  newSetupProgress,
+  setUpCard,
+} from "@app/utils/cashu-card-owner-store"
 import {
   TopUpDeps,
   createTopUpStore,
@@ -103,13 +107,14 @@ describeWithTwoMints(
       // Never set up: the card goes by the app's mint until its record names one.
       expect(mintOfCard(fresh.record)).toBe(mintA)
 
-      await selectApplet(transceive)
+      const version = await selectApplet(transceive)
       await setUpCard(
         transceive,
         {
-          cardPubkey: fresh.pubkey,
+          tap: { version, pubkey: fresh.pubkey },
           info: fresh,
-          mint: mintB,
+          intent: freezeSetupIntent({ cardPubkey: fresh.pubkey, mint: mintB }),
+          progress: newSetupProgress(),
           key: { privateKey: FIXTURE_OWNER_KEY, source: "dev", saved: false },
         },
         async () => undefined,

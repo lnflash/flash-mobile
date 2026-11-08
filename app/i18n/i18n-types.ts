@@ -973,10 +973,6 @@ type RootTranslation = {
 		 */
 		setUpKeyDevice: string
 		/**
-		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​a​ ​P​I​N​ ​f​r​o​m​ ​b​e​f​o​r​e​.​ ​C​h​o​o​s​e​ ​a​ ​n​e​w​ ​o​n​e​ ​t​o​ ​s​e​t​ ​i​t​ ​u​p​.
-		 */
-		setUpPinRequired: string
-		/**
 		 * S​e​t​ ​a​ ​P​I​N
 		 */
 		setUpChoosePin: string
@@ -1008,6 +1004,35 @@ type RootTranslation = {
 		 * T​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​f​u​n​d​s​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​b​e​ ​s​e​t​ ​u​p​.
 		 */
 		setUpInUse: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​n​e​e​d​s​ ​a​ ​n​e​w​e​r​ ​a​p​p​l​e​t​ ​b​e​f​o​r​e​ ​F​l​a​s​h​ ​c​a​n​ ​s​e​t​ ​i​t​ ​u​p​.​ ​N​o​t​h​i​n​g​ ​w​a​s​ ​w​r​i​t​t​e​n​ ​t​o​ ​i​t​.​ ​C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​t​o​ ​h​a​v​e​ ​i​t​ ​u​p​d​a​t​e​d​.
+		 */
+		setUpNeedsApplet: string
+		/**
+		 * F​l​a​s​h​ ​c​o​u​l​d​n​'​t​ ​r​e​a​d​ ​t​h​i​s​ ​c​a​r​d​ ​p​r​o​p​e​r​l​y​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​w​a​s​ ​w​r​i​t​t​e​n​.​ ​H​o​l​d​ ​i​t​ ​s​t​e​a​d​y​ ​a​g​a​i​n​s​t​ ​t​h​e​ ​p​h​o​n​e​ ​a​n​d​ ​t​a​p​ ​a​g​a​i​n​.
+		 */
+		setUpUnreadable: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​b​e​e​n​ ​u​s​e​d​ ​b​e​f​o​r​e​,​ ​s​o​ ​F​l​a​s​h​ ​c​a​n​'​t​ ​s​e​t​ ​i​t​ ​u​p​.​ ​U​s​e​ ​a​ ​n​e​w​ ​c​a​r​d​.
+		 */
+		setUpUsed: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​l​o​c​k​e​d​ ​a​g​a​i​n​s​t​ ​c​h​a​n​g​e​s​,​ ​s​o​ ​F​l​a​s​h​ ​c​a​n​'​t​ ​s​e​t​ ​i​t​ ​u​p​.​ ​U​s​e​ ​a​ ​n​e​w​ ​c​a​r​d​.
+		 */
+		setUpLocked: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​s​p​e​n​d​i​n​g​ ​l​i​m​i​t​s​,​ ​s​o​ ​F​l​a​s​h​ ​c​a​n​'​t​ ​s​e​t​ ​i​t​ ​u​p​.​ ​U​s​e​ ​a​ ​n​e​w​ ​c​a​r​d​.
+		 */
+		setUpLimitsSet: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​a​l​r​e​a​d​y​ ​h​a​s​ ​a​ ​P​I​N​ ​f​r​o​m​ ​b​e​f​o​r​e​,​ ​s​o​ ​F​l​a​s​h​ ​c​a​n​'​t​ ​s​e​t​ ​i​t​ ​u​p​.​ ​N​o​t​h​i​n​g​ ​w​a​s​ ​w​r​i​t​t​e​n​ ​t​o​ ​i​t​.​ ​U​s​e​ ​a​ ​n​e​w​ ​c​a​r​d​.
+		 */
+		setUpPinSet: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​w​a​s​ ​p​r​e​p​a​r​e​d​ ​f​o​r​ ​e​C​a​s​h​ ​f​r​o​m​ ​{​m​i​n​t​}​.​ ​F​l​a​s​h​ ​c​a​n​'​t​ ​s​e​t​ ​i​t​ ​u​p​ ​f​o​r​ ​a​n​o​t​h​e​r​ ​m​i​n​t​.​ ​U​s​e​ ​a​ ​n​e​w​ ​c​a​r​d​.
+		 * @param {string} mint
+		 */
+		setUpOtherMint: RequiredParams<'mint'>
 		/**
 		 * T​h​e​ ​t​a​p​ ​w​a​s​ ​c​u​t​ ​s​h​o​r​t​ ​w​h​i​l​e​ ​t​h​e​ ​c​a​r​d​ ​w​a​s​ ​b​e​i​n​g​ ​s​e​t​ ​u​p​.​ ​T​a​p​ ​t​h​e​ ​c​a​r​d​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​.
 		 */
@@ -9759,10 +9784,6 @@ export type TranslationFunctions = {
 		 */
 		setUpKeyDevice: () => LocalizedString
 		/**
-		 * This card already has a PIN from before. Choose a new one to set it up.
-		 */
-		setUpPinRequired: () => LocalizedString
-		/**
 		 * Set a PIN
 		 */
 		setUpChoosePin: () => LocalizedString
@@ -9794,6 +9815,34 @@ export type TranslationFunctions = {
 		 * This card holds funds, so it can't be set up.
 		 */
 		setUpInUse: () => LocalizedString
+		/**
+		 * This card needs a newer applet before Flash can set it up. Nothing was written to it. Contact support to have it updated.
+		 */
+		setUpNeedsApplet: () => LocalizedString
+		/**
+		 * Flash couldn't read this card properly, so nothing was written. Hold it steady against the phone and tap again.
+		 */
+		setUpUnreadable: () => LocalizedString
+		/**
+		 * This card has been used before, so Flash can't set it up. Use a new card.
+		 */
+		setUpUsed: () => LocalizedString
+		/**
+		 * This card is locked against changes, so Flash can't set it up. Use a new card.
+		 */
+		setUpLocked: () => LocalizedString
+		/**
+		 * This card already has spending limits, so Flash can't set it up. Use a new card.
+		 */
+		setUpLimitsSet: () => LocalizedString
+		/**
+		 * This card already has a PIN from before, so Flash can't set it up. Nothing was written to it. Use a new card.
+		 */
+		setUpPinSet: () => LocalizedString
+		/**
+		 * This card was prepared for eCash from {mint}. Flash can't set it up for another mint. Use a new card.
+		 */
+		setUpOtherMint: (arg: { mint: string }) => LocalizedString
 		/**
 		 * The tap was cut short while the card was being set up. Tap the card again to finish.
 		 */
