@@ -563,6 +563,11 @@ export const createFakeCard = (
   }))
   let spentToday = 0
   let nopinSpent = 0
+  /**
+   * GET_CARD's allowance-armed byte (78): set by a good VERIFY_PIN or owner
+   * proof, never cleared (the applet's armAllowance, D20).
+   */
+  let allowanceArmed = false
   let outbox = outboxOption?.packet
   let lastSig: { signature: number[]; noPin: boolean } | undefined
   /** The payment in hand is given up: its drafts go with it. */
@@ -624,7 +629,8 @@ export const createFakeCard = (
       good = false
     }
     if (!good) return { refused: sw(0x6a91) }
-    // A good proof arms the allowance; nothing more here.
+    // A good proof arms the allowance (D20).
+    allowanceArmed = true
     return value
   }
 
@@ -772,7 +778,7 @@ export const createFakeCard = (
           ...new Array(32).fill(0),
           rolls,
           limits.rollBudget === 7 ? 0 : limits.rollBudget,
-          0,
+          allowanceArmed ? 1 : 0,
           ...new Array(26).fill(0),
           mint.length,
           ...mint,
@@ -897,6 +903,8 @@ export const createFakeCard = (
         if (pinOf(pinData) !== pin) return wrongPin()
         verified = true
         tries = PIN_TRIES
+        // A good PIN arms the no-PIN allowance (D20), as the applet's does.
+        allowanceArmed = true
         return SW_OK
       }
       case 0x41: {

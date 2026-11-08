@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -24,6 +24,8 @@ import {
   AppletNotSelectedError,
   CardError,
   CardNeedsUpdateError,
+  CardProtocolError,
+  CardTap,
   PIN_MAX_LENGTH,
   Transceiver,
   WrongCardError,
@@ -43,12 +45,20 @@ import { refreshTipHeader } from "@app/utils/cashu-card-headers"
 import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
 import {
   CardNotOpenError,
+  CardNotOpenReason,
   OwnerKey,
+  SetupIntent,
+  SetupProgress,
+  checkSetupVersion,
+  freezeSetupIntent,
   newOwnerKey,
+  newSetupProgress,
   ownerKeyFor,
   saveOwnerKey,
   setUpCard,
+  setupWriteSent,
 } from "@app/utils/cashu-card-owner-store"
+import { RelayUnsettledError } from "@app/utils/cashu-card-relay"
 import { toastShow } from "@app/utils/toast"
 
 type LLType = ReturnType<typeof useI18nContext>["LL"]
@@ -70,6 +80,27 @@ type Step =
 
 /** What the tap did. */
 type SetUpOutcome = "set-up" | "already-mine"
+
+/**
+ * One setup sequence (ENG-825): what it set out to write, fixed at the first
+ * tap press, and what it has sent. Every retry tap reuses it as it is.
+ */
+type SetupSequence = { intent: SetupIntent; progress: SetupProgress }
+
+/**
+ * What the card already read says about setting it up, before any PIN is
+ * typed: display only. The tap's own reads decide (`setUpCard`).
+ */
+const refusalBeforeTap = (card: {
+  hasOwner: boolean
+  unspent: number
+  pinState: string
+}): CardNotOpenReason | undefined => {
+  if (card.hasOwner) return "owned"
+  if (card.unspent > 0) return "in-use"
+  if (card.pinState !== "unset") return "pin-set"
+  return undefined
+}
 
 /** The mint step's choice: a listed mint, or an address written in. */
 type MintChoice = { kind: "listed"; url: string } | { kind: "other" }
@@ -115,6 +146,15 @@ const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
  * An empty card with no owner belongs to the first phone that sets it up
  * (SECURITY-MODEL): the screen says so.
  *
+ * Before any write (ENG-825): the first tap press fixes what the sequence
+ * writes (the card, the mint, whether a PIN is chosen), and every retry tap
+ * holds the card it reaches to that: the same card key, an applet version
+ * setup writes to (`SETUP_APPLET_VERSIONS`), answers that add up, and a card
+ * that is open, unused, unlocked, with no limits, no PIN from before and no
+ * record for another mint. A card that fails is told inline, and nothing is
+ * written to it. A card already read as owned, funded or with a PIN is told
+ * so at the intro, before a PIN is typed for nothing.
+ *
  * The mint (ENG-787): a card whose record already names a mint (a setup cut
  * short, or an earlier one) is set up for that same mint, with no choice.
  * Otherwise the app's card mint (forge, "Flash") is written with no extra
@@ -137,10 +177,8 @@ export const FlashcardV2SetupScreen = () => {
   const [pin, setPin] = useState<string>()
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
-
-  // A card that already has a PIN from before must be given a new one: the
-  // record can't be written without a PIN nobody here knows.
-  const pinRequired = cashuCard ? cashuCard.pinState !== "unset" : false
+  // The sequence the first tap press fixed; retries reuse it.
+  const sequence = useRef<SetupSequence>()
 
   // The record's own mint, on a card whose record is set: kept, never changed.
   // GET_INFO and GET_CARD both say the record is set.
@@ -184,6 +222,14 @@ export const FlashcardV2SetupScreen = () => {
       if (!live) return
       setKey(chosen)
       setAnchor(header?.bytes)
+      // A card already read as one setup refuses: said now, before a PIN is
+      // typed for nothing. Display only: the tap's reads decide.
+      const refusal = refusalBeforeTap(cashuCard)
+      if (refusal) {
+        setError(notOpenMessage(refusal, LL))
+        setStep({ name: "finished" })
+        return
+      }
       setStep({ name: "intro" })
     })().catch(() => {
       if (live) {
@@ -203,9 +249,18 @@ export const FlashcardV2SetupScreen = () => {
   /** The tap (see the screen's comment). */
   const setUp = async (
     transceive: Transceiver,
-    owner: OwnerKey,
+    tap: CardTap,
+    { owner, intent, progress }: SetupSequence & { owner: OwnerKey },
   ): Promise<SetUpOutcome> => {
-    const info = await getInfo(transceive)
+    // An applet version setup does not write to: nothing more is sent.
+    checkSetupVersion(tap.version)
+    let info
+    try {
+      info = await getInfo(transceive)
+    } catch (err) {
+      if (err instanceof CardProtocolError) throw new CardNotOpenError("unreadable")
+      throw err
+    }
     if (info.hasOwner) {
       // Owned already: by this phone if it takes this phone's proof (a
       // setup whose answer was lost landed), else by someone else.
@@ -222,17 +277,32 @@ export const FlashcardV2SetupScreen = () => {
     }
     await setUpCard(
       transceive,
-      {
-        cardPubkey: cashuCard.pubkey,
-        info,
-        pin,
-        mint,
-        anchor,
-        key: owner,
-      },
+      { tap, info, intent, progress, pin, anchor, key: owner },
       saveOwnerKey,
     )
     return "set-up"
+  }
+
+  /**
+   * The sequence a tap runs: the one an earlier tap press fixed, else a new
+   * one from what the holder chose. A mint the card cannot hold throws here,
+   * before any APDU.
+   */
+  const sequenceForTap = (): SetupSequence => {
+    if (!sequence.current) {
+      sequence.current = {
+        intent: freezeSetupIntent({ cardPubkey: cashuCard.pubkey, mint, pin }),
+        progress: newSetupProgress(),
+      }
+    }
+    return sequence.current
+  }
+
+  /** The holder goes back to change the PIN or the mint: a sequence that sent nothing is dropped. */
+  const dropUnsentSequence = () => {
+    if (sequence.current && !setupWriteSent(sequence.current.progress)) {
+      sequence.current = undefined
+    }
   }
 
   const tap = async () => {
@@ -240,10 +310,22 @@ export const FlashcardV2SetupScreen = () => {
     setBusy(true)
     setError(undefined)
     try {
+      let current: SetupSequence
+      try {
+        current = sequenceForTap()
+      } catch {
+        // A mint the card cannot hold: nothing was sent.
+        setError(LL.FlashcardV2.setUpFailed())
+        return
+      }
       const outcome = await runCardOperation(
-        (transceive) => setUp(transceive, key),
+        (transceive, _report, cardTap) =>
+          setUp(transceive, cardTap, { ...current, owner: key }),
         cashuCard.pubkey,
         {
+          // A 2.2 card's last payment settles before setup touches it: an
+          // unsettled one stops the tap before anything is written.
+          changesSlots: true,
           assume: {
             hasOwner: true,
             recordSet: true,
@@ -265,7 +347,10 @@ export const FlashcardV2SetupScreen = () => {
       if (err instanceof NfcError.UserCancel) return
       const failure = setUpFailure(err, LL)
       setError(failure.message)
-      if (failure.final) setStep({ name: "finished" })
+      if (failure.final) {
+        sequence.current = undefined
+        setStep({ name: "finished" })
+      }
     } finally {
       setBusy(false)
     }
@@ -304,6 +389,7 @@ export const FlashcardV2SetupScreen = () => {
       : LL.FlashcardV2.setUpMintInvalid()
 
   const openMintStep = () => {
+    dropUnsentSequence()
     setError(undefined)
     setAddressError(undefined)
     setChoice(
@@ -389,11 +475,6 @@ export const FlashcardV2SetupScreen = () => {
                 ? LL.FlashcardV2.setUpKeyDevice()
                 : LL.FlashcardV2.setUpKeySeed()}
             </Text>
-            {pinRequired && (
-              <Text type="p2" style={styles.center}>
-                {LL.FlashcardV2.setUpPinRequired()}
-              </Text>
-            )}
             <View style={styles.mintRow}>
               <Text type="p2" style={styles.mintRowText} testID="setup-mint-row">
                 {LL.FlashcardV2.setUpMintRow({ mint: isolatedMintName(mint) })}
@@ -415,20 +496,22 @@ export const FlashcardV2SetupScreen = () => {
             {errorLine}
             <PrimaryBtn
               label={LL.FlashcardV2.setUpChoosePin()}
-              onPress={() => setStep({ name: "pin", confirm: false })}
+              onPress={() => {
+                dropUnsentSequence()
+                setStep({ name: "pin", confirm: false })
+              }}
               testID="setup-choose-pin"
             />
-            {!pinRequired && (
-              <PrimaryBtn
-                type="outline"
-                label={LL.FlashcardV2.setUpNoPin()}
-                onPress={() => {
-                  setPin(undefined)
-                  setStep({ name: "tap" })
-                }}
-                testID="setup-no-pin"
-              />
-            )}
+            <PrimaryBtn
+              type="outline"
+              label={LL.FlashcardV2.setUpNoPin()}
+              onPress={() => {
+                dropUnsentSequence()
+                setPin(undefined)
+                setStep({ name: "tap" })
+              }}
+              testID="setup-no-pin"
+            />
           </>
         )
       case "mint":
@@ -616,20 +699,50 @@ export const FlashcardV2SetupScreen = () => {
   )
 }
 
+/** What a card setup refuses is told, by why (ENG-825). */
+const notOpenMessage = (reason: CardNotOpenReason, LL: LLType, mint?: string): string => {
+  switch (reason) {
+    case "owned":
+      return LL.FlashcardV2.setUpAlreadyOwned()
+    case "in-use":
+      return LL.FlashcardV2.setUpInUse()
+    case "used":
+      return LL.FlashcardV2.setUpUsed()
+    case "locked":
+      return LL.FlashcardV2.setUpLocked()
+    case "limits-set":
+      return LL.FlashcardV2.setUpLimitsSet()
+    case "pin-set":
+      return LL.FlashcardV2.setUpPinSet()
+    case "other-mint":
+      return LL.FlashcardV2.setUpOtherMint({ mint: isolatedMintName(mint ?? "") })
+    case "unreadable":
+      return LL.FlashcardV2.setUpUnreadable()
+  }
+}
+
 /** What to tell the holder about a setup tap that failed, and whether to try again here. */
 const setUpFailure = (err: unknown, LL: LLType): { message: string; final?: boolean } => {
   if (err instanceof WrongCardError) return { message: LL.FlashcardV2.wrongCard() }
   if (err instanceof CardNeedsUpdateError) {
+    // The applet answered, but not as one setup writes to: an older one needs
+    // the card updated, a newer one needs this app updated.
+    if (err.found === "older") {
+      return { message: LL.FlashcardV2.setUpNeedsApplet(), final: true }
+    }
+    if (err.found === "newer") {
+      return { message: LL.FlashcardV2.setUpNeedsAppUpdate(), final: true }
+    }
     return { message: LL.FlashcardV2.needsUpdateBody(), final: true }
   }
   if (err instanceof AppletNotSelectedError)
     return { message: LL.FlashcardV2.notCashuCard() }
+  if (err instanceof RelayUnsettledError)
+    return { message: LL.FlashcardV2.relayPending() }
   if (err instanceof CardNotOpenError) {
-    if (err.reason === "owned")
-      return { message: LL.FlashcardV2.setUpAlreadyOwned(), final: true }
-    if (err.reason === "in-use")
-      return { message: LL.FlashcardV2.setUpInUse(), final: true }
-    return { message: LL.FlashcardV2.setUpPinRequired() }
+    // Answers that don't add up may be a tap held badly: tap again.
+    if (err.reason === "unreadable") return { message: LL.FlashcardV2.setUpUnreadable() }
+    return { message: notOpenMessage(err.reason, LL, err.mint), final: true }
   }
   if (err instanceof CardError) {
     if (err.sw === SW_CARD_IN_USE)
@@ -638,6 +751,9 @@ const setUpFailure = (err: unknown, LL: LLType): { message: string; final?: bool
     console.warn(`Cashu card refused ${err.context}: ${err.name} ${swHex(err.sw)}`)
     return { message: LL.FlashcardV2.setUpFailed() }
   }
+  // An answer framed wrong: nothing was acted on. Tap again.
+  if (err instanceof CardProtocolError)
+    return { message: LL.FlashcardV2.setUpUnreadable() }
   // No answer: the card may hold any part of the setup. The next tap finishes
   // it, with the key this phone already saved.
   return { message: LL.FlashcardV2.setUpUncertain() }

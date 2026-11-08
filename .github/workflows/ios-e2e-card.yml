@@ -59,8 +59,9 @@ permissions:
   contents: read
 
 env:
-  # Shared 2.1 applet and safe-clear contract at cashucard/cashucard #188.
-  CASHU_JAVACARD_REF: f435f1f9362341cfe8963c0192e4c08f5b2413a6
+  # Applet 2.2 (GET_OUTBOX, ENG-819/823) at cashucard/cashucard #237, as flash-pos's
+  # card relay job pins it: setup writes to 2.2 only (ENG-825).
+  CASHU_JAVACARD_REF: df3f0bf06338a38ba5d422aae37651bef6ce009f
   # Nutshell 0.20.3, the public release nearest forge's 0.20.3.1 (architect's
   # decision 6). It pins a breez-sdk-spark range PyPI no longer has, which
   # FakeWallet never uses: it is installed without its dependencies, and they

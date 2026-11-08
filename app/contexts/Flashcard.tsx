@@ -43,6 +43,7 @@ import {
   CashuCardInfo,
   ReadChanges,
   ReadPreview,
+  CardTap,
   Transceiver,
   WrongCardError,
   getBalance as getCardBalance,
@@ -546,6 +547,16 @@ type LearnedFromOperation = Pick<CashuCardState, "ownerKeySource" | "ownerPaymen
  */
 export type AssumedCard = Partial<CardInfo> & { record?: Partial<CardRecord> }
 
+/**
+ * One operation tap's work (`runCardOperation`): the channel, a way to say
+ * where it has got to, and what the tap's SELECT and GET_PUBKEY said.
+ */
+export type CardOperation<T> = (
+  transceive: Transceiver,
+  report: (text: string) => void,
+  tap: CardTap,
+) => Promise<T>
+
 /** How a caller of `runCardOperation` learns about, or vouches for, the card afterwards. */
 export type CardOperationOptions<T = unknown> = {
   /**
@@ -642,9 +653,13 @@ export interface FlashcardInterface {
    * scan sheet's prompt on Android and sets iOS's NFC sheet message, until the
    * operation ends. Fire-and-forget: `report` never waits on the screen, so a
    * card command never waits on it either.
+   *
+   * `op` is also handed what this tap's SELECT and GET_PUBKEY said (`tap`):
+   * the applet version and the card key, so setup (ENG-825) can hold them to
+   * what it set out to do before it writes anything.
    */
   runCardOperation: <T>(
-    op: (transceive: Transceiver, report: (text: string) => void) => Promise<T>,
+    op: CardOperation<T>,
     expectedPubkey: string,
     options?: CardOperationOptions<T>,
   ) => Promise<T>
@@ -1193,7 +1208,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   }
 
   const runCardOperation = async <T,>(
-    op: (transceive: Transceiver, report: (text: string) => void) => Promise<T>,
+    op: CardOperation<T>,
     expectedPubkey: string,
     {
       assume,
@@ -1257,7 +1272,7 @@ export const FlashcardProvider = ({ children }: Props) => {
 
       let result: T
       try {
-        result = await op(transceive, report)
+        result = await op(transceive, report, { version, pubkey })
       } catch (err) {
         // The card answered and refused: the channel is alive and this is
         // the card on screen (GET_PUBKEY above). A refusal can change the

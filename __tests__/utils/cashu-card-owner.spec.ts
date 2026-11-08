@@ -16,7 +16,19 @@ import * as bip39 from "bip39"
 import * as Keychain from "react-native-keychain"
 import { p256 } from "@noble/curves/p256"
 
-import { CardError, getInfo } from "../../app/utils/cashu-card"
+import {
+  CardError,
+  CardInfo,
+  CardNeedsUpdateError,
+  CardProtocolError,
+  CardRecord,
+  CardTap,
+  Transceiver,
+  WrongCardError,
+  getCardRecord,
+  getInfo,
+  selectApplet,
+} from "../../app/utils/cashu-card"
 import { setCardBridge } from "../../app/utils/cashu-card-bridge"
 import {
   NO_LIMITS,
@@ -37,6 +49,11 @@ import {
   CardNotOpenError,
   OwnerKeyStoreError,
   SEED_SERVER,
+  SETUP_APPLET_VERSIONS,
+  checkSetupState,
+  freezeSetupIntent,
+  newSetupProgress,
+  setupWriteSent,
   confirmOwnerKey,
   loadSeed,
   newOwnerKey,
@@ -47,7 +64,12 @@ import {
   saveOwnerKey,
   setUpCard,
 } from "../../app/utils/cashu-card-owner-store"
-import { FAKE_OWNER_KEY, createFakeCard } from "../helpers/fake-cashu"
+import {
+  FAKE_OWNER_KEY,
+  FakeCard,
+  FakeCardOptions,
+  createFakeCard,
+} from "../helpers/fake-cashu"
 import { HEADER_VECTORS, headerBytes } from "../helpers/block-headers"
 
 const fromHex = (h: string) => (h.match(/../g) ?? []).map((x) => parseInt(x, 16))
@@ -678,11 +700,73 @@ describe("the owner key store", () => {
   })
 })
 
+/** An open, empty, fresh 2.2 card's GET_INFO (ENG-825). */
+const baseInfo = (): CardInfo => ({
+  version: "2.2",
+  major: 2,
+  minor: 2,
+  maxSlots: 128,
+  unspent: 0,
+  spent: 0,
+  empty: 128,
+  secp256k1Native: true,
+  schnorr: true,
+  sealed: false,
+  pinState: "unset",
+  format: 4,
+  tries: 3,
+  locked: false,
+  recordSet: false,
+  dailyLimit: 0,
+  hasOwner: false,
+  now: 0,
+  windowStart: 0,
+  spentToday: 0,
+  changeGrant: false,
+  paymentLimit: 0,
+  allowance: 0,
+  nopinSpent: 0,
+})
+
+/** That card's GET_CARD: no record. */
+const baseRecord = (): CardRecord => ({
+  format: 4,
+  recordSet: false,
+  unit: 0,
+  dailyLimit: 0,
+  lastHeader: "00".repeat(32),
+  rolls: 0,
+  rollBudget: 7,
+  allowanceArmed: false,
+  mint: "",
+})
+
 describe("setUpCard: personalisation, owner last", () => {
   const key = { privateKey: FAKE_OWNER_KEY, source: "device" as const, saved: false }
+  /** A 2.2 card, the applet version setup writes to (ENG-825). */
+  const V22: [number, number] = [2, 2]
+  const MINT = "https://mint.test"
+  /** What runCardOperation's SELECT and GET_PUBKEY said of `card`. */
+  const tapOf = (card: FakeCard, version: number[] = V22): CardTap => ({
+    version,
+    pubkey: card.pubkey,
+  })
+  /** One setup sequence's arguments for `card` as `info` reads it. */
+  const argsFor = (
+    card: FakeCard,
+    info: CardInfo,
+    { pin, mint = MINT }: { pin?: string; mint?: string } = {},
+  ) => ({
+    tap: tapOf(card, [info.major, info.minor]),
+    info,
+    pin,
+    intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint, pin }),
+    progress: newSetupProgress(),
+    key,
+  })
 
   it("SET_PIN, VERIFY_PIN, SET_CARD, the key saved, then SET_OWNER with the anchor: in that order", async () => {
-    const card = createFakeCard(128, { owner: null })
+    const card = createFakeCard(128, { owner: null, version: V22 })
     const order: string[] = []
     const answer = card.transceive.getMockImplementation()!
     card.transceive.mockImplementation(async (apdu) => {
@@ -697,16 +781,14 @@ describe("setUpCard: personalisation, owner last", () => {
     await setUpCard(
       card.transceive,
       {
-        cardPubkey: card.pubkey,
-        info,
-        pin: "1234",
-        mint: "https://mint.test",
+        ...argsFor(card, info, { pin: "1234", mint: "https://mint.test" }),
         anchor: headerBytes(HEADER_VECTORS[2]),
-        key,
       },
       save,
     )
-    expect(order).toEqual(["41", "40", "32", "saved", "43"])
+    // One read before the writes (ENG-825): GET_CARD, then the same writes in
+    // the same order.
+    expect(order).toEqual(["16", "41", "40", "32", "saved", "43"])
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(card.pin()).toBe("1234")
     expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
@@ -719,16 +801,11 @@ describe("setUpCard: personalisation, owner last", () => {
   })
 
   it("with no PIN: SET_CARD, the key saved, SET_OWNER; no anchor when the phone has no header", async () => {
-    const card = createFakeCard(128, { owner: null })
+    const card = createFakeCard(128, { owner: null, version: V22 })
     const info = await getInfo(card.transceive)
     card.transceive.mockClear()
-    await setUpCard(card.transceive, {
-      cardPubkey: card.pubkey,
-      info,
-      mint: "https://mint.test",
-      key,
-    })
-    expect(card.ins()).toEqual([0x32, 0x43])
+    await setUpCard(card.transceive, argsFor(card, info))
+    expect(card.ins()).toEqual([0x16, 0x32, 0x43])
     expect(card.pin()).toBeUndefined()
     expect(card.now()).toBe(0)
     await expect(ownerKeyStore.get(card.pubkey)).resolves.toMatchObject({
@@ -738,7 +815,7 @@ describe("setUpCard: personalisation, owner last", () => {
   })
 
   it("keeps the key saved when SET_OWNER's answer is lost: the card may hold it as its owner", async () => {
-    const card = createFakeCard(128, { owner: null })
+    const card = createFakeCard(128, { owner: null, version: V22 })
     const info = await getInfo(card.transceive)
     const answer = card.transceive.getMockImplementation()!
     card.transceive.mockImplementation(async (apdu) => {
@@ -747,14 +824,9 @@ describe("setUpCard: personalisation, owner last", () => {
       if (apdu[1] === 0x43) throw new Error("Tag was lost")
       return response
     })
-    await expect(
-      setUpCard(card.transceive, {
-        cardPubkey: card.pubkey,
-        info,
-        mint: "https://mint.test",
-        key,
-      }),
-    ).rejects.toThrow("Tag was lost")
+    await expect(setUpCard(card.transceive, argsFor(card, info))).rejects.toThrow(
+      "Tag was lost",
+    )
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     await expect(ownerKeyStore.get(card.pubkey)).resolves.toMatchObject({
       privateKey: FAKE_OWNER_KEY,
@@ -767,52 +839,546 @@ describe("setUpCard: personalisation, owner last", () => {
   })
 
   it("never sends SET_OWNER when the key could not be saved", async () => {
-    const card = createFakeCard(128, { owner: null })
+    const card = createFakeCard(128, { owner: null, version: V22 })
     const info = await getInfo(card.transceive)
     card.transceive.mockClear()
     const save = jest.fn(async () => {
       throw new OwnerKeyStoreError("the owner key was not saved")
     })
     await expect(
-      setUpCard(
-        card.transceive,
-        { cardPubkey: card.pubkey, info, mint: "https://mint.test", key },
-        save,
-      ),
+      setUpCard(card.transceive, argsFor(card, info), save),
     ).rejects.toBeInstanceOf(OwnerKeyStoreError)
     expect(card.ins()).not.toContain(0x43)
     expect(card.owner()).toBeUndefined()
   })
 
-  it("refuses a card that has an owner, holds value, or has a PIN nobody here knows: before anything is sent", async () => {
-    const card = createFakeCard()
+  it("refuses a card that has an owner, holds value, or has a PIN nobody here knows: before anything is written", async () => {
+    const card = createFakeCard(128, { version: V22 })
     const owned = await getInfo(card.transceive)
     card.transceive.mockClear()
     await expect(
-      setUpCard(card.transceive, {
-        cardPubkey: card.pubkey,
-        info: owned,
-        mint: "m",
-        key,
-      }),
+      setUpCard(card.transceive, argsFor(card, owned, { mint: "m" })),
     ).rejects.toMatchObject({ reason: "owned" })
     await expect(
-      setUpCard(card.transceive, {
-        cardPubkey: card.pubkey,
-        info: { ...owned, hasOwner: false, unspent: 1 },
-        mint: "m",
-        key,
-      }),
+      setUpCard(
+        card.transceive,
+        argsFor(
+          card,
+          { ...owned, hasOwner: false, unspent: 1, empty: owned.empty - 1 },
+          { mint: "m" },
+        ),
+      ),
     ).rejects.toMatchObject({ reason: "in-use" })
     await expect(
-      setUpCard(card.transceive, {
-        cardPubkey: card.pubkey,
-        info: { ...owned, hasOwner: false, unspent: 0, pinState: "set" },
-        mint: "m",
-        key,
-      }),
+      setUpCard(
+        card.transceive,
+        argsFor(card, { ...owned, hasOwner: false, unspent: 0, pinState: "set" }),
+      ),
     ).rejects.toBeInstanceOf(CardNotOpenError)
-    expect(card.ins()).toEqual([])
+    // GET_CARD each time, and nothing written.
+    expect(card.ins()).toEqual([0x16, 0x16, 0x16])
+  })
+
+  // ENG-825: the guard before any setup write.
+  describe("the guard before any write (ENG-825)", () => {
+    /** Every INS a setup tap may send before its guard passes: reads only. */
+    const READS = [0xa4, 0x01, 0x10, 0x16]
+    const onlyReads = (card: FakeCard) =>
+      expect(card.ins().filter((ins) => !READS.includes(ins))).toEqual([])
+
+    /** A fresh 2.2 card, its GET_INFO, and the transceive cleared. */
+    const fresh = async (options: FakeCardOptions = {}) => {
+      const card = createFakeCard(128, { owner: null, version: V22, ...options })
+      const info = await getInfo(card.transceive)
+      card.transceive.mockClear()
+      return { card, info }
+    }
+
+    for (const [name, found, version] of [
+      ["2.0", "older", [2, 0]],
+      ["2.1", "older", [2, 1]],
+      ["2.3", "newer", [2, 3]],
+    ] as [string, string, number[]][]) {
+      it(`refuses applet ${name} with CardNeedsUpdateError (${found}) and writes nothing`, async () => {
+        const card = createFakeCard(128, {
+          owner: null,
+          version: version as [number, number],
+        })
+        const info = await getInfo(card.transceive)
+        card.transceive.mockClear()
+        const thrown = await setUpCard(card.transceive, {
+          ...argsFor(card, info, { pin: "1234" }),
+          tap: tapOf(card, version),
+        }).catch((err) => err)
+        expect(thrown).toBeInstanceOf(CardNeedsUpdateError)
+        expect(thrown).toMatchObject({ found })
+        onlyReads(card)
+        expect(card.pin()).toBeUndefined()
+        expect(card.record().set).toBe(false)
+      })
+    }
+
+    it("SETUP_APPLET_VERSIONS is 2.2 alone", () => {
+      expect(SETUP_APPLET_VERSIONS).toEqual([[2, 2]])
+    })
+
+    it("refuses an owned card, before any write", async () => {
+      const card = createFakeCard(128, { version: V22, record: false })
+      const info = await getInfo(card.transceive)
+      card.transceive.mockClear()
+      await expect(
+        setUpCard(card.transceive, argsFor(card, info, { pin: "1234" })),
+      ).rejects.toMatchObject({ reason: "owned" })
+      onlyReads(card)
+    })
+
+    for (const [label, pin] of [
+      ["with a PIN chosen", "1234"],
+      ["with none", undefined],
+    ] as [string, string | undefined][]) {
+      it(`refuses a card with a PIN from before, ${label}, before any write`, async () => {
+        const { card, info } = await fresh({ pin: "9999" })
+        await expect(
+          setUpCard(card.transceive, argsFor(card, info, { pin })),
+        ).rejects.toMatchObject({ reason: "pin-set" })
+        onlyReads(card)
+        expect(card.pin()).toBe("9999")
+      })
+    }
+
+    it("refuses a blocked PIN as one from before", () => {
+      const card = createFakeCard(128, { owner: null, version: V22 })
+      const info = { ...baseInfo(), pinState: "blocked" as const }
+      expect(() =>
+        checkSetupState({
+          tap: tapOf(card),
+          info,
+          record: baseRecord(),
+          intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT, pin: "1234" }),
+          progress: { pinSent: true, recordSent: false },
+        }),
+      ).toThrow(expect.objectContaining({ reason: "pin-set" }))
+    })
+
+    it("refuses a funded card, before any write", async () => {
+      const { card } = await fresh()
+      card.slots[0] = [1, ...new Array(81).fill(1)]
+      const info = await getInfo(card.transceive)
+      card.transceive.mockClear()
+      await expect(setUpCard(card.transceive, argsFor(card, info))).rejects.toMatchObject(
+        { reason: "in-use" },
+      )
+      onlyReads(card)
+    })
+
+    it("refuses a used card (spent slots), before any write", async () => {
+      const { card } = await fresh()
+      card.slots[3] = [2, ...new Array(81).fill(1)]
+      const info = await getInfo(card.transceive)
+      card.transceive.mockClear()
+      await expect(setUpCard(card.transceive, argsFor(card, info))).rejects.toMatchObject(
+        { reason: "used" },
+      )
+      onlyReads(card)
+    })
+
+    it("refuses a locked card, before any write", async () => {
+      const { card, info } = await fresh({ locked: true })
+      await expect(setUpCard(card.transceive, argsFor(card, info))).rejects.toMatchObject(
+        { reason: "locked" },
+      )
+      onlyReads(card)
+    })
+
+    for (const [label, limits] of [
+      ["a daily limit", { day: 5000 }],
+      ["a no-PIN allowance", { allowance: 250 }],
+    ] as [string, FakeCardOptions["limits"]][]) {
+      it(`refuses a card with ${label}, before any write`, async () => {
+        const { card, info } = await fresh({ limits })
+        await expect(
+          setUpCard(card.transceive, argsFor(card, info)),
+        ).rejects.toMatchObject({ reason: "limits-set" })
+        onlyReads(card)
+      })
+    }
+
+    for (const [label, extra] of [
+      ["paymentLimit", { paymentLimit: 1000 }],
+      ["nopinSpent", { nopinSpent: 1 }],
+      ["spentToday", { spentToday: 1 }],
+    ] as [string, Partial<CardInfo>][]) {
+      it(`refuses a card whose GET_INFO ${label} is not zero`, () => {
+        const card = createFakeCard(128, { owner: null, version: V22 })
+        expect(() =>
+          checkSetupState({
+            tap: tapOf(card),
+            info: { ...baseInfo(), ...extra },
+            record: baseRecord(),
+            intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT }),
+            progress: newSetupProgress(),
+          }),
+        ).toThrow(expect.objectContaining({ reason: "limits-set" }))
+      })
+    }
+
+    it("an armed allowance with no PIN of this sequence's is a limit; after this sequence's own VERIFY_PIN it is not", () => {
+      const card = createFakeCard(128, { owner: null, version: V22 })
+      const check =
+        (
+          info: Partial<CardInfo>,
+          progress: { pinSent: boolean; recordSent: boolean },
+          pin?: string,
+        ) =>
+        () =>
+          checkSetupState({
+            tap: tapOf(card),
+            info: { ...baseInfo(), ...info },
+            record: { ...baseRecord(), allowanceArmed: true },
+            intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT, pin }),
+            progress,
+          })
+      expect(check({}, newSetupProgress())).toThrow(
+        expect.objectContaining({ reason: "limits-set" }),
+      )
+      expect(check({ pinState: "set" }, newSetupProgress(), "1234")).toThrow(
+        expect.objectContaining({ reason: "pin-set" }),
+      )
+      expect(
+        check({ pinState: "set" }, { pinSent: true, recordSent: false }, "1234"),
+      ).not.toThrow()
+    })
+
+    it("refuses a non-zero GET_CARD daily limit", () => {
+      const card = createFakeCard(128, { owner: null, version: V22 })
+      expect(() =>
+        checkSetupState({
+          tap: tapOf(card),
+          info: baseInfo(),
+          record: { ...baseRecord(), dailyLimit: 1 },
+          intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT }),
+          progress: newSetupProgress(),
+        }),
+      ).toThrow(expect.objectContaining({ reason: "limits-set" }))
+    })
+
+    /** Answers `ins` with `corrupt` of what the card said. */
+    const corrupting = (
+      card: FakeCard,
+      ins: number,
+      corrupt: (response: number[]) => number[],
+    ): Transceiver => {
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        return apdu[1] === ins ? corrupt(response) : response
+      })
+      return card.transceive
+    }
+
+    it("a GET_CARD answer shorter than 106 bytes is unreadable: nothing written", async () => {
+      const { card, info } = await fresh()
+      const transceive = corrupting(card, 0x16, (r) => [...r.slice(0, 100), 0x90, 0x00])
+      await expect(
+        setUpCard(transceive, argsFor(card, info, { pin: "1234" })),
+      ).rejects.toMatchObject({ reason: "unreadable" })
+      onlyReads(card)
+    })
+
+    it("a GET_INFO PIN byte of 9 is unreadable: nothing written", async () => {
+      const card = createFakeCard(128, { owner: null, version: V22 })
+      const transceive = corrupting(card, 0x01, (r) => {
+        const bad = [...r]
+        bad[7] = 9
+        return bad
+      })
+      const info = await getInfo(transceive)
+      card.transceive.mockClear()
+      await expect(
+        setUpCard(transceive, argsFor(card, info, { pin: "1234" })),
+      ).rejects.toMatchObject({ reason: "unreadable" })
+      onlyReads(card)
+    })
+
+    it("a GET_INFO version that differs from SELECT's is unreadable: nothing written", async () => {
+      const card = createFakeCard(128, { owner: null, version: V22 })
+      const transceive = corrupting(card, 0x01, (r) => {
+        const bad = [...r]
+        bad[1] = 1
+        return bad
+      })
+      const info = await getInfo(transceive)
+      card.transceive.mockClear()
+      await expect(
+        setUpCard(transceive, { ...argsFor(card, info), tap: tapOf(card) }),
+      ).rejects.toMatchObject({ reason: "unreadable" })
+      onlyReads(card)
+    })
+
+    for (const [label, extra] of [
+      ["a format other than 4", { format: 3 }],
+      ["slot counts that do not add up", { empty: 127 }],
+      ["GET_INFO and GET_CARD disagreeing on the record", { recordSet: true }],
+    ] as [string, Partial<CardInfo>][]) {
+      it(`${label} is unreadable`, () => {
+        const card = createFakeCard(128, { owner: null, version: V22 })
+        expect(() =>
+          checkSetupState({
+            tap: tapOf(card),
+            info: { ...baseInfo(), ...extra },
+            record: baseRecord(),
+            intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT }),
+            progress: newSetupProgress(),
+          }),
+        ).toThrow(expect.objectContaining({ reason: "unreadable" }))
+      })
+    }
+
+    it("a set record in a unit other than sat is unreadable", () => {
+      const card = createFakeCard(128, { owner: null, version: V22 })
+      expect(() =>
+        checkSetupState({
+          tap: tapOf(card),
+          info: { ...baseInfo(), recordSet: true },
+          record: { ...baseRecord(), recordSet: true, unit: 1, mint: MINT },
+          intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT }),
+          progress: newSetupProgress(),
+        }),
+      ).toThrow(expect.objectContaining({ reason: "unreadable" }))
+    })
+
+    it("a PIN given that the intent did not choose (or none where it did) is refused before any APDU", async () => {
+      const { card, info } = await fresh()
+      await expect(
+        setUpCard(card.transceive, {
+          ...argsFor(card, info),
+          pin: "1234",
+        }),
+      ).rejects.toMatchObject({ reason: "unreadable" })
+      await expect(
+        setUpCard(card.transceive, {
+          ...argsFor(card, info, { pin: "1234" }),
+          pin: undefined,
+        }),
+      ).rejects.toMatchObject({ reason: "unreadable" })
+      expect(card.ins()).toEqual([])
+    })
+
+    it("a transport failure on GET_CARD propagates as it is", async () => {
+      const { card, info } = await fresh()
+      card.transceive.mockRejectedValueOnce(new Error("Tag was lost"))
+      await expect(setUpCard(card.transceive, argsFor(card, info))).rejects.toThrow(
+        "Tag was lost",
+      )
+      onlyReads(card)
+    })
+
+    it("a card swapped for another: the intent is for card A, the tap reached B", async () => {
+      const a = createFakeCard(128, { owner: null, version: V22 })
+      const { card: b, info } = await fresh({ cardKey: "09".repeat(32) })
+      const args = argsFor(a, info, { pin: "1234" })
+      const thrown = await setUpCard(b.transceive, {
+        ...args,
+        tap: tapOf(b),
+      }).catch((err) => err)
+      expect(thrown).toBeInstanceOf(WrongCardError)
+      onlyReads(b)
+      expect(b.pin()).toBeUndefined()
+    })
+
+    it("a tap on A cut after SET_PIN, and the retry reaches B: WrongCardError, nothing written to B", async () => {
+      const { card: a, info: infoA } = await fresh()
+      const answer = a.transceive.getMockImplementation()!
+      a.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x41) throw new Error("Tag was lost")
+        return response
+      })
+      const args = argsFor(a, infoA, { pin: "1234" })
+      await expect(setUpCard(a.transceive, args)).rejects.toThrow("Tag was lost")
+      expect(args.progress.pinSent).toBe(true)
+
+      const { card: b, info: infoB } = await fresh({ cardKey: "09".repeat(32) })
+      const thrown = await setUpCard(b.transceive, {
+        ...args,
+        info: infoB,
+        tap: tapOf(b),
+      }).catch((err) => err)
+      expect(thrown).toBeInstanceOf(WrongCardError)
+      onlyReads(b)
+    })
+
+    it("resumes in the same sequence: SET_PIN lands, the answer is lost, and the next tap finishes", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x41) throw new Error("Tag was lost")
+        return response
+      })
+      const args = argsFor(card, info, { pin: "1234" })
+      await expect(setUpCard(card.transceive, args)).rejects.toThrow("Tag was lost")
+      expect(card.pin()).toBe("1234")
+
+      // The next tap: a new SELECT, a new GET_INFO that says the PIN is set.
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      const again = await getInfo(card.transceive)
+      expect(again.pinState).toBe("set")
+      await setUpCard(card.transceive, { ...args, info: again })
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      expect(card.record()).toEqual({ set: true, mint: MINT })
+    })
+
+    it("resumes in the same sequence after VERIFY_PIN lands: the card's allowance is armed, and the next tap finishes", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x40) throw new Error("Tag was lost")
+        return response
+      })
+      const args = argsFor(card, info, { pin: "1234" })
+      await expect(setUpCard(card.transceive, args)).rejects.toThrow("Tag was lost")
+      expect(args.progress.pinSent).toBe(true)
+      expect(args.progress.recordSent).toBe(false)
+
+      // The next tap: the PIN is set, and VERIFY_PIN armed the allowance (D20).
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      const again = await getInfo(card.transceive)
+      expect(again.pinState).toBe("set")
+      expect((await getCardRecord(card.transceive)).allowanceArmed).toBe(true)
+      await setUpCard(card.transceive, { ...args, info: again })
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      expect(card.record()).toEqual({ set: true, mint: MINT })
+    })
+
+    it("resumes in the same sequence after SET_CARD lands: record set, allowance armed, and the next tap finishes", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x32) throw new Error("Tag was lost")
+        return response
+      })
+      const args = argsFor(card, info, { pin: "1234" })
+      await expect(setUpCard(card.transceive, args)).rejects.toThrow("Tag was lost")
+      expect(args.progress.recordSent).toBe(true)
+
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      const again = await getInfo(card.transceive)
+      expect(again.recordSet).toBe(true)
+      await setUpCard(card.transceive, { ...args, info: again })
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    })
+
+    it("a card a PIN from before has armed is refused as pin-set, not limits-set, and nothing is written", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x40) throw new Error("Tag was lost")
+        return response
+      })
+      await expect(
+        setUpCard(card.transceive, argsFor(card, info, { pin: "1234" })),
+      ).rejects.toThrow("Tag was lost")
+      card.transceive.mockImplementation(answer)
+      const again = await getInfo(card.transceive)
+      card.transceive.mockClear()
+      // A new sequence: the PIN and the armed allowance are not its own.
+      await expect(
+        setUpCard(card.transceive, argsFor(card, again, { pin: "1234" })),
+      ).rejects.toMatchObject({ reason: "pin-set" })
+      onlyReads(card)
+    })
+
+    it("the same card after an app restart (a new sequence) is refused: the PIN is not this sequence's", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x41) throw new Error("Tag was lost")
+        return response
+      })
+      await expect(
+        setUpCard(card.transceive, argsFor(card, info, { pin: "1234" })),
+      ).rejects.toThrow("Tag was lost")
+      card.transceive.mockImplementation(answer)
+      const again = await getInfo(card.transceive)
+      card.transceive.mockClear()
+      await expect(
+        setUpCard(card.transceive, argsFor(card, again, { pin: "1234" })),
+      ).rejects.toMatchObject({ reason: "pin-set" })
+      onlyReads(card)
+    })
+
+    it("a recorded mint that differs from the intent's is refused; a matching one completes", async () => {
+      const { card, info } = await fresh({ record: true })
+      expect(info.recordSet).toBe(true)
+      const thrown = await setUpCard(
+        card.transceive,
+        argsFor(card, info, { mint: "https://other.example" }),
+      ).catch((err) => err)
+      expect(thrown).toMatchObject({ reason: "other-mint", mint: MINT })
+      onlyReads(card)
+
+      // The same mint, spelled with a trailing slash, is the same mint.
+      await setUpCard(card.transceive, argsFor(card, info, { mint: `${MINT}/` }))
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    })
+
+    it("an invalid mint fails in freezeSetupIntent, before any transceive", () => {
+      const transceive = jest.fn()
+      expect(() => freezeSetupIntent({ cardPubkey: "02".repeat(33), mint: "" })).toThrow(
+        CardProtocolError,
+      )
+      expect(() =>
+        freezeSetupIntent({ cardPubkey: "02".repeat(33), mint: "x".repeat(78) }),
+      ).toThrow(CardProtocolError)
+      expect(transceive).not.toHaveBeenCalled()
+    })
+
+    it("the intent is frozen and keeps no PIN", () => {
+      const intent = freezeSetupIntent({ cardPubkey: "ab", mint: MINT, pin: "1234" })
+      expect(intent).toEqual({
+        cardPubkey: "ab",
+        mint: MINT,
+        unit: 0,
+        refundKey: null,
+        design: null,
+        pinChosen: true,
+      })
+      expect(Object.isFrozen(intent)).toBe(true)
+      expect(JSON.stringify(intent)).not.toContain("1234")
+    })
+
+    it("marks each write sent before it goes out", async () => {
+      const { card, info } = await fresh()
+      const args = argsFor(card, info, { pin: "1234" })
+      const seen: string[] = []
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        if (apdu[1] === 0x41) seen.push(`SET_PIN ${JSON.stringify(args.progress)}`)
+        if (apdu[1] === 0x32) seen.push(`SET_CARD ${JSON.stringify(args.progress)}`)
+        return answer(apdu)
+      })
+      await setUpCard(card.transceive, args)
+      expect(seen).toEqual([
+        'SET_PIN {"pinSent":true,"recordSent":false}',
+        'SET_CARD {"pinSent":true,"recordSent":true}',
+      ])
+      expect(setupWriteSent(args.progress)).toBe(true)
+      expect(setupWriteSent(newSetupProgress())).toBe(false)
+    })
+
+    it("the happy path on 2.2 adds exactly one GET_CARD to the writes", async () => {
+      const { card, info } = await fresh()
+      await setUpCard(card.transceive, argsFor(card, info, { pin: "1234" }))
+      expect(card.ins()).toEqual([0x16, 0x41, 0x40, 0x32, 0x43])
+    })
   })
 
   it("SET_OWNER refuses an anchor that is not 80 bytes before anything is sent", async () => {
