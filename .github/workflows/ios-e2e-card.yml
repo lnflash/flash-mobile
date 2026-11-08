@@ -73,24 +73,33 @@ env:
   MAESTRO_VERSION: "2.10.0"
   BRIDGE_URL: http://localhost:9876
   MINT_URL: http://localhost:3338
+  # A second mint (ENG-787): a card set up for a mint of its own is read,
+  # topped up, tidied and reclaimed there, never at MINT_URL.
+  MINT_B_URL: http://localhost:3339
   FIXTURES_URL: http://localhost:9877
 
 jobs:
   flashcard-e2e:
-    name: Flashcard flows (iOS simulator, ${{ matrix.ids }} keyset ids, ${{ matrix.fee }} ppk)
+    name: Flashcard ${{ matrix.mintB && 'second mint' || 'flows' }} (iOS simulator, ${{ matrix.ids }} keyset ids, ${{ matrix.fee }} ppk)
     runs-on: macos-15
     # ENG-787: one leg per mint keyset id shape, as flash-pos's card relay job
     # runs them (ENG-824): v1 (8-byte ids, forge's) and v2 (33-byte ids, as
     # Minibits and Macadamia serve; a card slot holds the first 8 bytes). The
     # fee leg runs the engine against a mint charging 100 ppk on inputs, below
     # the UI only: the flows' amounts are written for a mint with no fee.
+    # The mint-b legs (ENG-787: a card at a mint of its own) are cardsim-jest
+    # only, like the fee leg, one per shape and fee: they start a second mint,
+    # which no flow leg needs.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { ids: v1, fee: 0, flows: true }
-          - { ids: v2, fee: 0, flows: true }
-          - { ids: v2, fee: 100, flows: false }
+          - { ids: v1, fee: 0, flows: true, mintB: false }
+          - { ids: v2, fee: 0, flows: true, mintB: false }
+          - { ids: v2, fee: 100, flows: false, mintB: false }
+          - { ids: v1, fee: 0, flows: false, mintB: true }
+          - { ids: v2, fee: 0, flows: false, mintB: true }
+          - { ids: v2, fee: 100, flows: false, mintB: true }
     # Native setup/build plus passing flows took about 90 minutes in #817.
     # Allow time for token revocation and post-job cleanup as well.
     timeout-minutes: 120
@@ -174,24 +183,78 @@ jobs:
               process.exit(1);
             }'
 
-      - name: Start the fixture server and smoke every fixture
+      # Mint B: the leg's id shape and fee, its own key and database, so its
+      # keysets are not mint A's. Nutshell is installed by the step above.
+      - name: Start mint B (Nutshell, FakeWallet, ${{ matrix.ids }} keyset ids)
+        if: matrix.mintB
+        env:
+          MINT_IDS: ${{ matrix.ids }}
+          MINT_FEE_PPK: ${{ matrix.fee }}
         run: |
+          mkdir -p .e2e/mint-b
+          cd .e2e/mint-b
+          if [ "$MINT_IDS" = v1 ]; then export VERSION=0.19.2; fi
+          MINT_PRIVATE_KEY=ci-e2e-only-mint-b CASHU_DIR="$PWD/.cashu" \
+            MINT_BACKEND_BOLT11_SAT=FakeWallet MINT_LISTEN_PORT=3339 \
+            MINT_INPUT_FEE_PPK="$MINT_FEE_PPK" MINT_RATE_LIMIT=FALSE FAKEWALLET_DELAY_INCOMING_PAYMENT=0 \
+            nohup mint > ../mint-b.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS "$MINT_B_URL/v1/keysets" > /dev/null && break; sleep 1; done
+          keysets=$(curl -fsS "$MINT_B_URL/v1/keysets")
+          echo "$keysets"
+          # B's id shape and fee too: a fee that did not take on B would run
+          # the spec's 0-fee branch on the 100 ppk leg, and pass.
+          # shellcheck disable=SC2016 # JavaScript, not shell: nothing to expand.
+          KEYSETS="$keysets" node -e '
+            const { keysets } = JSON.parse(process.env.KEYSETS);
+            const active = keysets.filter((k) => k.active && k.unit === "sat");
+            const want = process.env.MINT_IDS === "v2" ? /^01[0-9a-f]{64}$/ : /^00[0-9a-f]{14}$/;
+            const fee = Number(process.env.MINT_FEE_PPK);
+            if (active.length !== 1 || !want.test(active[0].id) || (active[0].input_fee_ppk ?? 0) !== fee) {
+              console.error(`mint B: expected one active sat keyset, ${process.env.MINT_IDS} id, ${fee} ppk: ` +
+                JSON.stringify(active));
+              process.exit(1);
+            }'
+          # Two mints, two keysets: a card at B must never be answered by A.
+          a=$(curl -fsS "$MINT_URL/v1/keysets") b=$(curl -fsS "$MINT_B_URL/v1/keysets") node -e '
+            const ids = (body) => JSON.parse(body).keysets.map((k) => k.id);
+            const shared = ids(process.env.a).filter((id) => ids(process.env.b).includes(id));
+            if (shared.length) { console.error(`mints A and B share keysets: ${shared}`); process.exit(1); }'
+
+      - name: Start the fixture server and smoke every fixture
+        env:
+          MINT_B: ${{ matrix.mintB }}
+        run: |
+          mint_b=()
+          if [ "$MINT_B" = true ]; then mint_b=(--mint-b "$MINT_B_URL"); fi
           nohup node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve --port 9877 \
-            --bridge "$BRIDGE_URL" --mint "$MINT_URL" > .e2e/fixtures.log 2>&1 &
+            --bridge "$BRIDGE_URL" --mint "$MINT_URL" "${mint_b[@]}" \
+            > .e2e/fixtures.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS "$FIXTURES_URL/health" > /dev/null && break; sleep 1; done
-          for fixture in fresh owned loaded spent full blocked limited missing-small; do
+          for fixture in fresh owned loaded spent full blocked limited missing-small missing-mid; do
             curl -fsS -X POST "$FIXTURES_URL/load/$fixture"; echo
           done
 
       # The top-up engine and the dev card transport against the same card
-      # and mint, below the UI: no wallet, so no sign-in needed. Every leg runs
-      # it; the UI steps below run only on the legs with `flows`.
+      # and mint, below the UI: no wallet, so no sign-in needed. Every leg but
+      # the mint-b ones runs it; the UI steps below run only on the legs with
+      # `flows`.
       - name: Top-up against cardsim (jest, opt-in spec)
+        if: ${{ !matrix.mintB }}
         env:
           CARDSIM_URL: ${{ env.BRIDGE_URL }}
           CARD_MINT_URL: ${{ env.MINT_URL }}
           CARD_FIXTURES_URL: ${{ env.FIXTURES_URL }}
         run: yarn test __tests__/integration/card-topup-cardsim.spec.ts
+
+      - name: A card at a mint of its own against cardsim (jest, opt-in spec)
+        if: matrix.mintB
+        env:
+          CARDSIM_URL: ${{ env.BRIDGE_URL }}
+          CARD_MINT_URL: ${{ env.MINT_URL }}
+          CARD_MINT_B_URL: ${{ env.MINT_B_URL }}
+          CARD_MINT_FEE_PPK: ${{ matrix.fee }}
+          CARD_FIXTURES_URL: ${{ env.FIXTURES_URL }}
+        run: yarn test __tests__/integration/card-mint-b-cardsim.spec.ts
 
       - name: Setup Ruby
         if: matrix.flows

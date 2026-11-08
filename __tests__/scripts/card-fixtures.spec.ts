@@ -28,6 +28,7 @@ import {
   FIXTURE_PIN,
   FULL_SLOTS,
   FixtureDeps,
+  MISSING_MID_AMOUNTS,
   MISSING_SMALL_AMOUNTS,
   FixtureName,
   PRODUCTION_MINT_HOST,
@@ -85,6 +86,7 @@ describe("card fixtures", () => {
       "blocked",
       "limited",
       "missing-small",
+      "missing-mid",
     ])
     expect(isFixtureName("owned")).toBe(true)
     expect(isFixtureName("loaded-0.4")).toBe(false)
@@ -223,6 +225,21 @@ describe("card fixtures", () => {
     )
     // Nothing was spent by the refusal.
     expect(statuses(sim.card).slice(0, 2)).toEqual([1, 1])
+  })
+
+  it("missing-mid: 161 sat as 128 + 32 + 1, owned, no PIN: a tidy worth its fee at 100 ppk (ENG-787)", async () => {
+    const { deps, sim } = setup()
+    const summary = await loadFixture("missing-mid", deps)
+    expect(summary).toMatchObject({
+      balance: 161,
+      pinState: "unset",
+      hasOwner: true,
+      recordSet: true,
+      unspent: 3,
+      spent: 0,
+    })
+    expect(MISSING_MID_AMOUNTS).toEqual([128, 32, 1])
+    expect(sim.card.dleqs.size).toBe(3)
   })
 
   it("spendExactly pays exactly the amount from the card with no change, redeemed at the mint", async () => {
@@ -457,6 +474,33 @@ describe("the fixture server", () => {
     expect(refused).toEqual({ status: 500, body: { error: "spend failed", amount: 3 } })
     const paid = await request(handler, "POST", "/spend/4")
     expect(paid).toEqual({ status: 200, body: { balance: 8, spent: [4] } })
+  })
+
+  // ENG-787: a card at a mint of its own.
+  it("provisions the card at the second mint under /mint-b/, and at the first otherwise", async () => {
+    const { deps, sim, mint } = setup()
+    const mintB = { ...mint, url: "http://127.0.0.1:3339" }
+    const handler = fixtureHandler(
+      deps,
+      { ...health, mintB: mintB.url },
+      { ...deps, mint: mintB },
+    )
+    const atB = await request(handler, "POST", "/mint-b/load/owned")
+    expect(atB.status).toBe(200)
+    expect(sim.card.record()).toEqual({ set: true, mint: "http://127.0.0.1:3339" })
+    const atA = await request(handler, "POST", "/load/owned")
+    expect(atA.status).toBe(200)
+    expect(sim.card.record()).toEqual({ set: true, mint: mint.url })
+  })
+
+  it("answers 404 under /mint-b/ when no second mint is served", async () => {
+    const { deps } = setup()
+    const { status } = await request(
+      fixtureHandler(deps, health),
+      "POST",
+      "/mint-b/load/owned",
+    )
+    expect(status).toBe(404)
   })
 
   it("answers 404 to a fixture it does not know, the old loaded-0.4 among them, without echoing the name", async () => {

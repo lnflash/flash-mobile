@@ -57,6 +57,10 @@ const mockNavigation = {
   addListener: () => () => undefined,
 }
 
+// The fake card's record names https://mint.test (fake-cashu): on the fund
+// list here, so these flows are judged on ownership alone (ENG-787).
+const CARD_FUND_MINTS = ["https://mint.test"]
+
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
 jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
@@ -175,7 +179,9 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
     // The top-up screen asks a card with a PIN for it before paying unless
     // this phone owns the card (`asksForPin`): it is not this phone's.
     expect(latest?.cashuCard).toMatchObject({ pinState: "set", hasOwner: true })
-    expect(topUpEligibility(readCard(), { usdEnabled: false })).toMatchObject({
+    expect(
+      topUpEligibility(readCard(), { usdEnabled: false, fundMints: CARD_FUND_MINTS }),
+    ).toMatchObject({
       ok: true,
     })
     expect(asksForPinBeforePaying(readCard())).toBe(true)
@@ -203,7 +209,9 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
     expect(owner()).not.toBe(LL.FlashcardV2.ownerOther())
     // The load tap offers the grant first, and asks for the PIN only on a refusal.
     expect(asksForPinBeforePaying(readCard())).toBe(false)
-    expect(topUpEligibility(readCard(), { usdEnabled: false })).toMatchObject({
+    expect(
+      topUpEligibility(readCard(), { usdEnabled: false, fundMints: CARD_FUND_MINTS }),
+    ).toMatchObject({
       ok: true,
     })
     expect(screen.queryByTestId("flashcard-v2-action-limits")).toBeNull()
@@ -321,7 +329,9 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
     await waitFor(() => expect(latest?.cashuCard?.pinState).toBe("blocked"))
 
     expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
-    expect(topUpEligibility(readCard(), { usdEnabled: false })).toEqual({
+    expect(
+      topUpEligibility(readCard(), { usdEnabled: false, fundMints: CARD_FUND_MINTS }),
+    ).toEqual({
       ok: false,
       reason: "blocked",
     })
@@ -393,7 +403,9 @@ describe("whose card it is, as the card says in the read tap (ENG-675)", () => {
     expect(blocked.granted()).toBe(false)
     expect(latest?.cashuCard?.ownerKeySource).toBeUndefined()
     expect(owner()).toBe(LL.FlashcardV2.ownerOther())
-    expect(topUpEligibility(readCard(), { usdEnabled: false })).toEqual({
+    expect(
+      topUpEligibility(readCard(), { usdEnabled: false, fundMints: CARD_FUND_MINTS }),
+    ).toEqual({
       ok: false,
       reason: "blocked",
     })

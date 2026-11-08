@@ -244,9 +244,9 @@ const refuseOldFormat = (record: TopUpRecord): TopUpRecord => {
 
 /**
  * Whether a saved top-up is the mint's in hand. A quote, its payment and its
- * proofs exist only at the mint that issued them (`mintUrl`), and a
- * development build can point the card at another mint (`cardMintUrl` in
- * use-card-top-up), so a store can hold top-ups of two mints at once.
+ * proofs exist only at the mint that issued them (`mintUrl`), and each card
+ * is topped up at its own mint (`mintOfCard`, ENG-787), so a store can hold
+ * top-ups of several mints at once.
  * Compared as mints, not strings (`sameMint`): a production record must
  * never be orphaned by a cosmetic edit to `CASHU_MINT_URL`.
  */

@@ -76,7 +76,12 @@ import {
 import { cardCommitments, tidyOwed } from "../utils/cashu-card-topup/engine"
 import { tidyKeyset } from "../utils/cashu-card-topup/ladder"
 import { TidyOffer, tidyOfferFor } from "../utils/cashu-card-topup/offer"
-import { topUpMint, topUpStore } from "../utils/cashu-card-topup/connected"
+import {
+  mintOfCardOrUndefined,
+  topUpMint,
+  topUpStore,
+} from "../utils/cashu-card-topup/connected"
+import { mintKey } from "../utils/cashu-card-topup/mint-url"
 import {
   CaptureOutcome,
   RelayOutcome,
@@ -103,25 +108,51 @@ const describeCardFailure = (err: unknown): string =>
   err instanceof CardError ? `${err.name} ${err.sw.toString(16)}` : describeError(err)
 
 /**
- * A card's unspent value per unit, as the mint names the unit of each keyset
- * on it, with the units the mint named (`units`, absent for an empty card,
- * which needs no lookup). Undefined when the tap could not read the keyset
- * split (there is nothing to ask the mint about), or when the mint could not
- * be asked or did not answer with a keyset list.
+ * A card's unspent value per unit, as its own mint (`mintOfCard`, ENG-787)
+ * names the unit of each keyset on it, with the units that mint named
+ * (`units`, absent for an empty card, which needs no lookup) and the mint.
+ * Undefined when the tap could not read the keyset split (there is nothing to
+ * ask the mint about), when the card's mint is one this app cannot use, or
+ * when the mint could not be asked or did not answer with a keyset list.
  */
 const cardUnitTotals = async (
   card: CashuCardInfo,
-): Promise<{ unitTotals: CardUnitTotals; units?: KeysetUnits } | undefined> => {
+): Promise<
+  { unitTotals: CardUnitTotals; units?: KeysetUnits; mint?: string } | undefined
+> => {
   const { keysets } = card
   if (!keysets) return undefined
   if (keysets.length === 0) return { unitTotals: { byUnit: [], unknown: 0 } }
+  const mint = mintOfCardOrUndefined(card.record)
+  if (!mint) return undefined
   try {
-    const units = await unitsForKeysets(keysets.map((k) => k.keysetId))
-    return { unitTotals: totalsByUnit(keysets, units), units }
+    const units = await unitsForKeysets(
+      keysets.map((k) => k.keysetId),
+      mint,
+    )
+    return { unitTotals: totalsByUnit(keysets, units), units, mint }
   } catch (err) {
     console.warn("Cashu mint keyset lookup failed:", describeError(err))
     return undefined
   }
+}
+
+/**
+ * A split's units from what the card's own mint named before (`record`,
+ * `mintOfCard`, ENG-787: `known` is per mint); undefined unless it named them
+ * all, and for a card whose mint this app cannot use.
+ */
+const namedUnitTotals = (
+  known: Record<string, KeysetUnits> | undefined,
+  keysets: CardKeysetTotal[] | undefined,
+  record: CashuCardInfo["record"] | undefined,
+): CardUnitTotals | undefined => {
+  const mint = mintOfCardOrUndefined(record)
+  if (!keysets || !mint) return undefined
+  const units = known?.[mintKey(mint)] ?? {}
+  return keysets.every(({ keysetId }) => units[keysetId.toLowerCase()] !== undefined)
+    ? totalsByUnit(keysets, units)
+    : undefined
 }
 
 /**
@@ -259,9 +290,11 @@ const relayBeforeOp = async (
 const tidyOfferForRead = async (card: CashuCardInfo): Promise<TidyOffer | undefined> => {
   const pieces = card.unspentSlots
   const keysetId = pieces && tidyKeyset(pieces)
-  if (!pieces || !keysetId) return undefined
+  // At the card's own mint (ENG-787): none for a mint this app cannot use.
+  const mint = mintOfCardOrUndefined(card.record)
+  if (!pieces || !keysetId || !mint) return undefined
   try {
-    const feePpk = await topUpMint().feePpk(keysetId)
+    const feePpk = await topUpMint(mint).feePpk(keysetId)
     const tidies = await topUpStore.tidies.list()
     const pubkey = card.pubkey.toLowerCase()
     if (tidies.some((t) => t.cardPubkey === pubkey && tidyOwed(t))) return undefined
@@ -423,7 +456,7 @@ export type CashuCardState = CashuCardInfo & {
   /**
    * The card's unspent value per unit. Defined once every keyset on the card
    * has a unit the mint named, on this read or an earlier one
-   * (`flashcardV2.keysetUnits`). The mint's answer for this split defines it
+   * (`flashcardV2.keysetUnitsByMint`). The mint's answer for this split defines it
    * too, counting a keyset the mint does not list toward `unknown`. Undefined
    * while any keyset has never been named and the mint has not answered (its
    * lookup is outstanding, or failed), or when the keyset split could not be
@@ -726,7 +759,7 @@ export const FlashcardProvider = ({ children }: Props) => {
   const dispatch = useAppDispatch()
   // What the mint has named before, kept across sessions: a split whose
   // keysets are all named is labelled at once, before the mint answers again.
-  const knownKeysetUnits = useAppSelector((state) => state.flashcardV2.keysetUnits)
+  const knownKeysetUnits = useAppSelector((state) => state.flashcardV2.keysetUnitsByMint)
   const knownKeysetUnitsRef = useRef(knownKeysetUnits)
   knownKeysetUnitsRef.current = knownKeysetUnits
   const [cashuCardPreview, setCashuCardPreview] = useState<CashuCardPreview>()
@@ -737,14 +770,10 @@ export const FlashcardProvider = ({ children }: Props) => {
   const verifyingText = (preview: CashuCardPreview) =>
     scanSheetVerifying(preview, balanceHidden(apollo), LL)
 
-  /** A split's units from what the mint named before; undefined unless it named them all. */
-  const knownUnitTotals = (keysets?: CardKeysetTotal[]): CardUnitTotals | undefined => {
-    if (!keysets) return undefined
-    const units = knownKeysetUnitsRef.current ?? {}
-    return keysets.every(({ keysetId }) => units[keysetId.toLowerCase()] !== undefined)
-      ? totalsByUnit(keysets, units)
-      : undefined
-  }
+  const knownUnitTotals = (
+    keysets: CardKeysetTotal[] | undefined,
+    record: CashuCardInfo["record"] | undefined,
+  ) => namedUnitTotals(knownKeysetUnitsRef.current, keysets, record)
 
   useEffect(() => {
     loadFlashcard()
@@ -872,7 +901,7 @@ export const FlashcardProvider = ({ children }: Props) => {
         if (info) {
           // The card screen renders this; the caller navigates on the result.
           cashuGeneration.current += 1
-          const known = knownUnitTotals(info.keysets)
+          const known = knownUnitTotals(info.keysets, info.record)
           // Under the grant the read's GET_INFO said the card's payment limit.
           const ownerPaymentLimit = ownership.granted ? info.paymentLimit : undefined
           setCashuCard({
@@ -986,7 +1015,7 @@ export const FlashcardProvider = ({ children }: Props) => {
    * on the card in context and, signed in, the card's single unit (if it has
    * exactly one) on its record. A mint that cannot be reached leaves the card
    * as the read labelled it, and the record's unit as the read left it: named
-   * from the units the mint named before (`flashcardV2.keysetUnits`) when it
+   * from the units the mint named before (`flashcardV2.keysetUnitsByMint`) when it
    * had named every keyset on the card. So the screen says "unit unknown"
    * only when a keyset was never named, or when the read lost the keyset
    * split and there is nothing to ask about. The next read asks again. A
@@ -997,7 +1026,9 @@ export const FlashcardProvider = ({ children }: Props) => {
     const answer = await cardUnitTotals(card)
     if (!answer) return
     // Facts about the mint's keysets: kept whatever the card does next.
-    if (answer.units && isAuthed) dispatch(keysetUnitsLearned(answer.units))
+    if (answer.units && answer.mint && isAuthed) {
+      dispatch(keysetUnitsLearned({ mint: answer.mint, units: answer.units }))
+    }
     const { unitTotals } = answer
     if (generation !== cashuGeneration.current) return
     // Totals belong to the split they were computed from. A card operation
@@ -1061,7 +1092,7 @@ export const FlashcardProvider = ({ children }: Props) => {
     const spentChanged = update.spent !== undefined && update.spent !== previous.spent
     const keysets = slots?.keysets
     // The new split is labelled at once when the mint named its keysets before.
-    const known = moved ? knownUnitTotals(keysets) : undefined
+    const known = moved ? knownUnitTotals(keysets, record) : undefined
     // The pieces themselves changed (a tidy) or the value did: the pieces
     // read in the same session replace the old ones, and an offer made for
     // the old ones goes (ENG-702).

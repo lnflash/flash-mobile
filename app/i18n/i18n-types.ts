@@ -1097,6 +1097,88 @@ type RootTranslation = {
 		 * @param {unknown} amount
 		 */
 		topUpUnfinishedNeedsUpdate: RequiredParams<'amount'>
+		/**
+		 * S​t​o​r​e​d​ ​o​n​ ​t​h​e​ ​c​a​r​d​ ​·​ ​e​C​a​s​h​ ​f​r​o​m​ ​{​m​i​n​t​}
+		 * @param {string} mint
+		 */
+		mintLine: RequiredParams<'mint'>
+		/**
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​e​C​a​s​h​ ​i​s​ ​b​a​c​k​e​d​ ​b​y​ ​{​m​i​n​t​}​,​ ​w​h​i​c​h​ ​F​l​a​s​h​ ​d​o​e​s​n​'​t​ ​r​u​n​.
+		 * @param {string} mint
+		 */
+		mintNotice: RequiredParams<'mint'>
+		/**
+		 * F​l​a​s​h​ ​c​a​n​'​t​ ​a​d​d​ ​m​o​n​e​y​ ​t​o​ ​t​h​i​s​ ​c​a​r​d​ ​y​e​t
+		 */
+		mintReadOnlyTitle: string
+		/**
+		 * F​l​a​s​h​ ​d​o​e​s​n​'​t​ ​f​u​n​d​ ​{​m​i​n​t​}​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​s​t​i​l​l​ ​s​e​e​ ​t​h​e​ ​b​a​l​a​n​c​e​ ​a​n​d​ ​t​i​d​y​ ​t​h​e​ ​c​a​r​d​ ​w​h​e​n​ ​o​f​f​e​r​e​d​.
+		 * @param {string} mint
+		 */
+		mintReadOnly: RequiredParams<'mint'>
+		/**
+		 * F​l​a​s​h​ ​c​a​n​'​t​ ​u​s​e​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​m​i​n​t
+		 */
+		cardMintInvalidTitle: string
+		/**
+		 * F​l​a​s​h​ ​c​a​n​'​t​ ​a​d​d​ ​m​o​n​e​y​ ​t​o​ ​i​t​ ​o​r​ ​t​e​l​l​ ​i​t​s​ ​u​n​i​t​s​.​ ​C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​w​i​t​h​ ​t​h​e​ ​c​a​r​d​ ​I​D​ ​b​e​l​o​w​.
+		 */
+		cardMintInvalidBody: string
+		/**
+		 * F​l​a​s​h​ ​c​a​n​'​t​ ​u​s​e​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​m​i​n​t​,​ ​s​o​ ​i​t​ ​c​a​n​'​t​ ​a​d​d​ ​m​o​n​e​y​.​ ​C​o​n​t​a​c​t​ ​s​u​p​p​o​r​t​ ​w​i​t​h​ ​t​h​e​ ​c​a​r​d​ ​I​D​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​.
+		 */
+		topUpCardMintInvalid: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​a​s​ ​a​n​ ​u​n​f​i​n​i​s​h​e​d​ ​t​o​p​-​u​p​ ​o​r​ ​t​i​d​y​ ​a​t​ ​{​m​i​n​t​}​.​ ​F​i​n​i​s​h​ ​i​t​ ​f​r​o​m​ ​t​h​e​ ​c​a​r​d​'​s​ ​s​c​r​e​e​n​,​ ​t​h​e​n​ ​t​o​p​ ​u​p​.
+		 * @param {string} mint
+		 */
+		topUpOtherMint: RequiredParams<'mint'>
+		/**
+		 * e​C​a​s​h​ ​f​r​o​m​ ​{​m​i​n​t​}
+		 * @param {string} mint
+		 */
+		setUpMintRow: RequiredParams<'mint'>
+		/**
+		 * C​h​a​n​g​e
+		 */
+		setUpMintChange: string
+		/**
+		 * W​h​e​r​e​ ​t​h​e​ ​c​a​r​d​'​s​ ​e​C​a​s​h​ ​c​o​m​e​s​ ​f​r​o​m
+		 */
+		setUpMintTitle: string
+		/**
+		 * A​ ​m​i​n​t​ ​i​s​s​u​e​s​ ​t​h​e​ ​e​C​a​s​h​ ​a​ ​c​a​r​d​ ​h​o​l​d​s​ ​a​n​d​ ​p​a​y​s​ ​i​t​ ​o​u​t​ ​w​h​e​n​ ​i​t​'​s​ ​s​p​e​n​t​.​ ​F​l​a​s​h​ ​a​d​d​s​ ​m​o​n​e​y​ ​o​n​l​y​ ​a​t​ ​m​i​n​t​s​ ​i​t​ ​s​u​p​p​o​r​t​s​.
+		 */
+		setUpMintIntro: string
+		/**
+		 * A​n​o​t​h​e​r​ ​m​i​n​t
+		 */
+		setUpMintOther: string
+		/**
+		 * T​h​e​ ​m​i​n​t​'​s​ ​w​e​b​ ​a​d​d​r​e​s​s​,​ ​a​s​ ​t​h​e​ ​m​i​n​t​ ​g​i​v​e​s​ ​i​t
+		 */
+		setUpMintPlaceholder: string
+		/**
+		 * T​h​i​s​ ​a​d​d​r​e​s​s​ ​c​a​n​'​t​ ​b​e​ ​u​s​e​d​.​ ​C​o​p​y​ ​i​t​ ​e​x​a​c​t​l​y​ ​a​s​ ​t​h​e​ ​m​i​n​t​ ​g​i​v​e​s​ ​i​t​,​ ​s​t​a​r​t​i​n​g​ ​w​i​t​h​ ​h​t​t​p​s​:​/​/​.
+		 */
+		setUpMintInvalid: string
+		/**
+		 * T​h​i​s​ ​a​d​d​r​e​s​s​ ​i​s​ ​t​o​o​ ​l​o​n​g​ ​t​o​ ​s​a​v​e​ ​o​n​ ​a​ ​c​a​r​d​.​ ​A​s​k​ ​t​h​e​ ​m​i​n​t​ ​f​o​r​ ​a​ ​s​h​o​r​t​e​r​ ​o​n​e​.
+		 */
+		setUpMintTooLong: string
+		/**
+		 * N​o​ ​e​C​a​s​h​ ​m​i​n​t​ ​a​n​s​w​e​r​e​d​ ​a​t​ ​t​h​i​s​ ​a​d​d​r​e​s​s​.​ ​C​h​e​c​k​ ​i​t​,​ ​o​r​ ​c​h​o​o​s​e​ ​a​n​o​t​h​e​r​ ​m​i​n​t​.
+		 */
+		setUpMintNoAnswer: string
+		/**
+		 * F​l​a​s​h​ ​c​a​n​'​t​ ​a​d​d​ ​m​o​n​e​y​ ​h​e​r​e​ ​y​e​t
+		 */
+		setUpMintReadOnly: string
+		/**
+		 * F​l​a​s​h​ ​d​o​e​s​n​'​t​ ​r​u​n​ ​{​m​i​n​t​}​,​ ​a​n​d​ ​t​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​m​o​v​e​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​a​n​o​t​h​e​r​ ​m​i​n​t​ ​l​a​t​e​r​.
+		 * @param {string} mint
+		 */
+		setUpMintNotice: RequiredParams<'mint'>
 	}
 	Cashout: {
 		/**
@@ -9800,6 +9882,82 @@ export type TranslationFunctions = {
 		 * A top-up of {amount} was made for this card's old software. It's kept on this phone: contact support to recover it.
 		 */
 		topUpUnfinishedNeedsUpdate: (arg: { amount: unknown }) => LocalizedString
+		/**
+		 * Stored on the card · eCash from {mint}
+		 */
+		mintLine: (arg: { mint: string }) => LocalizedString
+		/**
+		 * This card's eCash is backed by {mint}, which Flash doesn't run.
+		 */
+		mintNotice: (arg: { mint: string }) => LocalizedString
+		/**
+		 * Flash can't add money to this card yet
+		 */
+		mintReadOnlyTitle: () => LocalizedString
+		/**
+		 * Flash doesn't fund {mint} yet. You can still see the balance and tidy the card when offered.
+		 */
+		mintReadOnly: (arg: { mint: string }) => LocalizedString
+		/**
+		 * Flash can't use this card's mint
+		 */
+		cardMintInvalidTitle: () => LocalizedString
+		/**
+		 * Flash can't add money to it or tell its units. Contact support with the card ID below.
+		 */
+		cardMintInvalidBody: () => LocalizedString
+		/**
+		 * Flash can't use this card's mint, so it can't add money. Contact support with the card ID from the card's screen.
+		 */
+		topUpCardMintInvalid: () => LocalizedString
+		/**
+		 * This card has an unfinished top-up or tidy at {mint}. Finish it from the card's screen, then top up.
+		 */
+		topUpOtherMint: (arg: { mint: string }) => LocalizedString
+		/**
+		 * eCash from {mint}
+		 */
+		setUpMintRow: (arg: { mint: string }) => LocalizedString
+		/**
+		 * Change
+		 */
+		setUpMintChange: () => LocalizedString
+		/**
+		 * Where the card's eCash comes from
+		 */
+		setUpMintTitle: () => LocalizedString
+		/**
+		 * A mint issues the eCash a card holds and pays it out when it's spent. Flash adds money only at mints it supports.
+		 */
+		setUpMintIntro: () => LocalizedString
+		/**
+		 * Another mint
+		 */
+		setUpMintOther: () => LocalizedString
+		/**
+		 * The mint's web address, as the mint gives it
+		 */
+		setUpMintPlaceholder: () => LocalizedString
+		/**
+		 * This address can't be used. Copy it exactly as the mint gives it, starting with https://.
+		 */
+		setUpMintInvalid: () => LocalizedString
+		/**
+		 * This address is too long to save on a card. Ask the mint for a shorter one.
+		 */
+		setUpMintTooLong: () => LocalizedString
+		/**
+		 * No eCash mint answered at this address. Check it, or choose another mint.
+		 */
+		setUpMintNoAnswer: () => LocalizedString
+		/**
+		 * Flash can't add money here yet
+		 */
+		setUpMintReadOnly: () => LocalizedString
+		/**
+		 * Flash doesn't run {mint}, and this app can't move the card to another mint later.
+		 */
+		setUpMintNotice: (arg: { mint: string }) => LocalizedString
 	}
 	Cashout: {
 		/**

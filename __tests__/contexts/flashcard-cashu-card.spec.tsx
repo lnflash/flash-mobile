@@ -24,6 +24,9 @@ import {
   renderProvider,
 } from "./flashcard-harness"
 
+// The mint the fake card's record names (fake-cashu): its units are kept under it (ENG-787).
+const CARD_MINT = "https://mint.test"
+
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
 jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
@@ -326,7 +329,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     await tapOnce()
 
     // Asked about exactly the keysets the card holds, after the tap.
-    expect(lookupUnits).toHaveBeenCalledWith([KEYSET_HEX])
+    expect(lookupUnits).toHaveBeenCalledWith([KEYSET_HEX], CARD_MINT)
     await waitFor(() =>
       expect(latest?.cashuCard?.unitTotals).toEqual({
         byUnit: [{ unit: "sat", amount: 500 }],
@@ -341,7 +344,9 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     const { tap } = await mount()
     await tap()
     await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
-    expect(store.getState().flashcardV2.keysetUnits).toEqual({ [KEYSET_HEX]: "sat" })
+    expect(store.getState().flashcardV2.keysetUnitsByMint?.[CARD_MINT]).toEqual({
+      [KEYSET_HEX]: "sat",
+    })
 
     // The mint is slow this time: the read is labelled before it answers.
     lookupUnits.mockReturnValue(
@@ -383,7 +388,9 @@ describe("FlashcardProvider Cashu card orchestration", () => {
   })
 
   it("still waits on the mint for a card holding a keyset it has not named", async () => {
-    store.dispatch(keysetUnitsLearned({ ["ff".repeat(8)]: "usd" }))
+    store.dispatch(
+      keysetUnitsLearned({ mint: CARD_MINT, units: { ["ff".repeat(8)]: "usd" } }),
+    )
     tapCashuCard()
     lookupUnits.mockReturnValue(
       new Promise(() => {
@@ -398,7 +405,9 @@ describe("FlashcardProvider Cashu card orchestration", () => {
   })
 
   it("still waits on the mint when it has named only some of the card's keysets", async () => {
-    store.dispatch(keysetUnitsLearned({ [KEYSET_HEX]: "sat" }))
+    store.dispatch(
+      keysetUnitsLearned({ mint: CARD_MINT, units: { [KEYSET_HEX]: "sat" } }),
+    )
     tapCashuCard()
     transceive.mockImplementation(
       cardHolding([
@@ -426,7 +435,12 @@ describe("FlashcardProvider Cashu card orchestration", () => {
   })
 
   it("labels a card holding two units at once, and names no single unit on its record", async () => {
-    store.dispatch(keysetUnitsLearned({ [KEYSET_HEX]: "sat", [USD_KEYSET_HEX]: "usd" }))
+    store.dispatch(
+      keysetUnitsLearned({
+        mint: CARD_MINT,
+        units: { [KEYSET_HEX]: "sat", [USD_KEYSET_HEX]: "usd" },
+      }),
+    )
     tapCashuCard()
     transceive.mockImplementation(
       cardHolding([
@@ -461,7 +475,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     await tapOnce({ isAuthed: false })
 
     await waitFor(() => expect(latest?.cashuCard?.unitTotals).toBeDefined())
-    expect(store.getState().flashcardV2.keysetUnits).toBeUndefined()
+    expect(store.getState().flashcardV2.keysetUnitsByMint).toBeUndefined()
   })
 
   it("leaves the unit unknown, and the record's unit alone, when the mint cannot be asked", async () => {
@@ -502,7 +516,7 @@ describe("FlashcardProvider Cashu card orchestration", () => {
     await waitFor(() =>
       expect(warn).toHaveBeenCalledWith("Cashu mint keyset lookup failed:", "Error"),
     )
-    expect(store.getState().flashcardV2.keysetUnits).toBeUndefined()
+    expect(store.getState().flashcardV2.keysetUnitsByMint).toBeUndefined()
     expect(latest?.cashuCard?.unitTotals).toBeUndefined()
     // Still the 500 the unit was named for, so the home row keeps valuing it
     // rather than show "500 · unit unknown".

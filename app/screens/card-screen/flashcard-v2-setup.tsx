@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react"
-import { AccessibilityInfo, ActivityIndicator, Platform, View } from "react-native"
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Platform,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native"
 import { NfcError } from "react-native-nfc-manager"
 import { makeStyles, Text, useTheme } from "@rneui/themed"
 import { useNavigation } from "@react-navigation/native"
@@ -8,6 +15,8 @@ import { StackNavigationProp } from "@react-navigation/stack"
 import { PrimaryBtn } from "@app/components/buttons"
 import { PinPad } from "@app/components/card/PinPad"
 import { Screen } from "@app/components/screen"
+import { CASHU_MINT_URL, DEFAULT_CARD_MINTS, mintDisplayName } from "@app/config/appinfo"
+import { useFeatureFlags } from "@app/config/feature-flags-context"
 import { useFlashcard } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -22,6 +31,14 @@ import {
   isValidCardPin,
 } from "@app/utils/cashu-card"
 import { cardMintUrl } from "@app/utils/cashu-card-bridge"
+import { isolatedMintName } from "@app/utils/cashu-card-format"
+import {
+  checkCardMint,
+  isFundMint,
+  mintOfCardOrUndefined,
+} from "@app/utils/cashu-card-topup/connected"
+import { sameMint } from "@app/utils/cashu-card-topup/mint-url"
+import { fetchKeysetUnits } from "@app/utils/cashu-mint"
 import { refreshTipHeader } from "@app/utils/cashu-card-headers"
 import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
 import {
@@ -45,12 +62,41 @@ const SW_OWNER_PROOF = 0x6a91
 type Step =
   | { name: "preparing" }
   | { name: "intro" }
+  /** "Change" on the intro (ENG-787): which mint the card's eCash comes from. */
+  | { name: "mint" }
   | { name: "pin"; confirm: boolean }
   | { name: "tap" }
   | { name: "finished" }
 
 /** What the tap did. */
 type SetUpOutcome = "set-up" | "already-mine"
+
+/** The mint step's choice: a listed mint, or an address written in. */
+type MintChoice = { kind: "listed"; url: string } | { kind: "other" }
+
+/**
+ * The mints setup lists (ENG-787): the app's card mint first when it is not
+ * one of `DEFAULT_CARD_MINTS` (a development build's dev mint), then those.
+ */
+const listedMints = (): { url: string; name: string }[] => {
+  const own = cardMintUrl()
+  const listed = DEFAULT_CARD_MINTS.map((mint) => ({ ...mint }))
+  return listed.some((mint) => sameMint(mint.url, own))
+    ? listed
+    : [{ url: own, name: mintDisplayName(own) }, ...listed]
+}
+
+/** Whether a mint's own `/v1/keysets` lists a sat keyset: a typo answers nothing. */
+const answersAsMint = async (url: string): Promise<boolean> => {
+  try {
+    const units = await fetchKeysetUnits(url)
+    return Object.values(units).includes("sat")
+  } catch {
+    return false
+  }
+}
+
+const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
 
 /**
  * Set up a Cashu card (ENG-675, card protocol 2.0; architect's decision 15):
@@ -68,6 +114,13 @@ type SetUpOutcome = "set-up" | "already-mine"
  *
  * An empty card with no owner belongs to the first phone that sets it up
  * (SECURITY-MODEL): the screen says so.
+ *
+ * The mint (ENG-787): a card whose record already names a mint (a setup cut
+ * short, or an earlier one) is set up for that same mint, with no choice.
+ * Otherwise the app's card mint (forge, "Flash") is written with no extra
+ * press; one "Change" link opens the other listed mints and a written-in
+ * address. A mint Flash doesn't fund is said once, under the choice: SET_CARD
+ * fixes the mint, and this app can't move the card later.
  */
 export const FlashcardV2SetupScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -75,6 +128,7 @@ export const FlashcardV2SetupScreen = () => {
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { cashuCard, runCardOperation } = useFlashcard()
+  const { cardFundMints } = useFeatureFlags()
 
   const [step, setStep] = useState<Step>({ name: "preparing" })
   const [key, setKey] = useState<OwnerKey>()
@@ -88,9 +142,28 @@ export const FlashcardV2SetupScreen = () => {
   // record can't be written without a PIN nobody here knows.
   const pinRequired = cashuCard ? cashuCard.pinState !== "unset" : false
 
+  // The record's own mint, on a card whose record is set: kept, never changed.
+  // GET_INFO and GET_CARD both say the record is set.
+  const [recordedMint] = useState(() =>
+    cashuCard?.recordSet && cashuCard.record?.recordSet
+      ? mintOfCardOrUndefined(cashuCard.record)
+      : undefined,
+  )
+  const [mint, setMint] = useState(() => recordedMint ?? cardMintUrl())
+  // The mint step's own state; nothing reaches `mint` before Continue.
+  const [choice, setChoice] = useState<MintChoice>({ kind: "listed", url: mint })
+  const [address, setAddress] = useState("https://")
+  const [addressError, setAddressError] = useState<string>()
+  const [checking, setChecking] = useState(false)
+
   useEffect(() => {
     if (error && Platform.OS === "ios") AccessibilityInfo.announceForAccessibility(error)
   }, [error])
+  useEffect(() => {
+    if (addressError && Platform.OS === "ios") {
+      AccessibilityInfo.announceForAccessibility(addressError)
+    }
+  }, [addressError])
 
   useEffect(() => {
     if (!cashuCard) navigation.goBack()
@@ -153,7 +226,7 @@ export const FlashcardV2SetupScreen = () => {
         cardPubkey: cashuCard.pubkey,
         info,
         pin,
-        mint: cardMintUrl(),
+        mint,
         anchor,
         key: owner,
       },
@@ -222,6 +295,67 @@ export const FlashcardV2SetupScreen = () => {
     setStep({ name: "tap" })
   }
 
+  const addressCheck = checkCardMint(address)
+  const addressProblem = (check = addressCheck) =>
+    check.ok
+      ? undefined
+      : check.reason === "too-long"
+      ? LL.FlashcardV2.setUpMintTooLong()
+      : LL.FlashcardV2.setUpMintInvalid()
+
+  const openMintStep = () => {
+    setError(undefined)
+    setAddressError(undefined)
+    setChoice(
+      listedMints().some((listed) => sameMint(listed.url, mint))
+        ? { kind: "listed", url: mint }
+        : { kind: "other" },
+    )
+    if (!listedMints().some((listed) => sameMint(listed.url, mint))) setAddress(mint)
+    setStep({ name: "mint" })
+  }
+
+  /** Continue on the mint step: a listed mint at once, a written-in one once it answers. */
+  const mintNext = async () => {
+    if (choice.kind === "listed") {
+      setMint(choice.url)
+      setStep({ name: "intro" })
+      return
+    }
+    if (!addressCheck.ok) {
+      setAddressError(addressProblem())
+      return
+    }
+    const url = addressCheck.url
+    setChecking(true)
+    setAddressError(undefined)
+    const answered = await answersAsMint(url)
+    setChecking(false)
+    // A typo would be frozen onto the card: only a mint that answers is taken.
+    if (!answered) {
+      setAddressError(LL.FlashcardV2.setUpMintNoAnswer())
+      return
+    }
+    setMint(url)
+    setStep({ name: "intro" })
+  }
+
+  /** What is said once under a choice: read-only, and that the mint stays (decision 2). */
+  const mintCaveats = (url: string, testID: string) => (
+    <>
+      {!isFundMint(url, cardFundMints) && (
+        <Text type="caption" style={styles.caveat} testID={`${testID}-read-only`}>
+          {LL.FlashcardV2.setUpMintReadOnly()}
+        </Text>
+      )}
+      {!sameMint(url, CASHU_MINT_URL) && (
+        <Text type="caption" style={styles.caveat} testID={`${testID}-notice`}>
+          {LL.FlashcardV2.setUpMintNotice({ mint: isolatedMintName(url) })}
+        </Text>
+      )}
+    </>
+  )
+
   const errorLine = (
     <View style={styles.status} testID="setup-status" accessibilityLiveRegion="polite">
       {error && (
@@ -260,6 +394,24 @@ export const FlashcardV2SetupScreen = () => {
                 {LL.FlashcardV2.setUpPinRequired()}
               </Text>
             )}
+            <View style={styles.mintRow}>
+              <Text type="p2" style={styles.mintRowText} testID="setup-mint-row">
+                {LL.FlashcardV2.setUpMintRow({ mint: isolatedMintName(mint) })}
+              </Text>
+              {/* A card whose record names its mint keeps it: no choice. */}
+              {!recordedMint && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={openMintStep}
+                  style={styles.link}
+                  testID="setup-mint-change"
+                >
+                  <Text type="p2" bold>
+                    {LL.FlashcardV2.setUpMintChange()}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {errorLine}
             <PrimaryBtn
               label={LL.FlashcardV2.setUpChoosePin()}
@@ -277,6 +429,122 @@ export const FlashcardV2SetupScreen = () => {
                 testID="setup-no-pin"
               />
             )}
+          </>
+        )
+      case "mint":
+        return (
+          <>
+            <Text type="h02" accessibilityRole="header" testID="setup-mint-title">
+              {LL.FlashcardV2.setUpMintTitle()}
+            </Text>
+            <Text type="p2">{LL.FlashcardV2.setUpMintIntro()}</Text>
+            <View accessibilityRole="radiogroup" style={styles.mints}>
+              {listedMints().map((listed) => {
+                const checked =
+                  choice.kind === "listed" && sameMint(choice.url, listed.url)
+                return (
+                  <View key={listed.url}>
+                    <TouchableOpacity
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked }}
+                      accessibilityLabel={listed.name}
+                      style={[styles.mintOption, checked && styles.mintSelected]}
+                      onPress={() => {
+                        setAddressError(undefined)
+                        setChoice({ kind: "listed", url: listed.url })
+                      }}
+                      testID={`setup-mint-option-${listed.name}`}
+                    >
+                      <Text type="p1">{listed.name}</Text>
+                      <Text type="p1" bold>
+                        {checked ? "✓" : ""}
+                      </Text>
+                    </TouchableOpacity>
+                    {!isFundMint(listed.url, cardFundMints) && (
+                      <Text type="caption" style={styles.caveat}>
+                        {LL.FlashcardV2.setUpMintReadOnly()}
+                      </Text>
+                    )}
+                    {checked && !sameMint(listed.url, CASHU_MINT_URL) && (
+                      <Text
+                        type="caption"
+                        style={styles.caveat}
+                        testID="setup-mint-choice-notice"
+                      >
+                        {LL.FlashcardV2.setUpMintNotice({
+                          mint: isolatedMintName(listed.url),
+                        })}
+                      </Text>
+                    )}
+                  </View>
+                )
+              })}
+              <TouchableOpacity
+                accessibilityRole="radio"
+                accessibilityState={{ checked: choice.kind === "other" }}
+                style={[
+                  styles.mintOption,
+                  choice.kind === "other" && styles.mintSelected,
+                ]}
+                onPress={() => setChoice({ kind: "other" })}
+                testID="setup-mint-option-other"
+              >
+                <Text type="p1">{LL.FlashcardV2.setUpMintOther()}</Text>
+                <Text type="p1" bold>
+                  {choice.kind === "other" ? "✓" : ""}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {choice.kind === "other" && (
+              <>
+                <TextInput
+                  value={address}
+                  onChangeText={(text) => {
+                    setAddress(text)
+                    setAddressError(undefined)
+                  }}
+                  onBlur={() => setAddressError(addressProblem())}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  keyboardType="url"
+                  accessibilityLabel={LL.FlashcardV2.setUpMintPlaceholder()}
+                  style={[styles.address, { color: colors.black }]}
+                  testID="setup-mint-address"
+                />
+                <Text type="caption">{LL.FlashcardV2.setUpMintPlaceholder()}</Text>
+                {addressCheck.ok && mintCaveats(addressCheck.url, "setup-mint-address")}
+              </>
+            )}
+            <View
+              style={styles.status}
+              testID="setup-mint-status"
+              accessibilityLiveRegion="polite"
+            >
+              {addressError && (
+                <Text type="p2" style={styles.error} testID="setup-mint-error">
+                  {addressError}
+                </Text>
+              )}
+            </View>
+            <PrimaryBtn
+              label={LL.FlashcardV2.next()}
+              loading={checking}
+              disabled={checking || (choice.kind === "other" && !addressCheck.ok)}
+              onPress={mintNext}
+              testID="setup-mint-next"
+            />
+            {/* Back changes nothing: the mint stays what it was. */}
+            <PrimaryBtn
+              type="outline"
+              label={LL.common.back()}
+              disabled={checking}
+              onPress={() => {
+                setAddressError(undefined)
+                setStep({ name: "intro" })
+              }}
+              testID="setup-mint-back"
+            />
           </>
         )
       case "pin":
@@ -399,5 +667,52 @@ const useStyles = makeStyles(({ colors }) => ({
   error: {
     color: colors.error,
     textAlign: "center",
+  },
+  mintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  mintRowText: {
+    textAlign: "center",
+  },
+  // At least 44 pt to press.
+  link: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  mints: {
+    gap: 8,
+  },
+  mintOption: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border01,
+  },
+  mintSelected: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
+  caveat: {
+    marginTop: 4,
+    marginHorizontal: 16,
+    color: colors.grey2,
+  },
+  address: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border01,
+    paddingHorizontal: 12,
+    fontFamily: MONOSPACE,
   },
 }))

@@ -12,6 +12,11 @@ import {
   unitsForKeysets,
 } from "../../app/utils/cashu-mint"
 import { setCardBridge } from "../../app/utils/cashu-card-bridge"
+import { mintOfCard } from "../../app/utils/cashu-card-topup/connected"
+
+// A card never set up: its record names no mint, so it goes by the app's
+// card mint (`mintOfCard`): forge, or a development build's dev mint.
+const UNSET_RECORD = { recordSet: false, mint: "" }
 
 jest.mock("axios", () => ({ get: jest.fn() }))
 
@@ -181,9 +186,9 @@ describe("unitsForKeysets", () => {
     await expect(unitsForKeysets([SAT], mint)).resolves.toEqual({ [SAT]: "sat" })
   })
 
-  it("defaults to the Flash mint", async () => {
+  it("asks a card never set up about its units at the Flash mint", async () => {
     get.mockResolvedValue({ data: keysetsBody([{ id: SAT, unit: "sat" }]) })
-    await unitsForKeysets([SAT])
+    await unitsForKeysets([SAT], mintOfCard(UNSET_RECORD))
     expect(get).toHaveBeenCalledWith(
       "https://forge.flashapp.me/v1/keysets",
       expect.anything(),
@@ -197,10 +202,10 @@ describe("unitsForKeysets", () => {
       setCardBridge(undefined)
     })
 
-    it("defaults to the dev mint while a card bridge names one", async () => {
+    it("asks the dev mint about a card never set up while a card bridge names one", async () => {
       setCardBridge({ url: "http://localhost:9876", mintUrl: "http://localhost:3338" })
       get.mockResolvedValue({ data: keysetsBody([{ id: SAT, unit: "sat" }]) })
-      await unitsForKeysets([SAT])
+      await unitsForKeysets([SAT], mintOfCard(UNSET_RECORD))
       expect(get).toHaveBeenCalledWith(
         "http://localhost:3338/v1/keysets",
         expect.anything(),
@@ -215,12 +220,38 @@ describe("unitsForKeysets", () => {
       setCardBridge({ url: "http://localhost:9876", mintUrl: "http://localhost:3339" })
       ;(globalThis as unknown as Dev).__DEV__ = false
       get.mockResolvedValue({ data: keysetsBody([{ id: SAT, unit: "sat" }]) })
-      await unitsForKeysets([SAT])
+      await unitsForKeysets([SAT], mintOfCard(UNSET_RECORD))
       expect(get).not.toHaveBeenCalledWith(
         "http://localhost:3339/v1/keysets",
         expect.anything(),
       )
     })
+  })
+})
+
+describe("unitsForKeysets per mint (ENG-787)", () => {
+  it("shares one list between two spellings of a mint", async () => {
+    const mint = freshMint()
+    get.mockResolvedValue({ data: keysetsBody([{ id: SAT, unit: "sat" }]) })
+    await unitsForKeysets([SAT], mint)
+    await unitsForKeysets([SAT], `${mint.toUpperCase()}/`)
+    expect(get).toHaveBeenCalledTimes(1)
+  })
+
+  it("never answers one mint from another mint's list, even on the same host", async () => {
+    const host = freshMint()
+    get
+      .mockResolvedValueOnce({ data: keysetsBody([{ id: SAT, unit: "sat" }]) })
+      .mockResolvedValueOnce({ data: keysetsBody([{ id: USD, unit: "usd" }]) })
+    await expect(unitsForKeysets([SAT], host)).resolves.toEqual({ [SAT]: "sat" })
+    await expect(unitsForKeysets([USD], `${host}/Bitcoin`)).resolves.toEqual({
+      [USD]: "usd",
+    })
+    expect(get).toHaveBeenNthCalledWith(
+      2,
+      `${host}/Bitcoin/v1/keysets`,
+      expect.anything(),
+    )
   })
 })
 

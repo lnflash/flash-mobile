@@ -160,6 +160,32 @@ describe("isStaleDevMint", () => {
     setCardBridge(undefined)
     expect(isStaleDevMint(MINT)).toBe(true)
   })
+
+  // ENG-787: a card's own https mint is no dev mint.
+  it("is false in a release build for a card's own https mint (Minibits)", () => {
+    setDev(false)
+    try {
+      expect(isStaleDevMint("https://mint.minibits.cash/Bitcoin")).toBe(false)
+      expect(isStaleDevMint("http://localhost:3338")).toBe(false)
+    } finally {
+      setDev(true)
+    }
+  })
+
+  it("is false in development for an https mint no bridge named", () => {
+    setCardBridge({ url: BRIDGE, mintUrl: MINT, stubPay: true })
+    expect(isStaleDevMint("https://mint.minibits.cash/Bitcoin")).toBe(false)
+    setCardBridge(undefined)
+    expect(isStaleDevMint("https://mint.macadamia.cash")).toBe(false)
+  })
+
+  it("is true for an https dev mint a bridge named and let go of", () => {
+    const devHttps = "https://dev-mint.test"
+    setCardBridge({ url: BRIDGE, mintUrl: devHttps })
+    expect(isStaleDevMint(devHttps)).toBe(false)
+    setCardBridge(undefined)
+    expect(isStaleDevMint(`${devHttps}/`)).toBe(true)
+  })
 })
 
 describe("in a release build (__DEV__ false)", () => {

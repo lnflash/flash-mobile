@@ -36,7 +36,11 @@ DLEQ), with format-4 SIG_ALL pieces minted at the dev mint. It also serves the
 tip header stub at `/headers` (a real mainnet header, `FIXTURE_TIP_HEADER`),
 and `POST /spend/<amount>`: a till's offline payment of exactly that much
 from the card, no change, redeemed at the mint (500 when no pieces add up to
-it).
+it). With `--mint-b <url>`, a second local mint (ENG-787), the same endpoints
+under `/mint-b/` provision the card at that mint instead: its record names it
+and its pieces are its. `__tests__/integration/card-mint-b-cardsim.spec.ts`
+uses it, with `CARD_MINT_B_URL` set, to check that a card at a mint of its own
+is read, topped up, tidied and reclaimed there and never at the first mint.
 
 | Fixture         | Card                                                                                    |
 | --------------- | --------------------------------------------------------------------------------------- |
@@ -48,6 +52,7 @@ it).
 | `blocked`       | `loaded`, PIN blocked by three wrong tries                                              |
 | `limited`       | `loaded`, with the owner's limits (5,000 a day, 1,000 a payment, 250 without the PIN)   |
 | `missing-small` | `owned`, no PIN, 12 sat as 8 + 4: no 1 or 2, so a till offline can take only 4, 8 or 12 |
+| `missing-mid`   | `owned`, no PIN, 161 sat as 128 + 32 + 1: worth a tidy even at a 100 ppk mint           |
 
 There is no `legacy` fixture: the pinned cardsim serves the 2.1 applet, so "This
 card needs an update" (a 0.x or Foxy 1.x card) is pinned by the unit specs

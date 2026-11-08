@@ -26,7 +26,11 @@ import {
 } from "@app/utils/cashu-card"
 import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
 import { OwnerKey, ownerKeyFor, saveOwnerKey } from "@app/utils/cashu-card-owner-store"
-import { isStaleDevMint, stubbedPayOutcome } from "@app/utils/cashu-card-bridge"
+import {
+  cardMintUrl,
+  isStaleDevMint,
+  stubbedPayOutcome,
+} from "@app/utils/cashu-card-bridge"
 import {
   CardFreeDeps,
   PayOutcome,
@@ -46,6 +50,7 @@ import {
   reclaimPlan,
   reclaimSpentSlots,
   reclaimVerdicts,
+  mintKey,
   unfinishedTopUps,
 } from "@app/utils/cashu-card-topup"
 
@@ -69,16 +74,62 @@ gql`
   }
 `
 
-// The app's one top-up store and its client for the connected mint
-// (`connected.ts`), shared with the card context's tidy offer (ENG-702).
+// The app's one top-up store and its client per mint (`connected.ts`),
+// shared with the card context's tidy offer (ENG-702).
 const store = topUpStore
 export { topUpMint }
 /** What the card-free steps need: the mint and the store, no wallet, no card. */
-const cardFreeDeps = (mint: TopUpMint = topUpMint()): CardFreeDeps => ({
+const cardFreeDeps = (mint: TopUpMint): CardFreeDeps => ({
   mint,
   store,
   now: Date.now,
 })
+
+/**
+ * Every mint with card-free work in the store (ENG-787): a top-up quoted or
+ * paid, a tidy signed, at whatever mint issued it, and the card mint
+ * (`cardMintUrl()`) always. A store that cannot be read rejects.
+ */
+const mintsWithWork = async (): Promise<string[]> => {
+  const [topUps, tidies] = await Promise.all([store.list(), store.tidies.list()])
+  const mints = new Map<string, string>([[mintKey(cardMintUrl()), cardMintUrl()]])
+  const add = (url: string) => {
+    if (!mints.has(mintKey(url))) mints.set(mintKey(url), url)
+  }
+  topUps.forEach((record) => {
+    if (record.state === "quoted" || record.state === "paid") add(record.mintUrl)
+  })
+  tidies.forEach((record) => {
+    if (record.state === "signed") add(record.mintUrl)
+  })
+  return [...mints.values()]
+}
+
+/**
+ * One card-free pass at every mint with work (`mintsWithWork`): its top-ups
+ * minted or dropped (`advanceTopUps`), its signed tidies swapped
+ * (`advanceTidies`), each in its own try, so one mint that cannot be reached
+ * never holds up another. Resolves how many still wait, summed. The fund
+ * list is never asked: it gates starting a top-up, never finishing one.
+ * Rejects only when the store cannot be read.
+ */
+export const advanceEveryMint = async (): Promise<{ waiting: number }> => {
+  let waiting = 0
+  for (const url of await mintsWithWork()) {
+    const deps = cardFreeDeps(topUpMint(url))
+    try {
+      waiting += (await advanceTopUps(deps)).waiting
+    } catch {
+      // Asked again on the next pass.
+    }
+    try {
+      waiting += (await advanceTidies(deps)).waiting
+    } catch {
+      // Asked again on the next pass.
+    }
+  }
+  return { waiting }
+}
 
 /**
  * Error codes flash's lnInvoicePaymentSend returns only for a payment refused
@@ -143,11 +194,12 @@ const readPaymentAnswer = (answer: PaymentAnswer | null | undefined): PayOutcome
 }
 
 /**
- * The Cashu card top-up (ENG-616), wired to this app: the mint it is
- * connected to, the Keychain store, the Cash wallet paying the mint's invoice
- * under an idempotency key, and the card through `runCardOperation`.
+ * The Cashu card top-up (ENG-616), wired to this app: the card's own mint
+ * (`mintUrl`, `mintOfCard`, ENG-787), the Keychain store, the Cash wallet
+ * paying the mint's invoice under an idempotency key, and the card through
+ * `runCardOperation`.
  */
-export const useCardTopUp = () => {
+export const useCardTopUp = (mintUrl: string) => {
   const { LL } = useI18nContext()
   const { runCardOperation } = useFlashcard()
   const [payInvoice] = useCardTopUpInvoicePaymentSendMutation({
@@ -161,7 +213,7 @@ export const useCardTopUp = () => {
     // `pay` judges the dev stub against it, never the bridge's mint of the
     // moment: a dev link arriving after the screen mounted cannot pair the
     // stub with a production quote, nor turn a dev quote into a real payment.
-    const mint = topUpMint()
+    const mint = topUpMint(mintUrl)
     return {
       ...cardFreeDeps(mint),
       newId: uuidv4,
@@ -212,7 +264,7 @@ export const useCardTopUp = () => {
         return readPaymentAnswer(answer)
       },
     }
-  }, [payInvoice, LL])
+  }, [payInvoice, LL, mintUrl])
 
   /** The Cash wallet's fee to pay the top-up's invoice, in cents; undefined if it cannot be probed. */
   const feeFor = async (record: TopUpRecord): Promise<number | undefined> => {
@@ -399,6 +451,8 @@ export const useCardTopUp = () => {
  */
 export const useUnfinishedTopUps = (cardPubkey: string | undefined) => {
   const [records, setRecords] = useState<TopUpRecord[]>([])
+  const recordsRef = useRef(records)
+  recordsRef.current = records
   // The focused screen's read-again; none while it is not focused.
   const refresh = useRef<(() => Promise<unknown>) | undefined>(undefined)
   useFocusEffect(
@@ -411,7 +465,8 @@ export const useUnfinishedTopUps = (cardPubkey: string | undefined) => {
           .catch(() => live && setRecords([]))
       const readAgain = () =>
         list()
-          .then(() => advanceTopUps(cardFreeDeps()))
+          // Every mint with work: the card's top-ups are at its own (ENG-787).
+          .then(() => advanceEveryMint())
           .then(list, () => undefined)
       refresh.current = readAgain
       readAgain()
@@ -423,7 +478,10 @@ export const useUnfinishedTopUps = (cardPubkey: string | undefined) => {
   )
   const dismiss = useCallback(async (id: string) => {
     try {
-      await cancelTopUp(cardFreeDeps(), id)
+      // Through the mint that issued it, which alone can say it was not paid.
+      const mintUrl =
+        recordsRef.current.find((record) => record.id === id)?.mintUrl ?? cardMintUrl()
+      await cancelTopUp(cardFreeDeps(topUpMint(mintUrl)), id)
     } catch (err) {
       refresh.current?.()
       throw err
@@ -454,17 +512,9 @@ export const useTopUpMinter = () => {
     const loop = createMinterLoop({
       // A card tidy the card signed is swapped without the card too (ENG-702),
       // and each one still signed keeps the loop asking, as a top-up does.
-      run: async () => {
-        const deps = cardFreeDeps()
-        const result = await advanceTopUps(deps)
-        let tidiesWaiting = 0
-        try {
-          tidiesWaiting = (await advanceTidies(deps)).waiting
-        } catch {
-          // Asked again on the next pass.
-        }
-        return { ...result, waiting: result.waiting + tidiesWaiting }
-      },
+      // One pass per mint with work (ENG-787): a card at Minibits is
+      // minted at Minibits, and a mint that is down holds up no other.
+      run: advanceEveryMint,
       pollMs: TOP_UP_POLL_MS,
       isActive: () => AppState.currentState === "active",
     })

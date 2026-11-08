@@ -13,7 +13,7 @@
 import axios from "axios"
 
 import type { CardKeysetTotal } from "./cashu-card"
-import { cardMintUrl } from "./cashu-card-bridge"
+import { mintKey } from "./cashu-card-topup/mint-url"
 
 /** Keyset id (lowercase hex) → the unit the mint gives for it, e.g. "sat". */
 export type KeysetUnits = Record<string, string>
@@ -82,14 +82,17 @@ export const fetchKeysetUnits = async (mintUrl: string): Promise<KeysetUnits> =>
 
 const cache = new Map<string, Promise<KeysetUnits>>()
 
+// Keyed by the mint (`mintKey`), so two spellings of one mint share a list
+// and two mints never do (ENG-787).
 const keysetUnits = (mintUrl: string, refresh: boolean): Promise<KeysetUnits> => {
-  const cached = cache.get(mintUrl)
+  const key = mintKey(mintUrl)
+  const cached = cache.get(key)
   if (cached && !refresh) return cached
   const pending = fetchKeysetUnits(mintUrl)
-  cache.set(mintUrl, pending)
+  cache.set(key, pending)
   // A failed lookup is not remembered: the next read asks again.
   pending.catch(() => {
-    if (cache.get(mintUrl) === pending) cache.delete(mintUrl)
+    if (cache.get(key) === pending) cache.delete(key)
   })
   return pending
 }
@@ -100,12 +103,11 @@ const keysetUnits = (mintUrl: string, refresh: boolean): Promise<KeysetUnits> =>
  * a keyset the mint added since the last fetch is picked up. Ids the mint still
  * does not list are simply absent from the result. Rejects when the mint cannot
  * be reached or answers with something that is not a keyset list. The mint
- * is `CASHU_MINT_URL` unless a development build set a dev mint
- * (`cardMintUrl`).
+ * is always named: the card's own (`mintOfCard`, ENG-787), never assumed.
  */
 export const unitsForKeysets = async (
   keysetIds: string[],
-  mintUrl: string = cardMintUrl(),
+  mintUrl: string,
 ): Promise<KeysetUnits> => {
   const listsAll = (units: KeysetUnits) =>
     keysetIds.every((id) => units[id.toLowerCase()] !== undefined)

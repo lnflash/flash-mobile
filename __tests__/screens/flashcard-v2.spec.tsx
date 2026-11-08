@@ -32,7 +32,7 @@ import {
   FlashcardV2Screen,
   shortPubkey,
 } from "../../app/screens/card-screen/flashcard-v2"
-import { formatUnitAmount } from "../../app/utils/cashu-card-format"
+import { formatUnitAmount, isolatedMintName } from "../../app/utils/cashu-card-format"
 import { cardInfo, cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
 import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
@@ -76,6 +76,7 @@ const mockFeePpk = jest.fn(async (_id: string) => 0)
 const mockRunTidy = jest.fn()
 const mockVerifyCardPin = jest.fn()
 
+import { setCardFundMints } from "../../app/utils/cashu-card-topup/connected"
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   useI18nContext: () => ({ LL: require("../../app/i18n/i18n-util").i18nObject("en") }),
@@ -286,7 +287,12 @@ describe("FlashcardV2Screen", () => {
       expect(index).toBeGreaterThan(-1)
       return index
     }
-    const balance = at(JSON.stringify(LL.FlashcardV2.onCardBalance()))
+    // A recorded card's caption names its mint (ENG-787): forge is "Flash".
+    const balance = at(
+      JSON.stringify(
+        LL.FlashcardV2.mintLine({ mint: isolatedMintName("https://forge.flashapp.me") }),
+      ),
+    )
     const pinNotice = at('"flashcard-v2-no-pin"')
     const details = at('"flashcard-v2-card-id"')
     // Every action, not just the first: Remove card is the only one some
@@ -1126,7 +1132,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           locked: false,
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
-        "none",
+        { ownership: "none" },
         LL,
       ).map((notice) => notice.testID),
     ).toEqual(["flashcard-v2-not-set-up", "flashcard-v2-no-pin"])
@@ -1138,7 +1144,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           locked: false,
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
-        "mine",
+        { ownership: "mine" },
         LL,
       ).map((notice) => notice.testID),
     ).toEqual(["flashcard-v2-refresh-needed"])
@@ -1167,7 +1173,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
             locked: false,
             record: cardRecord({ rolls: 7, rollBudget: 7 }),
           },
-          ownership,
+          { ownership },
           LL,
         ).map((notice) => [notice.testID, notice.body]),
       )
@@ -1185,7 +1191,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
     it(`cardNotices for a LOCKED card with a blocked PIN (owner ${ownership}): no one is told to set a new PIN`, () => {
       const blocked = cardNotices(
         { hasOwner: true, pinState: "blocked", locked: true, record: cardRecord() },
-        ownership,
+        { ownership },
         LL,
       ).find((notice) => notice.testID === "flashcard-v2-blocked")
       expect(blocked?.body).toBe(LL.FlashcardV2.blockedLockedBody())
@@ -1818,5 +1824,96 @@ describe("FlashcardV2Screen card tidy (ENG-702)", () => {
       )
       expect(screen.queryByTestId("flashcard-v2-tidy-progress")).toBeNull()
     })
+  })
+})
+
+// ENG-787: the card names its mint, and Top up waits for a mint Flash funds.
+describe("FlashcardV2Screen, the card's own mint", () => {
+  const MINIBITS = "https://mint.minibits.cash/Bitcoin"
+  const at = (mint: string, over: Partial<CashuCardState> = {}) =>
+    card({ record: cardRecord({ mint }), ...over })
+  const caption = () => screen.getByTestId("flashcard-v2-caption").props.children
+
+  beforeEach(() => {
+    mockIsAuthed = true
+    mockCashuCardPreview = undefined
+  })
+
+  it("names forge as Flash on a recorded card's caption", () => {
+    mockCashuCard = card()
+    renderScreen()
+    expect(caption()).toBe(
+      LL.FlashcardV2.mintLine({ mint: isolatedMintName("https://forge.flashapp.me") }),
+    )
+    expect(caption()).toContain("Flash")
+    expect(screen.getByTestId("flashcard-v2-action-topup")).toBeTruthy()
+    expect(screen.queryByTestId("flashcard-v2-mint-read-only")).toBeNull()
+  })
+
+  it("keeps the plain caption on a card never set up", () => {
+    mockCashuCard = card({
+      hasOwner: false,
+      recordSet: false,
+      record: cardRecord({ recordSet: false, mint: "" }),
+    })
+    renderScreen()
+    expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
+  })
+
+  it("a card at a mint Flash doesn't fund: its name on the caption, no Top up, and a notice of what still works", () => {
+    mockCashuCard = at(MINIBITS)
+    renderScreen()
+    expect(caption()).toBe(LL.FlashcardV2.mintLine({ mint: isolatedMintName(MINIBITS) }))
+    expect(screen.queryByTestId("flashcard-v2-action-topup")).toBeNull()
+    const notice = screen.getByTestId("flashcard-v2-mint-read-only")
+    expect(notice.props.accessibilityLabel).toBe(
+      `${LL.FlashcardV2.mintReadOnlyTitle()}. ${LL.FlashcardV2.mintReadOnly({
+        mint: isolatedMintName(MINIBITS),
+      })}`,
+    )
+    // The rest stays: the balance, limits, PIN, the card details. A holder
+    // who picked a mint off the fund list at setup is never left without it.
+    expect(screen.getByTestId("flashcard-v2-balance-sat").props.children).toBe(
+      "1,500 sats",
+    )
+    expect(screen.getByTestId("flashcard-v2-action-limits")).toBeTruthy()
+  })
+
+  it("a card whose mint can't be used: the plain caption, no Top up, and a severe notice", () => {
+    mockCashuCard = at("http://mint.example")
+    renderScreen()
+    expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
+    expect(screen.queryByTestId("flashcard-v2-action-topup")).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-mint-invalid").props.accessibilityLabel).toBe(
+      `${LL.FlashcardV2.cardMintInvalidTitle()}. ${LL.FlashcardV2.cardMintInvalidBody()}`,
+    )
+  })
+
+  it("cardNotices judges the fund list it is given, as the Top up button does, not the app's global", () => {
+    // The global stays forge alone: only the list handed in names Minibits.
+    const given = cardNotices(
+      at(MINIBITS),
+      { ownership: "mine", fundMints: ["https://forge.flashapp.me", MINIBITS] },
+      LL,
+    ).map((n) => n.testID)
+    expect(given).not.toContain("flashcard-v2-mint-read-only")
+    const forgeOnly = cardNotices(
+      at(MINIBITS),
+      { ownership: "mine", fundMints: ["https://forge.flashapp.me"] },
+      LL,
+    ).map((n) => n.testID)
+    expect(forgeOnly).toContain("flashcard-v2-mint-read-only")
+  })
+
+  it("cardNotices: the read-only notice goes once its mint is on the fund list", () => {
+    const notices = () =>
+      cardNotices(at(MINIBITS), { ownership: "mine" }, LL).map((n) => n.testID)
+    expect(notices()).toContain("flashcard-v2-mint-read-only")
+    setCardFundMints(["https://forge.flashapp.me", MINIBITS])
+    try {
+      expect(notices()).not.toContain("flashcard-v2-mint-read-only")
+    } finally {
+      setCardFundMints([])
+    }
   })
 })

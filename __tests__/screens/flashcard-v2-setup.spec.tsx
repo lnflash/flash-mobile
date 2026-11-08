@@ -19,7 +19,8 @@ import { FlashcardV2SetupScreen } from "../../app/screens/card-screen/flashcard-
 import { Transceiver } from "../../app/utils/cashu-card"
 import { ownerPublicKey } from "../../app/utils/cashu-card-owner"
 import { FAKE_OWNER_KEY, FakeCard, createFakeCard } from "../helpers/fake-cashu"
-import { cashuCardState } from "../helpers/cashu-card-state"
+import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
+import { isolatedMintName } from "../../app/utils/cashu-card-format"
 import { HEADER_VECTORS, headerBytes } from "../helpers/block-headers"
 
 loadLocale("en")
@@ -31,6 +32,7 @@ const mockNewOwnerKey = jest.fn()
 const mockOwnerKeyFor = jest.fn()
 const mockSaveOwnerKey = jest.fn()
 const mockRefreshTipHeader = jest.fn()
+const mockFetchKeysetUnits = jest.fn()
 let mockCard: CashuCardState | undefined
 let capturedOptions: CardOperationOptions | undefined
 let mockRunResult: (op: (t: Transceiver) => Promise<unknown>) => Promise<unknown>
@@ -53,6 +55,10 @@ jest.mock("@app/utils/toast", () => ({
 jest.mock("@app/utils/cashu-card-bridge", () => ({
   ...jest.requireActual("@app/utils/cashu-card-bridge"),
   cardMintUrl: () => "https://mint.test",
+}))
+jest.mock("@app/utils/cashu-mint", () => ({
+  ...jest.requireActual("@app/utils/cashu-mint"),
+  fetchKeysetUnits: (...args: unknown[]) => mockFetchKeysetUnits(...args),
 }))
 jest.mock("@app/utils/cashu-card-headers", () => ({
   ...jest.requireActual("@app/utils/cashu-card-headers"),
@@ -327,5 +333,209 @@ describe("FlashcardV2SetupScreen", () => {
     })
     expect(screen.queryByTestId("setup-error")).toBeNull()
     expect(screen.getByTestId("setup-tap")).toBeTruthy()
+  })
+})
+
+// ENG-787: the mint a card is set up for.
+describe("FlashcardV2SetupScreen: the card's mint", () => {
+  const MINIBITS = "https://mint.minibits.cash/Bitcoin"
+  let card: FakeCard
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    card = createFakeCard(128, { owner: null, sealed: true })
+    mockCard = cashuCardState({
+      pubkey: card.pubkey,
+      hasOwner: false,
+      recordSet: false,
+      record: cardRecord({ recordSet: false, mint: "" }),
+      pinState: "unset",
+      unspent: 0,
+      balance: 0,
+      ownerKeySource: undefined,
+    })
+    mockRunResult = (op) => op(card.transceive)
+    mockOwnerKeyFor.mockResolvedValue(undefined)
+    mockNewOwnerKey.mockResolvedValue(SEED_KEY)
+    mockSaveOwnerKey.mockResolvedValue(undefined)
+    mockRefreshTipHeader.mockResolvedValue(undefined)
+    mockFetchKeysetUnits.mockResolvedValue({ "00aabbccddeeff00": "sat" })
+  })
+
+  const tapNoPin = async () => {
+    fireEvent.press(screen.getByTestId("setup-no-pin"))
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("setup-tap"))
+    })
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+  }
+  const choose = (testID: string) => fireEvent.press(screen.getByTestId(testID))
+  const next = async () => {
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("setup-mint-next"))
+    })
+  }
+  const nextDisabled = () =>
+    screen.getByTestId("setup-mint-next").props.accessibilityState?.disabled
+
+  it("names the app's mint with one Change link, and writes it with no added press", async () => {
+    await renderScreen()
+    expect(screen.getByTestId("setup-mint-row").props.children).toBe(
+      LL.FlashcardV2.setUpMintRow({ mint: isolatedMintName("https://mint.test") }),
+    )
+    expect(screen.getByTestId("setup-mint-change")).toBeTruthy()
+    await tapNoPin()
+    expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
+    expect(mockFetchKeysetUnits).not.toHaveBeenCalled()
+  })
+
+  it("a card whose record already names a mint keeps it: no Change, and SET_CARD writes that mint again", async () => {
+    mockCard = {
+      ...(mockCard as CashuCardState),
+      recordSet: true,
+      record: cardRecord({ mint: `${MINIBITS}/` }),
+    }
+    await renderScreen()
+    expect(screen.queryByTestId("setup-mint-change")).toBeNull()
+    expect(screen.getByTestId("setup-mint-row").props.children).toBe(
+      LL.FlashcardV2.setUpMintRow({ mint: isolatedMintName(MINIBITS) }),
+    )
+    await tapNoPin()
+    expect(card.record()).toEqual({ set: true, mint: MINIBITS })
+  })
+
+  it("Change lists the mints, says which Flash can't fund, and SET_CARD writes the one chosen", async () => {
+    await renderScreen()
+    choose("setup-mint-change")
+    expect(screen.getByTestId("setup-mint-title").props.children).toBe(
+      LL.FlashcardV2.setUpMintTitle(),
+    )
+    expect(screen.getByText(LL.FlashcardV2.setUpMintIntro())).toBeTruthy()
+    // The app's own mint is chosen to start with, and says so to a screen reader.
+    expect(
+      screen.getByTestId("setup-mint-option-mint.test").props.accessibilityState,
+    ).toEqual({ checked: true })
+    // Minibits, Macadamia and Cuba are off the fund list: each says so once.
+    expect(screen.getAllByText(LL.FlashcardV2.setUpMintReadOnly())).toHaveLength(3)
+    // The test's card mint is not forge, so even it carries the notice: once.
+    expect(screen.getAllByTestId("setup-mint-choice-notice")).toHaveLength(1)
+    expect(screen.getByTestId("setup-mint-choice-notice").props.children).toBe(
+      LL.FlashcardV2.setUpMintNotice({ mint: isolatedMintName("https://mint.test") }),
+    )
+
+    choose("setup-mint-option-Minibits")
+    expect(
+      screen.getByTestId("setup-mint-option-Minibits").props.accessibilityState,
+    ).toEqual({ checked: true })
+    expect(screen.getByTestId("setup-mint-choice-notice").props.children).toBe(
+      LL.FlashcardV2.setUpMintNotice({ mint: isolatedMintName(MINIBITS) }),
+    )
+    await next()
+
+    expect(screen.getByTestId("setup-mint-row").props.children).toBe(
+      LL.FlashcardV2.setUpMintRow({ mint: isolatedMintName(MINIBITS) }),
+    )
+    await tapNoPin()
+    expect(card.record()).toEqual({ set: true, mint: MINIBITS })
+    // A listed mint is taken as listed: nothing asked of it.
+    expect(mockFetchKeysetUnits).not.toHaveBeenCalled()
+  })
+
+  it("choosing Flash (forge) carries no notice", async () => {
+    await renderScreen()
+    choose("setup-mint-change")
+    choose("setup-mint-option-Flash")
+    expect(screen.queryByTestId("setup-mint-choice-notice")).toBeNull()
+    await next()
+    await tapNoPin()
+    expect(card.record()).toEqual({ set: true, mint: "https://forge.flashapp.me" })
+  })
+
+  it("Back changes nothing", async () => {
+    await renderScreen()
+    choose("setup-mint-change")
+    choose("setup-mint-option-Minibits")
+    choose("setup-mint-back")
+    expect(screen.getByTestId("setup-mint-row").props.children).toBe(
+      LL.FlashcardV2.setUpMintRow({ mint: isolatedMintName("https://mint.test") }),
+    )
+  })
+
+  it("a written-in address: Continue waits for one a card can hold, and the field says why", async () => {
+    await renderScreen()
+    choose("setup-mint-change")
+    choose("setup-mint-option-other")
+    const field = screen.getByTestId("setup-mint-address")
+    expect(field.props.value).toBe("https://")
+    expect(field.props.autoCorrect).toBe(false)
+    expect(field.props.autoCapitalize).toBe("none")
+    expect(nextDisabled()).toBe(true)
+
+    fireEvent.changeText(field, "https://mint.example/?q=1")
+    fireEvent(field, "blur")
+    expect(nextDisabled()).toBe(true)
+    expect(screen.getByTestId("setup-mint-error").props.children).toBe(
+      LL.FlashcardV2.setUpMintInvalid(),
+    )
+
+    fireEvent.changeText(field, `https://${"a".repeat(70)}.example`)
+    fireEvent(field, "blur")
+    expect(nextDisabled()).toBe(true)
+    expect(screen.getByTestId("setup-mint-error").props.children).toBe(
+      LL.FlashcardV2.setUpMintTooLong(),
+    )
+  })
+
+  it("an address no mint answers at stays on the step, says so, and writes nothing", async () => {
+    mockFetchKeysetUnits.mockRejectedValue(new Error("Network Error"))
+    await renderScreen()
+    choose("setup-mint-change")
+    choose("setup-mint-option-other")
+    fireEvent.changeText(screen.getByTestId("setup-mint-address"), "https://mnit.example")
+    // Off the fund list, and not Flash's: said under the field, before Continue.
+    expect(screen.getByTestId("setup-mint-address-read-only").props.children).toBe(
+      LL.FlashcardV2.setUpMintReadOnly(),
+    )
+    expect(screen.getByTestId("setup-mint-address-notice").props.children).toBe(
+      LL.FlashcardV2.setUpMintNotice({ mint: isolatedMintName("https://mnit.example") }),
+    )
+    await next()
+    expect(mockFetchKeysetUnits).toHaveBeenCalledWith("https://mnit.example")
+    expect(screen.getByTestId("setup-mint-error").props.children).toBe(
+      LL.FlashcardV2.setUpMintNoAnswer(),
+    )
+    expect(screen.getByTestId("setup-mint-title")).toBeTruthy()
+  })
+
+  it("so does a mint that lists no sat keyset", async () => {
+    mockFetchKeysetUnits.mockResolvedValue({ "00aabbccddeeff00": "usd" })
+    await renderScreen()
+    choose("setup-mint-change")
+    choose("setup-mint-option-other")
+    fireEvent.changeText(screen.getByTestId("setup-mint-address"), "https://usd.example")
+    await next()
+    expect(screen.getByTestId("setup-mint-error").props.children).toBe(
+      LL.FlashcardV2.setUpMintNoAnswer(),
+    )
+  })
+
+  it("an address that answers as a mint is written, as normalized", async () => {
+    await renderScreen()
+    choose("setup-mint-change")
+    choose("setup-mint-option-other")
+    fireEvent.changeText(
+      screen.getByTestId("setup-mint-address"),
+      "https://Mint.Example/Sats/",
+    )
+    await next()
+    expect(mockFetchKeysetUnits).toHaveBeenCalledWith("https://mint.example/Sats")
+    expect(screen.getByTestId("setup-mint-row").props.children).toBe(
+      LL.FlashcardV2.setUpMintRow({
+        mint: isolatedMintName("https://mint.example/Sats"),
+      }),
+    )
+    expect(screen.getByTestId("setup-mint-row").props.children).toContain("mint.example")
+    await tapNoPin()
+    expect(card.record()).toEqual({ set: true, mint: "https://mint.example/Sats" })
   })
 })

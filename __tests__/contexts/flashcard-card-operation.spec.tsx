@@ -27,6 +27,9 @@ import {
   renderProvider,
 } from "./flashcard-harness"
 
+// The mint the fake card's record names (fake-cashu): its units are kept under it (ENG-787).
+const CARD_MINT = "https://mint.test"
+
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
 jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
@@ -583,14 +586,16 @@ describe("FlashcardProvider runCardOperation", () => {
     await waitFor(() => expect(answers).toHaveLength(2))
 
     // The answer about the split read at 500 arrives late: it does not land.
-    expect(store.getState().flashcardV2.keysetUnits).toBeUndefined()
+    expect(store.getState().flashcardV2.keysetUnitsByMint).toBeUndefined()
     await act(async () => {
       answers[0]({ [KEYSET_HEX]: "sat" })
     })
     expect(latest?.cashuCard?.unitTotals).toBeUndefined()
     expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].unit).toBeUndefined()
     // Its units are kept, though: they are facts about the mint, not the card.
-    expect(store.getState().flashcardV2.keysetUnits).toEqual({ [KEYSET_HEX]: "sat" })
+    expect(store.getState().flashcardV2.keysetUnitsByMint?.[CARD_MINT]).toEqual({
+      [KEYSET_HEX]: "sat",
+    })
 
     // The answer about the new split names the unit of the whole new total.
     await act(async () => {
@@ -632,7 +637,12 @@ describe("FlashcardProvider runCardOperation", () => {
   })
 
   it("an op that moves value into a second unit is labelled at once, and names no single unit on the card's record", async () => {
-    store.dispatch(keysetUnitsLearned({ [KEYSET_HEX]: "sat", [USD_KEYSET_HEX]: "usd" }))
+    store.dispatch(
+      keysetUnitsLearned({
+        mint: CARD_MINT,
+        units: { [KEYSET_HEX]: "sat", [USD_KEYSET_HEX]: "usd" },
+      }),
+    )
     transceive.mockImplementation(makeSplitCard())
     await mount()
     await readCard()
