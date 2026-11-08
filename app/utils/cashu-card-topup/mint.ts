@@ -7,6 +7,7 @@ import {
   SerializedBlindedSignature,
 } from "@cashu/cashu-ts"
 
+import { KeysetIdError, cardPrefix, resolveCardKeyset } from "./keyset-id"
 import type { CardUnit } from "./types"
 
 /**
@@ -36,8 +37,14 @@ export type TopUpQuote = {
 /** The mint calls a top-up makes, over the mint the app is connected to. */
 export type TopUpMint = {
   url: string
-  /** The active keyset for `unit`, with its keys. */
+  /**
+   * The active keyset for `unit`, with its keys, under the mint's full id (a
+   * v1 or a v2 id). Refused when a card could not tell it from another of the
+   * mint's keysets: one whose first 8 bytes, all a card slot holds, are
+   * another listed keyset's too.
+   */
   activeKeyset: (unit: CardUnit) => Promise<MintKeys>
+  /** Keyset `id`, the mint's full id exactly (never a card's prefix), with its keys. */
   keyset: (id: string) => Promise<MintKeys>
   createQuote: (args: {
     unit: CardUnit
@@ -70,24 +77,34 @@ export type TopUpMint = {
     outputs: SerializedBlindedMessage[],
   ) => Promise<SerializedBlindedSignature[]>
   /**
-   * NUT-02: keyset `id`'s `input_fee_ppk`, 0 when the mint states none.
-   * Throws when the mint does not list the keyset as active: a swap's
-   * outputs must be in an active keyset.
+   * NUT-02: the `input_fee_ppk` of the keyset card id `id` names (a v1 id, or
+   * a v2 id's 8-byte prefix: `resolveCardKeyset`), 0 when the mint states
+   * none. Throws when it names no single keyset, or one the mint does not
+   * list as active: a swap's outputs must be in an active keyset.
    */
   feePpk: (id: string) => Promise<number>
+  /**
+   * The mint's full id for card id `cardId`, and its fee, as `feePpk`
+   * resolves and checks it. A tidy resolves once and keeps the full id: a
+   * resumed one never asks again (the catalogue may have changed since).
+   */
+  resolveCardKeyset: (cardId: string) => Promise<{ id: string; feePpk: number }>
 }
 
 /**
- * A card slot stores the keyset id as 8 raw bytes (spec/APDU.md), which is a
- * NUT-02 v1 id: 16 hex chars. A v2 id (33 bytes) cannot be written, so a
- * keyset with one is refused before anything is minted under it.
+ * A keyset id a card slot can name: a v1 id (8 bytes) whole, or a v2 id (33
+ * bytes) by its first 8. Anything else is refused before anything is minted.
  */
-const CARD_KEYSET_ID = /^[0-9a-f]{16}$/
+const MINT_KEYSET_ID = /^([0-9a-f]{16}|[0-9a-f]{66})$/
 
 export class TopUpMintError extends Error {
-  constructor(message: string) {
+  /** Set when a card's keyset id named no single keyset (`resolveCardKeyset`). */
+  readonly reason?: KeysetIdError["reason"]
+
+  constructor(message: string, reason?: KeysetIdError["reason"]) {
     super(message)
     this.name = "TopUpMintError"
+    this.reason = reason
   }
 }
 
@@ -110,6 +127,27 @@ export const createTopUpMint = (url: string): TopUpMint => {
     return cached
   }
 
+  const resolveActive = async (
+    cardId: string,
+  ): Promise<{ id: string; feePpk: number }> => {
+    const { keysets: all } = await mint.getKeySets()
+    let id: string
+    try {
+      id = resolveCardKeyset(
+        cardId,
+        all.map((k) => k.id),
+      )
+    } catch (err) {
+      if (err instanceof KeysetIdError) throw new TopUpMintError(err.message, err.reason)
+      throw err
+    }
+    const found = all.find((k) => k.id === id)
+    if (!found?.active) {
+      throw new TopUpMintError(`the mint does not list keyset ${id} as active`)
+    }
+    return { id, feePpk: found.input_fee_ppk ?? 0 }
+  }
+
   return {
     url,
     keyset,
@@ -122,9 +160,16 @@ export const createTopUpMint = (url: string): TopUpMint => {
         throw new TopUpMintError(`the mint has no active ${unit} keyset`)
       }
       const [chosen] = active
-      if (!CARD_KEYSET_ID.test(chosen.id)) {
+      if (!MINT_KEYSET_ID.test(chosen.id)) {
+        throw new TopUpMintError(`keyset ${chosen.id} is not a NUT-02 v1 or v2 id`)
+      }
+      // A card names the keyset by its first 8 bytes: another keyset with the
+      // same ones (active or not) would make the pieces minted here ambiguous.
+      const prefix = cardPrefix(chosen.id)
+      if (all.some((k) => k.id !== chosen.id && cardPrefix(k.id) === prefix)) {
         throw new TopUpMintError(
-          `keyset ${chosen.id} does not fit in a card slot (8-byte keyset id)`,
+          `keyset ${chosen.id} shares its card id ${prefix} with another of the mint's keysets`,
+          "keyset-ambiguous",
         )
       }
       return keyset(chosen.id)
@@ -152,14 +197,8 @@ export const createTopUpMint = (url: string): TopUpMint => {
     },
     mint: async (payload) => (await mint.mintBolt11(payload)).signatures,
     swap: async (inputs, outputs) => (await mint.swap({ inputs, outputs })).signatures,
-    feePpk: async (id) => {
-      const { keysets: all } = await mint.getKeySets()
-      const found = all.find((k) => k.id === id)
-      if (!found?.active) {
-        throw new TopUpMintError(`the mint does not list keyset ${id} as active`)
-      }
-      return found.input_fee_ppk ?? 0
-    },
+    feePpk: async (id) => (await resolveActive(id)).feePpk,
+    resolveCardKeyset: resolveActive,
     restore: (outputs) => mint.restore({ outputs }),
     proofStates: async (Ys) => {
       const { states } = await mint.check({ Ys })
@@ -186,9 +225,9 @@ export type RelayMintRequest = (route: string, body?: unknown) => Promise<unknow
 
 /**
  * The keyset ids a relay may ask keys for: NUT-02 v1 (8 bytes, `00` ‖ 14
- * hex) and v2 (33 bytes, `01` ‖ 64 hex). Wider than `CARD_KEYSET_ID`, which
- * only a top-up's `activeKeyset` applies: the relay reads keys and never
- * writes a slot.
+ * hex) and v2 (33 bytes, `01` ‖ 64 hex), by the version byte. Narrower
+ * than a top-up's `activeKeyset`, which takes any 16- or 66-hex id the mint
+ * lists: the relay asks keys by an id a packet names.
  */
 export const RELAY_KEYSET_ID = /^(00[0-9a-f]{14}|01[0-9a-f]{64})$/
 
@@ -250,8 +289,7 @@ const relayMethod = (route: string, body: unknown): "GET" | "POST" => {
  * before a request is made. https only; `allowInsecure` admits http for the
  * dev bridge's local mint. Every call has a `RELAY_TIMEOUT_MS` timeout and a
  * `RELAY_MAX_RESPONSE_BYTES` cap, and a non-2xx or non-JSON answer is a
- * `RelayNetworkError`. `createTopUpMint` and its `CARD_KEYSET_ID` are not
- * touched by any of this.
+ * `RelayNetworkError`. `createTopUpMint` is not touched by any of this.
  */
 export const createRelayRequest = (
   url: string,

@@ -41,6 +41,8 @@ const mockAllowLoad = jest.fn()
 const mockOwnerKeyFor = jest.fn()
 const mockReclaimVerdicts = jest.fn()
 const mockFeePpk = jest.fn()
+/** The mint's full id for a card id, where it is not the card id itself (a v2 keyset). */
+const mockFullIds = new Map<string, string>()
 const mockNudge = jest.fn()
 const mockReport = jest.fn()
 
@@ -78,7 +80,15 @@ jest.mock("@app/utils/cashu-card-topup", () => ({
 }))
 jest.mock("@app/utils/cashu-card-topup/connected", () => ({
   ...jest.requireActual("@app/utils/cashu-card-topup/connected"),
-  topUpMint: () => ({ url: "https://mint.test", feePpk: mockFeePpk }),
+  topUpMint: () => ({
+    url: "https://mint.test",
+    feePpk: mockFeePpk,
+    // As the real client's: the full id the card id names, with its fee.
+    resolveCardKeyset: async (id: string) => ({
+      id: mockFullIds.get(id) ?? id,
+      feePpk: await mockFeePpk(id),
+    }),
+  }),
 }))
 
 loadLocale("en")
@@ -161,6 +171,7 @@ beforeEach(async () => {
   await Keychain.resetInternetCredentials({ server: ARCHIVE })
   store.dispatch(resetFlashcardV2())
   mockFeePpk.mockResolvedValue(0)
+  mockFullIds.clear()
   mockOwnerKeyFor.mockResolvedValue(OWNER)
   mockReclaimVerdicts.mockResolvedValue(VERDICTS)
   mockRunTidy.mockResolvedValue({ status: "tidied", record: {} })
@@ -204,6 +215,22 @@ describe("useCardTidy", () => {
     // The grant opens the load, with the owner's key.
     await args.openForLoading("transceive")
     expect(mockAllowLoad).toHaveBeenCalledWith("transceive", expect.any(Function))
+  })
+
+  it("hands the tidy the mint's full id for a v2 keyset the card names by its first 8 bytes (ENG-787)", async () => {
+    const full = `${KEYSET}${"ab".repeat(25)}`
+    mockFullIds.set(KEYSET, full)
+    mockFeePpk.mockResolvedValue(150)
+    const cashuCard = card()
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+
+    await act(async () => {
+      await result.current.tidy()
+    })
+
+    expect(mockFeePpk).toHaveBeenCalledWith(KEYSET)
+    const [, args] = mockRunTidy.mock.calls[0]
+    expect(args).toMatchObject({ keysetId: full, feePpk: 150 })
   })
 
   it("finishes a tidy still owed with the mint's fee never asked: its keyset is rotated out", async () => {

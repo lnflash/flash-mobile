@@ -476,8 +476,10 @@ describeWithCardsim("the 2.1 card against cardsim and a FakeWallet mint", () => 
     expect(refused.status).toBe(500)
 
     const mint = createTopUpMint(mintUrl)
-    const keysetId = tidyKeyset(card.unspentSlots) as string
-    const feePpk = await mint.feePpk(keysetId)
+    // The card names the keyset by 8 bytes; the tidy keeps the mint's full id (ENG-787).
+    const { id: keysetId, feePpk } = await mint.resolveCardKeyset(
+      tidyKeyset(card.unspentSlots) as string,
+    )
     const spentBefore = card.spentToday
     let ids = 0
     const tap = counting(transceive)
@@ -498,6 +500,16 @@ describeWithCardsim("the 2.1 card against cardsim and a FakeWallet mint", () => 
         verdicts: new Map(),
       },
     )
+    if (feePpk > 0) {
+      // The fee leg (ENG-787): one input costs a whole sat, as much as the 1s
+      // this card's shape lacks, so no tidy is made and nothing leaves it.
+      expect(result).toEqual({ status: "skipped", reason: "fee" })
+      expect(tap.count(0x22)).toBe(0)
+      const unchanged = await (await fetch(`${bridge}/state`)).json()
+      expect(unchanged.balance).toBe(12)
+      expect(unchanged.counts.spent).toBe(0)
+      return
+    }
     if (result.status !== "tidied") throw new Error(`the tidy ended ${result.status}`)
     // The 8 alone, as 2 + 2 + 2 + 1 + 1 beside the 4. Every output was the
     // card's own change: no SPEND_ALL_OUTPUTS, and SIGN took a payment with none.
@@ -533,8 +545,9 @@ describeWithCardsim("the 2.1 card against cardsim and a FakeWallet mint", () => 
     const card = await readCashuCard(transceive)
     if (!card?.unspentSlots) throw new Error("the loaded fixture did not read")
     const mint = createTopUpMint(mintUrl)
-    const keysetId = tidyKeyset(card.unspentSlots) as string
-    const feePpk = await mint.feePpk(keysetId)
+    const { id: keysetId, feePpk } = await mint.resolveCardKeyset(
+      tidyKeyset(card.unspentSlots) as string,
+    )
     let ids = 0
     const deps: TidyDeps = {
       mint,
@@ -552,6 +565,18 @@ describeWithCardsim("the 2.1 card against cardsim and a FakeWallet mint", () => 
     }
 
     await selectApplet(transceive)
+    if (feePpk > 0) {
+      // The fee leg (ENG-787): the fee is as much as the 1s the shape lacks,
+      // so the tidy is refused by its plan, before any PIN is wanted.
+      await expect(runTidy(deps, args)).resolves.toEqual({
+        status: "skipped",
+        reason: "fee",
+      })
+      const unchanged = await (await fetch(`${bridge}/state`)).json()
+      expect(unchanged.balance).toBe(21)
+      expect(unchanged.counts.spent).toBe(0)
+      return
+    }
     const refused = runTidy(deps, args)
     await expect(refused).rejects.toBeInstanceOf(CardSpendError)
     await expect(refused).rejects.toMatchObject({ reason: "pin-needed", sw: 0x6a94 })

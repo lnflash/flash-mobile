@@ -6,8 +6,8 @@
  *     before a request is made
  *   - https only, but for the dev bridge's own mint; routes go only onto the
  *     approved URL; a non-2xx or non-JSON answer is a RelayNetworkError
- *   - a 33-byte keyset id passes the relay path and is still refused by the
- *     top-up's activeKeyset (a card slot holds 8 bytes)
+ *   - a 33-byte keyset id passes the relay path, and the top-up's
+ *     activeKeyset answers it whole (ENG-787: a card slot holds its first 8)
  *   - the packet's mint is relayed only when it is a mint this app knows,
  *     and the card's record mint counts only when it is one too
  */
@@ -16,7 +16,6 @@ import { Mint } from "@cashu/cashu-ts"
 import {
   RelayNetworkError,
   RelayRouteError,
-  TopUpMintError,
   createRelayRequest,
   createTopUpMint,
 } from "../../app/utils/cashu-card-topup/mint"
@@ -128,7 +127,7 @@ describe("createRelayRequest", () => {
     await expect(request("/v1/keysets")).rejects.toBeInstanceOf(RelayNetworkError)
   })
 
-  it("passes a 33-byte keyset id that the top-up's activeKeyset still refuses", async () => {
+  it("passes a 33-byte keyset id, which the top-up's activeKeyset answers whole (ENG-787)", async () => {
     const fetchImpl = jest.fn(async () => okJson({ keysets: [] }))
     await expect(
       createRelayRequest("https://mint.test", { fetchImpl })(`/v1/keys/${V2}`),
@@ -137,10 +136,13 @@ describe("createRelayRequest", () => {
     const getKeySets = jest.fn(async () => ({
       keysets: [{ id: V2, unit: "sat", active: true, input_fee_ppk: 0 }],
     }))
-    ;(Mint as unknown as jest.Mock).mockImplementation(() => ({ getKeySets }))
+    const getKeys = jest.fn(async (id: string) => ({
+      keysets: [{ id, unit: "sat", active: true, keys: { 1: "02" } }],
+    }))
+    ;(Mint as unknown as jest.Mock).mockImplementation(() => ({ getKeySets, getKeys }))
     await expect(
       createTopUpMint("https://mint.test").activeKeyset("sat"),
-    ).rejects.toThrow(TopUpMintError)
+    ).resolves.toMatchObject({ id: V2 })
   })
 })
 

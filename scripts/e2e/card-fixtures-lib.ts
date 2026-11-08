@@ -60,6 +60,7 @@ import {
   randomBytes,
   splitPow2,
 } from "../../app/utils/cashu-card-outputs"
+import { cardPrefix } from "../../app/utils/cashu-card-topup/keyset-id"
 import type { TopUpMint } from "../../app/utils/cashu-card-topup/mint"
 import { signMintQuote } from "../../app/utils/cashu-card-topup/nut20"
 
@@ -244,7 +245,11 @@ export const mintToCard = async (
 const loadSlots = async (transceive: Transceiver, slots: CardSlotProof[]) => {
   await allowLoad(transceive, ownerSigner(FIXTURE_OWNER_KEY))
   for (const slot of slots) {
-    const result = await loadProof(transceive, slot)
+    // The slot holds the keyset's card id: a v2 id's first 8 bytes (ENG-787).
+    const result = await loadProof(transceive, {
+      ...slot,
+      keysetId: cardPrefix(slot.keysetId),
+    })
     if (result.alreadyOnCard)
       throw new Error("fixture: a fresh piece was already on the card")
   }
@@ -316,12 +321,15 @@ export const spendAndRedeem = async (
     })
   }
   const signature = toHex(await spendAllSign(transceive))
+  // A card names a v2 keyset by its first 8 bytes; the mint knows it only by
+  // its full id, as a till resolves it (ENG-787).
+  const fullId = (id: string) => (cardPrefix(keyset.id) === id ? keyset.id : id)
   await deps.mint.swap(
-    proofs.map((proof, i) =>
-      i === 0
-        ? { ...proof, witness: JSON.stringify({ signatures: [signature] }) }
-        : proof,
-    ),
+    proofs.map((proof, i) => ({
+      ...proof,
+      id: fullId(proof.id),
+      ...(i === 0 ? { witness: JSON.stringify({ signatures: [signature] }) } : {}),
+    })),
     outputs.map((o) => ({ ...o, amount: Amount.from(o.amount) })),
   )
   const states = await deps.mint.proofStates(

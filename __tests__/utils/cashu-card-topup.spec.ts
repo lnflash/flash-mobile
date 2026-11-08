@@ -19,7 +19,12 @@
  */
 import * as Keychain from "react-native-keychain"
 
-import { Amount, MintOperationError, hashToCurve } from "@cashu/cashu-ts"
+import {
+  Amount,
+  MintOperationError,
+  SerializedBlindedSignature,
+  hashToCurve,
+} from "@cashu/cashu-ts"
 
 import {
   CardProofSlot,
@@ -1141,6 +1146,108 @@ describe("a phone clock that is not the mint's: a quote is judged by its age on 
       result: { status: "expired" },
     })
     expect(pay).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("at a mint that serves v2 keyset ids (ENG-787)", () => {
+  /** The keyset id a slot holds: the 8 bytes after its status byte. */
+  const slotKeyset = (slot: number) => toHex(card.slots[slot].slice(1, 9))
+  const filled = () => card.slots.flatMap((slot, i) => (slot[0] === 0 ? [] : [i]))
+
+  beforeEach(() => {
+    mint = createFakeMint({ now: () => clock, versionByte: 1 })
+    deps = { ...deps, mint }
+  })
+
+  it("mints under the mint's full 33-byte id and writes its first 8 bytes to each slot", async () => {
+    expect(mint.keysetId).toMatch(/^01[0-9a-f]{64}$/)
+    const record = await minted(1000)
+
+    expect(record.keysetId).toBe(mint.keysetId)
+    // The mint is sent and signs the full id, and the DLEQ is checked under it.
+    const [{ outputs }] = (mint.mint as jest.Mock).mock.calls[0]
+    expect(outputs.every((o: { id: string }) => o.id === mint.keysetId)).toBe(true)
+    expect(mint.keyset).toHaveBeenCalledWith(mint.keysetId)
+    record.proofs?.forEach((proof) => expect(proof.keysetId).toBe(mint.keysetId))
+
+    const after = await loadOnCard(record.id)
+
+    expect(after.state).toBe("loaded")
+    // The record keeps the full id; the card, its 8-byte prefix.
+    expect(after.keysetId).toBe(mint.keysetId)
+    expect(filled()).toHaveLength(SHAPE_1000.length)
+    filled().forEach((slot) => expect(slotKeyset(slot)).toBe(mint.keysetId.slice(0, 16)))
+  })
+
+  it("refuses a signature under another keyset than the one paid for, and keeps no proof", async () => {
+    settlesOnPay()
+    const record = await prepare(16)
+    await payTopUp(deps, record.id)
+    const mintCall = mint.mint as jest.Mock
+    const real = mintCall.getMockImplementation()!
+    // The mint answers under the 8-byte form of its own id: not the keyset
+    // the outputs were made for.
+    mintCall.mockImplementationOnce(async (args) =>
+      ((await real(args)) as SerializedBlindedSignature[]).map((signature) => ({
+        ...signature,
+        id: signature.id.slice(0, 16),
+      })),
+    )
+
+    // cashu-ts toProof refuses the id mismatch first, so the engine reports
+    // it as a failed signature check, before its own mint-mismatch guard.
+    const refused = mintTopUp(deps, record.id)
+    await expect(refused).rejects.toBeInstanceOf(TopUpError)
+    await expect(refused).rejects.toMatchObject({ reason: "dleq" })
+    const saved = await deps.store.get(record.id)
+    expect(saved?.proofs).toBeUndefined()
+    expect(saved?.state).toBe("paid")
+  })
+
+  it("loads a v2 top-up beside a card's v1 pieces: each slot holds its own keyset's card id", async () => {
+    const v1 = createFakeMint({ now: () => clock })
+    const atV1 = { ...deps, mint: v1 }
+    settlesOnPay()
+    pay.mockImplementation(async ({ paymentRequest }) => {
+      for (const m of [v1, mint]) {
+        const [id] =
+          [...m.quotes.entries()].find(([, q]) => q.request === paymentRequest) ?? []
+        if (id) m.settle(id)
+      }
+      return { kind: "paid" } as PayOutcome
+    })
+    const first = await prepareTopUp(atV1, {
+      cardPubkey: CARD,
+      unit: "sat",
+      amount: 3,
+      walletId: WALLET,
+      card: EMPTY_CARD,
+    })
+    await payTopUp(atV1, first.id)
+    await mintTopUp(atV1, first.id)
+    await loadTopUp(atV1, {
+      id: first.id,
+      transceive: card.transceive,
+      card: { maxSlots: 32 },
+      mintStates: await proofStatesForLoad(atV1, first.id),
+    })
+    const v1Slots = filled()
+
+    const second = await prepare(3, { card: { empty: 32 - v1Slots.length } })
+    await payTopUp(deps, second.id)
+    await mintTopUp(deps, second.id)
+    const after = await loadOnCard(second.id)
+
+    expect(after.state).toBe("loaded")
+    const v2Slots = filled().filter((slot) => !v1Slots.includes(slot))
+    expect(v2Slots.length).toBeGreaterThan(0)
+    v1Slots.forEach((slot) => expect(slotKeyset(slot)).toBe(v1.keysetId))
+    v2Slots.forEach((slot) => expect(slotKeyset(slot)).toBe(mint.keysetId.slice(0, 16)))
+    // A reclaim knows each piece by its card id either way.
+    const read = await getProof(card.transceive, v2Slots[0])
+    expect(
+      JSON.parse(reclaimProofKey("https://mint.test", CARD, read as CardProofSlot))[3],
+    ).toBe(mint.keysetId.slice(0, 16))
   })
 })
 

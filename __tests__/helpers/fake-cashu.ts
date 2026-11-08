@@ -6,7 +6,9 @@
  * SIG_ALL card pieces), quotes real signed bolt11 invoices, and refuses a paid
  * quote past its expiry as Nutshell does; and a 2.0 card (card protocol 2.0,
  * ENG-675) that answers the commands this app sends as the applet does. The
- * mint has a sat and a usd keyset, as forge does.
+ * mint has a sat and a usd keyset, as forge does: v1 ids by default, or v2
+ * (33-byte) ids as Minibits and Macadamia serve (ENG-787), which it knows
+ * only whole, as Nutshell does. The card holds 8 bytes of an id.
  */
 import { createHash } from "crypto"
 import { encode, sign } from "bolt11"
@@ -41,6 +43,7 @@ import {
   authMessage,
   toHex,
 } from "../../app/utils/cashu-card"
+import { resolveCardKeyset } from "../../app/utils/cashu-card-topup/keyset-id"
 import { verifyMintQuoteSignature } from "../../app/utils/cashu-card-topup/nut20"
 import type {
   CardUnit,
@@ -127,13 +130,16 @@ const bolt11 = ({
 export const createFakeMint = ({
   now = Date.now,
   satKeysetId,
+  versionByte = 0,
 }: {
   now?: () => number
   /** The sat keyset's id in place of the one its keys derive (a recorded packet's keyset). */
   satKeysetId?: string
+  /** NUT-02 keyset id version: 0 for v1 (8 bytes, forge's), 1 for v2 (33 bytes). */
+  versionByte?: 0 | 1
 } = {}): FakeMint => {
   const keysetFor = (unit: CardUnit) => {
-    const pair = createNewMintKeys(21, undefined, { unit, versionByte: 0 })
+    const pair = createNewMintKeys(21, undefined, { unit, versionByte })
     if (unit === "sat" && satKeysetId) pair.keysetId = satKeysetId
     const keys: Record<string, string> = {}
     Object.entries(pair.pubKeys).forEach(([amount, key]) => {
@@ -186,12 +192,18 @@ export const createFakeMint = ({
       inputs.reduce((total, input) => total + (inputFeePpk.get(input.id) ?? 0), 0) / 1000,
     )
 
+  // As `createTopUpMint`'s: a card id names one listed keyset, v1 whole or v2 by its prefix.
+  const resolveActive = async (cardId: string) => {
+    const id = resolveCardKeyset(
+      cardId,
+      keysets.map(({ keyset }) => keyset.id),
+    )
+    return { id, feePpk: inputFeePpk.get(id) ?? 0 }
+  }
   const fake: FakeMint = {
     inputFeePpk,
-    feePpk: jest.fn(async (id: string) => {
-      if (!byId(id)) throw new Error(`the mint does not list keyset ${id} as active`)
-      return inputFeePpk.get(id) ?? 0
-    }),
+    feePpk: jest.fn(async (id: string) => (await resolveActive(id)).feePpk),
+    resolveCardKeyset: jest.fn(resolveActive),
     url: "https://mint.test",
     keysetId: keysets[0].keyset.id,
     usdKeysetId: keysets[1].keyset.id,
@@ -286,6 +298,11 @@ export const createFakeMint = ({
     swap: jest.fn(async (inputs: Proof[], outputs: SerializedBlindedMessage[]) => {
       const total = (items: { amount: Proof["amount"] }[]) =>
         items.reduce((sum, item) => sum + Amount.from(item.amount).toNumber(), 0)
+      // A mint knows a keyset by its full id alone: a v2 id's 8-byte card
+      // prefix is "keyset not found", as Nutshell answers it.
+      if ([...inputs, ...outputs].some((item) => !byId(item.id))) {
+        throw new MintOperationError(12001, "keyset not found")
+      }
       if (total(inputs) !== total(outputs) + feeFor(inputs)) {
         throw new MintOperationError(11000, "inputs and outputs do not balance")
       }

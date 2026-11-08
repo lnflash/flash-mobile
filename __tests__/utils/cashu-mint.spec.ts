@@ -69,6 +69,50 @@ describe("parseKeysetUnits", () => {
     ).toEqual({ [USD]: "usd" })
   })
 
+  // ENG-787: a card names a v2 keyset (33 bytes) by its first 8.
+  const V2 = `01fc0ec0${"5a".repeat(29)}`
+  const V2_PREFIX = V2.slice(0, 16)
+
+  it("maps a v2 keyset's 8-byte card id to its unit, beside the full id", () => {
+    const units = parseKeysetUnits(
+      keysetsBody([
+        { id: SAT, unit: "sat" },
+        { id: V2, unit: "sat" },
+      ]),
+    )
+    expect(units).toEqual({ [SAT]: "sat", [V2]: "sat", [V2_PREFIX]: "sat" })
+    expect(totalsByUnit([{ keysetId: V2_PREFIX, amount: 21 }], units)).toEqual({
+      byUnit: [{ unit: "sat", amount: 21 }],
+      unknown: 0,
+    })
+  })
+
+  it("leaves a card id two v2 keysets share unmapped: its value is unit unknown", () => {
+    const other = `${V2_PREFIX}${"c3".repeat(25)}`
+    const units = parseKeysetUnits(
+      keysetsBody([
+        { id: V2, unit: "sat" },
+        { id: other, unit: "usd" },
+      ]),
+    )
+    expect(units[V2_PREFIX]).toBeUndefined()
+    expect(totalsByUnit([{ keysetId: V2_PREFIX, amount: 5 }], units)).toEqual({
+      byUnit: [],
+      unknown: 5,
+    })
+  })
+
+  it("never lets a v2 prefix override a v1 id the mint lists exactly", () => {
+    const shadow = `${SAT}${"77".repeat(25)}`
+    const units = parseKeysetUnits(
+      keysetsBody([
+        { id: SAT, unit: "sat" },
+        { id: shadow, unit: "usd" },
+      ]),
+    )
+    expect(units[SAT]).toBe("sat")
+  })
+
   it("refuses a body with no keyset list, so an error page cannot pass for 'no keysets'", () => {
     expect(() => parseKeysetUnits("<html>502</html>")).toThrow(/no keysets list/)
     expect(() => parseKeysetUnits({})).toThrow(/no keysets list/)

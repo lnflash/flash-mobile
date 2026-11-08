@@ -36,6 +36,7 @@ import {
   splitPow2,
 } from "../cashu-card-outputs"
 import { topUpPieces } from "../cashu-card-shape"
+import { cardPrefix } from "./keyset-id"
 import { sameMint } from "./mint-url"
 import { signMintQuote } from "./nut20"
 import type { ProofState, TopUpMint } from "./mint"
@@ -1301,10 +1302,14 @@ export async function loadPieces(
   // in a spent slot (a remnant a cut CLEAR_SPENT left, whose piece the mint
   // still holds unspent): then it is not on the card to spend, and the record
   // stays unfinished until a reclaim frees that slot and a later load writes
-  // it. Never retried: one APDU per piece, once.
+  // it. Never retried: one APDU per piece, once. The slot holds the keyset's
+  // card id (8 bytes, `cardPrefix`); the record keeps the mint's full id.
   if (pending.length > 0) onProgress?.(0, pending.length)
   for (const [i, proof] of pending.entries()) {
-    const result = await loadProof(transceive, proof)
+    const result = await loadProof(transceive, {
+      ...proof,
+      keysetId: cardPrefix(proof.keysetId),
+    })
     if (result.alreadyOnCard && inSpentSlot.has(proof.nonce)) held += 1
     onProgress?.(i + 1, pending.length)
   }

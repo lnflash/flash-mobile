@@ -101,7 +101,8 @@ const putOnCard = async (amounts: number[]) => {
     const slot = card.slots.findIndex((s) => s[0] === 0)
     card.slots[slot] = [
       1,
-      ...bytes(piece.keysetId),
+      // The slot's 8 bytes: a v2 id's prefix (ENG-787), a v1 id whole.
+      ...bytes(piece.keysetId.slice(0, 16)),
       ...u32(piece.amount),
       ...bytes(piece.nonce),
       ...bytes(piece.C),
@@ -1130,5 +1131,63 @@ describe("isFinalMintRefusal", () => {
     }
     expect(isFinalMintRefusal(new Error("Network request failed"))).toBe(false)
     expect(isFinalMintRefusal(undefined)).toBe(false)
+  })
+})
+
+describe("runTidy at a mint that serves v2 keyset ids (ENG-787)", () => {
+  beforeEach(() => {
+    mint = createFakeMint({ now: () => clock, versionByte: 1 })
+    deps = { ...deps, mint }
+  })
+
+  const slotKeysets = () =>
+    card.slots.filter((slot) => slot[0] === 1).map((slot) => toHex(slot.slice(1, 9)))
+
+  it("plans by the pieces' card id, and keeps and swaps the mint's full id", async () => {
+    expect(mint.keysetId).toMatch(/^01[0-9a-f]{64}$/)
+    await putOnCard(AFTER_A_TILL)
+    expect(new Set(slotKeysets())).toEqual(new Set([mint.keysetId.slice(0, 16)]))
+    const { id, feePpk } = await mint.resolveCardKeyset(mint.keysetId.slice(0, 16))
+    expect(id).toBe(mint.keysetId)
+
+    const result = await runTidy(deps, args({ keysetId: id, feePpk }))
+
+    if (result.status !== "tidied") throw new Error(`not tidied: ${result.status}`)
+    expect(result.record.keysetId).toBe(mint.keysetId)
+    const [inputs, outputs] = (mint.swap as jest.Mock).mock.calls[0]
+    expect(inputs.every((p: { id: string }) => p.id === mint.keysetId)).toBe(true)
+    expect(outputs.every((o: { id: string }) => o.id === mint.keysetId)).toBe(true)
+    expect(mint.keyset).toHaveBeenCalledWith(mint.keysetId)
+    // The change went back under the card id, and the balance moved by the fee alone (0).
+    expect(new Set(slotKeysets())).toEqual(new Set([mint.keysetId.slice(0, 16)]))
+    expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
+    expect(belowTarget(unspentAmounts())).toBe(false)
+  })
+
+  it("finishes a cut tidy under the id it stored, never asking the mint's catalogue again", async () => {
+    await putOnCard(AFTER_A_TILL)
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      if (apdu[1] === INS.GET_NONCE) throw new Error("Tag was lost")
+      return answer(apdu)
+    })
+    await expect(runTidy(deps, args())).rejects.toThrow("Tag was lost")
+    card.transceive.mockImplementation(answer)
+    const [signed] = await deps.store.tidies.list()
+    expect(signed).toMatchObject({ state: "signed", keysetId: mint.keysetId })
+    // The catalogue has changed since: the card id names nothing now.
+    ;(mint.resolveCardKeyset as jest.Mock).mockRejectedValue(new Error("rotated"))
+    ;(mint.feePpk as jest.Mock).mockRejectedValue(new Error("rotated"))
+
+    await expect(runTidy(deps, args({ keysetId: undefined }))).resolves.toMatchObject({
+      status: "tidied",
+    })
+
+    expect(mint.resolveCardKeyset).not.toHaveBeenCalled()
+    expect(mint.feePpk).not.toHaveBeenCalled()
+    const [inputs, outputs] = (mint.swap as jest.Mock).mock.calls[0]
+    expect(inputs.every((p: { id: string }) => p.id === mint.keysetId)).toBe(true)
+    expect(outputs.every((o: { id: string }) => o.id === mint.keysetId)).toBe(true)
+    expect(sum(unspentAmounts())).toBe(sum(AFTER_A_TILL))
   })
 })
