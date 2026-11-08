@@ -303,6 +303,8 @@ const en: BaseTranslation = {
     setUpInUse: "This card holds funds, so it can't be set up.",
     setUpNeedsApplet:
       "This card needs a newer applet before Flash can set it up. Nothing was written to it. Contact support to have it updated.",
+    setUpNeedsAppUpdate:
+      "This card's software is newer than this version of Flash. Update Flash to set it up. Nothing was written to it.",
     setUpUnreadable:
       "Flash couldn't read this card properly, so nothing was written. Hold it steady against the phone and tap again.",
     setUpUsed:

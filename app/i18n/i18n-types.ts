@@ -1009,6 +1009,10 @@ type RootTranslation = {
 		 */
 		setUpNeedsApplet: string
 		/**
+		 * T​h​i​s​ ​c​a​r​d​'​s​ ​s​o​f​t​w​a​r​e​ ​i​s​ ​n​e​w​e​r​ ​t​h​a​n​ ​t​h​i​s​ ​v​e​r​s​i​o​n​ ​o​f​ ​F​l​a​s​h​.​ ​U​p​d​a​t​e​ ​F​l​a​s​h​ ​t​o​ ​s​e​t​ ​i​t​ ​u​p​.​ ​N​o​t​h​i​n​g​ ​w​a​s​ ​w​r​i​t​t​e​n​ ​t​o​ ​i​t​.
+		 */
+		setUpNeedsAppUpdate: string
+		/**
 		 * F​l​a​s​h​ ​c​o​u​l​d​n​'​t​ ​r​e​a​d​ ​t​h​i​s​ ​c​a​r​d​ ​p​r​o​p​e​r​l​y​,​ ​s​o​ ​n​o​t​h​i​n​g​ ​w​a​s​ ​w​r​i​t​t​e​n​.​ ​H​o​l​d​ ​i​t​ ​s​t​e​a​d​y​ ​a​g​a​i​n​s​t​ ​t​h​e​ ​p​h​o​n​e​ ​a​n​d​ ​t​a​p​ ​a​g​a​i​n​.
 		 */
 		setUpUnreadable: string
@@ -9819,6 +9823,10 @@ export type TranslationFunctions = {
 		 * This card needs a newer applet before Flash can set it up. Nothing was written to it. Contact support to have it updated.
 		 */
 		setUpNeedsApplet: () => LocalizedString
+		/**
+		 * This card's software is newer than this version of Flash. Update Flash to set it up. Nothing was written to it.
+		 */
+		setUpNeedsAppUpdate: () => LocalizedString
 		/**
 		 * Flash couldn't read this card properly, so nothing was written. Hold it steady against the phone and tap again.
 		 */

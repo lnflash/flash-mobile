@@ -725,9 +725,13 @@ const notOpenMessage = (reason: CardNotOpenReason, LL: LLType, mint?: string): s
 const setUpFailure = (err: unknown, LL: LLType): { message: string; final?: boolean } => {
   if (err instanceof WrongCardError) return { message: LL.FlashcardV2.wrongCard() }
   if (err instanceof CardNeedsUpdateError) {
-    // The applet answered, but not as one setup writes to.
-    if (err.found === "older" || err.found === "newer") {
+    // The applet answered, but not as one setup writes to: an older one needs
+    // the card updated, a newer one needs this app updated.
+    if (err.found === "older") {
       return { message: LL.FlashcardV2.setUpNeedsApplet(), final: true }
+    }
+    if (err.found === "newer") {
+      return { message: LL.FlashcardV2.setUpNeedsAppUpdate(), final: true }
     }
     return { message: LL.FlashcardV2.needsUpdateBody(), final: true }
   }

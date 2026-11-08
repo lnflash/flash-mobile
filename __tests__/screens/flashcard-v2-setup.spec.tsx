@@ -16,7 +16,12 @@ import appTheme from "../../app/rne-theme/theme"
 import { i18nObject } from "../../app/i18n/i18n-util"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import { FlashcardV2SetupScreen } from "../../app/screens/card-screen/flashcard-v2-setup"
-import { CardProtocolError, CardTap, Transceiver } from "../../app/utils/cashu-card"
+import {
+  CardNeedsUpdateError,
+  CardProtocolError,
+  CardTap,
+  Transceiver,
+} from "../../app/utils/cashu-card"
 import { RelayUnsettledError } from "../../app/utils/cashu-card-relay"
 import { ownerPublicKey } from "../../app/utils/cashu-card-owner"
 import { FAKE_OWNER_KEY, FakeCard, createFakeCard } from "../helpers/fake-cashu"
@@ -34,6 +39,9 @@ const mockOwnerKeyFor = jest.fn()
 const mockSaveOwnerKey = jest.fn()
 const mockRefreshTipHeader = jest.fn()
 const mockFetchKeysetUnits = jest.fn()
+/** The real freezeSetupIntent and setUpCard, watched: a retry must not freeze again. */
+const mockFreezeSetupIntent = jest.fn()
+const mockSetUpCard = jest.fn()
 let mockCard: CashuCardState | undefined
 let capturedOptions: CardOperationOptions | undefined
 type Op = (
@@ -75,7 +83,12 @@ jest.mock("@app/utils/cashu-card-owner-store", () => ({
   newOwnerKey: (...args: unknown[]) => mockNewOwnerKey(...args),
   ownerKeyFor: (...args: unknown[]) => mockOwnerKeyFor(...args),
   saveOwnerKey: (...args: unknown[]) => mockSaveOwnerKey(...args),
+  freezeSetupIntent: (...args: unknown[]) => mockFreezeSetupIntent(...args),
+  setUpCard: (...args: unknown[]) => mockSetUpCard(...args),
 }))
+const actualOwnerStore = jest.requireActual("@app/utils/cashu-card-owner-store")
+mockFreezeSetupIntent.mockImplementation(actualOwnerStore.freezeSetupIntent)
+mockSetUpCard.mockImplementation(actualOwnerStore.setUpCard)
 jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
     cashuCard: mockCard,
@@ -433,12 +446,25 @@ describe("FlashcardV2SetupScreen", () => {
       })
     }
 
-    it("an applet version setup does not write to sends nothing at all", async () => {
+    it("a newer 2.x applet asks for a Flash update, and sends nothing at all", async () => {
       mockRunResult = runOn(card, [2, 3])
       await renderScreen()
       await tapNoPin()
-      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpNeedsApplet()))
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpNeedsAppUpdate()))
+      expect(screen.getByTestId("setup-close")).toBeTruthy()
+      expect(screen.queryByTestId("setup-tap")).toBeNull()
       expect(order).toEqual([])
+    })
+
+    it("a newer applet major, refused at SELECT, asks for a Flash update for good", async () => {
+      // runCardOperation's SELECT throws this for a 3.x applet (checkVersion).
+      mockRunResult = () => Promise.reject(new CardNeedsUpdateError("newer"))
+      await renderScreen()
+      await tapNoPin()
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpNeedsAppUpdate()))
+      expect(screen.getByTestId("setup-close")).toBeTruthy()
+      expect(screen.queryByTestId("setup-tap")).toBeNull()
+      expect(mockSaveOwnerKey).not.toHaveBeenCalled()
     })
 
     it("a card whose record names another mint says which, for good", async () => {
@@ -508,30 +534,63 @@ describe("FlashcardV2SetupScreen", () => {
       onlyReads()
     })
 
-    it("a retry reuses the frozen intent: a tap cut after SET_PIN is finished by the next, with the same PIN", async () => {
+    /** Each tap's write cut once, after the card took INS `ins`: the answer is lost. */
+    const cutOnceAfter = (ins: number) => {
       const answer = card.transceive.getMockImplementation()!
       let cut = true
       card.transceive.mockImplementation(async (apdu) => {
         order.push(apdu[1].toString(16))
         const response = await answer(apdu)
-        if (cut && apdu[1] === 0x41) {
+        if (cut && apdu[1] === ins) {
           cut = false
           throw new Error("Tag was lost")
         }
         return response
       })
+    }
+
+    it("a retry reuses the frozen intent: a tap cut after SET_PIN is finished by the next, with the same PIN, and nothing is frozen again", async () => {
+      cutOnceAfter(0x41)
       await renderScreen()
       await chooseAndTap("2468")
       await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
       expect(card.pin()).toBe("2468")
+      expect(mockFreezeSetupIntent).toHaveBeenCalledTimes(1)
+      const intent = mockSetUpCard.mock.calls[0][1].intent
 
       // Tap again: the card now says its PIN is set, by this sequence.
       await act(async () => {
         fireEvent.press(screen.getByTestId("setup-tap"))
       })
       await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+      // The retry froze nothing new: it wrote the first tap's intent, the same object.
+      expect(mockFreezeSetupIntent).toHaveBeenCalledTimes(1)
+      expect(mockSetUpCard).toHaveBeenCalledTimes(2)
+      expect(mockSetUpCard.mock.calls[1][1].intent).toBe(intent)
+      expect(mockSetUpCard.mock.calls[1][1].progress).toBe(
+        mockSetUpCard.mock.calls[0][1].progress,
+      )
       expect(card.pin()).toBe("2468")
       expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      expect(card.record()).toEqual({ set: true, mint: intent.mint })
+    })
+
+    it("a tap cut after VERIFY_PIN, the card's allowance armed by it, is finished by the next tap", async () => {
+      cutOnceAfter(0x40)
+      await renderScreen()
+      await chooseAndTap("2468")
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+      expect(card.pin()).toBe("2468")
+      expect(card.owner()).toBeUndefined()
+
+      // Tap again: the PIN is set and the allowance armed, both by this sequence.
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+      expect(screen.queryByTestId("setup-error")).toBeNull()
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
     })
   })
 

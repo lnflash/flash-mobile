@@ -1,6 +1,6 @@
 /**
  * ENG-634, ENG-675: the card layer and the top-up engine against the real
- * 2.1 applet (cardsim, at the ref the e2e workflow pins) and a real mint
+ * 2.2 applet (cardsim, at the ref the e2e workflow pins) and a real mint
  * (Nutshell 0.20.3 on FakeWallet), below the UI. Opt-in: runs only with
  * CARDSIM_URL, CARD_MINT_URL and CARD_FIXTURES_URL set (the iOS e2e workflow
  * sets them; see .maestro/flashcard/README.md), and is skipped in the unit
@@ -126,7 +126,7 @@ const engineDeps = (mintUrl: string): TopUpDeps => {
   }
 }
 
-describeWithCardsim("the 2.1 card against cardsim and a FakeWallet mint", () => {
+describeWithCardsim("the 2.2 card against cardsim and a FakeWallet mint", () => {
   jest.setTimeout(180_000)
 
   const bridge = CARDSIM_URL as string
@@ -141,7 +141,7 @@ describeWithCardsim("the 2.1 card against cardsim and a FakeWallet mint", () => 
     const transceive = bridgeTransceiver(bridge)
     const card = await readCashuCard(transceive)
     if (!card?.spentSlots) throw new Error("the spent fixture did not read")
-    expect(card.version).toBe("2.1")
+    expect(card.version).toBe("2.2")
     expect(card.hasOwner).toBe(true)
     expect(card.sealed).toBe(true)
     expect(card.record.mint).toBe(mintUrl)

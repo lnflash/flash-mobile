@@ -25,6 +25,7 @@ import {
   CardTap,
   Transceiver,
   WrongCardError,
+  getCardRecord,
   getInfo,
   selectApplet,
 } from "../../app/utils/cashu-card"
@@ -1227,6 +1228,71 @@ describe("setUpCard: personalisation, owner last", () => {
       await setUpCard(card.transceive, { ...args, info: again })
       expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
       expect(card.record()).toEqual({ set: true, mint: MINT })
+    })
+
+    it("resumes in the same sequence after VERIFY_PIN lands: the card's allowance is armed, and the next tap finishes", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x40) throw new Error("Tag was lost")
+        return response
+      })
+      const args = argsFor(card, info, { pin: "1234" })
+      await expect(setUpCard(card.transceive, args)).rejects.toThrow("Tag was lost")
+      expect(args.progress.pinSent).toBe(true)
+      expect(args.progress.recordSent).toBe(false)
+
+      // The next tap: the PIN is set, and VERIFY_PIN armed the allowance (D20).
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      const again = await getInfo(card.transceive)
+      expect(again.pinState).toBe("set")
+      expect((await getCardRecord(card.transceive)).allowanceArmed).toBe(true)
+      await setUpCard(card.transceive, { ...args, info: again })
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      expect(card.record()).toEqual({ set: true, mint: MINT })
+    })
+
+    it("resumes in the same sequence after SET_CARD lands: record set, allowance armed, and the next tap finishes", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x32) throw new Error("Tag was lost")
+        return response
+      })
+      const args = argsFor(card, info, { pin: "1234" })
+      await expect(setUpCard(card.transceive, args)).rejects.toThrow("Tag was lost")
+      expect(args.progress.recordSent).toBe(true)
+
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      const again = await getInfo(card.transceive)
+      expect(again.recordSet).toBe(true)
+      await setUpCard(card.transceive, { ...args, info: again })
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    })
+
+    it("a card a PIN from before has armed is refused as pin-set, not limits-set, and nothing is written", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x40) throw new Error("Tag was lost")
+        return response
+      })
+      await expect(
+        setUpCard(card.transceive, argsFor(card, info, { pin: "1234" })),
+      ).rejects.toThrow("Tag was lost")
+      card.transceive.mockImplementation(answer)
+      const again = await getInfo(card.transceive)
+      card.transceive.mockClear()
+      // A new sequence: the PIN and the armed allowance are not its own.
+      await expect(
+        setUpCard(card.transceive, argsFor(card, again, { pin: "1234" })),
+      ).rejects.toMatchObject({ reason: "pin-set" })
+      onlyReads(card)
     })
 
     it("the same card after an app restart (a new sequence) is refused: the PIN is not this sequence's", async () => {
