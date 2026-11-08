@@ -50,7 +50,13 @@ import {
   OwnerKeyStoreError,
   SEED_SERVER,
   SETUP_APPLET_VERSIONS,
+  CardSetup,
+  ReadBackField,
+  SetupProgress,
+  SetupReadBackError,
   checkSetupState,
+  compareReadBack,
+  setupRecord,
   freezeSetupIntent,
   newSetupProgress,
   setupWriteSent,
@@ -763,6 +769,8 @@ describe("setUpCard: personalisation, owner last", () => {
     intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint, pin }),
     progress: newSetupProgress(),
     key,
+    // The wallet's record (ENG-826) is pinned in its own describe below.
+    persist: jest.fn(async () => undefined),
   })
 
   it("SET_PIN, VERIFY_PIN, SET_CARD, the key saved, then SET_OWNER with the anchor: in that order", async () => {
@@ -788,7 +796,8 @@ describe("setUpCard: personalisation, owner last", () => {
     )
     // One read before the writes (ENG-825): GET_CARD, then the same writes in
     // the same order.
-    expect(order).toEqual(["16", "41", "40", "32", "saved", "43"])
+    // ENG-826: SET_CARD is read back (GET_CARD) before the key is saved.
+    expect(order).toEqual(["16", "41", "40", "32", "16", "saved", "43"])
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(card.pin()).toBe("1234")
     expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
@@ -805,7 +814,7 @@ describe("setUpCard: personalisation, owner last", () => {
     const info = await getInfo(card.transceive)
     card.transceive.mockClear()
     await setUpCard(card.transceive, argsFor(card, info))
-    expect(card.ins()).toEqual([0x16, 0x32, 0x43])
+    expect(card.ins()).toEqual([0x16, 0x32, 0x16, 0x43])
     expect(card.pin()).toBeUndefined()
     expect(card.now()).toBe(0)
     await expect(ownerKeyStore.get(card.pubkey)).resolves.toMatchObject({
@@ -955,7 +964,7 @@ describe("setUpCard: personalisation, owner last", () => {
           info,
           record: baseRecord(),
           intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT, pin: "1234" }),
-          progress: { pinSent: true, recordSent: false },
+          progress: { pinSent: true, recordSent: false, ownerSent: false },
         }),
       ).toThrow(expect.objectContaining({ reason: "pin-set" }))
     })
@@ -1025,12 +1034,7 @@ describe("setUpCard: personalisation, owner last", () => {
     it("an armed allowance with no PIN of this sequence's is a limit; after this sequence's own VERIFY_PIN it is not", () => {
       const card = createFakeCard(128, { owner: null, version: V22 })
       const check =
-        (
-          info: Partial<CardInfo>,
-          progress: { pinSent: boolean; recordSent: boolean },
-          pin?: string,
-        ) =>
-        () =>
+        (info: Partial<CardInfo>, progress: SetupProgress, pin?: string) => () =>
           checkSetupState({
             tap: tapOf(card),
             info: { ...baseInfo(), ...info },
@@ -1045,7 +1049,11 @@ describe("setUpCard: personalisation, owner last", () => {
         expect.objectContaining({ reason: "pin-set" }),
       )
       expect(
-        check({ pinState: "set" }, { pinSent: true, recordSent: false }, "1234"),
+        check(
+          { pinState: "set" },
+          { pinSent: true, recordSent: false, ownerSent: false },
+          "1234",
+        ),
       ).not.toThrow()
     })
 
@@ -1367,17 +1375,17 @@ describe("setUpCard: personalisation, owner last", () => {
       })
       await setUpCard(card.transceive, args)
       expect(seen).toEqual([
-        'SET_PIN {"pinSent":true,"recordSent":false}',
-        'SET_CARD {"pinSent":true,"recordSent":true}',
+        'SET_PIN {"pinSent":true,"recordSent":false,"ownerSent":false}',
+        'SET_CARD {"pinSent":true,"recordSent":true,"ownerSent":false}',
       ])
       expect(setupWriteSent(args.progress)).toBe(true)
       expect(setupWriteSent(newSetupProgress())).toBe(false)
     })
 
-    it("the happy path on 2.2 adds exactly one GET_CARD to the writes", async () => {
+    it("the happy path on 2.2 reads GET_CARD once before the writes and once after SET_CARD (ENG-826)", async () => {
       const { card, info } = await fresh()
       await setUpCard(card.transceive, argsFor(card, info, { pin: "1234" }))
-      expect(card.ins()).toEqual([0x16, 0x41, 0x40, 0x32, 0x43])
+      expect(card.ins()).toEqual([0x16, 0x41, 0x40, 0x32, 0x16, 0x43])
     })
   })
 
@@ -1390,5 +1398,371 @@ describe("setUpCard: personalisation, owner last", () => {
   it("the key the card holds is the owner key's public half, 04 ‖ X ‖ Y", () => {
     const pub = ownerPublicKey(FAKE_OWNER_KEY)
     expect(hex(pub)).toBe(hex(p256.getPublicKey(FAKE_OWNER_KEY, false)))
+  })
+})
+
+// ENG-826: the wallet's setup record and the read-back.
+describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
+  const key = { privateKey: FAKE_OWNER_KEY, source: "device" as const, saved: false }
+  const V22: [number, number] = [2, 2]
+  const MINT = "https://mint.test"
+  const tapOf = (card: FakeCard): CardTap => ({ version: V22, pubkey: card.pubkey })
+  /** Every setup record `persist` was given, in order. */
+  const persisted: CardSetup[] = []
+  /** The setup records persisted and the APDUs sent, in one order. */
+  const log: string[] = []
+  beforeEach(() => {
+    persisted.length = 0
+    log.length = 0
+  })
+  /** A `persist` that records each setup record, as the wallet's store would keep it. */
+  const persistSpy = () =>
+    jest.fn(async (setup: CardSetup) => {
+      persisted.push(JSON.parse(JSON.stringify(setup)))
+      log.push(`persist ${setup.status}`)
+    })
+  /** One setup sequence's arguments for `card` as `info` reads it. */
+  const argsFor = (
+    card: FakeCard,
+    info: CardInfo,
+    { pin, mint = MINT }: { pin?: string; mint?: string } = {},
+  ) => ({
+    tap: tapOf(card),
+    info,
+    pin,
+    intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint, pin }),
+    progress: newSetupProgress(),
+    key,
+    persist: persistSpy(),
+  })
+  /** A fresh 2.2 card, its GET_INFO, and the transceive cleared. */
+  const fresh = async (options: FakeCardOptions = {}) => {
+    const card = createFakeCard(128, { owner: null, version: V22, ...options })
+    const info = await getInfo(card.transceive)
+    card.transceive.mockClear()
+    return { card, info }
+  }
+  /** Every APDU `card` is sent noted in `log`, beside the records persisted. */
+  const logged = (card: FakeCard) => {
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      log.push(`apdu ${apdu[1].toString(16)}`)
+      return answer(apdu)
+    })
+    return answer
+  }
+  /** The next tap after a restart: a new SELECT and GET_INFO, nothing else kept. */
+  const nextTap = async (card: FakeCard, answer: Transceiver) => {
+    card.transceive.mockImplementation(answer)
+    await selectApplet(card.transceive)
+    const info = await getInfo(card.transceive)
+    card.transceive.mockClear()
+    logged(card)
+    return info
+  }
+  const PIN = "97531"
+
+  it("persists the next progress before SET_PIN, SET_CARD and SET_OWNER, and the set-up record after", async () => {
+    const { card, info } = await fresh()
+    logged(card)
+    await setUpCard(card.transceive, argsFor(card, info, { pin: PIN }))
+    expect(log).toEqual([
+      "apdu 16",
+      "persist started",
+      "apdu 41",
+      "apdu 40",
+      "persist started",
+      "apdu 32",
+      "apdu 16",
+      "persist started",
+      "apdu 43",
+      "persist set-up",
+    ])
+    expect(persisted.map((setup) => setup.progress)).toEqual([
+      { pinSent: true, recordSent: false, ownerSent: false },
+      { pinSent: true, recordSent: true, ownerSent: false },
+      { pinSent: true, recordSent: true, ownerSent: true },
+      { pinSent: true, recordSent: true, ownerSent: true },
+    ])
+    const last = persisted[persisted.length - 1]
+    expect(last).toMatchObject({
+      v: 1,
+      status: "set-up",
+      intent: { cardPubkey: card.pubkey, mint: MINT, pinChosen: true },
+      heldByCard: { mint: MINT, unit: 0, refundKey: null, design: null },
+    })
+    expect(typeof last.setUpAt).toBe("number")
+    expect(last.mismatch).toBeUndefined()
+  })
+
+  it("with no PIN, the first persist comes before SET_CARD", async () => {
+    const { card, info } = await fresh()
+    logged(card)
+    await setUpCard(card.transceive, argsFor(card, info))
+    expect(log).toEqual([
+      "apdu 16",
+      "persist started",
+      "apdu 32",
+      "apdu 16",
+      "persist started",
+      "apdu 43",
+      "persist set-up",
+    ])
+  })
+
+  for (const failAt of [1, 2, 3]) {
+    it(`a persist that fails (call ${failAt}) sends nothing more: the write it precedes never goes out`, async () => {
+      const { card, info } = await fresh()
+      logged(card)
+      const save = jest.fn(async () => undefined)
+      let calls = 0
+      const args = {
+        ...argsFor(card, info, { pin: PIN }),
+        persist: jest.fn(async () => {
+          calls += 1
+          log.push(`persist ${calls}`)
+          if (calls === failAt) throw new Error("disk full")
+        }),
+      }
+      await expect(setUpCard(card.transceive, args, save)).rejects.toThrow("disk full")
+      expect(log[log.length - 1]).toBe(`persist ${failAt}`)
+      expect(card.owner()).toBeUndefined()
+      if (failAt === 1) expect(card.pin()).toBeUndefined()
+      if (failAt <= 2) expect(card.record().set).toBe(false)
+      if (failAt <= 2) expect(save).not.toHaveBeenCalled()
+      // The progress is marked only once its record is on disk.
+      expect(args.progress).toEqual({
+        pinSent: failAt > 1,
+        recordSent: failAt > 2,
+        ownerSent: false,
+      })
+    })
+  }
+
+  it("a set-up record that is not saved only warns: the card is set up", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined)
+    const { card, info } = await fresh()
+    const args = {
+      ...argsFor(card, info),
+      persist: jest.fn(async (setup: CardSetup) => {
+        if (setup.status === "set-up") throw new Error("disk full")
+      }),
+    }
+    await setUpCard(card.transceive, args)
+    expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    expect(warn).toHaveBeenCalledWith("Cashu card setup record (set-up) not saved: Error")
+    warn.mockRestore()
+  })
+
+  it("after a restart with SET_PIN on the card, resumes the stored intent: one SET_PIN across both taps, VERIFY_PIN, and it finishes", async () => {
+    const { card, info } = await fresh()
+    const answer = logged(card)
+    card.transceive.mockImplementation(async (apdu) => {
+      log.push(`apdu ${apdu[1].toString(16)}`)
+      const response = await answer(apdu)
+      if (apdu[1] === 0x41) throw new Error("Tag was lost")
+      return response
+    })
+    await expect(
+      setUpCard(card.transceive, argsFor(card, info, { pin: PIN })),
+    ).rejects.toThrow("Tag was lost")
+    expect(card.pin()).toBe(PIN)
+
+    // A restart: only what was persisted survives.
+    const stored: CardSetup = JSON.parse(JSON.stringify(persisted[persisted.length - 1]))
+    expect(stored).toMatchObject({ status: "started", progress: { pinSent: true } })
+    const again = await nextTap(card, answer)
+    expect(again.pinState).toBe("set")
+    await setUpCard(card.transceive, {
+      tap: tapOf(card),
+      info: again,
+      pin: PIN,
+      intent: stored.intent,
+      progress: { ...stored.progress },
+      key,
+      persist: persistSpy(),
+    })
+    expect(log.filter((entry) => entry === "apdu 41")).toHaveLength(1)
+    expect(card.ins()).toEqual([0x16, 0x40, 0x32, 0x16, 0x43])
+    expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    expect(card.record()).toEqual({ set: true, mint: MINT })
+  })
+
+  it("with pinSent stored and a card that reads no PIN, SET_PIN never landed: it is sent again", async () => {
+    const { card, info } = await fresh()
+    const answer = logged(card)
+    card.transceive.mockImplementation(async (apdu) => {
+      log.push(`apdu ${apdu[1].toString(16)}`)
+      // Lost on the way: the card never saw it.
+      if (apdu[1] === 0x41) throw new Error("Tag was lost")
+      return answer(apdu)
+    })
+    await expect(
+      setUpCard(card.transceive, argsFor(card, info, { pin: PIN })),
+    ).rejects.toThrow("Tag was lost")
+    const stored: CardSetup = JSON.parse(JSON.stringify(persisted[persisted.length - 1]))
+    expect(stored.progress.pinSent).toBe(true)
+    const again = await nextTap(card, answer)
+    expect(again.pinState).toBe("unset")
+    await setUpCard(card.transceive, {
+      tap: tapOf(card),
+      info: again,
+      pin: PIN,
+      intent: stored.intent,
+      progress: { ...stored.progress },
+      key,
+      persist: persistSpy(),
+    })
+    expect(log.filter((entry) => entry === "apdu 41")).toHaveLength(2)
+    expect(card.pin()).toBe(PIN)
+    expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+  })
+
+  /** The card answers its second GET_CARD (the read-back) with `corrupt` of what it holds. */
+  const corruptReadBack = (card: FakeCard, corrupt: (body: number[]) => number[]) => {
+    const answer = card.transceive.getMockImplementation()!
+    let reads = 0
+    card.transceive.mockImplementation(async (apdu) => {
+      log.push(`apdu ${apdu[1].toString(16)}`)
+      const response = await answer(apdu)
+      if (apdu[1] !== 0x16) return response
+      reads += 1
+      if (reads !== 2) return response
+      return [...corrupt(response.slice(0, -2)), 0x90, 0x00]
+    })
+  }
+  const at = (body: number[], index: number, bytes: number[]) => {
+    const out = [...body]
+    out.splice(index, bytes.length, ...bytes)
+    return out
+  }
+
+  for (const [field, corrupt] of [
+    ["unset", (b: number[]) => at(b, 1, [0])],
+    ["mint", (b: number[]) => at(b, 106, [0x48])],
+    ["unit", (b: number[]) => at(b, 2, [1])],
+    ["refundKey", (b: number[]) => at(b, 7, [0x02, ...new Array(32).fill(0x11)])],
+    ["design", (b: number[]) => at(b, 106 + MINT.length, [0x46, 0x4c, 0x31])],
+  ] as [ReadBackField, (b: number[]) => number[]][]) {
+    it(`a read-back whose ${field} differs stops before SET_OWNER: mismatched, nothing after the read-back`, async () => {
+      const { card, info } = await fresh()
+      corruptReadBack(card, corrupt)
+      const save = jest.fn(async () => undefined)
+      const thrown = await setUpCard(
+        card.transceive,
+        argsFor(card, info, { pin: PIN }),
+        save,
+      ).catch((err) => err)
+      expect(thrown).toBeInstanceOf(SetupReadBackError)
+      expect(thrown.fields).toEqual([field])
+      // The read-back is the last APDU: no SET_OWNER, no key saved.
+      expect(card.ins()).toEqual([0x16, 0x41, 0x40, 0x32, 0x16])
+      expect(log[log.length - 1]).toBe("persist mismatched")
+      expect(save).not.toHaveBeenCalled()
+      expect(card.owner()).toBeUndefined()
+      expect(persisted[persisted.length - 1]).toMatchObject({
+        status: "mismatched",
+        mismatch: [field],
+        progress: { pinSent: true, recordSent: true, ownerSent: false },
+      })
+      expect(persisted[persisted.length - 1].heldByCard).toBeDefined()
+    })
+  }
+
+  it("a mismatched record that is not saved still stops before SET_OWNER", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined)
+    const { card, info } = await fresh()
+    corruptReadBack(card, (b) => at(b, 2, [1]))
+    const args = {
+      ...argsFor(card, info),
+      persist: jest.fn(async (setup: CardSetup) => {
+        if (setup.status === "mismatched") throw new Error("disk full")
+      }),
+    }
+    await expect(setUpCard(card.transceive, args)).rejects.toBeInstanceOf(
+      SetupReadBackError,
+    )
+    expect(card.ins()).not.toContain(0x43)
+    expect(warn).toHaveBeenCalledWith(
+      "Cashu card setup record (mismatched) not saved: Error",
+    )
+    warn.mockRestore()
+  })
+
+  it("a read-back framed wrong is unreadable, not final: no SET_OWNER", async () => {
+    const { card, info } = await fresh()
+    corruptReadBack(card, (b) => b.slice(0, 100))
+    await expect(setUpCard(card.transceive, argsFor(card, info))).rejects.toMatchObject({
+      reason: "unreadable",
+    })
+    expect(card.ins()).toEqual([0x16, 0x32, 0x16])
+  })
+
+  describe("compareReadBack", () => {
+    const intent = freezeSetupIntent({ cardPubkey: CARD, mint: MINT })
+    const kept = (): CardRecord => ({
+      ...baseRecord(),
+      recordSet: true,
+      mint: MINT,
+      design: null,
+    })
+    for (const [label, record, fields] of [
+      ["the record as written", kept(), []],
+      ["no record", { ...kept(), recordSet: false }, ["unset"]],
+      [
+        "the mint with a trailing slash (exact bytes)",
+        { ...kept(), mint: `${MINT}/` },
+        ["mint"],
+      ],
+      ["another unit", { ...kept(), unit: 1 }, ["unit"]],
+      ["a refund key", { ...kept(), refundKey: "02" + "11".repeat(32) }, ["refundKey"]],
+      ["a design", { ...kept(), design: "FL1" }, ["design"]],
+      [
+        "an answer that stops before the design",
+        { ...kept(), design: undefined },
+        ["design"],
+      ],
+      [
+        "everything",
+        {
+          ...kept(),
+          recordSet: false,
+          mint: "x",
+          unit: 2,
+          refundKey: "03" + "22".repeat(32),
+          design: "AB1",
+        },
+        ["unset", "mint", "unit", "refundKey", "design"],
+      ],
+    ] as [string, CardRecord, ReadBackField[]][]) {
+      it(`${label}: ${fields.length ? fields.join(", ") : "kept"}`, () => {
+        expect(compareReadBack(intent, record)).toEqual(fields)
+      })
+    }
+  })
+
+  it("no persisted record holds the PIN or any key", async () => {
+    const { card, info } = await fresh()
+    await setUpCard(card.transceive, argsFor(card, info, { pin: PIN }))
+    const all = JSON.stringify(persisted)
+    expect(persisted.length).toBeGreaterThan(0)
+    expect(all).not.toContain(PIN)
+    expect(all).not.toContain(FAKE_OWNER_KEY)
+    expect(all).not.toContain(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    expect(all).not.toMatch(/privateKey|publicKey|seed/)
+  })
+
+  it("setupRecord copies the intent and progress: later progress does not reach a record already made", () => {
+    const intent = freezeSetupIntent({ cardPubkey: CARD, mint: MINT })
+    const progress = newSetupProgress()
+    const record = setupRecord(intent, progress, { status: "started", at: 5 })
+    progress.recordSent = true
+    expect(record).toEqual({
+      v: 1,
+      intent: { ...intent },
+      progress: { pinSent: false, recordSent: false, ownerSent: false },
+      status: "started",
+      updatedAt: 5,
+    })
   })
 })

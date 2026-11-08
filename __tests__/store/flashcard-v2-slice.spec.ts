@@ -7,13 +7,16 @@ import reducer, {
   cardForgotten,
   cardLimitsSet,
   cardSeen,
+  cardSetupSaved,
   cardUnitResolved,
   initialFlashcardV2State,
   keysetUnitsLearned,
   resetFlashcardV2,
   tidyOfferDismissed,
 } from "@app/store/redux/slices/flashcardV2Slice"
+import type { CardSetup } from "@app/utils/cashu-card-owner-store"
 import {
+  migrate,
   migrateFlashcardV2,
   migrateFlashcardV2Cards,
   migrations,
@@ -351,5 +354,151 @@ describe("flashcardV2 slice — tidy offer (ENG-702)", () => {
     expect(state.tidyDismissed).toEqual({})
     state = reducer(state, tidyOfferDismissed({ pubkey: PUBKEY, fingerprint: "f1" }))
     expect(reducer(state, resetFlashcardV2()).tidyDismissed).toBeUndefined()
+  })
+})
+
+describe("flashcardV2 slice — setup records (ENG-826)", () => {
+  const OTHER = "03" + "cd".repeat(32)
+  const setup = (overrides: Partial<CardSetup> = {}, pubkey = PUBKEY): CardSetup => ({
+    v: 1,
+    intent: {
+      cardPubkey: pubkey,
+      mint: "https://mint.test",
+      unit: 0,
+      refundKey: null,
+      design: null,
+      pinChosen: true,
+    },
+    progress: { pinSent: true, recordSent: false, ownerSent: false },
+    status: "started",
+    updatedAt: 1_000,
+    ...overrides,
+  })
+
+  it("starts absent: no initial value, so no persist migration", () => {
+    expect(reducer(undefined, { type: "@@init" }).setups).toBeUndefined()
+    expect(PERSIST_VERSION).toBe(3)
+  })
+
+  it("cardSetupSaved replaces the card's record and leaves another card's", () => {
+    let state = reducer(undefined, cardSetupSaved(setup()))
+    state = reducer(state, cardSetupSaved(setup({}, OTHER)))
+    const next = setup({
+      progress: { pinSent: true, recordSent: true, ownerSent: true },
+      status: "set-up",
+      heldByCard: { mint: "https://mint.test", unit: 0, refundKey: null, design: null },
+      setUpAt: 2_000,
+      updatedAt: 2_000,
+    })
+    state = reducer(state, cardSetupSaved(next))
+    expect(state.setups?.[PUBKEY]).toEqual(next)
+    expect(state.setups?.[OTHER]).toEqual(setup({}, OTHER))
+  })
+
+  it("Remove card keeps the setup record; logout drops every one (decision 3)", () => {
+    let state = reducer(undefined, seen())
+    state = reducer(state, cardSetupSaved(setup()))
+    state = reducer(state, cardForgotten({ pubkey: PUBKEY }))
+    expect(state.cards[PUBKEY]).toBeUndefined()
+    expect(state.setups?.[PUBKEY]).toEqual(setup())
+    expect(reducer(state, resetFlashcardV2()).setups).toBeUndefined()
+  })
+
+  it("a store saved before setups (`{ cards }`) rehydrates with none", async () => {
+    const saved = {
+      accountUpgrade: {},
+      flashcardV2: { cards: {} },
+      _persist: { version: 3, rehydrated: false },
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const migrated: any = await migrate(saved as any, PERSIST_VERSION)
+    expect(migrated.flashcardV2).toEqual({ cards: {} })
+    expect(migrated.flashcardV2.setups).toBeUndefined()
+  })
+})
+
+describe("flushPersisted (ENG-826)", () => {
+  /** The AsyncStorage jest mock, as the module the store imports. */
+  const asyncStorage = () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require("@react-native-async-storage/async-storage")
+    return (mod.default ??
+      mod) as typeof import("@react-native-async-storage/async-storage").default
+  }
+  /** A fresh store module and its own AsyncStorage (empty), the store rehydrated. */
+  const freshStore = async () => {
+    let store!: typeof import("@app/store/redux")
+    let storage!: typeof import("@react-native-async-storage/async-storage").default
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      store = require("@app/store/redux")
+      storage = asyncStorage()
+    })
+    // Before rehydration nothing is written: it says so.
+    await expect(store.flushPersisted()).rejects.toMatchObject({
+      reason: "not-rehydrated",
+    })
+    await new Promise<void>((resolve) => {
+      const check = (): unknown =>
+        store.persistor.getState().bootstrapped ? resolve() : setTimeout(check, 1)
+      check()
+    })
+    return { store, storage }
+  }
+  const record: CardSetup = {
+    v: 1,
+    intent: {
+      cardPubkey: PUBKEY,
+      mint: "https://mint.test",
+      unit: 0,
+      refundKey: null,
+      design: null,
+      pinChosen: false,
+    },
+    progress: { pinSent: false, recordSent: true, ownerSent: false },
+    status: "started",
+    updatedAt: 1,
+  }
+  /** What AsyncStorage holds for the persisted slice. */
+  const onDisk = async (
+    storage: typeof import("@react-native-async-storage/async-storage").default,
+  ) => {
+    const root = await storage.getItem("persist:root")
+    return root ? JSON.parse(JSON.parse(root).flashcardV2) : undefined
+  }
+
+  it("resolves once AsyncStorage holds the record", async () => {
+    const { store, storage } = await freshStore()
+    store.store.dispatch(cardSetupSaved(record))
+    await store.flushPersisted()
+    expect((await onDisk(storage))?.setups?.[PUBKEY]).toEqual(record)
+  })
+
+  it("rejects when the write fails, though a bare persistor.flush() resolves", async () => {
+    const error = jest.spyOn(console, "error").mockImplementation(() => undefined)
+    const { store, storage } = await freshStore()
+    const setItem = storage.setItem as jest.Mock
+    setItem.mockImplementationOnce(async () => {
+      throw new Error("disk full")
+    })
+    store.store.dispatch(cardSetupSaved(record))
+    await expect(store.flushPersisted()).rejects.toMatchObject({
+      name: "PersistWriteError",
+      reason: "write-failed",
+    })
+    expect((await onDisk(storage))?.setups).toBeUndefined()
+
+    // redux-persist alone swallows the failure: why flushPersisted exists.
+    setItem.mockImplementationOnce(async () => {
+      throw new Error("disk full")
+    })
+    store.store.dispatch(cardSetupSaved({ ...record, updatedAt: 2 }))
+    await expect(store.persistor.flush()).resolves.toBeDefined()
+
+    // The next write that lands clears it.
+    store.store.dispatch(cardSetupSaved({ ...record, updatedAt: 3 }))
+    await store.flushPersisted()
+    expect((await onDisk(storage))?.setups?.[PUBKEY].updatedAt).toBe(3)
+    error.mockRestore()
   })
 })

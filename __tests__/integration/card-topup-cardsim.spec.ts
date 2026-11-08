@@ -376,6 +376,7 @@ describeWithCardsim("the 2.2 card against cardsim and a FakeWallet mint", () => 
         progress: newSetupProgress(),
         anchor: headerBytes(anchor),
         key: { privateKey: FIXTURE_OWNER_KEY, source: "dev", saved: false },
+        persist: async () => undefined,
       },
       async () => {
         // The key is saved before SET_OWNER: the card has no owner yet.

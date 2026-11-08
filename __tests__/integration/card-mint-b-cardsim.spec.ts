@@ -116,6 +116,7 @@ describeWithTwoMints(
           intent: freezeSetupIntent({ cardPubkey: fresh.pubkey, mint: mintB }),
           progress: newSetupProgress(),
           key: { privateKey: FIXTURE_OWNER_KEY, source: "dev", saved: false },
+          persist: async () => undefined,
         },
         async () => undefined,
       )
