@@ -459,6 +459,33 @@ describe("the fixture server", () => {
     expect(paid).toEqual({ status: 200, body: { balance: 8, spent: [4] } })
   })
 
+  // ENG-787: a card at a mint of its own.
+  it("provisions the card at the second mint under /mint-b/, and at the first otherwise", async () => {
+    const { deps, sim, mint } = setup()
+    const mintB = { ...mint, url: "http://127.0.0.1:3339" }
+    const handler = fixtureHandler(
+      deps,
+      { ...health, mintB: mintB.url },
+      { ...deps, mint: mintB },
+    )
+    const atB = await request(handler, "POST", "/mint-b/load/owned")
+    expect(atB.status).toBe(200)
+    expect(sim.card.record()).toEqual({ set: true, mint: "http://127.0.0.1:3339" })
+    const atA = await request(handler, "POST", "/load/owned")
+    expect(atA.status).toBe(200)
+    expect(sim.card.record()).toEqual({ set: true, mint: mint.url })
+  })
+
+  it("answers 404 under /mint-b/ when no second mint is served", async () => {
+    const { deps } = setup()
+    const { status } = await request(
+      fixtureHandler(deps, health),
+      "POST",
+      "/mint-b/load/owned",
+    )
+    expect(status).toBe(404)
+  })
+
   it("answers 404 to a fixture it does not know, the old loaded-0.4 among them, without echoing the name", async () => {
     const { deps } = setup()
     for (const name of ["nothing", "loaded-0.4"]) {

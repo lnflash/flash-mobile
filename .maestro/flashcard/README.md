@@ -36,7 +36,11 @@ DLEQ), with format-4 SIG_ALL pieces minted at the dev mint. It also serves the
 tip header stub at `/headers` (a real mainnet header, `FIXTURE_TIP_HEADER`),
 and `POST /spend/<amount>`: a till's offline payment of exactly that much
 from the card, no change, redeemed at the mint (500 when no pieces add up to
-it).
+it). With `--mint-b <url>`, a second local mint (ENG-787), the same endpoints
+under `/mint-b/` provision the card at that mint instead: its record names it
+and its pieces are its. `__tests__/integration/card-mint-b-cardsim.spec.ts`
+uses it, with `CARD_MINT_B_URL` set, to check that a card at a mint of its own
+is read, topped up, tidied and reclaimed there and never at the first mint.
 
 | Fixture         | Card                                                                                    |
 | --------------- | --------------------------------------------------------------------------------------- |

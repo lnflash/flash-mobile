@@ -1,13 +1,15 @@
 /**
  * Card fixture loader for the Flashcard e2e flows (ENG-634; card protocol 2.0, ENG-675).
  *
- *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL]
+ *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL] [--mint-b URL]
  *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|owned|loaded|spent|full|blocked|limited|missing-small> [--bridge URL] [--mint URL]
  *
  * `serve` answers `POST /load/<name>` with the fixture's summary (the Maestro
  * flows and the developer screen call it), and `POST /spend/<amount>` with a
  * till's offline payment of exactly that much from the card (ENG-702); `load`
- * provisions one and exits.
+ * provisions one and exits. With `--mint-b`, a second local mint (ENG-787: a
+ * card at a mint of its own), the same endpoints under `/mint-b/` provision
+ * the card at that mint instead: its record names it and its pieces are its.
  * The bridge is cardsim (lnflash/cashu-javacard tools/cardsim, default
  * http://127.0.0.1:9876) and the mint a local Nutshell on FakeWallet
  * (default http://127.0.0.1:3338). The production mint is refused: its quotes
@@ -91,11 +93,16 @@ export const fixtureMint = (url: string): FixtureMint => {
  * and answers the balance left, or 500 when no pieces add up to it.
  */
 export const fixtureHandler = (
-  deps: FixtureDeps,
-  health: { bridge: string; mint: string },
+  depsA: FixtureDeps,
+  health: { bridge: string; mint: string; mintB?: string },
+  depsB?: FixtureDeps,
 ): RequestListener => {
   let queue: Promise<unknown> = Promise.resolve()
   return (req, res) => {
+    // `/mint-b/...`: the same fixture, provisioned at the second mint.
+    const atB = depsB !== undefined && /^\/mint-b\//.test(req.url ?? "")
+    const deps = atB ? (depsB as FixtureDeps) : depsA
+    const url = atB ? (req.url ?? "").slice("/mint-b".length) : req.url
     const reply = (status: number, body: unknown) => {
       res.writeHead(status, { "content-type": "application/json" })
       res.end(JSON.stringify(body))
@@ -104,7 +111,7 @@ export const fixtureHandler = (
       res.writeHead(status, { "content-type": "text/plain" })
       res.end(body)
     }
-    const match = /^\/load\/([a-z0-9.-]+)$/.exec(req.url ?? "")
+    const match = /^\/load\/([a-z0-9.-]+)$/.exec(url ?? "")
     if (req.method === "GET" && req.url === "/health") {
       reply(200, { ok: true, ...health })
       return
@@ -120,7 +127,7 @@ export const fixtureHandler = (
       text(200, FIXTURE_TIP_HEADER.header)
       return
     }
-    const spend = /^\/spend\/([0-9]{1,9})$/.exec(req.url ?? "")
+    const spend = /^\/spend\/([0-9]{1,9})$/.exec(url ?? "")
     if (req.method === "POST" && spend) {
       const amount = Number(spend[1])
       queue = queue.then(
@@ -170,7 +177,7 @@ const option = (args: string[], name: string, fallback: string): string => {
 
 const usage = () => {
   console.error(
-    `usage: card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL]\n` +
+    `usage: card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL] [--mint-b URL]\n` +
       `       card-fixtures.ts load <${FIXTURE_NAMES.join(
         "|",
       )}> [--bridge URL] [--mint URL]`,
@@ -186,11 +193,20 @@ const main = async () => {
     console.error("card-fixtures: the production mint is not a fixture mint")
     process.exit(1)
   }
+  const mintBUrl = option(args, "--mint-b", "").replace(/\/+$/, "") || undefined
+  if (mintBUrl && hostOf(mintBUrl) === PRODUCTION_MINT_HOST) {
+    console.error("card-fixtures: the production mint is not a fixture mint")
+    process.exit(1)
+  }
   const deps: FixtureDeps = {
     card: bridgeCard(bridge),
     mint: fixtureMint(mintUrl),
     log: (line) => console.log(`card-fixtures: ${line}`),
   }
+  // The same card, provisioned at the second mint (ENG-787).
+  const depsB: FixtureDeps | undefined = mintBUrl
+    ? { ...deps, mint: fixtureMint(mintBUrl) }
+    : undefined
 
   if (command === "load") {
     const name = args[0]
@@ -201,11 +217,19 @@ const main = async () => {
   if (command !== "serve") usage()
 
   const port = Number(option(args, "--port", "9877"))
-  const server = createServer(fixtureHandler(deps, { bridge, mint: mintUrl }))
+  const server = createServer(
+    fixtureHandler(
+      deps,
+      { bridge, mint: mintUrl, ...(mintBUrl ? { mintB: mintBUrl } : {}) },
+      depsB,
+    ),
+  )
   // Loopback only, like cardsim: nothing off this machine provisions its card.
   server.listen(port, "127.0.0.1", () => {
     console.log(
-      `card-fixtures listening on http://127.0.0.1:${port} (bridge ${bridge}, mint ${mintUrl})`,
+      `card-fixtures listening on http://127.0.0.1:${port} (bridge ${bridge}, mint ${mintUrl}${
+        mintBUrl ? `, mint-b ${mintBUrl}` : ""
+      })`,
     )
   })
 }
