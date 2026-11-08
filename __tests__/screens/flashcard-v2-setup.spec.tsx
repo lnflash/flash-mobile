@@ -9,6 +9,8 @@
 import * as React from "react"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native"
 import { createTheme, ThemeProvider } from "@rneui/themed"
+import { configureStore } from "@reduxjs/toolkit"
+import { Provider } from "react-redux"
 import { NfcError } from "react-native-nfc-manager"
 
 import type { CardOperationOptions, CashuCardState } from "../../app/contexts/Flashcard"
@@ -28,6 +30,9 @@ import { FAKE_OWNER_KEY, FakeCard, createFakeCard } from "../helpers/fake-cashu"
 import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { isolatedMintName } from "../../app/utils/cashu-card-format"
 import { HEADER_VECTORS, headerBytes } from "../helpers/block-headers"
+import rootReducer from "../../app/store/redux/reducers"
+import type { FlashcardV2Slice } from "../../app/store/redux/slices/flashcardV2Slice"
+import type { CardSetup as CardSetupRecord } from "../../app/utils/cashu-card-owner-store"
 
 loadLocale("en")
 const LL = i18nObject("en")
@@ -42,6 +47,8 @@ const mockFetchKeysetUnits = jest.fn()
 /** The real freezeSetupIntent and setUpCard, watched: a retry must not freeze again. */
 const mockFreezeSetupIntent = jest.fn()
 const mockSetUpCard = jest.fn()
+/** flushPersisted, as the screen awaits it before each card write (ENG-826). */
+const mockFlushPersisted = jest.fn()
 let mockCard: CashuCardState | undefined
 let capturedOptions: CardOperationOptions | undefined
 type Op = (
@@ -89,6 +96,10 @@ jest.mock("@app/utils/cashu-card-owner-store", () => ({
 const actualOwnerStore = jest.requireActual("@app/utils/cashu-card-owner-store")
 mockFreezeSetupIntent.mockImplementation(actualOwnerStore.freezeSetupIntent)
 mockSetUpCard.mockImplementation(actualOwnerStore.setUpCard)
+jest.mock("@app/store/redux", () => ({
+  ...jest.requireActual("@app/store/redux"),
+  flushPersisted: (...args: unknown[]) => mockFlushPersisted(...args),
+}))
 jest.mock("@app/hooks", () => ({
   useFlashcard: () => ({
     cashuCard: mockCard,
@@ -98,6 +109,26 @@ jest.mock("@app/hooks", () => ({
     },
   }),
 }))
+
+/** A store as the app's, unpersisted: `flashcardV2` as a restart rehydrates it. */
+const newStore = (flashcardV2?: FlashcardV2Slice) =>
+  configureStore({
+    reducer: rootReducer,
+    ...(flashcardV2
+      ? { preloadedState: { flashcardV2 } as Parameters<typeof rootReducer>[0] }
+      : {}),
+  })
+let testStore = newStore()
+/** What `flushPersisted` put on disk last: the slice a restart rehydrates. */
+let disk: FlashcardV2Slice | undefined
+const flushToDisk = async () => {
+  disk = JSON.parse(JSON.stringify(testStore.getState().flashcardV2))
+}
+beforeEach(() => {
+  testStore = newStore()
+  disk = undefined
+  mockFlushPersisted.mockImplementation(flushToDisk)
+})
 
 const SEED_KEY = { privateKey: FAKE_OWNER_KEY, source: "seed", saved: false }
 /** The applet version setup writes to (ENG-825). */
@@ -110,34 +141,27 @@ const runOn =
 const hex = (bytes: number[]) =>
   bytes.map((b) => b.toString(16).padStart(2, "0")).join("")
 
-const renderScreen = async () => {
-  render(
-    <ThemeProvider
-      theme={createTheme({
-        mode: "light",
-        lightColors: appTheme.lightColors,
-        darkColors: appTheme.darkColors,
-      })}
-    >
-      <FlashcardV2SetupScreen />
-    </ThemeProvider>,
-  )
-  await waitFor(() => expect(screen.getByTestId("setup-intro")).toBeTruthy())
-}
-
 /** Renders with no wait for the intro: a card refused before it never shows one. */
 const renderPlain = () =>
   render(
-    <ThemeProvider
-      theme={createTheme({
-        mode: "light",
-        lightColors: appTheme.lightColors,
-        darkColors: appTheme.darkColors,
-      })}
-    >
-      <FlashcardV2SetupScreen />
-    </ThemeProvider>,
+    <Provider store={testStore}>
+      <ThemeProvider
+        theme={createTheme({
+          mode: "light",
+          lightColors: appTheme.lightColors,
+          darkColors: appTheme.darkColors,
+        })}
+      >
+        <FlashcardV2SetupScreen />
+      </ThemeProvider>
+    </Provider>,
   )
+
+const renderScreen = async () => {
+  const rendered = renderPlain()
+  await waitFor(() => expect(screen.getByTestId("setup-intro")).toBeTruthy())
+  return rendered
+}
 
 const type = (digits: string) => {
   for (const d of digits) fireEvent.press(screen.getByTestId(`pin-${d}`))
@@ -229,7 +253,8 @@ describe("FlashcardV2SetupScreen", () => {
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
     // The two sealed PIN commands each ask the card for its PIN key first.
     // GET_CARD is read with GET_INFO before anything is written (ENG-825).
-    expect(order).toEqual(["1", "16", "44", "41", "44", "40", "32", "saved", "43"])
+    // ENG-826: SET_CARD is read back (GET_CARD) before the key is saved.
+    expect(order).toEqual(["1", "16", "44", "41", "44", "40", "32", "16", "saved", "43"])
     expect(mockSaveOwnerKey).toHaveBeenCalledWith(card.pubkey, SEED_KEY)
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(card.pin()).toBe("2468")
@@ -261,7 +286,7 @@ describe("FlashcardV2SetupScreen", () => {
       fireEvent.press(screen.getByTestId("setup-tap"))
     })
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
-    expect(order).toEqual(["1", "16", "32", "saved", "43"])
+    expect(order).toEqual(["1", "16", "32", "16", "saved", "43"])
     expect(card.pin()).toBeUndefined()
     expect(capturedOptions?.assume).toEqual({
       hasOwner: true,
@@ -348,10 +373,16 @@ describe("FlashcardV2SetupScreen", () => {
       fireEvent.press(screen.getByTestId("setup-tap"))
     })
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
-    expect(card.ins()).toEqual([0x01, 0x44, 0x45])
+    // ENG-826: SET_OWNER had gone out, so the record is read back and the
+    // wallet's record finished.
+    expect(card.ins()).toEqual([0x01, 0x44, 0x45, 0x16])
     expect(mockToast).toHaveBeenCalledWith(
       expect.objectContaining({ message: LL.FlashcardV2.setUpAlreadyMine() }),
     )
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({
+      status: "set-up",
+      heldByCard: { mint: "https://mint.test", unit: 0, refundKey: null, design: null },
+    })
   })
 
   it("resumes with the key saved for the card, not a new one", async () => {
@@ -591,6 +622,287 @@ describe("FlashcardV2SetupScreen", () => {
       expect(screen.queryByTestId("setup-error")).toBeNull()
       expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
       expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
+    })
+  })
+
+  // ENG-826: the wallet's record of the setup, kept across a restart.
+  describe("the setup record (ENG-826)", () => {
+    /** The card's answers, with `ins` answered and then its reply lost. */
+    const losingAfter = (ins: number) => {
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === ins) throw new Error("Tag was lost")
+        return response
+      })
+      return answer
+    }
+    /** An app restart: the screen gone, the store rebuilt from what reached disk. */
+    const restart = (unmount: () => void, overrides: Partial<CashuCardState> = {}) => {
+      unmount()
+      testStore = newStore(disk)
+      mockCard = { ...(mockCard as CashuCardState), ...overrides }
+    }
+    /** The record on disk, rewritten as if a later app had stored it in format `v`. */
+    const asFormat = (v: number) => {
+      const stored = disk?.setups?.[card.pubkey]
+      expect(stored).toBeDefined()
+      disk = {
+        ...(disk as FlashcardV2Slice),
+        setups: { [card.pubkey]: { ...stored, v } as unknown as CardSetupRecord },
+      }
+    }
+    const pinTitle = () => screen.getByTestId("pin-step-title").props.children
+    const setPinCount = () => order.filter((ins) => ins === "41").length
+
+    it("a tap cut after SET_PIN, then a restart: one PIN entry to verify it, one tap finishes, and SET_PIN went out once", async () => {
+      const answer = losingAfter(0x41)
+      const { unmount } = await renderScreen()
+      await chooseAndTap("2468")
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+      expect(card.pin()).toBe("2468")
+      expect(disk?.setups?.[card.pubkey]).toMatchObject({
+        status: "started",
+        progress: { pinSent: true, recordSent: false, ownerSent: false },
+      })
+
+      card.transceive.mockImplementation(answer)
+      restart(unmount, { pinState: "set" })
+      renderPlain()
+      // The PIN on the card is this wallet's own: not refused as one from before.
+      await waitFor(() => expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin()))
+      expect(screen.queryByText(LL.FlashcardV2.setUpPinSet())).toBeNull()
+      type("2468")
+      fireEvent.press(screen.getByTestId("pin-next"))
+      // No confirm: straight to the tap.
+      expect(screen.getByTestId("setup-tap")).toBeTruthy()
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+      expect(setPinCount()).toBe(1)
+      expect(order).toContain("40")
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      // The stored intent was resumed, not frozen again.
+      expect(mockFreezeSetupIntent).toHaveBeenCalledTimes(1)
+      expect(disk?.setups?.[card.pubkey]?.status).toBe("set-up")
+      expect(JSON.stringify(disk)).not.toContain("2468")
+    })
+
+    it("a wrong PIN on the resume says how many tries are left and asks again", async () => {
+      const answer = losingAfter(0x41)
+      const { unmount } = await renderScreen()
+      await chooseAndTap("2468")
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+
+      card.transceive.mockImplementation(answer)
+      restart(unmount, { pinState: "set" })
+      renderPlain()
+      await waitFor(() => expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin()))
+      type("1357")
+      fireEvent.press(screen.getByTestId("pin-next"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.wrongPin({ tries: 2 })))
+      expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin())
+      expect(order).not.toContain("32")
+      type("2468")
+      fireEvent.press(screen.getByTestId("pin-next"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+      expect(setPinCount()).toBe(1)
+    })
+
+    it("the last wrong PIN on the resume blocks the card: said as final, and the PIN is not asked again", async () => {
+      const answer = losingAfter(0x41)
+      const { unmount } = await renderScreen()
+      await chooseAndTap("2468")
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+
+      card.transceive.mockImplementation(answer)
+      restart(unmount, { pinState: "set" })
+      renderPlain()
+      for (const tries of [2, 1]) {
+        await waitFor(() => expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin()))
+        type("1357")
+        fireEvent.press(screen.getByTestId("pin-next"))
+        await act(async () => {
+          fireEvent.press(screen.getByTestId("setup-tap"))
+        })
+        await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.wrongPin({ tries })))
+      }
+      type("1357")
+      fireEvent.press(screen.getByTestId("pin-next"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      // The fake answers 6983 on the last try, as the applet does.
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.cardNowBlocked()))
+      expect(screen.getByTestId("setup-close")).toBeTruthy()
+      expect(screen.queryByTestId("pin-step-title")).toBeNull()
+      expect(screen.queryByTestId("setup-tap")).toBeNull()
+      expect(order).not.toContain("32")
+    })
+
+    it("a VERIFY_PIN that answers 63C0 on the resume is final too: no tries left", async () => {
+      const answer = losingAfter(0x41)
+      const { unmount } = await renderScreen()
+      await chooseAndTap("2468")
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+
+      card.transceive.mockImplementation(async (apdu) =>
+        apdu[1] === 0x40 ? [0x63, 0xc0] : answer(apdu),
+      )
+      restart(unmount, { pinState: "set" })
+      renderPlain()
+      await waitFor(() => expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin()))
+      type("2468")
+      fireEvent.press(screen.getByTestId("pin-next"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.cardNowBlocked()))
+      expect(errorText()).not.toBe(LL.FlashcardV2.wrongPin({ tries: 0 }))
+      expect(screen.getByTestId("setup-close")).toBeTruthy()
+      expect(screen.queryByTestId("pin-step-title")).toBeNull()
+    })
+
+    it("a started record of a format it does not know (v other than 1) is ignored: the normal intro", async () => {
+      const answer = losingAfter(0x32)
+      const { unmount } = await renderScreen()
+      fireEvent.press(screen.getByTestId("setup-no-pin"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+      expect(disk?.setups?.[card.pubkey]?.status).toBe("started")
+
+      card.transceive.mockImplementation(answer)
+      asFormat(2)
+      restart(unmount)
+      renderPlain()
+      await waitFor(() => expect(screen.getByTestId("setup-intro")).toBeTruthy())
+      expect(screen.queryByTestId("pin-step-title")).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.setUpMismatchStored())).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.setUpResume())).toBeNull()
+    })
+
+    it("a mismatched record of a format it does not know (v other than 1) is ignored: the normal intro", async () => {
+      const answer = card.transceive.getMockImplementation()!
+      let reads = 0
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] !== 0x16) return response
+        reads += 1
+        return reads === 2 ? [...response.slice(0, 2), 1, ...response.slice(3)] : response
+      })
+      const { unmount } = await renderScreen()
+      fireEvent.press(screen.getByTestId("setup-no-pin"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() =>
+        expect(errorText()).toBe(LL.FlashcardV2.setUpReadBackMismatch()),
+      )
+      expect(disk?.setups?.[card.pubkey]?.status).toBe("mismatched")
+
+      card.transceive.mockImplementation(answer)
+      asFormat(2)
+      restart(unmount)
+      renderPlain()
+      await waitFor(() => expect(screen.getByTestId("setup-intro")).toBeTruthy())
+      expect(screen.queryByText(LL.FlashcardV2.setUpMismatchStored())).toBeNull()
+    })
+
+    it("a read-back that differs stops before SET_OWNER, and the card is refused at the intro after a restart", async () => {
+      const answer = card.transceive.getMockImplementation()!
+      let reads = 0
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] !== 0x16) return response
+        reads += 1
+        // The read-back names another unit than the one written.
+        return reads === 2 ? [...response.slice(0, 2), 1, ...response.slice(3)] : response
+      })
+      const { unmount } = await renderScreen()
+      fireEvent.press(screen.getByTestId("setup-no-pin"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() =>
+        expect(errorText()).toBe(LL.FlashcardV2.setUpReadBackMismatch()),
+      )
+      expect(order).not.toContain("43")
+      expect(card.owner()).toBeUndefined()
+      expect(mockSaveOwnerKey).not.toHaveBeenCalled()
+      expect(screen.getByTestId("setup-close")).toBeTruthy()
+      expect(disk?.setups?.[card.pubkey]).toMatchObject({
+        status: "mismatched",
+        mismatch: ["unit"],
+      })
+
+      restart(unmount, { recordSet: true })
+      order.length = 0
+      renderPlain()
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpMismatchStored()))
+      expect(screen.getByTestId("setup-close")).toBeTruthy()
+      expect(order).toEqual([])
+    })
+
+    it("the happy path asks for nothing more: one tap press, and the record is set-up", async () => {
+      await renderScreen()
+      fireEvent.press(screen.getByTestId("setup-no-pin"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+      // Before SET_CARD, before SET_OWNER, and the set-up record after.
+      expect(mockFlushPersisted).toHaveBeenCalledTimes(3)
+      expect(disk?.setups?.[card.pubkey]).toMatchObject({
+        status: "set-up",
+        heldByCard: { mint: "https://mint.test" },
+      })
+    })
+
+    it("a record that does not reach disk writes nothing to the card, and says to try again", async () => {
+      const { PersistWriteError } = jest.requireActual("@app/store/redux")
+      mockFlushPersisted.mockRejectedValue(new PersistWriteError("write-failed"))
+      await renderScreen()
+      await chooseAndTap("2468")
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpFailed()))
+      // The reads before any write, and nothing written.
+      expect(order).toEqual(["1", "16"])
+      expect(card.pin()).toBeUndefined()
+      expect(screen.getByTestId("setup-tap")).toBeTruthy()
+    })
+
+    it("with no PIN, a tap cut after SET_CARD, then a restart: straight to the tap, the stored mint kept, and one tap finishes", async () => {
+      const answer = losingAfter(0x32)
+      const { unmount } = await renderScreen()
+      fireEvent.press(screen.getByTestId("setup-no-pin"))
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+
+      card.transceive.mockImplementation(answer)
+      restart(unmount, { recordSet: true })
+      renderPlain()
+      await waitFor(() =>
+        expect(screen.getByTestId("setup-tap-note").props.children).toBe(
+          LL.FlashcardV2.setUpResume(),
+        ),
+      )
+      expect(screen.queryByTestId("setup-mint-change")).toBeNull()
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("setup-tap"))
+      })
+      await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+      expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
+      expect(disk?.setups?.[card.pubkey]?.status).toBe("set-up")
     })
   })
 

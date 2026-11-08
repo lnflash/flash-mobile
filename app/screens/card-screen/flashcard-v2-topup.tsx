@@ -35,6 +35,7 @@ import {
   PIN_MAX_LENGTH,
   WrongCardError,
   isValidCardPin,
+  SW_PIN_BLOCKED,
   triesLeft,
 } from "@app/utils/cashu-card"
 import { cardMintUrl, stubbedPayOutcome } from "@app/utils/cashu-card-bridge"
@@ -92,7 +93,6 @@ const amountProblemText = (
  */
 const MINT_POLL_MS = 1500
 const MINT_POLL_ATTEMPTS = 10
-const SW_PIN_BLOCKED = 0x6983
 
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => {

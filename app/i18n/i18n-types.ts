@@ -1046,6 +1046,22 @@ type RootTranslation = {
 		 */
 		setUpFailed: string
 		/**
+		 * T​h​e​ ​c​a​r​d​ ​d​i​d​n​'​t​ ​k​e​e​p​ ​t​h​e​ ​s​e​t​u​p​ ​F​l​a​s​h​ ​w​r​o​t​e​ ​t​o​ ​i​t​,​ ​s​o​ ​s​e​t​u​p​ ​s​t​o​p​p​e​d​ ​b​e​f​o​r​e​ ​t​h​i​s​ ​p​h​o​n​e​ ​b​e​c​a​m​e​ ​i​t​s​ ​o​w​n​e​r​.​ ​K​e​e​p​ ​t​h​e​ ​c​a​r​d​ ​a​n​d​ ​c​o​n​t​a​c​t​ ​F​l​a​s​h​ ​s​u​p​p​o​r​t​.
+		 */
+		setUpReadBackMismatch: string
+		/**
+		 * S​e​t​t​i​n​g​ ​u​p​ ​t​h​i​s​ ​c​a​r​d​ ​s​t​o​p​p​e​d​ ​e​a​r​l​i​e​r​ ​b​e​c​a​u​s​e​ ​t​h​e​ ​c​a​r​d​ ​d​i​d​n​'​t​ ​k​e​e​p​ ​w​h​a​t​ ​F​l​a​s​h​ ​w​r​o​t​e​.​ ​C​o​n​t​a​c​t​ ​F​l​a​s​h​ ​s​u​p​p​o​r​t​.
+		 */
+		setUpMismatchStored: string
+		/**
+		 * E​n​t​e​r​ ​t​h​e​ ​P​I​N​ ​y​o​u​ ​c​h​o​s​e​ ​f​o​r​ ​t​h​i​s​ ​c​a​r​d​ ​t​o​ ​f​i​n​i​s​h​ ​s​e​t​t​i​n​g​ ​i​t​ ​u​p​.
+		 */
+		setUpResumePin: string
+		/**
+		 * F​i​n​i​s​h​ ​s​e​t​t​i​n​g​ ​u​p​ ​t​h​i​s​ ​c​a​r​d​.​ ​T​a​p​ ​i​t​ ​t​o​ ​t​h​e​ ​p​h​o​n​e​.
+		 */
+		setUpResume: string
+		/**
 		 * L​i​m​i​t​s
 		 */
 		limits: string
@@ -9859,6 +9875,22 @@ export type TranslationFunctions = {
 		 * Couldn't set up the card. Try again.
 		 */
 		setUpFailed: () => LocalizedString
+		/**
+		 * The card didn't keep the setup Flash wrote to it, so setup stopped before this phone became its owner. Keep the card and contact Flash support.
+		 */
+		setUpReadBackMismatch: () => LocalizedString
+		/**
+		 * Setting up this card stopped earlier because the card didn't keep what Flash wrote. Contact Flash support.
+		 */
+		setUpMismatchStored: () => LocalizedString
+		/**
+		 * Enter the PIN you chose for this card to finish setting it up.
+		 */
+		setUpResumePin: () => LocalizedString
+		/**
+		 * Finish setting up this card. Tap it to the phone.
+		 */
+		setUpResume: () => LocalizedString
 		/**
 		 * Limits
 		 */

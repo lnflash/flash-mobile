@@ -1599,8 +1599,20 @@ describe("GET_CARD", () => {
       rollBudget: 7,
       allowanceArmed: true,
       mint: "https://forge.flashapp.me",
+      // Three zero bytes after the mint: no design (ENG-826).
+      design: null,
     })
     expect(parseCardRecord(cardBody("m", { budget: 12 })).rollBudget).toBe(12)
+  })
+
+  it("decodes the design at 106 + the mint's length: three characters, null for zeros, undefined when the answer stops before it (ENG-826)", () => {
+    const body = cardBody("abc")
+    expect(body).toHaveLength(106 + 3 + 3)
+    body.splice(109, 3, 0x46, 0x4c, 0x31)
+    expect(parseCardRecord(body)).toMatchObject({ mint: "abc", design: "FL1" })
+    expect(parseCardRecord(cardBody("abc")).design).toBeNull()
+    expect(parseCardRecord(cardBody("abc").slice(0, 109)).design).toBeUndefined()
+    expect(parseCardRecord(cardBody("abc").slice(0, 110)).design).toBeUndefined()
   })
 
   it("refuses an answer too short for the record, or a mint past it", () => {

@@ -365,8 +365,56 @@ export type SetupIntent = Readonly<{
 /**
  * What this sequence has sent so far, set just BEFORE each write goes out: a
  * write whose answer is lost may have landed, and the next tap may find it.
+ * `ownerSent` (SET_OWNER, ENG-826) implies `recordSent`.
  */
-export type SetupProgress = { pinSent: boolean; recordSent: boolean }
+export type SetupProgress = { pinSent: boolean; recordSent: boolean; ownerSent: boolean }
+
+/** A field of the record the card read back that differs from the intent (ENG-826). */
+export type ReadBackField = "unset" | "mint" | "unit" | "refundKey" | "design"
+
+/** What the card's GET_CARD said of its record after setup wrote it. */
+export type HeldByCard = {
+  mint: string
+  unit: number
+  refundKey: string | null
+  design: string | null
+}
+
+/**
+ * The wallet's own record of a card setup (ENG-826), kept in the persisted
+ * `flashcardV2` slice by card pubkey and written BEFORE each setup write goes
+ * out: a restart between taps resumes the same intent and progress. Nothing
+ * secret: never the PIN, the seed or any key, only whether a PIN was chosen.
+ */
+export type CardSetup = {
+  v: 1
+  intent: SetupIntent
+  progress: SetupProgress
+  /**
+   * `started` while writes are going out; `mismatched` when the card read back
+   * a record other than the one written (final: SET_OWNER never went out);
+   * `set-up` once SET_OWNER went through.
+   */
+  status: "started" | "mismatched" | "set-up"
+  /** What the card read back, once it has (`mismatched`, `set-up`). */
+  heldByCard?: HeldByCard
+  /** Which fields differed, for `mismatched`. */
+  mismatch?: ReadBackField[]
+  /** ms since epoch */
+  updatedAt: number
+  /** ms since epoch, for `set-up`. */
+  setUpAt?: number
+}
+
+/**
+ * A stored setup record in the format this app reads (`v: 1`), else
+ * undefined: a record of an unknown format is ignored, never read as v1.
+ */
+export const currentSetup = (setup: CardSetup | undefined): CardSetup | undefined =>
+  setup && setup.v === 1 ? setup : undefined
+
+/** Writes a setup record and resolves once it is on disk; rejects when it is not. */
+export type PersistSetup = (setup: CardSetup) => Promise<void>
 
 /**
  * Fixes the intent of a setup: the mint is checked as SET_CARD would take it
@@ -397,6 +445,7 @@ export const freezeSetupIntent = ({
 export const newSetupProgress = (): SetupProgress => ({
   pinSent: false,
   recordSent: false,
+  ownerSent: false,
 })
 
 /** Whether a sequence has sent any write: then its intent is not rebuilt. */
@@ -417,6 +466,12 @@ export type SetUpArgs = {
   /** The tip block header, when the phone has one: the clock's anchor. */
   anchor?: number[]
   key: OwnerKey
+  /**
+   * Writes the sequence's record (ENG-826) and resolves once it is on disk.
+   * Run before SET_PIN, SET_CARD and SET_OWNER: a rejection means that write
+   * is not sent.
+   */
+  persist: PersistSetup
 }
 
 /** Why a card cannot be set up (ENG-825): nothing was written to it. */
@@ -443,6 +498,17 @@ export class CardNotOpenError extends Error {
   constructor(readonly reason: CardNotOpenReason, readonly mint?: string) {
     super(`this card cannot be set up (${reason})`)
     this.name = "CardNotOpenError"
+  }
+}
+
+/**
+ * The card read back a record other than the one setup wrote (ENG-826):
+ * setup stopped before SET_OWNER, and this phone does not own the card.
+ */
+export class SetupReadBackError extends Error {
+  constructor(readonly fields: ReadBackField[]) {
+    super(`the card did not keep the setup record (${fields.join(", ")})`)
+    this.name = "SetupReadBackError"
   }
 }
 
@@ -527,6 +593,66 @@ export const checkSetupState = ({
   }
 }
 
+/** What `record` says the card holds, as a setup record keeps it. */
+export const heldByCard = (record: CardRecord): HeldByCard => ({
+  mint: record.mint,
+  unit: record.unit,
+  refundKey: record.refundKey ?? null,
+  design: record.design ?? null,
+})
+
+/**
+ * The GET_CARD read back after SET_CARD (ENG-826) held to the intent: the
+ * fields that differ, none when the card kept what was written. The mint is
+ * compared exactly, as the bytes just written; the design must read back as
+ * the intent's, zeros for none, and an answer that stops before it differs.
+ * Pure: it sends nothing.
+ */
+export const compareReadBack = (
+  intent: SetupIntent,
+  record: CardRecord,
+): ReadBackField[] => {
+  const fields: ReadBackField[] = []
+  if (!record.recordSet) fields.push("unset")
+  if (record.mint !== intent.mint) fields.push("mint")
+  if (record.unit !== intent.unit) fields.push("unit")
+  if ((record.refundKey ?? null) !== intent.refundKey) fields.push("refundKey")
+  if (record.design !== intent.design) fields.push("design")
+  return fields
+}
+
+/**
+ * The setup record for `intent` at `progress`, copied: later progress never
+ * reaches a record already made. `at` (ms) is its `updatedAt`, now by default.
+ */
+export const setupRecord = (
+  intent: SetupIntent,
+  progress: SetupProgress,
+  {
+    status,
+    at = Date.now(),
+    ...extra
+  }: Pick<CardSetup, "status"> &
+    Partial<Pick<CardSetup, "heldByCard" | "mismatch" | "setUpAt">> & {
+      at?: number
+    },
+): CardSetup => ({
+  v: 1,
+  intent: { ...intent },
+  progress: { ...progress },
+  status,
+  ...extra,
+  updatedAt: at,
+})
+
+/** Field names only: a setup record that could not be written is logged without its content. */
+const warnUnsaved = (status: CardSetup["status"], err: unknown) =>
+  console.warn(
+    `Cashu card setup record (${status}) not saved: ${
+      err instanceof Error ? err.name : typeof err
+    }`,
+  )
+
 /**
  * Personalisation, one tap, owner last (spec/APDU.md, Personalisation), so a
  * setup cut short is finished by the next tap of the same sequence. First the
@@ -542,10 +668,19 @@ export const checkSetupState = ({
  * whose answer is lost may have landed, and a card owned by a key this phone
  * no longer has is orphaned for good. A lost answer is settled on the next
  * tap by the card's owner flag.
+ *
+ * The wallet's record (ENG-826): before each write the next progress is
+ * persisted (`persist`, on disk before it resolves), so a restart resumes the
+ * same intent; a failed persist sends nothing more. A PIN this sequence sent
+ * that the card holds is not sent again: it is verified. After SET_CARD the
+ * record is read back and held to the intent (`compareReadBack`); a card that
+ * did not keep it is marked `mismatched` and refused before SET_OWNER
+ * (`SetupReadBackError`). After SET_OWNER the record is `set-up`, with what
+ * the card read back.
  */
 export async function setUpCard(
   transceive: Transceiver,
-  { tap, info, pin, intent, progress, anchor, key }: SetUpArgs,
+  { tap, info, pin, intent, progress, anchor, key, persist }: SetUpArgs,
   save: typeof saveOwnerKey = saveOwnerKey,
 ): Promise<void> {
   if (Boolean(pin) !== intent.pinChosen) throw new CardNotOpenError("unreadable")
@@ -561,16 +696,50 @@ export async function setUpCard(
   checkSetupState({ tap, info, record, intent, progress })
   const { cardPubkey } = intent
   const form: PinForm = { sealed: info.sealed, cardPubkey }
+  // One tap at a time writes this sequence's progress, in order: persisted,
+  // then marked, before the write, as a lost answer may still have landed.
+  const mark = async (next: Partial<SetupProgress>) => {
+    const progressed = { ...progress, ...next }
+    await persist(setupRecord(intent, progressed, { status: "started" }))
+    Object.assign(progress, progressed)
+  }
   if (pin) {
-    progress.pinSent = true
-    await setCardPin(transceive, pin, form)
+    // A SET_PIN this sequence sent that the card holds is not sent again; one
+    // it sent that the card does not hold never landed, and is sent again.
+    if (!(progress.pinSent && info.pinState === "set")) {
+      await mark({ pinSent: true })
+      await setCardPin(transceive, pin, form)
+    }
     await verifyCardPin(transceive, pin, form)
   }
-  // One tap at a time writes this sequence's progress, in order: marked
-  // before the write, as a lost answer may still have landed.
-  // eslint-disable-next-line require-atomic-updates
-  progress.recordSent = true
+  await mark({ recordSent: true })
   await setOpenCardRecord(transceive, { mint: intent.mint })
+  let readBack: CardRecord
+  try {
+    readBack = await getCardRecord(transceive)
+  } catch (err) {
+    if (err instanceof CardProtocolError) throw new CardNotOpenError("unreadable")
+    throw err
+  }
+  const held = heldByCard(readBack)
+  const mismatch = compareReadBack(intent, readBack)
+  if (mismatch.length > 0) {
+    await persist(
+      setupRecord(intent, progress, { status: "mismatched", heldByCard: held, mismatch }),
+    ).catch((err) => warnUnsaved("mismatched", err))
+    throw new SetupReadBackError(mismatch)
+  }
   await save(cardPubkey, key)
+  await mark({ ownerSent: true })
   await setOwner(transceive, key.privateKey, anchor)
+  const at = Date.now()
+  // The next tap's already-mine path writes it again if this one is lost.
+  await persist(
+    setupRecord(intent, progress, {
+      status: "set-up",
+      heldByCard: held,
+      setUpAt: at,
+      at,
+    }),
+  ).catch((err) => warnUnsaved("set-up", err))
 }

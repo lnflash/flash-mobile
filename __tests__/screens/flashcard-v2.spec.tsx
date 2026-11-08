@@ -35,7 +35,10 @@ import {
 import { formatUnitAmount, isolatedMintName } from "../../app/utils/cashu-card-format"
 import { cardInfo, cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
-import { resetFlashcardV2 } from "../../app/store/redux/slices/flashcardV2Slice"
+import {
+  cardSetupSaved,
+  resetFlashcardV2,
+} from "../../app/store/redux/slices/flashcardV2Slice"
 import {
   RunTidyArgs,
   TidyError,
@@ -1858,6 +1861,64 @@ describe("FlashcardV2Screen, the card's own mint", () => {
     })
     renderScreen()
     expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
+  })
+
+  describe("a card read without its record (ENG-826)", () => {
+    const setUp = (status: "set-up" | "started", mint = MINIBITS) =>
+      cardSetupSaved({
+        v: 1,
+        intent: {
+          cardPubkey: PUBKEY,
+          mint,
+          unit: 0,
+          refundKey: null,
+          design: null,
+          pinChosen: false,
+        },
+        progress: { pinSent: false, recordSent: true, ownerSent: status === "set-up" },
+        status,
+        heldByCard: { mint, unit: 0, refundKey: null, design: null },
+        updatedAt: 1,
+      })
+    afterEach(() => {
+      store.dispatch(resetFlashcardV2())
+    })
+
+    it("names the mint the card read back when this phone set it up", () => {
+      store.dispatch(setUp("set-up"))
+      mockCashuCard = card({ record: undefined })
+      renderScreen()
+      expect(caption()).toBe(
+        LL.FlashcardV2.mintLine({ mint: isolatedMintName(MINIBITS) }),
+      )
+    })
+
+    it("keeps the plain caption for a setup not finished, or with no record of one", () => {
+      mockCashuCard = card({ record: undefined })
+      const { unmount } = renderScreen()
+      expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
+      unmount()
+      store.dispatch(setUp("started"))
+      renderScreen()
+      expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
+    })
+
+    it("ignores a setup record of a format it does not know (v other than 1)", () => {
+      const record = setUp("set-up").payload
+      store.dispatch(cardSetupSaved({ ...record, v: 2 } as unknown as typeof record))
+      mockCashuCard = card({ record: undefined })
+      renderScreen()
+      expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
+    })
+
+    it("the card's own record wins over the setup record", () => {
+      store.dispatch(setUp("set-up"))
+      mockCashuCard = card()
+      renderScreen()
+      expect(caption()).toBe(
+        LL.FlashcardV2.mintLine({ mint: isolatedMintName("https://forge.flashapp.me") }),
+      )
+    })
   })
 
   it("a card at a mint Flash doesn't fund: its name on the caption, no Top up, and a notice of what still works", () => {

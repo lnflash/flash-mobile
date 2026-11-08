@@ -320,6 +320,12 @@ const en: BaseTranslation = {
     setUpUncertain:
       "The tap was cut short while the card was being set up. Tap the card again to finish.",
     setUpFailed: "Couldn't set up the card. Try again.",
+    setUpReadBackMismatch:
+      "The card didn't keep the setup Flash wrote to it, so setup stopped before this phone became its owner. Keep the card and contact Flash support.",
+    setUpMismatchStored:
+      "Setting up this card stopped earlier because the card didn't keep what Flash wrote. Contact Flash support.",
+    setUpResumePin: "Enter the PIN you chose for this card to finish setting it up.",
+    setUpResume: "Finish setting up this card. Tap it to the phone.",
     limits: "Limits",
     limitsTitle: "Card limits",
     limitsIntro:

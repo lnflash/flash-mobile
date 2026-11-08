@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
 import type { CardPinState } from "@app/utils/cashu-card"
+import type { CardSetup } from "@app/utils/cashu-card-owner-store"
 import { mintKey } from "@app/utils/cashu-card-topup/mint-url"
 
 /**
@@ -103,6 +104,15 @@ export interface FlashcardV2Slice {
    * stays hidden until the card's pieces change. Absent until said.
    */
   tidyDismissed?: Record<string, string>
+  /**
+   * The wallet's record of each card setup (ENG-826), by card pubkey: what
+   * the setup set out to write and what it has sent, written before each
+   * setup write, so a restart resumes it. Nonsecret (`CardSetup`). Remove card
+   * keeps it (a card with this wallet's PIN can still be finished); logout
+   * drops it with every card. Absent until a setup first writes one: an
+   * optional field that starts absent needs no persist migration.
+   */
+  setups?: Record<string, CardSetup>
 }
 
 export const initialFlashcardV2State: FlashcardV2Slice = {
@@ -192,7 +202,17 @@ export const flashcardV2Slice = createSlice({
         [action.payload.pubkey]: action.payload.fingerprint,
       }
     },
-    /** "Remove card": this phone forgets the card. */
+    /** A setup's record, before or after one of its writes: replaces the card's last. */
+    cardSetupSaved: (state, action: PayloadAction<CardSetup>) => {
+      state.setups = {
+        ...state.setups,
+        [action.payload.intent.cardPubkey]: action.payload,
+      }
+    },
+    /**
+     * "Remove card": this phone forgets the card. Its setup record stays: a
+     * setup cut short with this wallet's PIN on the card can still be finished.
+     */
     cardForgotten: (state, action: PayloadAction<{ pubkey: string }>) => {
       delete state.cards[action.payload.pubkey]
       if (state.tidyDismissed) delete state.tidyDismissed[action.payload.pubkey]
@@ -206,6 +226,7 @@ export const flashcardV2Slice = createSlice({
 export const {
   cardLimitsSet,
   cardSeen,
+  cardSetupSaved,
   cardUnitResolved,
   cardForgotten,
   keysetUnitsLearned,

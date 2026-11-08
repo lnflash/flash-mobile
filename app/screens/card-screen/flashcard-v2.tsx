@@ -27,12 +27,14 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useFlashcard, useTapFlashcard, useUnfinishedTopUps } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
+import { useAppSelector } from "@app/store/redux"
 import { CardInfo } from "@app/utils/cashu-card"
 import {
   balanceLines,
   formatUnitAmount,
   isolatedMintName,
 } from "@app/utils/cashu-card-format"
+import { currentSetup } from "@app/utils/cashu-card-owner-store"
 import { TopUpRecord, isCurrentFormat, quoteIsDead } from "@app/utils/cashu-card-topup"
 import { isFundMint, mintOfCardOrUndefined } from "@app/utils/cashu-card-topup/connected"
 import { soleUnit } from "@app/utils/cashu-mint"
@@ -83,6 +85,11 @@ export const FlashcardV2Screen = () => {
   }, [topUpNotice])
   const tapFlashcard = useTapFlashcard()
   const { data: { hideBalance = false } = {} } = useHideBalanceQuery()
+  // The wallet's record of this card's setup (ENG-826): what the card read
+  // back when this phone set it up, for a read that did not bring the record.
+  const setUpRecord = useAppSelector((state) =>
+    cashuCard ? currentSetup(state.flashcardV2.setups?.[cashuCard.pubkey]) : undefined,
+  )
 
   // Same courtesy the BoltCard screen extends: a card read while signed out
   // is forgotten when the screen closes, so it never greets the next user.
@@ -121,6 +128,15 @@ export const FlashcardV2Screen = () => {
   // The card's own mint (ENG-787), when its record names one this app can
   // use; the Cash wallet funds it only on the fund list (`isFundMint`).
   const cardMint = mintOfCardOrUndefined(cashuCard.record)
+  // The caption's mint: the card's own record, else what it read back when
+  // this phone set it up (ENG-826). Display only: top-up still needs the read.
+  const captionMint = cashuCard.record
+    ? cashuCard.record.recordSet
+      ? cardMint
+      : undefined
+    : setUpRecord?.status === "set-up" && setUpRecord.heldByCard
+    ? mintOfCardOrUndefined({ recordSet: true, mint: setUpRecord.heldByCard.mint })
+    : undefined
   // A blocked PIN takes no load but the owner's: the grant needs no PIN.
   const canTopUp =
     cashuCard.hasOwner &&
@@ -173,8 +189,8 @@ export const FlashcardV2Screen = () => {
       {/* A recorded card names its mint on the caption it already has
           (ENG-787): no new row. */}
       <Text type="caption" style={styles.balanceCaption} testID="flashcard-v2-caption">
-        {cashuCard.record?.recordSet && cardMint
-          ? LL.FlashcardV2.mintLine({ mint: isolatedMintName(cardMint) })
+        {captionMint
+          ? LL.FlashcardV2.mintLine({ mint: isolatedMintName(captionMint) })
           : LL.FlashcardV2.onCardBalance()}
       </Text>
 
