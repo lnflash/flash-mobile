@@ -28,6 +28,7 @@ import {
   RelayNetworkError,
   createRelayRequest,
 } from "../cashu-card-topup/mint"
+import { cardFundMints } from "../cashu-card-topup/connected"
 import { knownRelayMint, sameMint } from "../cashu-card-topup/mint-url"
 import { relayCrypto } from "./crypto"
 import {
@@ -150,8 +151,17 @@ const permanentRefusal = (err: unknown, swapRefused: boolean): string | undefine
   return undefined
 }
 
-/** The mints this app speaks to: `CASHU_MINT_URL` and the card mint (a dev bridge's, in development). */
-const defaultKnownMints = (): string[] => [CASHU_MINT_URL, cardMintUrl()]
+/**
+ * The mints this app speaks to: `CASHU_MINT_URL`, the card mint (a dev
+ * bridge's, in development) and the fund list (`cardFundMints`, ENG-787
+ * decision 5). Read on every use, so a fund list that arrives after launch
+ * counts at once.
+ */
+export const defaultKnownMints = (): string[] => [
+  CASHU_MINT_URL,
+  cardMintUrl(),
+  ...cardFundMints(),
+]
 
 /** http only for the dev bridge's own local mint; https everywhere else. */
 const defaultRequest: RelayRequestFactory = (approvedUrl) => {

@@ -8,19 +8,21 @@
  * src/graphql/error-map.ts).
  */
 import { AppState } from "react-native"
+import * as Keychain from "react-native-keychain"
 import { act, renderHook, waitFor } from "@testing-library/react-native"
 
 import { PaymentSendResult } from "../../app/graphql/generated"
 import { loadLocale } from "../../app/i18n/i18n-util.sync"
 import {
   TOP_UP_POLL_MS,
+  advanceEveryMint,
   nudgeTopUpMinter,
   topUpMint,
   useCardTopUp,
   useTopUpMinter,
   useUnfinishedTopUps,
 } from "../../app/hooks/use-card-top-up"
-import { setCardBridge } from "../../app/utils/cashu-card-bridge"
+import { cardMintUrl, setCardBridge } from "../../app/utils/cashu-card-bridge"
 import type { CardProofSlot } from "../../app/utils/cashu-card"
 import {
   PayArgs,
@@ -103,7 +105,9 @@ const args = (over: Partial<PayArgs> = {}): PayArgs => ({
 const answer = (status: string, errors: { code?: string; message: string }[] = []) =>
   mockSend.mockResolvedValueOnce({ data: { lnInvoicePaymentSend: { status, errors } } })
 
-const hook = () => renderHook(() => useCardTopUp()).result.current
+// The screen hands the hook the card's own mint (ENG-787); here, the app's
+// card mint as it is when the hook mounts.
+const hook = () => renderHook(() => useCardTopUp(cardMintUrl())).result.current
 
 const KEY_REFUSED = new Error(
   'Variable "$input" got invalid value { walletId: "cash-wallet" }; Field "idempotencyKey" is not defined by type "LnInvoicePaymentInput".',
@@ -386,22 +390,42 @@ describe("useCardTopUp with a development build's card bridge (ENG-634)", () => 
   })
 
   it("keeps one mint client per mint, and a new one when the dev mint changes", () => {
-    const forge = topUpMint()
+    const forge = topUpMint(cardMintUrl())
     expect(forge.url).toBe("https://forge.flashapp.me")
-    expect(topUpMint()).toBe(forge)
+    expect(topUpMint(cardMintUrl())).toBe(forge)
+    // Two spellings of one mint share its client (ENG-787).
+    expect(topUpMint("https://Forge.flashapp.me/")).toBe(forge)
     setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT })
-    const dev = topUpMint()
+    const dev = topUpMint(cardMintUrl())
     expect(dev.url).toBe(DEV_MINT)
-    expect(topUpMint()).toBe(dev)
+    expect(topUpMint(cardMintUrl())).toBe(dev)
     setCardBridge(undefined)
-    expect(topUpMint().url).toBe("https://forge.flashapp.me")
+    expect(topUpMint(cardMintUrl()).url).toBe("https://forge.flashapp.me")
+    // The forge client is still the one it was.
+    expect(topUpMint(cardMintUrl())).toBe(forge)
   })
 
   it("mints at the production mint in a release build, whatever was set", () => {
     setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT })
     setDev(false)
-    expect(topUpMint().url).toBe("https://forge.flashapp.me")
+    expect(topUpMint(cardMintUrl()).url).toBe("https://forge.flashapp.me")
     expect(hook().deps.mint.url).toBe("https://forge.flashapp.me")
+  })
+
+  // ENG-787: the hook works at the card's own mint, whatever the app's is.
+  it("quotes, pays and mints at the card's own mint", () => {
+    const { deps } = renderHook(() => useCardTopUp("https://mint.minibits.cash/Bitcoin"))
+      .result.current
+    expect(deps.mint.url).toBe("https://mint.minibits.cash/Bitcoin")
+  })
+
+  it("pays a release build's top-up at a card's own https mint for real: it is no stale dev mint", async () => {
+    setDev(false)
+    const { deps } = renderHook(() => useCardTopUp("https://mint.minibits.cash/Bitcoin"))
+      .result.current
+    answer(PaymentSendResult.Pending)
+    await expect(deps.pay(args())).resolves.toEqual({ kind: "pending" })
+    expect(mockSend).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -982,5 +1006,152 @@ describe("useTopUpMinter", () => {
       if (foreground) Object.defineProperty(AppState, "currentState", foreground)
       jest.useRealTimers()
     }
+  })
+})
+
+// ENG-787: each card's top-ups and tidies live at its own mint.
+describe("advanceEveryMint", () => {
+  const MINIBITS = "https://mint.minibits.cash/Bitcoin"
+  const MACADAMIA = "https://mint.macadamia.cash"
+  const saved = (id: string, mintUrl: string, state: TopUpRecord["state"]) =>
+    ({
+      version: 2,
+      cardFormat: 4,
+      id,
+      cardPubkey: "02ab",
+      mintUrl,
+      unit: "sat",
+      amount: 100,
+      keysetId: "0059534ce0bfa19a",
+      quote: { id: `q-${id}`, request: "lnbc", expiry: null, quotedAt: 1, lifeMs: null },
+      outputs: [],
+      payment: {
+        walletId: "cash",
+        idempotencyKey: id,
+        dispatched: true,
+        everDispatched: true,
+      },
+      loadStarted: false,
+      state,
+      createdAt: 1,
+      updatedAt: 1,
+    } as unknown as TopUpRecord)
+  const signedTidy = (id: string, mintUrl: string) => ({
+    kind: "tidy",
+    version: 1,
+    id,
+    cardPubkey: "02ab",
+    mintUrl,
+    keysetId: "0059534ce0bfa19a",
+    fee: 0,
+    inputs: [],
+    outputs: [{ amount: 1 }],
+    signature: "33".repeat(64),
+    loadStarted: false,
+    state: "signed",
+    createdAt: 1,
+    updatedAt: 1,
+  })
+  const seed = (records: unknown[]) =>
+    Keychain.setInternetCredentials(
+      "flashcard-v2-topups",
+      "topups",
+      JSON.stringify({ format: 3, records }),
+    )
+  const mintsAsked = (mock: jest.Mock) =>
+    mock.mock.calls.map(([deps]) => (deps as { mint: { url: string } }).mint.url)
+
+  afterEach(async () => {
+    await Keychain.resetInternetCredentials({ server: "flashcard-v2-topups" })
+  })
+
+  it("asks every mint with work, each through its own client, and forge always", async () => {
+    await seed([
+      saved("a", MINIBITS, "paid"),
+      saved("b", `${MINIBITS}/`, "quoted"),
+      saved("c", "https://forge.flashapp.me", "loaded"),
+      signedTidy("t", MACADAMIA),
+    ])
+    mockAdvance.mockResolvedValue({ waiting: 1 })
+    mockAdvanceTidies.mockResolvedValue({ waiting: 0 })
+
+    await expect(advanceEveryMint()).resolves.toEqual({ waiting: 3 })
+
+    expect(mintsAsked(mockAdvance).sort()).toEqual(
+      ["https://forge.flashapp.me", MACADAMIA, MINIBITS].sort(),
+    )
+    expect(mintsAsked(mockAdvanceTidies).sort()).toEqual(
+      ["https://forge.flashapp.me", MACADAMIA, MINIBITS].sort(),
+    )
+  })
+
+  it("a mint that throws holds up no other mint", async () => {
+    await seed([saved("a", MINIBITS, "paid"), saved("b", MACADAMIA, "paid")])
+    mockAdvance.mockImplementation(async (deps: { mint: { url: string } }) => {
+      if (deps.mint.url === MINIBITS) throw new Error("Network request failed")
+      return { waiting: 1 }
+    })
+    mockAdvanceTidies.mockImplementation(async (deps: { mint: { url: string } }) => {
+      if (deps.mint.url === MINIBITS) throw new Error("Network request failed")
+      return { waiting: 0 }
+    })
+
+    await expect(advanceEveryMint()).resolves.toEqual({ waiting: 2 })
+    expect(mintsAsked(mockAdvance)).toContain(MACADAMIA)
+    expect(mintsAsked(mockAdvanceTidies)).toContain(MACADAMIA)
+  })
+
+  it("still mints a paid top-up at a mint off the fund list: the fence gates starting one, never finishing", async () => {
+    await seed([saved("a", MACADAMIA, "paid")])
+    await advanceEveryMint()
+    expect(mintsAsked(mockAdvance)).toContain(MACADAMIA)
+  })
+
+  it("rejects when the store cannot be read, asking no mint", async () => {
+    await Keychain.setInternetCredentials("flashcard-v2-topups", "topups", "not json")
+    await expect(advanceEveryMint()).rejects.toThrow()
+    expect(mockAdvance).not.toHaveBeenCalled()
+  })
+
+  it("is what the app's minter runs on each pass", async () => {
+    await seed([saved("a", MINIBITS, "paid")])
+    const listen = jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation(
+        () =>
+          ({ remove: jest.fn() } as unknown as ReturnType<
+            typeof AppState.addEventListener
+          >),
+      )
+    try {
+      const { unmount } = renderHook(() => useTopUpMinter())
+      await waitFor(() => expect(mintsAsked(mockAdvance)).toContain(MINIBITS))
+      unmount()
+    } finally {
+      listen.mockRestore()
+    }
+  })
+})
+
+describe("useUnfinishedTopUps at the card's own mint (ENG-787)", () => {
+  it("dismisses through the mint that issued the top-up", async () => {
+    const atMinibits = {
+      id: "t1",
+      cardPubkey: "02ab",
+      mintUrl: "https://mint.minibits.cash/Bitcoin",
+    } as TopUpRecord
+    mockUnfinished.mockResolvedValue([atMinibits])
+    mockCancel.mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useUnfinishedTopUps("02ab"))
+    await waitFor(() => expect(result.current.records).toEqual([atMinibits]))
+
+    await act(async () => result.current.dismiss("t1"))
+
+    expect(mockCancel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mint: expect.objectContaining({ url: "https://mint.minibits.cash/Bitcoin" }),
+      }),
+      "t1",
+    )
   })
 })

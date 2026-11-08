@@ -18,7 +18,7 @@
 import { CASHU_MINT_URL } from "@app/config/appinfo"
 
 import type { PayOutcome } from "./cashu-card-topup/engine"
-import { sameMint } from "./cashu-card-topup/mint-url"
+import { mintKey, sameMint } from "./cashu-card-topup/mint-url"
 import { Transceiver, toHex } from "./cashu-card"
 import { CARD_TRANSCEIVE_TIMEOUT_MS } from "./cashu-card-nfc"
 
@@ -59,6 +59,14 @@ export type CardBridgeLink =
 const isDev = (): boolean => typeof __DEV__ !== "undefined" && __DEV__ === true
 
 let bridge: CardBridgeConfig | undefined
+
+/**
+ * Every dev mint a bridge has named this session (`setCardBridge`), kept
+ * after the bridge moves on or is cleared: a top-up quoted at one of them is
+ * a dev mint's, whatever the bridge says now (`isStaleDevMint`). Only ever
+ * filled in a development build.
+ */
+const bridgeNamed = new Set<string>()
 
 const hostOf = (url: string): string | undefined => {
   try {
@@ -106,6 +114,7 @@ export const setCardBridge = (config: CardBridgeConfig | undefined): void => {
   if (stubPay && mintUrl === undefined) {
     throw new Error("card bridge: the pay stub needs a dev mint URL")
   }
+  if (mintUrl !== undefined) bridgeNamed.add(mintKey(mintUrl))
   bridge = {
     url: url.replace(/\/+$/, ""),
     mintUrl: mintUrl?.replace(/\/+$/, ""),
@@ -148,11 +157,17 @@ export const stubbedPayOutcome = (mintUrl: string): PayOutcome | undefined => {
  * Whether a top-up bound to `mintUrl` must not be paid for real: a dev mint
  * the bridge no longer points at (the bridge was cleared or moved after the
  * screen quoted it). Its invoice is a dev mint's, most likely a FakeWallet
- * one, and nothing should leave the Cash wallet for it. Always false for the
- * production mint, and so always false in a release build.
+ * one, and nothing should leave the Cash wallet for it. A dev mint is one
+ * served over http, or one a bridge named this session (`bridgeNamed`).
+ * Always false for the production mint, for any https mint no bridge named
+ * (a card's own mint, ENG-787: Minibits is no dev mint), and so always false
+ * in a release build.
  */
 export const isStaleDevMint = (mintUrl: string): boolean =>
-  !isProductionMint(mintUrl) && !sameMint(mintUrl, cardMintUrl())
+  isDev() &&
+  !isProductionMint(mintUrl) &&
+  !sameMint(mintUrl, cardMintUrl()) &&
+  (/^http:\/\//i.test(mintUrl) || bridgeNamed.has(mintKey(mintUrl)))
 
 const fromHex = (hex: unknown): number[] => {
   if (typeof hex !== "string" || hex.length % 2 !== 0 || !/^[0-9a-fA-F]*$/.test(hex)) {

@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
 import type { CardPinState } from "@app/utils/cashu-card"
+import { mintKey } from "@app/utils/cashu-card-topup/mint-url"
 
 /**
  * Flashcard v2 (Cashu card) — the cards this phone has read (ENG-616).
@@ -61,7 +62,7 @@ export type KnownCard = {
   /**
    * The mint's unit (NUT-02 keyset `unit`, e.g. `sat`, `usd`) when every
    * unspent proof on the card is in that one unit, as the mint named it: for
-   * the last read it answered, or at once, from `keysetUnits`, for a later
+   * the last read it answered, or at once, from `keysetUnitsByMint`, for a later
    * read or card operation whose keysets it had all named before. A read or
    * operation that finds the balance moved clears it until one of those
    * names it again. Absent for an empty card, a card holding more than one
@@ -86,6 +87,16 @@ export interface FlashcardV2Slice {
    * again. Absent until the mint first answers.
    */
   keysetUnits?: Record<string, string>
+  /**
+   * The same, per mint (ENG-787): `mintKey` of the mint that named them, to
+   * keyset id (lowercase hex) to unit. Two mints can list the same id, so a
+   * card's split is named only from its own mint's list. The flat
+   * `keysetUnits` above, from builds before this, is left in storage unread
+   * (no persist migration, so a downgrade still finds its own): the first
+   * offline read after the upgrade says "unit unknown" until the mint
+   * answers. Absent until a mint first answers.
+   */
+  keysetUnitsByMint?: Record<string, Record<string, string>>
   /**
    * "Not now" on a card's tidy offer (ENG-702): the fingerprint of the
    * pieces it was said to (`piecesFingerprint`), by card pubkey. The offer
@@ -136,7 +147,7 @@ export const flashcardV2Slice = createSlice({
     },
     /**
      * The mint named the units of what the last read found, on that read or
-     * an earlier one (`keysetUnits`). Sets the card's unit, or clears it
+     * an earlier one (`keysetUnitsByMint`). Sets the card's unit, or clears it
      * (`unit` undefined) when there is no single one. Only a card already on
      * record is touched: resolving a unit never invents one.
      */
@@ -147,9 +158,16 @@ export const flashcardV2Slice = createSlice({
       const card = state.cards[action.payload.pubkey]
       if (card) card.unit = action.payload.unit
     },
-    /** The mint named these keysets' units: kept for the next read. */
-    keysetUnitsLearned: (state, action: PayloadAction<Record<string, string>>) => {
-      state.keysetUnits = { ...state.keysetUnits, ...action.payload }
+    /** `mint` named these keysets' units: kept, under that mint, for the next read. */
+    keysetUnitsLearned: (
+      state,
+      action: PayloadAction<{ mint: string; units: Record<string, string> }>,
+    ) => {
+      const key = mintKey(action.payload.mint)
+      state.keysetUnitsByMint = {
+        ...state.keysetUnitsByMint,
+        [key]: { ...state.keysetUnitsByMint?.[key], ...action.payload.units },
+      }
     },
     /** The owner's SET_LIMIT went through: what this phone set, the payment limit included. */
     cardLimitsSet: (

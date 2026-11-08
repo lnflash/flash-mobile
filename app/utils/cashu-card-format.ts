@@ -3,6 +3,7 @@
  * balance lines, and the scan sheet's while a read verifies the card
  * (ENG-707). Never converted through a price.
  */
+import { mintDisplayName } from "@app/config/appinfo"
 import type { CashuCardState } from "@app/contexts/Flashcard"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
 
@@ -39,7 +40,7 @@ export const formatUnitAmount = (amount: number, unit: string, LL: LLType): stri
 /**
  * The card's figures, one per unit the mint named. While a keyset on the card
  * has never been named (on this read or an earlier one:
- * `flashcardV2.keysetUnits`) and the mint has not answered, or when the tap
+ * `flashcardV2.keysetUnitsByMint`) and the mint has not answered, or when the tap
  * lost the keyset split so there was nothing to ask it, the card's own total
  * is shown labelled "unit unknown", never bare: GET_BALANCE adds every keyset
  * together and the card stores no unit. Value in a keyset the mint does not
@@ -71,3 +72,12 @@ export const balanceLines = (
   }
   return lines
 }
+
+/**
+ * A mint's name as a sentence carries it (ENG-787): `mintDisplayName` in a
+ * left-to-right isolate (U+2066 … U+2069), so a host such as
+ * `mint.minibits.cash` reads whole, dots and all, inside a right-to-left
+ * sentence, and cannot reorder the words around it.
+ */
+export const isolatedMintName = (url: string): string =>
+  `\u2066${mintDisplayName(url)}\u2069`

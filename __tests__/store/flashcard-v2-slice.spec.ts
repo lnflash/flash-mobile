@@ -120,10 +120,32 @@ describe("flashcardV2 slice — known cards", () => {
   })
 
   it("keeps the units the mint names, adding to what it named before", () => {
-    let state = reducer(undefined, keysetUnitsLearned({ aa: "sat" }))
-    state = reducer(state, keysetUnitsLearned({ bb: "usd" }))
-    expect(state.keysetUnits).toEqual({ aa: "sat", bb: "usd" })
-    expect(reducer(state, resetFlashcardV2()).keysetUnits).toBeUndefined()
+    const mint = "https://forge.flashapp.me"
+    let state = reducer(undefined, keysetUnitsLearned({ mint, units: { aa: "sat" } }))
+    state = reducer(state, keysetUnitsLearned({ mint, units: { bb: "usd" } }))
+    expect(state.keysetUnitsByMint).toEqual({ [mint]: { aa: "sat", bb: "usd" } })
+    expect(reducer(state, resetFlashcardV2()).keysetUnitsByMint).toBeUndefined()
+  })
+
+  // ENG-787: two mints can list the same keyset id.
+  it("keeps each mint's units apart, under the mint's key", () => {
+    let state = reducer(
+      undefined,
+      keysetUnitsLearned({ mint: "https://Forge.flashapp.me/", units: { aa: "sat" } }),
+    )
+    state = reducer(
+      state,
+      keysetUnitsLearned({
+        mint: "https://mint.minibits.cash/Bitcoin",
+        units: { aa: "usd" },
+      }),
+    )
+    expect(state.keysetUnitsByMint).toEqual({
+      "https://forge.flashapp.me": { aa: "sat" },
+      "https://mint.minibits.cash/bitcoin": { aa: "usd" },
+    })
+    // The flat map of earlier builds is never written, and stays as it was.
+    expect(state.keysetUnits).toBeUndefined()
   })
 
   it("reset drops everything", () => {

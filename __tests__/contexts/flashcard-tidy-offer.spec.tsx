@@ -26,6 +26,7 @@ import {
   renderProvider,
 } from "./flashcard-harness"
 
+import { unitsForKeysets } from "@app/utils/cashu-mint"
 jest.mock("js-lnurl", () => ({ getParams: jest.fn() }))
 jest.mock("axios", () => ({ get: jest.fn() }))
 jest.mock("@app/utils/toast", () => ({ toastShow: jest.fn() }))
@@ -38,9 +39,14 @@ jest.mock("@app/utils/cashu-card-headers", () => ({
   refreshTipHeader: jest.fn(async () => undefined),
 }))
 const mockFeePpk = jest.fn(async (_id: string) => 0)
+/** The mint each client was asked for (ENG-787: the card's own). */
+const mockTopUpMint = jest.fn()
 jest.mock("@app/utils/cashu-card-topup/connected", () => ({
   ...jest.requireActual("@app/utils/cashu-card-topup/connected"),
-  topUpMint: () => ({ url: "https://mint.test", feePpk: mockFeePpk }),
+  topUpMint: (url: string) => {
+    mockTopUpMint(url)
+    return { url: "https://mint.test", feePpk: mockFeePpk }
+  },
 }))
 
 const KEYSET = [0x00, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00]
@@ -132,6 +138,14 @@ describe("FlashcardProvider tidy offer (ENG-702)", () => {
     )
     expect(mockFeePpk).toHaveBeenCalledWith("00aabbccddeeff00")
     expect(latest?.cashuCard?.unspentSlots).toHaveLength(AFTER_A_TILL.length)
+    // The fee is asked of the card's own mint, the one its record names
+    // (fake-cashu's https://mint.test), never the app's (ENG-787).
+    expect(mockTopUpMint).toHaveBeenCalledWith("https://mint.test")
+    expect(mockTopUpMint).not.toHaveBeenCalledWith("https://forge.flashapp.me")
+    expect(unitsForKeysets).toHaveBeenCalledWith(
+      ["00aabbccddeeff00"],
+      "https://mint.test",
+    )
   })
 
   it("offers nothing when the card is another phone's: no grant in the read", async () => {

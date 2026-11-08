@@ -30,7 +30,9 @@ import {
   RelayStoreError,
   createRelay,
   createRelayStore,
+  defaultKnownMints,
 } from "@app/utils/cashu-card-relay"
+import { setCardFundMints } from "@app/utils/cashu-card-topup/connected"
 import { KEEP_TERMINAL } from "@app/utils/cashu-card-relay/store"
 import { decodePacket } from "@app/utils/cashu-card-relay/relay"
 
@@ -665,5 +667,21 @@ describe("createRelayStore's unknown-mint notes", () => {
     expect(await store.noteUnknownMint("card", `scope${KEEP_TERMINAL}`)).toBe(true)
     await store.remove("card", "scope5")
     expect(await store.noteUnknownMint("card", "scope5")).toBe(true)
+  })
+})
+
+// ENG-787 decision 5: the relay knows the mints the app funds.
+describe("defaultKnownMints", () => {
+  afterEach(() => setCardFundMints([]))
+
+  it("is forge and the card mint, plus the fund list as it is at each use", () => {
+    expect(defaultKnownMints()).toEqual([
+      "https://forge.flashapp.me",
+      "https://forge.flashapp.me",
+      "https://forge.flashapp.me",
+    ])
+    setCardFundMints(["https://forge.flashapp.me", "https://mint.minibits.cash/Bitcoin"])
+    expect(defaultKnownMints()).toContain("https://mint.minibits.cash/Bitcoin")
+    expect(defaultKnownMints()).not.toContain("https://mint.macadamia.cash")
   })
 })

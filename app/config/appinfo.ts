@@ -63,6 +63,49 @@ export const LNURL_DOMAINS = ["getflash.io", "pay.flashapp.me", "flashapp.me"]
  */
 export const CASHU_MINT_URL = "https://forge.flashapp.me"
 
+/**
+ * The mints a card can be set up for without typing an address (ENG-787), in
+ * the order setup lists them, each with the name the app shows for it. Forge
+ * (`CASHU_MINT_URL`, "Flash") comes first and is what setup writes unless the
+ * owner picks another. Being listed here says nothing about funding: only the
+ * fund list (`cardFundMints`, Remote Config) decides where the Cash wallet
+ * may pay.
+ */
+export const DEFAULT_CARD_MINTS: readonly { url: string; name: string }[] = [
+  { url: CASHU_MINT_URL, name: "Flash" },
+  { url: "https://mint.minibits.cash/Bitcoin", name: "Minibits" },
+  { url: "https://mint.macadamia.cash", name: "Macadamia" },
+  { url: "https://mint.cubabitcoin.org", name: "Cuba" },
+]
+
+// A mint's identity for the name lookup: origin and path, less trailing
+// slashes, lowercased (as `mintKey` in cashu-card-topup/mint-url.ts).
+const displayKey = (url: string): string | undefined => {
+  try {
+    const parsed = new URL(url)
+    return (parsed.origin + parsed.pathname.replace(/\/+$/, "")).toLowerCase()
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * The name the app shows for a mint: a listed mint's own name
+ * (`DEFAULT_CARD_MINTS`), else its host, as Foxy names one (`mintNameOf`).
+ * Never the path: it is the host that says whose mint it is. A string that is
+ * not a URL is shown as written.
+ */
+export const mintDisplayName = (url: string): string => {
+  const key = displayKey(url)
+  const known = key && DEFAULT_CARD_MINTS.find((mint) => displayKey(mint.url) === key)
+  if (known) return known.name
+  try {
+    return new URL(url).host.toLowerCase() || url
+  } catch {
+    return url
+  }
+}
+
 export const ratingOptions = {
   AppleAppID: "6451129095",
   GooglePackageName: "com.lnflash",

@@ -21,8 +21,14 @@ import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import {
   FeatureFlagContextProvider,
   REMOTE_CONFIG_GATE_MS,
+  parseCardFundMints,
   useFeatureFlags,
 } from "../../app/config/feature-flags-context"
+import {
+  cardFundMints,
+  isFundMint,
+  setCardFundMints,
+} from "../../app/utils/cashu-card-topup/connected"
 
 let mockCurrentLevel = "NonAuth"
 jest.mock("@app/graphql/level-context", () => ({
@@ -251,5 +257,86 @@ describe("FeatureFlagContextProvider startup gate", () => {
     })
 
     expect(errorSpy).not.toHaveBeenCalled()
+  })
+})
+
+// ENG-787 decision 1: the mints the Cash wallet may pay for a card top-up.
+describe("cardFundMints", () => {
+  const FORGE = "https://forge.flashapp.me"
+  let fundMints: string | undefined
+
+  const FundMints = () => {
+    const { cardFundMints } = useFeatureFlags()
+    return <Text testID="fund-mints">{JSON.stringify(cardFundMints)}</Text>
+  }
+  const renderFundMints = () => {
+    remoteConfig.fetchAndActivate.mockResolvedValue(undefined)
+    return render(
+      <FeatureFlagContextProvider>
+        <FundMints />
+      </FeatureFlagContextProvider>,
+    )
+  }
+  const shown = (screen: ReturnType<typeof render>) =>
+    JSON.parse(screen.getByTestId("fund-mints").props.children)
+
+  beforeEach(() => {
+    mockCurrentLevel = "ONE"
+    fundMints = undefined
+    remoteConfig.getValue.mockImplementation((key: string) => ({
+      asBoolean: () => false,
+      asString: () => (key === "cardFundMints" ? fundMints ?? "" : ""),
+      getSource: () =>
+        key === "cardFundMints" && fundMints !== undefined ? "remote" : "static",
+    }))
+  })
+
+  afterEach(() => {
+    setCardFundMints([])
+  })
+
+  it("is forge alone while nothing was ever fetched", async () => {
+    const screen = renderFundMints()
+    await flush()
+    expect(shown(screen)).toEqual([FORGE])
+    expect(cardFundMints()).toEqual([FORGE])
+  })
+  ;[
+    ["malformed JSON", "[https://mint.minibits.cash/Bitcoin"],
+    ["an object", '{"mints":["https://mint.minibits.cash/Bitcoin"]}'],
+    ["an empty list", "[]"],
+    ["only entries that are not mints", '["minibits", 7, null, "http://mint.test"]'],
+  ].forEach(([name, value]) =>
+    it(`is forge alone, never open, for ${name}`, async () => {
+      fundMints = value
+      const screen = renderFundMints()
+      await flush()
+      expect(shown(screen)).toEqual([FORGE])
+      expect(cardFundMints()).toEqual([FORGE])
+    }),
+  )
+
+  it("keeps the listed mints that pass the card's own check, normalized, and hands them to the card flows", async () => {
+    fundMints = JSON.stringify([
+      "https://forge.flashapp.me/",
+      "https://Mint.Minibits.cash/Bitcoin",
+      "https://user@evil.example",
+      "https://mint.minibits.cash/Bitcoin",
+    ])
+    const screen = renderFundMints()
+    await flush()
+    const expected = [FORGE, "https://mint.minibits.cash/Bitcoin"]
+    expect(shown(screen)).toEqual(expected)
+    expect(cardFundMints()).toEqual(expected)
+  })
+
+  it("reads a list without forge as given; forge, the card mint, stays funded (isFundMint)", () => {
+    expect(parseCardFundMints('["https://mint.macadamia.cash"]')).toEqual([
+      "https://mint.macadamia.cash",
+    ])
+    expect(parseCardFundMints(undefined)).toEqual([FORGE])
+    expect(isFundMint(FORGE, parseCardFundMints('["https://mint.macadamia.cash"]'))).toBe(
+      true,
+    )
   })
 })
