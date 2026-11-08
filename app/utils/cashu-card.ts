@@ -707,6 +707,9 @@ export const pinBytes = (pin: string, command: string): number[] => {
   return Array.from(pin).map((c) => c.charCodeAt(0))
 }
 
+/** VERIFY_PIN's answer once the card has blocked its PIN. */
+export const SW_PIN_BLOCKED = 0x6983
+
 /** The tries left encoded in a 63CX status word, or undefined for any other. */
 export const triesLeft = (sw: number): number | undefined =>
   (sw & 0xfff0) === 0x63c0 ? sw & 0x0f : undefined

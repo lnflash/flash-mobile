@@ -27,6 +27,7 @@ import {
   CardProtocolError,
   CardTap,
   PIN_MAX_LENGTH,
+  SW_PIN_BLOCKED,
   Transceiver,
   WrongCardError,
   getCardRecord,
@@ -55,6 +56,7 @@ import {
   SetupReadBackError,
   checkSetupVersion,
   compareReadBack,
+  currentSetup,
   freezeSetupIntent,
   heldByCard,
   newOwnerKey,
@@ -112,13 +114,14 @@ type SetupSequence = { intent: SetupIntent; progress: SetupProgress }
 const storedSetupFor = (
   setup: CardSetup | undefined,
   cardPubkey: string,
-): CardSetup | undefined =>
-  setup &&
-  setup.v === 1 &&
-  setup.intent?.cardPubkey === cardPubkey &&
-  setup.status !== "set-up"
-    ? setup
+): CardSetup | undefined => {
+  const current = currentSetup(setup)
+  return current &&
+    current.intent?.cardPubkey === cardPubkey &&
+    current.status !== "set-up"
+    ? current
     : undefined
+}
 
 /** A stored setup this screen resumes: started, with a write sent. */
 const resumable = (setup: CardSetup | undefined): CardSetup | undefined =>
@@ -908,8 +911,12 @@ const setUpFailure = (
     return { message: notOpenMessage(err.reason, LL, err.mint), final: true }
   }
   if (err instanceof CardError) {
-    // VERIFY_PIN refused the PIN typed on a resume (ENG-826): type it again.
+    // VERIFY_PIN refused the PIN typed on a resume (ENG-826). The last wrong
+    // PIN blocks it: final, as top-up says it; otherwise type it again.
     const tries = triesLeft(err.sw)
+    if (tries === 0 || err.sw === SW_PIN_BLOCKED) {
+      return { message: LL.FlashcardV2.cardNowBlocked(), final: true }
+    }
     if (tries !== undefined) {
       return { message: LL.FlashcardV2.wrongPin({ tries }), retryPin: true }
     }

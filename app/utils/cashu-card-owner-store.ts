@@ -406,6 +406,13 @@ export type CardSetup = {
   setUpAt?: number
 }
 
+/**
+ * A stored setup record in the format this app reads (`v: 1`), else
+ * undefined: a record of an unknown format is ignored, never read as v1.
+ */
+export const currentSetup = (setup: CardSetup | undefined): CardSetup | undefined =>
+  setup && setup.v === 1 ? setup : undefined
+
 /** Writes a setup record and resolves once it is on disk; rejects when it is not. */
 export type PersistSetup = (setup: CardSetup) => Promise<void>
 

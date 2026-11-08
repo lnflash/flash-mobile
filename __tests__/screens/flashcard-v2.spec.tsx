@@ -1903,6 +1903,14 @@ describe("FlashcardV2Screen, the card's own mint", () => {
       expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
     })
 
+    it("ignores a setup record of a format it does not know (v other than 1)", () => {
+      const record = setUp("set-up").payload
+      store.dispatch(cardSetupSaved({ ...record, v: 2 } as unknown as typeof record))
+      mockCashuCard = card({ record: undefined })
+      renderScreen()
+      expect(caption()).toBe(LL.FlashcardV2.onCardBalance())
+    })
+
     it("the card's own record wins over the setup record", () => {
       store.dispatch(setUp("set-up"))
       mockCashuCard = card()

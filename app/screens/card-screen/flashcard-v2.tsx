@@ -34,6 +34,7 @@ import {
   formatUnitAmount,
   isolatedMintName,
 } from "@app/utils/cashu-card-format"
+import { currentSetup } from "@app/utils/cashu-card-owner-store"
 import { TopUpRecord, isCurrentFormat, quoteIsDead } from "@app/utils/cashu-card-topup"
 import { isFundMint, mintOfCardOrUndefined } from "@app/utils/cashu-card-topup/connected"
 import { soleUnit } from "@app/utils/cashu-mint"
@@ -87,7 +88,7 @@ export const FlashcardV2Screen = () => {
   // The wallet's record of this card's setup (ENG-826): what the card read
   // back when this phone set it up, for a read that did not bring the record.
   const setUpRecord = useAppSelector((state) =>
-    cashuCard ? state.flashcardV2.setups?.[cashuCard.pubkey] : undefined,
+    cashuCard ? currentSetup(state.flashcardV2.setups?.[cashuCard.pubkey]) : undefined,
   )
 
   // Same courtesy the BoltCard screen extends: a card read while signed out
