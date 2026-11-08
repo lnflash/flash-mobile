@@ -333,7 +333,7 @@ const en: BaseTranslation = {
     mintLine: "Stored on the card · eCash from {mint: string}",
     mintNotice: "This card's eCash is backed by {mint: string}, which Flash doesn't run.",
     mintReadOnlyTitle: "Flash can't add money to this card yet",
-    mintReadOnly: "Flash doesn't fund {mint: string} yet. You can still see the balance, tidy the card when offered, and pay at a till that takes {mint: string}.",
+    mintReadOnly: "Flash doesn't fund {mint: string} yet. You can still see the balance and tidy the card when offered.",
     cardMintInvalidTitle: "Flash can't use this card's mint",
     cardMintInvalidBody: "Flash can't add money to it or tell its units. Contact support with the card ID below.",
     topUpCardMintInvalid: "Flash can't use this card's mint, so it can't add money. Contact support with the card ID from the card's screen.",

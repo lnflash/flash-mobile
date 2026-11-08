@@ -8,8 +8,9 @@
  *
  * Opt-in: runs only with CARDSIM_URL, CARD_MINT_URL, CARD_MINT_B_URL and
  * CARD_FIXTURES_URL set (the iOS e2e workflow sets them, with the fixture
- * server's `--mint-b`), and is skipped in the unit suite. Each leg of the
- * workflow's matrix runs it, the 100 ppk leg included.
+ * server's `--mint-b`), and is skipped in the unit suite. The workflow runs
+ * it on its mint-b legs (cardsim jest only), the 100 ppk one included, which
+ * sets CARD_MINT_FEE_PPK so a fee that did not take on B fails here.
  */
 import axios from "axios"
 
@@ -172,12 +173,14 @@ describeWithTwoMints(
       expect(atA()).toEqual([])
     })
 
-    it("tidies a card at B, and reclaims its spent slots at B: nothing reaches A", async () => {
-      await loadFixture("missing-small")
+    it("tidies a card at B, its fee taken at B's rate, and reclaims its spent slots at B: nothing reaches A", async () => {
+      // 128 + 32 + 1: worth a tidy at 100 ppk as well as at none, so every
+      // leg tidies at B, the fee leg at a mint that charges for it.
+      await loadFixture("missing-mid")
       asked.length = 0
       const transceive = bridgeTransceiver(bridge)
       const card = await readCashuCard(transceive)
-      if (!card?.unspentSlots) throw new Error("the missing-small fixture did not read")
+      if (!card?.unspentSlots) throw new Error("the missing-mid fixture did not read")
       const mint = topUpMint(mintOfCard(card.record))
       expect(mint.url).toBe(mintB)
 
@@ -202,17 +205,19 @@ describeWithTwoMints(
           verdicts: new Map(),
         },
       )
-      if (feePpk > 0) {
-        // The fee leg: one input costs a whole sat, as much as the 1s the
-        // card lacks, so no tidy is made (as at A).
-        expect(result).toEqual({ status: "skipped", reason: "fee" })
-      } else {
-        expect(result.status).toBe("tidied")
-        if (result.status === "tidied") expect(result.record.mintUrl).toBe(mintB)
-      }
+      // The leg's fee, read from B: 100 on the fee leg, 0 on the others.
+      expect(feePpk).toBe(Number(process.env.CARD_MINT_FEE_PPK ?? feePpk))
+      if (result.status !== "tidied") throw new Error(`the tidy ended ${result.status}`)
+      expect(result.record.mintUrl).toBe(mintB)
+      // NUT-02: ceil(inputs · ppk / 1000), taken at B; the balance moves by it alone.
+      const fee = Math.ceil((result.record.inputs.length * feePpk) / 1000)
+      expect(result.record.fee).toBe(fee)
+      if (feePpk > 0) expect(fee).toBeGreaterThan(0)
+      const tidied = await readCashuCard(transceive)
+      expect(tidied?.balance).toBe(card.balance - fee)
 
-      // A till pays 4 at B, offline: the 4 is spent on the card, SPENT at B.
-      const paid = await fetch(`${CARD_FIXTURES_URL}/mint-b/spend/4`, { method: "POST" })
+      // A till pays 8 at B, offline: the 8 is spent on the card, SPENT at B.
+      const paid = await fetch(`${CARD_FIXTURES_URL}/mint-b/spend/8`, { method: "POST" })
       expect(paid.status).toBe(200)
       asked.length = 0
       const spent = await readCashuCard(transceive)

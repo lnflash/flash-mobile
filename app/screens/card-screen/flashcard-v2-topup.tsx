@@ -361,9 +361,15 @@ export const FlashcardV2TopUpScreen = () => {
   const [cardMint] = useState(() =>
     cashuCard ? mintOfCardOrUndefined(cashuCard.record) : undefined,
   )
-  const { deps, feeFor, checkPin, load, reclaimPlanFor } = useCardTopUp(
-    cardMint ?? cardMintUrl(),
-  )
+  // The mint the screen's deps quote, pay, mint and load at: the card's own
+  // for a new top-up, and a resumed record's own mint once it is read, so a
+  // top-up paid at another mint (before ENG-787, say) is finished where it
+  // was paid. The fund list gates starting a fund, never finishing one.
+  const [screenMint, setScreenMint] = useState(() => cardMint ?? cardMintUrl())
+  const { deps, feeFor, checkPin, load, reclaimPlanFor } = useCardTopUp(screenMint)
+  // The record a resume read, once the screen's deps are at its mint.
+  const [resumed, setResumed] = useState<TopUpRecord>()
+  const resumeRan = useRef(false)
   const { convertMoneyAmount } = usePriceConversion()
   const { formatMoneyAmount } = useDisplayCurrency()
   const isAuthed = useIsAuthed()
@@ -794,7 +800,8 @@ export const FlashcardV2TopUpScreen = () => {
     await prepare()
   }
 
-  // Resume a saved top-up where it stopped.
+  // Resume a saved top-up where it stopped, at the mint it was quoted at
+  // (`screenMint`), whatever the card's record names now (ENG-787).
   useEffect(() => {
     if (!resumeId) return
     ;(async () => {
@@ -803,13 +810,33 @@ export const FlashcardV2TopUpScreen = () => {
         navigation.goBack()
         return
       }
-      // Another mint's top-up is never asked about, priced or paid through
-      // this card's mint (ENG-787); the engine refuses it too (`ofThisMint`).
-      if (!sameMint(record.mintUrl, deps.mint.url)) {
-        const message = refusal("other-mint", LL, { otherMint: record.mintUrl })
-        setStep({ name: "refused", message })
+      // A quote never sent for payment has moved no money: paying it would
+      // start a fund, so a mint off the fund list refuses it, as a new top-up
+      // there is refused. Everything else (sent, paid, minted) is finished.
+      const startsAFund =
+        record.state === "quoted" &&
+        !record.payment.dispatched &&
+        !record.payment.everDispatched
+      if (startsAFund && !isFundMint(record.mintUrl, cardFundMints)) {
+        setStep({
+          name: "refused",
+          message: refusal("read-only-mint", LL, { mint: record.mintUrl }),
+        })
         return
       }
+      setScreenMint(record.mintUrl)
+      setResumed(record)
+    })().catch(() => setStep({ name: "refused", message: LL.FlashcardV2.topUpFailed() }))
+    // A resume runs once, for the record it was opened with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeId])
+
+  // Once the deps are at the resumed record's mint: on from where it stopped.
+  useEffect(() => {
+    if (!resumed || resumeRan.current || !sameMint(resumed.mintUrl, deps.mint.url)) return
+    resumeRan.current = true
+    const record = resumed
+    ;(async () => {
       setUnit(record.unit)
       switch (record.state) {
         case "quoted": {
@@ -829,9 +856,9 @@ export const FlashcardV2TopUpScreen = () => {
           break
       }
     })().catch(() => setStep({ name: "refused", message: LL.FlashcardV2.topUpFailed() }))
-    // A resume runs once, for the record it was opened with.
+    // Runs once, when the deps first reach the record's mint.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumeId])
+  }, [resumed, deps])
 
   if (!cashuCard) return null
 
@@ -982,47 +1009,19 @@ export const FlashcardV2TopUpScreen = () => {
         )
       case "pin":
         return (
-          <>
-            <Text type="h02" accessibilityRole="header" style={styles.center}>
-              {LL.FlashcardV2.topUpPinTitle()}
-            </Text>
-            <Text type="caption" style={styles.center}>
-              {step.purpose === "check" || !step.record
-                ? LL.FlashcardV2.topUpPinBody()
-                : LL.FlashcardV2.topUpTapToLoad({ amount: amountText(step.record) })}
-            </Text>
-            <Text
-              type="h01"
-              style={styles.dots}
-              testID="topup-pin-entry"
-              accessibilityLabel={LL.FlashcardV2.pinEntered({ count: pinEntry.length })}
-            >
-              {"●".repeat(pinEntry.length)}
-              <Text type="h01" style={styles.empty}>
-                {"○".repeat(Math.max(0, 4 - pinEntry.length))}
-              </Text>
-            </Text>
-            {errorLine}
-            <PinPad
-              onDigit={(digit) => {
-                setError(undefined)
-                setPinEntry((e) => (e.length < PIN_MAX_LENGTH ? e + digit : e))
-              }}
-              onBackspace={() => setPinEntry((e) => e.slice(0, -1))}
-              onClear={() => setPinEntry("")}
-            />
-            <PrimaryBtn
-              label={
-                step.purpose === "check"
-                  ? LL.FlashcardV2.topUpCheckPin()
-                  : LL.FlashcardV2.topUpLoad()
-              }
-              disabled={!isValidCardPin(pinEntry) || busy}
-              loading={busy}
-              onPress={submitPin}
-              testID="topup-pin-submit"
-            />
-          </>
+          <TopUpPin
+            loadsAmount={
+              step.purpose === "check" || !step.record
+                ? undefined
+                : amountText(step.record)
+            }
+            pinEntry={pinEntry}
+            setPinEntry={setPinEntry}
+            clearError={() => setError(undefined)}
+            errorLine={errorLine}
+            busy={busy}
+            onSubmit={submitPin}
+          />
         )
       case "confirm":
         return (
@@ -1153,6 +1152,66 @@ const ReclaimNotes = ({ reclaim }: { reclaim: ReclaimResult }) => {
           {LL.FlashcardV2.topUpSettlingNote({ count: reclaim.settling })}
         </Text>
       )}
+    </>
+  )
+}
+
+/**
+ * The PIN step: checked before anything is paid (`loadsAmount` undefined), or
+ * asked for the load tap that writes `loadsAmount` on the card.
+ */
+const TopUpPin: React.FC<{
+  loadsAmount?: string
+  pinEntry: string
+  setPinEntry: React.Dispatch<React.SetStateAction<string>>
+  clearError: () => void
+  errorLine: React.ReactNode
+  busy: boolean
+  onSubmit: () => void
+}> = ({ loadsAmount, pinEntry, setPinEntry, clearError, errorLine, busy, onSubmit }) => {
+  const styles = useStyles()
+  const { LL } = useI18nContext()
+  return (
+    <>
+      <Text type="h02" accessibilityRole="header" style={styles.center}>
+        {LL.FlashcardV2.topUpPinTitle()}
+      </Text>
+      <Text type="caption" style={styles.center}>
+        {loadsAmount === undefined
+          ? LL.FlashcardV2.topUpPinBody()
+          : LL.FlashcardV2.topUpTapToLoad({ amount: loadsAmount })}
+      </Text>
+      <Text
+        type="h01"
+        style={styles.dots}
+        testID="topup-pin-entry"
+        accessibilityLabel={LL.FlashcardV2.pinEntered({ count: pinEntry.length })}
+      >
+        {"●".repeat(pinEntry.length)}
+        <Text type="h01" style={styles.empty}>
+          {"○".repeat(Math.max(0, 4 - pinEntry.length))}
+        </Text>
+      </Text>
+      {errorLine}
+      <PinPad
+        onDigit={(digit) => {
+          clearError()
+          setPinEntry((e) => (e.length < PIN_MAX_LENGTH ? e + digit : e))
+        }}
+        onBackspace={() => setPinEntry((e) => e.slice(0, -1))}
+        onClear={() => setPinEntry("")}
+      />
+      <PrimaryBtn
+        label={
+          loadsAmount === undefined
+            ? LL.FlashcardV2.topUpCheckPin()
+            : LL.FlashcardV2.topUpLoad()
+        }
+        disabled={!isValidCardPin(pinEntry) || busy}
+        loading={busy}
+        onPress={onSubmit}
+        testID="topup-pin-submit"
+      />
     </>
   )
 }

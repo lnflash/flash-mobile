@@ -52,6 +52,7 @@ is read, topped up, tidied and reclaimed there and never at the first mint.
 | `blocked`       | `loaded`, PIN blocked by three wrong tries                                              |
 | `limited`       | `loaded`, with the owner's limits (5,000 a day, 1,000 a payment, 250 without the PIN)   |
 | `missing-small` | `owned`, no PIN, 12 sat as 8 + 4: no 1 or 2, so a till offline can take only 4, 8 or 12 |
+| `missing-mid`   | `owned`, no PIN, 161 sat as 128 + 32 + 1: worth a tidy even at a 100 ppk mint           |
 
 There is no `legacy` fixture: the pinned cardsim serves the 2.1 applet, so "This
 card needs an update" (a 0.x or Foxy 1.x card) is pinned by the unit specs

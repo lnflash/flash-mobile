@@ -180,10 +180,8 @@ jest.mock("@app/hooks/use-card-top-up", () => ({
     deps: {
       store: { get: mockStoreGet, list: mockStoreList, tidies: { list: mockTidiesList } },
       mint: {
-        url:
-          mockDepsMintUrl ??
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          require("../../app/utils/cashu-card-bridge").cardMintUrl(),
+        // The mint the screen asked for, as the real hook's deps are.
+        url: mockDepsMintUrl ?? mintUrl,
       },
     },
     feeFor: mockFeeFor,
@@ -1253,6 +1251,8 @@ describe("FlashcardV2TopUpScreen: the development pay stub (ENG-634)", () => {
       mintUrl: "http://localhost:3338",
       stubPay: true,
     })
+    // A dev card: set up for the bridge's dev mint, where the screen quotes.
+    mockCard = card({ record: cardRecord({ mint: "http://localhost:3338" }) })
   })
   afterEach(() => {
     setDev(true)
@@ -1287,6 +1287,8 @@ describe("FlashcardV2TopUpScreen: the development pay stub (ENG-634)", () => {
 
   it("a release build (__DEV__ false) checks the balance, whatever was set", async () => {
     setDev(false)
+    // A release build's card: at forge (the dev mint is no card's mint there).
+    mockCard = card()
     mockEntered = 60_000
     await renderSettled()
     fireEvent.press(screen.getByTestId("amount-input"))
@@ -1579,13 +1581,54 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
     )
   })
 
-  it("resuming another mint's top-up stops before its fee is asked, or anything is paid", async () => {
+  it("finishes a top-up paid at another mint through that mint, whatever the card's record names now", async () => {
+    // Set up for Minibits; topped up at forge by an earlier build, paid, not loaded.
+    mockFundMints = [MINIBITS]
+    mockCard = at(MINIBITS)
+    mockParams = { topUpId: "topup-1" }
+    const paidAtForge = record({ state: "paid" })
+    mockStoreGet.mockResolvedValue(paidAtForge)
+    mockMint.mockResolvedValue({ record: record({ state: "minted" }), status: "minted" })
+    renderScreen()
+
+    await waitFor(() => expect(screen.getByTestId("topup-tap")).toBeTruthy())
+    // Minted where it was paid: forge's client, never the card's mint's.
+    expect(mockUseCardTopUp).toHaveBeenLastCalledWith("https://forge.flashapp.me")
+    expect(mockMint).toHaveBeenCalledWith(
+      expect.objectContaining({ mint: { url: "https://forge.flashapp.me" } }),
+      "topup-1",
+    )
+    expect(screen.queryByTestId("topup-refused")).toBeNull()
+
+    await act(async () => press(LL.FlashcardV2.topUpLoad()))
+    expect(mockLoad).toHaveBeenCalledWith(
+      expect.objectContaining({ state: "minted" }),
+      mockCard,
+      undefined,
+    )
+    expect(screen.getByTestId("topup-done")).toBeTruthy()
+  })
+
+  it("finishes a sent quote at a mint off the fund list: money may have moved", async () => {
+    mockParams = { topUpId: "topup-1" }
+    mockStoreGet.mockResolvedValue(
+      record({ mintUrl: MACADAMIA, payment: { ...record().payment, dispatched: true } }),
+    )
+    renderScreen()
+
+    await waitFor(() => expect(screen.getByTestId("topup-confirm-amount")).toBeTruthy())
+    expect(mockUseCardTopUp).toHaveBeenLastCalledWith(MACADAMIA)
+    expect(mockFeeFor).toHaveBeenCalledTimes(1)
+    expect(errorText()).toBe(LL.FlashcardV2.topUpPaymentUnknown())
+  })
+
+  it("refuses resuming a quote never sent at a mint off the fund list, before its fee is asked or anything is paid", async () => {
     mockParams = { topUpId: "topup-1" }
     mockStoreGet.mockResolvedValue(record({ mintUrl: MACADAMIA }))
     renderScreen()
     await waitFor(() =>
       expect(refusedText()).toBe(
-        LL.FlashcardV2.topUpOtherMint({ mint: isolatedMintName(MACADAMIA) }),
+        LL.FlashcardV2.mintReadOnly({ mint: isolatedMintName(MACADAMIA) }),
       ),
     )
     expect(mockFeeFor).not.toHaveBeenCalled()

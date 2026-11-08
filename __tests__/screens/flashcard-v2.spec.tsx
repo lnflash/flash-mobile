@@ -1132,7 +1132,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           locked: false,
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
-        "none",
+        { ownership: "none" },
         LL,
       ).map((notice) => notice.testID),
     ).toEqual(["flashcard-v2-not-set-up", "flashcard-v2-no-pin"])
@@ -1144,7 +1144,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
           locked: false,
           record: cardRecord({ rolls: 9, rollBudget: 7 }),
         },
-        "mine",
+        { ownership: "mine" },
         LL,
       ).map((notice) => notice.testID),
     ).toEqual(["flashcard-v2-refresh-needed"])
@@ -1173,7 +1173,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
             locked: false,
             record: cardRecord({ rolls: 7, rollBudget: 7 }),
           },
-          ownership,
+          { ownership },
           LL,
         ).map((notice) => [notice.testID, notice.body]),
       )
@@ -1191,7 +1191,7 @@ describe("FlashcardV2Screen, the owner's actions (card protocol 2.0)", () => {
     it(`cardNotices for a LOCKED card with a blocked PIN (owner ${ownership}): no one is told to set a new PIN`, () => {
       const blocked = cardNotices(
         { hasOwner: true, pinState: "blocked", locked: true, record: cardRecord() },
-        ownership,
+        { ownership },
         LL,
       ).find((notice) => notice.testID === "flashcard-v2-blocked")
       expect(blocked?.body).toBe(LL.FlashcardV2.blockedLockedBody())
@@ -1871,7 +1871,11 @@ describe("FlashcardV2Screen, the card's own mint", () => {
         mint: isolatedMintName(MINIBITS),
       })}`,
     )
-    // The rest stays: limits, PIN, the card details.
+    // The rest stays: the balance, limits, PIN, the card details. A holder
+    // who picked a mint off the fund list at setup is never left without it.
+    expect(screen.getByTestId("flashcard-v2-balance-sat").props.children).toBe(
+      "1,500 sats",
+    )
     expect(screen.getByTestId("flashcard-v2-action-limits")).toBeTruthy()
   })
 
@@ -1885,8 +1889,25 @@ describe("FlashcardV2Screen, the card's own mint", () => {
     )
   })
 
+  it("cardNotices judges the fund list it is given, as the Top up button does, not the app's global", () => {
+    // The global stays forge alone: only the list handed in names Minibits.
+    const given = cardNotices(
+      at(MINIBITS),
+      { ownership: "mine", fundMints: ["https://forge.flashapp.me", MINIBITS] },
+      LL,
+    ).map((n) => n.testID)
+    expect(given).not.toContain("flashcard-v2-mint-read-only")
+    const forgeOnly = cardNotices(
+      at(MINIBITS),
+      { ownership: "mine", fundMints: ["https://forge.flashapp.me"] },
+      LL,
+    ).map((n) => n.testID)
+    expect(forgeOnly).toContain("flashcard-v2-mint-read-only")
+  })
+
   it("cardNotices: the read-only notice goes once its mint is on the fund list", () => {
-    const notices = () => cardNotices(at(MINIBITS), "mine", LL).map((n) => n.testID)
+    const notices = () =>
+      cardNotices(at(MINIBITS), { ownership: "mine" }, LL).map((n) => n.testID)
     expect(notices()).toContain("flashcard-v2-mint-read-only")
     setCardFundMints(["https://forge.flashapp.me", MINIBITS])
     try {

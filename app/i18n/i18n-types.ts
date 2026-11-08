@@ -1112,10 +1112,10 @@ type RootTranslation = {
 		 */
 		mintReadOnlyTitle: string
 		/**
-		 * F​l​a​s​h​ ​d​o​e​s​n​'​t​ ​f​u​n​d​ ​{​m​i​n​t​}​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​s​t​i​l​l​ ​s​e​e​ ​t​h​e​ ​b​a​l​a​n​c​e​,​ ​t​i​d​y​ ​t​h​e​ ​c​a​r​d​ ​w​h​e​n​ ​o​f​f​e​r​e​d​,​ ​a​n​d​ ​p​a​y​ ​a​t​ ​a​ ​t​i​l​l​ ​t​h​a​t​ ​t​a​k​e​s​ ​{​m​i​n​t​}​.
+		 * F​l​a​s​h​ ​d​o​e​s​n​'​t​ ​f​u​n​d​ ​{​m​i​n​t​}​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​s​t​i​l​l​ ​s​e​e​ ​t​h​e​ ​b​a​l​a​n​c​e​ ​a​n​d​ ​t​i​d​y​ ​t​h​e​ ​c​a​r​d​ ​w​h​e​n​ ​o​f​f​e​r​e​d​.
 		 * @param {string} mint
 		 */
-		mintReadOnly: RequiredParams<'mint' | 'mint'>
+		mintReadOnly: RequiredParams<'mint'>
 		/**
 		 * F​l​a​s​h​ ​c​a​n​'​t​ ​u​s​e​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​m​i​n​t
 		 */
@@ -9895,7 +9895,7 @@ export type TranslationFunctions = {
 		 */
 		mintReadOnlyTitle: () => LocalizedString
 		/**
-		 * Flash doesn't fund {mint} yet. You can still see the balance, tidy the card when offered, and pay at a till that takes {mint}.
+		 * Flash doesn't fund {mint} yet. You can still see the balance and tidy the card when offered.
 		 */
 		mintReadOnly: (arg: { mint: string }) => LocalizedString
 		/**

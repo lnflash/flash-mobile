@@ -2,7 +2,7 @@
  * Card fixture loader for the Flashcard e2e flows (ENG-634; card protocol 2.0, ENG-675).
  *
  *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts serve [--port 9877] [--bridge URL] [--mint URL] [--mint-b URL]
- *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|owned|loaded|spent|full|blocked|limited|missing-small> [--bridge URL] [--mint URL]
+ *   node_modules/.bin/tsx scripts/e2e/card-fixtures.ts load <fresh|owned|loaded|spent|full|blocked|limited|missing-small|missing-mid> [--bridge URL] [--mint URL]
  *
  * `serve` answers `POST /load/<name>` with the fixture's summary (the Maestro
  * flows and the developer screen call it), and `POST /spend/<amount>` with a

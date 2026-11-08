@@ -159,10 +159,16 @@ export const useCardTidy = (card: TidyCard | undefined) => {
     }: { pin?: string; finishOnly?: boolean } = {}): Promise<TidyResult> => {
       setProgress(undefined)
       if (!card) throw new TopUpError("state", "no card to tidy")
-      // At the card's own mint (ENG-787), the one its pieces came from. A
-      // tidy moves only the card's own value there, so the fund list is not
-      // asked. A record mint this app cannot use is refused (`state`).
-      const mint = topUpMint(mintOfCard(card.record))
+      // A tidy still owed is finished at the mint it was signed for, whatever
+      // the card's record names now (ENG-787): the oldest the card owes, at
+      // any mint. Only a new tidy goes to the card's own mint, the one its
+      // pieces came from. A tidy moves only the card's own value, so the
+      // fund list is not asked. A record mint this app cannot use refuses a
+      // new tidy (`state`), never the finishing of an owed one.
+      const owedAnywhere = (
+        await unfinishedTidies({ store: topUpStore }, card.pubkey)
+      ).find(tidyOwed)
+      const mint = topUpMint(owedAnywhere?.mintUrl ?? mintOfCard(card.record))
       const deps: TidyDeps = { mint, store: topUpStore, now: Date.now, newId: uuidv4 }
       // A tidy still owed is finished first, and its fee and keyset are in
       // its record: the mint is not asked (its keyset may be rotated out by

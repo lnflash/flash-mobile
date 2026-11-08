@@ -73,6 +73,7 @@ export const FIXTURE_NAMES = [
   "blocked",
   "limited",
   "missing-small",
+  "missing-mid",
 ] as const
 export type FixtureName = (typeof FIXTURE_NAMES)[number]
 
@@ -124,6 +125,14 @@ export const SPENT_SLOTS = [1, 2]
  * only 4, 8 or 12 exactly. A tidy reshapes it to 1 + 1 + 2 + 2 + 2 + 4.
  */
 export const MISSING_SMALL_AMOUNTS = [8, 4]
+/**
+ * `missing-mid` (ENG-787): 161 sat as 128 + 32 + 1, the gap in the middle of
+ * the ladder. At a mint charging 100 ppk, one input costs a whole sat, so a
+ * tidy of `missing-small` is never worth its fee; this one is: the 1 joins
+ * the inputs, the fee is 1, and the change has no 1 in it (128 + 32 + 1 less
+ * 1, as 64 + 32 + 16 + 16 + 8 + 8 + 8 + 8). With no fee it tidies the 128.
+ */
+export const MISSING_MID_AMOUNTS = [128, 32, 1]
 /** `full`: every one of the card's 128 slots holds 1 sat. */
 export const FULL_SLOTS = 128
 /** `limited`: the owner's limits, the rollover budget at its default. */
@@ -389,6 +398,7 @@ const setUp = async (
  * - `blocked`: `loaded`, with the PIN blocked by three wrong tries.
  * - `limited`: `loaded`, with the owner's limits `FIXTURE_LIMITS`.
  * - `missing-small`: set up, no PIN, 12 sat as 8 + 4 (`MISSING_SMALL_AMOUNTS`).
+ * - `missing-mid`: set up, no PIN, 161 sat as 128 + 32 + 1 (`MISSING_MID_AMOUNTS`).
  *
  * Every fixture starts from `reset` and ends with a SELECT, so the app's
  * first command finds an unverified session, as a fresh tap does.
@@ -408,9 +418,10 @@ export const loadFixture = async (
 
   if (name === "owned") await setUp(transceive, { mint: mint.url, form })
 
-  if (name === "missing-small") {
+  if (name === "missing-small" || name === "missing-mid") {
     await setUp(transceive, { mint: mint.url, form })
-    const { slots } = await mintToCard(deps, pubkey, MISSING_SMALL_AMOUNTS)
+    const amounts = name === "missing-small" ? MISSING_SMALL_AMOUNTS : MISSING_MID_AMOUNTS
+    const { slots } = await mintToCard(deps, pubkey, amounts)
     await loadSlots(transceive, slots)
   }
 

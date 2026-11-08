@@ -28,6 +28,7 @@ import {
   FIXTURE_PIN,
   FULL_SLOTS,
   FixtureDeps,
+  MISSING_MID_AMOUNTS,
   MISSING_SMALL_AMOUNTS,
   FixtureName,
   PRODUCTION_MINT_HOST,
@@ -85,6 +86,7 @@ describe("card fixtures", () => {
       "blocked",
       "limited",
       "missing-small",
+      "missing-mid",
     ])
     expect(isFixtureName("owned")).toBe(true)
     expect(isFixtureName("loaded-0.4")).toBe(false)
@@ -223,6 +225,21 @@ describe("card fixtures", () => {
     )
     // Nothing was spent by the refusal.
     expect(statuses(sim.card).slice(0, 2)).toEqual([1, 1])
+  })
+
+  it("missing-mid: 161 sat as 128 + 32 + 1, owned, no PIN: a tidy worth its fee at 100 ppk (ENG-787)", async () => {
+    const { deps, sim } = setup()
+    const summary = await loadFixture("missing-mid", deps)
+    expect(summary).toMatchObject({
+      balance: 161,
+      pinState: "unset",
+      hasOwner: true,
+      recordSet: true,
+      unspent: 3,
+      spent: 0,
+    })
+    expect(MISSING_MID_AMOUNTS).toEqual([128, 32, 1])
+    expect(sim.card.dleqs.size).toBe(3)
   })
 
   it("spendExactly pays exactly the amount from the card with no change, redeemed at the mint", async () => {

@@ -47,6 +47,8 @@ const mockNudge = jest.fn()
 const mockReport = jest.fn()
 /** Every mint the hook asked for a client (ENG-787: the card's own). */
 const mockTopUpMint = jest.fn()
+/** The URL the client answers for a mint asked: one test mint unless a test says otherwise. */
+let mockClientUrl: (url: string) => string = () => "https://mint.test"
 
 jest.mock("@app/i18n/i18n-react", () => ({
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -85,7 +87,7 @@ jest.mock("@app/utils/cashu-card-topup/connected", () => ({
   // One client, whatever mint is asked for: the tidies saved here are its own.
   topUpMint: (url: string) => ({
     ...mockTopUpMint(url),
-    url: "https://mint.test",
+    url: mockClientUrl(url),
     feePpk: mockFeePpk,
     // As the real client's: the full id the card id names, with its fee.
     resolveCardKeyset: async (id: string) => ({
@@ -171,6 +173,7 @@ const saveTidies = (records: TidyRecord[]) =>
 
 beforeEach(async () => {
   jest.clearAllMocks()
+  mockClientUrl = () => "https://mint.test"
   await Keychain.resetInternetCredentials({ server: TOPUPS })
   await Keychain.resetInternetCredentials({ server: ARCHIVE })
   store.dispatch(resetFlashcardV2())
@@ -421,6 +424,61 @@ describe("useCardTidy", () => {
     expect(result.current.records).toEqual([
       expect.objectContaining({ id: "gone", state: "needs-card" }),
     ])
+  })
+
+  it("finishes a tidy owed at another mint through that mint's client, not the card's (ENG-787)", async () => {
+    // Each client answers as the mint it was asked for, as the real one does.
+    mockClientUrl = (url) => url
+    const cashuCard = card({
+      record: cardRecord({ mint: "https://mint.minibits.cash/Bitcoin" }),
+    })
+    // Signed at forge (an earlier build tidied every card there), not yet swapped.
+    await saveTidies([
+      {
+        ...saved("owed", "signed", cashuCard.pubkey),
+        mintUrl: "https://forge.flashapp.me",
+      },
+    ])
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await waitFor(() => expect(result.current.records).toHaveLength(1))
+
+    await act(async () => {
+      await result.current.tidy({ finishOnly: true })
+    })
+
+    expect(mockTopUpMint).toHaveBeenCalledWith("https://forge.flashapp.me")
+    expect(mockTopUpMint).not.toHaveBeenCalledWith("https://mint.minibits.cash/Bitcoin")
+    expect(mockRunTidy).toHaveBeenCalledTimes(1)
+    const [deps, args] = mockRunTidy.mock.calls[0]
+    expect(deps.mint.url).toBe("https://forge.flashapp.me")
+    expect(args).toMatchObject({ keysetId: undefined, feePpk: 0 })
+    expect(mockFeePpk).not.toHaveBeenCalled()
+  })
+
+  it("still starts a new tidy at the card's own mint when nothing is owed anywhere", async () => {
+    mockClientUrl = (url) => url
+    const cashuCard = card({
+      record: cardRecord({ mint: "https://mint.minibits.cash/Bitcoin" }),
+    })
+    // Kept for a human, at forge: not owed, so it does not take the tap there.
+    await saveTidies([
+      {
+        ...saved("kept", "needs-card", cashuCard.pubkey),
+        mintUrl: "https://forge.flashapp.me",
+      },
+    ])
+    const { result } = renderHook(() => useCardTidy(cashuCard), { wrapper })
+    await waitFor(() => expect(result.current.records).toHaveLength(1))
+
+    await act(async () => {
+      await result.current.tidy()
+    })
+
+    expect(mockTopUpMint).toHaveBeenCalledWith("https://mint.minibits.cash/Bitcoin")
+    expect(mockTopUpMint).not.toHaveBeenCalledWith("https://forge.flashapp.me")
+    expect(mockRunTidy.mock.calls[0][0].mint.url).toBe(
+      "https://mint.minibits.cash/Bitcoin",
+    )
   })
 
   it("Finish with a tidy still owed finishes it, with no keyset a new tidy could plan in", async () => {

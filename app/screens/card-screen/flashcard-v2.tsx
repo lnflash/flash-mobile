@@ -444,8 +444,10 @@ const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> 
 }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
+  // The same fund list the Top up button is judged against (`canTopUp`).
+  const { cardFundMints } = useFeatureFlags()
 
-  const notices = cardNotices(card, ownership, LL)
+  const notices = cardNotices(card, { ownership, fundMints: cardFundMints }, LL)
   if (notices.length === 0) return null
 
   // One element per notice for a screen reader, labelled with the words on
@@ -483,7 +485,14 @@ const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> 
  */
 export const cardNotices = (
   card: Pick<CashuCardState, "hasOwner" | "pinState" | "record" | "locked">,
-  ownership: CardOwnership,
+  {
+    ownership,
+    fundMints,
+  }: {
+    ownership: CardOwnership
+    /** The fund list (`cardFundMints`), as `canTopUp` is given it; the app's own when not given. */
+    fundMints?: readonly string[]
+  },
   LL: LLType,
 ): Notice[] => {
   const notices: Notice[] = []
@@ -496,8 +505,8 @@ export const cardNotices = (
     })
   }
   // Mint per card (ENG-787): no Top up on a card whose mint this app cannot
-  // use, or whose mint Flash doesn't fund (the fund list the flag provider
-  // set, `cardFundMints`); each says what still works.
+  // use, or whose mint Flash doesn't fund (`fundMints`, the list the Top up
+  // button is judged against); each says what still works.
   if (card.hasOwner && card.record?.recordSet) {
     const mint = mintOfCardOrUndefined(card.record)
     if (!mint) {
@@ -507,7 +516,7 @@ export const cardNotices = (
         body: LL.FlashcardV2.cardMintInvalidBody(),
         severe: true,
       })
-    } else if (!isFundMint(mint)) {
+    } else if (!isFundMint(mint, fundMints)) {
       notices.push({
         testID: "flashcard-v2-mint-read-only",
         title: LL.FlashcardV2.mintReadOnlyTitle(),
