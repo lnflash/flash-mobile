@@ -711,6 +711,13 @@ export const pinBytes = (pin: string, command: string): number[] => {
 export const triesLeft = (sw: number): number | undefined =>
   (sw & 0xfff0) === 0x63c0 ? sw & 0x0f : undefined
 
+/**
+ * What an operation tap's SELECT and GET_PUBKEY said, before anything else
+ * was sent: the applet version (`02 xx`) and the card key, hex (33 bytes,
+ * compressed). The applet reports no chip UID: the card key is its identity.
+ */
+export type CardTap = { version: number[]; pubkey: string }
+
 /** A tap reached a card that is not the one the screen is showing. */
 export class WrongCardError extends Error {
   constructor(readonly pubkey: string) {

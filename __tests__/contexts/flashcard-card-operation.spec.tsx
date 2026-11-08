@@ -260,6 +260,36 @@ describe("FlashcardProvider runCardOperation", () => {
     expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].pinState).toBe("set")
   })
 
+  it("hands the op what this tap's SELECT and GET_PUBKEY said: the applet version and the card key (ENG-825)", async () => {
+    await mount()
+    await readCard()
+    const op = jest.fn(async () => "done")
+
+    await act(async () => {
+      await latest?.runCardOperation(op, toHex(PUBKEY))
+    })
+
+    expect(op).toHaveBeenCalledTimes(1)
+    expect(op).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), {
+      version: [2, 0],
+      pubkey: toHex(PUBKEY),
+    })
+  })
+
+  it("a 2.2 card's version reaches the op as SELECT said it", async () => {
+    const card = createFakeCard(128, { owner: null, version: [2, 2] })
+    transceive.mockImplementation((bytes: number[]) => card.transceive(bytes))
+    await mount()
+    await readCard()
+    let tap: unknown
+    await act(async () => {
+      await latest?.runCardOperation(async (_t, _report, seen) => {
+        tap = seen
+      }, toHex(PUBKEY))
+    })
+    expect(tap).toEqual({ version: [2, 2], pubkey: toHex(PUBKEY) })
+  })
+
   it("raises Android's transceive timeout once the session is open, before the first APDU", async () => {
     await mount()
     await readCard()
