@@ -1339,7 +1339,16 @@ export type CardRecord = {
   allowanceArmed: boolean
   /** The mint the card was set up for. */
   mint: string
+  /**
+   * The card's design (ENG-826; spec/APDU.md, GET_CARD, at 106 + the mint's
+   * length): three characters, null when the card holds zeros, undefined when
+   * the answer stops before it.
+   */
+  design?: string | null
 }
+
+/** The size of GET_CARD's design field, after the mint. */
+export const RECORD_DESIGN_SIZE = 3
 
 /** The rollover budget a card holds until the owner sets another (D20). */
 export const ROLL_BUDGET_DEFAULT = 7
@@ -1356,6 +1365,11 @@ export function parseCardRecord(body: number[]): CardRecord {
     throw new CardProtocolError("GET_CARD: the mint runs past the answer")
   }
   const refund = body.slice(7, 40)
+  const designAt = 106 + mintLength
+  const designBytes =
+    body.length >= designAt + RECORD_DESIGN_SIZE
+      ? body.slice(designAt, designAt + RECORD_DESIGN_SIZE)
+      : undefined
   return {
     format: body[0],
     recordSet: body[1] === 1,
@@ -1367,6 +1381,12 @@ export function parseCardRecord(body: number[]): CardRecord {
     rollBudget: body[77] || ROLL_BUDGET_DEFAULT,
     allowanceArmed: body[78] === 1,
     mint: String.fromCharCode(...body.slice(106, 106 + mintLength)),
+    design:
+      designBytes === undefined
+        ? undefined
+        : designBytes.every((b) => b === 0)
+        ? null
+        : String.fromCharCode(...designBytes),
   }
 }
 
