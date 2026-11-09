@@ -759,6 +759,62 @@ export const checkSetupState = ({
   }
 }
 
+/**
+ * A card exactly as the provisioner leaves it, waiting for its holder
+ * (ENG-830): a version setup writes to, no PIN, no owner, not locked, no
+ * proofs, no limits, and an empty record (no mint, no refund key, zero
+ * design bytes), with no setup record of any status or format on this phone.
+ * Read from state the app already holds: it sends nothing and never throws.
+ * Display only: `checkSetupState` stays the authority before any write. A
+ * card read without its record, with an unknown PIN state, or with a design
+ * the answer stopped before is not awaiting: the old wording shows instead.
+ */
+export const isAwaitingHolder = (
+  card: Pick<
+    CardInfo,
+    | "major"
+    | "minor"
+    | "pinState"
+    | "hasOwner"
+    | "locked"
+    | "recordSet"
+    | "unspent"
+    | "spent"
+    | "dailyLimit"
+    | "paymentLimit"
+    | "allowance"
+    | "nopinSpent"
+    | "spentToday"
+  > & { record?: CardRecord },
+  rawSetup: CardSetup | undefined,
+): boolean => {
+  const { record } = card
+  return (
+    SETUP_APPLET_VERSIONS.some(
+      ([major, minor]) => card.major === major && card.minor === minor,
+    ) &&
+    card.pinState === "unset" &&
+    card.hasOwner === false &&
+    card.locked === false &&
+    card.unspent === 0 &&
+    card.spent === 0 &&
+    card.dailyLimit === 0 &&
+    card.paymentLimit === 0 &&
+    card.allowance === 0 &&
+    card.nopinSpent === 0 &&
+    card.spentToday === 0 &&
+    card.recordSet === false &&
+    record !== undefined &&
+    record.recordSet === false &&
+    record.mint === "" &&
+    record.refundKey === undefined &&
+    record.design === null &&
+    record.dailyLimit === 0 &&
+    record.allowanceArmed === false &&
+    rawSetup === undefined
+  )
+}
+
 /** What `record` says the card holds, as a setup record keeps it. */
 export const heldByCard = (record: CardRecord): HeldByCard => ({
   mint: record.mint,
