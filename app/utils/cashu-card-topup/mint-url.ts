@@ -23,8 +23,9 @@ export const sameMint = (a: string, b: string): boolean => mintKey(a) === mintKe
 /**
  * The mint a card's assisted-settlement packet may be relayed to (ENG-820),
  * or undefined: then no request object is ever built. `known` is the mints
- * this app already speaks to (`CASHU_MINT_URL` and the card mint,
- * `cardMintUrl()`); the answer is the one of them the packet's mint is
+ * this app speaks to (`defaultKnownMints`: `CASHU_MINT_URL`, the card mint,
+ * and the mints of the cards this phone has read or set up, ENG-831); the
+ * answer is the one of them the packet's mint is
  * (`sameMint`), as configured, which is the URL the relay calls. The card's
  * record mint (`recordMint`, when this tap read it) counts only when it is
  * one of `known` too, and must name the same mint as the packet: a packet

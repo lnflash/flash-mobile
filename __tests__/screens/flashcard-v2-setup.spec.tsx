@@ -1754,7 +1754,7 @@ describe("FlashcardV2SetupScreen: the card's mint", () => {
     expect(card.record()).toEqual({ set: true, mint: MINIBITS })
   })
 
-  it("Change lists the mints, says which Flash can't fund, and SET_CARD writes the one chosen", async () => {
+  it("Change lists the mints, puts the till note beside each one not forge, and SET_CARD writes the one chosen", async () => {
     await renderScreen()
     choose("setup-mint-change")
     expect(screen.getByTestId("setup-mint-title").props.children).toBe(
@@ -1765,8 +1765,15 @@ describe("FlashcardV2SetupScreen: the card's mint", () => {
     expect(
       screen.getByTestId("setup-mint-option-mint.test").props.accessibilityState,
     ).toEqual({ checked: true })
-    // Minibits, Macadamia and Cuba are off the fund list: each says so once.
-    expect(screen.getAllByText(LL.FlashcardV2.setUpMintReadOnly())).toHaveLength(3)
+    // ENG-831: every mint but forge carries the till note, once; forge none.
+    // The test's card mint (the dev bridge's) is not forge: tills don't take it.
+    expect(screen.getAllByText(LL.FlashcardV2.setUpTillNote())).toHaveLength(4)
+    ;["mint.test", "Minibits", "Macadamia", "Cuba"].forEach((name) =>
+      expect(screen.getByTestId(`setup-mint-till-${name}`).props.children).toBe(
+        LL.FlashcardV2.setUpTillNote(),
+      ),
+    )
+    expect(screen.queryByTestId("setup-mint-till-Flash")).toBeNull()
     // The test's card mint is not forge, so even it carries the notice: once.
     expect(screen.getAllByTestId("setup-mint-choice-notice")).toHaveLength(1)
     expect(screen.getByTestId("setup-mint-choice-notice").props.children).toBe(
@@ -1842,9 +1849,9 @@ describe("FlashcardV2SetupScreen: the card's mint", () => {
     choose("setup-mint-change")
     choose("setup-mint-option-other")
     fireEvent.changeText(screen.getByTestId("setup-mint-address"), "https://mnit.example")
-    // Off the fund list, and not Flash's: said under the field, before Continue.
-    expect(screen.getByTestId("setup-mint-address-read-only").props.children).toBe(
-      LL.FlashcardV2.setUpMintReadOnly(),
+    // Not forge: the till note and the notice, under the field, before Continue.
+    expect(screen.getByTestId("setup-mint-address-till").props.children).toBe(
+      LL.FlashcardV2.setUpTillNote(),
     )
     expect(screen.getByTestId("setup-mint-address-notice").props.children).toBe(
       LL.FlashcardV2.setUpMintNotice({ mint: isolatedMintName("https://mnit.example") }),
@@ -1855,6 +1862,18 @@ describe("FlashcardV2SetupScreen: the card's mint", () => {
       LL.FlashcardV2.setUpMintNoAnswer(),
     )
     expect(screen.getByTestId("setup-mint-title")).toBeTruthy()
+  })
+
+  it("a written-in forge address carries no till note and no notice (ENG-831)", async () => {
+    await renderScreen()
+    choose("setup-mint-change")
+    choose("setup-mint-option-other")
+    fireEvent.changeText(
+      screen.getByTestId("setup-mint-address"),
+      "https://Forge.flashapp.me/",
+    )
+    expect(screen.queryByTestId("setup-mint-address-till")).toBeNull()
+    expect(screen.queryByTestId("setup-mint-address-notice")).toBeNull()
   })
 
   it("so does a mint that lists no sat keyset", async () => {

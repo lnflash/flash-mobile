@@ -1175,14 +1175,10 @@ type RootTranslation = {
 		 */
 		mintNotice: RequiredParams<'mint'>
 		/**
-		 * F​l​a​s​h​ ​c​a​n​'​t​ ​a​d​d​ ​m​o​n​e​y​ ​t​o​ ​t​h​i​s​ ​c​a​r​d​ ​y​e​t
-		 */
-		mintReadOnlyTitle: string
-		/**
-		 * F​l​a​s​h​ ​d​o​e​s​n​'​t​ ​f​u​n​d​ ​{​m​i​n​t​}​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​s​t​i​l​l​ ​s​e​e​ ​t​h​e​ ​b​a​l​a​n​c​e​ ​a​n​d​ ​t​i​d​y​ ​t​h​e​ ​c​a​r​d​ ​w​h​e​n​ ​o​f​f​e​r​e​d​.
+		 * F​l​a​s​h​ ​t​i​l​l​s​ ​c​a​n​'​t​ ​t​a​k​e​ ​a​ ​c​a​r​d​ ​a​t​ ​{​m​i​n​t​}​ ​y​e​t​.​ ​Y​o​u​ ​c​a​n​ ​s​t​i​l​l​ ​l​o​a​d​ ​i​t​ ​h​e​r​e​.
 		 * @param {string} mint
 		 */
-		mintReadOnly: RequiredParams<'mint'>
+		topUpTillNote: RequiredParams<'mint'>
 		/**
 		 * F​l​a​s​h​ ​c​a​n​'​t​ ​u​s​e​ ​t​h​i​s​ ​c​a​r​d​'​s​ ​m​i​n​t
 		 */
@@ -1238,14 +1234,14 @@ type RootTranslation = {
 		 */
 		setUpMintNoAnswer: string
 		/**
-		 * F​l​a​s​h​ ​c​a​n​'​t​ ​a​d​d​ ​m​o​n​e​y​ ​h​e​r​e​ ​y​e​t
-		 */
-		setUpMintReadOnly: string
-		/**
 		 * F​l​a​s​h​ ​d​o​e​s​n​'​t​ ​r​u​n​ ​{​m​i​n​t​}​,​ ​a​n​d​ ​t​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​m​o​v​e​ ​t​h​e​ ​c​a​r​d​ ​t​o​ ​a​n​o​t​h​e​r​ ​m​i​n​t​ ​l​a​t​e​r​.
 		 * @param {string} mint
 		 */
 		setUpMintNotice: RequiredParams<'mint'>
+		/**
+		 * F​l​a​s​h​ ​t​i​l​l​s​ ​t​a​k​e​ ​f​o​r​g​e​ ​c​a​r​d​s​ ​o​n​l​y​,​ ​f​o​r​ ​n​o​w​.
+		 */
+		setUpTillNote: string
 		/**
 		 * L​i​m​i​t​s​:​ ​{​l​i​m​i​t​s​}
 		 * @param {string} limits
@@ -10085,13 +10081,9 @@ export type TranslationFunctions = {
 		 */
 		mintNotice: (arg: { mint: string }) => LocalizedString
 		/**
-		 * Flash can't add money to this card yet
+		 * Flash tills can't take a card at {mint} yet. You can still load it here.
 		 */
-		mintReadOnlyTitle: () => LocalizedString
-		/**
-		 * Flash doesn't fund {mint} yet. You can still see the balance and tidy the card when offered.
-		 */
-		mintReadOnly: (arg: { mint: string }) => LocalizedString
+		topUpTillNote: (arg: { mint: string }) => LocalizedString
 		/**
 		 * Flash can't use this card's mint
 		 */
@@ -10145,13 +10137,13 @@ export type TranslationFunctions = {
 		 */
 		setUpMintNoAnswer: () => LocalizedString
 		/**
-		 * Flash can't add money here yet
-		 */
-		setUpMintReadOnly: () => LocalizedString
-		/**
 		 * Flash doesn't run {mint}, and this app can't move the card to another mint later.
 		 */
 		setUpMintNotice: (arg: { mint: string }) => LocalizedString
+		/**
+		 * Flash tills take forge cards only, for now.
+		 */
+		setUpTillNote: () => LocalizedString
 		/**
 		 * Limits: {limits}
 		 */

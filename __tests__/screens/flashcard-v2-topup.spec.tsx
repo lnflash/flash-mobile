@@ -94,8 +94,6 @@ let mockParams:
     }
   | undefined
 let mockUsdEnabled = false
-/** The fund list the flags give (ENG-787); undefined: the app's own, forge alone. */
-let mockFundMints: string[] | undefined
 /** The mint the screen handed `useCardTopUp`: the card's own. */
 const mockUseCardTopUp = jest.fn()
 const mockTidiesList = jest.fn()
@@ -139,7 +137,6 @@ jest.mock("react-native-safe-area-context", () =>
 jest.mock("@app/config/feature-flags-context", () => ({
   useFeatureFlags: () => ({
     cashuCardUsdEnabled: mockUsdEnabled,
-    cardFundMints: mockFundMints,
   }),
 }))
 jest.mock("@app/graphql/is-authed-context", () => ({ useIsAuthed: () => true }))
@@ -276,7 +273,6 @@ beforeEach(() => {
   mockCard = card()
   mockParams = undefined
   mockUsdEnabled = false
-  mockFundMints = undefined
   mockTidiesList.mockResolvedValue([])
   mockEntered = 1000
   mockDepsMintUrl = undefined
@@ -1469,7 +1465,7 @@ describe("FlashcardV2TopUpScreen: reclaiming spent slots (ENG-631)", () => {
   })
 })
 
-// ENG-787: each card is topped up at its own mint, and only at a fund mint.
+// ENG-787: each card is topped up at its own mint; ENG-831: at any mint.
 describe("FlashcardV2TopUpScreen: the card's own mint", () => {
   const MINIBITS = "https://mint.minibits.cash/Bitcoin"
   const MACADAMIA = "https://mint.macadamia.cash"
@@ -1489,21 +1485,16 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
       )
     })
 
-    it("refuses a mint off the fund list, and takes it once it is listed", () => {
-      expect(topUpEligibility(at(MINIBITS), usdOff)).toEqual({
-        ok: false,
-        reason: "read-only-mint",
-      })
-      expect(
-        topUpEligibility(at(MINIBITS), { ...usdOff, fundMints: [MINIBITS] }),
-      ).toEqual({ ok: true, unit: "choose" })
+    it("takes a card at any mint this app can use: no fund list (ENG-831)", () => {
+      ;[MINIBITS, MACADAMIA, "https://forge.flashapp.me"].forEach((mint) =>
+        expect(topUpEligibility(at(mint), usdOff)).toEqual({ ok: true, unit: "choose" }),
+      )
     })
 
     it("refuses while the card has an unfinished top-up or tidy at another mint", () => {
       expect(
         topUpEligibility(at(MINIBITS), {
           ...usdOff,
-          fundMints: [MINIBITS],
           otherMint: "https://forge.flashapp.me",
         }),
       ).toEqual({ ok: false, reason: "other-mint" })
@@ -1511,7 +1502,6 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
       expect(
         topUpEligibility(at(MINIBITS), {
           ...usdOff,
-          fundMints: [MINIBITS],
           otherMint: `${MINIBITS}/`,
         }),
       ).toEqual({ ok: true, unit: "choose" })
@@ -1519,21 +1509,30 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
   })
 
   it("hands the top-up the card's own mint", async () => {
-    mockFundMints = [MINIBITS]
     mockCard = at(`${MINIBITS}/`)
     await renderSettled()
     expect(mockUseCardTopUp).toHaveBeenCalledWith(MINIBITS)
   })
 
-  it("a card at a mint Flash doesn't fund says so, with what still works, and asks nothing", async () => {
+  it("a Minibits card tops up at Minibits: no refusal, no forge call, and the till note on the confirm", async () => {
+    mockDepsMintUrl = MINIBITS
     mockCard = at(MINIBITS)
+    mockPrepare.mockResolvedValue(record({ mintUrl: MINIBITS }))
     await renderSettled()
-    expect(refusedText()).toBe(
-      LL.FlashcardV2.mintReadOnly({ mint: isolatedMintName(MINIBITS) }),
+    expect(screen.queryByTestId("topup-refused")).toBeNull()
+    fireEvent.press(screen.getByTestId("amount-input"))
+    await act(async () => press(LL.FlashcardV2.next()))
+
+    expect(mockPrepare).toHaveBeenCalledWith(
+      expect.objectContaining({ mint: { url: MINIBITS } }),
+      expect.anything(),
     )
-    expect(refusedText()).toContain("Minibits")
-    expect(screen.queryByTestId("amount-input")).toBeNull()
-    expect(mockPrepare).not.toHaveBeenCalled()
+    expect(mockUseCardTopUp).not.toHaveBeenCalledWith("https://forge.flashapp.me")
+    expect(screen.getByTestId("topup-confirm-amount")).toBeTruthy()
+    expect(screen.getByTestId("topup-till-note").props.children).toBe(
+      LL.FlashcardV2.topUpTillNote({ mint: isolatedMintName(MINIBITS) }),
+    )
+    expect(screen.getByTestId("topup-till-note").props.children).toContain("Minibits")
   })
 
   it("a card whose mint can't be used says so, and asks no mint anything", async () => {
@@ -1545,7 +1544,6 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
   })
 
   it("an unfinished top-up of this card at another mint holds a new one back", async () => {
-    mockFundMints = [MINIBITS]
     mockDepsMintUrl = MINIBITS
     mockCard = at(MINIBITS)
     mockStoreList.mockResolvedValue([record({ state: "paid" })])
@@ -1561,7 +1559,6 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
   })
 
   it("so does a tidy still owed at another mint", async () => {
-    mockFundMints = [MINIBITS]
     mockDepsMintUrl = MINIBITS
     mockCard = at(MINIBITS)
     mockTidiesList.mockResolvedValue([
@@ -1583,7 +1580,6 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
 
   it("finishes a top-up paid at another mint through that mint, whatever the card's record names now", async () => {
     // Set up for Minibits; topped up at forge by an earlier build, paid, not loaded.
-    mockFundMints = [MINIBITS]
     mockCard = at(MINIBITS)
     mockParams = { topUpId: "topup-1" }
     const paidAtForge = record({ state: "paid" })
@@ -1609,7 +1605,7 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
     expect(screen.getByTestId("topup-done")).toBeTruthy()
   })
 
-  it("finishes a sent quote at a mint off the fund list: money may have moved", async () => {
+  it("finishes a sent quote at a mint Flash doesn't run: money may have moved", async () => {
     mockParams = { topUpId: "topup-1" }
     mockStoreGet.mockResolvedValue(
       record({ mintUrl: MACADAMIA, payment: { ...record().payment, dispatched: true } }),
@@ -1622,22 +1618,22 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
     expect(errorText()).toBe(LL.FlashcardV2.topUpPaymentUnknown())
   })
 
-  it("refuses resuming a quote never sent at a mint off the fund list, before its fee is asked or anything is paid", async () => {
+  it("resumes a quote never sent at a mint Flash doesn't run to its confirm, with the till note, paying nothing yet (ENG-831)", async () => {
     mockParams = { topUpId: "topup-1" }
     mockStoreGet.mockResolvedValue(record({ mintUrl: MACADAMIA }))
     renderScreen()
-    await waitFor(() =>
-      expect(refusedText()).toBe(
-        LL.FlashcardV2.mintReadOnly({ mint: isolatedMintName(MACADAMIA) }),
-      ),
+    await waitFor(() => expect(screen.getByTestId("topup-confirm-amount")).toBeTruthy())
+    expect(screen.queryByTestId("topup-refused")).toBeNull()
+    expect(mockUseCardTopUp).toHaveBeenLastCalledWith(MACADAMIA)
+    expect(mockFeeFor).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId("topup-till-note").props.children).toBe(
+      LL.FlashcardV2.topUpTillNote({ mint: isolatedMintName(MACADAMIA) }),
     )
-    expect(mockFeeFor).not.toHaveBeenCalled()
     expect(mockPay).not.toHaveBeenCalled()
     expect(mockMint).not.toHaveBeenCalled()
   })
 
   it("says once, on the confirm step only, that a mint Flash doesn't run backs the card", async () => {
-    mockFundMints = [MINIBITS]
     mockDepsMintUrl = MINIBITS
     mockCard = at(MINIBITS)
     mockPrepare.mockResolvedValue(record({ mintUrl: MINIBITS }))
@@ -1651,6 +1647,7 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
     expect(screen.getByTestId("topup-mint-notice").props.children).toBe(
       LL.FlashcardV2.mintNotice({ mint: isolatedMintName(MINIBITS) }),
     )
+    expect(screen.getByTestId("topup-till-note")).toBeTruthy()
   })
 
   it("says nothing of the kind for forge", async () => {
@@ -1659,5 +1656,6 @@ describe("FlashcardV2TopUpScreen: the card's own mint", () => {
     await act(async () => press(LL.FlashcardV2.next()))
     expect(screen.getByTestId("topup-confirm-amount")).toBeTruthy()
     expect(screen.queryByTestId("topup-mint-notice")).toBeNull()
+    expect(screen.queryByTestId("topup-till-note")).toBeNull()
   })
 })

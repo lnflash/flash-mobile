@@ -66,32 +66,10 @@ export const mintOfCardOrUndefined = (
   }
 }
 
-/** Never open: forge alone, until Remote Config names others (`setCardFundMints`). */
-const FORGE_ONLY: readonly string[] = [CASHU_MINT_URL]
-
-let fundMints: readonly string[] = FORGE_ONLY
-
 /**
- * The mints the Cash wallet may pay for a card top-up (ENG-787 decision 1):
- * Remote Config's `cardFundMints`, forge alone by default. Reads, fees,
- * units, tidies and reclaims never check it, and a top-up already paid is
- * finished whatever it says now.
+ * Whether a card at `url` is a forge card: the one mint Flash tills take
+ * today. A card at any other mint is still read, topped up, tidied and
+ * reclaimed at its own (ENG-831: no fund list); this only decides the till
+ * note. Remove when ENG-788 ships (tills load and settle at any mint).
  */
-export const cardFundMints = (): readonly string[] => fundMints
-
-/** Set by the feature-flag provider; an empty list means forge alone, never none. */
-export const setCardFundMints = (mints: readonly string[]): void => {
-  fundMints = mints.length > 0 ? [...mints] : FORGE_ONLY
-}
-
-/**
- * Whether a card at `url` may be funded from the Cash wallet: the dev
- * bridge's own mint (`cardMintUrl()`, forge in a release build), or one on
- * the fund list (`mints`, `cardFundMints()` unless given).
- */
-export const isFundMint = (
-  url: string,
-  mints: readonly string[] | undefined = cardFundMints(),
-): boolean =>
-  sameMint(url, cardMintUrl()) ||
-  (mints.length > 0 ? mints : FORGE_ONLY).some((mint) => sameMint(mint, url))
+export const isForgeMint = (url: string): boolean => sameMint(url, CASHU_MINT_URL)

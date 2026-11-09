@@ -1,16 +1,6 @@
-import React, {
-  useState,
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react"
+import React, { useState, createContext, useContext, useEffect, useRef } from "react"
 import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import { useAppConfig } from "@app/hooks"
-import { CASHU_MINT_URL } from "@app/config/appinfo"
-import { normalizeCardMint } from "@app/utils/cashu-card-topup/mint-url"
-import { setCardFundMints } from "@app/utils/cashu-card-topup/connected"
 import { useLevel } from "@app/graphql/level-context"
 import {
   useAssistantDevOverride,
@@ -24,11 +14,6 @@ const BridgeTopupEnabledKey = "bridgeTopupEnabled"
 // until flash-pos refuses or supports USD cards (ENG-619): today it prices
 // every card proof as sats, so a USD card would be charged many times over.
 const CashuCardUsdEnabledKey = "cashuCardUsdEnabled"
-// The mints the Cash wallet may pay for a card top-up (ENG-787 decision 1): a
-// JSON array of https mint URLs. Forge alone until the owner adds a mint,
-// after one real top-up and one tidy there. Unfetched, malformed or empty
-// reads as forge alone: never open.
-const CardFundMintsKey = "cardFundMints"
 // The Flash assistant (ENG-684, docs/ai-assistant-tool-registry.md §1, rule 7):
 // the assistant itself, voice input, spoken replies, the server-side model
 // fallback, and the on-device model (ENG-690). All five stay off until
@@ -48,8 +33,6 @@ type FeatureFlags = {
   deviceAccountEnabled: boolean
   bridgeTopupEnabled: boolean
   cashuCardUsdEnabled: boolean
-  /** Normalized mint URLs, never empty: forge alone by default. */
-  cardFundMints: readonly string[]
   assistantEnabled: boolean
   assistantVoice: boolean
   assistantVoiceReplies: boolean
@@ -71,7 +54,6 @@ type RemoteConfig = {
   [DeviceAccountEnabledKey]: boolean
   [BridgeTopupEnabledKey]: boolean
   [CashuCardUsdEnabledKey]: boolean
-  [CardFundMintsKey]: string
   [AssistantEnabledKey]: boolean
   [AssistantVoiceKey]: boolean
   [AssistantVoiceRepliesKey]: boolean
@@ -83,7 +65,6 @@ const defaultRemoteConfig: RemoteConfig = {
   deviceAccountEnabledRestAuth: true,
   bridgeTopupEnabled: false,
   cashuCardUsdEnabled: false,
-  cardFundMints: JSON.stringify([CASHU_MINT_URL]),
   assistantEnabled: false,
   assistantVoice: false,
   assistantVoiceReplies: false,
@@ -91,38 +72,10 @@ const defaultRemoteConfig: RemoteConfig = {
   assistantOnDeviceModel: false,
 }
 
-const FORGE_ONLY: readonly string[] = [CASHU_MINT_URL]
-
-/**
- * The fund list as Remote Config gives it: a JSON array of mint URLs, each
- * kept only when `normalizeCardMint` takes it (https, no credentials, query
- * or fragment, short enough for a card). Anything else, an empty array, or a
- * list in which no entry survives, is forge alone: the fence never opens on
- * a bad value.
- */
-export const parseCardFundMints = (raw: unknown): readonly string[] => {
-  if (typeof raw !== "string") return FORGE_ONLY
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return FORGE_ONLY
-  }
-  if (!Array.isArray(parsed)) return FORGE_ONLY
-  const mints: string[] = []
-  parsed.forEach((entry) => {
-    if (typeof entry !== "string") return
-    const checked = normalizeCardMint(entry)
-    if (checked.ok && !mints.includes(checked.url)) mints.push(checked.url)
-  })
-  return mints.length > 0 ? mints : FORGE_ONLY
-}
-
 const defaultFeatureFlags: FeatureFlags = {
   deviceAccountEnabled: false,
   bridgeTopupEnabled: false,
   cashuCardUsdEnabled: false,
-  cardFundMints: FORGE_ONLY,
   assistantEnabled: false,
   assistantVoice: false,
   assistantVoiceReplies: false,
@@ -158,19 +111,10 @@ const readActive = (): RemoteConfig => {
     const value = getRemoteConfig().getValue(key)
     return value.getSource() === "static" ? defaultRemoteConfig[key] : value.asBoolean()
   }
-  const readString = (key: typeof CardFundMintsKey): string => {
-    try {
-      const value = getRemoteConfig().getValue(key)
-      return value.getSource() === "static" ? defaultRemoteConfig[key] : value.asString()
-    } catch {
-      return defaultRemoteConfig[key]
-    }
-  }
   return {
     [DeviceAccountEnabledKey]: read(DeviceAccountEnabledKey),
     [BridgeTopupEnabledKey]: read(BridgeTopupEnabledKey),
     [CashuCardUsdEnabledKey]: read(CashuCardUsdEnabledKey),
-    [CardFundMintsKey]: readString(CardFundMintsKey),
     [AssistantEnabledKey]: read(AssistantEnabledKey),
     [AssistantVoiceKey]: read(AssistantVoiceKey),
     [AssistantVoiceRepliesKey]: read(AssistantVoiceRepliesKey),
@@ -236,20 +180,11 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
     }
   }, [])
 
-  const cardFundMints = useMemo(
-    () => parseCardFundMints(remoteConfig.cardFundMints),
-    [remoteConfig.cardFundMints],
-  )
-  // The card flows outside React (the minter, the relay) read the same list.
-  setCardFundMints(cardFundMints)
-
   const featureFlags: FeatureFlags = {
     deviceAccountEnabled:
       remoteConfig.deviceAccountEnabledRestAuth || galoyInstance.id === "Local",
     bridgeTopupEnabled: remoteConfig.bridgeTopupEnabled || galoyInstance.id === "Local",
     cashuCardUsdEnabled: remoteConfig.cashuCardUsdEnabled || galoyInstance.id === "Local",
-    // No Local override: a fund mint is a money decision, never a test default.
-    cardFundMints,
     // No Local override for the assistant flags (spec §1, rule 7). A debug
     // or e2e build, or a local phone build with ASSISTANT_DEV_LINK, may turn
     // the assistant itself on with a dev link (assistant-dev-override.ts,

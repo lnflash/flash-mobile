@@ -31,8 +31,14 @@ import {
   createRelay,
   createRelayStore,
   defaultKnownMints,
+  phoneCardMints,
 } from "@app/utils/cashu-card-relay"
-import { setCardFundMints } from "@app/utils/cashu-card-topup/connected"
+import { store } from "@app/store/redux"
+import {
+  cardSeen,
+  cardSetupSaved,
+  resetFlashcardV2,
+} from "@app/store/redux/slices/flashcardV2Slice"
 import { KEEP_TERMINAL } from "@app/utils/cashu-card-relay/store"
 import { decodePacket } from "@app/utils/cashu-card-relay/relay"
 
@@ -670,18 +676,95 @@ describe("createRelayStore's unknown-mint notes", () => {
   })
 })
 
-// ENG-787 decision 5: the relay knows the mints the app funds.
+// ENG-831: the relay knows the mints of the cards this phone holds records or
+// setups for, not a config list.
 describe("defaultKnownMints", () => {
-  afterEach(() => setCardFundMints([]))
+  const FORGE = "https://forge.flashapp.me"
+  const MINIBITS = "https://mint.minibits.cash/Bitcoin"
+  const MACADAMIA = "https://mint.macadamia.cash"
+  const seen = (pubkey: string, recordMint?: string) =>
+    cardSeen({
+      pubkey,
+      version: "2.2",
+      pinState: "set",
+      owned: true,
+      needsUpdate: false,
+      limits: { day: 0, allowance: 0 },
+      lastBalance: 0,
+      ...(recordMint ? { recordMint } : {}),
+      at: 1,
+    })
+  const setUp = (pubkey: string, mint: string, held?: string) =>
+    cardSetupSaved({
+      v: 1,
+      intent: {
+        cardPubkey: pubkey,
+        mint,
+        unit: 0,
+        refundKey: null,
+        design: null,
+        pinChosen: false,
+      },
+      progress: { pinSent: false, recordSent: true, ownerSent: false },
+      status: "started",
+      ...(held
+        ? { heldByCard: { mint: held, unit: 0, refundKey: null, design: null } }
+        : {}),
+      updatedAt: 1,
+    })
 
-  it("is forge and the card mint, plus the fund list as it is at each use", () => {
-    expect(defaultKnownMints()).toEqual([
-      "https://forge.flashapp.me",
-      "https://forge.flashapp.me",
-      "https://forge.flashapp.me",
-    ])
-    setCardFundMints(["https://forge.flashapp.me", "https://mint.minibits.cash/Bitcoin"])
-    expect(defaultKnownMints()).toContain("https://mint.minibits.cash/Bitcoin")
-    expect(defaultKnownMints()).not.toContain("https://mint.macadamia.cash")
+  afterEach(() => {
+    store.dispatch(resetFlashcardV2())
+  })
+
+  it("is forge (and the card mint) alone, once, on a phone that holds no card", () => {
+    expect(defaultKnownMints()).toEqual([FORGE])
+  })
+
+  it("adds each card's record mint and each setup's mints, as each is stored, deduped", () => {
+    store.dispatch(seen("02aa", MINIBITS))
+    store.dispatch(seen("02bb"))
+    store.dispatch(seen("02cc", `${FORGE}/`))
+    expect(defaultKnownMints()).toEqual([FORGE, MINIBITS])
+    store.dispatch(setUp("02dd", MACADAMIA, `${MINIBITS.toUpperCase()}/`))
+    expect(defaultKnownMints()).toEqual([FORGE, MINIBITS, MACADAMIA])
+  })
+
+  it("phoneCardMints reads cards with a record mint and every setup mint, and nothing of no state", () => {
+    expect(phoneCardMints(undefined)).toEqual([])
+    store.dispatch(seen("02aa", MINIBITS))
+    store.dispatch(setUp("02dd", MACADAMIA))
+    expect(phoneCardMints(store.getState().flashcardV2)).toEqual([MINIBITS, MACADAMIA])
+  })
+
+  it("relays a packet for a card at another mint to that mint, once the phone holds the card", async () => {
+    const { card, double, request, pubkey } = setup()
+    const relay = createRelay({
+      store: createRelayStore(),
+      crypto: relayCrypto,
+      knownMints: defaultKnownMints,
+      request,
+    })
+    // Not yet held: the packet's mint is unknown, and no mint is called.
+    expect(
+      await relay.captureOutbox({
+        transceive: card.transceive,
+        card: { pubkey, recordMint: MINT },
+      }),
+    ).toEqual({ kind: "unknown-mint" })
+    expect(request).not.toHaveBeenCalled()
+
+    // The read records the card's own mint (`recordMint`): it is relayed there.
+    store.dispatch(seen(pubkey, MINT))
+    expect(
+      await relay.captureOutbox({
+        transceive: card.transceive,
+        card: { pubkey, recordMint: MINT },
+      }),
+    ).toEqual({ kind: "captured" })
+    expect(await relay.settlePending(pubkey)).toEqual({ kind: "settled" })
+    expect(request).toHaveBeenCalledWith(MINT)
+    expect(request).not.toHaveBeenCalledWith(FORGE)
+    expect(double.calls["/v1/swap"]).toBe(1)
   })
 })
