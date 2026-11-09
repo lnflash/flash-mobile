@@ -70,6 +70,7 @@ import {
   finishHolderSetup,
   freezeSetupIntent,
   heldByCard,
+  isAwaitingHolder,
   newOwnerKey,
   newSetupProgress,
   ownerKeyFor,
@@ -323,6 +324,11 @@ export const FlashcardV2SetupScreen = () => {
     cashuCard ? storedSetupFor(storedSetup, cashuCard.pubkey) : undefined,
   )
   const [resumed] = useState(() => resumable(stored))
+  // A card exactly as the provisioner left it (ENG-830), told from the raw
+  // record: any stored setup, of any status or format, hides the line.
+  const [awaiting] = useState(() =>
+    cashuCard ? isAwaitingHolder(cashuCard, storedSetup) : false,
+  )
 
   const [step, setStep] = useState<Step>({ name: "preparing" })
   const [key, setKey] = useState<OwnerKey>()
@@ -787,8 +793,14 @@ export const FlashcardV2SetupScreen = () => {
             <Text type="p1" style={styles.center} testID="setup-intro">
               {LL.FlashcardV2.setUpIntro()}
             </Text>
-            <Text type="p2" style={styles.center}>
-              {LL.FlashcardV2.setUpFirstPhone()}
+            <Text
+              type="p2"
+              style={styles.center}
+              testID={awaiting ? "setup-awaiting-holder" : undefined}
+            >
+              {awaiting
+                ? LL.FlashcardV2.setUpAwaitingHolder()
+                : LL.FlashcardV2.setUpFirstPhone()}
             </Text>
             <Text
               type="p2"

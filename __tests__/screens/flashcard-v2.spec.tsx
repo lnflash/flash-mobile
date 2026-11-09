@@ -2145,3 +2145,127 @@ describe("FlashcardV2Screen, the holder setup (ENG-827)", () => {
     neither()
   })
 })
+
+// ENG-830: a card exactly as the provisioner left it gets awaiting-holder
+// wording in the existing "isn't set up" notice; nothing else changes.
+describe("FlashcardV2Screen, a card awaiting its holder (ENG-830)", () => {
+  const ownerless = {
+    hasOwner: false,
+    pinState: "unset" as const,
+    locked: false,
+    record: cardRecord({ recordSet: false, mint: "", design: null }),
+  }
+  /** A 2.2 card exactly as the provisioner leaves it. */
+  const awaiting = (overrides: Partial<CashuCardState> = {}) =>
+    card({
+      version: "2.2",
+      major: 2,
+      minor: 2,
+      hasOwner: false,
+      recordSet: false,
+      pinState: "unset",
+      unspent: 0,
+      spent: 0,
+      empty: 128,
+      balance: 0,
+      keysets: [],
+      unitTotals: undefined,
+      record: cardRecord({ recordSet: false, mint: "", design: null }),
+      ownerKeySource: undefined,
+      ...overrides,
+    })
+  const stored = (status: CardSetup["status"], v = 1): CardSetup =>
+    ({
+      v,
+      intent: {
+        cardPubkey: PUBKEY,
+        mint: "https://mint.test",
+        unit: 0,
+        refundKey: null,
+        design: null,
+        pinChosen: false,
+      },
+      progress: {
+        pinSent: false,
+        recordSent: false,
+        ownerSent: false,
+        limitsSent: false,
+        verified: false,
+      },
+      status,
+      updatedAt: 1,
+    } as CardSetup)
+  const notice = () => screen.getByTestId("flashcard-v2-not-set-up")
+  const awaitingLabel = `${LL.FlashcardV2.notSetUpTitle()}. ${LL.FlashcardV2.notSetUpAwaitingBody()}`
+  const plainLabel = `${LL.FlashcardV2.notSetUpTitle()}. ${LL.FlashcardV2.notSetUpBody()}`
+
+  beforeEach(() => {
+    mockIsAuthed = true
+    mockCashuCardPreview = undefined
+  })
+  afterEach(() => {
+    store.dispatch(resetFlashcardV2())
+  })
+
+  it("cardNotices: the same notices in the same order, the not-set-up body reworded only when awaiting", () => {
+    const of = (awaitingHolder?: boolean) =>
+      cardNotices(ownerless, { ownership: "none", awaitingHolder }, LL)
+    const ids = ["flashcard-v2-not-set-up", "flashcard-v2-no-pin"]
+    expect(of(true).map((n) => n.testID)).toEqual(ids)
+    expect(of(false).map((n) => n.testID)).toEqual(ids)
+    expect(of(undefined).map((n) => n.testID)).toEqual(ids)
+    expect(of(true)[0]).toMatchObject({
+      title: LL.FlashcardV2.notSetUpTitle(),
+      body: LL.FlashcardV2.notSetUpAwaitingBody(),
+    })
+    expect(of(false)[0].body).toBe(LL.FlashcardV2.notSetUpBody())
+    expect(of(undefined)[0].body).toBe(LL.FlashcardV2.notSetUpBody())
+  })
+
+  it("an awaiting card's notice says it is waiting for its holder, labelled with those words, and Set up is offered", () => {
+    mockCashuCard = awaiting()
+    renderScreen()
+    expect(notice().props.accessibilityLabel).toBe(awaitingLabel)
+    expect(screen.getByText(LL.FlashcardV2.notSetUpAwaitingBody())).toBeTruthy()
+    expect(screen.queryByText(LL.FlashcardV2.notSetUpBody())).toBeNull()
+    expect(screen.getByTestId("flashcard-v2-action-setup")).toBeTruthy()
+  })
+
+  // forEach rather than it.each: the global `it` is typed without .each here.
+  const plainCards: [string, Partial<CashuCardState>][] = [
+    ["funded", { unspent: 2, balance: 10 }],
+    ["with a record set", { recordSet: true, record: cardRecord({ design: null }) }],
+    ["of version 2.0", { version: "2.0", major: 2, minor: 0 }],
+  ]
+  plainCards.forEach(([label, overrides]) => {
+    it(`an ownerless card ${label} keeps the old body`, () => {
+      mockCashuCard = awaiting(overrides)
+      renderScreen()
+      expect(notice().props.accessibilityLabel).toBe(plainLabel)
+      expect(screen.queryByText(LL.FlashcardV2.notSetUpAwaitingBody())).toBeNull()
+    })
+  })
+
+  it("an owned card shows no not-set-up notice at all", () => {
+    mockCashuCard = awaiting({ hasOwner: true, ownerKeySource: "seed" })
+    renderScreen()
+    expect(screen.queryByTestId("flashcard-v2-not-set-up")).toBeNull()
+    expect(screen.queryByText(LL.FlashcardV2.notSetUpAwaitingBody())).toBeNull()
+  })
+
+  const storedRecords: [string, CardSetup][] = [
+    ["started", stored("started")],
+    ["mismatched", stored("mismatched")],
+    ["set-up", stored("set-up")],
+    ["of a foreign format", stored("started", 2)],
+  ]
+  storedRecords.forEach(([label, record]) => {
+    it(`a stored setup record ${label} for the card keeps the old body`, () => {
+      store.dispatch(cardSetupSaved(record))
+      mockCashuCard = awaiting()
+      renderScreen()
+      expect(notice().props.accessibilityLabel).toBe(plainLabel)
+      expect(screen.queryByText(LL.FlashcardV2.notSetUpAwaitingBody())).toBeNull()
+    })
+  })
+})
