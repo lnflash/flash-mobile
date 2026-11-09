@@ -2073,6 +2073,34 @@ describe("FlashcardV2Screen, the holder setup (ENG-827)", () => {
     expect(screen.queryByTestId("flashcard-v2-setup-verified")).toBeNull()
   })
 
+  it("a funded setup not verified still offers Finish setup next to Top up", () => {
+    // Topped up after a tap cut past SET_OWNER: the owner's finish needs no
+    // empty card (spec/APDU.md SET_LIMIT: "no PIN, any funds").
+    store.dispatch(cardSetupSaved(record({ unconfirmed: ["dailyLimit"] })))
+    mockCashuCard = card({ unspent: 2, balance: 10 })
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-unconfirmed")).toBeTruthy()
+    expect(screen.getByTestId("flashcard-v2-action-finish")).toBeTruthy()
+    expect(screen.getByTestId("flashcard-v2-action-topup")).toBeTruthy()
+  })
+
+  it("limits changed elsewhere say to check Limits, with no Finish setup: no tap finishes it", () => {
+    store.dispatch(
+      cardSetupSaved(
+        record({
+          unconfirmed: ["dailyLimit", "paymentLimit", "allowance", "rollBudget"],
+          limitsChangedElsewhere: true,
+        }),
+      ),
+    )
+    mockCashuCard = card()
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-limits-differ").props.children).toBe(
+      LL.FlashcardV2.setUpLimitsDiffer(),
+    )
+    neither()
+  })
+
   it("a setup not verified with nothing named says every part", () => {
     store.dispatch(cardSetupSaved(record()))
     mockCashuCard = card()

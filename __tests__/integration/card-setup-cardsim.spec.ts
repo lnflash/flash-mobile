@@ -161,11 +161,10 @@ describeWithCardsim("the setup record and the read-back (cardsim)", () => {
         persisted.push(setup)
       },
     })
-    // GET_CARD before the writes and once after SET_CARD. ENG-827: then the
-    // owner's SET_LIMIT, ALLOW_LOAD, and the verifying GET_INFO and GET_CARD.
-    expect(sent.slice(-10)).toEqual([
-      0x16, 0x32, 0x16, 0x43, 0x44, 0x34, 0x44, 0x45, 0x01, 0x16,
-    ])
+    // GET_CARD before the writes and once after SET_CARD. ENG-827: no limits
+    // wanted, so no SET_LIMIT (spec/APDU.md Personalisation: "if the holder
+    // wants limits"); ALLOW_LOAD, and the verifying GET_INFO and GET_CARD.
+    expect(sent.slice(-8)).toEqual([0x16, 0x32, 0x16, 0x43, 0x44, 0x45, 0x01, 0x16])
     const record = await getCardRecord(transceive)
     expect(record.design).toBeNull()
     expect(compareReadBack(intent, record)).toEqual([])

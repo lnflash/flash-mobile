@@ -59,6 +59,7 @@ import {
   compareReadBack,
   compareVerification,
   finishHolderSetup,
+  setupLimitsDiffer,
   setupUnverified,
   setupRecord,
   freezeSetupIntent,
@@ -755,7 +756,12 @@ const baseRecord = (): CardRecord => ({
  * ENG-827: what follows SET_OWNER in the same tap: GET_NONCE and the owner's
  * SET_LIMIT, GET_NONCE and ALLOW_LOAD, then the verifying GET_INFO and GET_CARD.
  */
-const VERIFY_TAIL = [0x44, 0x34, 0x44, 0x45, 0x01, 0x16]
+/**
+ * After SET_OWNER with no limits wanted (ENG-827): no SET_LIMIT (spec/APDU.md
+ * Personalisation: "if the holder wants limits"), only ALLOW_LOAD and the
+ * verifying read.
+ */
+const VERIFY_TAIL = [0x44, 0x45, 0x01, 0x16]
 
 describe("setUpCard: personalisation, owner last", () => {
   const key = { privateKey: FAKE_OWNER_KEY, source: "device" as const, saved: false }
@@ -807,7 +813,8 @@ describe("setUpCard: personalisation, owner last", () => {
     // One read before the writes (ENG-825): GET_CARD, then the same writes in
     // the same order.
     // ENG-826: SET_CARD is read back (GET_CARD) before the key is saved.
-    // ENG-827: then the owner's SET_LIMIT, ALLOW_LOAD and the verifying read.
+    // ENG-827: then ALLOW_LOAD and the verifying read; no SET_LIMIT for
+    // no limits.
     expect(order).toEqual([
       "16",
       "41",
@@ -816,8 +823,6 @@ describe("setUpCard: personalisation, owner last", () => {
       "16",
       "saved",
       "43",
-      "44",
-      "34",
       "44",
       "45",
       "1",
@@ -1504,10 +1509,9 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
       "apdu 16",
       "persist started",
       "apdu 43",
-      // ENG-827: set-up, before SET_LIMIT, and verified after the read.
+      // ENG-827: set-up, then verified after the read; no SET_LIMIT for no
+      // limits.
       "persist set-up",
-      "apdu 44",
-      "apdu 34",
       "apdu 44",
       "apdu 45",
       "apdu 1",
@@ -1519,12 +1523,12 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
       { ...sent, pinSent: true, recordSent: false, ownerSent: false },
       { ...sent, pinSent: true, recordSent: true, ownerSent: false },
       { ...sent, pinSent: true, recordSent: true, ownerSent: true },
-      { ...sent, pinSent: true, recordSent: true, ownerSent: true, limitsSent: true },
+      { ...sent, pinSent: true, recordSent: true, ownerSent: true },
       {
         pinSent: true,
         recordSent: true,
         ownerSent: true,
-        limitsSent: true,
+        limitsSent: false,
         verified: true,
       },
     ])
@@ -1555,8 +1559,6 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
       "persist started",
       "apdu 43",
       "persist set-up",
-      "apdu 44",
-      "apdu 34",
       "apdu 44",
       "apdu 45",
       "apdu 1",
@@ -2179,8 +2181,12 @@ describe("holder setup: SET_LIMIT after SET_OWNER, and the verifying read (ENG-8
       expect(last()).toMatchObject({
         status: "set-up",
         unconfirmed: ["dailyLimit", "paymentLimit", "allowance", "rollBudget"],
+        limitsChangedElsewhere: true,
       })
       expect(last().verification).toBeUndefined()
+      // No tap finishes it: not offered as unverified, but as limits that differ.
+      expect(setupUnverified(last())).toBe(false)
+      expect(setupLimitsDiffer(last())).toBe(true)
     })
 
     it("a persist rejected before the resumed SET_LIMIT sends it not", async () => {

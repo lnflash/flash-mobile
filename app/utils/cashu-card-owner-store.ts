@@ -446,6 +446,12 @@ export type CardSetup = {
   verification?: SetupVerification
   /** ENG-827: what a `set-up` record's last verifying read did not confirm. */
   unconfirmed?: ReadBackField[]
+  /**
+   * ENG-827: the last verifying read found limits that are neither the
+   * intent's nor a new card's. Setup never overwrites them, so no tap can
+   * finish it: the holder is pointed to Limits instead.
+   */
+  limitsChangedElsewhere?: boolean
 }
 
 /** What the card said when its setup was verified (ENG-827). */
@@ -467,12 +473,28 @@ export const currentSetup = (setup: CardSetup | undefined): CardSetup | undefine
  * carries the intent's limits, SET_OWNER went out, and no verifying read
  * confirmed it. An ENG-826 record (no limits) never is: it is left as it is.
  */
-export const setupUnverified = (setup: CardSetup | undefined): boolean =>
+const setupNotVerified = (setup: CardSetup | undefined): setup is CardSetup =>
   setup !== undefined &&
   setup.status === "set-up" &&
   setup.intent.limits !== undefined &&
   setup.progress.ownerSent &&
   setup.verification === undefined
+
+/**
+ * A `set-up` record (ENG-827) whose holder setup is not verified yet and that
+ * a tap can still finish: not one whose card holds limits from elsewhere
+ * (`setupLimitsDiffer`), which setup never overwrites.
+ */
+export const setupUnverified = (setup: CardSetup | undefined): boolean =>
+  setupNotVerified(setup) && !setup.limitsChangedElsewhere
+
+/**
+ * A `set-up` record (ENG-827) not verified because the card holds limits
+ * that are neither the intent's nor a new card's: no tap finishes it, and the
+ * holder checks them under Limits.
+ */
+export const setupLimitsDiffer = (setup: CardSetup | undefined): boolean =>
+  setupNotVerified(setup) && setup.limitsChangedElsewhere === true
 
 /** Writes a setup record and resolves once it is on disk; rejects when it is not. */
 export type PersistSetup = (setup: CardSetup) => Promise<void>
@@ -741,6 +763,13 @@ const limitFields = (
   return fields
 }
 
+/** Whether two sets of limits are the same, field for field. */
+export const sameLimits = (a: CardLimits, b: CardLimits): boolean =>
+  a.day === b.day &&
+  a.payment === b.payment &&
+  a.allowance === b.allowance &&
+  a.rollBudget === b.rollBudget
+
 /**
  * The verifying read after SET_OWNER and SET_LIMIT (ENG-827) held to the
  * intent: the record's fields (`compareReadBack`), the owner flag, and the
@@ -774,7 +803,12 @@ export const setupRecord = (
     Partial<
       Pick<
         CardSetup,
-        "heldByCard" | "mismatch" | "setUpAt" | "verification" | "unconfirmed"
+        | "heldByCard"
+        | "mismatch"
+        | "setUpAt"
+        | "verification"
+        | "unconfirmed"
+        | "limitsChangedElsewhere"
       >
     > & {
       at?: number
@@ -925,6 +959,7 @@ export async function finishHolderSetup(
       heldByCard: held,
       setUpAt: setUpAt ?? at,
       unconfirmed: fields,
+      ...(limitsChangedElsewhere ? { limitsChangedElsewhere: true } : {}),
       at,
     }),
   ).catch((err) => warnUnsaved("set-up", err))
@@ -1035,6 +1070,29 @@ export async function setUpCard(
         at,
       }),
     ).catch((err) => warnUnsaved("set-up", err))
+    return
+  }
+  // No limits wanted (the default): a new card already holds 0/0/0 with
+  // budget 7 (spec/APDU.md: limits are "all off on a new card"), and
+  // Personalisation sends SET_LIMIT only "if the holder wants limits". None
+  // is sent; the verifying read confirms the card's own.
+  if (sameLimits(intent.limits, NO_LIMITS)) {
+    await persist(
+      setupRecord(intent, progress, {
+        status: "set-up",
+        heldByCard: held,
+        setUpAt: at,
+        at,
+      }),
+    ).catch((err) => warnUnsaved("set-up", err))
+    await finishHolderSetup(transceive, {
+      intent,
+      progress,
+      key,
+      persist,
+      granted: false,
+      setUpAt: at,
+    })
     return
   }
   await mark({ limitsSent: true }, "set-up", { heldByCard: held, setUpAt: at, at })

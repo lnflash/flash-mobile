@@ -166,7 +166,12 @@ const refusalBeforeTap = (
   resumed?: CardSetup,
 ): CardNotOpenReason | undefined => {
   if (card.hasOwner && !resumed?.progress.ownerSent) return "owned"
-  if (card.unspent > 0) return "in-use"
+  // A card this sequence may own already (ENG-827): what is left to send is
+  // the owner's SET_LIMIT and the verifying read, which funds don't affect
+  // (spec/APDU.md SET_LIMIT: "no PIN, any funds"; ALLOW_LOAD needs only the
+  // owner's proof). Topped up before Finish setup, it still finishes.
+  const ownedBySequence = card.hasOwner && resumed?.progress.ownerSent === true
+  if (card.unspent > 0 && !ownedBySequence) return "in-use"
   const ownPin =
     card.pinState === "set" &&
     resumed !== undefined &&
@@ -375,6 +380,20 @@ export const FlashcardV2SetupScreen = () => {
 
   if (!cashuCard) return null
 
+  /**
+   * When SET_OWNER went through, as the wallet's record of this card's setup
+   * says it now (ENG-827): the stored record, kept current by `persist`, else
+   * the one the screen resumed.
+   */
+  const setUpAtOnRecord = (): number | undefined => {
+    const current = currentSetup(storedSetup)
+    return (
+      (current?.intent?.cardPubkey === cashuCard.pubkey && current.status === "set-up"
+        ? current.setUpAt
+        : undefined) ?? resumed?.setUpAt
+    )
+  }
+
   /** The setup record on disk before the write it precedes (ENG-826). */
   const persist = async (setup: CardSetup) => {
     dispatch(cardSetupSaved(setup))
@@ -456,7 +475,9 @@ export const FlashcardV2SetupScreen = () => {
           key: owner,
           persist,
           granted: true,
-          setUpAt: resumed?.setUpAt,
+          // When SET_OWNER went through, from the record on disk now: an
+          // in-session retry's own SET_OWNER time, not this tap's.
+          setUpAt: setUpAtOnRecord(),
         })
         return "verified"
       }
@@ -515,27 +536,23 @@ export const FlashcardV2SetupScreen = () => {
           // A 2.2 card's last payment settles before setup touches it: an
           // unsettled one stops the tap before anything is written.
           changesSlots: true,
+          // No limits assumed (ENG-827): an already-mine tap wrote none, and
+          // a verified one re-reads them; the wallet's own copy is set below.
           assume: {
             hasOwner: true,
             recordSet: true,
             ...(pin ? { pinState: "set" as const } : {}),
-            // ENG-827: the limits the setup wrote and verified.
-            ...(intentLimits
-              ? { dailyLimit: intentLimits.day, allowance: intentLimits.allowance }
-              : {}),
             // GET_CARD's record set flag; the re-read reads the record whole.
-            record: {
-              recordSet: true,
-              ...(intentLimits
-                ? { dailyLimit: intentLimits.day, rollBudget: intentLimits.rollBudget }
-                : {}),
-            },
+            record: { recordSet: true },
           },
-          // The payment limit is said only under the grant: this phone set it.
-          learned: {
+          // The payment limit is said only under the grant, and only when
+          // this tap verified the card holds it.
+          learned: (result: SetUpOutcome) => ({
             ownerKeySource: key.source,
-            ...(intentLimits ? { ownerPaymentLimit: intentLimits.payment } : {}),
-          },
+            ...(result === "verified" && intentLimits
+              ? { ownerPaymentLimit: intentLimits.payment }
+              : {}),
+          }),
         },
       )
       if (outcome === "verified" && intentLimits) {
@@ -1116,10 +1133,13 @@ const setUpFailure = (
   // same sequence finishes it at the next tap. Limits the card holds that
   // setup did not write are never overwritten: the holder checks Limits.
   if (err instanceof SetupUnconfirmedError) {
+    // No tap finishes a card whose limits came from elsewhere: final here,
+    // as the card screen says it (`setupLimitsDiffer`), with no Finish.
+    if (err.limitsChangedElsewhere) {
+      return { message: LL.FlashcardV2.setUpLimitsDiffer(), final: true }
+    }
     return {
-      message: err.limitsChangedElsewhere
-        ? LL.FlashcardV2.setUpLimitsDiffer()
-        : LL.FlashcardV2.setUpUnconfirmed({ what: unconfirmedWhat(err.fields, LL) }),
+      message: LL.FlashcardV2.setUpUnconfirmed({ what: unconfirmedWhat(err.fields, LL) }),
       unconfirmed: true,
     }
   }

@@ -85,16 +85,20 @@ export const balanceLines = (
 export const isolatedMintName = (url: string): string =>
   `\u2066${mintDisplayName(url)}\u2069`
 
-/** Setup's limits row (ENG-827): none, the daily limit, or the holder's own. */
+/**
+ * Setup's limits row (ENG-827): none, the daily limit when it is the only
+ * one, or the holder's own. A no-PIN allowance or a per-payment limit is never
+ * left out of a summary that names only the day's.
+ */
 export const limitsSummary = (limits: CardLimits, LL: LLType): string => {
-  if (limits.day > 0) {
-    return LL.FlashcardV2.setUpLimitsDaily({ day: grouped.format(limits.day) })
-  }
-  const none =
+  const othersOff =
     limits.payment === 0 &&
     limits.allowance === 0 &&
     limits.rollBudget === ROLL_BUDGET_DEFAULT
-  return none ? LL.FlashcardV2.setUpLimitsNone() : LL.FlashcardV2.setUpLimitsCustom()
+  if (!othersOff) return LL.FlashcardV2.setUpLimitsCustom()
+  return limits.day > 0
+    ? LL.FlashcardV2.setUpLimitsDaily({ day: grouped.format(limits.day) })
+    : LL.FlashcardV2.setUpLimitsNone()
 }
 
 /**

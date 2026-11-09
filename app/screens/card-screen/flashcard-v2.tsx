@@ -35,7 +35,11 @@ import {
   isolatedMintName,
   unconfirmedWhat,
 } from "@app/utils/cashu-card-format"
-import { currentSetup, setupUnverified } from "@app/utils/cashu-card-owner-store"
+import {
+  currentSetup,
+  setupLimitsDiffer,
+  setupUnverified,
+} from "@app/utils/cashu-card-owner-store"
 import { TopUpRecord, isCurrentFormat, quoteIsDead } from "@app/utils/cashu-card-topup"
 import { isFundMint, mintOfCardOrUndefined } from "@app/utils/cashu-card-topup/connected"
 import { soleUnit } from "@app/utils/cashu-mint"
@@ -148,6 +152,8 @@ export const FlashcardV2Screen = () => {
         ? ("verified" as const)
         : setupUnverified(setUpRecord)
         ? ("unverified" as const)
+        : setupLimitsDiffer(setUpRecord)
+        ? ("limits-differ" as const)
         : undefined
       : undefined
   const canTopUp =
@@ -224,6 +230,18 @@ export const FlashcardV2Screen = () => {
           {LL.FlashcardV2.setUpUnconfirmed({
             what: unconfirmedWhat(setUpRecord?.unconfirmed ?? [], LL),
           })}
+        </Text>
+      )}
+
+      {/* Limits from elsewhere, never overwritten (ENG-827): no tap
+          finishes setup, so no Finish button; the holder checks Limits. */}
+      {holderSetup === "limits-differ" && (
+        <Text
+          type="caption"
+          style={styles.balanceCaption}
+          testID="flashcard-v2-setup-limits-differ"
+        >
+          {LL.FlashcardV2.setUpLimitsDiffer()}
         </Text>
       )}
 
