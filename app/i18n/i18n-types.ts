@@ -1058,6 +1058,28 @@ type RootTranslation = {
 		 */
 		setUpResumePin: string
 		/**
+		 * T​h​e​ ​c​a​r​d​ ​s​a​y​s​ ​i​t​ ​h​a​s​ ​{​t​r​i​e​s​}​ ​t​r​i​e​s​ ​l​e​f​t​ ​b​e​f​o​r​e​ ​i​t​ ​b​l​o​c​k​s​.​ ​A​ ​w​r​o​n​g​ ​P​I​N​ ​u​s​e​s​ ​o​n​e​.
+		 * @param {number} tries
+		 */
+		setUpResumePinTries: RequiredParams<'tries'>
+		/**
+		 * I​ ​d​o​n​'​t​ ​r​e​m​e​m​b​e​r​ ​i​t
+		 */
+		setUpPinUnknownLink: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​h​o​l​d​s​ ​t​h​e​ ​P​I​N​ ​y​o​u​ ​c​h​o​s​e​ ​d​u​r​i​n​g​ ​s​e​t​u​p​,​ ​a​n​d​ ​s​e​t​u​p​ ​c​a​n​'​t​ ​f​i​n​i​s​h​ ​w​i​t​h​o​u​t​ ​i​t​.​ ​D​o​n​'​t​ ​g​u​e​s​s​:​ ​e​a​c​h​ ​w​r​o​n​g​ ​t​r​y​ ​c​o​u​n​t​s​,​ ​a​n​d​ ​t​h​e​ ​l​a​s​t​ ​o​n​e​ ​b​l​o​c​k​s​ ​t​h​e​ ​c​a​r​d​.​ ​T​h​e​ ​c​a​r​d​ ​n​e​e​d​s​ ​a​ ​r​e​s​e​t​,​ ​a​n​d​ ​t​h​i​s​ ​a​p​p​ ​c​a​n​'​t​ ​d​o​ ​t​h​a​t​ ​y​e​t​.​ ​N​o​t​h​i​n​g​ ​w​a​s​ ​w​r​i​t​t​e​n​.​ ​K​e​e​p​ ​t​h​e​ ​c​a​r​d​ ​a​n​d​ ​c​o​n​t​a​c​t​ ​F​l​a​s​h​ ​s​u​p​p​o​r​t​.
+		 */
+		setUpPinUnknown: string
+		/**
+		 * T​h​e​ ​c​a​r​d​ ​n​o​w​ ​s​a​y​s​ ​i​t​ ​h​a​s​ ​{​t​r​i​e​s​}​ ​t​r​i​e​s​ ​l​e​f​t​,​ ​n​o​t​ ​w​h​a​t​ ​w​a​s​ ​s​h​o​w​n​ ​b​e​f​o​r​e​.​ ​C​h​e​c​k​ ​t​h​e​ ​P​I​N​,​ ​t​h​e​n​ ​t​r​y​ ​a​g​a​i​n​.
+		 * @param {number} tries
+		 */
+		setUpPinTriesChanged: RequiredParams<'tries'>
+		/**
+		 * T​h​e​ ​c​a​r​d​ ​d​o​e​s​n​'​t​ ​h​o​l​d​ ​a​ ​P​I​N​ ​a​f​t​e​r​ ​a​l​l​.​ ​C​h​o​o​s​e​ ​a​ ​P​I​N​ ​f​o​r​ ​i​t​ ​a​g​a​i​n​.
+		 */
+		setUpPinNotSet: string
+		/**
 		 * F​i​n​i​s​h​ ​s​e​t​t​i​n​g​ ​u​p​ ​t​h​i​s​ ​c​a​r​d​.​ ​T​a​p​ ​i​t​ ​t​o​ ​t​h​e​ ​p​h​o​n​e​.
 		 */
 		setUpResume: string
@@ -9950,6 +9972,26 @@ export type TranslationFunctions = {
 		 * Enter the PIN you chose for this card to finish setting it up.
 		 */
 		setUpResumePin: () => LocalizedString
+		/**
+		 * The card says it has {tries} tries left before it blocks. A wrong PIN uses one.
+		 */
+		setUpResumePinTries: (arg: { tries: number }) => LocalizedString
+		/**
+		 * I don't remember it
+		 */
+		setUpPinUnknownLink: () => LocalizedString
+		/**
+		 * This card holds the PIN you chose during setup, and setup can't finish without it. Don't guess: each wrong try counts, and the last one blocks the card. The card needs a reset, and this app can't do that yet. Nothing was written. Keep the card and contact Flash support.
+		 */
+		setUpPinUnknown: () => LocalizedString
+		/**
+		 * The card now says it has {tries} tries left, not what was shown before. Check the PIN, then try again.
+		 */
+		setUpPinTriesChanged: (arg: { tries: number }) => LocalizedString
+		/**
+		 * The card doesn't hold a PIN after all. Choose a PIN for it again.
+		 */
+		setUpPinNotSet: () => LocalizedString
 		/**
 		 * Finish setting up this card. Tap it to the phone.
 		 */
