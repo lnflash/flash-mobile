@@ -25,6 +25,7 @@ import {
 import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
 import {
   CardSetup,
+  PinResumeStop,
   compareReadBack,
   finishHolderSetup,
   freezeSetupIntent,
@@ -115,11 +116,14 @@ describeWithCardsim("the setup record and the read-back (cardsim)", () => {
     const stored = store.getState().flashcardV2.setups?.[card.pubkey]
     expect(stored).toMatchObject({ status: "started", progress: { pinSent: true } })
     if (!stored) throw new Error("no setup record")
+    // ENG-829: no tries on record before a resume has read them.
+    expect(stored.progress.pinTries).toBeUndefined()
 
     const transceive = tracing(sent)
     const again = await readCashuCard(bridgeTransceiver(bridge))
     if (!again) throw new Error("the card did not read after the cut")
     expect(again.pinState).toBe("set")
+    const resumedAt = sent.length
     const tap = { version: await selectApplet(transceive), pubkey: again.pubkey }
     await setUpCard(transceive, {
       tap,
@@ -131,15 +135,66 @@ describeWithCardsim("the setup record and the read-back (cardsim)", () => {
       persist,
     })
     expect(sent.filter((ins) => ins === 0x41)).toHaveLength(1)
+    // ENG-829: the resume read GET_CARD before VERIFY_PIN, and kept the tries.
+    const resumed = sent.slice(resumedAt)
+    expect(resumed.indexOf(0x16)).toBeGreaterThan(-1)
+    expect(resumed.indexOf(0x40)).toBeGreaterThan(resumed.indexOf(0x16))
     expect(store.getState().flashcardV2.setups?.[card.pubkey]).toMatchObject({
       status: "set-up",
       heldByCard: { mint: mintUrl, unit: 0, refundKey: null, design: null },
+      progress: { pinTries: 3 },
     })
     const state = await (await fetch(`${bridge}/state`)).json()
     expect(state).toMatchObject({ hasOwner: true, recordSet: true, mint: mintUrl })
     await selectApplet(transceive)
     await verifyCardPin(transceive, PIN, { sealed: true, cardPubkey: card.pubkey })
     await allowLoad(transceive, ownerSigner(FIXTURE_OWNER_KEY))
+  })
+
+  it("a resume entry typed against tries other than the card's sends no VERIFY_PIN (ENG-829)", async () => {
+    await loadFixture("fresh")
+    const sent: number[] = []
+    const persisted: CardSetup[] = []
+    const persist = async (setup: CardSetup) => {
+      persisted.push(JSON.parse(JSON.stringify(setup)))
+    }
+    const cut = tracing(sent, 0x41)
+    const card = await readCashuCard(bridgeTransceiver(bridge))
+    if (!card) throw new Error("the fresh fixture did not read")
+    const intent = freezeSetupIntent({ cardPubkey: card.pubkey, mint: mintUrl, pin: PIN })
+    await expect(
+      setUpCard(cut, {
+        tap: { version: await selectApplet(cut), pubkey: card.pubkey },
+        info: card,
+        pin: PIN,
+        intent,
+        progress: newSetupProgress(),
+        key,
+        persist,
+      }),
+    ).rejects.toThrow("Tag was lost")
+    const stored = persisted[persisted.length - 1]
+
+    const transceive = tracing(sent)
+    const resumedAt = sent.length
+    const tap = { version: await selectApplet(transceive), pubkey: card.pubkey }
+    const info = await getInfo(transceive)
+    expect(info.tries).toBe(3)
+    const thrown = await setUpCard(transceive, {
+      tap,
+      info,
+      pin: PIN,
+      entered: { triesShown: 2 },
+      intent: stored.intent,
+      progress: { ...stored.progress },
+      key,
+      persist,
+    }).catch((err) => err)
+    expect(thrown).toBeInstanceOf(PinResumeStop)
+    expect(thrown).toMatchObject({ reason: "tries-changed", tries: 3 })
+    expect(sent.slice(resumedAt)).not.toContain(0x40)
+    expect(sent.slice(resumedAt)).not.toContain(0x41)
+    expect((await getInfo(transceive)).tries).toBe(3)
   })
 
   it("the happy path's read-back matches the intent exactly, the design as zeros", async () => {

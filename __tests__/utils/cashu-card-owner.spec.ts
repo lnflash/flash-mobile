@@ -28,6 +28,7 @@ import {
   getCardRecord,
   getInfo,
   selectApplet,
+  verifyCardPin,
 } from "../../app/utils/cashu-card"
 import { setCardBridge } from "../../app/utils/cashu-card-bridge"
 import {
@@ -48,6 +49,7 @@ import {
 import {
   CardNotOpenError,
   OwnerKeyStoreError,
+  PinResumeStop,
   SEED_SERVER,
   SETUP_APPLET_VERSIONS,
   CardSetup,
@@ -1682,6 +1684,158 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
     expect(log.filter((entry) => entry === "apdu 41")).toHaveLength(2)
     expect(card.pin()).toBe(PIN)
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+  })
+
+  describe("the resume rule for the PIN step (ENG-829)", () => {
+    /** A setup cut short at SET_PIN (`landed`: the card kept it), then a restart: the stored record and the next tap's GET_INFO. */
+    const cutAtSetPin = async (landed: boolean) => {
+      const { card, info } = await fresh()
+      const answer = logged(card)
+      card.transceive.mockImplementation(async (apdu) => {
+        log.push(`apdu ${apdu[1].toString(16)}`)
+        if (apdu[1] === 0x41 && !landed) throw new Error("Tag was lost")
+        const response = await answer(apdu)
+        if (apdu[1] === 0x41) throw new Error("Tag was lost")
+        return response
+      })
+      await expect(
+        setUpCard(card.transceive, argsFor(card, info, { pin: PIN })),
+      ).rejects.toThrow("Tag was lost")
+      const stored: CardSetup = JSON.parse(
+        JSON.stringify(persisted[persisted.length - 1]),
+      )
+      expect(stored.progress).toMatchObject({ pinSent: true, recordSent: false })
+      return { card, answer, stored }
+    }
+    const resumeArgs = (
+      card: FakeCard,
+      { info, stored }: { info: CardInfo; stored: CardSetup },
+      extra: Partial<Parameters<typeof setUpCard>[1]> = {},
+    ) => ({
+      tap: tapOf(card),
+      info,
+      pin: PIN,
+      intent: stored.intent,
+      progress: { ...stored.progress },
+      key,
+      persist: persistSpy(),
+      ...extra,
+    })
+
+    it("on the verify-only path, persists the tries read before VERIFY_PIN", async () => {
+      const { card, answer, stored } = await cutAtSetPin(true)
+      expect(stored.progress.pinTries).toBeUndefined()
+      const again = await nextTap(card, answer)
+      expect(again.tries).toBe(3)
+      persisted.length = 0
+      log.length = 0
+      await setUpCard(card.transceive, resumeArgs(card, { info: again, stored }))
+      expect(log.slice(0, 3)).toEqual(["apdu 16", "persist started", "apdu 40"])
+      expect(persisted[0].progress).toMatchObject({ pinSent: true, pinTries: 3 })
+      expect(persisted[0].progress.pinStop).toBeUndefined()
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    })
+
+    it("a persist of the tries that fails sends no VERIFY_PIN", async () => {
+      const { card, answer, stored } = await cutAtSetPin(true)
+      const again = await nextTap(card, answer)
+      const thrown = await setUpCard(
+        card.transceive,
+        resumeArgs(
+          card,
+          { info: again, stored },
+          {
+            persist: jest.fn(async () => {
+              throw new Error("disk full")
+            }),
+          },
+        ),
+      ).catch((err) => err)
+      expect(thrown).toEqual(new Error("disk full"))
+      expect(card.ins()).toEqual([0x16])
+      expect(card.triesLeft()).toBe(3)
+    })
+
+    it("an entry typed once on the resume step, on a card that holds no PIN, is never written: not-set, no SET_PIN or VERIFY_PIN", async () => {
+      const { card, answer, stored } = await cutAtSetPin(false)
+      const again = await nextTap(card, answer)
+      expect(again.pinState).toBe("unset")
+      persisted.length = 0
+      const thrown = await setUpCard(
+        card.transceive,
+        resumeArgs(card, { info: again, stored }, { entered: { triesShown: 3 } }),
+      ).catch((err) => err)
+      expect(thrown).toBeInstanceOf(PinResumeStop)
+      expect(thrown).toMatchObject({ reason: "not-set", tries: 3 })
+      expect(card.ins()).toEqual([0x16])
+      expect(card.pin()).toBeUndefined()
+      expect(persisted).toHaveLength(1)
+      expect(persisted[0]).toMatchObject({
+        status: "started",
+        progress: { pinSent: true, recordSent: false, pinStop: "not-set", pinTries: 3 },
+      })
+      expect(JSON.stringify(persisted)).not.toContain(PIN)
+    })
+
+    it("an entry typed against tries other than the card's sends no VERIFY_PIN: tries-changed", async () => {
+      const { card, answer, stored } = await cutAtSetPin(true)
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      const before = await getInfo(card.transceive)
+      // Another phone's wrong try in between: the card now has 2.
+      await expect(
+        verifyCardPin(card.transceive, "00000", {
+          sealed: before.sealed,
+          cardPubkey: card.pubkey,
+        }),
+      ).rejects.toBeInstanceOf(CardError)
+      const again = await nextTap(card, answer)
+      expect(again.tries).toBe(2)
+      persisted.length = 0
+      const thrown = await setUpCard(
+        card.transceive,
+        resumeArgs(card, { info: again, stored }, { entered: { triesShown: 3 } }),
+      ).catch((err) => err)
+      expect(thrown).toBeInstanceOf(PinResumeStop)
+      expect(thrown).toMatchObject({ reason: "tries-changed", tries: 2 })
+      expect(card.ins()).toEqual([0x16])
+      expect(card.triesLeft()).toBe(2)
+      expect(persisted[0].progress).toMatchObject({
+        pinStop: "tries-changed",
+        pinTries: 2,
+      })
+    })
+
+    it("an entry typed against the card's own tries is verified, and the stop on record is cleared", async () => {
+      const { card, answer, stored } = await cutAtSetPin(true)
+      const again = await nextTap(card, answer)
+      persisted.length = 0
+      await setUpCard(
+        card.transceive,
+        resumeArgs(
+          card,
+          { info: again, stored },
+          {
+            progress: { ...stored.progress, pinStop: "tries-changed", pinTries: 2 },
+            entered: { triesShown: 3 },
+          },
+        ),
+      )
+      expect(card.ins().slice(0, 2)).toEqual([0x16, 0x40])
+      expect(persisted[0].progress).toMatchObject({ pinTries: 3 })
+      expect(persisted[0].progress.pinStop).toBeUndefined()
+      expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    })
+
+    it("a PIN confirmed in this session, with pinSent and a card that holds none, is set exactly once, then verified (regression)", async () => {
+      const { card, answer, stored } = await cutAtSetPin(false)
+      const again = await nextTap(card, answer)
+      log.length = 0
+      await setUpCard(card.transceive, resumeArgs(card, { info: again, stored }))
+      expect(log.filter((entry) => entry === "apdu 41")).toHaveLength(1)
+      expect(card.ins().slice(0, 3)).toEqual([0x16, 0x41, 0x40])
+      expect(card.pin()).toBe(PIN)
+    })
   })
 
   /** The card answers its second GET_CARD (the read-back) with `corrupt` of what it holds. */

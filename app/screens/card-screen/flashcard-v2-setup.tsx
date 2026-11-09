@@ -59,6 +59,7 @@ import {
   CardNotOpenReason,
   CardSetup,
   OwnerKey,
+  PinResumeStop,
   SetupIntent,
   SetupProgress,
   SetupReadBackError,
@@ -210,6 +211,45 @@ const answersAsMint = async (url: string): Promise<boolean> => {
 const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
 
 /**
+ * A card this sequence may have sent SET_OWNER to, found owned by this
+ * phone (ENG-826): the record it read back, held to the intent, finishes
+ * the wallet's record. A card from before (no SET_OWNER on record) gets
+ * none. A record not finished only warns.
+ */
+const recordAlreadyMine = async (
+  transceive: Transceiver,
+  { intent, progress }: SetupSequence,
+  persist: (setup: CardSetup) => Promise<void>,
+) => {
+  if (!progress.ownerSent) return
+  try {
+    const readBack = await getCardRecord(transceive)
+    const mismatch = compareReadBack(intent, readBack)
+    const at = Date.now()
+    await persist(
+      mismatch.length > 0
+        ? setupRecord(intent, progress, {
+            status: "mismatched",
+            heldByCard: heldByCard(readBack),
+            mismatch,
+          })
+        : setupRecord(intent, progress, {
+            status: "set-up",
+            heldByCard: heldByCard(readBack),
+            setUpAt: at,
+            at,
+          }),
+    )
+  } catch (err) {
+    console.warn(
+      `Cashu card setup record not finished: ${
+        err instanceof Error ? err.name : typeof err
+      }`,
+    )
+  }
+}
+
+/**
  * Beside a mint that is not forge: Flash tills take forge cards only, for now
  * (ENG-831). Nothing beside forge. Remove when ENG-788 ships.
  */
@@ -289,6 +329,14 @@ export const FlashcardV2SetupScreen = () => {
   const [anchor, setAnchor] = useState<number[]>()
   const [entry, setEntry] = useState("")
   const [pin, setPin] = useState<string>()
+  // `pin` is the resume step's single entry, never confirmed (ENG-829): the
+  // tap sends it only as a VERIFY_PIN, against the tries shown. In state
+  // only: a remount holds no PIN and goes back to the resume step.
+  const [pinEntered, setPinEntered] = useState(false)
+  // The tries the last tap's answer said (a 63CX, or a `PinResumeStop`'s
+  // GET_INFO), shown in place of the card's as the screen opened: a stop
+  // before VERIFY_PIN gets no re-read of the card.
+  const [triesRead, setTriesRead] = useState<number>()
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
   // The last tap set the card up and it did not confirm all of it (ENG-827):
@@ -414,43 +462,8 @@ export const FlashcardV2SetupScreen = () => {
     await flushPersisted()
   }
 
-  /**
-   * A card this sequence may have sent SET_OWNER to, found owned by this
-   * phone (ENG-826): the record it read back, held to the intent, finishes
-   * the wallet's record. A card from before (no SET_OWNER on record) gets
-   * none.
-   */
-  const recordAlreadyMine = async (
-    transceive: Transceiver,
-    { intent, progress }: SetupSequence,
-  ) => {
-    if (!progress.ownerSent) return
-    try {
-      const readBack = await getCardRecord(transceive)
-      const mismatch = compareReadBack(intent, readBack)
-      const at = Date.now()
-      await persist(
-        mismatch.length > 0
-          ? setupRecord(intent, progress, {
-              status: "mismatched",
-              heldByCard: heldByCard(readBack),
-              mismatch,
-            })
-          : setupRecord(intent, progress, {
-              status: "set-up",
-              heldByCard: heldByCard(readBack),
-              setUpAt: at,
-              at,
-            }),
-      )
-    } catch (err) {
-      console.warn(
-        `Cashu card setup record not finished: ${
-          err instanceof Error ? err.name : typeof err
-        }`,
-      )
-    }
-  }
+  /** The PIN tries the resume step shows: the last tap's read, else the card's. */
+  const triesShown = triesRead ?? cashuCard.tries
 
   /** The tap (see the screen's comment). */
   const setUp = async (
@@ -495,12 +508,22 @@ export const FlashcardV2SetupScreen = () => {
         })
         return "verified"
       }
-      await recordAlreadyMine(transceive, { intent, progress })
+      await recordAlreadyMine(transceive, { intent, progress }, persist)
       return "already-mine"
     }
     await setUpCard(
       transceive,
-      { tap, info, intent, progress, pin, anchor, key: owner, persist },
+      {
+        tap,
+        info,
+        intent,
+        progress,
+        pin,
+        entered: pinEntered ? { triesShown } : undefined,
+        anchor,
+        key: owner,
+        persist,
+      },
       saveOwnerKey,
     )
     return intent.limits ? "verified" : "set-up"
@@ -601,10 +624,20 @@ export const FlashcardV2SetupScreen = () => {
         sequence.current = undefined
         setStep({ name: "finished" })
       } else if (failure.retryPin) {
-        // A wrong PIN for the one this sequence set: typed again, once.
+        // A wrong PIN for the one this sequence set, or tries other than
+        // those shown (ENG-829): typed again, once, against the tries the
+        // card just said.
+        setTriesRead(failure.tries)
         setPin(undefined)
+        setPinEntered(false)
         setEntry("")
         setStep({ name: "pin", confirm: false, resume: true })
+      } else if (failure.choosePin) {
+        // The card holds no PIN after all (ENG-829): a new one, confirmed.
+        setPin(undefined)
+        setPinEntered(false)
+        setEntry("")
+        setStep({ name: "pin", confirm: false })
       }
     } finally {
       setBusy(false)
@@ -621,12 +654,14 @@ export const FlashcardV2SetupScreen = () => {
     if (step.resume) {
       // The PIN already on the card: one entry, checked by the card itself.
       setPin(entry)
+      setPinEntered(true)
       setEntry("")
       setStep({ name: "tap" })
       return
     }
     if (!step.confirm) {
       setPin(entry)
+      setPinEntered(false)
       setEntry("")
       setStep({ name: "pin", confirm: true })
       return
@@ -640,6 +675,31 @@ export const FlashcardV2SetupScreen = () => {
     }
     setEntry("")
     setStep({ name: "tap" })
+  }
+
+  /**
+   * "I don't remember it" on the resume step (ENG-829): nothing is sent to the
+   * card. The stop is put on record and the record kept, so reopening setup
+   * comes back to the resume step: the holder may remember it later.
+   */
+  const pinUnknown = async () => {
+    const current = sequence.current
+    if (!current) return
+    const progress: SetupProgress = {
+      ...current.progress,
+      pinTries: triesShown,
+      pinStop: "unknown-pin",
+    }
+    try {
+      await persist(setupRecord(current.intent, progress, { status: "started" }))
+    } catch {
+      setError(LL.FlashcardV2.setUpFailed())
+      return
+    }
+    Object.assign(current.progress, progress)
+    setEntry("")
+    setError(LL.FlashcardV2.setUpPinUnknown())
+    setStep({ name: "finished" })
   }
 
   /** "Change" beside the limits: the step opens at the limits chosen so far. */
@@ -932,39 +992,17 @@ export const FlashcardV2SetupScreen = () => {
         )
       case "pin":
         return (
-          <>
-            <Text type="h02" testID="pin-step-title" accessibilityRole="header">
-              {step.resume
-                ? LL.FlashcardV2.setUpResumePin()
-                : step.confirm
-                ? LL.FlashcardV2.confirmPin()
-                : LL.FlashcardV2.newPin()}
-            </Text>
-            <Text type="caption">{LL.FlashcardV2.pinLength()}</Text>
-            <Text
-              type="h01"
-              style={styles.dots}
-              testID="pin-entry"
-              accessibilityLabel={LL.FlashcardV2.pinEntered({ count: entry.length })}
-            >
-              {"●".repeat(entry.length)}
-              <Text type="h01" style={styles.empty}>
-                {"○".repeat(Math.max(0, 4 - entry.length))}
-              </Text>
-            </Text>
-            {errorLine}
-            <PinPad
-              onDigit={onDigit}
-              onBackspace={() => setEntry((e) => e.slice(0, -1))}
-              onClear={() => setEntry("")}
-            />
-            <PrimaryBtn
-              label={LL.FlashcardV2.next()}
-              disabled={!isValidCardPin(entry)}
-              onPress={pinNext}
-              testID="pin-next"
-            />
-          </>
+          <SetupPinStep
+            step={step}
+            tries={triesShown}
+            entry={entry}
+            setEntry={setEntry}
+            onDigit={onDigit}
+            onNext={pinNext}
+            // No PIN command: the card's tries are never spent on a guess.
+            onUnknown={step.resume && !cashuCard.hasOwner ? pinUnknown : undefined}
+            errorLine={errorLine}
+          />
         )
       case "tap":
         return (
@@ -1132,12 +1170,107 @@ const notOpenMessage = (reason: CardNotOpenReason, LL: LLType, mint?: string): s
   }
 }
 
+/**
+ * The PIN step: a new PIN, its confirmation, or (`resume`, ENG-826) the PIN
+ * this sequence already set, with the tries the card has left and, when
+ * `onUnknown` is given, an exit that sends nothing (ENG-829).
+ */
+const SetupPinStep = ({
+  step,
+  tries,
+  entry,
+  setEntry,
+  onDigit,
+  onNext,
+  onUnknown,
+  errorLine,
+}: {
+  step: Extract<Step, { name: "pin" }>
+  tries: number
+  entry: string
+  setEntry: React.Dispatch<React.SetStateAction<string>>
+  onDigit: (d: string) => void
+  onNext: () => void
+  onUnknown?: () => void
+  errorLine: React.ReactNode
+}) => {
+  const styles = useStyles()
+  const { LL } = useI18nContext()
+  return (
+    <>
+      <Text type="h02" testID="pin-step-title" accessibilityRole="header">
+        {step.resume
+          ? LL.FlashcardV2.setUpResumePin()
+          : step.confirm
+          ? LL.FlashcardV2.confirmPin()
+          : LL.FlashcardV2.newPin()}
+      </Text>
+      {step.resume && (
+        <Text type="p2" testID="setup-pin-tries">
+          {LL.FlashcardV2.setUpResumePinTries({ tries })}
+        </Text>
+      )}
+      <Text type="caption">{LL.FlashcardV2.pinLength()}</Text>
+      <Text
+        type="h01"
+        style={styles.dots}
+        testID="pin-entry"
+        accessibilityLabel={LL.FlashcardV2.pinEntered({ count: entry.length })}
+      >
+        {"●".repeat(entry.length)}
+        <Text type="h01" style={styles.empty}>
+          {"○".repeat(Math.max(0, 4 - entry.length))}
+        </Text>
+      </Text>
+      {errorLine}
+      <PinPad
+        onDigit={onDigit}
+        onBackspace={() => setEntry((e) => e.slice(0, -1))}
+        onClear={() => setEntry("")}
+      />
+      <PrimaryBtn
+        label={LL.FlashcardV2.next()}
+        disabled={!isValidCardPin(entry)}
+        onPress={onNext}
+        testID="pin-next"
+      />
+      {onUnknown && (
+        <PrimaryBtn
+          type="outline"
+          label={LL.FlashcardV2.setUpPinUnknownLink()}
+          onPress={onUnknown}
+          testID="setup-pin-unknown"
+        />
+      )}
+    </>
+  )
+}
+
 /** What to tell the holder about a setup tap that failed, and whether to try again here. */
 const setUpFailure = (
   err: unknown,
   LL: LLType,
-): { message: string; final?: boolean; retryPin?: boolean; unconfirmed?: boolean } => {
+): {
+  message: string
+  final?: boolean
+  retryPin?: boolean
+  /** With `retryPin`: the tries the card said in this tap. */
+  tries?: number
+  choosePin?: boolean
+  unconfirmed?: boolean
+} => {
   if (err instanceof WrongCardError) return { message: LL.FlashcardV2.wrongCard() }
+  // A resumed PIN stopped before any PIN command (ENG-829).
+  if (err instanceof PinResumeStop) {
+    if (err.reason === "tries-changed") {
+      return {
+        message: LL.FlashcardV2.setUpPinTriesChanged({ tries: err.tries }),
+        retryPin: true,
+        tries: err.tries,
+      }
+    }
+    return { message: LL.FlashcardV2.setUpPinNotSet(), choosePin: true }
+  }
   // Set up, owned by this phone, and not all of it confirmed (ENG-827): the
   // same sequence finishes it at the next tap. Limits the card holds that
   // setup did not write are never overwritten: the holder checks Limits.
@@ -1188,7 +1321,7 @@ const setUpFailure = (
       return { message: LL.FlashcardV2.cardNowBlocked(), final: true }
     }
     if (tries !== undefined) {
-      return { message: LL.FlashcardV2.wrongPin({ tries }), retryPin: true }
+      return { message: LL.FlashcardV2.wrongPin({ tries }), retryPin: true, tries }
     }
     if (err.sw === SW_CARD_IN_USE)
       return { message: LL.FlashcardV2.setUpInUse(), final: true }

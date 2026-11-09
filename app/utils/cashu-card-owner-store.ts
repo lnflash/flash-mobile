@@ -387,7 +387,22 @@ export type SetupProgress = {
   ownerSent: boolean
   limitsSent?: boolean
   verified?: boolean
+  /**
+   * The PIN tries left that this tap's GET_INFO reported on a resume, before
+   * any VERIFY_PIN (ENG-829). Nonsecret: never the PIN or a hash of it.
+   */
+  pinTries?: number
+  /**
+   * Which resume stop fired last on the PIN step (ENG-829): the holder said
+   * they don't remember the PIN (`unknown-pin`), the card holds no PIN after
+   * all (`not-set`), or its tries differ from those shown (`tries-changed`).
+   * Cleared by the next resume that goes on to VERIFY_PIN.
+   */
+  pinStop?: PinStop
 }
+
+/** Why a resumed PIN step stopped with nothing sent (ENG-829). */
+export type PinStop = "unknown-pin" | "not-set" | "tries-changed"
 
 /**
  * A field the card read back that differs from the intent: of the record
@@ -570,6 +585,13 @@ export type SetUpArgs = {
   info: CardInfo
   /** A PIN to set on the card, exactly when `intent.pinChosen`. */
   pin?: string
+  /**
+   * Set only when `pin` is the resume step's single entry, never confirmed
+   * (ENG-829): the tries the holder was shown before typing it. Such a PIN is
+   * never written as a new PIN, and is not verified when the card's tries
+   * changed since.
+   */
+  entered?: { triesShown: number }
   /** What the sequence set out to write (`freezeSetupIntent`). */
   intent: SetupIntent
   /** What the sequence has sent; updated here before each write. */
@@ -609,6 +631,19 @@ export class CardNotOpenError extends Error {
   constructor(readonly reason: CardNotOpenReason, readonly mint?: string) {
     super(`this card cannot be set up (${reason})`)
     this.name = "CardNotOpenError"
+  }
+}
+
+/**
+ * A resumed PIN step stopped (ENG-829), thrown before any PIN command: the
+ * PIN the holder typed once was not sent. `not-set`: the card holds no PIN,
+ * and an unconfirmed entry is never written as one. `tries-changed`: the
+ * card's tries (`tries`, this tap's GET_INFO) differ from those shown.
+ */
+export class PinResumeStop extends Error {
+  constructor(readonly reason: "not-set" | "tries-changed", readonly tries: number) {
+    super(`the resumed PIN was not sent (${reason})`)
+    this.name = "PinResumeStop"
   }
 }
 
@@ -995,7 +1030,12 @@ export async function finishHolderSetup(
  * The wallet's record (ENG-826): before each write the next progress is
  * persisted (`persist`, on disk before it resolves), so a restart resumes the
  * same intent; a failed persist sends nothing more. A PIN this sequence sent
- * that the card holds is not sent again: it is verified. After SET_CARD the
+ * that the card holds is not sent again: it is verified, after the tries this
+ * tap read are persisted (`pinTries`). The resume rule (ENG-829): GET_INFO and
+ * GET_CARD always run before any PIN command, and a PIN typed once on the
+ * resume step (`entered`) is sent only as a VERIFY_PIN, only to a card that
+ * holds a PIN, and only with the tries the holder was shown; otherwise
+ * `PinResumeStop`, with the stop on record and nothing sent. After SET_CARD the
  * record is read back and held to the intent (`compareReadBack`); a card that
  * did not keep it is marked `mismatched` and refused before SET_OWNER
  * (`SetupReadBackError`).
@@ -1016,7 +1056,7 @@ export async function finishHolderSetup(
  */
 export async function setUpCard(
   transceive: Transceiver,
-  { tap, info, pin, intent, progress, anchor, key, persist }: SetUpArgs,
+  { tap, info, pin, entered, intent, progress, anchor, key, persist }: SetUpArgs,
   save: typeof saveOwnerKey = saveOwnerKey,
 ): Promise<void> {
   if (Boolean(pin) !== intent.pinChosen) throw new CardNotOpenError("unreadable")
@@ -1044,10 +1084,27 @@ export async function setUpCard(
     Object.assign(progress, progressed)
   }
   if (pin) {
-    // A SET_PIN this sequence sent that the card holds is not sent again; one
-    // it sent that the card does not hold never landed, and is sent again.
-    if (!(progress.pinSent && info.pinState === "set")) {
-      await mark({ pinSent: true })
+    // A PIN typed once on the resume step (ENG-829) is never written as a new
+    // PIN, and is not verified against tries other than those shown: both
+    // stop here, before any PIN command.
+    if (entered && info.pinState !== "set") {
+      await mark({ pinStop: "not-set", pinTries: info.tries })
+      throw new PinResumeStop("not-set", info.tries)
+    }
+    if (entered && info.tries !== entered.triesShown) {
+      await mark({ pinStop: "tries-changed", pinTries: info.tries })
+      throw new PinResumeStop("tries-changed", info.tries)
+    }
+    if (progress.pinSent && info.pinState === "set") {
+      // A SET_PIN this sequence sent that the card holds is not sent again:
+      // it is verified, with the tries read first on record. A persist that
+      // fails sends no VERIFY_PIN.
+      await mark({ pinTries: info.tries, pinStop: undefined })
+    } else {
+      // No PIN on the card, with a PIN confirmed in this session: SET_PIN,
+      // sent again if an earlier one never landed. It goes on to VERIFY_PIN,
+      // so a resume stop on record (`not-set`) and its tries are cleared.
+      await mark({ pinSent: true, pinStop: undefined, pinTries: undefined })
       await setCardPin(transceive, pin, form)
     }
     await verifyCardPin(transceive, pin, form)
