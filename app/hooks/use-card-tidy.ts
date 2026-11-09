@@ -163,8 +163,8 @@ export const useCardTidy = (card: TidyCard | undefined) => {
       // the card's record names now (ENG-787): the oldest the card owes, at
       // any mint. Only a new tidy goes to the card's own mint, the one its
       // pieces came from. A tidy moves only the card's own value. A record
-      // mint this app cannot use refuses a
-      // new tidy (`state`), never the finishing of an owed one.
+      // mint this app cannot use refuses a new tidy (`state`), never the
+      // finishing of an owed one.
       const owedAnywhere = (
         await unfinishedTidies({ store: topUpStore }, card.pubkey)
       ).find(tidyOwed)

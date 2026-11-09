@@ -210,6 +210,21 @@ const answersAsMint = async (url: string): Promise<boolean> => {
 const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
 
 /**
+ * Beside a mint that is not forge: Flash tills take forge cards only, for now
+ * (ENG-831). Nothing beside forge. Remove when ENG-788 ships.
+ */
+const TillNote: React.FC<{ url: string; testID: string }> = ({ url, testID }) => {
+  const styles = useStyles()
+  const { LL } = useI18nContext()
+  if (isForgeMint(url)) return null
+  return (
+    <Text type="caption" style={styles.caveat} testID={testID}>
+      {LL.FlashcardV2.setUpTillNote()}
+    </Text>
+  )
+}
+
+/**
  * Set up a Cashu card (ENG-675, card protocol 2.0; architect's decision 15):
  * this phone becomes the owner of an empty card that has none.
  *
@@ -239,8 +254,9 @@ const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
  * short, or an earlier one) is set up for that same mint, with no choice.
  * Otherwise the app's card mint (forge, "Flash") is written with no extra
  * press; one "Change" link opens the other listed mints and a written-in
- * address. A mint Flash doesn't fund is said once, under the choice: SET_CARD
- * fixes the mint, and this app can't move the card later.
+ * address. A mint that is not forge gets the till note and the notice once,
+ * under the choice: SET_CARD fixes the mint, and this app can't move the card
+ * later.
  *
  * The limits (ENG-827): none unless the holder changes them behind one
  * "Change" link (a no-PIN allowance needs a PIN: "Continue without a PIN"
@@ -251,21 +267,6 @@ const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
  * (`finishHolderSetup`); a card whose limits differ and are not a new card's
  * is never overwritten, and the holder is pointed to Limits.
  */
-/**
- * Beside a mint that is not forge: Flash tills take forge cards only, for now
- * (ENG-831). Nothing beside forge. Remove when ENG-788 ships.
- */
-const TillNote: React.FC<{ url: string; testID: string }> = ({ url, testID }) => {
-  const styles = useStyles()
-  const { LL } = useI18nContext()
-  if (isForgeMint(url)) return null
-  return (
-    <Text type="caption" style={styles.caveat} testID={testID}>
-      {LL.FlashcardV2.setUpTillNote()}
-    </Text>
-  )
-}
-
 export const FlashcardV2SetupScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
