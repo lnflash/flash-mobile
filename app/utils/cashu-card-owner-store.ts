@@ -1102,8 +1102,9 @@ export async function setUpCard(
       await mark({ pinTries: info.tries, pinStop: undefined })
     } else {
       // No PIN on the card, with a PIN confirmed in this session: SET_PIN,
-      // sent again if an earlier one never landed.
-      await mark({ pinSent: true })
+      // sent again if an earlier one never landed. It goes on to VERIFY_PIN,
+      // so a resume stop on record (`not-set`) and its tries are cleared.
+      await mark({ pinSent: true, pinStop: undefined, pinTries: undefined })
       await setCardPin(transceive, pin, form)
     }
     await verifyCardPin(transceive, pin, form)
