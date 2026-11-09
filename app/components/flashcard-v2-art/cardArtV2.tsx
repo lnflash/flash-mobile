@@ -139,6 +139,11 @@ export const CARD_ART = {
    * The chip-side contactless mark: three arcs right of the chip. Static
    * builds draw them at `restOpacity`; an animated build draws each as an
    * overlay viewed through `box`, which holds all three with caps.
+   *
+   * `restOpacity` 0.6 is a deliberate departure from the reference
+   * (cashu-card-front.png draws the arcs opaque), decided by the owner on
+   * 2026-11-09 (ENG-840): the arcs are the one element a till animates, and a
+   * resting state below full ink is what makes that pulse visible.
    */
   chipArcs: {
     d: [

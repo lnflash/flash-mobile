@@ -34,7 +34,7 @@ jest.mock("react-native-svg", () => require("../helpers/svg-stub"))
  * __tests__/components/cashu/cardArtV2.test.tsx pins the same value for its
  * copy.
  */
-const ART_FILE_SHA256 = "6e0b76e7542270cf9a45de8e7a642143b13cbd3d2e91a4573364392cba42b0d6"
+const ART_FILE_SHA256 = "caefa34a8f840999d04c7e9841ce426971f0c2764276485a8b4081346067b0b6"
 
 /**
  * sha256 of JSON.stringify(CARD_ART): every coordinate, colour, opacity,
