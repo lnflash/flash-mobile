@@ -200,7 +200,6 @@ const FLAGS_OFF: Flags = {
   deviceAccountEnabled: false,
   bridgeTopupEnabled: false,
   cashuCardUsdEnabled: false,
-  cardFundMints: ["https://forge.flashapp.me"],
   assistantEnabled: false,
   assistantVoice: false,
   assistantVoiceReplies: false,

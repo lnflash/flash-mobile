@@ -60,7 +60,7 @@ import {
   tidyOwed,
   topUpAmountProblem,
 } from "@app/utils/cashu-card-topup"
-import { isFundMint, mintOfCardOrUndefined } from "@app/utils/cashu-card-topup/connected"
+import { isForgeMint, mintOfCardOrUndefined } from "@app/utils/cashu-card-topup/connected"
 
 import { shortPubkey } from "./flashcard-v2"
 
@@ -118,9 +118,8 @@ const sleep = (ms: number) =>
  * never asks this.
  *
  * Mint per card (ENG-787): a card is topped up at its own mint
- * (`mintOfCard`). A record mint this app cannot use is refused
- * (`mint-refused`); a mint off the fund list takes no new top-up
- * (`read-only-mint`: `isFundMint`, forge alone by default); and an unfinished
+ * (`mintOfCard`), whichever mint that is (ENG-831: no fund list). A record
+ * mint this app cannot use is refused (`mint-refused`); and an unfinished
  * top-up or tidy of this card at another mint (`otherMint`) holds a new one
  * back until it is finished, as an unfinished one in another unit does.
  */
@@ -139,7 +138,6 @@ export type TopUpEligibility =
         | "usd-off"
         | "usd-off-unfinished"
         | "mint-refused"
-        | "read-only-mint"
         | "other-mint"
     }
 
@@ -163,13 +161,10 @@ export const topUpEligibility = (
   {
     unfinishedUnits = [],
     usdEnabled,
-    fundMints,
     otherMint,
   }: {
     unfinishedUnits?: readonly CardUnit[]
     usdEnabled: boolean
-    /** The fund list (`cardFundMints`); the app's own when not given. */
-    fundMints?: readonly string[]
     /** A mint other than the card's that holds an unfinished top-up or tidy of it. */
     otherMint?: string
   },
@@ -177,7 +172,6 @@ export const topUpEligibility = (
   if (!card.hasOwner) return { ok: false, reason: "not-set-up" }
   const mint = mintOfCardOrUndefined(card.record)
   if (!mint) return { ok: false, reason: "mint-refused" }
-  if (!isFundMint(mint, fundMints)) return { ok: false, reason: "read-only-mint" }
   if (otherMint !== undefined && !sameMint(otherMint, mint)) {
     return { ok: false, reason: "other-mint" }
   }
@@ -208,7 +202,7 @@ export const topUpEligibility = (
 const refusal = (
   reason: Exclude<TopUpEligibility, { ok: true }>["reason"],
   LL: LLType,
-  { mint, otherMint }: { mint?: string; otherMint?: string } = {},
+  { otherMint }: { otherMint?: string } = {},
 ) =>
   ({
     "not-set-up": LL.FlashcardV2.topUpCantNotSetUp(),
@@ -220,9 +214,6 @@ const refusal = (
     "usd-off": LL.FlashcardV2.topUpCantUsd(),
     "usd-off-unfinished": LL.FlashcardV2.topUpCantUsdUnfinished(),
     "mint-refused": LL.FlashcardV2.topUpCardMintInvalid(),
-    "read-only-mint": LL.FlashcardV2.mintReadOnly({
-      mint: isolatedMintName(mint ?? ""),
-    }),
     "other-mint": LL.FlashcardV2.topUpOtherMint({
       mint: isolatedMintName(otherMint ?? ""),
     }),
@@ -353,7 +344,7 @@ export const FlashcardV2TopUpScreen = () => {
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
-  const { cashuCardUsdEnabled, cardFundMints } = useFeatureFlags()
+  const { cashuCardUsdEnabled } = useFeatureFlags()
   const { cashuCard } = useFlashcard()
   // The card's own mint (ENG-787), fixed for the screen's life: every quote,
   // payment and mint call goes there. None when the record's mint cannot be
@@ -364,7 +355,7 @@ export const FlashcardV2TopUpScreen = () => {
   // The mint the screen's deps quote, pay, mint and load at: the card's own
   // for a new top-up, and a resumed record's own mint once it is read, so a
   // top-up paid at another mint (before ENG-787, say) is finished where it
-  // was paid. The fund list gates starting a fund, never finishing one.
+  // was paid.
   const [screenMint, setScreenMint] = useState(() => cardMint ?? cardMintUrl())
   const { deps, feeFor, checkPin, load, reclaimPlanFor } = useCardTopUp(screenMint)
   // The record a resume read, once the screen's deps are at its mint.
@@ -397,14 +388,13 @@ export const FlashcardV2TopUpScreen = () => {
     ? topUpEligibility(cashuCard, {
         unfinishedUnits: commitments.units,
         usdEnabled: cashuCardUsdEnabled,
-        fundMints: cardFundMints,
         otherMint,
       })
     : undefined
   const refusalOf = (
     reason: Exclude<TopUpEligibility, { ok: true }>["reason"],
     elsewhere = otherMint,
-  ) => refusal(reason, LL, { mint: cardMint, otherMint: elsewhere })
+  ) => refusal(reason, LL, { otherMint: elsewhere })
   const resumeId = params?.topUpId
   const [step, setStep] = useState<Step>(() => {
     if (resumeId) return { name: "loading" }
@@ -485,7 +475,6 @@ export const FlashcardV2TopUpScreen = () => {
         const after = topUpEligibility(cashuCard, {
           unfinishedUnits: committed.units,
           usdEnabled: cashuCardUsdEnabled,
-          fundMints: cardFundMints,
           otherMint: elsewhere,
         })
         if (!after.ok) {
@@ -808,20 +797,6 @@ export const FlashcardV2TopUpScreen = () => {
       const record = await deps.store.get(resumeId)
       if (!record) {
         navigation.goBack()
-        return
-      }
-      // A quote never sent for payment has moved no money: paying it would
-      // start a fund, so a mint off the fund list refuses it, as a new top-up
-      // there is refused. Everything else (sent, paid, minted) is finished.
-      const startsAFund =
-        record.state === "quoted" &&
-        !record.payment.dispatched &&
-        !record.payment.everDispatched
-      if (startsAFund && !isFundMint(record.mintUrl, cardFundMints)) {
-        setStep({
-          name: "refused",
-          message: refusal("read-only-mint", LL, { mint: record.mintUrl }),
-        })
         return
       }
       setScreenMint(record.mintUrl)
@@ -1219,7 +1194,8 @@ const TopUpPin: React.FC<{
 /**
  * The confirm step: what the payment loads, onto which card, at what fee,
  * from the Cash wallet; and, once, where it matters (ENG-787), that a mint
- * Flash doesn't run backs what it buys.
+ * Flash doesn't run backs what it buys, and (ENG-831) that Flash tills don't
+ * take a card at that mint yet.
  */
 const TopUpConfirm: React.FC<{
   record: TopUpRecord
@@ -1267,6 +1243,12 @@ const TopUpConfirm: React.FC<{
       {!sameMint(record.mintUrl, CASHU_MINT_URL) && (
         <Text type="caption" style={styles.center} testID="topup-mint-notice">
           {LL.FlashcardV2.mintNotice({ mint: isolatedMintName(record.mintUrl) })}
+        </Text>
+      )}
+      {/* Remove when ENG-788 ships: Flash tills take forge cards only today. */}
+      {!isForgeMint(record.mintUrl) && (
+        <Text type="caption" style={styles.center} testID="topup-till-note">
+          {LL.FlashcardV2.topUpTillNote({ mint: isolatedMintName(record.mintUrl) })}
         </Text>
       )}
       {errorLine}

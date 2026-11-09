@@ -16,7 +16,6 @@ import { PrimaryBtn } from "@app/components/buttons"
 import { PinPad } from "@app/components/card/PinPad"
 import { Screen } from "@app/components/screen"
 import { CASHU_MINT_URL, DEFAULT_CARD_MINTS, mintDisplayName } from "@app/config/appinfo"
-import { useFeatureFlags } from "@app/config/feature-flags-context"
 import { useFlashcard } from "@app/hooks"
 import { useI18nContext } from "@app/i18n/i18n-react"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
@@ -43,7 +42,7 @@ import {
 } from "@app/utils/cashu-card-format"
 import {
   checkCardMint,
-  isFundMint,
+  isForgeMint,
   mintOfCardOrUndefined,
 } from "@app/utils/cashu-card-topup/connected"
 import { sameMint } from "@app/utils/cashu-card-topup/mint-url"
@@ -252,13 +251,27 @@ const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
  * (`finishHolderSetup`); a card whose limits differ and are not a new card's
  * is never overwritten, and the holder is pointed to Limits.
  */
+/**
+ * Beside a mint that is not forge: Flash tills take forge cards only, for now
+ * (ENG-831). Nothing beside forge. Remove when ENG-788 ships.
+ */
+const TillNote: React.FC<{ url: string; testID: string }> = ({ url, testID }) => {
+  const styles = useStyles()
+  const { LL } = useI18nContext()
+  if (isForgeMint(url)) return null
+  return (
+    <Text type="caption" style={styles.caveat} testID={testID}>
+      {LL.FlashcardV2.setUpTillNote()}
+    </Text>
+  )
+}
+
 export const FlashcardV2SetupScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const styles = useStyles()
   const { colors } = useTheme().theme
   const { LL } = useI18nContext()
   const { cashuCard, runCardOperation } = useFlashcard()
-  const { cardFundMints } = useFeatureFlags()
   const dispatch = useAppDispatch()
   // The wallet's record of this card's setup (ENG-826), as it stood when the
   // screen opened: a setup cut short, even by a restart, resumes from it.
@@ -681,14 +694,10 @@ export const FlashcardV2SetupScreen = () => {
     setStep({ name: "intro" })
   }
 
-  /** What is said once under a choice: read-only, and that the mint stays (decision 2). */
+  /** What is said once under a choice: the till note, and that the mint stays (decision 2). */
   const mintCaveats = (url: string, testID: string) => (
     <>
-      {!isFundMint(url, cardFundMints) && (
-        <Text type="caption" style={styles.caveat} testID={`${testID}-read-only`}>
-          {LL.FlashcardV2.setUpMintReadOnly()}
-        </Text>
-      )}
+      <TillNote url={url} testID={`${testID}-till`} />
       {!sameMint(url, CASHU_MINT_URL) && (
         <Text type="caption" style={styles.caveat} testID={`${testID}-notice`}>
           {LL.FlashcardV2.setUpMintNotice({ mint: isolatedMintName(url) })}
@@ -834,11 +843,10 @@ export const FlashcardV2SetupScreen = () => {
                         {checked ? "✓" : ""}
                       </Text>
                     </TouchableOpacity>
-                    {!isFundMint(listed.url, cardFundMints) && (
-                      <Text type="caption" style={styles.caveat}>
-                        {LL.FlashcardV2.setUpMintReadOnly()}
-                      </Text>
-                    )}
+                    <TillNote
+                      url={listed.url}
+                      testID={`setup-mint-till-${listed.name}`}
+                    />
                     {checked && !sameMint(listed.url, CASHU_MINT_URL) && (
                       <Text
                         type="caption"

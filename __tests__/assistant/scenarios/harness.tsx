@@ -408,7 +408,6 @@ export async function replay(
           deviceAccountEnabled: false,
           bridgeTopupEnabled: false,
           cashuCardUsdEnabled: false,
-          cardFundMints: ["https://forge.flashapp.me"],
           assistantEnabled: true,
           assistantVoice: true,
           assistantVoiceReplies: false,
