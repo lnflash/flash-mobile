@@ -23,6 +23,7 @@ import {
   CardProtocolError,
   CardTap,
   Transceiver,
+  verifyCardPin,
 } from "../../app/utils/cashu-card"
 import { RelayUnsettledError } from "../../app/utils/cashu-card-relay"
 import { ownerPublicKey, ownerSigner, setLimits } from "../../app/utils/cashu-card-owner"
@@ -792,6 +793,237 @@ describe("FlashcardV2SetupScreen", () => {
       expect(screen.queryByTestId("pin-step-title")).toBeNull()
     })
 
+    // ENG-829: one resume rule for the PIN step after a lost reply.
+    describe("the resume rule for the PIN step (ENG-829)", () => {
+      const WRITES = ["41", "40", "42", "32", "43", "34"]
+      const triesLine = () => screen.getByTestId("setup-pin-tries").props.children
+      const stored = () => disk?.setups?.[card.pubkey]
+      /** A tap cut at SET_PIN (`landed`: the card kept it), then a restart onto the resume step, `order` cleared. */
+      const resumeAfterSetPin = async ({
+        landed = true,
+        overrides = {},
+      }: { landed?: boolean; overrides?: Partial<CashuCardState> } = {}) => {
+        const answer = card.transceive.getMockImplementation()!
+        card.transceive.mockImplementation(async (apdu) => {
+          if (apdu[1] === 0x41 && !landed) throw new Error("Tag was lost")
+          const response = await answer(apdu)
+          if (apdu[1] === 0x41) throw new Error("Tag was lost")
+          return response
+        })
+        const { unmount } = await renderScreen()
+        await chooseAndTap("2468")
+        await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+        card.transceive.mockImplementation(answer)
+        restart(unmount, { pinState: "set", tries: 3, ...overrides })
+        order.length = 0
+        renderPlain()
+        await waitFor(() => expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin()))
+        return answer
+      }
+      const enterAndTap = async (pin: string) => {
+        type(pin)
+        fireEvent.press(screen.getByTestId("pin-next"))
+        await act(async () => {
+          fireEvent.press(screen.getByTestId("setup-tap"))
+        })
+      }
+
+      it("shows the tries left before the holder types, sends nothing on open, and reads the card before VERIFY_PIN", async () => {
+        await resumeAfterSetPin()
+        expect(triesLine()).toBe(LL.FlashcardV2.setUpResumePinTries({ tries: 3 }))
+        expect(order).toEqual([])
+        await enterAndTap("2468")
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+        const verify = order.indexOf("40")
+        expect(verify).toBeGreaterThan(-1)
+        expect(order.indexOf("1")).toBeLessThan(verify)
+        expect(order.indexOf("16")).toBeLessThan(verify)
+        expect(order).not.toContain("41")
+        expect(stored()?.progress.pinTries).toBe(3)
+        expect(JSON.stringify(disk)).not.toContain("2468")
+      })
+
+      it('"I don\'t remember it" sends nothing to the card, says what to do, and keeps the record to resume later', async () => {
+        await resumeAfterSetPin()
+        await act(async () => {
+          fireEvent.press(screen.getByTestId("setup-pin-unknown"))
+        })
+        await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpPinUnknown()))
+        expect(screen.getByTestId("setup-close")).toBeTruthy()
+        expect(screen.queryByTestId("pin-step-title")).toBeNull()
+        expect(order).toEqual([])
+        expect(card.triesLeft()).toBe(3)
+        expect(stored()).toMatchObject({
+          status: "started",
+          progress: {
+            pinSent: true,
+            recordSent: false,
+            pinStop: "unknown-pin",
+            pinTries: 3,
+          },
+        })
+        expect(JSON.stringify(disk)).not.toContain("2468")
+        // Reopened later, the resume step again: the holder may remember.
+        const { unmount } = screen
+        restart(unmount)
+        renderPlain()
+        await waitFor(() => expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin()))
+        expect(order).toEqual([])
+      })
+
+      it('"I don\'t remember it" whose record does not reach disk says to try again and stays', async () => {
+        await resumeAfterSetPin()
+        mockFlushPersisted.mockRejectedValueOnce(new Error("disk full"))
+        await act(async () => {
+          fireEvent.press(screen.getByTestId("setup-pin-unknown"))
+        })
+        await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpFailed()))
+        expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin())
+        expect(order).toEqual([])
+      })
+
+      it("tries that changed since they were shown send no VERIFY_PIN: said, with the new count, and back to the resume step", async () => {
+        await resumeAfterSetPin()
+        // Another wrong try in between, not from this screen: the card has 2.
+        await expect(
+          verifyCardPin(card.transceive, "1357", {
+            sealed: true,
+            cardPubkey: card.pubkey,
+          }),
+        ).rejects.toThrow()
+        expect(card.triesLeft()).toBe(2)
+        order.length = 0
+        await enterAndTap("2468")
+        await waitFor(() =>
+          expect(errorText()).toBe(LL.FlashcardV2.setUpPinTriesChanged({ tries: 2 })),
+        )
+        expect(order).not.toContain("40")
+        expect(card.triesLeft()).toBe(2)
+        expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin())
+        expect(triesLine()).toBe(LL.FlashcardV2.setUpResumePinTries({ tries: 2 }))
+        expect(stored()?.progress).toMatchObject({
+          pinStop: "tries-changed",
+          pinTries: 2,
+        })
+        // Typed again against the tries now shown: verified, and finished.
+        await enterAndTap("2468")
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+        expect(order.filter((ins) => ins === "40")).toHaveLength(1)
+        expect(stored()?.progress.pinStop).toBeUndefined()
+      })
+
+      it("a card that holds no PIN after all is never sent the entry: said, and a new PIN is chosen with confirmation", async () => {
+        await resumeAfterSetPin({ landed: false })
+        expect(card.pin()).toBeUndefined()
+        await enterAndTap("2468")
+        await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpPinNotSet()))
+        expect(order).not.toContain("41")
+        expect(order).not.toContain("40")
+        expect(card.pin()).toBeUndefined()
+        expect(pinTitle()).toBe(LL.FlashcardV2.newPin())
+        expect(screen.queryByTestId("setup-pin-unknown")).toBeNull()
+        expect(stored()?.progress).toMatchObject({ pinStop: "not-set" })
+        type("8642")
+        fireEvent.press(screen.getByTestId("pin-next"))
+        expect(pinTitle()).toBe(LL.FlashcardV2.confirmPin())
+        await enterAndTap("8642")
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+        expect(setPinCount()).toBe(1)
+        expect(card.pin()).toBe("8642")
+        expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      })
+
+      it("after a wrong PIN on the resume, the tries line reads what the card said", async () => {
+        await resumeAfterSetPin()
+        await enterAndTap("1357")
+        await waitFor(() =>
+          expect(errorText()).toBe(LL.FlashcardV2.wrongPin({ tries: 2 })),
+        )
+        expect(pinTitle()).toBe(LL.FlashcardV2.setUpResumePin())
+        expect(triesLine()).toBe(LL.FlashcardV2.setUpResumePinTries({ tries: 2 }))
+        // Typed again against 2, as shown: no tries-changed stop.
+        await enterAndTap("2468")
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+        expect(setPinCount()).toBe(0)
+      })
+
+      it("in the same session, a tap cut after VERIFY_PIN is finished by the next press: no second SET_PIN, one more VERIFY_PIN (regression)", async () => {
+        const answer = card.transceive.getMockImplementation()!
+        let cut = false
+        card.transceive.mockImplementation(async (apdu) => {
+          const response = await answer(apdu)
+          if (apdu[1] === 0x40 && !cut) {
+            cut = true
+            throw new Error("Tag was lost")
+          }
+          return response
+        })
+        await renderScreen()
+        await chooseAndTap("2468")
+        await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+        const before = order.length
+        await act(async () => {
+          fireEvent.press(screen.getByTestId("setup-tap"))
+        })
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+        const second = order.slice(before)
+        expect(second).not.toContain("41")
+        expect(second.filter((ins) => ins === "40")).toHaveLength(1)
+        expect(card.triesLeft()).toBe(3)
+        expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+      })
+
+      for (const [label, setup, message] of [
+        [
+          "another card",
+          () => {
+            mockRunResult = runOn(card, V22, "02" + "11".repeat(32))
+          },
+          LL.FlashcardV2.wrongCard(),
+        ],
+        [
+          "a card funded since",
+          (answer: Transceiver) => {
+            card.transceive.mockImplementation(async (apdu) => {
+              order.push(apdu[1].toString(16))
+              const response = await answer(apdu)
+              if (apdu[1] !== 0x01) return response
+              const body = response.slice(0, -2)
+              body[3] += 1
+              body[5] -= 1
+              return [...body, 0x90, 0x00]
+            })
+          },
+          LL.FlashcardV2.setUpInUse(),
+        ],
+        [
+          "a card locked since",
+          (answer: Transceiver) => {
+            card.transceive.mockImplementation(async (apdu) => {
+              order.push(apdu[1].toString(16))
+              const response = await answer(apdu)
+              if (apdu[1] !== 0x01) return response
+              const body = response.slice(0, -2)
+              body[10] = 1
+              return [...body, 0x90, 0x00]
+            })
+          },
+          LL.FlashcardV2.setUpLocked(),
+        ],
+      ] as [string, (answer: Transceiver) => void, string][]) {
+        it(`${label} at the resume tap is refused before any write, and the record is kept as it was (regression)`, async () => {
+          const answer = await resumeAfterSetPin()
+          const before = JSON.parse(JSON.stringify(stored()))
+          setup(answer)
+          await enterAndTap("2468")
+          await waitFor(() => expect(errorText()).toBe(message))
+          for (const ins of WRITES) expect(order).not.toContain(ins)
+          expect(card.triesLeft()).toBe(3)
+          expect(stored()).toEqual(before)
+        })
+      }
+    })
+
     it("a started record of a format it does not know (v other than 1) is ignored: the normal intro", async () => {
       const answer = losingAfter(0x32)
       const { unmount } = await renderScreen()
@@ -1144,6 +1376,26 @@ describe("FlashcardV2SetupScreen: the limits and the verifying read (ENG-827)", 
     expect(mockToast).toHaveBeenCalledWith(
       expect.objectContaining({ message: LL.FlashcardV2.setUpVerified() }),
     )
+  })
+
+  it("a record with ownerSent on a card read as owned asks for no PIN and has no PIN exit: no PIN command at the tap (ENG-829, regression)", async () => {
+    const answer = losingAfter(0x43)
+    const { unmount } = await renderScreen()
+    await chooseAndTap("2468")
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({ progress: { ownerSent: true } })
+
+    card.transceive.mockImplementation(answer)
+    order.length = 0
+    restart(unmount, { hasOwner: true, recordSet: true, pinState: "set" })
+    renderPlain()
+    await waitFor(() => expect(screen.getByTestId("setup-tap")).toBeTruthy())
+    expect(screen.queryByTestId("pin-step-title")).toBeNull()
+    expect(screen.queryByTestId("setup-pin-unknown")).toBeNull()
+    await pressTap()
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    for (const ins of ["40", "41", "42"]) expect(order).not.toContain(ins)
+    expect(card.triesLeft()).toBe(3)
   })
 
   it("a tap cut after SET_LIMIT, then a restart: Finish setup, one tap, no second SET_LIMIT, and verified", async () => {
