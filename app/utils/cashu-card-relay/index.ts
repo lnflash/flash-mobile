@@ -20,6 +20,8 @@
  * top-up or tidy, and the card's next record is captured as usual.
  */
 import { CASHU_MINT_URL } from "@app/config/appinfo"
+import { store } from "@app/store/redux"
+import type { FlashcardV2Slice } from "@app/store/redux/slices/flashcardV2Slice"
 
 import { Transceiver } from "../cashu-card"
 import { cardMintUrl, getCardBridge } from "../cashu-card-bridge"
@@ -28,7 +30,6 @@ import {
   RelayNetworkError,
   createRelayRequest,
 } from "../cashu-card-topup/mint"
-import { cardFundMints } from "../cashu-card-topup/connected"
 import { knownRelayMint, sameMint } from "../cashu-card-topup/mint-url"
 import { relayCrypto } from "./crypto"
 import {
@@ -152,16 +153,45 @@ const permanentRefusal = (err: unknown, swapRefused: boolean): string | undefine
 }
 
 /**
- * The mints this app speaks to: `CASHU_MINT_URL`, the card mint (a dev
- * bridge's, in development) and the fund list (`cardFundMints`, ENG-787
- * decision 5). Read on every use, so a fund list that arrives after launch
- * counts at once.
+ * The mints of the cards this phone holds records or setups for (ENG-831):
+ * each card's record mint at its last read (`recordMint`), and each setup's
+ * intended mint and the mint the card read back. Unordered, not deduped.
  */
-export const defaultKnownMints = (): string[] => [
-  CASHU_MINT_URL,
-  cardMintUrl(),
-  ...cardFundMints(),
-]
+export const phoneCardMints = (
+  state: Pick<FlashcardV2Slice, "cards" | "setups"> | undefined,
+): string[] => {
+  if (!state) return []
+  const mints: string[] = []
+  Object.values(state.cards ?? {}).forEach((card) => {
+    if (card.recordMint) mints.push(card.recordMint)
+  })
+  Object.values(state.setups ?? {}).forEach((setup) => {
+    if (setup.intent?.mint) mints.push(setup.intent.mint)
+    if (setup.heldByCard?.mint) mints.push(setup.heldByCard.mint)
+  })
+  return mints
+}
+
+/** `mints` less repeats (`sameMint`), the first spelling of each kept. */
+const dedupeMints = (mints: readonly string[]): string[] =>
+  mints.reduce<string[]>(
+    (kept, url) => (kept.some((k) => sameMint(k, url)) ? kept : [...kept, url]),
+    [],
+  )
+
+/**
+ * The mints this app speaks to (ENG-831): `CASHU_MINT_URL`, the card mint (a
+ * dev bridge's, in development) and the mint of every card this phone holds
+ * a record or a setup for (`phoneCardMints`), deduped. No config list: a card
+ * at any mint is relayed to it once this phone has read or set it up. Read
+ * on every use, so a card read after launch counts at once.
+ */
+export const defaultKnownMints = (): string[] =>
+  dedupeMints([
+    CASHU_MINT_URL,
+    cardMintUrl(),
+    ...phoneCardMints(store.getState().flashcardV2),
+  ])
 
 /** http only for the dev bridge's own local mint; https everywhere else. */
 const defaultRequest: RelayRequestFactory = (approvedUrl) => {

@@ -1,7 +1,7 @@
 /**
  * ENG-787: a card is read, priced, topped up, tidied and reclaimed at the
- * mint its own record names, through one client per mint; the Cash wallet
- * funds only the mints on the fund list (forge alone by default).
+ * mint its own record names, through one client per mint. ENG-831: there is
+ * no fund list; `isForgeMint` only decides the till note.
  */
 import {
   CASHU_MINT_URL,
@@ -9,12 +9,11 @@ import {
   mintDisplayName,
 } from "../../app/config/appinfo"
 import { setCardBridge } from "../../app/utils/cashu-card-bridge"
+import * as connected from "../../app/utils/cashu-card-topup/connected"
 import {
-  cardFundMints,
-  isFundMint,
+  isForgeMint,
   mintOfCard,
   mintOfCardOrUndefined,
-  setCardFundMints,
   topUpMint,
 } from "../../app/utils/cashu-card-topup/connected"
 import { TopUpError } from "../../app/utils/cashu-card-topup"
@@ -31,7 +30,6 @@ const setDev = (value: boolean) => {
 afterEach(() => {
   setDev(true)
   setCardBridge(undefined)
-  setCardFundMints([])
 })
 
 describe("mintOfCard", () => {
@@ -80,33 +78,23 @@ describe("topUpMint", () => {
   })
 })
 
-describe("the fund list", () => {
-  it("is forge alone until something sets it, and never empty", () => {
-    expect(cardFundMints()).toEqual([CASHU_MINT_URL])
-    setCardFundMints([])
-    expect(cardFundMints()).toEqual([CASHU_MINT_URL])
+describe("no fund list (ENG-831)", () => {
+  it("exports no fence: no fund list, no setter, no isFundMint", () => {
+    expect(Object.keys(connected)).not.toEqual(expect.arrayContaining(["cardFundMints"]))
+    expect("setCardFundMints" in connected).toBe(false)
+    expect("isFundMint" in connected).toBe(false)
   })
 
-  it("funds forge, and another mint only once it is listed", () => {
-    expect(isFundMint(CASHU_MINT_URL)).toBe(true)
-    expect(isFundMint(MINIBITS)).toBe(false)
-    setCardFundMints([CASHU_MINT_URL, MINIBITS])
-    expect(isFundMint(`${MINIBITS}/`)).toBe(true)
-    // Its root, on the same host, is another mint.
-    expect(isFundMint("https://mint.minibits.cash")).toBe(false)
+  it("calls forge, in any spelling, a forge mint, and no other mint", () => {
+    expect(isForgeMint(CASHU_MINT_URL)).toBe(true)
+    expect(isForgeMint("https://Forge.flashapp.me/")).toBe(true)
+    expect(isForgeMint(MINIBITS)).toBe(false)
+    expect(isForgeMint("https://mint.macadamia.cash")).toBe(false)
   })
 
-  it("judges by the list it is given, an empty one being forge alone", () => {
-    expect(isFundMint(MINIBITS, [MINIBITS])).toBe(true)
-    expect(isFundMint(MINIBITS, [])).toBe(false)
-    expect(isFundMint(CASHU_MINT_URL, [])).toBe(true)
-  })
-
-  it("funds the dev bridge's own mint in development, never in a release build", () => {
+  it("never calls the dev bridge's mint forge: tills do not take it either", () => {
     setCardBridge({ url: BRIDGE, mintUrl: DEV_MINT })
-    expect(isFundMint(DEV_MINT)).toBe(true)
-    setDev(false)
-    expect(isFundMint(DEV_MINT)).toBe(false)
+    expect(isForgeMint(DEV_MINT)).toBe(false)
   })
 })
 

@@ -71,6 +71,13 @@ export type KnownCard = {
    * learn it: the card stores keyset ids, not units.
    */
   unit?: string
+  /**
+   * The mint the card's record named at the last read (GET_CARD), as
+   * `checkCardMint` normalizes it; absent for a card whose record is not set
+   * or names a mint this app cannot use. The relay knows it (ENG-831), so a
+   * card at any mint has its last payment carried to that mint.
+   */
+  recordMint?: string
 }
 
 export interface FlashcardV2Slice {

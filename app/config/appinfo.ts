@@ -67,9 +67,8 @@ export const CASHU_MINT_URL = "https://forge.flashapp.me"
  * The mints a card can be set up for without typing an address (ENG-787), in
  * the order setup lists them, each with the name the app shows for it. Forge
  * (`CASHU_MINT_URL`, "Flash") comes first and is what setup writes unless the
- * owner picks another. Being listed here says nothing about funding: only the
- * fund list (`cardFundMints`, Remote Config) decides where the Cash wallet
- * may pay.
+ * owner picks another. A card at any mint, listed or written in, is funded
+ * from the Cash wallet at its own mint (ENG-831: no fund list).
  */
 export const DEFAULT_CARD_MINTS: readonly { url: string; name: string }[] = [
   { url: CASHU_MINT_URL, name: "Flash" },
