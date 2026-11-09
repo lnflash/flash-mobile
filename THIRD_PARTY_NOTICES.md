@@ -102,12 +102,11 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-## Inter (credited, not bundled)
+## Figtree (credited, not bundled)
 
-The FLASH, BEARER CARD and ₿ marks on the Cashu card (Flashcard v2)
-(`app/components/flashcard-v2-art/cardArtV2.tsx`) are artwork drawn from glyph
-outlines of Inter 4.001 (Inter Black, Inter SemiBold and Inter Bold;
-Copyright 2016 The Inter Project Authors, https://github.com/rsms/inter,
-SIL Open Font License 1.1). Per the OFL FAQ (1.1.1-1.1.2) the artwork needs no
-licence notice and Inter is credited as a courtesy; the font itself is not
-bundled.
+The CASHU ECASH CARD caption on the Cashu card
+(`app/components/flashcard-v2-art/cardArtV2.tsx`) is artwork drawn from glyph
+outlines of Figtree 2.002 (the variable font at weight 650; Copyright 2022 The
+Figtree Project Authors, https://github.com/erikdkennedy/figtree, SIL Open Font
+License 1.1). Per the OFL FAQ (1.1.1-1.1.2) the artwork needs no licence notice
+and Figtree is credited as a courtesy; the font itself is not bundled.

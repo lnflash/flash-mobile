@@ -1,15 +1,15 @@
 import React from "react"
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native"
-import { useTheme } from "@rneui/themed"
 
 import { CARD_ART, CARD_PALETTE, CardArtV2 } from "./cardArtV2"
 
 /**
- * The Cashu card (Flashcard v2, "Bearer") as the app shows it: the card art
- * flash-pos draws (cardArtV2.tsx, shared byte-for-byte), as a still. It is
- * the printed card's face and nothing more: the chip-side contactless arcs
- * sit in the art at their resting 60 %, and no id is drawn on it (the screen
- * lists the card's id, and the physical card prints none).
+ * The Cashu card as the app shows it: the Cashu Card face flash-pos draws
+ * (cardArtV2.tsx, shared byte-for-byte), as a still. It is the printed card's
+ * face and nothing more: the chip-side contactless arcs sit in the art at
+ * their resting 60 %, and no id is drawn on it (the screen lists the card's
+ * id, and the physical card prints none). The lime face stands out on both
+ * themes' pages, so it needs no outline of its own.
  */
 
 /** Kept either side of the card on a phone too narrow for the full 320 dp. */
@@ -37,10 +37,9 @@ export const FlashcardV2Art: React.FC<Props> = ({
   style,
   testID,
 }) => {
-  const { mode, colors } = useTheme().theme
   const k = width / CARD_ART.width
   // The art's own ISO corner at this size: a fixed radius would crop the
-  // slash's corner or show the base around the art's.
+  // art's corner or show the base around it.
   const borderRadius = CARD_ART.radius * k
   const size = { width, height: CARD_ART.height * k, borderRadius }
   return (
@@ -56,17 +55,6 @@ export const FlashcardV2Art: React.FC<Props> = ({
       <View style={[styles.clip, { borderRadius }]}>
         <CardArtV2 />
       </View>
-      {/* On the dark theme's black page the card has no edge of its own: its
-          base is near-black, the art's lift fades out before the corners, its
-          hairline is 2 % white, and a black shadow cannot show on black. This
-          outline draws one, over the art: a border on either view above would
-          inset the art by its width and squash it. */}
-      {mode === "dark" && (
-        <View
-          pointerEvents="none"
-          style={[styles.outline, { borderRadius, borderColor: colors.grey4 }]}
-        />
-      )}
     </View>
   )
 }
@@ -86,9 +74,5 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
     backgroundColor: CARD_PALETTE.base,
-  },
-  outline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
   },
 })

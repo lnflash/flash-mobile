@@ -1,29 +1,30 @@
 import React from 'react';
 import Svg, {
-  Circle,
   ClipPath,
   Defs,
   G,
   LinearGradient,
   Path,
-  RadialGradient,
   Rect,
   Stop,
-  Use,
 } from 'react-native-svg';
 
 /**
- * FLASH CARD v2, Concept A "Bearer": the card face as vector.
+ * CASHU CARD face: the card as vector.
  *
  * SHARED FILE. It is copied byte-for-byte into flash-pos and flash-mobile,
  * and each repo has a parity test that hashes CARD_ART against the same
  * expected digest. Change it in both repos (and both digests) or not at all.
  *
- * Geometry is measured off the chosen design sheet's front card
- * (flash-card-assets source/ecashNFC-v1.jpg); colours are the asset pack's
- * where the sheet agrees, and the lift and the chip gold are fitted to the
- * sheet itself. 1 unit = 1 dp on a 320 dp card, and 0.2675 mm of the
- * physical card.
+ * Sources (cashucard): the provisioner's face,
+ * apps/provisioner/assets/cardart/cashu-card-front.png (1048 x 663), for
+ * every position, size and colour; brand/mark/cashu-card-mark.svg and
+ * brand/lockup/cashu-card-lockup-on-light.svg for the mark and the lockup;
+ * and brand/fonts/Figtree-Variable.ttf (Figtree 2.002, wght 650) for the
+ * caption. 1 unit = 1048 / 320 PNG px = 1 dp on a 320 dp card, and 0.2675
+ * mm of the physical card. The brand SVGs cut their shapes with <Mask>;
+ * here every cut is flattened, once and offline, to an evenodd path, and
+ * the caption is outlined, overlaps removed.
  *
  * Rules that keep Android and iOS identical:
  * - one <Svg> for the art, never a nested <Svg x y>;
@@ -31,136 +32,41 @@ import Svg, {
  * - opacity on the fill or stroke of leaf elements, never <G opacity>
  *   (that is an offscreen layer on Android), and on a gradient stop only
  *   in whole steps of 1/255 where it is small (Android keeps 8 bits);
- * - no <Text>, <Pattern>, <Image> or filters. FeTurbulence is a no-op stub
- *   in react-native-svg 15 and Android's Pattern ignores the viewBox, so
- *   the matte "noise" is a seeded vector grain; type is outlined Inter 4.001
- *   (SIL OFL 1.1; see THIRD_PARTY_NOTICES.md), so no font can fall back.
+ * - no <Text>, <Pattern>, <Image>, <Mask> or filters. Type is outlined
+ *   Figtree (SIL OFL 1.1; see THIRD_PARTY_NOTICES.md), so no font can fall
+ *   back, and a mask is an offscreen layer on Android.
  */
 
-/** The card's palette. No green anywhere: Flash green belongs to the app. */
+/** The card's palette, sampled from the provisioner's PNG. */
 export const CARD_PALETTE = {
-  /** Matte near-black: the sheet's unlit right edge reads (8, 9, 11). */
-  base: '#080a0d',
-  /** Bitcoin orange, the one accent. */
-  orange: '#f97316',
   /**
-   * Muted satin chip gold, in the order the plate's light runs: a deep
-   * amber top-left corner, a light band across the middle, a darker
-   * bottom-right.
+   * The field's mean colour: what the wrappers paint under the art, so an
+   * anti-aliased corner never fringes another colour.
    */
-  goldShadow: '#805711',
-  goldLow: '#a88232',
-  goldLight: '#bc933a',
-  goldMid: '#b6862f',
-  goldDark: '#a5761c',
-  chipLine: '#8a6524',
+  base: '#9fc985',
+  /** The field, light lime top-left to mid green bottom-right. */
+  lime: '#ddf5a4',
+  limeMid: '#c7e698',
+  green: '#85b879',
+  greenDeep: '#558d66',
   /**
-   * The lift's light: a cool violet-white. Over the base (whose green runs
-   * 2 above its red) it lands the plateau on the sheet's blue-black, about
-   * (17, 18, 23), never charcoal.
+   * The brand's deep green: the lockup's mark and "cashu", and the large
+   * mark at 22 %.
    */
-  lift: '#d8b8ff',
-  /** The brand bolt, as a warm-gold watermark. */
-  watermark: '#f5c96b',
-  nfcGrey: '#8b8f96',
+  markInk: '#10271e',
+  /** The caption and the chip-side arcs. */
+  ink: '#1d3d29',
+  /** The lockup's "card". */
+  inkSoft: '#557a62',
+  /** Chip gold, light top-left to dark bottom-right. */
+  goldLight: '#f3e8ae',
+  goldMid: '#d2bb6a',
+  goldDark: '#a98b3d',
   white: '#ffffff',
   black: '#000000',
 } as const;
 
 const P = CARD_PALETTE;
-
-/** The Flash bolt's yellow face (flash-bolt-on-dark.svg, 0 0 236.5 366). */
-const BOLT =
-  'M124.1,342.8c-11.8-3.1-21.4-11.1-26.8-22-5.1-10.1-6-22.6-1.5-33.1l15.3-33,17.8-37.6c.3-.7-.1-1.6-.4-2.1s-1-.9-1.9-.9h-40.8c-9,0-17.4-2.6-24.7-7.9-5-3.6-9.1-8.1-12.3-13.4-5.6-9.4-7.3-21.3-4.3-31.8l4.3-14.8,32.1-112C85.2,13.5,102.6-.5,123.8,0c14.7.4,28.3,8.2,35.6,21,5.7,10,6.7,21.9,3.5,32.9l-6.6,22.7-15.4,51.9c-.2.8-.3,1.5.2,2.1s1,1.1,1.9,1.1h53.6c5.7,0,11,1.7,16,4,13.5,6.2,22.4,19.3,23.8,34,.8,8.4-.9,16.3-4.6,23.7l-8.2,17.8-50.5,108.9c-8.4,18.2-29.3,27.9-48.8,22.7Z';
-
-/* eslint-disable no-bitwise -- mulberry32 is 32-bit integer arithmetic. */
-/** mulberry32: a tiny seeded PRNG, so the grain is the same in every build. */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-/* eslint-enable no-bitwise */
-
-/**
- * The matte grain: one tile of `cells` x `cells` square specks, `perTone`
- * light and `perTone` dark, balanced so that EVERY row and column of the
- * tile holds floor(perTone / cells) or one more of each tone. A plain
- * shuffle left a row with 15 dark specks and 1 light one: a dark line that
- * repeated every tile down the card.
- *
- * The cells take the symbols of a seeded Latin square (row, column and
- * symbol orders each shuffled by Fisher-Yates on mulberry32): symbols below
- * `base` are light, the next `base` dark, and the spare specks go one per
- * row on the next symbol, in shuffled rows (light first, then dark), so
- * they spread over distinct rows and columns too. Returns one path per tone,
- * in row-major order.
- */
-export function grainTile(
-  seed: number,
-  tile: number,
-  cells: number,
-  perTone: number,
-): [string, string] {
-  const rand = mulberry32(seed);
-  const shuffled = () => {
-    const order = Array.from({length: cells}, (_, i) => i);
-    for (let i = cells - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-    return order;
-  };
-  const rows = shuffled();
-  const cols = shuffled();
-  const symbols = shuffled();
-  const spareRows = shuffled();
-  const base = Math.floor(perTone / cells);
-  const spare = perTone - base * cells;
-  if (2 * base >= cells || 2 * spare > cells) {
-    throw new Error('grainTile: too many specks for one Latin square');
-  }
-  const spareRank: number[] = [];
-  spareRows.forEach((row, rank) => {
-    spareRank[row] = rank;
-  });
-  const light: number[] = [];
-  const dark: number[] = [];
-  for (let r = 0; r < cells; r++) {
-    for (let c = 0; c < cells; c++) {
-      const symbol = symbols[(rows[r] + cols[c]) % cells];
-      const cell = r * cells + c;
-      if (symbol < base) {
-        light.push(cell);
-      } else if (symbol < 2 * base) {
-        dark.push(cell);
-      } else if (symbol === 2 * base && spareRank[r] < 2 * spare) {
-        (spareRank[r] < spare ? light : dark).push(cell);
-      }
-    }
-  }
-  const side = tile / cells;
-  // (n * tile) / cells, not n * side: an exact quotient prints as "2.4".
-  const at = (n: number) => (n * tile) / cells;
-  const path = (picked: number[]) =>
-    picked
-      .map(
-        c =>
-          `M${at(c % cells)} ${at(
-            Math.floor(c / cells),
-          )}h${side}v${side}h-${side}z`,
-      )
-      .join('');
-  return [path(light), path(dark)];
-}
-
-const GRAIN_SEED = 0x0c67f1a5;
-const [GRAIN_LIGHT, GRAIN_DARK] = grainTile(GRAIN_SEED, 32, 40, 285);
 
 /**
  * Every value the card face is drawn from, layers bottom to top. The parity
@@ -175,193 +81,89 @@ export const CARD_ART = {
   radius: 11.9,
   mmPerUnit: 0.2675,
   palette: P,
-  layers: [
-    'base',
-    'lift',
-    'watermark',
-    'grain',
-    'slash',
-    'rule',
-    'halo',
-    'ring',
-    'plate',
-    'contacts',
-    'chipArcs',
-    'nfc',
-    'btc',
-    'flash',
-    'bearer',
-    'edge',
-  ],
+  layers: ['base', 'mark', 'lockup', 'plate', 'chipArcs', 'caption', 'edge'],
   /**
-   * A soft cool lift, brightest around 45 % x / 47 % y, broad, and gone at
-   * the right edge: [offset, opacity of palette.lift]. Fitted to the sheet's
-   * field (803 samples; on the Pixel the mean error is under half a level
-   * per channel, down from 1.1 red and 1.6 blue with a white lift). Each
-   * opacity is a whole step of 1/255: Android keeps a stop's opacity in 8
-   * bits, so any other value would draw differently there and on iOS.
+   * The field: the PNG's 143-degree gradient, fitted to within half a level
+   * per channel. Its line runs corner to corner through the card's centre.
    */
-  lift: {
-    cx: 145,
-    cy: 95,
-    r: 165,
+  base: {
+    x1: 53.4,
+    y1: -40.24,
+    x2: 266.6,
+    y2: 242.68,
     stops: [
-      [0, 11 / 255],
-      [0.35, 11 / 255],
-      [0.6, 9 / 255],
-      [0.8, 5 / 255],
-      [1, 0],
+      [0, P.lime],
+      [0.25, P.limeMid],
+      [0.66, P.green],
+      [1, P.greenDeep],
     ],
   },
   /**
-   * The bolt's ink box lands on x 129.6–190.4 (centred on 160), y 22–130.1.
-   * 0.02, not the sheet-matched 0.028: the brand bolt is rounder and heavier
-   * than the sheet's, and at 0.028 it read as a smudge on the phone.
+   * The large mark at the right, its chip cuts as holes: ink box x
+   * 191.9-282.9, y 38.6-147.8.
    */
-  watermark: {d: BOLT, x: 116.1, y: 22, scale: 0.314, opacity: 0.02},
-  /**
-   * One 32-unit tile of 0.8-unit specks (17.8 % light, 17.8 % dark, 7 or 8
-   * of each in every row and column), instanced cols x rows times with
-   * <Use>: about 3/255 of monochrome noise with no line in it.
-   */
-  grain: {
-    seed: GRAIN_SEED,
-    tile: 32,
-    cells: 40,
-    perTone: 285,
-    cols: 10,
-    rows: 7,
-    light: {d: GRAIN_LIGHT, opacity: 0.024},
-    dark: {d: GRAIN_DARK, opacity: 0.3},
+  mark: {
+    opacity: 57 / 255,
+    d: 'M236.79 40.07C258.02 34.78 277.76 43.64 282.17 61.32C282.75 63.64 282.94 65.79 282.81 67.8L243.24 77.67Q242.3 74.99 239.78 73.47Q236.89 71.74 233.62 72.55L227.37 74.11L220.51 46.6C225.43 43.77 230.89 41.54 236.79 40.07ZM245.74 147.81L237.19 113.49L243.44 111.94Q246.71 111.12 248.45 108.23Q250.18 105.34 249.37 102.07L244.28 81.67L281.91 72.28C278.94 80.93 269.35 86.49 259.45 90.78C250.32 94.32 248.84 103.45 255.9 111.71C261.21 117.9 271.52 119.09 273.87 128.52C275.93 136.77 268.85 143.55 258.24 146.2C254.07 147.24 249.88 147.76 245.74 147.81ZM195.51 113.87L216.68 108.59L217.06 110.12Q217.87 113.39 220.76 115.13Q223.66 116.87 226.93 116.05L233.18 114.49L241.46 147.69C221.37 146.32 203.18 133.7 195.51 113.87ZM218.11 80.68L234.62 76.56Q238.51 75.59 239.48 79.48L245.36 103.07Q245.76 104.68 244.9 106.1Q244.05 107.53 242.44 107.93L225.93 112.04Q222.04 113.01 221.07 109.12L215.19 85.54Q214.22 81.65 218.11 80.68ZM217.11 76.67Q213.84 77.48 212.1 80.38Q210.36 83.27 211.18 86.54L211.56 88.07L191.86 92.98C192.35 75.45 201.65 59.12 216.82 48.89L223.36 75.11ZM191.91 97.23L212.56 92.08L215.68 104.58L194.16 109.94C193.9 109.06 193.65 108.16 193.42 107.25C192.59 103.9 192.09 100.55 191.91 97.23Z',
+  },
+  /** The lockup: the small mark and "cashu" in markInk, "card" in inkSoft. */
+  lockup: {
+    cashu:
+      'M50.61 33.88Q49.4 33.88 48.45 33.37Q47.51 32.86 46.98 31.97Q46.45 31.07 46.45 29.91Q46.45 28.75 46.98 27.85Q47.51 26.96 48.44 26.45Q49.37 25.94 50.58 25.94Q51.75 25.94 52.72 26.54Q53.53 27.03 53.96 27.9Q54.22 27.38 54.64 26.95Q55.08 26.49 55.73 26.22Q56.39 25.94 57.26 25.94Q58.44 25.94 59.25 26.38Q60.07 26.82 60.48 27.61Q60.89 28.4 60.88 29.47L60.86 33.7L58.65 33.7L58.62 32.93Q58.31 33.39 57.79 33.64Q57.28 33.88 56.58 33.88Q55.24 33.88 54.5 33.28Q53.98 32.85 53.82 32.18Q53.41 32.85 52.75 33.27Q51.78 33.88 50.61 33.88ZM67.63 33.7L67.63 23.1L69.99 23.1L69.99 27.04Q70.37 26.49 70.9 26.22Q71.44 25.94 72.09 25.94Q73 25.94 73.62 26.31Q74.24 26.68 74.56 27.44Q74.87 28.2 74.87 29.39L74.87 33.7L72.5 33.7L72.5 29.82Q72.5 29.22 72.37 28.86Q72.23 28.51 71.98 28.34Q71.72 28.17 71.37 28.16Q70.69 28.14 70.34 28.53Q69.99 28.91 69.99 29.7L69.99 33.7ZM31.26 20.13C34.56 19.31 37.64 20.69 38.32 23.44C38.41 23.8 38.44 24.14 38.42 24.45L32.26 25.99Q32.11 25.57 31.72 25.33Q31.27 25.06 30.76 25.19L29.79 25.43L28.72 21.15C29.49 20.71 30.34 20.36 31.26 20.13ZM77.99 33.88Q77.08 33.88 76.46 33.51Q75.84 33.14 75.53 32.38Q75.22 31.62 75.22 30.44L75.22 26.13L77.58 26.13L77.58 30Q77.58 30.59 77.72 30.95Q77.85 31.31 78.11 31.48Q78.36 31.65 78.72 31.66Q79.39 31.67 79.74 31.29Q80.1 30.9 80.1 30.13L80.1 26.13L82.46 26.13L82.46 33.7L80.23 33.7L80.14 32.72Q79.77 33.28 79.22 33.58Q78.67 33.88 77.99 33.88ZM32.65 36.92L31.32 31.57L32.29 31.33Q33.52 31.02 33.21 29.79L32.42 26.61L38.28 25.15C37.82 26.5 36.33 27.36 34.79 28.03C33.36 28.58 33.13 30 34.23 31.29C35.06 32.26 36.67 32.44 37.03 33.91C37.35 35.2 36.25 36.25 34.6 36.66C33.95 36.83 33.29 36.91 32.65 36.92ZM64.19 33.88Q63.44 33.88 62.8 33.66Q62.16 33.45 61.68 33.05Q61.21 32.65 60.98 32.07L62.92 31.25Q63.12 31.64 63.47 31.83Q63.81 32.02 64.19 32.02Q64.56 32.02 64.77 31.89Q64.98 31.77 64.98 31.53Q64.98 31.29 64.76 31.15Q64.55 31.02 64.14 30.92L63.48 30.75Q62.43 30.48 61.86 29.85Q61.29 29.21 61.29 28.38Q61.29 27.22 62.09 26.58Q62.89 25.94 64.31 25.94Q65.12 25.94 65.73 26.16Q66.34 26.38 66.76 26.76Q67.18 27.15 67.37 27.65L65.49 28.43Q65.38 28.13 65.05 27.97Q64.72 27.81 64.34 27.81Q64 27.81 63.82 27.95Q63.64 28.1 63.64 28.34Q63.64 28.53 63.86 28.65Q64.07 28.78 64.5 28.89L65.3 29.09Q66.02 29.26 66.5 29.63Q66.98 30 67.23 30.5Q67.47 30.99 67.47 31.55Q67.47 32.27 67.05 32.79Q66.63 33.31 65.89 33.59Q65.16 33.88 64.19 33.88ZM24.83 31.63L28.12 30.81L28.18 31.04Q28.31 31.55 28.76 31.82Q29.21 32.09 29.72 31.97L30.69 31.73L31.98 36.9C28.85 36.68 26.02 34.72 24.83 31.63ZM28.35 26.46L30.92 25.82Q31.17 25.75 31.39 25.89Q31.61 26.02 31.67 26.27L32.59 29.94Q32.74 30.55 32.14 30.7L29.56 31.34Q29.31 31.41 29.09 31.27Q28.87 31.14 28.81 30.89L27.89 27.21Q27.74 26.61 28.35 26.46ZM54 27.98Q54.06 28.11 54.11 28.24L51.87 29.01Q51.7 28.63 51.32 28.4Q50.93 28.17 50.46 28.17Q49.99 28.17 49.63 28.39Q49.28 28.61 49.07 29Q48.87 29.4 48.87 29.91Q48.87 30.42 49.08 30.81Q49.28 31.2 49.65 31.43Q50.02 31.65 50.49 31.65Q50.95 31.65 51.34 31.41Q51.72 31.17 51.89 30.78L53.76 31.41Q53.81 30.33 54.53 29.78Q55.3 29.18 56.7 29.18L58.54 29.18Q58.47 28.59 58.19 28.25Q57.91 27.9 57.29 27.9Q56.86 27.9 56.54 28.1Q56.22 28.3 56 28.64L54 27.98ZM28.19 25.83Q26.96 26.14 27.27 27.37L27.33 27.61L24.26 28.37C24.33 25.64 25.78 23.1 28.14 21.51L29.16 25.59ZM24.26 29.04L27.48 28.23L27.97 30.18L24.62 31.02C24.57 30.88 24.54 30.74 24.5 30.6C24.37 30.07 24.29 29.55 24.26 29.04ZM57.11 32.09Q57.54 32.09 57.87 31.91Q58.2 31.73 58.39 31.42Q58.58 31.11 58.58 30.74L58.58 30.71L57.58 30.71Q56.83 30.71 56.49 30.91Q56.16 31.12 56.16 31.5Q56.16 31.78 56.41 31.94Q56.66 32.09 57.11 32.09Z',
+    card: 'M86.68 33.88Q85.57 33.88 84.7 33.37Q83.84 32.86 83.35 31.97Q82.86 31.07 82.86 29.91Q82.86 28.75 83.35 27.85Q83.83 26.96 84.69 26.45Q85.55 25.94 86.65 25.94Q87.75 25.94 88.61 26.44Q89.47 26.95 89.92 27.85L88.83 28.34Q88.52 27.75 87.94 27.41Q87.36 27.07 86.63 27.07Q85.88 27.07 85.31 27.43Q84.74 27.79 84.41 28.43Q84.09 29.07 84.09 29.91Q84.09 30.75 84.42 31.39Q84.75 32.03 85.33 32.39Q85.91 32.76 86.66 32.76Q87.4 32.76 87.98 32.38Q88.57 32 88.87 31.33L89.97 31.82Q89.52 32.79 88.66 33.33Q87.79 33.88 86.68 33.88ZM92.91 33.88Q91.57 33.88 90.82 33.27Q90.07 32.66 90.07 31.56Q90.07 30.42 90.84 29.8Q91.6 29.18 92.97 29.18L95.09 29.18Q95.02 28.11 94.56 27.57Q94.11 27.03 93.19 27.03Q92.57 27.03 92.12 27.29Q91.68 27.54 91.39 28.08L90.31 27.65Q90.6 27.12 91 26.74Q91.4 26.36 91.95 26.15Q92.49 25.94 93.19 25.94Q94.25 25.94 94.94 26.36Q95.63 26.78 95.98 27.59Q96.32 28.4 96.32 29.6L96.3 33.7L95.18 33.7L95.12 32.69Q94.79 33.26 94.23 33.57Q93.67 33.88 92.91 33.88ZM92.96 32.81Q93.62 32.81 94.11 32.54Q94.59 32.26 94.85 31.75Q95.11 31.23 95.11 30.51L95.11 30.19L93.26 30.19Q92.2 30.19 91.75 30.55Q91.3 30.9 91.3 31.55Q91.3 32.14 91.73 32.48Q92.18 32.81 92.96 32.81ZM97.25 33.7L97.25 26.13L98.46 26.13L98.46 27.47Q98.91 26.76 99.63 26.43Q100.36 26.09 101.14 26.09L101.14 27.23Q100.47 27.23 99.86 27.45Q99.24 27.67 98.85 28.17Q98.46 28.67 98.46 29.53L98.46 33.7L97.25 33.7ZM104.36 33.88Q103.35 33.88 102.58 33.38Q101.81 32.88 101.38 31.98Q100.94 31.08 100.94 29.91Q100.94 28.73 101.38 27.84Q101.81 26.95 102.58 26.44Q103.35 25.94 104.36 25.94Q105.19 25.94 105.85 26.33Q106.51 26.72 106.92 27.4L106.92 23.1L108.13 23.1L108.13 33.7L106.98 33.7L106.93 32.41Q106.52 33.1 105.86 33.49Q105.2 33.88 104.36 33.88ZM104.64 32.78Q105.3 32.78 105.81 32.42Q106.33 32.06 106.62 31.42Q106.91 30.78 106.92 29.96L106.92 29.87Q106.91 29.04 106.62 28.4Q106.33 27.77 105.81 27.41Q105.3 27.05 104.62 27.05Q103.91 27.05 103.35 27.41Q102.8 27.78 102.48 28.42Q102.17 29.07 102.17 29.91Q102.17 30.75 102.49 31.4Q102.81 32.05 103.37 32.41Q103.92 32.78 104.64 32.78Z',
   },
   /**
-   * Burnt orange, 46 % in the corner brightening to 68 % at the tip, where
-   * the hypotenuse meets the bottom edge (tipX).
-   */
-  slash: {
-    d: 'M0 157 L112.9 202 L0 202 Z',
-    tipX: 112.9,
-    x1: 0,
-    y1: 202,
-    x2: 95.1,
-    y2: 161,
-    stops: [
-      [0, 0.46],
-      [1, 0.68],
-    ],
-  },
-  /**
-   * The thin orange rule on the left edge; the clip tapers it into the
-   * corners. It splits where the slash meets the edge: full above, and
-   * lighter over the slash, which it brightens by about a fifth as on the
-   * sheet (not a bar of its own along the slash).
-   */
-  rule: {width: 1.8, split: 157, opacity: 0.5, slashOpacity: 0.25},
-  /** The chip group: halo, ring, plate, contacts and arcs move together. */
-  halo: {
-    cx: 50.1,
-    cy: 53,
-    r: 32,
-    stops: [
-      [0, 0.14],
-      [0.4, 0.12],
-      [0.7, 0.07],
-      [1, 0],
-    ],
-  },
-  /** Perimeter 168.0: exactly 42 dash periods, so no seam. */
-  ring: {
-    x: 26.2,
-    y: 30.1,
-    w: 47.8,
-    h: 39.3,
-    rx: 3.6,
-    strokeWidth: 0.7,
-    opacity: 0.8,
-    dash: [2, 2],
-  },
-  /**
-   * The plate: one gradient across it at about 30 degrees, fitted to the
-   * sheet's plate (1012 samples between the contact lines): deep at the
-   * top-left corner, light through the middle, darker again bottom-right.
-   * No outline: the sheet's plate keeps its full brightness to the edge.
+   * The chip: a rounded plate with its contacts (the cashew and six rails)
+   * cut through to the field, and one gradient across it at 37.5 degrees.
    */
   plate: {
-    x: 31.6,
-    y: 35.2,
-    w: 37,
-    h: 28.8,
-    rx: 2.4,
+    x: 22.96,
+    y: 70.29,
+    w: 65.83,
+    h: 49.71,
+    rx: 8.85,
+    d: 'M55.2 80.84Q59.33 79.81 62.64 81.34Q65.88 82.84 66.69 86.08Q67.29 88.49 65.56 90.32Q64.17 91.79 60.92 93.2Q58.59 94.11 58.23 96.27Q57.88 98.33 59.61 100.36Q60.26 101.12 61.91 102.1Q64.08 103.39 64.4 104.65Q64.7 105.86 63.76 106.87Q62.73 107.97 60.71 108.48Q55.13 109.87 50.23 106.98Q45.27 104.05 43.85 98.35Q42.41 92.58 45.67 87.51Q48.96 82.39 55.2 80.84ZM55 120L31.82 120C26.93 120 22.96 116.04 22.96 111.15L22.96 104.09L44.53 104.09Q46.38 106.72 49.35 108.48Q52.08 110.09 55 110.52L55 120ZM31.82 70.29L52.98 70.29L52.98 79.68Q47.37 81.64 44.2 86.57Q44.11 86.72 44.02 86.86L22.96 86.86L22.96 79.15C22.96 74.25 26.93 70.29 31.82 70.29ZM88.79 86.65L88.79 103.66L65.9 103.66Q65.52 102.69 64.7 101.93Q64.12 101.38 62.8 100.6Q61.4 99.77 60.93 99.23Q59.73 97.82 59.94 96.55Q60.14 95.37 61.57 94.82L61.58 94.81L61.6 94.81Q65.18 93.25 66.83 91.51Q68.85 89.38 68.56 86.65L88.79 86.65ZM54.78 79.15Q54.76 79.15 54.74 79.16L54.74 70.29L79.94 70.29C84.83 70.29 88.79 74.25 88.79 79.15L88.79 84.89L68.15 84.89Q66.98 81.43 63.37 79.76Q59.5 77.97 54.78 79.15ZM88.79 105.42L88.79 111.15C88.79 116.04 84.83 120 79.94 120L56.76 120L56.76 110.67Q58.89 110.72 61.13 110.17Q63.65 109.54 65.03 108.05Q66.16 106.84 66.21 105.42L88.79 105.42ZM22.96 102.34L22.96 88.62L43.07 88.62Q40.83 93.43 42.16 98.77Q42.64 100.69 43.48 102.34L22.96 102.34Z',
     gold: {
-      x1: 30,
-      y1: 38,
-      x2: 70.2,
-      y2: 61.2,
+      x1: 22.96,
+      y1: 70.29,
+      x2: 88.41,
+      y2: 120.51,
       stops: [
-        [0, P.goldShadow],
-        [0.3, P.goldLow],
-        [0.55, P.goldLight],
-        [0.8, P.goldMid],
+        [0, P.goldLight],
+        [0.45, P.goldMid],
         [1, P.goldDark],
       ],
     },
   },
-  /** Two verticals at about 1/3 and 2/3, four horizontals in the lower two-thirds. */
-  contacts: {
-    d: 'M43.2 35.2V64M57 35.2V64M31.6 45.1H68.6M31.6 49.9H68.6M31.6 54.1H68.6M31.6 58.9H68.6',
-    width: 0.55,
-    opacity: 0.8,
-  },
   /**
-   * The chip-side contactless mark: three arcs, no dot, on the axis y = 47.
-   * Static builds draw them at `restOpacity`; an animated build draws each
-   * as an overlay viewed through `box`, which holds all three with caps.
+   * The chip-side contactless mark: three arcs right of the chip. Static
+   * builds draw them at `restOpacity`; an animated build draws each as an
+   * overlay viewed through `box`, which holds all three with caps.
    */
   chipArcs: {
     d: [
-      'M76.2 41.8A6.83 6.83 0 0 1 76.2 52.2',
-      'M80.9 40.55A7.95 7.95 0 0 1 80.9 53.45',
-      'M85.4 39.65A8.53 8.53 0 0 1 85.4 54.35',
+      'M100.64 85.83A7.13 7.13 0 0 1 100.64 96.56',
+      'M105.11 82.27A12.48 12.48 0 0 1 105.11 100.12',
+      'M109.55 78.69A17.76 17.76 0 0 1 109.55 103.69',
     ],
-    width: 1.2,
+    width: 1.97,
     restOpacity: 0.6,
-    box: {x: 75, y: 38, w: 16, h: 18},
-  },
-  /** The grey bottom mark: its right edge sits on the card's centre line. */
-  nfc: {
-    dot: {cx: 144.2, cy: 181.9, r: 1.5},
-    d: [
-      'M147.6 178A4.37 4.37 0 0 1 147.6 185.8',
-      'M151 176.65A5.91 5.91 0 0 1 151 187.15',
-      'M154.4 175.45A7.05 7.05 0 0 1 154.4 188.35',
-    ],
-    width: 1.2,
-    opacity: 0.8,
-  },
-  /** ₿, Inter Bold, cap 5.2: tone-on-tone on the slash, on BEARER CARD's baseline. */
-  btc: {
-    x: 14.5,
-    y: 183.6,
-    opacity: 0.8,
-    d: 'M0.95 6.45H1.37V5.8H1.92V6.45H2.34V5.79C3.39 5.73 3.94 5.15 3.94 4.37C3.94 3.59 3.39 3.13 2.8 3.11V3.05C3.34 2.93 3.74 2.55 3.74 1.94C3.74 1.24 3.27 0.71 2.34 0.62V-0.05H1.92V0.6H1.37V-0.05H0.95V0.6H-0.04V5.8H0.95ZM1.02 4.92V3.51H1.97C2.51 3.51 2.85 3.83 2.85 4.26C2.85 4.66 2.57 4.92 1.94 4.92ZM1.02 2.78V1.47H1.89C2.38 1.47 2.66 1.73 2.66 2.11C2.66 2.53 2.32 2.78 1.86 2.78Z',
+    box: {x: 99, y: 77, w: 17.5, h: 28.5},
   },
   /**
-   * FLASH, Inter Black at -0.02 em, cap 11.35: ink x 249.6–298.9, cap top
-   * 169, baseline 180.3.
+   * CASHU ECASH CARD, Figtree wght 650 at +0.133 em, cap 6.46: ink x
+   * 22.6-133.8, baseline 181.7.
    */
-  flash: {
-    x: 249.6,
-    y: 169,
-    inkRight: 298.9,
-    d: 'M0 11.3H3.1V7.4H7.5V5H3.1V2.4H8V-0H0ZM8.8 11.3H16.5V8.8H11.9V-0H8.8ZM17 11.3H20.4L21 9.1H24.5L25.2 11.3H28.7L24.8 -0H20.6ZM21.7 6.8C22.1 5.4 22.4 4 22.7 2.5C23 4 23.4 5.4 23.8 6.8ZM33.6 11.4C36.5 11.4 38.2 10.2 38.2 7.9C38.2 6.2 37.2 5 34.7 4.5L33.7 4.3C32.6 4 32.2 3.7 32.2 3.2C32.2 2.7 32.6 2.3 33.6 2.3C34.6 2.3 35 2.8 35.1 3.5H38C38 1.3 36.3 -0.2 33.6 -0.2C30.9 -0.2 29 1.3 29 3.4C29 5.2 30.2 6.2 32.2 6.6L33.4 6.9C34.6 7.1 35.1 7.4 35.1 7.9C35.1 8.5 34.5 8.9 33.6 8.9C32.4 8.9 31.7 8.4 31.6 7.3H28.7C28.7 10.2 30.6 11.4 33.6 11.4ZM39.1 11.3H42.1V6.7H46.2V11.3H49.3V-0H46.2V4.3H42.1V-0H39.1Z',
+  caption: {
+    d: 'M128.39 181.65L128.39 175.19L130.44 175.19Q131.41 175.19 132.16 175.6Q132.9 176.01 133.33 176.74Q133.75 177.47 133.75 178.42Q133.75 179.36 133.33 180.09Q132.9 180.82 132.16 181.23Q131.41 181.65 130.44 181.65ZM121.24 181.65L121.24 175.19L123.58 175.19Q124.26 175.19 124.77 175.45Q125.29 175.72 125.58 176.18Q125.88 176.64 125.88 177.25Q125.88 177.88 125.53 178.37Q125.19 178.85 124.62 179.09L126.13 181.65L124.81 181.65L123.46 179.31Q123.4 179.31 123.34 179.31L122.41 179.31L122.41 181.65ZM30.23 181.65L32.79 175.19L34.03 175.19L36.6 181.65L35.36 181.65L34.77 180.15L32.06 180.15L31.46 181.65ZM78.73 181.65L81.29 175.19L82.53 175.19L85.1 181.65L83.86 181.65L83.27 180.15L80.56 180.15L79.96 181.65ZM112.83 181.65L115.4 175.19L116.64 175.19L119.2 181.65L117.97 181.65L117.37 180.15L114.66 180.15L114.07 181.65ZM93.98 181.65L93.98 175.18L95.15 175.18L95.15 177.81L98.27 177.81L98.27 175.19L99.44 175.19L99.44 181.65L98.27 181.65L98.27 178.87L95.15 178.87L95.15 181.65ZM45.48 181.65L45.48 175.18L46.65 175.18L46.65 177.81L49.77 177.81L49.77 175.19L50.94 175.19L50.94 181.65L49.77 181.65L49.77 178.87L46.65 178.87L46.65 181.65ZM56.13 181.78Q55.35 181.78 54.76 181.47Q54.18 181.15 53.86 180.59Q53.54 180.02 53.54 179.26L53.54 175.19L54.71 175.19L54.71 179.26Q54.71 179.69 54.89 180.02Q55.07 180.34 55.39 180.52Q55.72 180.7 56.15 180.7Q56.58 180.7 56.91 180.52Q57.24 180.34 57.42 180.02Q57.59 179.69 57.59 179.26L57.59 175.19L58.76 175.19L58.76 179.26Q58.76 180.02 58.44 180.59Q58.11 181.15 57.52 181.47Q56.93 181.78 56.13 181.78ZM74.3 181.76Q73.36 181.76 72.63 181.33Q71.91 180.9 71.49 180.15Q71.08 179.4 71.08 178.42Q71.08 177.44 71.49 176.69Q71.9 175.94 72.63 175.51Q73.35 175.08 74.29 175.08Q74.94 175.08 75.5 175.31Q76.06 175.54 76.49 175.95Q76.92 176.36 77.15 176.89L76.07 177.31Q75.91 176.96 75.64 176.7Q75.37 176.43 75.02 176.29Q74.68 176.15 74.29 176.15Q73.7 176.15 73.24 176.44Q72.79 176.73 72.53 177.24Q72.27 177.75 72.27 178.42Q72.27 179.09 72.53 179.6Q72.79 180.12 73.26 180.41Q73.72 180.7 74.31 180.7Q74.72 180.7 75.06 180.55Q75.4 180.39 75.67 180.11Q75.93 179.83 76.1 179.47L77.17 179.89Q76.94 180.44 76.51 180.86Q76.09 181.29 75.52 181.52Q74.95 181.76 74.3 181.76ZM25.8 181.76Q24.86 181.76 24.13 181.33Q23.41 180.9 22.99 180.15Q22.58 179.4 22.58 178.42Q22.58 177.44 22.99 176.69Q23.4 175.94 24.13 175.51Q24.85 175.08 25.79 175.08Q26.44 175.08 27 175.31Q27.56 175.54 27.99 175.95Q28.42 176.36 28.65 176.89L27.57 177.31Q27.41 176.96 27.14 176.7Q26.87 176.43 26.52 176.29Q26.18 176.15 25.79 176.15Q25.2 176.15 24.74 176.44Q24.29 176.73 24.03 177.24Q23.77 177.75 23.77 178.42Q23.77 179.09 24.03 179.6Q24.29 180.12 24.76 180.41Q25.22 180.7 25.81 180.7Q26.22 180.7 26.56 180.55Q26.9 180.39 27.17 180.11Q27.43 179.83 27.6 179.47L28.67 179.89Q28.44 180.44 28.01 180.86Q27.59 181.29 27.02 181.52Q26.45 181.76 25.8 181.76ZM108.41 181.76Q107.46 181.76 106.74 181.33Q106.01 180.9 105.6 180.15Q105.19 179.4 105.19 178.42Q105.19 177.44 105.6 176.69Q106.01 175.94 106.73 175.51Q107.45 175.08 108.39 175.08Q109.04 175.08 109.6 175.31Q110.17 175.54 110.59 175.95Q111.02 176.36 111.25 176.89L110.18 177.31Q110.02 176.96 109.75 176.7Q109.48 176.43 109.13 176.29Q108.78 176.15 108.39 176.15Q107.81 176.15 107.35 176.44Q106.89 176.73 106.63 177.24Q106.38 177.75 106.38 178.42Q106.38 179.09 106.64 179.6Q106.9 180.12 107.36 180.41Q107.82 180.7 108.42 180.7Q108.82 180.7 109.17 180.55Q109.51 180.39 109.77 180.11Q110.04 179.83 110.2 179.47L111.28 179.89Q111.05 180.44 110.62 180.86Q110.19 181.29 109.62 181.52Q109.05 181.76 108.41 181.76ZM64.8 181.65L64.8 175.19L68.84 175.19L68.84 176.26L65.97 176.26L65.97 177.85L68.47 177.85L68.47 178.89L65.97 178.89L65.97 180.58L68.87 180.58L68.87 181.65ZM89.28 181.76Q88.79 181.76 88.36 181.64Q87.94 181.52 87.61 181.31Q87.29 181.09 87.08 180.83Q86.87 180.56 86.79 180.27L87.94 179.92Q88.06 180.25 88.38 180.49Q88.71 180.74 89.2 180.74Q89.75 180.75 90.08 180.51Q90.41 180.28 90.41 179.9Q90.41 179.56 90.14 179.34Q89.87 179.12 89.4 179L88.59 178.79Q88.12 178.67 87.76 178.43Q87.4 178.19 87.2 177.84Q86.99 177.48 86.99 177Q86.99 176.09 87.59 175.59Q88.18 175.08 89.29 175.08Q89.91 175.08 90.37 175.26Q90.84 175.45 91.15 175.78Q91.46 176.11 91.62 176.54L90.48 176.9Q90.36 176.56 90.04 176.32Q89.72 176.09 89.24 176.09Q88.75 176.09 88.47 176.33Q88.18 176.56 88.18 176.97Q88.18 177.3 88.41 177.49Q88.63 177.68 89.01 177.77L89.83 177.98Q90.69 178.18 91.15 178.7Q91.62 179.23 91.62 179.86Q91.62 180.43 91.35 180.85Q91.08 181.28 90.56 181.52Q90.04 181.76 89.28 181.76ZM40.78 181.76Q40.29 181.76 39.86 181.64Q39.44 181.52 39.11 181.31Q38.79 181.09 38.58 180.83Q38.37 180.56 38.29 180.27L39.44 179.92Q39.56 180.25 39.88 180.49Q40.21 180.74 40.7 180.74Q41.25 180.75 41.58 180.51Q41.91 180.28 41.91 179.9Q41.91 179.56 41.64 179.34Q41.37 179.12 40.9 179L40.09 178.79Q39.62 178.67 39.26 178.43Q38.9 178.19 38.7 177.84Q38.49 177.48 38.49 177Q38.49 176.09 39.09 175.59Q39.68 175.08 40.79 175.08Q41.41 175.08 41.87 175.26Q42.34 175.45 42.65 175.78Q42.96 176.11 43.12 176.54L41.98 176.9Q41.86 176.56 41.54 176.32Q41.22 176.09 40.74 176.09Q40.25 176.09 39.97 176.33Q39.68 176.56 39.68 176.97Q39.68 177.3 39.91 177.49Q40.13 177.68 40.51 177.77L41.33 177.98Q42.19 178.18 42.65 178.7Q43.12 179.23 43.12 179.86Q43.12 180.43 42.85 180.85Q42.58 181.28 42.06 181.52Q41.54 181.76 40.78 181.76ZM129.56 180.56L130.44 180.56Q130.89 180.56 131.28 180.4Q131.66 180.23 131.95 179.94Q132.24 179.65 132.4 179.26Q132.56 178.87 132.56 178.42Q132.56 177.96 132.4 177.58Q132.24 177.19 131.95 176.9Q131.66 176.6 131.28 176.44Q130.89 176.28 130.44 176.28L129.56 176.28ZM122.41 178.24L123.61 178.24Q123.91 178.24 124.15 178.11Q124.38 177.99 124.52 177.76Q124.67 177.53 124.67 177.25Q124.67 176.81 124.35 176.53Q124.04 176.25 123.54 176.25L122.41 176.25ZM80.95 179.11L82.88 179.11L81.91 176.65ZM115.05 179.11L116.98 179.11L116.02 176.65ZM32.45 179.11L34.38 179.11L33.41 176.65Z',
   },
-  /** BEARER CARD, Inter SemiBold caps at +0.27 em, cap 3.9: ink x 246.3–297.5. */
-  bearer: {
-    x: 246.3,
-    y: 185.5,
-    opacity: 0.9,
-    d: 'M0.04 3.9H1.61C2.5 3.9 2.94 3.44 2.94 2.84C2.94 2.25 2.52 1.9 2.11 1.88V1.84C2.49 1.75 2.79 1.49 2.79 1.01C2.79 0.43 2.37 0 1.53 0H0.04ZM0.74 3.32V2.17H1.52C1.96 2.17 2.23 2.44 2.23 2.78C2.23 3.09 2.02 3.32 1.5 3.32ZM0.74 1.66V0.58H1.46C1.88 0.58 2.09 0.8 2.09 1.1C2.09 1.45 1.81 1.66 1.44 1.66ZM5.02 3.9H7.56V3.31H5.72V2.22H7.42V1.64H5.72V0.59H7.55V0H5.02ZM9.45 3.9H10.21L10.53 2.93H11.99L12.32 3.9H13.09L11.7 0H10.81ZM10.72 2.37 10.88 1.87C10.99 1.53 11.11 1.09 11.25 0.54C11.39 1.08 11.52 1.52 11.63 1.87L11.8 2.37ZM15.06 3.9H15.76V2.47H16.49L17.25 3.9H18.04L17.19 2.35C17.65 2.17 17.89 1.78 17.89 1.25C17.89 0.51 17.41 0 16.52 0H15.06ZM15.76 1.89V0.59H16.41C16.94 0.59 17.18 0.83 17.18 1.25C17.18 1.66 16.94 1.89 16.41 1.89ZM20 3.9H22.55V3.31H20.7V2.22H22.4V1.64H20.7V0.59H22.54V0H20ZM24.7 3.9H25.4V2.47H26.12L26.89 3.9H27.67L26.83 2.35C27.29 2.17 27.53 1.78 27.53 1.25C27.53 0.51 27.05 0 26.15 0H24.7ZM25.4 1.89V0.59H26.05C26.58 0.59 26.81 0.83 26.81 1.25C26.81 1.66 26.58 1.89 26.05 1.89ZM34.1 3.95C35.02 3.95 35.64 3.35 35.75 2.6H35.04C34.95 3.06 34.57 3.33 34.11 3.33C33.47 3.33 33.02 2.85 33.02 1.95C33.02 1.07 33.47 0.57 34.11 0.57C34.58 0.57 34.95 0.84 35.04 1.3H35.74C35.62 0.44 34.96 -0.05 34.1 -0.05C33.08 -0.05 32.32 0.69 32.32 1.95C32.32 3.21 33.07 3.95 34.1 3.95ZM37.44 3.9H38.2L38.52 2.93H39.98L40.31 3.9H41.08L39.69 0H38.8ZM38.71 2.37 38.87 1.87C38.98 1.53 39.1 1.09 39.24 0.54C39.38 1.08 39.51 1.52 39.62 1.87L39.79 2.37ZM43.05 3.9H43.75V2.47H44.48L45.24 3.9H46.03L45.18 2.35C45.64 2.17 45.88 1.78 45.88 1.25C45.88 0.51 45.41 0 44.51 0H43.05ZM43.75 1.89V0.59H44.4C44.93 0.59 45.17 0.83 45.17 1.25C45.17 1.66 44.93 1.89 44.41 1.89ZM49.31 3.9C50.5 3.9 51.2 3.16 51.2 1.94C51.2 0.73 50.5 0 49.34 0H47.99V3.9ZM48.69 3.3V0.6H49.3C50.1 0.6 50.51 1.05 50.51 1.94C50.51 2.85 50.1 3.3 49.28 3.3Z',
-  },
+  /**
+   * Where a consumer may print an id: the empty bottom right, its ink ending
+   * at `right` (the caption's left margin, mirrored) and centred on
+   * `centerY` (the caption's mid-line). `capRef` is the caption's cap
+   * height, for anything that must read quieter than it.
+   */
+  idSlot: {right: 297.4, centerY: 178.42, capRef: 6.46},
   /** A faint hairline just inside the edge. */
   edge: {inset: 0.3, width: 0.6, opacity: 0.02},
 } as const;
@@ -372,144 +174,41 @@ const A = CARD_ART;
 const W = A.width;
 const H = A.height;
 
-const stops = (list: ReadonlyArray<readonly [number, number]>, color: string) =>
-  list.map(([offset, opacity]) => (
-    <Stop
-      key={offset}
-      offset={offset}
-      stopColor={color}
-      stopOpacity={opacity}
-    />
+const stops = (list: ReadonlyArray<readonly [number, string]>) =>
+  list.map(([offset, color]) => (
+    <Stop key={offset} offset={offset} stopColor={color} />
   ));
-
-const GRAIN_USES = Array.from({length: A.grain.cols * A.grain.rows}, (_, i) => (
-  <Use
-    key={i}
-    href="#cardGrain"
-    x={(i % A.grain.cols) * A.grain.tile}
-    y={Math.floor(i / A.grain.cols) * A.grain.tile}
-  />
-));
 
 /** Each layer of the face; the chip-side arcs only in a static build. */
 const LAYER: Record<CardLayer, (staticArcs: boolean) => React.ReactNode> = {
-  base: () => <Rect x={0} y={0} width={W} height={H} fill={P.base} />,
-  lift: () => <Rect x={0} y={0} width={W} height={H} fill="url(#cardLift)" />,
-  watermark: () => (
-    <G
-      transform={`translate(${A.watermark.x} ${A.watermark.y}) scale(${A.watermark.scale})`}>
-      <Path
-        d={A.watermark.d}
-        fill={P.watermark}
-        fillOpacity={A.watermark.opacity}
-      />
-    </G>
+  base: () => <Rect x={0} y={0} width={W} height={H} fill="url(#cardBase)" />,
+  mark: () => (
+    <Path
+      d={A.mark.d}
+      fill={P.markInk}
+      fillOpacity={A.mark.opacity}
+      fillRule="evenodd"
+    />
   ),
-  grain: () => GRAIN_USES,
-  slash: () => <Path d={A.slash.d} fill="url(#cardSlash)" />,
-  rule: () => (
+  lockup: () => (
     <>
-      <Rect
-        x={0}
-        y={0}
-        width={A.rule.width}
-        height={A.rule.split}
-        fill={P.orange}
-        fillOpacity={A.rule.opacity}
-      />
-      <Rect
-        x={0}
-        y={A.rule.split}
-        width={A.rule.width}
-        height={H - A.rule.split}
-        fill={P.orange}
-        fillOpacity={A.rule.slashOpacity}
-      />
+      <Path d={A.lockup.cashu} fill={P.markInk} fillRule="evenodd" />
+      <Path d={A.lockup.card} fill={P.inkSoft} fillRule="evenodd" />
     </>
   ),
-  halo: () => (
-    <Circle cx={A.halo.cx} cy={A.halo.cy} r={A.halo.r} fill="url(#cardHalo)" />
-  ),
-  ring: () => (
-    <Rect
-      x={A.ring.x}
-      y={A.ring.y}
-      width={A.ring.w}
-      height={A.ring.h}
-      rx={A.ring.rx}
-      ry={A.ring.rx}
-      fill="none"
-      stroke={P.orange}
-      strokeWidth={A.ring.strokeWidth}
-      strokeOpacity={A.ring.opacity}
-      strokeDasharray={A.ring.dash}
-    />
-  ),
-  plate: () => (
-    <Rect
-      x={A.plate.x}
-      y={A.plate.y}
-      width={A.plate.w}
-      height={A.plate.h}
-      rx={A.plate.rx}
-      ry={A.plate.rx}
-      fill="url(#cardGold)"
-    />
-  ),
-  contacts: () => (
-    <Path
-      d={A.contacts.d}
-      fill="none"
-      stroke={P.chipLine}
-      strokeWidth={A.contacts.width}
-      strokeOpacity={A.contacts.opacity}
-    />
-  ),
+  plate: () => <Path d={A.plate.d} fill="url(#cardGold)" fillRule="evenodd" />,
   chipArcs: staticArcs =>
     staticArcs ? (
       <Path
         d={A.chipArcs.d.join('')}
         fill="none"
-        stroke={P.orange}
+        stroke={P.ink}
         strokeWidth={A.chipArcs.width}
         strokeOpacity={A.chipArcs.restOpacity}
         strokeLinecap="round"
       />
     ) : null,
-  nfc: () => (
-    <>
-      <Circle
-        cx={A.nfc.dot.cx}
-        cy={A.nfc.dot.cy}
-        r={A.nfc.dot.r}
-        fill={P.nfcGrey}
-        fillOpacity={A.nfc.opacity}
-      />
-      <Path
-        d={A.nfc.d.join('')}
-        fill="none"
-        stroke={P.nfcGrey}
-        strokeWidth={A.nfc.width}
-        strokeOpacity={A.nfc.opacity}
-        strokeLinecap="round"
-      />
-    </>
-  ),
-  btc: () => (
-    <G transform={`translate(${A.btc.x} ${A.btc.y})`}>
-      <Path d={A.btc.d} fill={P.orange} fillOpacity={A.btc.opacity} />
-    </G>
-  ),
-  flash: () => (
-    <G transform={`translate(${A.flash.x} ${A.flash.y})`}>
-      <Path d={A.flash.d} fill={P.white} />
-    </G>
-  ),
-  bearer: () => (
-    <G transform={`translate(${A.bearer.x} ${A.bearer.y})`}>
-      <Path d={A.bearer.d} fill={P.orange} fillOpacity={A.bearer.opacity} />
-    </G>
-  ),
+  caption: () => <Path d={A.caption.d} fill={P.ink} fillRule="evenodd" />,
   edge: () => (
     <Rect
       x={A.edge.inset}
@@ -556,35 +255,15 @@ export const CardArtV2 = React.memo(function CardArtV2({
         <ClipPath id="cardClip">
           <Rect x={0} y={0} width={W} height={H} rx={A.radius} ry={A.radius} />
         </ClipPath>
-        <RadialGradient
-          id="cardLift"
-          gradientUnits="userSpaceOnUse"
-          cx={A.lift.cx}
-          cy={A.lift.cy}
-          fx={A.lift.cx}
-          fy={A.lift.cy}
-          r={A.lift.r}>
-          {stops(A.lift.stops, P.lift)}
-        </RadialGradient>
         <LinearGradient
-          id="cardSlash"
+          id="cardBase"
           gradientUnits="userSpaceOnUse"
-          x1={A.slash.x1}
-          y1={A.slash.y1}
-          x2={A.slash.x2}
-          y2={A.slash.y2}>
-          {stops(A.slash.stops, P.orange)}
+          x1={A.base.x1}
+          y1={A.base.y1}
+          x2={A.base.x2}
+          y2={A.base.y2}>
+          {stops(A.base.stops)}
         </LinearGradient>
-        <RadialGradient
-          id="cardHalo"
-          gradientUnits="userSpaceOnUse"
-          cx={A.halo.cx}
-          cy={A.halo.cy}
-          fx={A.halo.cx}
-          fy={A.halo.cy}
-          r={A.halo.r}>
-          {stops(A.halo.stops, P.orange)}
-        </RadialGradient>
         <LinearGradient
           id="cardGold"
           gradientUnits="userSpaceOnUse"
@@ -592,22 +271,8 @@ export const CardArtV2 = React.memo(function CardArtV2({
           y1={A.plate.gold.y1}
           x2={A.plate.gold.x2}
           y2={A.plate.gold.y2}>
-          {A.plate.gold.stops.map(([offset, color]) => (
-            <Stop key={offset} offset={offset} stopColor={color} />
-          ))}
+          {stops(A.plate.gold.stops)}
         </LinearGradient>
-        <G id="cardGrain">
-          <Path
-            d={A.grain.light.d}
-            fill={P.white}
-            fillOpacity={A.grain.light.opacity}
-          />
-          <Path
-            d={A.grain.dark.d}
-            fill={P.black}
-            fillOpacity={A.grain.dark.opacity}
-          />
-        </G>
       </Defs>
       <G clipPath="url(#cardClip)">
         {A.layers.map(id => (
