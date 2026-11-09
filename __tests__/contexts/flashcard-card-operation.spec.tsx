@@ -260,6 +260,26 @@ describe("FlashcardProvider runCardOperation", () => {
     expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].pinState).toBe("set")
   })
 
+  it("keeps the card's record mint on this phone at the read and the re-read, for the relay (ENG-831)", async () => {
+    // A card never set up names no mint: none is kept.
+    await mount()
+    await readCard()
+    expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].recordMint).toBeUndefined()
+    const recorded = createFakeCard(128, { owner: null, record: true })
+    transceive.mockImplementation((bytes: number[]) => recorded.transceive(bytes))
+    await readCard()
+    expect(store.getState().flashcardV2.cards[toHex(PUBKEY)].recordMint).toBe(CARD_MINT)
+    store.dispatch(resetFlashcardV2())
+    await act(async () => {
+      await latest?.runCardOperation(async () => "done", toHex(PUBKEY))
+    })
+    await waitFor(() =>
+      expect(store.getState().flashcardV2.cards[toHex(PUBKEY)]?.recordMint).toBe(
+        CARD_MINT,
+      ),
+    )
+  })
+
   it("hands the op what this tap's SELECT and GET_PUBKEY said: the applet version and the card key (ENG-825)", async () => {
     await mount()
     await readCard()

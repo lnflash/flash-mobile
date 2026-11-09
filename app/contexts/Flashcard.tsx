@@ -191,6 +191,16 @@ const toastRelay = (
 const relayUnit = (known?: CardUnitTotals, recorded?: KnownCard): string | undefined =>
   (known && soleUnit(known)) ?? recorded?.unit
 
+/**
+ * The mint a read's record names, for the card's entry on this phone
+ * (`KnownCard.recordMint`, ENG-831): none for an unset record or a mint this
+ * app cannot use.
+ */
+const recordMintOf = (record: CashuCardInfo["record"]): { recordMint?: string } => {
+  const recordMint = record.recordSet ? mintOfCardOrUndefined(record) : undefined
+  return recordMint ? { recordMint } : {}
+}
+
 /** The relay's card half on this tap's transceiver; a failure of its own (the store) is `failed`. */
 const captureOutbox = async (
   transceive: Transceiver,
@@ -944,6 +954,7 @@ export const FlashcardProvider = ({ children }: Props) => {
                 owned: info.hasOwner,
                 needsUpdate: false,
                 limits: limitsOf(info, info.record, ownerPaymentLimit),
+                ...recordMintOf(info.record),
                 at: Date.now(),
               }),
             )
@@ -1143,6 +1154,7 @@ export const FlashcardProvider = ({ children }: Props) => {
           owned: card.hasOwner,
           needsUpdate: false,
           limits: limitsOf(card, card.record, card.ownerPaymentLimit),
+          ...recordMintOf(card.record),
           at: Date.now(),
         }),
       )
