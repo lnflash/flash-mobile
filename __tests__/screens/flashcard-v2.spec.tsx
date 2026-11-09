@@ -36,6 +36,7 @@ import { formatUnitAmount, isolatedMintName } from "../../app/utils/cashu-card-f
 import { cardInfo, cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
 import {
+  cardLimitsSet,
   cardSetupSaved,
   resetFlashcardV2,
 } from "../../app/store/redux/slices/flashcardV2Slice"
@@ -2098,6 +2099,31 @@ describe("FlashcardV2Screen, the holder setup (ENG-827)", () => {
     expect(screen.getByTestId("flashcard-v2-setup-limits-differ").props.children).toBe(
       LL.FlashcardV2.setUpLimitsDiffer(),
     )
+    neither()
+  })
+
+  it("limits changed elsewhere stop being said once the holder saves limits under Limits", () => {
+    store.dispatch(
+      cardSetupSaved(
+        record({
+          unconfirmed: ["dailyLimit", "paymentLimit", "allowance", "rollBudget"],
+          limitsChangedElsewhere: true,
+        }),
+      ),
+    )
+    mockCashuCard = card()
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-limits-differ")).toBeTruthy()
+    // What the Limits screen dispatches when the owner's SET_LIMIT goes through.
+    act(() => {
+      store.dispatch(
+        cardLimitsSet({
+          pubkey: PUBKEY,
+          limits: { day: 2000, payment: 0, allowance: 0, rollBudget: 7 },
+        }),
+      )
+    })
+    expect(screen.queryByTestId("flashcard-v2-setup-limits-differ")).toBeNull()
     neither()
   })
 

@@ -179,7 +179,11 @@ export const flashcardV2Slice = createSlice({
         [key]: { ...state.keysetUnitsByMint?.[key], ...action.payload.units },
       }
     },
-    /** The owner's SET_LIMIT went through: what this phone set, the payment limit included. */
+    /**
+     * The owner's SET_LIMIT went through: what this phone set, the payment
+     * limit included. A setup record that found limits from elsewhere is
+     * marked `limitsSavedSince`: the holder has dealt with them.
+     */
     cardLimitsSet: (
       state,
       action: PayloadAction<{
@@ -191,6 +195,17 @@ export const flashcardV2Slice = createSlice({
     ) => {
       const card = state.cards[action.payload.pubkey]
       if (card) card.limits = { ...card.limits, ...action.payload.limits }
+      // ENG-827: a setup that found limits from elsewhere pointed the holder
+      // here; with theirs saved, it stops (`setupLimitsDiffer`).
+      const setup = state.setups?.[action.payload.pubkey]
+      if (
+        setup?.v === 1 &&
+        setup.status === "set-up" &&
+        setup.limitsChangedElsewhere === true &&
+        setup.verification === undefined
+      ) {
+        setup.limitsSavedSince = true
+      }
     },
     /** "Not now" on a tidy offer, for the pieces it was made for. */
     tidyOfferDismissed: (

@@ -25,8 +25,14 @@ import { store } from "../../app/store/redux"
 import {
   cardLimitsSet,
   cardSeen,
+  cardSetupSaved,
   resetFlashcardV2,
 } from "../../app/store/redux/slices/flashcardV2Slice"
+import {
+  CardSetup,
+  currentSetup,
+  setupLimitsDiffer,
+} from "../../app/utils/cashu-card-owner-store"
 import {
   FlashcardV2LimitsScreen,
   limitsFromFields,
@@ -178,6 +184,45 @@ describe("FlashcardV2LimitsScreen", () => {
       day: 5000,
       payment: 2500,
     })
+  })
+
+  it("a save after a setup that found limits from elsewhere marks it dealt with: the card screen stops pointing here (ENG-827)", async () => {
+    const differ: CardSetup = {
+      v: 1,
+      intent: {
+        cardPubkey: card.pubkey,
+        mint: "https://forge.flashapp.me",
+        unit: 0,
+        refundKey: null,
+        design: null,
+        pinChosen: true,
+        limits: { day: 5000, payment: 0, allowance: 0, rollBudget: 7 },
+      },
+      progress: { pinSent: true, recordSent: true, ownerSent: true },
+      status: "set-up",
+      heldByCard: {
+        mint: "https://forge.flashapp.me",
+        unit: 0,
+        refundKey: null,
+        design: null,
+      },
+      unconfirmed: ["dailyLimit"],
+      limitsChangedElsewhere: true,
+      updatedAt: 1,
+      setUpAt: 1,
+    }
+    store.dispatch(cardSetupSaved(differ))
+    const stored = () => currentSetup(store.getState().flashcardV2.setups?.[card.pubkey])
+    expect(setupLimitsDiffer(stored())).toBe(true)
+    renderScreen()
+    set("limits-day", "2000")
+
+    await save()
+
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(card.limits().day).toBe(2000)
+    expect(stored()?.limitsSavedSince).toBe(true)
+    expect(setupLimitsDiffer(stored())).toBe(false)
   })
 
   it("a payment limit this phone set, which another phone with the same key has changed since, is the card's when only the daily limit is edited", async () => {

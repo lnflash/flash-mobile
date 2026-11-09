@@ -452,6 +452,13 @@ export type CardSetup = {
    * finish it: the holder is pointed to Limits instead.
    */
   limitsChangedElsewhere?: boolean
+  /**
+   * ENG-827: after `limitsChangedElsewhere`, the owner's SET_LIMIT under
+   * Limits went through on this phone (`cardLimitsSet`): the holder has dealt
+   * with the limits, and the card screen stops pointing them there. The setup
+   * stays unverified: the card holds the holder's limits, not the intent's.
+   */
+  limitsSavedSince?: boolean
 }
 
 /** What the card said when its setup was verified (ENG-827). */
@@ -491,10 +498,13 @@ export const setupUnverified = (setup: CardSetup | undefined): boolean =>
 /**
  * A `set-up` record (ENG-827) not verified because the card holds limits
  * that are neither the intent's nor a new card's: no tap finishes it, and the
- * holder checks them under Limits.
+ * holder checks them under Limits. Once the holder has saved limits there
+ * (`limitsSavedSince`), it is no longer said.
  */
 export const setupLimitsDiffer = (setup: CardSetup | undefined): boolean =>
-  setupNotVerified(setup) && setup.limitsChangedElsewhere === true
+  setupNotVerified(setup) &&
+  setup.limitsChangedElsewhere === true &&
+  setup.limitsSavedSince !== true
 
 /** Writes a setup record and resolves once it is on disk; rejects when it is not. */
 export type PersistSetup = (setup: CardSetup) => Promise<void>
@@ -997,7 +1007,11 @@ export async function finishHolderSetup(
  * already on disk). Then the owner's SET_LIMIT with the intent's limits,
  * and `finishHolderSetup`: ALLOW_LOAD, GET_INFO and GET_CARD, held to the
  * intent. All matching, the record is verified; otherwise
- * `SetupUnconfirmedError`. An ENG-826 intent (no limits) stops after
+ * `SetupUnconfirmedError`. With the default no-limits intent (`NO_LIMITS`)
+ * no SET_LIMIT is sent at all (spec/APDU.md, Personalisation: SET_LIMIT only
+ * "if the holder wants limits"): the `set-up` persist only warns, since no
+ * write depends on it, and `finishHolderSetup` verifies the card's own
+ * 0/0/0, budget 7. An ENG-826 intent (no limits) stops after
  * SET_OWNER, its `set-up` record persisted as before, a failure only warned.
  */
 export async function setUpCard(
