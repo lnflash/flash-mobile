@@ -427,10 +427,45 @@ describe("FlashcardV2Art", () => {
       )
       expect(arcs).toHaveLength(1)
       expect(arcs[0].props.strokeOpacity).toBe(0.6)
-      // The card stands out by itself: no outline.
-      expect(layers(view)).toHaveLength(1)
+      // The art first, then (light theme) the outline over it.
       expect(layers(view)[0]).toBe(clips[0])
     })
+  })
+
+  it("outlines the card on the light theme, where the lime field fades into the white row", () => {
+    const { layer, background } = appTheme.lightColors as {
+      layer: string
+      background: string
+    }
+    // Why: the field's light top-left is all but the row's and the page's
+    // colour, so without an outline the card's top and left edges vanish.
+    expect(contrast(CARD_PALETTE.lime, layer)).toBeLessThan(1.5)
+    expect(contrast(CARD_PALETTE.lime, background)).toBeLessThan(1.5)
+    expect(contrast(CARD_PALETTE.base, layer)).toBeLessThan(3)
+
+    const width = 54
+    const view = renderArt(width, "light")
+    expect(layers(view)).toHaveLength(2)
+    const [clip, outline] = layers(view)
+    expect(StyleSheet.flatten(clip.props.style).overflow).toBe("hidden")
+    expect(outline.props.pointerEvents).toBe("none")
+    const style = StyleSheet.flatten(outline.props.style)
+    expect(style).toMatchObject({
+      ...StyleSheet.absoluteFillObject,
+      borderWidth: 1,
+      borderColor: CARD_PALETTE.greenDeep,
+    })
+    expect(style.borderRadius).toBeCloseTo((11.9 * width) / 320, 9)
+    // The outline holds the 3:1 non-text contrast against the row, the page
+    // and the field's lightest stop.
+    ;[layer, background, CARD_PALETTE.lime].forEach((c) =>
+      expect(contrast(CARD_PALETTE.greenDeep, c)).toBeGreaterThanOrEqual(3),
+    )
+    // Drawn over the art, never as a border that would inset it.
+    expect(
+      StyleSheet.flatten(view.getByTestId("art").props.style).borderWidth,
+    ).toBeUndefined()
+    expect(StyleSheet.flatten(clip.props.style).borderWidth).toBeUndefined()
   })
 
   it("draws no outline on the dark theme either: the lime face stands out from the black page", () => {
