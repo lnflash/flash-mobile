@@ -259,6 +259,8 @@ const en: BaseTranslation = {
     notSetUpTitle: "This card isn't set up",
     notSetUpBody:
       "Set it up before you load it. An empty card that hasn't been set up belongs to the first phone that sets it up.",
+    notSetUpAwaitingBody:
+      "This card is new and waiting for its holder. The first phone to set it up becomes its owner, and another phone can't take that back. Tap Set up to continue.",
     blockedTitle: "This card's PIN is blocked",
     blockedOwnerBody:
       "The PIN was entered wrong too many times. Set a new PIN to unblock it.",
@@ -285,9 +287,11 @@ const en: BaseTranslation = {
     setUp: "Set\nup",
     setUpTitle: "Set up card",
     setUpIntro:
-      "Setting up makes this phone the card's owner. Only the owner can load the card without its PIN, change its PIN or set its limits.",
+      "Setting up makes this phone the card's owner. Only the owner can load the card without a PIN, set or change its PIN, or set its limits.",
     setUpFirstPhone:
       "An empty card that hasn't been set up belongs to the first phone that sets it up.",
+    setUpAwaitingHolder:
+      "This card is new and waiting for its holder. The first phone to set it up becomes its owner, and another phone can't take that back. Choose a PIN or continue without one to set it up.",
     setUpKeySeed:
       "The owner key comes from your wallet's recovery phrase, so restoring the phrase on a new phone restores ownership.",
     setUpKeyDevice:

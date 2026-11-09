@@ -65,6 +65,7 @@ import {
   setupUnverified,
   setupRecord,
   freezeSetupIntent,
+  isAwaitingHolder,
   newSetupProgress,
   setupWriteSent,
   confirmOwnerKey,
@@ -84,6 +85,7 @@ import {
   createFakeCard,
 } from "../helpers/fake-cashu"
 import { HEADER_VECTORS, headerBytes } from "../helpers/block-headers"
+import { cardInfo, cardRecord } from "../helpers/cashu-card-state"
 
 const fromHex = (h: string) => (h.match(/../g) ?? []).map((x) => parseInt(x, 16))
 const hex = (b: ArrayLike<number>) =>
@@ -2436,5 +2438,95 @@ describe("holder setup: SET_LIMIT after SET_OWNER, and the verifying read (ENG-8
         progress: { verified: true },
       })
     })
+  })
+})
+
+// ENG-830: a card exactly as the provisioner leaves it, from state the app
+// already holds. Every field must say so; any one off hides the line.
+describe("isAwaitingHolder (ENG-830)", () => {
+  const MINT = "https://mint.test"
+  const awaitingInfo = (): CardInfo =>
+    cardInfo({
+      version: "2.2",
+      major: 2,
+      minor: 2,
+      unspent: 0,
+      spent: 0,
+      empty: 128,
+      pinState: "unset",
+      tries: 3,
+      recordSet: false,
+      hasOwner: false,
+    })
+  const emptyRecord = (overrides: Partial<CardRecord> = {}): CardRecord =>
+    cardRecord({ recordSet: false, mint: "", design: null, ...overrides })
+  const awaitingCard = () => ({ ...awaitingInfo(), record: emptyRecord() })
+  const aSetup = (status: CardSetup["status"]): CardSetup =>
+    setupRecord(
+      freezeSetupIntent({ cardPubkey: "02" + "ab".repeat(32), mint: MINT }),
+      newSetupProgress(),
+      { status, at: 1 },
+    )
+
+  it("is true for a 2.2 card with no PIN, owner, proofs, limits or record, and no setup", () => {
+    expect(isAwaitingHolder(awaitingCard(), undefined)).toBe(true)
+  })
+
+  type Flip = [string, (card: ReturnType<typeof awaitingCard>) => object]
+  const flips: Flip[] = [
+    ["version 2.0", (c) => ({ ...c, major: 2, minor: 0 })],
+    ["version 2.3", (c) => ({ ...c, major: 2, minor: 3 })],
+    ["PIN set", (c) => ({ ...c, pinState: "set" })],
+    ["PIN blocked", (c) => ({ ...c, pinState: "blocked" })],
+    ["PIN state unknown", (c) => ({ ...c, pinState: "unknown" })],
+    ["an owner", (c) => ({ ...c, hasOwner: true })],
+    ["locked", (c) => ({ ...c, locked: true })],
+    ["one unspent proof", (c) => ({ ...c, unspent: 1 })],
+    ["one spent proof", (c) => ({ ...c, spent: 1 })],
+    ["a daily limit", (c) => ({ ...c, dailyLimit: 1 })],
+    ["a payment limit", (c) => ({ ...c, paymentLimit: 1 })],
+    ["an allowance", (c) => ({ ...c, allowance: 1 })],
+    ["no-PIN spending", (c) => ({ ...c, nopinSpent: 1 })],
+    ["spending today", (c) => ({ ...c, spentToday: 1 })],
+    ["GET_INFO's record flag", (c) => ({ ...c, recordSet: true })],
+    ["no record read", (c) => ({ ...c, record: undefined })],
+    [
+      "GET_CARD's record flag",
+      (c) => ({ ...c, record: { ...c.record, recordSet: true } }),
+    ],
+    ["a mint", (c) => ({ ...c, record: { ...c.record, mint: MINT } })],
+    [
+      "a refund key",
+      (c) => ({ ...c, record: { ...c.record, refundKey: "02" + "cd".repeat(32) } }),
+    ],
+    ["a design", (c) => ({ ...c, record: { ...c.record, design: "abc" } })],
+    [
+      "a design the answer stopped before",
+      (c) => ({ ...c, record: { ...c.record, design: undefined } }),
+    ],
+    ["a record daily limit", (c) => ({ ...c, record: { ...c.record, dailyLimit: 1 } })],
+    [
+      "the allowance armed",
+      (c) => ({ ...c, record: { ...c.record, allowanceArmed: true } }),
+    ],
+  ]
+  // forEach rather than it.each: the global `it` is typed without .each here.
+  flips.forEach(([label, flip]) => {
+    it(`is false with ${label}`, () => {
+      const card = flip(awaitingCard()) as Parameters<typeof isAwaitingHolder>[0]
+      expect(isAwaitingHolder(card, undefined)).toBe(false)
+    })
+  })
+
+  const statuses = ["started", "mismatched", "set-up"] as const
+  statuses.forEach((status) => {
+    it(`is false with a stored ${status} setup`, () => {
+      expect(isAwaitingHolder(awaitingCard(), aSetup(status))).toBe(false)
+    })
+  })
+
+  it("is false with a stored setup of a foreign format", () => {
+    const foreign = { ...aSetup("started"), v: 2 } as unknown as CardSetup
+    expect(isAwaitingHolder(awaitingCard(), foreign)).toBe(false)
   })
 })

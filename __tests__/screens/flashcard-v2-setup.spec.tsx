@@ -1908,3 +1908,141 @@ describe("FlashcardV2SetupScreen: the card's mint", () => {
     expect(card.record()).toEqual({ set: true, mint: "https://mint.example/Sats" })
   })
 })
+
+// ENG-830: a card exactly as the provisioner left it says it is waiting for
+// its holder, in place of the first-phone line, and asks for nothing more.
+describe("FlashcardV2SetupScreen: a card awaiting its holder (ENG-830)", () => {
+  let card: FakeCard
+  let order: string[]
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    capturedOptions = undefined
+    order = []
+    card = createFakeCard(128, { owner: null, sealed: true, version: V22 })
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      order.push(apdu[1].toString(16))
+      return answer(apdu)
+    })
+    mockCard = cashuCardState({
+      pubkey: card.pubkey,
+      version: "2.2",
+      major: 2,
+      minor: 2,
+      hasOwner: false,
+      recordSet: false,
+      pinState: "unset",
+      unspent: 0,
+      spent: 0,
+      empty: 128,
+      balance: 0,
+      keysets: [],
+      unitTotals: undefined,
+      record: cardRecord({ recordSet: false, mint: "", design: null }),
+      ownerKeySource: undefined,
+    })
+    mockRunResult = runOn(card)
+    mockOwnerKeyFor.mockResolvedValue(undefined)
+    mockNewOwnerKey.mockResolvedValue(SEED_KEY)
+    mockSaveOwnerKey.mockImplementation(async () => {
+      order.push("saved")
+    })
+    mockRefreshTipHeader.mockResolvedValue({
+      bytes: headerBytes(HEADER_VECTORS[2]),
+      time: HEADER_VECTORS[2].time,
+    })
+  })
+
+  /** A stored record for this card, as `setupRecord` makes it. */
+  const storedRecord = (
+    status: CardSetupRecord["status"],
+    extra: Partial<CardSetupRecord> = {},
+  ): CardSetupRecord => ({
+    ...actualOwnerStore.setupRecord(
+      actualOwnerStore.freezeSetupIntent({
+        cardPubkey: card.pubkey,
+        mint: "https://mint.test",
+      }),
+      actualOwnerStore.newSetupProgress(),
+      { status, at: 1 },
+    ),
+    ...extra,
+  })
+
+  it("says the card is waiting for its holder in place of the first-phone line", async () => {
+    await renderScreen()
+    expect(screen.getByTestId("setup-awaiting-holder").props.children).toBe(
+      LL.FlashcardV2.setUpAwaitingHolder(),
+    )
+    expect(screen.queryByText(LL.FlashcardV2.setUpFirstPhone())).toBeNull()
+    expect(screen.getByText(LL.FlashcardV2.setUpIntro())).toBeTruthy()
+  })
+
+  it("shows the first-phone line, not the awaiting one, for a card with a record set", async () => {
+    mockCard = {
+      ...(mockCard as CashuCardState),
+      recordSet: true,
+      record: cardRecord({ mint: "https://mint.test", design: null }),
+    }
+    await renderScreen()
+    expect(screen.getByText(LL.FlashcardV2.setUpFirstPhone())).toBeTruthy()
+    expect(screen.queryByTestId("setup-awaiting-holder")).toBeNull()
+  })
+
+  // forEach rather than it.each: the global `it` is typed without .each here.
+  const heldSetups: [string, () => CardSetupRecord][] = [
+    [
+      "a verified setup",
+      () =>
+        storedRecord("set-up", { verification: { at: 1 } } as Partial<CardSetupRecord>),
+    ],
+    [
+      "a setup of a foreign format",
+      () => ({ ...storedRecord("started"), v: 2 } as unknown as CardSetupRecord),
+    ],
+  ]
+  heldSetups.forEach(([label, record]) => {
+    it(`shows the first-phone line when this phone holds ${label} for the card`, async () => {
+      testStore = newStore({
+        ...testStore.getState().flashcardV2,
+        setups: { [card.pubkey]: record() },
+      })
+      await renderScreen()
+      expect(screen.getByText(LL.FlashcardV2.setUpFirstPhone())).toBeTruthy()
+      expect(screen.queryByTestId("setup-awaiting-holder")).toBeNull()
+    })
+  })
+
+  const refused: [string, Partial<CashuCardState>][] = [
+    ["a PIN set", { pinState: "set" }],
+    ["an owner", { hasOwner: true }],
+    ["one unspent proof", { unspent: 1, balance: 10 }],
+  ]
+  refused.forEach(([label, overrides]) => {
+    it(`never says it is awaiting for a card with ${label}, which is refused at the intro`, async () => {
+      mockCard = { ...(mockCard as CashuCardState), ...overrides }
+      renderPlain()
+      await waitFor(() => expect(screen.getByTestId("setup-error")).toBeTruthy())
+      expect(screen.queryByTestId("setup-awaiting-holder")).toBeNull()
+      expect(screen.queryByText(LL.FlashcardV2.setUpAwaitingHolder())).toBeNull()
+      expect(order).toEqual([])
+    })
+  })
+
+  it("the happy path from the awaiting intro: no PIN, then one tap press, as for any blank card", async () => {
+    await renderScreen()
+    expect(screen.getByTestId("setup-awaiting-holder")).toBeTruthy()
+    fireEvent.press(screen.getByTestId("setup-no-pin"))
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("setup-tap"))
+    })
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(order).toEqual(["1", "16", "32", "16", "saved", "43", ...VERIFY_TAIL])
+    expect(mockFlushPersisted).toHaveBeenCalledTimes(4)
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({
+      status: "set-up",
+      progress: { limitsSent: false, verified: true },
+    })
+  })
+})

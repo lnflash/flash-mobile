@@ -36,6 +36,7 @@ import {
 } from "@app/utils/cashu-card-format"
 import {
   currentSetup,
+  isAwaitingHolder,
   setupLimitsDiffer,
   setupUnverified,
 } from "@app/utils/cashu-card-owner-store"
@@ -315,7 +316,7 @@ export const FlashcardV2Screen = () => {
         </View>
       )}
 
-      <CardNotices card={cashuCard} ownership={ownership} />
+      <CardNotices card={cashuCard} ownership={ownership} isAuthed={isAuthed} />
 
       {/* The tidy (ENG-702): offered after an online read by the owner. */}
       {isAuthed && (
@@ -512,13 +513,22 @@ type Notice = { testID: string; title: string; body: string; severe: boolean }
  * clock that has run out of days to count on its own. A set PIN needs no
  * notice: on 2.0 three wrong entries block it, and only the owner unblocks it.
  */
-const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> = ({
-  card,
-  ownership,
-}) => {
+const CardNotices: React.FC<{
+  card: CashuCardState
+  ownership: CardOwnership
+  /** The awaiting wording points at Set up, which only a signed-in holder sees. */
+  isAuthed: boolean
+}> = ({ card, ownership, isAuthed }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
-  const notices = cardNotices(card, { ownership }, LL)
+  // The raw record (ENG-830), not `currentSetup`'s: a stale or foreign-format
+  // setup for this card hides the awaiting-holder wording too.
+  const rawSetup = useAppSelector((state) => state.flashcardV2.setups?.[card.pubkey])
+  const notices = cardNotices(
+    card,
+    { ownership, awaitingHolder: isAuthed && isAwaitingHolder(card, rawSetup) },
+    LL,
+  )
   if (notices.length === 0) return null
 
   // One element per notice for a screen reader, labelled with the words on
@@ -556,7 +566,14 @@ const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> 
  */
 export const cardNotices = (
   card: Pick<CashuCardState, "hasOwner" | "pinState" | "record" | "locked">,
-  { ownership }: { ownership: CardOwnership },
+  {
+    ownership,
+    awaitingHolder,
+  }: {
+    ownership: CardOwnership
+    /** ENG-830: the card is exactly as the provisioner left it (`isAwaitingHolder`). */
+    awaitingHolder?: boolean
+  },
   LL: LLType,
 ): Notice[] => {
   const notices: Notice[] = []
@@ -564,7 +581,9 @@ export const cardNotices = (
     notices.push({
       testID: "flashcard-v2-not-set-up",
       title: LL.FlashcardV2.notSetUpTitle(),
-      body: LL.FlashcardV2.notSetUpBody(),
+      body: awaitingHolder
+        ? LL.FlashcardV2.notSetUpAwaitingBody()
+        : LL.FlashcardV2.notSetUpBody(),
       severe: false,
     })
   }

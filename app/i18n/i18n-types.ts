@@ -880,6 +880,10 @@ type RootTranslation = {
 		 */
 		notSetUpBody: string
 		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​n​e​w​ ​a​n​d​ ​w​a​i​t​i​n​g​ ​f​o​r​ ​i​t​s​ ​h​o​l​d​e​r​.​ ​T​h​e​ ​f​i​r​s​t​ ​p​h​o​n​e​ ​t​o​ ​s​e​t​ ​i​t​ ​u​p​ ​b​e​c​o​m​e​s​ ​i​t​s​ ​o​w​n​e​r​,​ ​a​n​d​ ​a​n​o​t​h​e​r​ ​p​h​o​n​e​ ​c​a​n​'​t​ ​t​a​k​e​ ​t​h​a​t​ ​b​a​c​k​.​ ​T​a​p​ ​S​e​t​ ​u​p​ ​t​o​ ​c​o​n​t​i​n​u​e​.
+		 */
+		notSetUpAwaitingBody: string
+		/**
 		 * T​h​i​s​ ​c​a​r​d​'​s​ ​P​I​N​ ​i​s​ ​b​l​o​c​k​e​d
 		 */
 		blockedTitle: string
@@ -957,13 +961,17 @@ type RootTranslation = {
 		 */
 		setUpTitle: string
 		/**
-		 * S​e​t​t​i​n​g​ ​u​p​ ​m​a​k​e​s​ ​t​h​i​s​ ​p​h​o​n​e​ ​t​h​e​ ​c​a​r​d​'​s​ ​o​w​n​e​r​.​ ​O​n​l​y​ ​t​h​e​ ​o​w​n​e​r​ ​c​a​n​ ​l​o​a​d​ ​t​h​e​ ​c​a​r​d​ ​w​i​t​h​o​u​t​ ​i​t​s​ ​P​I​N​,​ ​c​h​a​n​g​e​ ​i​t​s​ ​P​I​N​ ​o​r​ ​s​e​t​ ​i​t​s​ ​l​i​m​i​t​s​.
+		 * S​e​t​t​i​n​g​ ​u​p​ ​m​a​k​e​s​ ​t​h​i​s​ ​p​h​o​n​e​ ​t​h​e​ ​c​a​r​d​'​s​ ​o​w​n​e​r​.​ ​O​n​l​y​ ​t​h​e​ ​o​w​n​e​r​ ​c​a​n​ ​l​o​a​d​ ​t​h​e​ ​c​a​r​d​ ​w​i​t​h​o​u​t​ ​a​ ​P​I​N​,​ ​s​e​t​ ​o​r​ ​c​h​a​n​g​e​ ​i​t​s​ ​P​I​N​,​ ​o​r​ ​s​e​t​ ​i​t​s​ ​l​i​m​i​t​s​.
 		 */
 		setUpIntro: string
 		/**
 		 * A​n​ ​e​m​p​t​y​ ​c​a​r​d​ ​t​h​a​t​ ​h​a​s​n​'​t​ ​b​e​e​n​ ​s​e​t​ ​u​p​ ​b​e​l​o​n​g​s​ ​t​o​ ​t​h​e​ ​f​i​r​s​t​ ​p​h​o​n​e​ ​t​h​a​t​ ​s​e​t​s​ ​i​t​ ​u​p​.
 		 */
 		setUpFirstPhone: string
+		/**
+		 * T​h​i​s​ ​c​a​r​d​ ​i​s​ ​n​e​w​ ​a​n​d​ ​w​a​i​t​i​n​g​ ​f​o​r​ ​i​t​s​ ​h​o​l​d​e​r​.​ ​T​h​e​ ​f​i​r​s​t​ ​p​h​o​n​e​ ​t​o​ ​s​e​t​ ​i​t​ ​u​p​ ​b​e​c​o​m​e​s​ ​i​t​s​ ​o​w​n​e​r​,​ ​a​n​d​ ​a​n​o​t​h​e​r​ ​p​h​o​n​e​ ​c​a​n​'​t​ ​t​a​k​e​ ​t​h​a​t​ ​b​a​c​k​.​ ​C​h​o​o​s​e​ ​a​ ​P​I​N​ ​o​r​ ​c​o​n​t​i​n​u​e​ ​w​i​t​h​o​u​t​ ​o​n​e​ ​t​o​ ​s​e​t​ ​i​t​ ​u​p​.
+		 */
+		setUpAwaitingHolder: string
 		/**
 		 * T​h​e​ ​o​w​n​e​r​ ​k​e​y​ ​c​o​m​e​s​ ​f​r​o​m​ ​y​o​u​r​ ​w​a​l​l​e​t​'​s​ ​r​e​c​o​v​e​r​y​ ​p​h​r​a​s​e​,​ ​s​o​ ​r​e​s​t​o​r​i​n​g​ ​t​h​e​ ​p​h​r​a​s​e​ ​o​n​ ​a​ ​n​e​w​ ​p​h​o​n​e​ ​r​e​s​t​o​r​e​s​ ​o​w​n​e​r​s​h​i​p​.
 		 */
@@ -9792,6 +9800,10 @@ export type TranslationFunctions = {
 		 */
 		notSetUpBody: () => LocalizedString
 		/**
+		 * This card is new and waiting for its holder. The first phone to set it up becomes its owner, and another phone can't take that back. Tap Set up to continue.
+		 */
+		notSetUpAwaitingBody: () => LocalizedString
+		/**
 		 * This card's PIN is blocked
 		 */
 		blockedTitle: () => LocalizedString
@@ -9869,13 +9881,17 @@ export type TranslationFunctions = {
 		 */
 		setUpTitle: () => LocalizedString
 		/**
-		 * Setting up makes this phone the card's owner. Only the owner can load the card without its PIN, change its PIN or set its limits.
+		 * Setting up makes this phone the card's owner. Only the owner can load the card without a PIN, set or change its PIN, or set its limits.
 		 */
 		setUpIntro: () => LocalizedString
 		/**
 		 * An empty card that hasn't been set up belongs to the first phone that sets it up.
 		 */
 		setUpFirstPhone: () => LocalizedString
+		/**
+		 * This card is new and waiting for its holder. The first phone to set it up becomes its owner, and another phone can't take that back. Choose a PIN or continue without one to set it up.
+		 */
+		setUpAwaitingHolder: () => LocalizedString
 		/**
 		 * The owner key comes from your wallet's recovery phrase, so restoring the phrase on a new phone restores ownership.
 		 */
