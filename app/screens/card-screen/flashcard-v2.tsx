@@ -316,7 +316,7 @@ export const FlashcardV2Screen = () => {
         </View>
       )}
 
-      <CardNotices card={cashuCard} ownership={ownership} />
+      <CardNotices card={cashuCard} ownership={ownership} isAuthed={isAuthed} />
 
       {/* The tidy (ENG-702): offered after an online read by the owner. */}
       {isAuthed && (
@@ -513,10 +513,12 @@ type Notice = { testID: string; title: string; body: string; severe: boolean }
  * clock that has run out of days to count on its own. A set PIN needs no
  * notice: on 2.0 three wrong entries block it, and only the owner unblocks it.
  */
-const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> = ({
-  card,
-  ownership,
-}) => {
+const CardNotices: React.FC<{
+  card: CashuCardState
+  ownership: CardOwnership
+  /** The awaiting wording points at Set up, which only a signed-in holder sees. */
+  isAuthed: boolean
+}> = ({ card, ownership, isAuthed }) => {
   const styles = useStyles()
   const { LL } = useI18nContext()
   // The raw record (ENG-830), not `currentSetup`'s: a stale or foreign-format
@@ -524,7 +526,7 @@ const CardNotices: React.FC<{ card: CashuCardState; ownership: CardOwnership }> 
   const rawSetup = useAppSelector((state) => state.flashcardV2.setups?.[card.pubkey])
   const notices = cardNotices(
     card,
-    { ownership, awaitingHolder: isAwaitingHolder(card, rawSetup) },
+    { ownership, awaitingHolder: isAuthed && isAwaitingHolder(card, rawSetup) },
     LL,
   )
   if (notices.length === 0) return null

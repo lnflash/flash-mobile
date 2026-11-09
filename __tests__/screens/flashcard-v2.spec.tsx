@@ -2231,6 +2231,16 @@ describe("FlashcardV2Screen, a card awaiting its holder (ENG-830)", () => {
     expect(screen.getByTestId("flashcard-v2-action-setup")).toBeTruthy()
   })
 
+  it("signed out, an awaiting card keeps the old body, since Set up is not on the screen", () => {
+    mockIsAuthed = false
+    mockCashuCard = awaiting()
+    renderScreen()
+    expect(notice().props.accessibilityLabel).toBe(plainLabel)
+    expect(screen.getByText(LL.FlashcardV2.notSetUpBody())).toBeTruthy()
+    expect(screen.queryByText(LL.FlashcardV2.notSetUpAwaitingBody())).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-action-setup")).toBeNull()
+  })
+
   // forEach rather than it.each: the global `it` is typed without .each here.
   const plainCards: [string, Partial<CashuCardState>][] = [
     ["funded", { unspent: 2, balance: 10 }],
