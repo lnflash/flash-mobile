@@ -13,6 +13,7 @@
  * tightened here.
  */
 import { cardRecordValue, parseCardRecord } from "../../app/utils/cashu-card"
+import { limitValue } from "../../app/utils/cashu-card-owner"
 
 const fromHex = (h: string) => (h.match(/../g) ?? []).map((x) => parseInt(x, 16))
 const hex = (b: number[]) => b.map((x) => x.toString(16).padStart(2, "0")).join("")
@@ -105,6 +106,47 @@ describe("the app's card record codec matches cardkit's (df3f0bf)", () => {
         rolloverBudget: record.rollBudget,
         allowanceArmed: record.allowanceArmed,
       }).toEqual(cardkit)
+    })
+  }
+})
+
+/**
+ * ENG-827: SET_LIMIT's thirteen-byte value (`limitValue`) held to cardkit's
+ * `encodeOwnerLimits` (tools/cardkit/gp/configuration.ts at df3f0bf, the same
+ * pin as above; identical at 09e16b0). Re-generate from that file when the
+ * pin moves.
+ */
+const LIMIT_VECTORS: [
+  { dailySats: number; paymentSats: number; noPinSats: number; rolloverBudget: number },
+  string,
+][] = [
+  [
+    { dailySats: 0, paymentSats: 0, noPinSats: 0, rolloverBudget: 7 },
+    "00000000000000000000000007",
+  ],
+  [
+    { dailySats: 50000, paymentSats: 21000, noPinSats: 2500, rolloverBudget: 12 },
+    "0000c35000005208000009c40c",
+  ],
+  [
+    { dailySats: 4294967295, paymentSats: 1, noPinSats: 0, rolloverBudget: 30 },
+    "ffffffff00000001000000001e",
+  ],
+]
+
+describe("the app's SET_LIMIT value matches cardkit's (df3f0bf)", () => {
+  for (const [limits, encoded] of LIMIT_VECTORS) {
+    it(`limitValue(${JSON.stringify(limits)}) is cardkit's encodeOwnerLimits`, () => {
+      expect(
+        hex(
+          limitValue({
+            day: limits.dailySats,
+            payment: limits.paymentSats,
+            allowance: limits.noPinSats,
+            rollBudget: limits.rolloverBudget,
+          }),
+        ),
+      ).toBe(encoded)
     })
   }
 })

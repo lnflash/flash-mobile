@@ -36,6 +36,7 @@ import { formatUnitAmount, isolatedMintName } from "../../app/utils/cashu-card-f
 import { cardInfo, cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { store } from "../../app/store/redux"
 import {
+  cardLimitsSet,
   cardSetupSaved,
   resetFlashcardV2,
 } from "../../app/store/redux/slices/flashcardV2Slice"
@@ -48,7 +49,7 @@ import {
 import { CardError } from "../../app/utils/cashu-card"
 import { CardSpendError } from "../../app/utils/cashu-card-spend"
 import { RelayUnsettledError } from "../../app/utils/cashu-card-relay"
-import { ownerKeyStore } from "../../app/utils/cashu-card-owner-store"
+import { CardSetup, ownerKeyStore } from "../../app/utils/cashu-card-owner-store"
 
 loadLocale("en")
 const LL = i18nObject("en")
@@ -1976,5 +1977,193 @@ describe("FlashcardV2Screen, the card's own mint", () => {
     } finally {
       setCardFundMints([])
     }
+  })
+})
+
+// ENG-827: "holder setup verified", and a setup this phone has to finish.
+describe("FlashcardV2Screen, the holder setup (ENG-827)", () => {
+  const LIMITS = { day: 5000, payment: 0, allowance: 0, rollBudget: 7 }
+  const record = (
+    over: Partial<CardSetup> = {},
+    /** null for an ENG-826 record: no limits. */
+    limits: CardSetup["intent"]["limits"] | null = LIMITS,
+  ): CardSetup => ({
+    v: 1,
+    intent: {
+      cardPubkey: PUBKEY,
+      mint: "https://forge.flashapp.me",
+      unit: 0,
+      refundKey: null,
+      design: null,
+      pinChosen: true,
+      ...(limits ? { limits } : {}),
+    },
+    progress: {
+      pinSent: true,
+      recordSent: true,
+      ownerSent: true,
+      limitsSent: true,
+      verified: false,
+    },
+    status: "set-up",
+    heldByCard: {
+      mint: "https://forge.flashapp.me",
+      unit: 0,
+      refundKey: null,
+      design: null,
+    },
+    updatedAt: 1,
+    setUpAt: 1,
+    ...over,
+  })
+  const verified = () =>
+    record({
+      progress: {
+        pinSent: true,
+        recordSent: true,
+        ownerSent: true,
+        limitsSent: true,
+        verified: true,
+      },
+      verification: {
+        at: 2,
+        held: {
+          mint: "https://forge.flashapp.me",
+          unit: 0,
+          refundKey: null,
+          design: null,
+          owner: true,
+          ...LIMITS,
+        },
+      },
+    })
+  const neither = () => {
+    expect(screen.queryByTestId("flashcard-v2-setup-verified")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-setup-unconfirmed")).toBeNull()
+    expect(screen.queryByTestId("flashcard-v2-action-finish")).toBeNull()
+  }
+
+  beforeEach(() => {
+    mockIsAuthed = true
+    mockCashuCardPreview = undefined
+    mockNavigate.mockClear()
+  })
+  afterEach(() => {
+    store.dispatch(resetFlashcardV2())
+  })
+
+  it("a verified setup of this phone's says so in one line under the mint, with a fuller label", () => {
+    store.dispatch(cardSetupSaved(verified()))
+    mockCashuCard = card()
+    renderScreen()
+    const line = screen.getByTestId("flashcard-v2-setup-verified")
+    expect(line.props.children).toBe(LL.FlashcardV2.setUpVerifiedLine())
+    expect(line.props.accessibilityLabel).toBe(LL.FlashcardV2.setUpVerifiedLabel())
+    expect(screen.queryByTestId("flashcard-v2-action-finish")).toBeNull()
+  })
+
+  it("a setup not verified says what the card has not confirmed, and Finish setup opens setup", () => {
+    store.dispatch(cardSetupSaved(record({ unconfirmed: ["dailyLimit", "rollBudget"] })))
+    mockCashuCard = card()
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-unconfirmed").props.children).toBe(
+      LL.FlashcardV2.setUpUnconfirmed({ what: LL.FlashcardV2.setUpFieldLimits() }),
+    )
+    fireEvent.press(screen.getByTestId("flashcard-v2-action-finish"))
+    expect(mockNavigate).toHaveBeenCalledWith("FlashcardV2Setup")
+    expect(screen.queryByTestId("flashcard-v2-setup-verified")).toBeNull()
+  })
+
+  it("a funded setup not verified still offers Finish setup next to Top up", () => {
+    // Topped up after a tap cut past SET_OWNER: the owner's finish needs no
+    // empty card (spec/APDU.md SET_LIMIT: "no PIN, any funds").
+    store.dispatch(cardSetupSaved(record({ unconfirmed: ["dailyLimit"] })))
+    mockCashuCard = card({ unspent: 2, balance: 10 })
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-unconfirmed")).toBeTruthy()
+    expect(screen.getByTestId("flashcard-v2-action-finish")).toBeTruthy()
+    expect(screen.getByTestId("flashcard-v2-action-topup")).toBeTruthy()
+  })
+
+  it("limits changed elsewhere say to check Limits, with no Finish setup: no tap finishes it", () => {
+    store.dispatch(
+      cardSetupSaved(
+        record({
+          unconfirmed: ["dailyLimit", "paymentLimit", "allowance", "rollBudget"],
+          limitsChangedElsewhere: true,
+        }),
+      ),
+    )
+    mockCashuCard = card()
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-limits-differ").props.children).toBe(
+      LL.FlashcardV2.setUpLimitsDiffer(),
+    )
+    neither()
+  })
+
+  it("limits changed elsewhere stop being said once the holder saves limits under Limits", () => {
+    store.dispatch(
+      cardSetupSaved(
+        record({
+          unconfirmed: ["dailyLimit", "paymentLimit", "allowance", "rollBudget"],
+          limitsChangedElsewhere: true,
+        }),
+      ),
+    )
+    mockCashuCard = card()
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-limits-differ")).toBeTruthy()
+    // What the Limits screen dispatches when the owner's SET_LIMIT goes through.
+    act(() => {
+      store.dispatch(
+        cardLimitsSet({
+          pubkey: PUBKEY,
+          limits: { day: 2000, payment: 0, allowance: 0, rollBudget: 7 },
+        }),
+      )
+    })
+    expect(screen.queryByTestId("flashcard-v2-setup-limits-differ")).toBeNull()
+    neither()
+  })
+
+  it("a setup not verified with nothing named says every part", () => {
+    store.dispatch(cardSetupSaved(record()))
+    mockCashuCard = card()
+    renderScreen()
+    expect(screen.getByTestId("flashcard-v2-setup-unconfirmed").props.children).toBe(
+      LL.FlashcardV2.setUpUnconfirmed({
+        what: [
+          LL.FlashcardV2.setUpFieldOwner(),
+          LL.FlashcardV2.setUpFieldLimits(),
+          LL.FlashcardV2.setUpFieldMint(),
+          LL.FlashcardV2.setUpFieldRecord(),
+        ].join(", "),
+      }),
+    )
+  })
+
+  it("an owned card with no setup record says neither: verification is never read off the owner flag", () => {
+    mockCashuCard = card()
+    renderScreen()
+    neither()
+  })
+
+  it("an ENG-826 record (no limits) says neither", () => {
+    store.dispatch(cardSetupSaved(record({}, null)))
+    mockCashuCard = card()
+    renderScreen()
+    neither()
+  })
+
+  it("another phone's card says neither, verified record or not", () => {
+    store.dispatch(cardSetupSaved(verified()))
+    mockCashuCard = othersCard()
+    const { unmount } = renderScreen()
+    neither()
+    unmount()
+    store.dispatch(cardSetupSaved(record()))
+    renderScreen()
+    neither()
   })
 })

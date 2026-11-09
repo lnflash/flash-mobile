@@ -395,6 +395,36 @@ describe("flashcardV2 slice — setup records (ENG-826)", () => {
     expect(state.setups?.[OTHER]).toEqual(setup({}, OTHER))
   })
 
+  it("cardLimitsSet marks a setup that found limits from elsewhere as dealt with, and no other (ENG-827)", () => {
+    const limits = { day: 5000, payment: 0, allowance: 0, rollBudget: 7 }
+    const setUp = (over: Partial<CardSetup> = {}, pubkey = PUBKEY) =>
+      setup(
+        {
+          intent: { ...setup({}, pubkey).intent, limits },
+          progress: { pinSent: true, recordSent: true, ownerSent: true },
+          status: "set-up",
+          setUpAt: 2_000,
+          updatedAt: 2_000,
+          ...over,
+        },
+        pubkey,
+      )
+    const differ = setUp({ unconfirmed: ["dailyLimit"], limitsChangedElsewhere: true })
+    const unverified = setUp({ unconfirmed: ["dailyLimit"] }, OTHER)
+    let state = reducer(undefined, cardSetupSaved(differ))
+    state = reducer(state, cardSetupSaved(unverified))
+    const set = (pubkey: string) =>
+      cardLimitsSet({
+        pubkey,
+        limits: { day: 1, payment: 0, allowance: 0, rollBudget: 7 },
+      })
+    state = reducer(state, set(PUBKEY))
+    expect(state.setups?.[PUBKEY]).toEqual({ ...differ, limitsSavedSince: true })
+    // A setup a tap can still finish is left for Finish setup.
+    state = reducer(state, set(OTHER))
+    expect(state.setups?.[OTHER]).toEqual(unverified)
+  })
+
   it("Remove card keeps the setup record; logout drops every one (decision 3)", () => {
     let state = reducer(undefined, seen())
     state = reducer(state, cardSetupSaved(setup()))

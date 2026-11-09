@@ -463,6 +463,18 @@ export type FakeCardOptions = {
     allowance: number
     rollBudget: number
   }>
+  /**
+   * Test only (ENG-827): once the card has taken a SET_LIMIT, the limits
+   * GET_INFO and GET_CARD report in place of the ones it holds, field by
+   * field, as a card that did not keep that SET_LIMIT would. Before one, and
+   * for SET_LIMIT's own checks, the limits it holds.
+   */
+  reportLimits?: Partial<{
+    day: number
+    payment: number
+    allowance: number
+    rollBudget: number
+  }>
 }
 
 const hexToBytes = (hex: string): number[] =>
@@ -515,6 +527,7 @@ export const createFakeCard = (
     badAuth = false,
     rolls: initialRolls = 0,
     limits: initialLimits = {},
+    reportLimits = {},
     locked = false,
     outbox: outboxOption,
   }: FakeCardOptions = {},
@@ -541,6 +554,9 @@ export const createFakeCard = (
   let now = 0
   let rolls = initialRolls
   let limits = { day: 0, payment: 0, allowance: 0, rollBudget: 7, ...initialLimits }
+  /** What GET_INFO and GET_CARD say of the limits (`reportLimits`). */
+  let limitWritten = false
+  const reported = () => (limitWritten ? { ...limits, ...reportLimits } : limits)
   let payment:
     | { slots: number[]; outputs: number[][]; change: number; drafts: number[] }
     | undefined
@@ -725,7 +741,7 @@ export const createFakeCard = (
           tries,
           locked ? 1 : 0,
           recordSet ? 1 : 0,
-          ...u32(limits.day),
+          ...u32(reported().day),
           owner ? 1 : 0,
           ...u32(now),
           ...u32(0),
@@ -734,8 +750,8 @@ export const createFakeCard = (
         ]
         if (p1 === 1)
           body.push(
-            ...u32(grant ? limits.payment : 0),
-            ...u32(limits.allowance),
+            ...u32(grant ? reported().payment : 0),
+            ...u32(reported().allowance),
             ...u32(nopinSpent),
           )
         return [...body, ...SW_OK]
@@ -772,12 +788,12 @@ export const createFakeCard = (
           4,
           recordSet ? 1 : 0,
           0,
-          ...u32(limits.day),
+          ...u32(reported().day),
           ...new Array(33).fill(0),
           ...new Array(4).fill(0),
           ...new Array(32).fill(0),
           rolls,
-          limits.rollBudget === 7 ? 0 : limits.rollBudget,
+          reported().rollBudget === 7 ? 0 : reported().rollBudget,
           allowanceArmed ? 1 : 0,
           ...new Array(26).fill(0),
           mint.length,
@@ -879,6 +895,7 @@ export const createFakeCard = (
           allowance: proved.length >= 12 ? readU32(proved, 8) : limits.allowance,
           rollBudget: budget,
         }
+        limitWritten = true
         return SW_OK
       }
       case 0x36: {

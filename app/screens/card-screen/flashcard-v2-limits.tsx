@@ -345,8 +345,8 @@ export const FlashcardV2LimitsScreen = () => {
   )
 }
 
-/** One limit: its label, a number field, and what it does. */
-const LimitField: React.FC<{
+/** One limit: its label, a number field, and what it does. Setup's limits step uses it too (ENG-827). */
+export const LimitField: React.FC<{
   label: string
   note: string
   value: string

@@ -26,6 +26,7 @@ import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
 import {
   CardSetup,
   compareReadBack,
+  finishHolderSetup,
   freezeSetupIntent,
   newSetupProgress,
   setUpCard,
@@ -160,14 +161,113 @@ describeWithCardsim("the setup record and the read-back (cardsim)", () => {
         persisted.push(setup)
       },
     })
-    // GET_CARD before the writes and once after SET_CARD.
-    expect(sent.slice(-4)).toEqual([0x16, 0x32, 0x16, 0x43])
+    // GET_CARD before the writes and once after SET_CARD. ENG-827: no limits
+    // wanted, so no SET_LIMIT (spec/APDU.md Personalisation: "if the holder
+    // wants limits"); ALLOW_LOAD, and the verifying GET_INFO and GET_CARD.
+    expect(sent.slice(-8)).toEqual([0x16, 0x32, 0x16, 0x43, 0x44, 0x45, 0x01, 0x16])
     const record = await getCardRecord(transceive)
     expect(record.design).toBeNull()
     expect(compareReadBack(intent, record)).toEqual([])
     expect(persisted[persisted.length - 1]).toMatchObject({
       status: "set-up",
       heldByCard: { mint: mintUrl, unit: 0, refundKey: null, design: null },
+      verification: {
+        held: { owner: true, day: 0, payment: 0, allowance: 0, rollBudget: 7 },
+      },
+    })
+  })
+
+  // ENG-827: the holder's limits, written and verified by the real applet.
+  const LIMITS = { day: 5000, payment: 1000, allowance: 100, rollBudget: 10 }
+
+  it("the real applet reaches verified: SET_LIMIT after SET_OWNER, and the payment limit under the grant", async () => {
+    await loadFixture("fresh")
+    const sent: number[] = []
+    const persisted: CardSetup[] = []
+    const transceive = tracing(sent)
+    const card = await readCashuCard(bridgeTransceiver(bridge))
+    if (!card) throw new Error("the fresh fixture did not read")
+    const version = await selectApplet(transceive)
+    await setUpCard(transceive, {
+      tap: { version, pubkey: card.pubkey },
+      info: await getInfo(transceive),
+      pin: PIN,
+      intent: freezeSetupIntent({
+        cardPubkey: card.pubkey,
+        mint: mintUrl,
+        pin: PIN,
+        limits: LIMITS,
+      }),
+      progress: newSetupProgress(),
+      key,
+      persist: async (setup) => {
+        persisted.push(setup)
+      },
+    })
+    expect(persisted[persisted.length - 1]).toMatchObject({
+      status: "set-up",
+      progress: { limitsSent: true, verified: true },
+      verification: { held: { owner: true, ...LIMITS } },
+    })
+    // A new tap: the payment limit is said only under the owner's grant.
+    await selectApplet(transceive)
+    expect((await getInfo(transceive)).paymentLimit).toBe(0)
+    await allowLoad(transceive, ownerSigner(FIXTURE_OWNER_KEY))
+    expect((await getInfo(transceive)).paymentLimit).toBe(LIMITS.payment)
+  })
+
+  it("a tap cut after SET_OWNER resumes with exactly one SET_LIMIT, read under the grant", async () => {
+    await loadFixture("fresh")
+    const sent: number[] = []
+    let store = newStore()
+    let disk: FlashcardV2Slice | undefined
+    const persist = async (setup: CardSetup) => {
+      store.dispatch(cardSetupSaved(setup))
+      disk = JSON.parse(JSON.stringify(store.getState().flashcardV2))
+    }
+    const cut = tracing(sent, 0x43)
+    const card = await readCashuCard(bridgeTransceiver(bridge))
+    if (!card) throw new Error("the fresh fixture did not read")
+    const version = await selectApplet(cut)
+    await expect(
+      setUpCard(cut, {
+        tap: { version, pubkey: card.pubkey },
+        info: await getInfo(cut),
+        pin: PIN,
+        intent: freezeSetupIntent({
+          cardPubkey: card.pubkey,
+          mint: mintUrl,
+          pin: PIN,
+          limits: LIMITS,
+        }),
+        progress: newSetupProgress(),
+        key,
+        persist,
+      }),
+    ).rejects.toThrow("Tag was lost")
+    expect(sent).not.toContain(0x34)
+
+    store = newStore(disk)
+    const stored = store.getState().flashcardV2.setups?.[card.pubkey]
+    if (!stored) throw new Error("no setup record")
+    expect(stored).toMatchObject({ status: "started", progress: { ownerSent: true } })
+
+    const transceive = tracing(sent)
+    await selectApplet(transceive)
+    sent.length = 0
+    const verification = await finishHolderSetup(transceive, {
+      intent: stored.intent,
+      progress: { ...stored.progress },
+      key,
+      persist,
+      granted: false,
+    })
+    expect(sent.filter((ins) => ins === 0x34)).toHaveLength(1)
+    // The GET_INFO after the last ALLOW_LOAD said the payment limit.
+    expect(verification.held.payment).toBe(LIMITS.payment)
+    expect(store.getState().flashcardV2.setups?.[card.pubkey]).toMatchObject({
+      status: "set-up",
+      verification: { held: { owner: true, ...LIMITS } },
     })
   })
 })
