@@ -254,9 +254,9 @@ const TillNote: React.FC<{ url: string; testID: string }> = ({ url, testID }) =>
  * short, or an earlier one) is set up for that same mint, with no choice.
  * Otherwise the app's card mint (forge, "Flash") is written with no extra
  * press; one "Change" link opens the other listed mints and a written-in
- * address. A mint that is not forge gets the till note and the notice once,
- * under the choice: SET_CARD fixes the mint, and this app can't move the card
- * later.
+ * address. A mint that is not forge gets the till note beside it, and once it
+ * is chosen, the notice under the choice: SET_CARD fixes the mint, and this app
+ * can't move the card later.
  *
  * The limits (ENG-827): none unless the holder changes them behind one
  * "Change" link (a no-PIN allowance needs a PIN: "Continue without a PIN"
