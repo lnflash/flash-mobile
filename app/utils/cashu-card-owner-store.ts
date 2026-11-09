@@ -32,17 +32,22 @@ import {
   WrongCardError,
   cardRecordValue,
   getCardRecord,
+  getInfo,
   setCardPin,
   setOpenCardRecord,
   verifyCardPin,
 } from "./cashu-card"
 import { getCardBridge } from "./cashu-card-bridge"
 import {
+  CardLimits,
+  NO_LIMITS,
   allowLoad,
   deriveOwnerKey,
+  limitValue,
   ownerSigner,
   randomOwnerKey,
   refreshCard,
+  setLimits,
   setOwner,
 } from "./cashu-card-owner"
 import { sameMint } from "./cashu-card-topup/mint-url"
@@ -348,8 +353,9 @@ export const SETUP_APPLET_VERSIONS: readonly (readonly [number, number])[] = [[2
 /**
  * What a setup sets out to write, fixed at its first tap press (ENG-825) and
  * kept for every retry tap of the same sequence: the card it is for (its key,
- * the applet's only identity), and the record it writes. The PIN itself is
- * never kept here, only whether one was chosen.
+ * the applet's only identity), the record it writes, and the owner's limits
+ * it writes after SET_OWNER (ENG-827). The PIN itself is never kept here,
+ * only whether one was chosen.
  */
 export type SetupIntent = Readonly<{
   cardPubkey: string
@@ -360,17 +366,44 @@ export type SetupIntent = Readonly<{
   refundKey: null
   design: null
   pinChosen: boolean
+  /**
+   * The owner's SET_LIMIT, sent in the same tap after SET_OWNER (ENG-827).
+   * Absent on an ENG-826 record: such a setup never sends SET_LIMIT, and is
+   * never verified.
+   */
+  limits?: Readonly<CardLimits>
 }>
 
 /**
  * What this sequence has sent so far, set just BEFORE each write goes out: a
  * write whose answer is lost may have landed, and the next tap may find it.
- * `ownerSent` (SET_OWNER, ENG-826) implies `recordSent`.
+ * `ownerSent` (SET_OWNER, ENG-826) implies `recordSent`. `limitsSent`
+ * (SET_LIMIT, ENG-827) implies `ownerSent`; `verified` is set once the card
+ * read back everything the intent wrote. Both are absent on ENG-826 records.
  */
-export type SetupProgress = { pinSent: boolean; recordSent: boolean; ownerSent: boolean }
+export type SetupProgress = {
+  pinSent: boolean
+  recordSent: boolean
+  ownerSent: boolean
+  limitsSent?: boolean
+  verified?: boolean
+}
 
-/** A field of the record the card read back that differs from the intent (ENG-826). */
-export type ReadBackField = "unset" | "mint" | "unit" | "refundKey" | "design"
+/**
+ * A field the card read back that differs from the intent: of the record
+ * (ENG-826), or, at verification (ENG-827), the owner flag and the limits.
+ */
+export type ReadBackField =
+  | "unset"
+  | "mint"
+  | "unit"
+  | "refundKey"
+  | "design"
+  | "owner"
+  | "dailyLimit"
+  | "paymentLimit"
+  | "allowance"
+  | "rollBudget"
 
 /** What the card's GET_CARD said of its record after setup wrote it. */
 export type HeldByCard = {
@@ -404,6 +437,22 @@ export type CardSetup = {
   updatedAt: number
   /** ms since epoch, for `set-up`. */
   setUpAt?: number
+  /**
+   * ENG-827: the card read back, in one tap after SET_OWNER and SET_LIMIT,
+   * everything the intent wrote, its owner flag and its limits included.
+   * A `set-up` record with this is "holder setup verified". Point in time:
+   * a later change under Limits is not reflected here.
+   */
+  verification?: SetupVerification
+  /** ENG-827: what a `set-up` record's last verifying read did not confirm. */
+  unconfirmed?: ReadBackField[]
+}
+
+/** What the card said when its setup was verified (ENG-827). */
+export type SetupVerification = {
+  /** ms since epoch */
+  at: number
+  held: HeldByCard & { owner: true } & CardLimits
 }
 
 /**
@@ -413,24 +462,46 @@ export type CardSetup = {
 export const currentSetup = (setup: CardSetup | undefined): CardSetup | undefined =>
   setup && setup.v === 1 ? setup : undefined
 
+/**
+ * A `set-up` record (ENG-827) whose holder setup is not verified yet: it
+ * carries the intent's limits, SET_OWNER went out, and no verifying read
+ * confirmed it. An ENG-826 record (no limits) never is: it is left as it is.
+ */
+export const setupUnverified = (setup: CardSetup | undefined): boolean =>
+  setup !== undefined &&
+  setup.status === "set-up" &&
+  setup.intent.limits !== undefined &&
+  setup.progress.ownerSent &&
+  setup.verification === undefined
+
 /** Writes a setup record and resolves once it is on disk; rejects when it is not. */
 export type PersistSetup = (setup: CardSetup) => Promise<void>
 
 /**
  * Fixes the intent of a setup: the mint is checked as SET_CARD would take it
- * (`cardRecordValue`) first, so a mint the card cannot hold fails before any
- * APDU is sent.
+ * (`cardRecordValue`) and the limits as SET_LIMIT would (`limitValue`) first,
+ * so a mint the card cannot hold or limits it cannot take fail before any
+ * APDU is sent. The limits are none (`NO_LIMITS`) unless given (ENG-827). A
+ * no-PIN allowance above 0 with no PIN is refused here too: the card would
+ * answer SET_LIMIT `6985` after SET_OWNER, and the setup would be stranded.
  */
 export const freezeSetupIntent = ({
   cardPubkey,
   mint,
   pin,
+  limits = NO_LIMITS,
 }: {
   cardPubkey: string
   mint: string
   pin?: string
+  limits?: CardLimits
 }): SetupIntent => {
   cardRecordValue({ mint })
+  limitValue(limits)
+  if (limits.allowance > 0 && !pin) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    throw new CardNotOpenError("unreadable")
+  }
   return Object.freeze({
     cardPubkey,
     mint,
@@ -438,6 +509,12 @@ export const freezeSetupIntent = ({
     refundKey: null,
     design: null,
     pinChosen: Boolean(pin),
+    limits: Object.freeze({
+      day: limits.day,
+      payment: limits.payment,
+      allowance: limits.allowance,
+      rollBudget: limits.rollBudget,
+    }),
   })
 }
 
@@ -446,6 +523,8 @@ export const newSetupProgress = (): SetupProgress => ({
   pinSent: false,
   recordSent: false,
   ownerSent: false,
+  limitsSent: false,
+  verified: false,
 })
 
 /** Whether a sequence has sent any write: then its intent is not rebuilt. */
@@ -509,6 +588,26 @@ export class SetupReadBackError extends Error {
   constructor(readonly fields: ReadBackField[]) {
     super(`the card did not keep the setup record (${fields.join(", ")})`)
     this.name = "SetupReadBackError"
+  }
+}
+
+/**
+ * The card did not confirm, after SET_OWNER, everything the setup wrote
+ * (ENG-827): it is set up and this phone owns it, but it is not verified.
+ * The next tap of the same sequence finishes it. `limitsChangedElsewhere`
+ * when the card holds limits other than the intent's and not a new card's:
+ * setup never overwrites those (the holder may have set them under Limits).
+ */
+export class SetupUnconfirmedError extends Error {
+  readonly limitsChangedElsewhere: boolean
+
+  constructor(
+    readonly fields: ReadBackField[],
+    { limitsChangedElsewhere = false }: { limitsChangedElsewhere?: boolean } = {},
+  ) {
+    super(`the card did not confirm its setup (${fields.join(", ")})`)
+    this.name = "SetupUnconfirmedError"
+    this.limitsChangedElsewhere = limitsChangedElsewhere
   }
 }
 
@@ -622,6 +721,45 @@ export const compareReadBack = (
 }
 
 /**
+ * The limit fields in which the card differs from `limits`: the daily limit
+ * from GET_INFO and GET_CARD both, the payment limit and the allowance from
+ * GET_INFO (the payment limit reads 0 without the owner's grant), and the
+ * rollover budget from GET_CARD.
+ */
+const limitFields = (
+  limits: CardLimits,
+  info: CardInfo,
+  record: CardRecord,
+): ReadBackField[] => {
+  const fields: ReadBackField[] = []
+  if (info.dailyLimit !== limits.day || record.dailyLimit !== limits.day) {
+    fields.push("dailyLimit")
+  }
+  if (info.paymentLimit !== limits.payment) fields.push("paymentLimit")
+  if (info.allowance !== limits.allowance) fields.push("allowance")
+  if (record.rollBudget !== limits.rollBudget) fields.push("rollBudget")
+  return fields
+}
+
+/**
+ * The verifying read after SET_OWNER and SET_LIMIT (ENG-827) held to the
+ * intent: the record's fields (`compareReadBack`), the owner flag, and the
+ * intent's limits. Read GET_INFO under the owner's grant (ALLOW_LOAD) first:
+ * without it the card says its payment limit is 0. None when everything
+ * matches. Pure: it sends nothing.
+ */
+export const compareVerification = (
+  intent: SetupIntent,
+  info: CardInfo,
+  record: CardRecord,
+): ReadBackField[] => {
+  const fields = compareReadBack(intent, record)
+  if (!info.hasOwner) fields.push("owner")
+  if (intent.limits) fields.push(...limitFields(intent.limits, info, record))
+  return fields
+}
+
+/**
  * The setup record for `intent` at `progress`, copied: later progress never
  * reaches a record already made. `at` (ms) is its `updatedAt`, now by default.
  */
@@ -633,7 +771,12 @@ export const setupRecord = (
     at = Date.now(),
     ...extra
   }: Pick<CardSetup, "status"> &
-    Partial<Pick<CardSetup, "heldByCard" | "mismatch" | "setUpAt">> & {
+    Partial<
+      Pick<
+        CardSetup,
+        "heldByCard" | "mismatch" | "setUpAt" | "verification" | "unconfirmed"
+      >
+    > & {
       at?: number
     },
 ): CardSetup => ({
@@ -652,6 +795,141 @@ const warnUnsaved = (status: CardSetup["status"], err: unknown) =>
       err instanceof Error ? err.name : typeof err
     }`,
   )
+
+/** GET_INFO then GET_CARD; an answer framed wrong is unreadable, and nothing it says is acted on. */
+const readInfoAndRecord = async (
+  transceive: Transceiver,
+): Promise<{ info: CardInfo; record: CardRecord }> => {
+  try {
+    const info = await getInfo(transceive)
+    const record = await getCardRecord(transceive)
+    return { info, record }
+  } catch (err) {
+    if (err instanceof CardProtocolError) throw new CardNotOpenError("unreadable")
+    throw err
+  }
+}
+
+export type FinishHolderSetupArgs = {
+  /** The sequence's intent; it must carry `limits` (not an ENG-826 record). */
+  intent: SetupIntent
+  /** The sequence's progress; updated here as setupRecord's are. */
+  progress: SetupProgress
+  /** The owner key the card took. */
+  key: OwnerKey
+  persist: PersistSetup
+  /** This tap's ALLOW_LOAD already went through: the grant is on. */
+  granted: boolean
+  /** When SET_OWNER went through, when known: kept on the record. */
+  setUpAt?: number
+  /**
+   * This tap sent the intent's SET_LIMIT just now (`setUpCard`): it is read
+   * back, never sent again.
+   */
+  limitsWritten?: boolean
+}
+
+/**
+ * The holder setup's last step (ENG-827), on a card this phone owns: the
+ * owner's grant (ALLOW_LOAD, unless this tap has it already), then GET_INFO
+ * (P1 = 1, so under the grant it says the payment limit) and GET_CARD, held
+ * to the intent (`compareVerification`). A tap cut short after SET_OWNER is
+ * finished here by the next one:
+ *
+ *   - the card's limits are the intent's: nothing is written;
+ *   - they are a new card's (0/0/0, budget 7): `limitsSent` is persisted
+ *     (on disk before it goes out; a rejection sends nothing), then
+ *     SET_LIMIT, ALLOW_LOAD again (in case SET_LIMIT ends the grant) and the
+ *     read again. This covers a resume before SET_LIMIT and a SET_LIMIT
+ *     whose answer was lost;
+ *   - anything else is never overwritten: the holder may have set them under
+ *     Limits since. The setup is unconfirmed (`limitsChangedElsewhere`).
+ *
+ * All matching, the record is `set-up` with `verification`, and that is
+ * resolved. Otherwise it is `set-up` with `unconfirmed`, and
+ * `SetupUnconfirmedError` is thrown. Either final record that is not saved
+ * only warns: the next tap verifies again.
+ */
+export async function finishHolderSetup(
+  transceive: Transceiver,
+  {
+    intent,
+    progress,
+    key,
+    persist,
+    granted,
+    setUpAt,
+    limitsWritten = false,
+  }: FinishHolderSetupArgs,
+): Promise<SetupVerification> {
+  const { limits } = intent
+  // An ENG-826 record has no limits to write or to verify.
+  if (!limits) throw new CardNotOpenError("unreadable")
+  const sign = ownerSigner(key.privateKey)
+  if (!granted) await allowLoad(transceive, sign)
+  let { info, record } = await readInfoAndRecord(transceive)
+  let limitsChangedElsewhere = false
+  if (!limitsWritten && limitFields(limits, info, record).length > 0) {
+    if (limitFields(NO_LIMITS, info, record).length === 0) {
+      const next = { ...progress, limitsSent: true }
+      await persist(
+        setupRecord(intent, next, {
+          status: "set-up",
+          heldByCard: heldByCard(record),
+          setUpAt: setUpAt ?? Date.now(),
+        }),
+      )
+      Object.assign(progress, next)
+      await setLimits(transceive, sign, limits)
+      await allowLoad(transceive, sign)
+      ;({ info, record } = await readInfoAndRecord(transceive))
+    } else {
+      limitsChangedElsewhere = true
+    }
+  }
+  const fields = compareVerification(intent, info, record)
+  const held = heldByCard(record)
+  const at = Date.now()
+  if (fields.length === 0) {
+    const verification: SetupVerification = {
+      at,
+      held: {
+        ...held,
+        owner: true,
+        day: info.dailyLimit,
+        payment: info.paymentLimit,
+        allowance: info.allowance,
+        rollBudget: record.rollBudget,
+      },
+    }
+    const next = { ...progress, verified: true }
+    await persist(
+      setupRecord(intent, next, {
+        status: "set-up",
+        heldByCard: held,
+        setUpAt: setUpAt ?? at,
+        verification,
+        at,
+      }),
+    ).then(
+      () => {
+        Object.assign(progress, next)
+      },
+      (err) => warnUnsaved("set-up", err),
+    )
+    return verification
+  }
+  await persist(
+    setupRecord(intent, progress, {
+      status: "set-up",
+      heldByCard: held,
+      setUpAt: setUpAt ?? at,
+      unconfirmed: fields,
+      at,
+    }),
+  ).catch((err) => warnUnsaved("set-up", err))
+  throw new SetupUnconfirmedError(fields, { limitsChangedElsewhere })
+}
 
 /**
  * Personalisation, one tap, owner last (spec/APDU.md, Personalisation), so a
@@ -675,8 +953,17 @@ const warnUnsaved = (status: CardSetup["status"], err: unknown) =>
  * that the card holds is not sent again: it is verified. After SET_CARD the
  * record is read back and held to the intent (`compareReadBack`); a card that
  * did not keep it is marked `mismatched` and refused before SET_OWNER
- * (`SetupReadBackError`). After SET_OWNER the record is `set-up`, with what
- * the card read back.
+ * (`SetupReadBackError`).
+ *
+ * After SET_OWNER (ENG-827), with an intent that carries limits: the record
+ * is persisted `set-up`, with what the card read back and `limitsSent`, and
+ * that persist is strict: a rejection sends no SET_LIMIT, and the next tap
+ * finishes through the owned path (the `started` record with `ownerSent` is
+ * already on disk). Then the owner's SET_LIMIT with the intent's limits,
+ * and `finishHolderSetup`: ALLOW_LOAD, GET_INFO and GET_CARD, held to the
+ * intent. All matching, the record is verified; otherwise
+ * `SetupUnconfirmedError`. An ENG-826 intent (no limits) stops after
+ * SET_OWNER, its `set-up` record persisted as before, a failure only warned.
  */
 export async function setUpCard(
   transceive: Transceiver,
@@ -698,9 +985,13 @@ export async function setUpCard(
   const form: PinForm = { sealed: info.sealed, cardPubkey }
   // One tap at a time writes this sequence's progress, in order: persisted,
   // then marked, before the write, as a lost answer may still have landed.
-  const mark = async (next: Partial<SetupProgress>) => {
+  const mark = async (
+    next: Partial<SetupProgress>,
+    status: CardSetup["status"] = "started",
+    extra: Partial<Pick<CardSetup, "heldByCard" | "setUpAt">> & { at?: number } = {},
+  ) => {
     const progressed = { ...progress, ...next }
-    await persist(setupRecord(intent, progressed, { status: "started" }))
+    await persist(setupRecord(intent, progressed, { status, ...extra }))
     Object.assign(progress, progressed)
   }
   if (pin) {
@@ -733,13 +1024,28 @@ export async function setUpCard(
   await mark({ ownerSent: true })
   await setOwner(transceive, key.privateKey, anchor)
   const at = Date.now()
-  // The next tap's already-mine path writes it again if this one is lost.
-  await persist(
-    setupRecord(intent, progress, {
-      status: "set-up",
-      heldByCard: held,
-      setUpAt: at,
-      at,
-    }),
-  ).catch((err) => warnUnsaved("set-up", err))
+  if (!intent.limits) {
+    // An ENG-826 intent: the next tap's already-mine path writes it again if
+    // this one is lost.
+    await persist(
+      setupRecord(intent, progress, {
+        status: "set-up",
+        heldByCard: held,
+        setUpAt: at,
+        at,
+      }),
+    ).catch((err) => warnUnsaved("set-up", err))
+    return
+  }
+  await mark({ limitsSent: true }, "set-up", { heldByCard: held, setUpAt: at, at })
+  await setLimits(transceive, ownerSigner(key.privateKey), intent.limits)
+  await finishHolderSetup(transceive, {
+    intent,
+    progress,
+    key,
+    persist,
+    granted: false,
+    setUpAt: at,
+    limitsWritten: true,
+  })
 }

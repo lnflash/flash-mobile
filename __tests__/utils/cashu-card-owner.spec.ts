@@ -54,8 +54,12 @@ import {
   ReadBackField,
   SetupProgress,
   SetupReadBackError,
+  SetupUnconfirmedError,
   checkSetupState,
   compareReadBack,
+  compareVerification,
+  finishHolderSetup,
+  setupUnverified,
   setupRecord,
   freezeSetupIntent,
   newSetupProgress,
@@ -747,6 +751,12 @@ const baseRecord = (): CardRecord => ({
   mint: "",
 })
 
+/**
+ * ENG-827: what follows SET_OWNER in the same tap: GET_NONCE and the owner's
+ * SET_LIMIT, GET_NONCE and ALLOW_LOAD, then the verifying GET_INFO and GET_CARD.
+ */
+const VERIFY_TAIL = [0x44, 0x34, 0x44, 0x45, 0x01, 0x16]
+
 describe("setUpCard: personalisation, owner last", () => {
   const key = { privateKey: FAKE_OWNER_KEY, source: "device" as const, saved: false }
   /** A 2.2 card, the applet version setup writes to (ENG-825). */
@@ -797,7 +807,22 @@ describe("setUpCard: personalisation, owner last", () => {
     // One read before the writes (ENG-825): GET_CARD, then the same writes in
     // the same order.
     // ENG-826: SET_CARD is read back (GET_CARD) before the key is saved.
-    expect(order).toEqual(["16", "41", "40", "32", "16", "saved", "43"])
+    // ENG-827: then the owner's SET_LIMIT, ALLOW_LOAD and the verifying read.
+    expect(order).toEqual([
+      "16",
+      "41",
+      "40",
+      "32",
+      "16",
+      "saved",
+      "43",
+      "44",
+      "34",
+      "44",
+      "45",
+      "1",
+      "16",
+    ])
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(card.pin()).toBe("1234")
     expect(card.record()).toEqual({ set: true, mint: "https://mint.test" })
@@ -814,7 +839,7 @@ describe("setUpCard: personalisation, owner last", () => {
     const info = await getInfo(card.transceive)
     card.transceive.mockClear()
     await setUpCard(card.transceive, argsFor(card, info))
-    expect(card.ins()).toEqual([0x16, 0x32, 0x16, 0x43])
+    expect(card.ins()).toEqual([0x16, 0x32, 0x16, 0x43, ...VERIFY_TAIL])
     expect(card.pin()).toBeUndefined()
     expect(card.now()).toBe(0)
     await expect(ownerKeyStore.get(card.pubkey)).resolves.toMatchObject({
@@ -1358,8 +1383,11 @@ describe("setUpCard: personalisation, owner last", () => {
         refundKey: null,
         design: null,
         pinChosen: true,
+        // ENG-827: none unless given.
+        limits: NO_LIMITS,
       })
       expect(Object.isFrozen(intent)).toBe(true)
+      expect(Object.isFrozen(intent.limits)).toBe(true)
       expect(JSON.stringify(intent)).not.toContain("1234")
     })
 
@@ -1375,8 +1403,8 @@ describe("setUpCard: personalisation, owner last", () => {
       })
       await setUpCard(card.transceive, args)
       expect(seen).toEqual([
-        'SET_PIN {"pinSent":true,"recordSent":false,"ownerSent":false}',
-        'SET_CARD {"pinSent":true,"recordSent":true,"ownerSent":false}',
+        'SET_PIN {"pinSent":true,"recordSent":false,"ownerSent":false,"limitsSent":false,"verified":false}',
+        'SET_CARD {"pinSent":true,"recordSent":true,"ownerSent":false,"limitsSent":false,"verified":false}',
       ])
       expect(setupWriteSent(args.progress)).toBe(true)
       expect(setupWriteSent(newSetupProgress())).toBe(false)
@@ -1385,7 +1413,7 @@ describe("setUpCard: personalisation, owner last", () => {
     it("the happy path on 2.2 reads GET_CARD once before the writes and once after SET_CARD (ENG-826)", async () => {
       const { card, info } = await fresh()
       await setUpCard(card.transceive, argsFor(card, info, { pin: "1234" }))
-      expect(card.ins()).toEqual([0x16, 0x41, 0x40, 0x32, 0x16, 0x43])
+      expect(card.ins()).toEqual([0x16, 0x41, 0x40, 0x32, 0x16, 0x43, ...VERIFY_TAIL])
     })
   })
 
@@ -1476,23 +1504,43 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
       "apdu 16",
       "persist started",
       "apdu 43",
+      // ENG-827: set-up, before SET_LIMIT, and verified after the read.
+      "persist set-up",
+      "apdu 44",
+      "apdu 34",
+      "apdu 44",
+      "apdu 45",
+      "apdu 1",
+      "apdu 16",
       "persist set-up",
     ])
+    const sent = { limitsSent: false, verified: false }
     expect(persisted.map((setup) => setup.progress)).toEqual([
-      { pinSent: true, recordSent: false, ownerSent: false },
-      { pinSent: true, recordSent: true, ownerSent: false },
-      { pinSent: true, recordSent: true, ownerSent: true },
-      { pinSent: true, recordSent: true, ownerSent: true },
+      { ...sent, pinSent: true, recordSent: false, ownerSent: false },
+      { ...sent, pinSent: true, recordSent: true, ownerSent: false },
+      { ...sent, pinSent: true, recordSent: true, ownerSent: true },
+      { ...sent, pinSent: true, recordSent: true, ownerSent: true, limitsSent: true },
+      {
+        pinSent: true,
+        recordSent: true,
+        ownerSent: true,
+        limitsSent: true,
+        verified: true,
+      },
     ])
     const last = persisted[persisted.length - 1]
     expect(last).toMatchObject({
       v: 1,
       status: "set-up",
-      intent: { cardPubkey: card.pubkey, mint: MINT, pinChosen: true },
+      intent: { cardPubkey: card.pubkey, mint: MINT, pinChosen: true, limits: NO_LIMITS },
       heldByCard: { mint: MINT, unit: 0, refundKey: null, design: null },
+      verification: {
+        held: { mint: MINT, unit: 0, owner: true, ...NO_LIMITS },
+      },
     })
     expect(typeof last.setUpAt).toBe("number")
     expect(last.mismatch).toBeUndefined()
+    expect(last.unconfirmed).toBeUndefined()
   })
 
   it("with no PIN, the first persist comes before SET_CARD", async () => {
@@ -1506,6 +1554,13 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
       "apdu 16",
       "persist started",
       "apdu 43",
+      "persist set-up",
+      "apdu 44",
+      "apdu 34",
+      "apdu 44",
+      "apdu 45",
+      "apdu 1",
+      "apdu 16",
       "persist set-up",
     ])
   })
@@ -1535,15 +1590,22 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
         pinSent: failAt > 1,
         recordSent: failAt > 2,
         ownerSent: false,
+        limitsSent: false,
+        verified: false,
       })
     })
   }
 
-  it("a set-up record that is not saved only warns: the card is set up", async () => {
+  it("a set-up record that is not saved only warns, for an ENG-826 intent (no limits): the card is set up", async () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined)
     const { card, info } = await fresh()
+    const { limits: _dropped, ...legacy } = freezeSetupIntent({
+      cardPubkey: card.pubkey,
+      mint: MINT,
+    })
     const args = {
       ...argsFor(card, info),
+      intent: legacy,
       persist: jest.fn(async (setup: CardSetup) => {
         if (setup.status === "set-up") throw new Error("disk full")
       }),
@@ -1551,6 +1613,8 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
     await setUpCard(card.transceive, args)
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(warn).toHaveBeenCalledWith("Cashu card setup record (set-up) not saved: Error")
+    // An ENG-826 intent never sends SET_LIMIT.
+    expect(card.ins()).not.toContain(0x34)
     warn.mockRestore()
   })
 
@@ -1583,7 +1647,7 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
       persist: persistSpy(),
     })
     expect(log.filter((entry) => entry === "apdu 41")).toHaveLength(1)
-    expect(card.ins()).toEqual([0x16, 0x40, 0x32, 0x16, 0x43])
+    expect(card.ins()).toEqual([0x16, 0x40, 0x32, 0x16, 0x43, ...VERIFY_TAIL])
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(card.record()).toEqual({ set: true, mint: MINT })
   })
@@ -1760,9 +1824,457 @@ describe("setUpCard: the setup record and the read-back (ENG-826)", () => {
     expect(record).toEqual({
       v: 1,
       intent: { ...intent },
-      progress: { pinSent: false, recordSent: false, ownerSent: false },
+      progress: {
+        pinSent: false,
+        recordSent: false,
+        ownerSent: false,
+        limitsSent: false,
+        verified: false,
+      },
       status: "started",
       updatedAt: 5,
+    })
+  })
+})
+
+// ENG-827: the owner's SET_LIMIT in the same tap as SET_OWNER, the ALLOW_LOAD
+// read-back, and "holder setup verified".
+describe("holder setup: SET_LIMIT after SET_OWNER, and the verifying read (ENG-827)", () => {
+  const key = { privateKey: FAKE_OWNER_KEY, source: "device" as const, saved: false }
+  const V22: [number, number] = [2, 2]
+  const MINT = "https://mint.test"
+  const PIN = "97531"
+  /** Limits a holder may choose: a no-PIN allowance (so a PIN), and a budget not 7. */
+  const LIMITS = { day: 50000, payment: 21000, allowance: 2500, rollBudget: 12 }
+  /**
+   * What the wallet's persist rejects with when the record is not on disk
+   * (`PersistWriteError` in app/store/redux, whose store is not built here;
+   * the screen spec pins that one): setUpCard passes it on as it is.
+   */
+  class PersistWriteError extends Error {}
+  const persisted: CardSetup[] = []
+  beforeEach(() => {
+    persisted.length = 0
+  })
+  const persistSpy = () =>
+    jest.fn(async (setup: CardSetup) => {
+      persisted.push(JSON.parse(JSON.stringify(setup)))
+    })
+  const last = () => persisted[persisted.length - 1]
+  /** A fresh 2.2 card, its GET_INFO, and the transceive cleared. */
+  const fresh = async (options: FakeCardOptions = {}) => {
+    const card = createFakeCard(128, { owner: null, version: V22, ...options })
+    const info = await getInfo(card.transceive)
+    card.transceive.mockClear()
+    return { card, info }
+  }
+  const argsFor = (
+    card: FakeCard,
+    info: CardInfo,
+    { pin = PIN, limits = LIMITS }: { pin?: string; limits?: typeof LIMITS } = {},
+  ) => ({
+    tap: { version: V22, pubkey: card.pubkey },
+    info,
+    pin,
+    intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT, pin, limits }),
+    progress: newSetupProgress(),
+    key,
+    persist: persistSpy(),
+  })
+  /** An owned 2.2 card with its record set, as a setup cut after SET_OWNER leaves it. */
+  const owned = (options: FakeCardOptions = {}) =>
+    createFakeCard(128, { version: V22, pin: PIN, ...options })
+  /** That card's sequence: SET_OWNER sent, the intent's limits not confirmed. */
+  const ownedSequence = (card: FakeCard, limits = LIMITS) => ({
+    intent: freezeSetupIntent({ cardPubkey: card.pubkey, mint: MINT, pin: PIN, limits }),
+    progress: { pinSent: true, recordSent: true, ownerSent: true },
+    key,
+    persist: persistSpy(),
+  })
+  const setLimitCount = (card: FakeCard) => card.ins().filter((i) => i === 0x34).length
+
+  it("sends the owner's SET_LIMIT after SET_OWNER in the same tap, then ALLOW_LOAD, GET_INFO and GET_CARD; the card holds the intent's limits, the budget too", async () => {
+    const { card, info } = await fresh()
+    await setUpCard(card.transceive, argsFor(card, info))
+    const ins = card.ins()
+    expect(ins.slice(ins.indexOf(0x43))).toEqual([
+      0x43, 0x44, 0x34, 0x44, 0x45, 0x01, 0x16,
+    ])
+    expect(card.limits()).toEqual(LIMITS)
+    // The thirteen-byte form, under the owner's proof: the budget is the one chosen.
+    const setLimit = card.transceive.mock.calls
+      .map(([apdu]) => apdu)
+      .find((apdu) => apdu[1] === 0x34)
+    // The value is the last thirteen bytes, after the proof (spec/APDU.md).
+    const data = setLimit?.slice(5, 5 + (setLimit?.[4] ?? 0)) ?? []
+    expect(hex(data.slice(-13))).toBe("0000c35000005208000009c40c")
+  })
+
+  it("the record is verified only once every field matched: verification, and progress.verified", async () => {
+    const { card, info } = await fresh()
+    const args = argsFor(card, info)
+    await setUpCard(card.transceive, args)
+    expect(args.progress).toEqual({
+      pinSent: true,
+      recordSent: true,
+      ownerSent: true,
+      limitsSent: true,
+      verified: true,
+    })
+    expect(last()).toMatchObject({
+      status: "set-up",
+      intent: { limits: LIMITS },
+      verification: {
+        held: {
+          mint: MINT,
+          unit: 0,
+          refundKey: null,
+          design: null,
+          owner: true,
+          ...LIMITS,
+        },
+      },
+    })
+    expect(typeof last().verification?.at).toBe("number")
+    expect(setupUnverified(last())).toBe(false)
+  })
+
+  it("a persist rejected after SET_OWNER sends no SET_LIMIT: PersistWriteError is thrown, and the started record with ownerSent stays", async () => {
+    const { card, info } = await fresh()
+    const args = {
+      ...argsFor(card, info),
+      persist: jest.fn(async (setup: CardSetup) => {
+        if (setup.status === "set-up") throw new PersistWriteError("not written")
+        persisted.push(JSON.parse(JSON.stringify(setup)))
+      }),
+    }
+    await expect(setUpCard(card.transceive, args)).rejects.toBeInstanceOf(
+      PersistWriteError,
+    )
+    expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
+    expect(card.ins()).not.toContain(0x34)
+    expect(card.ins()[card.ins().length - 1]).toBe(0x43)
+    expect(last()).toMatchObject({ status: "started", progress: { ownerSent: true } })
+    expect(args.progress.limitsSent).toBe(false)
+  })
+
+  it("a card that reports another daily limit than it was sent: set-up with unconfirmed dailyLimit, and SetupUnconfirmedError", async () => {
+    const { card, info } = await fresh({ reportLimits: { day: 1 } })
+    const args = argsFor(card, info)
+    const err = await setUpCard(card.transceive, args).catch((e) => e)
+    expect(err).toBeInstanceOf(SetupUnconfirmedError)
+    expect(err.fields).toEqual(["dailyLimit"])
+    // This tap wrote them: not "changed elsewhere".
+    expect(err.limitsChangedElsewhere).toBe(false)
+    expect(setLimitCount(card)).toBe(1)
+    expect(last()).toMatchObject({ status: "set-up", unconfirmed: ["dailyLimit"] })
+    expect(last().verification).toBeUndefined()
+    expect(args.progress.verified).toBe(false)
+    expect(setupUnverified(last())).toBe(true)
+  })
+
+  it("an ENG-826 intent (no limits) never sends SET_LIMIT, and is never read as unverified", async () => {
+    const { card, info } = await fresh()
+    const { limits: _dropped, ...legacy } = freezeSetupIntent({
+      cardPubkey: card.pubkey,
+      mint: MINT,
+    })
+    await setUpCard(card.transceive, {
+      ...argsFor(card, info, { pin: undefined }),
+      pin: undefined,
+      intent: legacy,
+    })
+    expect(card.ins()).not.toContain(0x34)
+    expect(card.ins()[card.ins().length - 1]).toBe(0x43)
+    expect(last()).toMatchObject({ status: "set-up" })
+    expect(last().verification).toBeUndefined()
+    expect(setupUnverified(last())).toBe(false)
+  })
+
+  describe("compareVerification", () => {
+    const intent = freezeSetupIntent({
+      cardPubkey: CARD,
+      mint: MINT,
+      pin: PIN,
+      limits: LIMITS,
+    })
+    const info = (): CardInfo => ({
+      ...baseInfo(),
+      hasOwner: true,
+      recordSet: true,
+      pinState: "set",
+      dailyLimit: LIMITS.day,
+      paymentLimit: LIMITS.payment,
+      allowance: LIMITS.allowance,
+    })
+    const record = (): CardRecord => ({
+      ...baseRecord(),
+      recordSet: true,
+      mint: MINT,
+      design: null,
+      dailyLimit: LIMITS.day,
+      rollBudget: LIMITS.rollBudget,
+    })
+
+    it("is empty when everything matches", () => {
+      expect(compareVerification(intent, info(), record())).toEqual([])
+    })
+
+    for (const [field, change] of [
+      ["owner", { info: { hasOwner: false } }],
+      ["dailyLimit", { info: { dailyLimit: 1 } }],
+      ["dailyLimit", { record: { dailyLimit: 1 } }],
+      ["paymentLimit", { info: { paymentLimit: 0 } }],
+      ["allowance", { info: { allowance: 0 } }],
+      ["rollBudget", { record: { rollBudget: 7 } }],
+      ["mint", { record: { mint: "https://other.test" } }],
+      ["design", { record: { design: undefined } }],
+    ] as [ReadBackField, { info?: Partial<CardInfo>; record?: Partial<CardRecord> }][]) {
+      it(`${field} differs alone (${JSON.stringify(change)})`, () => {
+        expect(
+          compareVerification(
+            intent,
+            { ...info(), ...change.info },
+            { ...record(), ...change.record },
+          ),
+        ).toEqual([field])
+      })
+    }
+
+    it("a payment limit read without the owner's grant differs: ALLOW_LOAD must come first", async () => {
+      const card = owned({ limits: LIMITS })
+      await selectApplet(card.transceive)
+      const without = await getInfo(card.transceive)
+      expect(without.paymentLimit).toBe(0)
+      expect(
+        compareVerification(intent, without, await getCardRecord(card.transceive)),
+      ).toEqual(["paymentLimit"])
+      await allowLoad(card.transceive, ownerSigner(FAKE_OWNER_KEY))
+      expect(
+        compareVerification(
+          intent,
+          await getInfo(card.transceive),
+          await getCardRecord(card.transceive),
+        ),
+      ).toEqual([])
+    })
+  })
+
+  describe("freezeSetupIntent's limits", () => {
+    it("are none by default", () => {
+      expect(freezeSetupIntent({ cardPubkey: CARD, mint: MINT }).limits).toEqual(
+        NO_LIMITS,
+      )
+    })
+
+    it("refuses a budget of 31 before any APDU", () => {
+      expect(() =>
+        freezeSetupIntent({
+          cardPubkey: CARD,
+          mint: MINT,
+          pin: PIN,
+          limits: { ...NO_LIMITS, rollBudget: 31 },
+        }),
+      ).toThrow(CardProtocolError)
+    })
+
+    it("refuses a no-PIN allowance above 0 with no PIN: the card would refuse it (6985) after SET_OWNER", () => {
+      let err: unknown
+      try {
+        freezeSetupIntent({
+          cardPubkey: CARD,
+          mint: MINT,
+          limits: { ...NO_LIMITS, allowance: 1 },
+        })
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBeInstanceOf(CardNotOpenError)
+      expect((err as CardNotOpenError).reason).toBe("unreadable")
+      expect(
+        freezeSetupIntent({
+          cardPubkey: CARD,
+          mint: MINT,
+          pin: PIN,
+          limits: { ...NO_LIMITS, allowance: 1 },
+        }).limits,
+      ).toEqual({ ...NO_LIMITS, allowance: 1 })
+    })
+  })
+
+  describe("finishHolderSetup", () => {
+    it("writes a new card's limits once, persisting limitsSent first, and verifies", async () => {
+      const card = owned()
+      const sequence = ownedSequence(card)
+      const order: string[] = []
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        order.push(apdu[1].toString(16))
+        return answer(apdu)
+      })
+      sequence.persist.mockImplementation(async (setup: CardSetup) => {
+        order.push(`persist ${setup.progress.verified ? "verified" : setup.status}`)
+        persisted.push(JSON.parse(JSON.stringify(setup)))
+      })
+      const verification = await finishHolderSetup(card.transceive, {
+        ...sequence,
+        granted: false,
+        setUpAt: 42,
+      })
+      expect(order).toEqual([
+        "44",
+        "45",
+        "1",
+        "16",
+        "persist set-up",
+        "44",
+        "34",
+        "44",
+        "45",
+        "1",
+        "16",
+        "persist verified",
+      ])
+      expect(setLimitCount(card)).toBe(1)
+      expect(card.limits()).toEqual(LIMITS)
+      expect(persisted[0].progress.limitsSent).toBe(true)
+      expect(verification.held).toMatchObject({ owner: true, ...LIMITS, mint: MINT })
+      expect(last()).toMatchObject({
+        setUpAt: 42,
+        verification,
+        progress: { verified: true },
+      })
+      expect(sequence.progress).toMatchObject({ limitsSent: true, verified: true })
+    })
+
+    it("writes nothing to a card that already holds the intent's limits (a SET_LIMIT whose answer was lost)", async () => {
+      const card = owned({ limits: LIMITS })
+      const sequence = ownedSequence(card)
+      await allowLoad(card.transceive, ownerSigner(FAKE_OWNER_KEY))
+      card.transceive.mockClear()
+      await finishHolderSetup(card.transceive, { ...sequence, granted: true })
+      // Granted already: no ALLOW_LOAD before the read.
+      expect(card.ins()).toEqual([0x01, 0x16])
+      expect(last()).toMatchObject({ status: "set-up", verification: { held: LIMITS } })
+    })
+
+    it("never overwrites limits that are neither the intent's nor a new card's: changed elsewhere, unconfirmed", async () => {
+      const foreign = { day: 7000, payment: 0, allowance: 0, rollBudget: 7 }
+      const card = owned({ limits: foreign })
+      const sequence = ownedSequence(card)
+      const err = await finishHolderSetup(card.transceive, {
+        ...sequence,
+        granted: false,
+      }).catch((e) => e)
+      expect(err).toBeInstanceOf(SetupUnconfirmedError)
+      expect(err.limitsChangedElsewhere).toBe(true)
+      expect(err.fields).toEqual([
+        "dailyLimit",
+        "paymentLimit",
+        "allowance",
+        "rollBudget",
+      ])
+      expect(card.ins()).not.toContain(0x34)
+      expect(card.limits()).toEqual(foreign)
+      expect(last()).toMatchObject({
+        status: "set-up",
+        unconfirmed: ["dailyLimit", "paymentLimit", "allowance", "rollBudget"],
+      })
+      expect(last().verification).toBeUndefined()
+    })
+
+    it("a persist rejected before the resumed SET_LIMIT sends it not", async () => {
+      const card = owned()
+      const sequence = ownedSequence(card)
+      sequence.persist.mockRejectedValue(new PersistWriteError("not written"))
+      await expect(
+        finishHolderSetup(card.transceive, { ...sequence, granted: false }),
+      ).rejects.toBeInstanceOf(PersistWriteError)
+      expect(card.ins()).not.toContain(0x34)
+    })
+
+    it("a verified record that is not saved only warns: the next tap verifies again", async () => {
+      const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined)
+      const card = owned({ limits: LIMITS })
+      const sequence = ownedSequence(card)
+      sequence.persist.mockRejectedValue(new Error("disk full"))
+      await expect(
+        finishHolderSetup(card.transceive, { ...sequence, granted: false }),
+      ).resolves.toMatchObject({ held: { owner: true } })
+      expect(warn).toHaveBeenCalledWith(
+        "Cashu card setup record (set-up) not saved: Error",
+      )
+      warn.mockRestore()
+    })
+
+    it("an ENG-826 intent (no limits) is refused before anything is sent", async () => {
+      const card = owned()
+      const { intent, ...rest } = ownedSequence(card)
+      const { limits: _dropped, ...legacy } = intent
+      card.transceive.mockClear()
+      await expect(
+        finishHolderSetup(card.transceive, { ...rest, intent: legacy, granted: false }),
+      ).rejects.toBeInstanceOf(CardNotOpenError)
+      expect(card.transceive).not.toHaveBeenCalled()
+    })
+
+    it("a tap cut after SET_OWNER, then the next tap: SET_LIMIT once, and verified", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x43) throw new Error("Tag was lost")
+        return response
+      })
+      const args = argsFor(card, info)
+      await expect(setUpCard(card.transceive, args)).rejects.toThrow("Tag was lost")
+      const stored: CardSetup = JSON.parse(JSON.stringify(last()))
+      expect(stored).toMatchObject({ status: "started", progress: { ownerSent: true } })
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      card.transceive.mockClear()
+      await finishHolderSetup(card.transceive, {
+        intent: stored.intent,
+        progress: { ...stored.progress },
+        key,
+        persist: persistSpy(),
+        granted: false,
+      })
+      expect(setLimitCount(card)).toBe(1)
+      expect(card.limits()).toEqual(LIMITS)
+      expect(last().verification).toBeDefined()
+    })
+
+    it("a tap cut after SET_LIMIT, then the next tap: no second SET_LIMIT, and verified", async () => {
+      const { card, info } = await fresh()
+      const answer = card.transceive.getMockImplementation()!
+      card.transceive.mockImplementation(async (apdu) => {
+        const response = await answer(apdu)
+        if (apdu[1] === 0x34) throw new Error("Tag was lost")
+        return response
+      })
+      await expect(setUpCard(card.transceive, argsFor(card, info))).rejects.toThrow(
+        "Tag was lost",
+      )
+      const stored: CardSetup = JSON.parse(JSON.stringify(last()))
+      expect(stored).toMatchObject({ status: "set-up", progress: { limitsSent: true } })
+      expect(setupUnverified(stored)).toBe(true)
+      card.transceive.mockImplementation(answer)
+      await selectApplet(card.transceive)
+      card.transceive.mockClear()
+      await finishHolderSetup(card.transceive, {
+        intent: stored.intent,
+        progress: { ...stored.progress },
+        key,
+        persist: persistSpy(),
+        granted: false,
+        setUpAt: stored.setUpAt,
+      })
+      expect(card.ins()).not.toContain(0x34)
+      expect(last()).toMatchObject({
+        setUpAt: stored.setUpAt,
+        progress: { verified: true },
+      })
     })
   })
 })
