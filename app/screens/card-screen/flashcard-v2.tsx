@@ -33,8 +33,9 @@ import {
   balanceLines,
   formatUnitAmount,
   isolatedMintName,
+  unconfirmedWhat,
 } from "@app/utils/cashu-card-format"
-import { currentSetup } from "@app/utils/cashu-card-owner-store"
+import { currentSetup, setupUnverified } from "@app/utils/cashu-card-owner-store"
 import { TopUpRecord, isCurrentFormat, quoteIsDead } from "@app/utils/cashu-card-topup"
 import { isFundMint, mintOfCardOrUndefined } from "@app/utils/cashu-card-topup/connected"
 import { soleUnit } from "@app/utils/cashu-mint"
@@ -138,6 +139,17 @@ export const FlashcardV2Screen = () => {
     ? mintOfCardOrUndefined({ recordSet: true, mint: setUpRecord.heldByCard.mint })
     : undefined
   // A blocked PIN takes no load but the owner's: the grant needs no PIN.
+  // ENG-827: this phone's own holder setup, said only for a card it owns and
+  // a record that carries limits (not an ENG-826 one). Never derived from
+  // the card's owner flag: only the wallet's verifying read says it.
+  const holderSetup =
+    ownedHere && setUpRecord?.intent.limits && setUpRecord.status === "set-up"
+      ? setUpRecord.verification
+        ? ("verified" as const)
+        : setupUnverified(setUpRecord)
+        ? ("unverified" as const)
+        : undefined
+      : undefined
   const canTopUp =
     cashuCard.hasOwner &&
     cardMint !== undefined &&
@@ -193,6 +205,27 @@ export const FlashcardV2Screen = () => {
           ? LL.FlashcardV2.mintLine({ mint: isolatedMintName(captionMint) })
           : LL.FlashcardV2.onCardBalance()}
       </Text>
+      {holderSetup === "verified" && (
+        <Text
+          type="caption"
+          style={styles.balanceCaption}
+          accessibilityLabel={LL.FlashcardV2.setUpVerifiedLabel()}
+          testID="flashcard-v2-setup-verified"
+        >
+          {LL.FlashcardV2.setUpVerifiedLine()}
+        </Text>
+      )}
+      {holderSetup === "unverified" && (
+        <Text
+          type="caption"
+          style={styles.balanceCaption}
+          testID="flashcard-v2-setup-unconfirmed"
+        >
+          {LL.FlashcardV2.setUpUnconfirmed({
+            what: unconfirmedWhat(setUpRecord?.unconfirmed ?? [], LL),
+          })}
+        </Text>
+      )}
 
       {isAuthed && (
         <View style={styles.btns} testID="flashcard-v2-actions">
@@ -204,6 +237,16 @@ export const FlashcardV2Screen = () => {
               label={LL.FlashcardV2.setUp()}
               onPress={() => navigation.navigate("FlashcardV2Setup")}
               testID="flashcard-v2-action-setup"
+            />
+          )}
+          {/* A setup of this phone's the card has not confirmed (ENG-827). */}
+          {holderSetup === "unverified" && (
+            <IconBtn
+              type="clear"
+              icon="lockOpen"
+              label={LL.FlashcardV2.setUpFinish()}
+              onPress={() => navigation.navigate("FlashcardV2Setup")}
+              testID="flashcard-v2-action-finish"
             />
           )}
           {canTopUp && (
