@@ -25,7 +25,7 @@ import {
   Transceiver,
 } from "../../app/utils/cashu-card"
 import { RelayUnsettledError } from "../../app/utils/cashu-card-relay"
-import { ownerPublicKey } from "../../app/utils/cashu-card-owner"
+import { ownerPublicKey, ownerSigner, setLimits } from "../../app/utils/cashu-card-owner"
 import { FAKE_OWNER_KEY, FakeCard, createFakeCard } from "../helpers/fake-cashu"
 import { cardRecord, cashuCardState } from "../helpers/cashu-card-state"
 import { isolatedMintName } from "../../app/utils/cashu-card-format"
@@ -131,6 +131,15 @@ beforeEach(() => {
 })
 
 const SEED_KEY = { privateKey: FAKE_OWNER_KEY, source: "seed", saved: false }
+/**
+ * ENG-827: what follows SET_OWNER in the same tap, as INS hex: GET_NONCE and
+ * SET_LIMIT, GET_NONCE and ALLOW_LOAD, then GET_INFO and GET_CARD.
+ */
+const VERIFY_TAIL = ["44", "34", "44", "45", "1", "16"]
+/** A sealed-PIN setup's reads and writes up to SET_OWNER, as INS hex (ENG-825, ENG-826). */
+/** The toast of a setup the card confirmed (ENG-827). */
+const VERIFIED = LL.FlashcardV2.setUpVerified()
+const SEALED_PIN_SETUP = ["1", "16", "44", "41", "44", "40", "32", "16", "saved", "43"]
 /** The applet version setup writes to (ENG-825). */
 const V22: [number, number] = [2, 2]
 /** runCardOperation as the provider runs it: `op` on `card`, with the tap's SELECT and GET_PUBKEY. */
@@ -254,7 +263,7 @@ describe("FlashcardV2SetupScreen", () => {
     // The two sealed PIN commands each ask the card for its PIN key first.
     // GET_CARD is read with GET_INFO before anything is written (ENG-825).
     // ENG-826: SET_CARD is read back (GET_CARD) before the key is saved.
-    expect(order).toEqual(["1", "16", "44", "41", "44", "40", "32", "16", "saved", "43"])
+    expect(order).toEqual([...SEALED_PIN_SETUP, ...VERIFY_TAIL])
     expect(mockSaveOwnerKey).toHaveBeenCalledWith(card.pubkey, SEED_KEY)
     expect(card.owner()).toBe(hex(ownerPublicKey(FAKE_OWNER_KEY)))
     expect(card.pin()).toBe("2468")
@@ -266,12 +275,14 @@ describe("FlashcardV2SetupScreen", () => {
         hasOwner: true,
         recordSet: true,
         pinState: "set",
-        record: { recordSet: true },
+        dailyLimit: 0,
+        allowance: 0,
+        record: { recordSet: true, dailyLimit: 0, rollBudget: 7 },
       },
-      learned: { ownerKeySource: "seed" },
+      learned: { ownerKeySource: "seed", ownerPaymentLimit: 0 },
     })
     expect(mockToast).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "success", message: LL.FlashcardV2.setUpDone() }),
+      expect.objectContaining({ type: "success", message: VERIFIED }),
     )
     expect(JSON.stringify(mockToast.mock.calls)).not.toContain("2468")
   })
@@ -286,12 +297,14 @@ describe("FlashcardV2SetupScreen", () => {
       fireEvent.press(screen.getByTestId("setup-tap"))
     })
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
-    expect(order).toEqual(["1", "16", "32", "16", "saved", "43"])
+    expect(order).toEqual(["1", "16", "32", "16", "saved", "43", ...VERIFY_TAIL])
     expect(card.pin()).toBeUndefined()
     expect(capturedOptions?.assume).toEqual({
       hasOwner: true,
       recordSet: true,
-      record: { recordSet: true },
+      dailyLimit: 0,
+      allowance: 0,
+      record: { recordSet: true, dailyLimit: 0, rollBudget: 7 },
     })
   })
 
@@ -374,14 +387,16 @@ describe("FlashcardV2SetupScreen", () => {
     })
     await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
     // ENG-826: SET_OWNER had gone out, so the record is read back and the
-    // wallet's record finished.
-    expect(card.ins()).toEqual([0x01, 0x44, 0x45, 0x16])
+    // wallet's record finished. ENG-827: the verifying read under the grant;
+    // the card's limits are already the intent's (none), so no SET_LIMIT.
+    expect(card.ins()).toEqual([0x01, 0x44, 0x45, 0x01, 0x16])
     expect(mockToast).toHaveBeenCalledWith(
-      expect.objectContaining({ message: LL.FlashcardV2.setUpAlreadyMine() }),
+      expect.objectContaining({ message: LL.FlashcardV2.setUpVerified() }),
     )
     expect(disk?.setups?.[card.pubkey]).toMatchObject({
       status: "set-up",
       heldByCard: { mint: "https://mint.test", unit: 0, refundKey: null, design: null },
+      verification: { held: { owner: true, day: 0, rollBudget: 7 } },
     })
   })
 
@@ -859,11 +874,13 @@ describe("FlashcardV2SetupScreen", () => {
         fireEvent.press(screen.getByTestId("setup-tap"))
       })
       await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
-      // Before SET_CARD, before SET_OWNER, and the set-up record after.
-      expect(mockFlushPersisted).toHaveBeenCalledTimes(3)
+      // Before SET_CARD, SET_OWNER and SET_LIMIT, and the verified record after.
+      expect(mockFlushPersisted).toHaveBeenCalledTimes(4)
       expect(disk?.setups?.[card.pubkey]).toMatchObject({
         status: "set-up",
         heldByCard: { mint: "https://mint.test" },
+        progress: { limitsSent: true, verified: true },
+        verification: { held: { owner: true } },
       })
     })
 
@@ -917,6 +934,320 @@ describe("FlashcardV2SetupScreen", () => {
     })
     expect(screen.queryByTestId("setup-error")).toBeNull()
     expect(screen.getByTestId("setup-tap")).toBeTruthy()
+  })
+})
+
+// ENG-827: the owner's SET_LIMIT after SET_OWNER, and "holder setup verified".
+describe("FlashcardV2SetupScreen: the limits and the verifying read (ENG-827)", () => {
+  let card: FakeCard
+  let order: string[]
+  /** `c`'s own answers, each INS noted in `order`. */
+  const trace = (c: FakeCard) => {
+    const answer = c.transceive.getMockImplementation()!
+    return async (apdu: number[]) => {
+      order.push(apdu[1].toString(16))
+      return answer(apdu)
+    }
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    capturedOptions = undefined
+    order = []
+    card = createFakeCard(128, { owner: null, sealed: true, version: V22 })
+    card.transceive.mockImplementation(trace(card))
+    mockCard = cashuCardState({
+      pubkey: card.pubkey,
+      hasOwner: false,
+      recordSet: false,
+      pinState: "unset",
+      unspent: 0,
+      balance: 0,
+      ownerKeySource: undefined,
+    })
+    mockRunResult = runOn(card)
+    mockOwnerKeyFor.mockResolvedValue(undefined)
+    mockNewOwnerKey.mockResolvedValue(SEED_KEY)
+    mockSaveOwnerKey.mockImplementation(async () => {
+      order.push("saved")
+    })
+    mockRefreshTipHeader.mockResolvedValue({
+      bytes: headerBytes(HEADER_VECTORS[2]),
+      time: HEADER_VECTORS[2].time,
+    })
+  })
+
+  const losingAfter = (ins: number) => {
+    const answer = card.transceive.getMockImplementation()!
+    card.transceive.mockImplementation(async (apdu) => {
+      const response = await answer(apdu)
+      if (apdu[1] === ins) throw new Error("Tag was lost")
+      return response
+    })
+    return answer
+  }
+  const restart = (unmount: () => void, overrides: Partial<CashuCardState> = {}) => {
+    unmount()
+    testStore = newStore(disk)
+    mockCard = { ...(mockCard as CashuCardState), ...overrides }
+  }
+  /** "Change" beside the limits, the fields typed, and Continue. */
+  const chooseLimits = (fields: {
+    day?: string
+    payment?: string
+    allowance?: string
+    rollBudget?: string
+  }) => {
+    fireEvent.press(screen.getByTestId("setup-limits-change"))
+    expect(screen.getByTestId("setup-limits-title")).toBeTruthy()
+    if (fields.day !== undefined)
+      fireEvent.changeText(screen.getByTestId("setup-limits-day"), fields.day)
+    if (fields.payment !== undefined)
+      fireEvent.changeText(screen.getByTestId("setup-limits-payment"), fields.payment)
+    if (fields.allowance !== undefined)
+      fireEvent.changeText(screen.getByTestId("setup-limits-allowance"), fields.allowance)
+    if (fields.rollBudget !== undefined)
+      fireEvent.changeText(
+        screen.getByTestId("setup-limits-roll-budget"),
+        fields.rollBudget,
+      )
+    fireEvent.press(screen.getByTestId("setup-limits-next"))
+  }
+  const tapNoPin = async () => {
+    fireEvent.press(screen.getByTestId("setup-no-pin"))
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("setup-tap"))
+    })
+  }
+  const pressTap = async () => {
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("setup-tap"))
+    })
+  }
+  const setLimitCount = () => order.filter((ins) => ins === "34").length
+
+  it("says the limits on the intro, none to start with, behind one Change link", async () => {
+    await renderScreen()
+    expect(screen.getByTestId("setup-limits-row").props.children).toBe(
+      LL.FlashcardV2.setUpLimitsRow({ limits: LL.FlashcardV2.setUpLimitsNone() }),
+    )
+    expect(screen.getByTestId("setup-limits-change")).toBeTruthy()
+  })
+
+  it("the limits typed on the step are what SET_LIMIT carries, and the record is verified", async () => {
+    await renderScreen()
+    chooseLimits({ day: "5000", payment: "1000", rollBudget: "10" })
+    expect(screen.getByTestId("setup-limits-row").props.children).toBe(
+      LL.FlashcardV2.setUpLimitsRow({
+        limits: LL.FlashcardV2.setUpLimitsDaily({ day: "5,000" }),
+      }),
+    )
+    await tapNoPin()
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(card.limits()).toEqual({
+      day: 5000,
+      payment: 1000,
+      allowance: 0,
+      rollBudget: 10,
+    })
+    expect(setLimitCount()).toBe(1)
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({
+      status: "set-up",
+      intent: { limits: { day: 5000, payment: 1000, allowance: 0, rollBudget: 10 } },
+      verification: { held: { owner: true, day: 5000, payment: 1000, rollBudget: 10 } },
+    })
+    expect(capturedOptions?.learned).toEqual({
+      ownerKeySource: "seed",
+      ownerPaymentLimit: 1000,
+    })
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: LL.FlashcardV2.setUpVerified() }),
+    )
+  })
+
+  it("bad input on the limits step says so inline and stays: nothing is tapped", async () => {
+    await renderScreen()
+    chooseLimits({ rollBudget: "31" })
+    expect(screen.getByTestId("setup-limits-error").props.children).toBe(
+      LL.FlashcardV2.limitsInvalid(),
+    )
+    expect(screen.getByTestId("setup-limits-title")).toBeTruthy()
+    // Back changes nothing.
+    fireEvent.press(screen.getByTestId("setup-limits-back"))
+    expect(screen.getByTestId("setup-limits-row").props.children).toBe(
+      LL.FlashcardV2.setUpLimitsRow({ limits: LL.FlashcardV2.setUpLimitsNone() }),
+    )
+    expect(order).toEqual([])
+  })
+
+  it("a no-PIN allowance with Continue without a PIN says a PIN is needed, stays on the intro, and taps nothing", async () => {
+    await renderScreen()
+    chooseLimits({ allowance: "100" })
+    fireEvent.press(screen.getByTestId("setup-no-pin"))
+    expect(errorText()).toBe(LL.FlashcardV2.setUpLimitsNeedPin())
+    expect(screen.getByTestId("setup-intro")).toBeTruthy()
+    expect(screen.queryByTestId("setup-tap")).toBeNull()
+    expect(order).toEqual([])
+    expect(mockFreezeSetupIntent).not.toHaveBeenCalled()
+  })
+
+  it("a tap cut after SET_OWNER, then a restart: no PIN asked, one tap sends SET_LIMIT, and the record is verified", async () => {
+    const answer = losingAfter(0x43)
+    const { unmount } = await renderScreen()
+    chooseLimits({ day: "5000" })
+    await chooseAndTap("2468")
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+    expect(setLimitCount()).toBe(0)
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({
+      status: "started",
+      progress: { ownerSent: true },
+    })
+
+    card.transceive.mockImplementation(answer)
+    order.length = 0
+    restart(unmount, { hasOwner: true, recordSet: true, pinState: "set" })
+    renderPlain()
+    await waitFor(() =>
+      expect(screen.getByTestId("setup-tap-note").props.children).toBe(
+        LL.FlashcardV2.setUpResume(),
+      ),
+    )
+    expect(screen.queryByTestId("pin-step-title")).toBeNull()
+    expect(screen.queryByTestId("setup-limits-change")).toBeNull()
+    await pressTap()
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    // The grant, the key kept, the read, then SET_LIMIT and the verifying read.
+    expect(order).toEqual(["1", "44", "45", "saved", "1", "16", ...VERIFY_TAIL])
+    expect(card.limits()).toEqual({
+      day: 5000,
+      payment: 0,
+      allowance: 0,
+      rollBudget: 7,
+    })
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({
+      status: "set-up",
+      progress: { limitsSent: true, verified: true },
+      verification: { held: { owner: true, day: 5000 } },
+    })
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ message: LL.FlashcardV2.setUpVerified() }),
+    )
+  })
+
+  it("a tap cut after SET_LIMIT, then a restart: Finish setup, one tap, no second SET_LIMIT, and verified", async () => {
+    const answer = losingAfter(0x34)
+    const { unmount } = await renderScreen()
+    chooseLimits({ day: "5000" })
+    await tapNoPin()
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+    expect(setLimitCount()).toBe(1)
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({
+      status: "set-up",
+      progress: { limitsSent: true },
+    })
+    expect(disk?.setups?.[card.pubkey]?.verification).toBeUndefined()
+
+    card.transceive.mockImplementation(answer)
+    restart(unmount, { hasOwner: true, recordSet: true })
+    renderPlain()
+    await waitFor(() =>
+      expect(screen.getByText(LL.FlashcardV2.setUpFinish())).toBeTruthy(),
+    )
+    await pressTap()
+    await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+    expect(setLimitCount()).toBe(1)
+    expect(card.limits().day).toBe(5000)
+    expect(disk?.setups?.[card.pubkey]?.verification).toBeDefined()
+  })
+
+  it("limits set on the card since, by another phone with the key: no SET_LIMIT, the limits-differ copy, and the screen stays open", async () => {
+    const answer = losingAfter(0x43)
+    const { unmount } = await renderScreen()
+    chooseLimits({ day: "5000" })
+    await tapNoPin()
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpUncertain()))
+
+    card.transceive.mockImplementation(answer)
+    // The holder's limits, set under Limits before this phone finished.
+    await setLimits(card.transceive, ownerSigner(FAKE_OWNER_KEY), {
+      day: 7000,
+      payment: 0,
+      allowance: 0,
+      rollBudget: 7,
+    })
+    order.length = 0
+    restart(unmount, { hasOwner: true, recordSet: true })
+    renderPlain()
+    await waitFor(() => expect(screen.getByTestId("setup-tap")).toBeTruthy())
+    await pressTap()
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpLimitsDiffer()))
+    expect(setLimitCount()).toBe(0)
+    expect(card.limits().day).toBe(7000)
+    expect(mockGoBack).not.toHaveBeenCalled()
+    expect(screen.getByTestId("setup-tap")).toBeTruthy()
+    expect(screen.queryByTestId("setup-close")).toBeNull()
+    expect(screen.getByText(LL.FlashcardV2.setUpFinish())).toBeTruthy()
+    expect(disk?.setups?.[card.pubkey]).toMatchObject({
+      status: "set-up",
+      unconfirmed: ["dailyLimit"],
+    })
+  })
+
+  it("a card that does not keep the limits it was sent: what it has not confirmed, Finish setup, and the same sequence", async () => {
+    card = createFakeCard(128, {
+      owner: null,
+      sealed: true,
+      version: V22,
+      reportLimits: { day: 1 },
+    })
+    card.transceive.mockImplementation(trace(card))
+    mockRunResult = runOn(card)
+    await renderScreen()
+    chooseLimits({ day: "5000" })
+    await tapNoPin()
+    await waitFor(() =>
+      expect(errorText()).toBe(
+        LL.FlashcardV2.setUpUnconfirmed({ what: LL.FlashcardV2.setUpFieldLimits() }),
+      ),
+    )
+    expect(screen.getByText(LL.FlashcardV2.setUpFinish())).toBeTruthy()
+    expect(mockGoBack).not.toHaveBeenCalled()
+    expect(mockFreezeSetupIntent).toHaveBeenCalledTimes(1)
+    // The next tap is the same sequence's: the owned path, no new intent.
+    order.length = 0
+    await pressTap()
+    await waitFor(() => expect(order).toContain("16"))
+    expect(order.slice(0, 3)).toEqual(["1", "44", "45"])
+    expect(setLimitCount()).toBe(0)
+    expect(mockFreezeSetupIntent).toHaveBeenCalledTimes(1)
+  })
+
+  it("an ENG-826 set-up record (no limits) is not resumed: the owned card is refused as before", async () => {
+    const legacy: CardSetupRecord = {
+      v: 1,
+      intent: {
+        cardPubkey: card.pubkey,
+        mint: "https://mint.test",
+        unit: 0,
+        refundKey: null,
+        design: null,
+        pinChosen: false,
+      },
+      progress: { pinSent: false, recordSent: true, ownerSent: true },
+      status: "set-up",
+      heldByCard: { mint: "https://mint.test", unit: 0, refundKey: null, design: null },
+      updatedAt: 1,
+      setUpAt: 1,
+    }
+    testStore = newStore({
+      ...testStore.getState().flashcardV2,
+      setups: { [card.pubkey]: legacy },
+    })
+    mockCard = { ...(mockCard as CashuCardState), hasOwner: true, recordSet: true }
+    renderPlain()
+    await waitFor(() => expect(errorText()).toBe(LL.FlashcardV2.setUpAlreadyOwned()))
+    expect(screen.queryByText(LL.FlashcardV2.setUpFinish())).toBeNull()
+    expect(order).toEqual([])
   })
 })
 

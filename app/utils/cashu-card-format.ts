@@ -6,6 +6,9 @@
 import { mintDisplayName } from "@app/config/appinfo"
 import type { CashuCardState } from "@app/contexts/Flashcard"
 import type { TranslationFunctions } from "@app/i18n/i18n-types"
+import { ROLL_BUDGET_DEFAULT } from "@app/utils/cashu-card"
+import type { CardLimits } from "@app/utils/cashu-card-owner"
+import type { ReadBackField } from "@app/utils/cashu-card-owner-store"
 
 type LLType = TranslationFunctions
 
@@ -81,3 +84,39 @@ export const balanceLines = (
  */
 export const isolatedMintName = (url: string): string =>
   `\u2066${mintDisplayName(url)}\u2069`
+
+/** Setup's limits row (ENG-827): none, the daily limit, or the holder's own. */
+export const limitsSummary = (limits: CardLimits, LL: LLType): string => {
+  if (limits.day > 0) {
+    return LL.FlashcardV2.setUpLimitsDaily({ day: grouped.format(limits.day) })
+  }
+  const none =
+    limits.payment === 0 &&
+    limits.allowance === 0 &&
+    limits.rollBudget === ROLL_BUDGET_DEFAULT
+  return none ? LL.FlashcardV2.setUpLimitsNone() : LL.FlashcardV2.setUpLimitsCustom()
+}
+
+/**
+ * What a setup not verified (ENG-827) has not confirmed, as "its owner, its
+ * limits": every part when the record names none.
+ */
+export const unconfirmedWhat = (fields: readonly ReadBackField[], LL: LLType): string => {
+  const all = fields.length === 0
+  const isLimit = (field: ReadBackField) =>
+    field === "dailyLimit" ||
+    field === "paymentLimit" ||
+    field === "allowance" ||
+    field === "rollBudget"
+  const parts: string[] = []
+  if (all || fields.includes("owner")) parts.push(LL.FlashcardV2.setUpFieldOwner())
+  if (all || fields.some(isLimit)) parts.push(LL.FlashcardV2.setUpFieldLimits())
+  if (all || fields.includes("mint")) parts.push(LL.FlashcardV2.setUpFieldMint())
+  if (
+    all ||
+    fields.some((field) => field !== "owner" && field !== "mint" && !isLimit(field))
+  ) {
+    parts.push(LL.FlashcardV2.setUpFieldRecord())
+  }
+  return parts.join(", ")
+}

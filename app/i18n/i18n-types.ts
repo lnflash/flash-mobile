@@ -1224,6 +1224,69 @@ type RootTranslation = {
 		 * @param {string} mint
 		 */
 		setUpMintNotice: RequiredParams<'mint'>
+		/**
+		 * L​i​m​i​t​s​:​ ​{​l​i​m​i​t​s​}
+		 * @param {string} limits
+		 */
+		setUpLimitsRow: RequiredParams<'limits'>
+		/**
+		 * n​o​n​e
+		 */
+		setUpLimitsNone: string
+		/**
+		 * {​d​a​y​}​ ​s​a​t​s​ ​a​ ​d​a​y
+		 * @param {string} day
+		 */
+		setUpLimitsDaily: RequiredParams<'day'>
+		/**
+		 * y​o​u​r​ ​o​w​n
+		 */
+		setUpLimitsCustom: string
+		/**
+		 * S​p​e​n​d​i​n​g​ ​w​i​t​h​o​u​t​ ​a​ ​P​I​N​ ​n​e​e​d​s​ ​a​ ​P​I​N​ ​o​n​ ​t​h​e​ ​c​a​r​d​.​ ​S​e​t​ ​a​ ​P​I​N​,​ ​o​r​ ​s​e​t​ ​t​h​a​t​ ​l​i​m​i​t​ ​t​o​ ​0​.
+		 */
+		setUpLimitsNeedPin: string
+		/**
+		 * C​a​r​d​ ​s​e​t​ ​u​p​ ​a​n​d​ ​v​e​r​i​f​i​e​d​.​ ​T​h​i​s​ ​p​h​o​n​e​ ​i​s​ ​i​t​s​ ​o​w​n​e​r​.
+		 */
+		setUpVerified: string
+		/**
+		 * S​e​t​u​p​ ​v​e​r​i​f​i​e​d
+		 */
+		setUpVerifiedLine: string
+		/**
+		 * S​e​t​u​p​ ​v​e​r​i​f​i​e​d​ ​w​h​e​n​ ​i​t​ ​w​a​s​ ​s​e​t​ ​u​p
+		 */
+		setUpVerifiedLabel: string
+		/**
+		 * S​e​t​ ​u​p​,​ ​b​u​t​ ​t​h​e​ ​c​a​r​d​ ​h​a​s​n​'​t​ ​c​o​n​f​i​r​m​e​d​ ​{​w​h​a​t​}​.​ ​T​a​p​ ​i​t​ ​a​g​a​i​n​ ​t​o​ ​f​i​n​i​s​h​.
+		 * @param {string} what
+		 */
+		setUpUnconfirmed: RequiredParams<'what'>
+		/**
+		 * T​h​e​ ​c​a​r​d​ ​r​e​p​o​r​t​s​ ​o​t​h​e​r​ ​l​i​m​i​t​s​ ​t​h​a​n​ ​s​e​t​u​p​ ​w​r​o​t​e​.​ ​N​o​t​h​i​n​g​ ​w​a​s​ ​c​h​a​n​g​e​d​.​ ​C​h​e​c​k​ ​t​h​e​m​ ​u​n​d​e​r​ ​L​i​m​i​t​s​.
+		 */
+		setUpLimitsDiffer: string
+		/**
+		 * F​i​n​i​s​h​ ​s​e​t​u​p
+		 */
+		setUpFinish: string
+		/**
+		 * i​t​s​ ​o​w​n​e​r
+		 */
+		setUpFieldOwner: string
+		/**
+		 * i​t​s​ ​l​i​m​i​t​s
+		 */
+		setUpFieldLimits: string
+		/**
+		 * i​t​s​ ​e​C​a​s​h​ ​m​i​n​t
+		 */
+		setUpFieldMint: string
+		/**
+		 * i​t​s​ ​r​e​c​o​r​d
+		 */
+		setUpFieldRecord: string
 	}
 	Cashout: {
 		/**
@@ -10047,6 +10110,66 @@ export type TranslationFunctions = {
 		 * Flash doesn't run {mint}, and this app can't move the card to another mint later.
 		 */
 		setUpMintNotice: (arg: { mint: string }) => LocalizedString
+		/**
+		 * Limits: {limits}
+		 */
+		setUpLimitsRow: (arg: { limits: string }) => LocalizedString
+		/**
+		 * none
+		 */
+		setUpLimitsNone: () => LocalizedString
+		/**
+		 * {day} sats a day
+		 */
+		setUpLimitsDaily: (arg: { day: string }) => LocalizedString
+		/**
+		 * your own
+		 */
+		setUpLimitsCustom: () => LocalizedString
+		/**
+		 * Spending without a PIN needs a PIN on the card. Set a PIN, or set that limit to 0.
+		 */
+		setUpLimitsNeedPin: () => LocalizedString
+		/**
+		 * Card set up and verified. This phone is its owner.
+		 */
+		setUpVerified: () => LocalizedString
+		/**
+		 * Setup verified
+		 */
+		setUpVerifiedLine: () => LocalizedString
+		/**
+		 * Setup verified when it was set up
+		 */
+		setUpVerifiedLabel: () => LocalizedString
+		/**
+		 * Set up, but the card hasn't confirmed {what}. Tap it again to finish.
+		 */
+		setUpUnconfirmed: (arg: { what: string }) => LocalizedString
+		/**
+		 * The card reports other limits than setup wrote. Nothing was changed. Check them under Limits.
+		 */
+		setUpLimitsDiffer: () => LocalizedString
+		/**
+		 * Finish setup
+		 */
+		setUpFinish: () => LocalizedString
+		/**
+		 * its owner
+		 */
+		setUpFieldOwner: () => LocalizedString
+		/**
+		 * its limits
+		 */
+		setUpFieldLimits: () => LocalizedString
+		/**
+		 * its eCash mint
+		 */
+		setUpFieldMint: () => LocalizedString
+		/**
+		 * its record
+		 */
+		setUpFieldRecord: () => LocalizedString
 	}
 	Cashout: {
 		/**

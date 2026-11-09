@@ -36,7 +36,11 @@ import {
   triesLeft,
 } from "@app/utils/cashu-card"
 import { cardMintUrl } from "@app/utils/cashu-card-bridge"
-import { isolatedMintName } from "@app/utils/cashu-card-format"
+import {
+  isolatedMintName,
+  limitsSummary,
+  unconfirmedWhat,
+} from "@app/utils/cashu-card-format"
 import {
   checkCardMint,
   isFundMint,
@@ -45,7 +49,12 @@ import {
 import { sameMint } from "@app/utils/cashu-card-topup/mint-url"
 import { fetchKeysetUnits } from "@app/utils/cashu-mint"
 import { refreshTipHeader } from "@app/utils/cashu-card-headers"
-import { allowLoad, ownerSigner } from "@app/utils/cashu-card-owner"
+import {
+  CardLimits,
+  NO_LIMITS,
+  allowLoad,
+  ownerSigner,
+} from "@app/utils/cashu-card-owner"
 import {
   CardNotOpenError,
   CardNotOpenReason,
@@ -54,9 +63,11 @@ import {
   SetupIntent,
   SetupProgress,
   SetupReadBackError,
+  SetupUnconfirmedError,
   checkSetupVersion,
   compareReadBack,
   currentSetup,
+  finishHolderSetup,
   freezeSetupIntent,
   heldByCard,
   newOwnerKey,
@@ -65,6 +76,7 @@ import {
   saveOwnerKey,
   setUpCard,
   setupRecord,
+  setupUnverified,
   setupWriteSent,
 } from "@app/utils/cashu-card-owner-store"
 import { RelayUnsettledError } from "@app/utils/cashu-card-relay"
@@ -74,8 +86,10 @@ import {
   useAppDispatch,
   useAppSelector,
 } from "@app/store/redux"
-import { cardSetupSaved } from "@app/store/redux/slices/flashcardV2Slice"
+import { cardLimitsSet, cardSetupSaved } from "@app/store/redux/slices/flashcardV2Slice"
 import { toastShow } from "@app/utils/toast"
+
+import { LimitField, limitsFromFields } from "./flashcard-v2-limits"
 
 type LLType = ReturnType<typeof useI18nContext>["LL"]
 
@@ -90,6 +104,8 @@ type Step =
   | { name: "intro" }
   /** "Change" on the intro (ENG-787): which mint the card's eCash comes from. */
   | { name: "mint" }
+  /** "Change" beside the limits on the intro (ENG-827): the owner's limits setup writes. */
+  | { name: "limits" }
   /**
    * `resume` (ENG-826): the PIN this sequence already set on the card, typed
    * once after a restart, with no confirm.
@@ -98,8 +114,8 @@ type Step =
   | { name: "tap" }
   | { name: "finished" }
 
-/** What the tap did. */
-type SetUpOutcome = "set-up" | "already-mine"
+/** What the tap did. `verified` (ENG-827): set up, and the card read back all of it. */
+type SetUpOutcome = "set-up" | "already-mine" | "verified"
 
 /**
  * One setup sequence (ENG-825): what it set out to write, fixed at the first
@@ -109,7 +125,8 @@ type SetupSequence = { intent: SetupIntent; progress: SetupProgress }
 
 /**
  * The wallet's stored record of this card's setup (ENG-826), when it is one
- * this screen acts on: this format, this card, and not finished.
+ * this screen acts on: this format, this card, and not finished (ENG-827: a
+ * `set-up` record not verified is not finished).
  */
 const storedSetupFor = (
   setup: CardSetup | undefined,
@@ -118,14 +135,19 @@ const storedSetupFor = (
   const current = currentSetup(setup)
   return current &&
     current.intent?.cardPubkey === cardPubkey &&
-    current.status !== "set-up"
+    (current.status !== "set-up" || setupUnverified(current))
     ? current
     : undefined
 }
 
-/** A stored setup this screen resumes: started, with a write sent. */
+/**
+ * A stored setup this screen resumes: started, with a write sent (SET_OWNER
+ * among them, ENG-827), or set up and not verified.
+ */
 const resumable = (setup: CardSetup | undefined): CardSetup | undefined =>
-  setup && setup.status === "started" && setupWriteSent(setup.progress)
+  setup &&
+  ((setup.status === "started" && setupWriteSent(setup.progress)) ||
+    setupUnverified(setup))
     ? setup
     : undefined
 
@@ -215,6 +237,15 @@ const MONOSPACE = Platform.select({ ios: "Menlo", default: "monospace" })
  * press; one "Change" link opens the other listed mints and a written-in
  * address. A mint Flash doesn't fund is said once, under the choice: SET_CARD
  * fixes the mint, and this app can't move the card later.
+ *
+ * The limits (ENG-827): none unless the holder changes them behind one
+ * "Change" link (a no-PIN allowance needs a PIN: "Continue without a PIN"
+ * says so, and taps nothing). In the same tap, after SET_OWNER, the owner's
+ * SET_LIMIT writes them, then ALLOW_LOAD, GET_INFO and GET_CARD read back
+ * everything: all matching, the setup is verified. A tap cut after SET_OWNER
+ * is finished by the next one, through the owned path, with no PIN asked
+ * (`finishHolderSetup`); a card whose limits differ and are not a new card's
+ * is never overwritten, and the holder is pointed to Limits.
  */
 export const FlashcardV2SetupScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
@@ -241,6 +272,14 @@ export const FlashcardV2SetupScreen = () => {
   const [pin, setPin] = useState<string>()
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
+  // The last tap set the card up and it did not confirm all of it (ENG-827):
+  // the next tap finishes it.
+  const [unconfirmed, setUnconfirmed] = useState(() => setupUnverified(resumed))
+  // The owner's limits setup writes after SET_OWNER (ENG-827): none unless
+  // the holder changes them; a resumed setup keeps its own.
+  const [limits, setLimitsChoice] = useState<CardLimits>(
+    () => resumed?.intent.limits ?? NO_LIMITS,
+  )
   // The sequence the first tap press fixed; retries reuse it. A resumed one
   // (ENG-826) is the stored intent and progress.
   const sequence = useRef<SetupSequence | undefined>(
@@ -407,6 +446,20 @@ export const FlashcardV2SetupScreen = () => {
         throw err
       }
       await saveOwnerKey(cashuCard.pubkey, owner)
+      // ENG-827: a setup whose SET_OWNER went out finishes here: SET_LIMIT if
+      // the card's limits are a new card's, then the verifying read, under
+      // the grant just given.
+      if (progress.ownerSent && intent.limits) {
+        await finishHolderSetup(transceive, {
+          intent,
+          progress,
+          key: owner,
+          persist,
+          granted: true,
+          setUpAt: resumed?.setUpAt,
+        })
+        return "verified"
+      }
       await recordAlreadyMine(transceive, { intent, progress })
       return "already-mine"
     }
@@ -415,7 +468,7 @@ export const FlashcardV2SetupScreen = () => {
       { tap, info, intent, progress, pin, anchor, key: owner, persist },
       saveOwnerKey,
     )
-    return "set-up"
+    return intent.limits ? "verified" : "set-up"
   }
 
   /**
@@ -426,7 +479,7 @@ export const FlashcardV2SetupScreen = () => {
   const sequenceForTap = (): SetupSequence => {
     if (!sequence.current) {
       sequence.current = {
-        intent: freezeSetupIntent({ cardPubkey: cashuCard.pubkey, mint, pin }),
+        intent: freezeSetupIntent({ cardPubkey: cashuCard.pubkey, mint, pin, limits }),
         progress: newSetupProgress(),
       }
     }
@@ -453,6 +506,7 @@ export const FlashcardV2SetupScreen = () => {
         setError(LL.FlashcardV2.setUpFailed())
         return
       }
+      const intentLimits = current.intent.limits
       const outcome = await runCardOperation(
         (transceive, _report, cardTap) =>
           setUp(transceive, cardTap, { ...current, owner: key }),
@@ -465,14 +519,42 @@ export const FlashcardV2SetupScreen = () => {
             hasOwner: true,
             recordSet: true,
             ...(pin ? { pinState: "set" as const } : {}),
+            // ENG-827: the limits the setup wrote and verified.
+            ...(intentLimits
+              ? { dailyLimit: intentLimits.day, allowance: intentLimits.allowance }
+              : {}),
             // GET_CARD's record set flag; the re-read reads the record whole.
-            record: { recordSet: true },
+            record: {
+              recordSet: true,
+              ...(intentLimits
+                ? { dailyLimit: intentLimits.day, rollBudget: intentLimits.rollBudget }
+                : {}),
+            },
           },
-          learned: { ownerKeySource: key.source },
+          // The payment limit is said only under the grant: this phone set it.
+          learned: {
+            ownerKeySource: key.source,
+            ...(intentLimits ? { ownerPaymentLimit: intentLimits.payment } : {}),
+          },
         },
       )
+      if (outcome === "verified" && intentLimits) {
+        dispatch(
+          cardLimitsSet({
+            pubkey: cashuCard.pubkey,
+            limits: {
+              day: intentLimits.day,
+              payment: intentLimits.payment,
+              allowance: intentLimits.allowance,
+              rollBudget: intentLimits.rollBudget,
+            },
+          }),
+        )
+      }
       const message =
-        outcome === "already-mine"
+        outcome === "verified"
+          ? LL.FlashcardV2.setUpVerified()
+          : outcome === "already-mine"
           ? LL.FlashcardV2.setUpAlreadyMine()
           : LL.FlashcardV2.setUpDone()
       toastShow({ position: "top", type: "success", message })
@@ -482,6 +564,8 @@ export const FlashcardV2SetupScreen = () => {
       if (err instanceof NfcError.UserCancel) return
       const failure = setUpFailure(err, LL)
       setError(failure.message)
+      // Once set up and not confirmed, the button finishes it from then on.
+      if (failure.unconfirmed) setUnconfirmed(true)
       if (failure.final) {
         sequence.current = undefined
         setStep({ name: "finished" })
@@ -525,6 +609,13 @@ export const FlashcardV2SetupScreen = () => {
     }
     setEntry("")
     setStep({ name: "tap" })
+  }
+
+  /** "Change" beside the limits: the step opens at the limits chosen so far. */
+  const openLimitsStep = () => {
+    dropUnsentSequence()
+    setError(undefined)
+    setStep({ name: "limits" })
   }
 
   const addressCheck = checkCardMint(address)
@@ -640,6 +731,24 @@ export const FlashcardV2SetupScreen = () => {
                 </TouchableOpacity>
               )}
             </View>
+            <View style={styles.mintRow}>
+              <Text type="p2" style={styles.mintRowText} testID="setup-limits-row">
+                {LL.FlashcardV2.setUpLimitsRow({ limits: limitsSummary(limits, LL) })}
+              </Text>
+              {/* A resumed setup's limits are fixed with its intent. */}
+              {!resumed && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={openLimitsStep}
+                  style={styles.link}
+                  testID="setup-limits-change"
+                >
+                  <Text type="p2" bold>
+                    {LL.FlashcardV2.setUpMintChange()}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {errorLine}
             <PrimaryBtn
               label={LL.FlashcardV2.setUpChoosePin()}
@@ -653,6 +762,13 @@ export const FlashcardV2SetupScreen = () => {
               type="outline"
               label={LL.FlashcardV2.setUpNoPin()}
               onPress={() => {
+                // A no-PIN allowance needs a PIN on the card (SET_LIMIT 6985
+                // after SET_OWNER would strand the setup): said here, and
+                // nothing is tapped.
+                if (limits.allowance > 0) {
+                  setError(LL.FlashcardV2.setUpLimitsNeedPin())
+                  return
+                }
                 dropUnsentSequence()
                 setPin(undefined)
                 setStep({ name: "tap" })
@@ -660,6 +776,17 @@ export const FlashcardV2SetupScreen = () => {
               testID="setup-no-pin"
             />
           </>
+        )
+      case "limits":
+        return (
+          <SetupLimitsStep
+            limits={limits}
+            onContinue={(chosen) => {
+              setLimitsChoice(chosen)
+              setStep({ name: "intro" })
+            }}
+            onBack={() => setStep({ name: "intro" })}
+          />
         )
       case "mint":
         return (
@@ -825,7 +952,9 @@ export const FlashcardV2SetupScreen = () => {
             </Text>
             {errorLine}
             <PrimaryBtn
-              label={LL.FlashcardV2.setUpTap()}
+              label={
+                unconfirmed ? LL.FlashcardV2.setUpFinish() : LL.FlashcardV2.setUpTap()
+              }
               loading={busy}
               disabled={busy}
               onPress={tap}
@@ -851,6 +980,107 @@ export const FlashcardV2SetupScreen = () => {
     <Screen preset="scroll" backgroundColor={colors.background}>
       <View style={styles.container}>{body}</View>
     </Screen>
+  )
+}
+
+/**
+ * Setup's limits step (ENG-827): the owner's limits setup writes after
+ * SET_OWNER, opened at the ones chosen so far. Continue takes whole numbers
+ * and a budget of 1 to 30 (`limitsFromFields`), else says so inline; Back
+ * changes nothing.
+ */
+const SetupLimitsStep: React.FC<{
+  limits: CardLimits
+  onContinue: (limits: CardLimits) => void
+  onBack: () => void
+}> = ({ limits, onContinue, onBack }) => {
+  const styles = useStyles()
+  const { LL } = useI18nContext()
+  const [day, setDay] = useState(String(limits.day))
+  const [payment, setPayment] = useState(String(limits.payment))
+  const [allowance, setAllowance] = useState(String(limits.allowance))
+  const [rollBudget, setRollBudget] = useState(String(limits.rollBudget))
+  const [error, setError] = useState<string>()
+  useEffect(() => {
+    if (error && Platform.OS === "ios") AccessibilityInfo.announceForAccessibility(error)
+  }, [error])
+
+  /** A field's typed text, digits only; typing clears the error. */
+  const change = (set: (text: string) => void) => (text: string) => {
+    setError(undefined)
+    set(text.replace(/[^0-9]/g, ""))
+  }
+  const next = () => {
+    const chosen = limitsFromFields({ day, payment, allowance, rollBudget })
+    if (!chosen) {
+      setError(LL.FlashcardV2.limitsInvalid())
+      return
+    }
+    onContinue(chosen)
+  }
+
+  return (
+    <>
+      <Text type="h02" accessibilityRole="header" testID="setup-limits-title">
+        {LL.FlashcardV2.limitsTitle()}
+      </Text>
+      <Text type="p2">{LL.FlashcardV2.limitsIntro()}</Text>
+      <LimitField
+        label={LL.FlashcardV2.limitsDaily()}
+        note={LL.FlashcardV2.limitsDailyNote()}
+        value={day}
+        onChange={change(setDay)}
+        editable
+        testID="setup-limits-day"
+      />
+      <LimitField
+        label={LL.FlashcardV2.limitsPayment()}
+        note={LL.FlashcardV2.limitsPaymentNote()}
+        value={payment}
+        onChange={change(setPayment)}
+        editable
+        testID="setup-limits-payment"
+      />
+      <LimitField
+        label={LL.FlashcardV2.limitsAllowance()}
+        note={LL.FlashcardV2.limitsAllowanceNote()}
+        value={allowance}
+        onChange={change(setAllowance)}
+        editable
+        testID="setup-limits-allowance"
+      />
+      <LimitField
+        label={LL.FlashcardV2.limitsRollBudget()}
+        note={LL.FlashcardV2.limitsRollBudgetNote()}
+        value={rollBudget}
+        onChange={change(setRollBudget)}
+        editable
+        testID="setup-limits-roll-budget"
+      />
+      <View
+        style={styles.status}
+        testID="setup-limits-status"
+        accessibilityLiveRegion="polite"
+      >
+        {error && (
+          <Text type="p2" style={styles.error} testID="setup-limits-error">
+            {error}
+          </Text>
+        )}
+      </View>
+      <PrimaryBtn
+        label={LL.FlashcardV2.next()}
+        onPress={next}
+        testID="setup-limits-next"
+      />
+      {/* Back changes nothing: the limits stay what they were. */}
+      <PrimaryBtn
+        type="outline"
+        label={LL.common.back()}
+        onPress={onBack}
+        testID="setup-limits-back"
+      />
+    </>
   )
 }
 
@@ -880,8 +1110,19 @@ const notOpenMessage = (reason: CardNotOpenReason, LL: LLType, mint?: string): s
 const setUpFailure = (
   err: unknown,
   LL: LLType,
-): { message: string; final?: boolean; retryPin?: boolean } => {
+): { message: string; final?: boolean; retryPin?: boolean; unconfirmed?: boolean } => {
   if (err instanceof WrongCardError) return { message: LL.FlashcardV2.wrongCard() }
+  // Set up, owned by this phone, and not all of it confirmed (ENG-827): the
+  // same sequence finishes it at the next tap. Limits the card holds that
+  // setup did not write are never overwritten: the holder checks Limits.
+  if (err instanceof SetupUnconfirmedError) {
+    return {
+      message: err.limitsChangedElsewhere
+        ? LL.FlashcardV2.setUpLimitsDiffer()
+        : LL.FlashcardV2.setUpUnconfirmed({ what: unconfirmedWhat(err.fields, LL) }),
+      unconfirmed: true,
+    }
+  }
   // The card did not keep the record written to it (ENG-826): final, and
   // this phone is not its owner.
   if (err instanceof SetupReadBackError) {
