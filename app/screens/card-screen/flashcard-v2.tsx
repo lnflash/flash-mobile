@@ -164,7 +164,7 @@ export const FlashcardV2Screen = () => {
 
   return (
     <Screen preset="scroll" backgroundColor={colors.background}>
-      {/* The card as printed (Flash Card v2 "Bearer"), the art flash-pos
+      {/* The card as printed (the Cashu Card face), the art flash-pos
           draws. Its id is in the details below, so only a screen reader
           hears it here, masked as flash-pos masks it, one character at a
           time: read whole, "0C67" ends in "sixty-seven" and "BEEF" is a

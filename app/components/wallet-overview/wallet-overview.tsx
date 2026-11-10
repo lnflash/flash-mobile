@@ -256,7 +256,7 @@ const WalletOverview: React.FC<Props> = ({ setIsUnverifiedSeedModalVisible }) =>
 
 const grouped = new Intl.NumberFormat("en-US")
 
-/** The Bearer card art as the row's thumbnail: the width of the icon it replaces. */
+/** The Cashu Card face as the row's thumbnail: the width of the icon it replaces. */
 const HOME_CARD_ART_WIDTH = 54
 /** The art's drop shadow is sized for the card screen; a thumbnail goes without. */
 const homeCardArtStyle = { elevation: 0, shadowOpacity: 0 }

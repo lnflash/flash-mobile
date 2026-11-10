@@ -709,7 +709,7 @@ describe("FlashcardV2Screen", () => {
       return { first: i === 0, card, next, nextTop }
     }
 
-    it("draws the Bearer card art where the old picture was: 320 dp wide, 10 dp down, the balance 16 dp under it", () => {
+    it("draws the Cashu Card face where the old picture was: 320 dp wide, 10 dp down, the balance 16 dp under it", () => {
       renderScreen()
 
       const { first, card, next, nextTop } = layout()

@@ -113,7 +113,7 @@ describe("WalletOverview: the Cashu card row", () => {
     })
   })
 
-  it("draws the Bearer card as the row's thumbnail, the icon's width, with no shadow and hidden from screen readers", async () => {
+  it("draws the Cashu Card face as the row's thumbnail, the icon's width, with no shadow and hidden from screen readers", async () => {
     mockAttachedCard = card()
     await renderOverview()
 
