@@ -12,11 +12,8 @@ export type OnchainSpeed = OnchainFeeSpeed
 /** Fastest first: the order the picker shows them, and the fallback order. */
 export const ONCHAIN_SPEEDS: readonly OnchainSpeed[] = ["fast", "medium", "slow"]
 
-/** Smallest onchain send from the Bitcoin Account (isValidAmount). */
+/** Smallest onchain send in sats, from either account: the server's floor. */
 export const ONCHAIN_MIN_SEND_SATS = 5500
-
-/** Smallest onchain send from the Cash Account, in cents (isValidAmount). */
-export const ONCHAIN_MIN_SEND_CENTS = 200
 
 /** How long the amount has to stay still before the screen asks for a quote. */
 export const ONCHAIN_QUOTE_DEBOUNCE_MS = 400
@@ -105,27 +102,26 @@ export const resolveSelectedSpeed = (
 }
 
 export type CashAccountCanPayArgs = {
-  /** The send amount converted to cents, or NaN when it cannot be priced. */
+  /** The send amount in sats, as the Bitcoin Account would send it. */
+  amountSats: number
+  /** The same amount converted to cents, or NaN when it cannot be priced. */
   amountCents: number
   /** Cash Account balance in cents, undefined when there is no Cash wallet. */
   balanceCents?: number
-  /** The destination fixes an exact bitcoin amount (BIP-21 amount). */
-  hasFixedBtcAmount: boolean
 }
 
 /**
  * Whether offering "Pay from Cash Account" leads somewhere: the Cash Account
- * exists, its balance covers the amount, the amount clears its onchain minimum,
- * and the request does not fix an exact bitcoin amount (a Cash Account cannot
- * pay one, see AmountInvalidReason.OnChainBtcAmountCashWallet).
+ * exists, its balance covers the amount, and the amount is at least the 5,500
+ * sats the server takes on-chain. A request that fixes its bitcoin amount
+ * qualifies too: the Cash Account sends those exact sats.
  */
 export const cashAccountCanPay = ({
+  amountSats,
   amountCents,
   balanceCents,
-  hasFixedBtcAmount,
 }: CashAccountCanPayArgs): boolean =>
   balanceCents !== undefined &&
-  !hasFixedBtcAmount &&
   Number.isFinite(amountCents) &&
-  amountCents >= ONCHAIN_MIN_SEND_CENTS &&
+  amountSats >= ONCHAIN_MIN_SEND_SATS &&
   amountCents <= balanceCents

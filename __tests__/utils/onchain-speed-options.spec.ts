@@ -1,6 +1,5 @@
 import {
   cashAccountCanPay,
-  ONCHAIN_MIN_SEND_CENTS,
   ONCHAIN_MIN_SEND_SATS,
   planOnchainSpeeds,
   resolveSelectedSpeed,
@@ -156,7 +155,7 @@ describe("resolveSelectedSpeed", () => {
 })
 
 describe("cashAccountCanPay", () => {
-  const base = { amountCents: 600, balanceCents: 10_000, hasFixedBtcAmount: false }
+  const base = { amountSats: 6_000, amountCents: 600, balanceCents: 10_000 }
 
   it("offers the Cash Account when its balance covers the amount", () => {
     expect(cashAccountCanPay(base)).toBe(true)
@@ -171,15 +170,11 @@ describe("cashAccountCanPay", () => {
     expect(cashAccountCanPay({ ...base, balanceCents: undefined })).toBe(false)
   })
 
-  it("does not offer it below the Cash Account onchain minimum", () => {
-    expect(cashAccountCanPay({ ...base, amountCents: ONCHAIN_MIN_SEND_CENTS })).toBe(true)
-    expect(cashAccountCanPay({ ...base, amountCents: ONCHAIN_MIN_SEND_CENTS - 1 })).toBe(
+  it("does not offer it below the 5,500 sats the server takes on-chain", () => {
+    expect(cashAccountCanPay({ ...base, amountSats: ONCHAIN_MIN_SEND_SATS })).toBe(true)
+    expect(cashAccountCanPay({ ...base, amountSats: ONCHAIN_MIN_SEND_SATS - 1 })).toBe(
       false,
     )
-  })
-
-  it("does not offer it for a request that fixes an exact bitcoin amount", () => {
-    expect(cashAccountCanPay({ ...base, hasFixedBtcAmount: true })).toBe(false)
   })
 
   it("does not offer it when the amount cannot be priced", () => {

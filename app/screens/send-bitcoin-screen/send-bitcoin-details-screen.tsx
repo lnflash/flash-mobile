@@ -688,17 +688,17 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     const fee = formatBtcSats(onchainSpeedPlan.cheapestFeeSats)
     const max = formatBtcSats(onchainSpeedPlan.maxSendSats)
     const cashCanPay = cashAccountCanPay({
+      amountSats: paymentDetail.settlementAmount.amount,
       amountCents: paymentDetail.convertMoneyAmount(
         paymentDetail.settlementAmount,
         WalletCurrency.Usd,
       ).amount,
       balanceCents: usdWallet ? usdBalanceMoneyAmount.amount : undefined,
-      hasFixedBtcAmount: Boolean(paymentDetail.destinationSpecifiedAmount),
     })
     return (
       <OnchainFeeShortfall
         message={
-          onchainSpeedPlan.canSendMax
+          onchainSpeedPlan.canSendMax && paymentDetail.canSetAmount
             ? LL.SendBitcoinScreen.onchainFeeTooHigh({ fee, max })
             : LL.SendBitcoinScreen.onchainFeeTooHighNoMax({ fee })
         }
