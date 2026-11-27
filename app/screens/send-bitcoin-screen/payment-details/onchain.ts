@@ -352,6 +352,21 @@ export const BTC_DENOMINATED_SEND_MARGIN_BPS = 50
 export const cashCentsToDeliverSats = (midRateCents: number): number =>
   Math.ceil(midRateCents * (1 + BTC_DENOMINATED_SEND_MARGIN_BPS / 10_000))
 
+/**
+ * What the Cash Account will be debited for an on-chain request that fixes its
+ * sats, before the network fee: the settlement amount, the margin included.
+ * Undefined for every other payment.
+ */
+export const cashDebitForFixedSats = <T extends WalletCurrency>(
+  paymentDetail: PaymentDetail<T>,
+): PaymentDetail<T>["settlementAmount"] | undefined =>
+  paymentDetail.paymentType === PaymentType.Onchain &&
+  paymentDetail.destinationSpecifiedAmount &&
+  (paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+    paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Usdt)
+    ? paymentDetail.settlementAmount
+    : undefined
+
 export type CreateAmountOnchainPaymentDetailsParams<T extends WalletCurrency> = {
   address: string
   destinationSpecifiedAmount: BtcMoneyAmount
