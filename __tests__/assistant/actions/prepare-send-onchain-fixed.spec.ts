@@ -109,8 +109,13 @@ describe("prepareSend to an on-chain request that fixes its sats, from the cash 
       variables: { walletId: "my-usd", address: ADDRESS, amount: 50_000 },
     })
     expect(fake.actions.feeProbes.onChainUsdTxFee).not.toHaveBeenCalled()
-    // 50,000 sats are 3,150 cents at US$63,000 a bitcoin; the fee is 120 cents.
-    expect(action.summary).toMatchObject({ feeText: "USD 120", totalText: "USD 3270" })
+    // 50,000 sats are 3,150 cents at US$63,000 a bitcoin, 3,166 with the
+    // server's 0.5% margin rounded up; the fee is 120 cents.
+    expect(action.summary).toMatchObject({
+      amountText: "USD 3166",
+      feeText: "USD 120",
+      totalText: "USD 3286",
+    })
     expect(action.dispatch?.match).toEqual({ kind: "onchain", address: ADDRESS })
   })
 

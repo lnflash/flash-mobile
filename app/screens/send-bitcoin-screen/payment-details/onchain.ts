@@ -335,6 +335,23 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
   } as const
 }
 
+/**
+ * The margin the server adds when the Cash Account pays a request that fixes
+ * its sats, in basis points: the default of the server's
+ * onChainWallet.btcDenominatedSendMarginBps.
+ */
+export const BTC_DENOMINATED_SEND_MARGIN_BPS = 50
+
+/**
+ * The cents the server debits from the Cash Account for a request that fixes
+ * its sats, before the network fee: the sats at the mid rate (`midRateCents`)
+ * plus the margin, rounded UP to a whole cent, as the server's
+ * usdCentsToDeliverSats prices them. The margin is not a fee: the recipient
+ * gets slightly more than the request.
+ */
+export const cashCentsToDeliverSats = (midRateCents: number): number =>
+  Math.ceil(midRateCents * (1 + BTC_DENOMINATED_SEND_MARGIN_BPS / 10_000))
+
 export type CreateAmountOnchainPaymentDetailsParams<T extends WalletCurrency> = {
   address: string
   destinationSpecifiedAmount: BtcMoneyAmount
@@ -352,10 +369,18 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
     address,
   } = params
 
-  const settlementAmount = convertMoneyAmount(
+  const midRateAmount = convertMoneyAmount(
     destinationSpecifiedAmount,
     sendingWalletDescriptor.currency,
   )
+  // From the Cash Account the settlement is what the server debits: the sats
+  // at the mid rate plus its margin, rounded up to a whole cent. What is sent
+  // is still the request's sats (below).
+  const settlementAmount =
+    sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+    sendingWalletDescriptor.currency === WalletCurrency.Usdt
+      ? { ...midRateAmount, amount: cashCentsToDeliverSats(midRateAmount.amount) }
+      : midRateAmount
   const unitOfAccountAmount = destinationSpecifiedAmount
 
   const memo = destinationSpecifiedMemo || senderSpecifiedMemo

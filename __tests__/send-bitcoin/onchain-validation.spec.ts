@@ -64,9 +64,10 @@ describe("on-chain request validation", () => {
       expect(detail.canSendPayment).toBe(true)
     })
     it(`refuses a fixed request the ${currency} Cash balance cannot cover`, () => {
-      // 20,010 sats is 2,001 cents at the fixture price, one cent over the balance.
+      // 19,901 sats are 1,990.1 cents at the fixture price; with the server's
+      // 0.5% margin, rounded up, 2,001: one cent over the balance.
       expect(
-        isValidAmount({ ...balances, paymentDetail: fixedRequest(currency, 20_010) }),
+        isValidAmount({ ...balances, paymentDetail: fixedRequest(currency, 19_901) }),
       ).toEqual({
         validAmount: false,
         invalidReason: AmountInvalidReason.InsufficientBalance,

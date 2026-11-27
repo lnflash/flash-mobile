@@ -206,13 +206,15 @@ describe("send details: Pay from Cash Account for a request that fixes its sats"
     const detail = mockAmountNote.paymentDetail
     expect(detail.sendingWalletDescriptor).toEqual({ id: "cash-wallet", currency: "USD" })
     expect(detail.destinationSpecifiedAmount).toEqual(toBtcMoneyAmount(6_800))
-    expect(detail.settlementAmount.amount).toBe(680)
+    // 680 cents at ten sats a cent, plus the server's 0.5% margin, rounded up.
+    expect(detail.settlementAmount.amount).toBe(684)
     expect(detail.canSendPayment).toBe(true)
     expect(queryByTestId("onchain-fee-shortfall")).toBeNull()
   })
 
   it("does not offer the Cash Account when its balance cannot cover the request", async () => {
-    mockUsdBalance = 679
+    // 683 cents cover the request's 680 at the mid rate, not the 684 it costs.
+    mockUsdBalance = 683
     const { getByTestId, queryByText } = renderScreen()
     await settleQuote()
 

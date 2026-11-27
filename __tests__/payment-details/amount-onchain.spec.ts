@@ -125,8 +125,9 @@ describe("no amount onchain payment details", () => {
 
       it("keeps the request's sats and settles an estimate in cents", () => {
         expect(paymentDetails.destinationSpecifiedAmount).toEqual(toBtcMoneyAmount(6_000))
+        // 600 cents at the fixture price, plus the server's 0.5% margin.
         expect(paymentDetails.settlementAmount).toEqual({
-          amount: 600,
+          amount: 603,
           currency,
           currencyCode: currency,
         })

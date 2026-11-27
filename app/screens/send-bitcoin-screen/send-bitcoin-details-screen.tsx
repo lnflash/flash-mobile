@@ -52,7 +52,7 @@ import {
   toSpendableBalance,
   toUsdMoneyAmount,
 } from "@app/types/amounts"
-import { isValidAmount } from "./payment-details"
+import { cashCentsToDeliverSats, isValidAmount } from "./payment-details"
 import { noteInvoiceFirstSight } from "./invoice-expiry"
 import { buildMaxAmountButton } from "./max-amount-button"
 import { maxAmountButtonStrings } from "./max-amount-button-strings"
@@ -687,12 +687,17 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     if (!paymentDetail || !onchainSpeedPlan?.noSpeedFits) return null
     const fee = formatBtcSats(onchainSpeedPlan.cheapestFeeSats)
     const max = formatBtcSats(onchainSpeedPlan.maxSendSats)
+    const midRateCents = paymentDetail.convertMoneyAmount(
+      paymentDetail.settlementAmount,
+      WalletCurrency.Usd,
+    ).amount
     const cashCanPay = cashAccountCanPay({
       amountSats: paymentDetail.settlementAmount.amount,
-      amountCents: paymentDetail.convertMoneyAmount(
-        paymentDetail.settlementAmount,
-        WalletCurrency.Usd,
-      ).amount,
+      // A request that fixes its sats costs the Cash Account the server's
+      // margin too, as the payment detail it switches to prices it.
+      amountCents: paymentDetail.destinationSpecifiedAmount
+        ? cashCentsToDeliverSats(midRateCents)
+        : midRateCents,
       balanceCents: usdWallet ? usdBalanceMoneyAmount.amount : undefined,
     })
     return (
