@@ -282,6 +282,27 @@ export const fetchRecommendedFees = async (): Promise<RecommendedFees> => {
 // Fee extraction lives in ./fee-extraction (SDK-import-free) so it is
 // unit-testable under plain jest.
 
+/**
+ * The one onchain prepare request. The speed picker's quote
+ * (fetchBreezOnchainFees), the Next check (fetchBreezFee) and the send itself
+ * (payOnchainBreez) all go through it, so they read fees from the same request
+ * and a change to its shape reaches all three at once.
+ */
+const prepareOnchainSend = (
+  sdk: BreezSdkInterface,
+  paymentRequest: string,
+  amountSats: number,
+) =>
+  sdk.prepareSendPayment({
+    // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
+    // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
+    paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
+    amount: BigInt(amountSats),
+    tokenIdentifier: undefined,
+    conversionOptions: undefined,
+    feePolicy: undefined,
+  })
+
 export type FetchBreezFeeArgs = {
   paymentType: PaymentType
   paymentRequest: string
@@ -317,15 +338,7 @@ export const fetchBreezFee = async ({
     }
 
     if (paymentType === "onchain") {
-      const prepareResponse = await sdk.prepareSendPayment({
-        // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
-        // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
-        paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
-        amount: BigInt(amountSats),
-        tokenIdentifier: undefined,
-        conversionOptions: undefined,
-        feePolicy: undefined,
-      })
+      const prepareResponse = await prepareOnchainSend(sdk, paymentRequest, amountSats)
       const fee = extractFeeFromPaymentMethod(
         prepareResponse.paymentMethod,
         selectedFeeType,
@@ -408,15 +421,7 @@ export const fetchBreezOnchainFees = async ({
 }> => {
   try {
     const sdk = getSDKInstance()
-    const prepareResponse = await sdk.prepareSendPayment({
-      // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
-      // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
-      paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
-      amount: BigInt(amountSats),
-      tokenIdentifier: undefined,
-      conversionOptions: undefined,
-      feePolicy: undefined,
-    })
+    const prepareResponse = await prepareOnchainSend(sdk, paymentRequest, amountSats)
     const fees = extractOnchainFeesFromPaymentMethod(prepareResponse.paymentMethod)
     return {
       fees: {
@@ -428,12 +433,19 @@ export const fetchBreezOnchainFees = async ({
     }
   } catch (err) {
     console.log("FETCH BREEZ ONCHAIN FEES ERROR", err)
-    try {
-      getCrashlytics().recordError(err instanceof Error ? err : new Error(String(err)))
-    } catch {
-      // crashlytics unavailable: never let reporting mask the fee error
+    // This quote runs by itself on every amount that settles, so an expected
+    // miss (the SDK not running, insufficient funds near the full balance, a
+    // network blip) must not log a non-fatal each time: the screen already
+    // falls back on it. Only an unexpected SDK fault is reported.
+    const classified = classifyBreezSdkError(err)
+    if (classified.kind === "sdk" && !(err instanceof BreezSdkNotInitializedError)) {
+      try {
+        getCrashlytics().recordError(err instanceof Error ? err : new Error(String(err)))
+      } catch {
+        // crashlytics unavailable: never let reporting mask the fee error
+      }
     }
-    return { fees: null, err: classifyBreezSdkError(err) }
+    return { fees: null, err: classified }
   }
 }
 
@@ -619,15 +631,7 @@ export const payOnchainBreez = async (
   try {
     sdk = getSDKInstance()
 
-    const prepareResponse = await sdk.prepareSendPayment({
-      // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
-      // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
-      paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
-      amount: BigInt(amountSats),
-      tokenIdentifier: undefined,
-      conversionOptions: undefined,
-      feePolicy: undefined,
-    })
+    const prepareResponse = await prepareOnchainSend(sdk, paymentRequest, amountSats)
 
     const confirmationSpeed =
       selectedFeeType === "fast"
