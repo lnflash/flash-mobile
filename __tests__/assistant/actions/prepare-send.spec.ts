@@ -975,18 +975,6 @@ describe("prepareSend to an on-chain address from the cash wallet", () => {
       userMessage: "Assistant.onchainBelowMinimum",
     })
   })
-
-  it("refuses an on-chain request that sets a bitcoin amount: the API pays none from cash", async () => {
-    const fake = setup()
-    parse.mockResolvedValue(onchainDestination(50_000))
-
-    await expect(
-      run({ payee: `bitcoin:${ADDRESS}?amount=0.0005` }, fake),
-    ).resolves.toEqual({
-      kind: "error",
-      userMessage: "Assistant.onchainAmountUnsupported",
-    })
-  })
 })
 
 describe("prepareSend from the BTC wallet", () => {

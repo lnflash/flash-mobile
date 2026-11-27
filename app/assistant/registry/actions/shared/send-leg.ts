@@ -4,6 +4,7 @@ import type {
   PaymentDetail,
   SendPaymentMutation,
 } from "@app/screens/send-bitcoin-screen/payment-details/index.types"
+import { cashOnchainMinimumCents } from "@app/screens/send-bitcoin-screen/payment-details/utils"
 import {
   addMoneyAmounts,
   MoneyAmount,
@@ -43,10 +44,12 @@ import type { SourceWallet } from "./wallets"
 // balance and the limit checked, and how long its numbers hold. prepareSend
 // is one of these; a group send is one per leg.
 
-/** The least an on-chain send from the cash wallet may move: the send screen's own floor (isValidAmount). */
-export const CASH_ONCHAIN_MIN_CENTS = 200
-
-/** The least an on-chain send from the BTC wallet may move, in sats: the send screen's own floor (isValidAmount). */
+/**
+ * The least an on-chain send may move, in sats, from either wallet: the
+ * server's floor and the send screen's (isValidAmount). From the cash wallet
+ * an amount in dollars is held to what these sats are worth
+ * (cashOnchainMinimumCents).
+ */
 export const BTC_ONCHAIN_MIN_SATS = 5_500
 
 export type SendLegInput = {
@@ -227,13 +230,9 @@ export const prepareSendLeg = async (
   }
   if (memo && detail.canSetMemo) detail = detail.setMemo(memo)
 
-  // The Send screen pays a fixed-sat on-chain request from the cash wallet
-  // through onChainUsdPaymentSendAsBtcDenominated. The assistant does not build
-  // a card for it yet, so it refuses rather than guess.
-  if (!fromBtc && detail.paymentType === "onchain" && !detail.canSetAmount) {
-    throw new ToolReplyError("Assistant.onchainAmountUnsupported")
-  }
-
+  // A fixed-sat on-chain request from the cash wallet is paid as the Send
+  // screen pays it: its own sats, through onChainUsdPaymentSendAsBtcDenominated
+  // (payment-details/onchain.ts), its fee probed the same way.
   let comment: string | undefined
   if (!fromBtc) ({ detail, comment } = await withLnurlInvoice(detail, memo, ctx))
 
@@ -241,10 +240,15 @@ export const prepareSendLeg = async (
   if (!Number.isFinite(settlement.amount))
     throw new ToolReplyError("Assistant.toolFailed")
   if (settlement.amount <= 0) throw new ToolReplyError("Assistant.amountTooSmall")
+  // The cash wallet's on-chain floor is the server's 5,500 sats: a request
+  // that fixes the sats is held to them, an amount in dollars to what they
+  // are worth, as the send screen holds it (isValidAmount).
   if (
     !fromBtc &&
     detail.paymentType === "onchain" &&
-    settlement.amount < CASH_ONCHAIN_MIN_CENTS
+    (detail.destinationSpecifiedAmount
+      ? detail.destinationSpecifiedAmount.amount < BTC_ONCHAIN_MIN_SATS
+      : settlement.amount < cashOnchainMinimumCents(detail.convertMoneyAmount))
   ) {
     throw new ToolReplyError("Assistant.onchainBelowMinimum")
   }
