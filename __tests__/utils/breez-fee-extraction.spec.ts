@@ -1,5 +1,6 @@
 import {
   extractFeeFromPaymentMethod,
+  extractOnchainFeesFromPaymentMethod,
   SendPaymentMethodLike,
 } from "@app/utils/breez-sdk/fee-extraction"
 
@@ -77,5 +78,40 @@ describe("extractFeeFromPaymentMethod", () => {
 
   it("returns 0 when no payment method is passed at all", () => {
     expect(extractFeeFromPaymentMethod(undefined, "fast")).toEqual(BigInt(0))
+  })
+})
+
+describe("extractOnchainFeesFromPaymentMethod", () => {
+  it("sums user + L1 broadcast fee for all three speeds from one quote", () => {
+    expect(extractOnchainFeesFromPaymentMethod(bitcoinAddressMethod)).toEqual({
+      fast: BigInt(1230),
+      medium: BigInt(810),
+      slow: BigInt(420),
+    })
+  })
+
+  it("agrees with extractFeeFromPaymentMethod for every speed", () => {
+    const all = extractOnchainFeesFromPaymentMethod(bitcoinAddressMethod)
+    ;(["fast", "medium", "slow"] as const).forEach((speed) => {
+      expect(extractFeeFromPaymentMethod(bitcoinAddressMethod, speed)).toEqual(all[speed])
+    })
+  })
+
+  it("throws when the onchain prepare response carries no fee quote", () => {
+    expect(() =>
+      extractOnchainFeesFromPaymentMethod({ tag: "BitcoinAddress", inner: {} }),
+    ).toThrow(/fee quote missing/i)
+  })
+
+  it("throws on anything but an onchain response, never a silent 0-sat fee", () => {
+    expect(() =>
+      extractOnchainFeesFromPaymentMethod({
+        tag: "Bolt11Invoice",
+        inner: { lightningFeeSats: BigInt(7) },
+      }),
+    ).toThrow(/expected an onchain prepare response.*Bolt11Invoice/i)
+    expect(() => extractOnchainFeesFromPaymentMethod(undefined)).toThrow(
+      /expected an onchain prepare response.*none/i,
+    )
   })
 })

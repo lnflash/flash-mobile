@@ -4522,6 +4522,33 @@ type RootTranslation = {
 		 */
 		amountExceed: RequiredParams<'balance'>
 		/**
+		 * T​h​i​s​ ​a​m​o​u​n​t​ ​p​l​u​s​ ​t​h​e​ ​{​f​e​e​}​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​m​o​r​e​ ​t​h​a​n​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​o​f​ ​{​b​a​l​a​n​c​e​}​.
+		 * @param {string} balance
+		 * @param {string} fee
+		 */
+		amountPlusFeeExceed: RequiredParams<'balance' | 'fee'>
+		/**
+		 * T​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​{​f​e​e​}​.​ ​Y​o​u​ ​c​a​n​ ​s​e​n​d​ ​u​p​ ​t​o​ ​{​m​a​x​}​ ​f​r​o​m​ ​t​h​i​s​ ​a​c​c​o​u​n​t​.
+		 * @param {string} fee
+		 * @param {string} max
+		 */
+		onchainFeeTooHigh: RequiredParams<'fee' | 'max'>
+		/**
+		 * T​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​{​f​e​e​}​.​ ​Y​o​u​r​ ​b​a​l​a​n​c​e​ ​i​s​ ​t​o​o​ ​l​o​w​ ​f​o​r​ ​a​n​ ​o​n​-​c​h​a​i​n​ ​s​e​n​d​ ​f​r​o​m​ ​t​h​i​s​ ​a​c​c​o​u​n​t​.
+		 * @param {string} fee
+		 */
+		onchainFeeTooHighNoMax: RequiredParams<'fee'>
+		/**
+		 * S​e​n​d​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		sendMaxAmount: RequiredParams<'amount'>
+		/**
+		 * P​a​y​ ​f​r​o​m​ ​{​a​c​c​o​u​n​t​}
+		 * @param {string} account
+		 */
+		payFromAccount: RequiredParams<'account'>
+		/**
 		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​r​e​m​a​i​n​i​n​g​ ​d​a​i​l​y​ ​l​i​m​i​t​ ​o​f​ ​{​l​i​m​i​t​}
 		 * @param {string} limit
 		 */
@@ -13368,6 +13395,26 @@ export type TranslationFunctions = {
 		 * Amount exceeds your balance of {balance}
 		 */
 		amountExceed: (arg: { balance: string }) => LocalizedString
+		/**
+		 * This amount plus the {fee} network fee is more than your balance of {balance}.
+		 */
+		amountPlusFeeExceed: (arg: { balance: string, fee: string }) => LocalizedString
+		/**
+		 * The network fee is {fee}. You can send up to {max} from this account.
+		 */
+		onchainFeeTooHigh: (arg: { fee: string, max: string }) => LocalizedString
+		/**
+		 * The network fee is {fee}. Your balance is too low for an on-chain send from this account.
+		 */
+		onchainFeeTooHighNoMax: (arg: { fee: string }) => LocalizedString
+		/**
+		 * Send {amount}
+		 */
+		sendMaxAmount: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Pay from {account}
+		 */
+		payFromAccount: (arg: { account: string }) => LocalizedString
 		/**
 		 * Amount exceeds your remaining daily limit of {limit}
 		 */

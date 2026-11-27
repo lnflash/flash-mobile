@@ -6,50 +6,78 @@ import styled from "styled-components/native"
 // hooks
 import { useI18nContext } from "@app/i18n/i18n-react"
 
+type FeeType = "fast" | "medium" | "slow"
+
 type Props = {
   wrapperStyle?: ViewStyle
-  selectedFeeType?: "fast" | "medium" | "slow"
-  onSelectFee: (type: "fast" | "medium" | "slow") => void
+  selectedFeeType?: FeeType
+  onSelectFee: (type: FeeType) => void
+  // Optional: a line under a speed's name, such as its fee.
+  feeLabels?: Partial<Record<FeeType, string>>
+  // Optional: speeds shown dimmed that cannot be picked.
+  disabledFeeTypes?: readonly FeeType[]
 }
 
-const Fees: React.FC<Props> = ({ wrapperStyle, selectedFeeType, onSelectFee }) => {
+const FEE_TYPES: readonly FeeType[] = ["fast", "medium", "slow"]
+
+const disabledProps = {
+  disabled: true,
+  accessibilityState: { disabled: true },
+  style: { opacity: 0.4 },
+}
+
+const Fees: React.FC<Props> = ({
+  wrapperStyle,
+  selectedFeeType,
+  onSelectFee,
+  feeLabels,
+  disabledFeeTypes,
+}) => {
   const { LL } = useI18nContext()
   const { colors } = useTheme().theme
+
+  const names: Record<FeeType, string> = {
+    fast: LL.RefundFlow.fast(),
+    medium: LL.RefundFlow.medium(),
+    slow: LL.RefundFlow.slow(),
+  }
 
   return (
     <Wrapper style={wrapperStyle}>
       <Title>{LL.RefundFlow.recommendedFees()}</Title>
       <ButtonsWrapper>
-        <FeeSelect
-          colors={colors}
-          activeOpacity={0.5}
-          selected={selectedFeeType === "fast"}
-          onPress={() => onSelectFee("fast")}
-        >
-          <FeeText colors={colors} selected={selectedFeeType === "fast"}>
-            {LL.RefundFlow.fast()}
-          </FeeText>
-        </FeeSelect>
-        <FeeSelect
-          colors={colors}
-          activeOpacity={0.5}
-          selected={selectedFeeType === "medium"}
-          onPress={() => onSelectFee("medium")}
-        >
-          <FeeText colors={colors} selected={selectedFeeType === "medium"}>
-            {LL.RefundFlow.medium()}
-          </FeeText>
-        </FeeSelect>
-        <FeeSelect
-          colors={colors}
-          activeOpacity={0.5}
-          selected={selectedFeeType === "slow"}
-          onPress={() => onSelectFee("slow")}
-        >
-          <FeeText colors={colors} selected={selectedFeeType === "slow"}>
-            {LL.RefundFlow.slow()}
-          </FeeText>
-        </FeeSelect>
+        {FEE_TYPES.map((feeType) => {
+          const selected = selectedFeeType === feeType
+          const disabled = disabledFeeTypes?.includes(feeType) ?? false
+          const label = feeLabels?.[feeType]
+          return (
+            <FeeSelect
+              key={feeType}
+              colors={colors}
+              activeOpacity={0.5}
+              selected={selected}
+              onPress={() => onSelectFee(feeType)}
+              // Spread only when used, so the picker without these props
+              // renders exactly as it did before they existed.
+              {...(disabled ? disabledProps : {})}
+            >
+              <FeeText colors={colors} selected={selected}>
+                {names[feeType]}
+              </FeeText>
+              {label ? (
+                <FeeLabel
+                  colors={colors}
+                  selected={selected}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
+                  {label}
+                </FeeLabel>
+              ) : null}
+            </FeeSelect>
+          )
+        })}
       </ButtonsWrapper>
     </Wrapper>
   )
@@ -82,5 +110,11 @@ const FeeSelect = styled.TouchableOpacity<{ colors: Colors; selected: boolean }>
 
 const FeeText = styled.Text<{ colors: Colors; selected: boolean }>`
   font-size: 15px;
+  color: ${({ colors, selected }) => (selected ? colors.white : colors.black)};
+`
+
+const FeeLabel = styled.Text<{ colors: Colors; selected: boolean }>`
+  font-size: 12px;
+  padding-horizontal: 4px;
   color: ${({ colors, selected }) => (selected ? colors.white : colors.black)};
 `

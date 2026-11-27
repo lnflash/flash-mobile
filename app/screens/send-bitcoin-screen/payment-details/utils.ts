@@ -16,6 +16,7 @@ import {
   toBtcMoneyAmount,
 } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
+import { ONCHAIN_MIN_SEND_CENTS, ONCHAIN_MIN_SEND_SATS } from "../onchain-speed-options"
 
 export const isValidAmount = ({
   paymentDetail,
@@ -87,7 +88,7 @@ export const isValidAmount = ({
     paymentDetail.paymentType === PaymentType.Onchain &&
     lessThan({
       value: settlementAmount,
-      lessThan: toUsdMoneyAmount(200),
+      lessThan: toUsdMoneyAmount(ONCHAIN_MIN_SEND_CENTS),
     })
   ) {
     return {
@@ -101,7 +102,7 @@ export const isValidAmount = ({
     paymentDetail.paymentType === PaymentType.Onchain &&
     lessThan({
       value: settlementAmount,
-      lessThan: toBtcMoneyAmount(5500),
+      lessThan: toBtcMoneyAmount(ONCHAIN_MIN_SEND_SATS),
     })
   ) {
     return {

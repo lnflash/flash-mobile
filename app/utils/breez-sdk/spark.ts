@@ -45,7 +45,11 @@ import {
   lnurlLimitsFromPayRequest,
   validateAmountWithinLimits,
 } from "./fee-errors"
-import { extractFeeFromPaymentMethod } from "./fee-extraction"
+import {
+  extractFeeFromPaymentMethod,
+  extractOnchainFeesFromPaymentMethod,
+  OnchainFeeSpeed,
+} from "./fee-extraction"
 import { BreezSdkNotInitializedError, BreezSdkNotRunningReason } from "./sdk-errors"
 import { LnurlPayOutcomeUnknownError } from "./lnurl-pay-errors"
 
@@ -382,6 +386,54 @@ export const fetchBreezFee = async ({
       // crashlytics unavailable — never let reporting mask the fee error
     }
     return { fee: null, err: classifyBreezSdkError(err) }
+  }
+}
+
+export type FetchBreezOnchainFeesArgs = {
+  paymentRequest: string
+  amountSats: number
+}
+
+/**
+ * The total fee of every onchain speed for one send, from a single prepare
+ * call: the BitcoinAddress quote carries Fast, Medium and Slow together. The
+ * send details screen shows them on the speed picker.
+ */
+export const fetchBreezOnchainFees = async ({
+  paymentRequest,
+  amountSats,
+}: FetchBreezOnchainFeesArgs): Promise<{
+  fees: Record<OnchainFeeSpeed, number> | null
+  err: BreezFeeError | null
+}> => {
+  try {
+    const sdk = getSDKInstance()
+    const prepareResponse = await sdk.prepareSendPayment({
+      // 0.22.x: paymentRequest is a tagged union; Input wraps the raw string
+      // (bolt11 / address / BIP-21) exactly as the SDK parsed it before.
+      paymentRequest: new PaymentRequest.Input({ input: paymentRequest }),
+      amount: BigInt(amountSats),
+      tokenIdentifier: undefined,
+      conversionOptions: undefined,
+      feePolicy: undefined,
+    })
+    const fees = extractOnchainFeesFromPaymentMethod(prepareResponse.paymentMethod)
+    return {
+      fees: {
+        fast: Number(fees.fast),
+        medium: Number(fees.medium),
+        slow: Number(fees.slow),
+      },
+      err: null,
+    }
+  } catch (err) {
+    console.log("FETCH BREEZ ONCHAIN FEES ERROR", err)
+    try {
+      getCrashlytics().recordError(err instanceof Error ? err : new Error(String(err)))
+    } catch {
+      // crashlytics unavailable: never let reporting mask the fee error
+    }
+    return { fees: null, err: classifyBreezSdkError(err) }
   }
 }
 

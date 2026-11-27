@@ -32,6 +32,42 @@ type FeeFields = {
   }
 }
 
+/** The total fee of each onchain speed, in sats. */
+export type OnchainSpeedFeesSats = Record<OnchainFeeSpeed, bigint>
+
+// What a speed costs the sender: the SSP's fee plus the L1 broadcast fee.
+const totalSpeedFee = (speedFee: SpeedFee): bigint =>
+  speedFee.userFeeSat + speedFee.l1BroadcastFeeSat
+
+/**
+ * All three speeds from one onchain prepare response. The quote carries every
+ * speed, so the send screen can price Fast, Medium and Slow with one call.
+ * Throws on anything but a BitcoinAddress response that carries a quote, for
+ * the same reason extractFeeFromPaymentMethod does: no quote means no knowable
+ * fee, and a fee of 0 would skip the amount+fee balance check.
+ */
+export const extractOnchainFeesFromPaymentMethod = (
+  paymentMethod: SendPaymentMethodLike | undefined,
+): OnchainSpeedFeesSats => {
+  if (paymentMethod?.tag !== "BitcoinAddress") {
+    throw new Error(
+      `Expected an onchain prepare response, got: ${paymentMethod?.tag ?? "none"}`,
+    )
+  }
+  const feeQuote = (paymentMethod.inner as FeeFields | undefined)?.feeQuote
+  if (!feeQuote) {
+    // No quote means no knowable fee. Throwing (classified upstream as an
+    // "sdk" fee error) beats the old fall-through to 0, which displayed a
+    // free send and skipped the amount+fee balance check.
+    throw new Error("Fee quote missing from onchain prepare response")
+  }
+  return {
+    fast: totalSpeedFee(feeQuote.speedFast),
+    medium: totalSpeedFee(feeQuote.speedMedium),
+    slow: totalSpeedFee(feeQuote.speedSlow),
+  }
+}
+
 export const extractFeeFromPaymentMethod = (
   paymentMethod: SendPaymentMethodLike | undefined,
   selectedFeeType?: OnchainFeeSpeed,
@@ -41,23 +77,9 @@ export const extractFeeFromPaymentMethod = (
     return inner?.lightningFeeSats ?? BigInt(0)
   }
   if (paymentMethod?.tag === "BitcoinAddress") {
-    const feeQuote = inner?.feeQuote
-    if (!feeQuote) {
-      // No quote means no knowable fee. Throwing (classified upstream as an
-      // "sdk" fee error) beats the old fall-through to 0, which displayed a
-      // free send and skipped the amount+fee balance check.
-      throw new Error("Fee quote missing from onchain prepare response")
-    }
     // The send screens require a speed before continuing, so the default only
     // covers direct callers — an undefined speed must never read as fee 0.
-    const speed = selectedFeeType ?? "medium"
-    if (speed === "fast") {
-      return feeQuote.speedFast.userFeeSat + feeQuote.speedFast.l1BroadcastFeeSat
-    }
-    if (speed === "slow") {
-      return feeQuote.speedSlow.userFeeSat + feeQuote.speedSlow.l1BroadcastFeeSat
-    }
-    return feeQuote.speedMedium.userFeeSat + feeQuote.speedMedium.l1BroadcastFeeSat
+    return extractOnchainFeesFromPaymentMethod(paymentMethod)[selectedFeeType ?? "medium"]
   }
   if (paymentMethod?.tag === "SparkAddress" || paymentMethod?.tag === "SparkInvoice") {
     return inner?.fee ?? BigInt(0)

@@ -16,6 +16,8 @@ module.exports = {
   receiveOnchainBreez: jest.fn(() => Promise.resolve({ paymentRequest: "" })),
   receivePaymentBreez: jest.fn(() => Promise.resolve({ paymentRequest: "" })),
   fetchBreezFee: jest.fn(() => Promise.resolve({ fee: 0, err: null })),
+  // No quote: the speed picker then looks as it did before it showed fees.
+  fetchBreezOnchainFees: jest.fn(() => Promise.resolve({ fees: null, err: null })),
   fetchLnurlPayRequest: jest.fn(() => Promise.resolve(null)),
   // payLightningBreez resolves with { success, error, payment }, where payment
   // is the SDK's SendPaymentResponse, and the send path reads the status of
