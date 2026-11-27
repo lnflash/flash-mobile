@@ -33,21 +33,16 @@ import { useIsAuthed } from "@app/graphql/is-authed-context"
 
 // types
 import {
-  addMoneyAmounts,
   DisplayCurrency,
-  lessThanOrEqualTo,
-  moneyAmountIsCurrencyType,
   toBtcMoneyAmount,
   toSpendableBalance,
   toUsdMoneyAmount,
-  ZeroBtcMoneyAmount,
-  ZeroUsdMoneyAmount,
 } from "@app/types/amounts"
 import {
   useNpubByUsernameLazyQuery,
   useSendBitcoinConfirmationScreenQuery,
-  WalletCurrency,
 } from "@app/graphql/generated"
+import { checkAmountPlusFee } from "./amount-plus-fee"
 import { FeeType } from "./use-fee"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -131,52 +126,26 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
   }
 
   const validateAmount = () => {
-    const btcBalanceMoneyAmount = toBtcMoneyAmount(btcWallet?.balance)
-    const usdBalanceMoneyAmount = toUsdMoneyAmount(usdWallet?.balance)
-
-    if (
-      moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
-      btcBalanceMoneyAmount &&
-      !isSendingMax
-    ) {
-      const totalAmount = addMoneyAmounts({
-        a: settlementAmount,
-        b: fee.amount || ZeroBtcMoneyAmount,
-      })
-      const validAmount = lessThanOrEqualTo({
-        value: totalAmount,
-        lessThanOrEqualTo: btcBalanceMoneyAmount,
-      })
-      if (!validAmount) {
-        const invalidAmountErrorMessage = LL.SendBitcoinScreen.amountExceed({
-          balance: btcWalletText,
-        })
-        setInvalidAmountErr(invalidAmountErrorMessage)
-      }
-      setIsValidAmount(validAmount)
+    // USD and USDT alike: both are cents of the Cash Account.
+    const check = checkAmountPlusFee({
+      settlementAmount,
+      feeAmount: fee.amount,
+      btcBalanceSats: btcWallet?.balance,
+      cashBalanceCents: usdWallet?.balance,
+      isSendingMax,
+    })
+    if (check === "unchecked") return
+    if (check === "fits") {
+      setInvalidAmountErr(undefined)
+      setIsValidAmount(true)
+      return
     }
-
-    if (
-      moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
-      usdBalanceMoneyAmount &&
-      !isSendingMax
-    ) {
-      const totalAmount = addMoneyAmounts({
-        a: settlementAmount,
-        b: fee.amount || ZeroUsdMoneyAmount,
-      })
-      const validAmount = lessThanOrEqualTo({
-        value: totalAmount,
-        lessThanOrEqualTo: usdBalanceMoneyAmount,
-      })
-      if (!validAmount) {
-        const invalidAmountErrorMessage = LL.SendBitcoinScreen.amountExceed({
-          balance: usdWalletText,
-        })
-        setInvalidAmountErr(invalidAmountErrorMessage)
-      }
-      setIsValidAmount(validAmount)
-    }
+    setInvalidAmountErr(
+      LL.SendBitcoinScreen.amountExceed({
+        balance: check === "overBtcBalance" ? btcWalletText : usdWalletText,
+      }),
+    )
+    setIsValidAmount(false)
   }
 
   const autoAddContact = useCallback(async () => {
