@@ -227,10 +227,9 @@ export const prepareSendLeg = async (
   }
   if (memo && detail.canSetMemo) detail = detail.setMemo(memo)
 
-  // The cash wallet's on-chain send is USD-denominated only. An on-chain
-  // request that sets a bitcoin amount (BIP21) settles through the
-  // BTC-denominated mutation, which the API refuses
-  // (payOnChainByWalletIdForUsdWalletAndBtcAmount): no card for it.
+  // The Send screen pays a fixed-sat on-chain request from the cash wallet
+  // through onChainUsdPaymentSendAsBtcDenominated. The assistant does not build
+  // a card for it yet, so it refuses rather than guess.
   if (!fromBtc && detail.paymentType === "onchain" && !detail.canSetAmount) {
     throw new ToolReplyError("Assistant.onchainAmountUnsupported")
   }

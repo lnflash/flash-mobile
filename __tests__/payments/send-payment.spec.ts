@@ -405,7 +405,12 @@ const variants: Variant[] = [
       }),
     field: "onChainUsdPaymentSend",
     document: OnChainUsdPaymentSendDocument,
-    input: (walletId) => ({ walletId, address: ADDRESS, amount: testAmount.amount }),
+    input: (walletId) => ({
+      walletId,
+      address: ADDRESS,
+      amount: testAmount.amount,
+      memo: MEMO,
+    }),
   },
   {
     name: "onchain, send all",
@@ -434,7 +439,12 @@ const variants: Variant[] = [
       }),
     field: "onChainUsdPaymentSendAsBtcDenominated",
     document: OnChainUsdPaymentSendAsBtcDenominatedDocument,
-    input: (walletId) => ({ walletId, address: ADDRESS, amount: testAmount.amount }),
+    input: (walletId) => ({
+      walletId,
+      address: ADDRESS,
+      amount: testAmount.amount,
+      memo: MEMO,
+    }),
   },
 ]
 

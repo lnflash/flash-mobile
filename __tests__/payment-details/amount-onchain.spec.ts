@@ -160,12 +160,16 @@ describe("no amount onchain payment details", () => {
 
       it("sends the request's sats from the cash wallet", async () => {
         const sendPaymentMocks = createSendPaymentMocks()
-        if (!paymentDetails.canSendPayment) {
+        const paymentDetailsWithNote = createAmountOnchainPaymentDetails({
+          ...cashParams,
+          senderSpecifiedMemo: "note",
+        })
+        if (!paymentDetailsWithNote.canSendPayment) {
           throw new Error("Cannot send payment")
         }
 
         try {
-          await paymentDetails.sendPaymentMutation(sendPaymentMocks)
+          await paymentDetailsWithNote.sendPaymentMutation(sendPaymentMocks)
         } catch {
           // do nothing as function is expected to throw since we are not mocking the send payment response
         }
@@ -178,6 +182,7 @@ describe("no amount onchain payment details", () => {
               address: defaultParams.address,
               amount: 6_000,
               walletId: usdSendingWalletDescriptor.id,
+              memo: "note",
             },
           },
         })
