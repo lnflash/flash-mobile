@@ -167,6 +167,34 @@ describe("no amount lightning payment details", () => {
         },
       })
     })
+
+    it("sends the note with the payment", async () => {
+      const sendPaymentMocks = createSendPaymentMocks()
+      const paymentDetailsWithNote = createNoAmountOnchainPaymentDetails({
+        ...usdSendingWalletParams,
+        senderSpecifiedMemo: "note",
+      })
+      if (!paymentDetailsWithNote.canSendPayment) {
+        throw new Error("Cannot send payment")
+      }
+
+      try {
+        await paymentDetailsWithNote.sendPaymentMutation(sendPaymentMocks)
+      } catch {
+        // do nothing as function is expected to throw since we are not mocking the send payment response
+      }
+
+      expect(sendPaymentMocks.onChainUsdPaymentSend).toHaveBeenCalledWith({
+        variables: {
+          input: {
+            address: defaultParams.address,
+            amount: settlementAmount.amount,
+            walletId: usdSendingWalletParams.sendingWalletDescriptor.id,
+            memo: "note",
+          },
+        },
+      })
+    })
   })
 
   it("cannot calculate fee or send payment with zero amount", () => {

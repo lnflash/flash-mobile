@@ -83,6 +83,23 @@ export const isValidAmount = ({
     }
   }
 
+  // A request that fixes the sats is sent from the Cash Account as sats, and
+  // the server refuses fewer than 5,500 of them.
+  if (
+    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
+    paymentDetail.paymentType === PaymentType.Onchain &&
+    paymentDetail.destinationSpecifiedAmount &&
+    lessThan({
+      value: paymentDetail.destinationSpecifiedAmount,
+      lessThan: toBtcMoneyAmount(ONCHAIN_MIN_SEND_SATS),
+    })
+  ) {
+    return {
+      validAmount: false,
+      invalidReason: AmountInvalidReason.MinOnChainSatLimit,
+    }
+  }
+
   if (
     moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
     paymentDetail.paymentType === PaymentType.Onchain &&
@@ -108,17 +125,6 @@ export const isValidAmount = ({
     return {
       validAmount: false,
       invalidReason: AmountInvalidReason.MinOnChainSatLimit,
-    }
-  }
-
-  if (
-    paymentDetail.paymentType === PaymentType.Onchain &&
-    paymentDetail.destinationSpecifiedAmount &&
-    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd)
-  ) {
-    return {
-      validAmount: false,
-      invalidReason: AmountInvalidReason.OnChainBtcAmountCashWallet,
     }
   }
 
