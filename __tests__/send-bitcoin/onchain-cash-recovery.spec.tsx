@@ -61,7 +61,7 @@ describe("fixed Bitcoin request from Cash Account", () => {
       const screen = renderFor(currency, 5_499)
       expect(
         screen.getByText(
-          "Minimum amount for this transaction is 5,500 sats For smaller payments, ask the recipient for a Lightning invoice.",
+          "Minimum amount for this transaction is 5,500 sats. For smaller payments, ask the recipient for a Lightning invoice.",
         ),
       ).toBeTruthy()
     })

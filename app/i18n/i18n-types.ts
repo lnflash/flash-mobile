@@ -4497,9 +4497,14 @@ type RootTranslation = {
 		 */
 		MinOnChainLimit: string
 		/**
-		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s​.
 		 */
 		MinOnChainSatLimit: string
+		/**
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s​,​ ​a​b​o​u​t​ ​{​a​m​o​u​n​t​}​.
+		 * @param {string} amount
+		 */
+		MinOnChainCashLimit: RequiredParams<'amount'>
 		/**
 		 * F​o​r​ ​s​m​a​l​l​e​r​ ​p​a​y​m​e​n​t​s​,​ ​a​s​k​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​ ​f​o​r​ ​a​ ​L​i​g​h​t​n​i​n​g​ ​i​n​v​o​i​c​e​.
 		 */
@@ -8071,7 +8076,7 @@ type RootTranslation = {
 		 */
 		recipientInvoiceFailed: string
 		/**
-		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​$​2​.
+		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​5​,​5​0​0​ ​s​a​t​s​.
 		 */
 		onchainBelowMinimum: string
 		/**
@@ -13364,9 +13369,13 @@ export type TranslationFunctions = {
 		 */
 		MinOnChainLimit: () => LocalizedString
 		/**
-		 * Minimum amount for this transaction is 5,500 sats
+		 * Minimum amount for this transaction is 5,500 sats.
 		 */
 		MinOnChainSatLimit: () => LocalizedString
+		/**
+		 * Minimum amount for this transaction is 5,500 sats, about {amount}.
+		 */
+		MinOnChainCashLimit: (arg: { amount: string }) => LocalizedString
 		/**
 		 * For smaller payments, ask the recipient for a Lightning invoice.
 		 */
@@ -16874,7 +16883,7 @@ export type TranslationFunctions = {
 		 */
 		recipientInvoiceFailed: () => LocalizedString
 		/**
-		 * On-chain sends from your cash wallet need at least $2.
+		 * On-chain sends from your cash wallet need at least 5,500 sats.
 		 */
 		onchainBelowMinimum: () => LocalizedString
 		/**
