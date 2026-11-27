@@ -83,7 +83,8 @@ const onchainDestination = (amount?: number) =>
 const run = (args: PrepareSendArgs, fake: ReturnType<typeof setup>) =>
   prepareSendRun(args, fake.ctx)
 
-const feeInSats = (fake: ReturnType<typeof setup>, cents: number) =>
+/** The fee the server quotes for the request, in cents of the cash wallet. */
+const feeInCents = (fake: ReturnType<typeof setup>, cents: number) =>
   fake.actions.feeProbes.onChainUsdTxFeeAsBtcDenominated.mockResolvedValue({
     data: { onChainUsdTxFeeAsBtcDenominated: { amount: cents } },
   })
@@ -97,7 +98,7 @@ describe("prepareSend to an on-chain request that fixes its sats, from the cash 
   it("prepares a card for the request's own sats, its fee probed in sats", async () => {
     const fake = setup()
     parse.mockResolvedValue(onchainDestination(50_000))
-    feeInSats(fake, 120)
+    feeInCents(fake, 120)
 
     const action = prepared(
       await run({ payee: `bitcoin:${ADDRESS}?amount=0.0005` }, fake),
@@ -122,7 +123,7 @@ describe("prepareSend to an on-chain request that fixes its sats, from the cash 
   it("sends the request's own sats through onChainUsdPaymentSendAsBtcDenominated", async () => {
     const fake = setup()
     parse.mockResolvedValue(onchainDestination(50_000))
-    feeInSats(fake, 120)
+    feeInCents(fake, 120)
     fake.mutations.onChainUsdPaymentSendAsBtcDenominated.mockResolvedValue(
       sentOk("onChainUsdPaymentSendAsBtcDenominated"),
     )
@@ -147,7 +148,7 @@ describe("prepareSend to an on-chain request that fixes its sats, from the cash 
   it("refuses a request that fixes fewer than 5,500 sats, before probing a fee", async () => {
     const fake = setup()
     parse.mockResolvedValue(onchainDestination(5_499))
-    feeInSats(fake, 120)
+    feeInCents(fake, 120)
 
     await expect(
       run({ payee: `bitcoin:${ADDRESS}?amount=0.00005499` }, fake),
@@ -161,7 +162,7 @@ describe("prepareSend to an on-chain request that fixes its sats, from the cash 
   it("prepares a request that fixes exactly 5,500 sats", async () => {
     const fake = setup()
     parse.mockResolvedValue(onchainDestination(5_500))
-    feeInSats(fake, 120)
+    feeInCents(fake, 120)
 
     prepared(await run({ payee: `bitcoin:${ADDRESS}?amount=0.000055` }, fake))
 

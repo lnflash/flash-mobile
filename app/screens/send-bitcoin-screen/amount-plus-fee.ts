@@ -26,7 +26,8 @@ export type CheckAmountPlusFeeArgs = {
 /**
  * Amount plus fee against the balance of the wallet that pays: sats for the
  * Bitcoin Account, cents for the Cash Account in USD and in USDT alike. A
- * balance not read yet, or a fee that could not be read, does not fit.
+ * balance not read yet does not fit. No fee counts as zero; a fee that could
+ * not be read (NaN) does not fit.
  */
 export const checkAmountPlusFee = ({
   settlementAmount,

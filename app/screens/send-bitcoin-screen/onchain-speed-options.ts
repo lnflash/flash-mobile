@@ -108,20 +108,30 @@ export type CashAccountCanPayArgs = {
   amountCents: number
   /** Cash Account balance in cents, undefined when there is no Cash wallet. */
   balanceCents?: number
+  /** The request fixes its sats: the Cash Account sends those exact sats. */
+  hasFixedSats: boolean
+  /**
+   * The Cash Account's on-chain floor in cents for an amount the user typed
+   * (cashOnchainMinimumCents), or NaN when it cannot be priced.
+   */
+  minimumCents: number
 }
 
 /**
  * Whether offering "Pay from Cash Account" leads somewhere: the Cash Account
- * exists, its balance covers the amount, and the amount is at least the 5,500
- * sats the server takes on-chain. A request that fixes its bitcoin amount
- * qualifies too: the Cash Account sends those exact sats.
+ * exists, its balance covers the amount, and the amount clears the floor the
+ * Cash screen holds it to (isValidAmount). A request that fixes its sats is
+ * held to the server's 5,500 sats; an amount the user typed, to what those
+ * sats are worth in cents, rounded up.
  */
 export const cashAccountCanPay = ({
   amountSats,
   amountCents,
   balanceCents,
+  hasFixedSats,
+  minimumCents,
 }: CashAccountCanPayArgs): boolean =>
   balanceCents !== undefined &&
   Number.isFinite(amountCents) &&
-  amountSats >= ONCHAIN_MIN_SEND_SATS &&
+  (hasFixedSats ? amountSats >= ONCHAIN_MIN_SEND_SATS : amountCents >= minimumCents) &&
   amountCents <= balanceCents

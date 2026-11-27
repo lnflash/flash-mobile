@@ -52,7 +52,11 @@ import {
   toSpendableBalance,
   toUsdMoneyAmount,
 } from "@app/types/amounts"
-import { cashCentsToDeliverSats, isValidAmount } from "./payment-details"
+import {
+  cashCentsToDeliverSats,
+  cashOnchainMinimumCents,
+  isValidAmount,
+} from "./payment-details"
 import { noteInvoiceFirstSight } from "./invoice-expiry"
 import { buildMaxAmountButton } from "./max-amount-button"
 import { maxAmountButtonStrings } from "./max-amount-button-strings"
@@ -699,6 +703,10 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
         ? cashCentsToDeliverSats(midRateCents)
         : midRateCents,
       balanceCents: usdWallet ? usdBalanceMoneyAmount.amount : undefined,
+      // The floor the Cash screen holds the amount to: the sats of a request
+      // that fixes them, else what 5,500 sats are worth in cents.
+      hasFixedSats: Boolean(paymentDetail.destinationSpecifiedAmount),
+      minimumCents: cashOnchainMinimumCents(paymentDetail.convertMoneyAmount),
     })
     return (
       <OnchainFeeShortfall

@@ -155,7 +155,15 @@ describe("resolveSelectedSpeed", () => {
 })
 
 describe("cashAccountCanPay", () => {
-  const base = { amountSats: 6_000, amountCents: 600, balanceCents: 10_000 }
+  // A request that fixes its sats. An amount the user typed is held to the
+  // floor in cents: send-details-onchain-cash-offer-minimum.spec.tsx.
+  const base = {
+    amountSats: 6_000,
+    amountCents: 600,
+    balanceCents: 10_000,
+    hasFixedSats: true,
+    minimumCents: 550,
+  }
 
   it("offers the Cash Account when its balance covers the amount", () => {
     expect(cashAccountCanPay(base)).toBe(true)
