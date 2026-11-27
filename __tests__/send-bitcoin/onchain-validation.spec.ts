@@ -105,11 +105,13 @@ describe("on-chain request validation", () => {
           convertMoneyAmount: convert,
           sendingWalletDescriptor: { id: "cash-wallet", currency },
         })
-      expect(isValidAmount({ ...balances, paymentDetail: cash(199) })).toEqual({
+      // 5,500 sats are 550 cents at the fixture price.
+      expect(isValidAmount({ ...balances, paymentDetail: cash(549) })).toEqual({
         validAmount: false,
         invalidReason: AmountInvalidReason.MinOnChainLimit,
+        minimum: toUsdMoneyAmount(550),
       })
-      const minimum = cash(200)
+      const minimum = cash(550)
       expect(isValidAmount({ ...balances, paymentDetail: minimum })).toEqual({
         validAmount: true,
       })
