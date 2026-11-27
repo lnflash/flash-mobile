@@ -43,6 +43,7 @@ import {
   useSendBitcoinConfirmationScreenQuery,
 } from "@app/graphql/generated"
 import { checkAmountPlusFee } from "./amount-plus-fee"
+import { cashDebitForFixedSats } from "./payment-details"
 import { FeeType } from "./use-fee"
 import { RootStackParamList } from "@app/navigation/stack-param-lists"
 
@@ -304,6 +305,7 @@ const SendBitcoinConfirmationScreen: React.FC<Props> = ({ route, navigation }) =
               invoiceAmount
                 ? invoiceAmount
                 : paymentDetail.unitOfAccountAmount,
+            cashDebitAmount: cashDebitForFixedSats(paymentDetail),
             onSuccessAddContact: autoAddContact,
           })
           ReactNativeHapticFeedback.trigger("notificationSuccess", {

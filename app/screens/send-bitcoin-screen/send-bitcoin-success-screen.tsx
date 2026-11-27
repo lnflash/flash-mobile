@@ -103,7 +103,8 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
   let formattedPrimaryAmount = undefined
   let formattedSecondaryAmount = undefined
-  const { walletCurrency, unitOfAccountAmount, onSuccessAddContact } = route.params
+  const { walletCurrency, unitOfAccountAmount, cashDebitAmount, onSuccessAddContact } =
+    route.params
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
@@ -117,7 +118,14 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
       (walletCurrency === WalletCurrency.Usd || walletCurrency === WalletCurrency.Usdt) &&
       unitOfAccountAmount.currency === WalletCurrency.Btc
 
-    const primaryAmount = convertMoneyAmount(unitOfAccountAmount, DisplayCurrency)
+    // A Cash Account that paid an amount fixed in sats shows what it was
+    // debited, as the confirm screen did (AmountInput, cashDebitAmount).
+    const shownAmount =
+      isBtcDenominatedCashWalletAmount && cashDebitAmount
+        ? cashDebitAmount
+        : unitOfAccountAmount
+
+    const primaryAmount = convertMoneyAmount(shownAmount, DisplayCurrency)
 
     formattedPrimaryAmount = formatMoneyAmount({
       moneyAmount: primaryAmount,
@@ -125,8 +133,8 @@ const SendBitcoinSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
 
     const secondaryAmount = getSecondaryAmountIfCurrencyIsDifferent({
       primaryAmount,
-      walletAmount: convertMoneyAmount(unitOfAccountAmount, walletCurrency),
-      displayAmount: convertMoneyAmount(unitOfAccountAmount, DisplayCurrency),
+      walletAmount: convertMoneyAmount(shownAmount, walletCurrency),
+      displayAmount: convertMoneyAmount(shownAmount, DisplayCurrency),
     })
 
     formattedPrimaryAmount = formatMoneyAmount({

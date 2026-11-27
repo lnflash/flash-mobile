@@ -86,6 +86,8 @@ export type RootStackParamList = {
   sendBitcoinSuccess: {
     unitOfAccountAmount: MoneyAmount<WalletOrDisplayCurrency>
     walletCurrency: WalletCurrency
+    /** The Cash Account's debit for an amount fixed in sats (cashDebitForFixedSats). */
+    cashDebitAmount?: MoneyAmount<WalletCurrency>
     invoiceAmount?: MoneyAmount<WalletCurrency>
     onSuccessAddContact?: () => void
   }
