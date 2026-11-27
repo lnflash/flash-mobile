@@ -74,31 +74,41 @@ describe("cashOnchainMinimumCents", () => {
 describe("the Cash Account's on-chain minimum for an amount in dollars", () => {
   ;[WalletCurrency.Usd, WalletCurrency.Usdt].forEach((currency) => {
     it(`refuses an amount worth fewer than 5,500 sats from ${currency}, naming the minimum`, () => {
-      expect(isValidAmount({ ...balances, paymentDetail: typed(currency, 343) })).toEqual({
-        validAmount: false,
-        invalidReason: AmountInvalidReason.MinOnChainLimit,
-        minimum: toUsdMoneyAmount(344),
-      })
-      expect(isValidAmount({ ...balances, paymentDetail: typed(currency, 344) })).toEqual({
-        validAmount: true,
-      })
+      expect(isValidAmount({ ...balances, paymentDetail: typed(currency, 343) })).toEqual(
+        {
+          validAmount: false,
+          invalidReason: AmountInvalidReason.MinOnChainLimit,
+          minimum: toUsdMoneyAmount(344),
+        },
+      )
+      expect(isValidAmount({ ...balances, paymentDetail: typed(currency, 344) })).toEqual(
+        {
+          validAmount: true,
+        },
+      )
     })
 
     it(`refuses US$2.50 from ${currency}, which the old US$2.00 floor let through`, () => {
-      expect(isValidAmount({ ...balances, paymentDetail: typed(currency, 250) })).toEqual({
-        validAmount: false,
-        invalidReason: AmountInvalidReason.MinOnChainLimit,
-        minimum: toUsdMoneyAmount(344),
-      })
+      expect(isValidAmount({ ...balances, paymentDetail: typed(currency, 250) })).toEqual(
+        {
+          validAmount: false,
+          invalidReason: AmountInvalidReason.MinOnChainLimit,
+          minimum: toUsdMoneyAmount(344),
+        },
+      )
     })
 
     it(`holds a request that fixes its sats from ${currency} to the sats, never to their price`, () => {
       // 5,500 sats are 343.75 cents here, under the 344-cent minimum for an
       // amount in dollars: the request is still valid, because it sends sats.
-      expect(isValidAmount({ ...balances, paymentDetail: fixed(currency, 5_500) })).toEqual({
+      expect(
+        isValidAmount({ ...balances, paymentDetail: fixed(currency, 5_500) }),
+      ).toEqual({
         validAmount: true,
       })
-      expect(isValidAmount({ ...balances, paymentDetail: fixed(currency, 5_499) })).toEqual({
+      expect(
+        isValidAmount({ ...balances, paymentDetail: fixed(currency, 5_499) }),
+      ).toEqual({
         validAmount: false,
         invalidReason: AmountInvalidReason.MinOnChainSatLimit,
       })

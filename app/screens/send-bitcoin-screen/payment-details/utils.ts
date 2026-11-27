@@ -25,11 +25,10 @@ import { ONCHAIN_MIN_SEND_SATS } from "../onchain-speed-options"
  * on-chain send worth fewer than 5,500 sats. NaN when the sats cannot be
  * priced.
  */
-export const cashOnchainMinimumCents = (
-  convertMoneyAmount: ConvertMoneyAmount,
-): number =>
+export const cashOnchainMinimumCents = (convertMoneyAmount: ConvertMoneyAmount): number =>
   Math.ceil(
-    convertMoneyAmount(toBtcMoneyAmount(ONCHAIN_MIN_SEND_SATS), WalletCurrency.Usd).amount,
+    convertMoneyAmount(toBtcMoneyAmount(ONCHAIN_MIN_SEND_SATS), WalletCurrency.Usd)
+      .amount,
   )
 
 export const isValidAmount = ({
