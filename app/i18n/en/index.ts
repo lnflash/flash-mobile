@@ -1398,7 +1398,6 @@ const en: BaseTranslation = {
   },
   SendBitcoinScreen: {
     amount: "Amount",
-    MinOnChainLimit: "Minimum amount for this transaction is US$2.00",
     MinOnChainSatLimit: "Minimum amount for this transaction is 5,500 sats.",
     MinOnChainCashLimit: "Minimum amount for this transaction is 5,500 sats, about {amount: string}.",
     onchainSmallPaymentHint: "For smaller payments, ask the recipient for a Lightning invoice.",
@@ -2432,7 +2431,6 @@ const en: BaseTranslation = {
     amountOutsideRecipientLimits: "The person can't accept that amount.",
     recipientInvoiceFailed: "I couldn't get an invoice from the person. Try again in a moment.",
     onchainBelowMinimum: "On-chain sends from your cash wallet need at least 5,500 sats.",
-    onchainAmountUnsupported: "Your cash wallet can't pay an on-chain request that sets a bitcoin amount.",
     walletUnavailable: "That wallet isn't available on this account.",
     groupSendPartial: "Some payments didn't go through. Check each one below, then confirm again to send the rest.",
     groupSendPayeesUnsupported: "Group sends go to Flash users only.",

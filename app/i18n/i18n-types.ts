@@ -4493,10 +4493,6 @@ type RootTranslation = {
 		 */
 		amount: string
 		/**
-		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​U​S​$​2​.​0​0
-		 */
-		MinOnChainLimit: string
-		/**
 		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s​.
 		 */
 		MinOnChainSatLimit: string
@@ -8079,10 +8075,6 @@ type RootTranslation = {
 		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​5​,​5​0​0​ ​s​a​t​s​.
 		 */
 		onchainBelowMinimum: string
-		/**
-		 * Y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​c​a​n​'​t​ ​p​a​y​ ​a​n​ ​o​n​-​c​h​a​i​n​ ​r​e​q​u​e​s​t​ ​t​h​a​t​ ​s​e​t​s​ ​a​ ​b​i​t​c​o​i​n​ ​a​m​o​u​n​t​.
-		 */
-		onchainAmountUnsupported: string
 		/**
 		 * T​h​a​t​ ​w​a​l​l​e​t​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​a​c​c​o​u​n​t​.
 		 */
@@ -13365,10 +13357,6 @@ export type TranslationFunctions = {
 		 */
 		amount: () => LocalizedString
 		/**
-		 * Minimum amount for this transaction is US$2.00
-		 */
-		MinOnChainLimit: () => LocalizedString
-		/**
 		 * Minimum amount for this transaction is 5,500 sats.
 		 */
 		MinOnChainSatLimit: () => LocalizedString
@@ -16886,10 +16874,6 @@ export type TranslationFunctions = {
 		 * On-chain sends from your cash wallet need at least 5,500 sats.
 		 */
 		onchainBelowMinimum: () => LocalizedString
-		/**
-		 * Your cash wallet can't pay an on-chain request that sets a bitcoin amount.
-		 */
-		onchainAmountUnsupported: () => LocalizedString
 		/**
 		 * That wallet isn't available on this account.
 		 */
