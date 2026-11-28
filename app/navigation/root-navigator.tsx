@@ -30,7 +30,8 @@ import { MapScreen } from "../screens/map-screen/map-screen"
 import { PriceHistoryScreen } from "../screens/price/price-history-screen"
 // The one import the app makes from app/assistant (ENG-689): the module
 // boundary spec allows this file this specifier, and nothing else.
-import { AskFlashScreen } from "@app/assistant/ui"
+import { AskFlashGate } from "@app/assistant/ui"
+import { assistantInThisBuild } from "@app/config/assistant-dev-override"
 import ChatIcon from "@app/assets/icons/chat.svg"
 import { useIsAuthed } from "@app/graphql/is-authed-context"
 import { useI18nContext } from "@app/i18n/i18n-react"
@@ -481,14 +482,18 @@ export const RootStack = () => {
           title: LL.common.bitcoinPrice(),
         }}
       />
-      <RootNavigator.Screen
-        name="askFlash"
-        component={AskFlashScreen}
-        options={{
-          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-          title: LL.AskFlash.title(),
-        }}
-      />
+      {/* A store build has no Ask Flash route (assistantInThisBuild); where
+          there is one, its gate closes it while assistantEnabled is off. */}
+      {assistantInThisBuild() && (
+        <RootNavigator.Screen
+          name="askFlash"
+          component={AskFlashGate}
+          options={{
+            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+            title: LL.AskFlash.title(),
+          }}
+        />
+      )}
       <RootNavigator.Screen
         name="accountScreen"
         component={AccountScreen}

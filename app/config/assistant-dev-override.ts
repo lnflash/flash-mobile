@@ -43,6 +43,25 @@ import { ASSISTANT_DEV_LINK } from "@env"
 const linkEnabled = (): boolean =>
   (typeof __DEV__ !== "undefined" && __DEV__ === true) || ASSISTANT_DEV_LINK === "true"
 
+/**
+ * Store builds leave Ask Flash out until it is hardened (the owner's
+ * decision, 2026-11-27). Turning it back on in the stores is this one
+ * constant set to true, in a reviewed change, and a new build: nothing in the
+ * Firebase console can do it.
+ */
+const ASSISTANT_IN_STORE_BUILDS = false
+
+/**
+ * Whether this build carries Ask Flash at all: the builds that honour the
+ * dev link (a debug or e2e build, a test phone's build with
+ * ASSISTANT_DEV_LINK=true), and store builds only once
+ * ASSISTANT_IN_STORE_BUILDS is true. When false, assistantEnabled is off
+ * whatever Remote Config says (feature-flags-context.tsx) and the root
+ * navigator does not register the askFlash route.
+ */
+export const assistantInThisBuild = (): boolean =>
+  ASSISTANT_IN_STORE_BUILDS || linkEnabled()
+
 let on = false
 let voiceOn = false
 let repliesOn = false
