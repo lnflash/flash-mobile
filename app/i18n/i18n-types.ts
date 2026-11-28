@@ -4493,21 +4493,14 @@ type RootTranslation = {
 		 */
 		amount: string
 		/**
-		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​U​S​$​2​.​0​0
-		 */
-		MinOnChainLimit: string
-		/**
-		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s​.
 		 */
 		MinOnChainSatLimit: string
 		/**
-		 * U​s​e​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​A​c​c​o​u​n​t​ ​t​o​ ​p​a​y​ ​t​h​e​ ​e​x​a​c​t​ ​B​i​t​c​o​i​n​ ​a​m​o​u​n​t​ ​i​n​ ​t​h​i​s​ ​r​e​q​u​e​s​t​.
+		 * M​i​n​i​m​u​m​ ​a​m​o​u​n​t​ ​f​o​r​ ​t​h​i​s​ ​t​r​a​n​s​a​c​t​i​o​n​ ​i​s​ ​5​,​5​0​0​ ​s​a​t​s​,​ ​a​b​o​u​t​ ​{​a​m​o​u​n​t​}​.
+		 * @param {string} amount
 		 */
-		onchainBtcAmountCashWallet: string
-		/**
-		 * E​n​a​b​l​e​ ​y​o​u​r​ ​B​i​t​c​o​i​n​ ​A​c​c​o​u​n​t​ ​(​A​d​v​a​n​c​e​d​ ​M​o​d​e​)​ ​i​n​ ​S​e​t​t​i​n​g​s​ ​t​o​ ​p​a​y​ ​t​h​e​ ​e​x​a​c​t​ ​B​i​t​c​o​i​n​ ​a​m​o​u​n​t​ ​i​n​ ​t​h​i​s​ ​r​e​q​u​e​s​t​.
-		 */
-		onchainBtcAmountCashWalletBeginner: string
+		MinOnChainCashLimit: RequiredParams<'amount'>
 		/**
 		 * F​o​r​ ​s​m​a​l​l​e​r​ ​p​a​y​m​e​n​t​s​,​ ​a​s​k​ ​t​h​e​ ​r​e​c​i​p​i​e​n​t​ ​f​o​r​ ​a​ ​L​i​g​h​t​n​i​n​g​ ​i​n​v​o​i​c​e​.
 		 */
@@ -4521,6 +4514,33 @@ type RootTranslation = {
 		 * @param {string} balance
 		 */
 		amountExceed: RequiredParams<'balance'>
+		/**
+		 * T​h​i​s​ ​a​m​o​u​n​t​ ​p​l​u​s​ ​t​h​e​ ​{​f​e​e​}​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​m​o​r​e​ ​t​h​a​n​ ​y​o​u​r​ ​b​a​l​a​n​c​e​ ​o​f​ ​{​b​a​l​a​n​c​e​}​.
+		 * @param {string} balance
+		 * @param {string} fee
+		 */
+		amountPlusFeeExceed: RequiredParams<'balance' | 'fee'>
+		/**
+		 * T​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​{​f​e​e​}​.​ ​Y​o​u​ ​c​a​n​ ​s​e​n​d​ ​u​p​ ​t​o​ ​{​m​a​x​}​ ​f​r​o​m​ ​t​h​i​s​ ​a​c​c​o​u​n​t​.
+		 * @param {string} fee
+		 * @param {string} max
+		 */
+		onchainFeeTooHigh: RequiredParams<'fee' | 'max'>
+		/**
+		 * T​h​e​ ​n​e​t​w​o​r​k​ ​f​e​e​ ​i​s​ ​{​f​e​e​}​.​ ​Y​o​u​r​ ​b​a​l​a​n​c​e​ ​i​s​ ​t​o​o​ ​l​o​w​ ​f​o​r​ ​a​n​ ​o​n​-​c​h​a​i​n​ ​s​e​n​d​ ​f​r​o​m​ ​t​h​i​s​ ​a​c​c​o​u​n​t​.
+		 * @param {string} fee
+		 */
+		onchainFeeTooHighNoMax: RequiredParams<'fee'>
+		/**
+		 * S​e​n​d​ ​{​a​m​o​u​n​t​}
+		 * @param {string} amount
+		 */
+		sendMaxAmount: RequiredParams<'amount'>
+		/**
+		 * P​a​y​ ​f​r​o​m​ ​{​a​c​c​o​u​n​t​}
+		 * @param {string} account
+		 */
+		payFromAccount: RequiredParams<'account'>
 		/**
 		 * A​m​o​u​n​t​ ​e​x​c​e​e​d​s​ ​y​o​u​r​ ​r​e​m​a​i​n​i​n​g​ ​d​a​i​l​y​ ​l​i​m​i​t​ ​o​f​ ​{​l​i​m​i​t​}
 		 * @param {string} limit
@@ -8052,13 +8072,9 @@ type RootTranslation = {
 		 */
 		recipientInvoiceFailed: string
 		/**
-		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​$​2​.
+		 * O​n​-​c​h​a​i​n​ ​s​e​n​d​s​ ​f​r​o​m​ ​y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​5​,​5​0​0​ ​s​a​t​s​.
 		 */
 		onchainBelowMinimum: string
-		/**
-		 * Y​o​u​r​ ​c​a​s​h​ ​w​a​l​l​e​t​ ​c​a​n​'​t​ ​p​a​y​ ​a​n​ ​o​n​-​c​h​a​i​n​ ​r​e​q​u​e​s​t​ ​t​h​a​t​ ​s​e​t​s​ ​a​ ​b​i​t​c​o​i​n​ ​a​m​o​u​n​t​.
-		 */
-		onchainAmountUnsupported: string
 		/**
 		 * T​h​a​t​ ​w​a​l​l​e​t​ ​i​s​n​'​t​ ​a​v​a​i​l​a​b​l​e​ ​o​n​ ​t​h​i​s​ ​a​c​c​o​u​n​t​.
 		 */
@@ -13341,21 +13357,13 @@ export type TranslationFunctions = {
 		 */
 		amount: () => LocalizedString
 		/**
-		 * Minimum amount for this transaction is US$2.00
-		 */
-		MinOnChainLimit: () => LocalizedString
-		/**
-		 * Minimum amount for this transaction is 5,500 sats
+		 * Minimum amount for this transaction is 5,500 sats.
 		 */
 		MinOnChainSatLimit: () => LocalizedString
 		/**
-		 * Use your Bitcoin Account to pay the exact Bitcoin amount in this request.
+		 * Minimum amount for this transaction is 5,500 sats, about {amount}.
 		 */
-		onchainBtcAmountCashWallet: () => LocalizedString
-		/**
-		 * Enable your Bitcoin Account (Advanced Mode) in Settings to pay the exact Bitcoin amount in this request.
-		 */
-		onchainBtcAmountCashWalletBeginner: () => LocalizedString
+		MinOnChainCashLimit: (arg: { amount: string }) => LocalizedString
 		/**
 		 * For smaller payments, ask the recipient for a Lightning invoice.
 		 */
@@ -13368,6 +13376,26 @@ export type TranslationFunctions = {
 		 * Amount exceeds your balance of {balance}
 		 */
 		amountExceed: (arg: { balance: string }) => LocalizedString
+		/**
+		 * This amount plus the {fee} network fee is more than your balance of {balance}.
+		 */
+		amountPlusFeeExceed: (arg: { balance: string, fee: string }) => LocalizedString
+		/**
+		 * The network fee is {fee}. You can send up to {max} from this account.
+		 */
+		onchainFeeTooHigh: (arg: { fee: string, max: string }) => LocalizedString
+		/**
+		 * The network fee is {fee}. Your balance is too low for an on-chain send from this account.
+		 */
+		onchainFeeTooHighNoMax: (arg: { fee: string }) => LocalizedString
+		/**
+		 * Send {amount}
+		 */
+		sendMaxAmount: (arg: { amount: string }) => LocalizedString
+		/**
+		 * Pay from {account}
+		 */
+		payFromAccount: (arg: { account: string }) => LocalizedString
 		/**
 		 * Amount exceeds your remaining daily limit of {limit}
 		 */
@@ -16843,13 +16871,9 @@ export type TranslationFunctions = {
 		 */
 		recipientInvoiceFailed: () => LocalizedString
 		/**
-		 * On-chain sends from your cash wallet need at least $2.
+		 * On-chain sends from your cash wallet need at least 5,500 sats.
 		 */
 		onchainBelowMinimum: () => LocalizedString
-		/**
-		 * Your cash wallet can't pay an on-chain request that sets a bitcoin amount.
-		 */
-		onchainAmountUnsupported: () => LocalizedString
 		/**
 		 * That wallet isn't available on this account.
 		 */

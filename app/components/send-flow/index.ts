@@ -5,6 +5,7 @@ import DetailAmountNote from "./DetailAmountNote"
 import ConfirmationDestinationAmountNote from "./ConfirmationDestinationAmountNote"
 import ConfirmationWalletFee from "./ConfirmationWalletFee"
 import ConfirmationError from "./ConfirmationError"
+import OnchainFeeShortfall from "./OnchainFeeShortfall"
 
 export {
   DestinationField,
@@ -14,4 +15,5 @@ export {
   ConfirmationDestinationAmountNote,
   ConfirmationWalletFee,
   ConfirmationError,
+  OnchainFeeShortfall,
 }

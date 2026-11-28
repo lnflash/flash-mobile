@@ -36,33 +36,46 @@ const balances = {
 
 describe("on-chain request validation", () => {
   ;[WalletCurrency.Usd, WalletCurrency.Usdt].forEach((currency) => {
-    it(`blocks the reported 68-sat request from ${currency} Cash Account before a fee or send`, () => {
+    it(`refuses the reported 68-sat request from ${currency} Cash Account with the sat minimum`, () => {
       const detail = fixedRequest(currency, 68)
       expect(isValidAmount({ ...balances, paymentDetail: detail })).toEqual({
         validAmount: false,
-        invalidReason: AmountInvalidReason.MinOnChainLimit,
+        invalidReason: AmountInvalidReason.MinOnChainSatLimit,
       })
-      expect(detail.canGetFee).toBe(false)
-      expect(detail.canSendPayment).toBe(false)
       expect(detail.destinationSpecifiedAmount).toEqual(toBtcMoneyAmount(68))
     })
-  })
-  it("blocks 68 sats from Bitcoin Account with its actual on-chain minimum", () => {
-    expect(
-      isValidAmount({ ...balances, paymentDetail: fixedRequest("BTC", 68) }),
-    ).toEqual({
-      validAmount: false,
-      invalidReason: AmountInvalidReason.MinOnChainSatLimit,
+    it(`holds the 5,500-sat boundary for a fixed request from ${currency} Cash Account`, () => {
+      expect(
+        isValidAmount({ ...balances, paymentDetail: fixedRequest(currency, 5_499) }),
+      ).toEqual({
+        validAmount: false,
+        invalidReason: AmountInvalidReason.MinOnChainSatLimit,
+      })
+      expect(
+        isValidAmount({ ...balances, paymentDetail: fixedRequest(currency, 5_500) }),
+      ).toEqual({ validAmount: true })
     })
-  })
-  ;[WalletCurrency.Usd, WalletCurrency.Usdt].forEach((currency) => {
-    it(`asks for Bitcoin Account for an otherwise affordable fixed request from ${currency}`, () => {
+    it(`pays an affordable fixed request from ${currency} Cash Account`, () => {
       const detail = fixedRequest(currency, 6_000)
       expect(isValidAmount({ ...balances, paymentDetail: detail })).toEqual({
-        validAmount: false,
-        invalidReason: AmountInvalidReason.OnChainBtcAmountCashWallet,
+        validAmount: true,
       })
-      const switched = detail.setSendingWalletDescriptor({
+      expect(detail.canGetFee).toBe(true)
+      expect(detail.canSendPayment).toBe(true)
+    })
+    it(`refuses a fixed request the ${currency} Cash balance cannot cover`, () => {
+      // 19,901 sats are 1,990.1 cents at the fixture price; with the server's
+      // 0.5% margin, rounded up, 2,001: one cent over the balance.
+      expect(
+        isValidAmount({ ...balances, paymentDetail: fixedRequest(currency, 19_901) }),
+      ).toEqual({
+        validAmount: false,
+        invalidReason: AmountInvalidReason.InsufficientBalance,
+        balance: balances.usdWalletAmount,
+      })
+    })
+    it(`leaves the same request from Bitcoin Account unchanged after choosing it over ${currency}`, () => {
+      const switched = fixedRequest(currency, 6_000).setSendingWalletDescriptor({
         id: "btc-wallet",
         currency: WalletCurrency.Btc,
       })
@@ -76,6 +89,14 @@ describe("on-chain request validation", () => {
       })
     })
   })
+  it("blocks 68 sats from Bitcoin Account with its actual on-chain minimum", () => {
+    expect(
+      isValidAmount({ ...balances, paymentDetail: fixedRequest("BTC", 68) }),
+    ).toEqual({
+      validAmount: false,
+      invalidReason: AmountInvalidReason.MinOnChainSatLimit,
+    })
+  })
   ;[WalletCurrency.Usd, WalletCurrency.Usdt].forEach((currency) => {
     it(`keeps amount-free on-chain requests in ${currency} cash, enforcing the minimum and balance`, () => {
       const cash = (cents: number) =>
@@ -85,11 +106,13 @@ describe("on-chain request validation", () => {
           convertMoneyAmount: convert,
           sendingWalletDescriptor: { id: "cash-wallet", currency },
         })
-      expect(isValidAmount({ ...balances, paymentDetail: cash(199) })).toEqual({
+      // 5,500 sats are 550 cents at the fixture price.
+      expect(isValidAmount({ ...balances, paymentDetail: cash(549) })).toEqual({
         validAmount: false,
         invalidReason: AmountInvalidReason.MinOnChainLimit,
+        minimum: toUsdMoneyAmount(550),
       })
-      const minimum = cash(200)
+      const minimum = cash(550)
       expect(isValidAmount({ ...balances, paymentDetail: minimum })).toEqual({
         validAmount: true,
       })

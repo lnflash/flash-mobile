@@ -2,6 +2,7 @@ import { WalletCurrency } from "@app/graphql/generated"
 import {
   AmountInvalidReason,
   AmountStatus,
+  ConvertMoneyAmount,
   LimitType,
   PaymentDetail,
 } from "./index.types"
@@ -16,6 +17,19 @@ import {
   toBtcMoneyAmount,
 } from "@app/types/amounts"
 import { PaymentType } from "@galoymoney/client"
+import { ONCHAIN_MIN_SEND_SATS } from "../onchain-speed-options"
+
+/**
+ * The least a Cash Account on-chain send of an amount in dollars may move, in
+ * whole cents: what 5,500 sats are worth, rounded up. The server refuses an
+ * on-chain send worth fewer than 5,500 sats. NaN when the sats cannot be
+ * priced.
+ */
+export const cashOnchainMinimumCents = (convertMoneyAmount: ConvertMoneyAmount): number =>
+  Math.ceil(
+    convertMoneyAmount(toBtcMoneyAmount(ONCHAIN_MIN_SEND_SATS), WalletCurrency.Usd)
+      .amount,
+  )
 
 export const isValidAmount = ({
   paymentDetail,
@@ -82,26 +96,15 @@ export const isValidAmount = ({
     }
   }
 
+  // A request that fixes the sats is sent from the Cash Account as sats, and
+  // the server refuses fewer than 5,500 of them.
   if (
     moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
     paymentDetail.paymentType === PaymentType.Onchain &&
+    paymentDetail.destinationSpecifiedAmount &&
     lessThan({
-      value: settlementAmount,
-      lessThan: toUsdMoneyAmount(200),
-    })
-  ) {
-    return {
-      validAmount: false,
-      invalidReason: AmountInvalidReason.MinOnChainLimit,
-    }
-  }
-
-  if (
-    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
-    paymentDetail.paymentType === PaymentType.Onchain &&
-    lessThan({
-      value: settlementAmount,
-      lessThan: toBtcMoneyAmount(5500),
+      value: paymentDetail.destinationSpecifiedAmount,
+      lessThan: toBtcMoneyAmount(ONCHAIN_MIN_SEND_SATS),
     })
   ) {
     return {
@@ -110,14 +113,35 @@ export const isValidAmount = ({
     }
   }
 
+  // An amount in dollars is sent from the Cash Account as cents, and the
+  // server refuses one worth fewer than 5,500 sats. A request that fixes the
+  // sats was held to them above.
   if (
+    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd) &&
     paymentDetail.paymentType === PaymentType.Onchain &&
-    paymentDetail.destinationSpecifiedAmount &&
-    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Usd)
+    !paymentDetail.destinationSpecifiedAmount
+  ) {
+    const minimumCents = cashOnchainMinimumCents(paymentDetail.convertMoneyAmount)
+    if (Number.isFinite(minimumCents) && settlementAmount.amount < minimumCents) {
+      return {
+        validAmount: false,
+        invalidReason: AmountInvalidReason.MinOnChainLimit,
+        minimum: toUsdMoneyAmount(minimumCents),
+      }
+    }
+  }
+
+  if (
+    moneyAmountIsCurrencyType(settlementAmount, WalletCurrency.Btc) &&
+    paymentDetail.paymentType === PaymentType.Onchain &&
+    lessThan({
+      value: settlementAmount,
+      lessThan: toBtcMoneyAmount(ONCHAIN_MIN_SEND_SATS),
+    })
   ) {
     return {
       validAmount: false,
-      invalidReason: AmountInvalidReason.OnChainBtcAmountCashWallet,
+      invalidReason: AmountInvalidReason.MinOnChainSatLimit,
     }
   }
 

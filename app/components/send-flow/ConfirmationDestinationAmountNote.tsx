@@ -12,7 +12,10 @@ import DestinationIcon from "@app/assets/icons/destination.svg"
 import NoteIcon from "@app/assets/icons/note.svg"
 
 // types
-import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
+import {
+  cashDebitForFixedSats,
+  PaymentDetail,
+} from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
 import { MoneyAmount } from "@app/types/amounts"
 
@@ -69,6 +72,7 @@ const ConfirmationDestinationAmountNote: React.FC<Props> = ({
           isSendingMax={isSendingMax}
           convertMoneyAmount={convertMoneyAmount}
           walletCurrency={sendingWalletDescriptor.currency}
+          cashDebitAmount={cashDebitForFixedSats(paymentDetail)}
         />
       </View>
       {note ? (

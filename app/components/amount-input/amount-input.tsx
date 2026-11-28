@@ -40,6 +40,12 @@ export type AmountInputProps = {
    * decides later mounts the field once it has decided.
    */
   initiallyOpen?: boolean
+  /**
+   * What the Cash Account will be debited for an amount fixed in sats
+   * (cashDebitForFixedSats). Shown in place of the sats' value at the mid
+   * rate, still marked approximate: the server prices them at send time.
+   */
+  cashDebitAmount?: MoneyAmount<WalletCurrency>
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -57,6 +63,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   big = true,
   newDesign = false,
   initiallyOpen = false,
+  cashDebitAmount,
 }) => {
   const { LL } = useI18nContext()
   const { formatMoneyAmount, getSecondaryAmountIfCurrencyIsDifferent } =
@@ -77,7 +84,14 @@ export const AmountInput: React.FC<AmountInputProps> = ({
       (walletCurrency === WalletCurrency.Usd || walletCurrency === WalletCurrency.Usdt) &&
       unitOfAccountAmount.currency === WalletCurrency.Btc
 
-    const primaryAmount = convertMoneyAmount(unitOfAccountAmount, DisplayCurrency)
+    // A Cash Account paying an amount fixed in sats shows what it will be
+    // debited, not the sats' value at the mid rate.
+    const shownAmount =
+      isBtcDenominatedCashWalletAmount && cashDebitAmount
+        ? cashDebitAmount
+        : unitOfAccountAmount
+
+    const primaryAmount = convertMoneyAmount(shownAmount, DisplayCurrency)
 
     formattedPrimaryAmount = formatMoneyAmount({
       moneyAmount: primaryAmount,
@@ -85,8 +99,8 @@ export const AmountInput: React.FC<AmountInputProps> = ({
 
     const secondaryAmount = getSecondaryAmountIfCurrencyIsDifferent({
       primaryAmount,
-      walletAmount: convertMoneyAmount(unitOfAccountAmount, walletCurrency),
-      displayAmount: convertMoneyAmount(unitOfAccountAmount, DisplayCurrency),
+      walletAmount: convertMoneyAmount(shownAmount, walletCurrency),
+      displayAmount: convertMoneyAmount(shownAmount, DisplayCurrency),
     })
 
     formattedPrimaryAmount = formatMoneyAmount({

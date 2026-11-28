@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react"
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { View, Alert } from "react-native"
 import { makeStyles } from "@rneui/themed"
 import { StackScreenProps } from "@react-navigation/stack"
@@ -13,6 +13,7 @@ import {
   ChooseWallet,
   DetailAmountNote,
   DetailDestination,
+  OnchainFeeShortfall,
 } from "@app/components/send-flow"
 
 // gql
@@ -51,7 +52,11 @@ import {
   toSpendableBalance,
   toUsdMoneyAmount,
 } from "@app/types/amounts"
-import { isValidAmount } from "./payment-details"
+import {
+  cashCentsToDeliverSats,
+  cashOnchainMinimumCents,
+  isValidAmount,
+} from "./payment-details"
 import { noteInvoiceFirstSight } from "./invoice-expiry"
 import { buildMaxAmountButton } from "./max-amount-button"
 import { maxAmountButtonStrings } from "./max-amount-button-strings"
@@ -62,9 +67,23 @@ import {
 } from "./lnurl-fee-probe"
 import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { requestInvoice, utils } from "lnurl-pay"
-import { fetchBreezFee, fetchLnurlPayRequest } from "@app/utils/breez-sdk"
+import {
+  fetchBreezFee,
+  fetchBreezOnchainFees,
+  fetchLnurlPayRequest,
+} from "@app/utils/breez-sdk"
 import { LnurlLimits, lnurlLimitsFromPayRequest } from "@app/utils/breez-sdk/fee-errors"
 import { breezFeeErrorMessage } from "@app/utils/breez-sdk/fee-error-message"
+import {
+  cashAccountCanPay,
+  ONCHAIN_MIN_SEND_SATS,
+  ONCHAIN_QUOTE_DEBOUNCE_MS,
+  ONCHAIN_SPEEDS,
+  OnchainSpeed,
+  OnchainSpeedFees,
+  planOnchainSpeeds,
+  resolveSelectedSpeed,
+} from "./onchain-speed-options"
 import type { LnurlPayRequestDetails } from "@breeztech/breez-sdk-spark-react-native"
 
 type Props = StackScreenProps<RootStackParamList, "sendBitcoinDetails">
@@ -96,6 +115,14 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
     useState<LnurlPayRequestDetails | null>(null)
   const [asyncErrorMessage, setAsyncErrorMessage] = useState("")
   const [selectedFeeType, setSelectedFeeType] = useState<"fast" | "medium" | "slow">()
+  // The Bitcoin Account onchain quote for every speed, with the amount and
+  // destination it was asked for, so a quote is only ever read against them.
+  const [onchainQuote, setOnchainQuote] = useState<{
+    destination: string
+    amountSats: number
+    fees: OnchainSpeedFees
+  } | null>(null)
+  const onchainQuoteRequestId = useRef(0)
   const [isProcessing, setIsProcessing] = useState(false)
   // What the LNURL probe already asked the receiver, for the life of this
   // screen: completed prices and outstanding invoice mints. Every probe that
@@ -260,10 +287,16 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
             displayAmount: _convertMoneyAmount(spendableBalance, DisplayCurrency),
             walletAmount: spendableBalance,
           })
+          // Formatted as the confirm screen shows the Bitcoin Account fee.
+          const feeAmount = toBtcMoneyAmount(fee)
           setAsyncErrorMessage(
-            LL.SendBitcoinScreen.amountExceed({
+            LL.SendBitcoinScreen.amountPlusFeeExceed({
+              fee: formatDisplayAndWalletAmount({
+                displayAmount: _convertMoneyAmount(feeAmount, DisplayCurrency),
+                walletAmount: feeAmount,
+              }),
               balance: amount,
-            }) + "(amount + fee)",
+            }),
           )
           return false
         }
@@ -280,10 +313,17 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
             displayAmount: _convertMoneyAmount(spendableBalance, DisplayCurrency),
             walletAmount: spendableBalance,
           })
+          // In USD like the balance beside it: a USDT fee would otherwise
+          // print its figure twice under a USD display currency.
+          const feeAmount = toUsdMoneyAmount(estimatedFee.amount)
           setAsyncErrorMessage(
-            LL.SendBitcoinScreen.amountExceed({
+            LL.SendBitcoinScreen.amountPlusFeeExceed({
+              fee: formatDisplayAndWalletAmount({
+                displayAmount: _convertMoneyAmount(feeAmount, DisplayCurrency),
+                walletAmount: feeAmount,
+              }),
               balance: amount,
-            }) + "(amount + fee)",
+            }),
           )
           return false
         }
@@ -540,6 +580,163 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
       paymentDetail.paymentType === "onchain" &&
       !selectedFeeType)
 
+  // Bitcoin Account onchain: price all three speeds once the destination and a
+  // valid amount are known, so each speed shows its fee and the ones the
+  // balance cannot cover are dimmed. The quote waits for the amount to settle,
+  // and a response for an amount the user has since changed is dropped. On
+  // failure the picker looks as it did before, and the check on Next applies.
+  const isBtcOnchain =
+    paymentDetail?.sendingWalletDescriptor.currency === WalletCurrency.Btc &&
+    paymentDetail.paymentType === "onchain"
+  const onchainQuoteDestination = flashUserAddress || paymentDetail?.destination || ""
+  const onchainQuoteAmountSats =
+    isBtcOnchain && amountStatus.validAmount
+      ? paymentDetail?.settlementAmount.amount ?? 0
+      : 0
+
+  useEffect(() => {
+    onchainQuoteRequestId.current += 1
+    const requestId = onchainQuoteRequestId.current
+    setOnchainQuote(null)
+    if (!onchainQuoteDestination || onchainQuoteAmountSats <= 0) return
+    const timer = setTimeout(async () => {
+      const { fees } = await fetchBreezOnchainFees({
+        paymentRequest: onchainQuoteDestination,
+        amountSats: onchainQuoteAmountSats,
+      })
+      if (requestId !== onchainQuoteRequestId.current || !fees) return
+      setOnchainQuote({
+        destination: onchainQuoteDestination,
+        amountSats: onchainQuoteAmountSats,
+        fees,
+      })
+    }, ONCHAIN_QUOTE_DEBOUNCE_MS)
+    return () => {
+      clearTimeout(timer)
+      onchainQuoteRequestId.current += 1
+    }
+  }, [onchainQuoteDestination, onchainQuoteAmountSats])
+
+  const onchainSpeedPlan = useMemo(
+    () =>
+      onchainQuote &&
+      onchainQuote.destination === onchainQuoteDestination &&
+      onchainQuote.amountSats === onchainQuoteAmountSats
+        ? planOnchainSpeeds({
+            fees: onchainQuote.fees,
+            amountSats: onchainQuote.amountSats,
+            balanceSats: btcWallet.balance,
+            minSendSats: ONCHAIN_MIN_SEND_SATS,
+          })
+        : null,
+    [onchainQuote, onchainQuoteDestination, onchainQuoteAmountSats, btcWallet.balance],
+  )
+
+  // Keep the selection on a speed the balance covers: Medium by default, the
+  // fastest that fits when the current one stops fitting, none when none fits.
+  useEffect(() => {
+    if (!onchainSpeedPlan) return
+    const speed = resolveSelectedSpeed(onchainSpeedPlan, selectedFeeType)
+    if (speed !== selectedFeeType) setSelectedFeeType(speed)
+  }, [onchainSpeedPlan, selectedFeeType])
+
+  const onSelectFee = (speed: OnchainSpeed) => {
+    setSelectedFeeType(speed)
+    // An amount-plus-fee error from Next was about the previous speed. Left in
+    // place it would keep Next disabled under a speed that may fit.
+    if (speed !== selectedFeeType) setAsyncErrorMessage("")
+  }
+
+  // Formatted as the confirm screen shows the Bitcoin Account fee, so the two
+  // screens agree.
+  const formatBtcSats = (sats: number): string => {
+    const walletAmount = toBtcMoneyAmount(sats)
+    if (!paymentDetail) return formatSats(sats)
+    return formatDisplayAndWalletAmount({
+      displayAmount: paymentDetail.convertMoneyAmount(walletAmount, DisplayCurrency),
+      walletAmount,
+    })
+  }
+
+  const sendOnchainMax = () => {
+    if (!paymentDetail?.setAmount || !onchainSpeedPlan) return
+    setAsyncErrorMessage("")
+    // Exact sats rather than display currency: a converted amount can round
+    // back up past what the cheapest fee leaves room for.
+    setPaymentDetail(
+      paymentDetail.setAmount(toBtcMoneyAmount(onchainSpeedPlan.maxSendSats)),
+    )
+  }
+
+  // The same switch ChooseWallet makes, amount kept in display currency.
+  const payFromCashAccount = () => {
+    if (!paymentDetail || !usdWallet) return
+    let updatedPaymentDetail = paymentDetail.setSendingWalletDescriptor({
+      id: usdWallet.id,
+      currency: usdWallet.walletCurrency,
+    })
+    if (updatedPaymentDetail.canSetAmount) {
+      updatedPaymentDetail = updatedPaymentDetail.setAmount(
+        updatedPaymentDetail.convertMoneyAmount(
+          paymentDetail.unitOfAccountAmount,
+          DisplayCurrency,
+        ),
+      )
+    }
+    setAsyncErrorMessage("")
+    setPaymentDetail(updatedPaymentDetail)
+  }
+
+  const renderOnchainFeeShortfall = () => {
+    if (!paymentDetail || !onchainSpeedPlan?.noSpeedFits) return null
+    const fee = formatBtcSats(onchainSpeedPlan.cheapestFeeSats)
+    const max = formatBtcSats(onchainSpeedPlan.maxSendSats)
+    const midRateCents = paymentDetail.convertMoneyAmount(
+      paymentDetail.settlementAmount,
+      WalletCurrency.Usd,
+    ).amount
+    const cashCanPay = cashAccountCanPay({
+      amountSats: paymentDetail.settlementAmount.amount,
+      // A request that fixes its sats costs the Cash Account the server's
+      // margin too, as the payment detail it switches to prices it.
+      amountCents: paymentDetail.destinationSpecifiedAmount
+        ? cashCentsToDeliverSats(midRateCents)
+        : midRateCents,
+      balanceCents: usdWallet ? usdBalanceMoneyAmount.amount : undefined,
+      // The floor the Cash screen holds the amount to: the sats of a request
+      // that fixes them, else what 5,500 sats are worth in cents.
+      hasFixedSats: Boolean(paymentDetail.destinationSpecifiedAmount),
+      minimumCents: cashOnchainMinimumCents(paymentDetail.convertMoneyAmount),
+    })
+    return (
+      <OnchainFeeShortfall
+        message={
+          onchainSpeedPlan.canSendMax && paymentDetail.canSetAmount
+            ? LL.SendBitcoinScreen.onchainFeeTooHigh({ fee, max })
+            : LL.SendBitcoinScreen.onchainFeeTooHighNoMax({ fee })
+        }
+        sendMax={
+          onchainSpeedPlan.canSendMax && paymentDetail.canSetAmount
+            ? {
+                label: LL.SendBitcoinScreen.sendMaxAmount({ amount: max }),
+                onPress: sendOnchainMax,
+              }
+            : undefined
+        }
+        payFromCash={
+          cashCanPay
+            ? {
+                label: LL.SendBitcoinScreen.payFromAccount({
+                  account: LL.common.usdAccount(),
+                }),
+                onPress: payFromCashAccount,
+              }
+            : undefined
+        }
+      />
+    )
+  }
+
   if (paymentDetail) {
     return (
       <Screen
@@ -573,9 +770,26 @@ const SendBitcoinDetailsScreen: React.FC<Props> = ({ navigation, route }) => {
             <Fees
               wrapperStyle={{ marginTop: 0 }}
               selectedFeeType={selectedFeeType}
-              onSelectFee={setSelectedFeeType}
+              onSelectFee={onSelectFee}
+              feeLabels={
+                onchainSpeedPlan
+                  ? {
+                      fast: formatBtcSats(onchainSpeedPlan.options.fast.feeSats),
+                      medium: formatBtcSats(onchainSpeedPlan.options.medium.feeSats),
+                      slow: formatBtcSats(onchainSpeedPlan.options.slow.feeSats),
+                    }
+                  : undefined
+              }
+              disabledFeeTypes={
+                onchainSpeedPlan
+                  ? ONCHAIN_SPEEDS.filter(
+                      (speed) => !onchainSpeedPlan.options[speed].fits,
+                    )
+                  : undefined
+              }
             />
           )}
+        {isBtcOnchain && renderOnchainFeeShortfall()}
         <SendBitcoinDetailsExtraInfo
           errorMessage={asyncErrorMessage}
           amountStatus={amountStatus}

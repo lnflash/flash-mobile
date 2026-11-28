@@ -248,7 +248,6 @@ export const AmountInvalidReason = {
   NoAmount: "NoAmount",
   MinOnChainLimit: "MinOnChainLimit",
   MinOnChainSatLimit: "MinOnChainSatLimit",
-  OnChainBtcAmountCashWallet: "OnChainBtcAmountCashWallet",
   MinFlashcardLimit: "MinFlashcardLimit",
 } as const
 
@@ -284,14 +283,12 @@ export type AmountStatus =
   | {
       validAmount: false
       invalidReason: typeof AmountInvalidReason.MinOnChainLimit
+      /** The least the Cash Account can send on-chain: 5,500 sats, in cents. */
+      minimum: MoneyAmount<WalletCurrency>
     }
   | {
       validAmount: false
       invalidReason: typeof AmountInvalidReason.MinOnChainSatLimit
-    }
-  | {
-      validAmount: false
-      invalidReason: typeof AmountInvalidReason.OnChainBtcAmountCashWallet
     }
   | {
       validAmount: false

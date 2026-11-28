@@ -193,6 +193,7 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
               walletId: sendingWalletDescriptor.id,
               address,
               amount: settlementAmount.amount,
+              memo,
             },
           },
         })
@@ -233,6 +234,7 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
               walletId: sendingWalletDescriptor.id,
               address,
               amount: settlementAmount.amount,
+              memo,
             },
           },
         })
@@ -333,6 +335,38 @@ export const createNoAmountOnchainPaymentDetails = <T extends WalletCurrency>(
   } as const
 }
 
+/**
+ * The margin the server adds when the Cash Account pays a request that fixes
+ * its sats, in basis points: the default of the server's
+ * onChainWallet.btcDenominatedSendMarginBps.
+ */
+export const BTC_DENOMINATED_SEND_MARGIN_BPS = 50
+
+/**
+ * The cents the server debits from the Cash Account for a request that fixes
+ * its sats, before the network fee: the sats at the mid rate (`midRateCents`)
+ * plus the margin, rounded UP to a whole cent, as the server's
+ * usdCentsToDeliverSats prices them. The margin is not a fee: the recipient
+ * gets slightly more than the request.
+ */
+export const cashCentsToDeliverSats = (midRateCents: number): number =>
+  Math.ceil(midRateCents * (1 + BTC_DENOMINATED_SEND_MARGIN_BPS / 10_000))
+
+/**
+ * What the Cash Account will be debited for an on-chain request that fixes its
+ * sats, before the network fee: the settlement amount, the margin included.
+ * Undefined for every other payment.
+ */
+export const cashDebitForFixedSats = <T extends WalletCurrency>(
+  paymentDetail: PaymentDetail<T>,
+): PaymentDetail<T>["settlementAmount"] | undefined =>
+  paymentDetail.paymentType === PaymentType.Onchain &&
+  paymentDetail.destinationSpecifiedAmount &&
+  (paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+    paymentDetail.sendingWalletDescriptor.currency === WalletCurrency.Usdt)
+    ? paymentDetail.settlementAmount
+    : undefined
+
 export type CreateAmountOnchainPaymentDetailsParams<T extends WalletCurrency> = {
   address: string
   destinationSpecifiedAmount: BtcMoneyAmount
@@ -350,10 +384,18 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
     address,
   } = params
 
-  const settlementAmount = convertMoneyAmount(
+  const midRateAmount = convertMoneyAmount(
     destinationSpecifiedAmount,
     sendingWalletDescriptor.currency,
   )
+  // From the Cash Account the settlement is what the server debits: the sats
+  // at the mid rate plus its margin, rounded up to a whole cent. What is sent
+  // is still the request's sats (below).
+  const settlementAmount =
+    sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+    sendingWalletDescriptor.currency === WalletCurrency.Usdt
+      ? { ...midRateAmount, amount: cashCentsToDeliverSats(midRateAmount.amount) }
+      : midRateAmount
   const unitOfAccountAmount = destinationSpecifiedAmount
 
   const memo = destinationSpecifiedMemo || senderSpecifiedMemo
@@ -414,11 +456,61 @@ export const createAmountOnchainPaymentDetails = <T extends WalletCurrency>(
       sendPaymentMutation,
       getFee,
     }
+  } else if (
+    sendingWalletDescriptor.currency === WalletCurrency.Usd ||
+    sendingWalletDescriptor.currency === WalletCurrency.Usdt
+  ) {
+    // The request fixes the sats, so the Cash Account sends them as sats: the
+    // server prices them in cents and debits the Cash Account. The fee comes
+    // back in cents.
+    sendPaymentMutation = async (paymentMutations) => {
+      const { data } = await paymentMutations.onChainUsdPaymentSendAsBtcDenominated({
+        variables: {
+          input: {
+            walletId: sendingWalletDescriptor.id,
+            address,
+            amount: destinationSpecifiedAmount.amount,
+            memo,
+          },
+        },
+      })
+
+      return {
+        status: data?.onChainUsdPaymentSendAsBtcDenominated.status,
+        errors: data?.onChainUsdPaymentSendAsBtcDenominated.errors,
+      }
+    }
+
+    getFee = async (getFeeFns) => {
+      const { data } = await getFeeFns.onChainUsdTxFeeAsBtcDenominated({
+        variables: {
+          walletId: sendingWalletDescriptor.id,
+          address,
+          amount: destinationSpecifiedAmount.amount,
+        },
+      })
+
+      const rawAmount = data?.onChainUsdTxFeeAsBtcDenominated.amount
+      const amount =
+        typeof rawAmount === "number"
+          ? toWalletAmount({
+              amount: rawAmount,
+              currency: sendingWalletDescriptor.currency,
+            })
+          : rawAmount
+
+      return {
+        amount,
+      }
+    }
+
+    sendPaymentAndGetFee = {
+      canSendPayment: true,
+      canGetFee: true,
+      sendPaymentMutation,
+      getFee,
+    }
   }
-  // Fixed-amount Bitcoin requests cannot use Cash Account's cents-denominated
-  // endpoint: a local conversion could pay a different number of sats. The
-  // BTC-denominated cash endpoint is disabled server-side, so expose neither
-  // a fee probe nor a send. Amount validation explains how to choose Bitcoin.
 
   const setMemo: PaymentDetailSetMemo<T> = destinationSpecifiedMemo
     ? {

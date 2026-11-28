@@ -1,5 +1,7 @@
 import { WalletCurrency } from "@app/graphql/generated"
+import { ConvertMoneyAmount } from "@app/screens/send-bitcoin-screen/payment-details"
 import * as PaymentDetails from "@app/screens/send-bitcoin-screen/payment-details/onchain"
+import { toBtcMoneyAmount } from "@app/types/amounts"
 import {
   btcSendingWalletDescriptor,
   convertMoneyAmountMock,
@@ -107,18 +109,86 @@ describe("no amount onchain payment details", () => {
   })
   ;[WalletCurrency.Usd, WalletCurrency.Usdt].forEach((currency) => {
     describe(`sending from a ${currency} cash wallet`, () => {
-      it("does not expose a fee or send for the disabled BTC-denominated cash endpoint", () => {
-        const detail = createAmountOnchainPaymentDetails({
-          ...defaultParams,
-          sendingWalletDescriptor: { ...usdSendingWalletDescriptor, currency },
+      // Ten sats per cent, so a call that passed the converted cents instead of
+      // the request's sats would show up as a different number.
+      const cashParams = {
+        ...defaultParams,
+        destinationSpecifiedAmount: toBtcMoneyAmount(6_000),
+        convertMoneyAmount: ((amount, toCurrency) => ({
+          amount: amount.currency === toCurrency ? amount.amount : amount.amount / 10,
+          currency: toCurrency,
+          currencyCode: toCurrency,
+        })) as ConvertMoneyAmount,
+        sendingWalletDescriptor: { ...usdSendingWalletDescriptor, currency },
+      }
+      const paymentDetails = createAmountOnchainPaymentDetails(cashParams)
+
+      it("keeps the request's sats and settles an estimate in cents", () => {
+        expect(paymentDetails.destinationSpecifiedAmount).toEqual(toBtcMoneyAmount(6_000))
+        // 600 cents at the fixture price, plus the server's 0.5% margin.
+        expect(paymentDetails.settlementAmount).toEqual({
+          amount: 603,
+          currency,
+          currencyCode: currency,
         })
-        expect(detail.canGetFee).toBe(false)
-        expect(detail.getFee).toBeUndefined()
-        expect(detail.canSendPayment).toBe(false)
-        expect(detail.sendPaymentMutation).toBeUndefined()
-        expect(detail.destinationSpecifiedAmount).toEqual(
-          defaultParams.destinationSpecifiedAmount,
-        )
+        expect(paymentDetails.settlementAmountIsEstimated).toBe(true)
+        expect(paymentDetails.canGetFee).toBe(true)
+        expect(paymentDetails.canSendPayment).toBe(true)
+      })
+
+      it("gets the fee in sats and reads it as cents in the wallet currency", async () => {
+        const feeParamsMocks = createGetFeeMocks()
+        ;(feeParamsMocks.onChainUsdTxFeeAsBtcDenominated as jest.Mock).mockResolvedValue({
+          data: { onChainUsdTxFeeAsBtcDenominated: { amount: 37 } },
+        })
+        if (!paymentDetails.canGetFee) {
+          throw new Error("Cannot get fee")
+        }
+
+        const fee = await paymentDetails.getFee(feeParamsMocks)
+
+        expect(feeParamsMocks.onChainUsdTxFeeAsBtcDenominated).toHaveBeenCalledWith({
+          variables: {
+            address: defaultParams.address,
+            amount: 6_000,
+            walletId: usdSendingWalletDescriptor.id,
+          },
+        })
+        expect(feeParamsMocks.onChainUsdTxFee).not.toHaveBeenCalled()
+        expect(feeParamsMocks.onChainTxFee).not.toHaveBeenCalled()
+        expect(fee.amount).toEqual({ amount: 37, currency, currencyCode: currency })
+      })
+
+      it("sends the request's sats from the cash wallet", async () => {
+        const sendPaymentMocks = createSendPaymentMocks()
+        const paymentDetailsWithNote = createAmountOnchainPaymentDetails({
+          ...cashParams,
+          senderSpecifiedMemo: "note",
+        })
+        if (!paymentDetailsWithNote.canSendPayment) {
+          throw new Error("Cannot send payment")
+        }
+
+        try {
+          await paymentDetailsWithNote.sendPaymentMutation(sendPaymentMocks)
+        } catch {
+          // do nothing as function is expected to throw since we are not mocking the send payment response
+        }
+
+        expect(
+          sendPaymentMocks.onChainUsdPaymentSendAsBtcDenominated,
+        ).toHaveBeenCalledWith({
+          variables: {
+            input: {
+              address: defaultParams.address,
+              amount: 6_000,
+              walletId: usdSendingWalletDescriptor.id,
+              memo: "note",
+            },
+          },
+        })
+        expect(sendPaymentMocks.onChainUsdPaymentSend).not.toHaveBeenCalled()
+        expect(sendPaymentMocks.onChainPaymentSend).not.toHaveBeenCalled()
       })
     })
   })

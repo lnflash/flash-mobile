@@ -18,7 +18,10 @@ import { MaxAmountButton } from "@app/components/amount-input-screen"
 import { NoteInput } from "@app/components/note-input"
 
 // types
-import { PaymentDetail } from "@app/screens/send-bitcoin-screen/payment-details"
+import {
+  cashDebitForFixedSats,
+  PaymentDetail,
+} from "@app/screens/send-bitcoin-screen/payment-details"
 import { WalletCurrency } from "@app/graphql/generated"
 import {
   DisplayCurrency,
@@ -284,6 +287,7 @@ const DetailAmountNote: React.FC<Props> = ({
             walletCurrency={sendingWalletDescriptor.currency}
             canSetAmount={paymentDetail.canSetAmount}
             isSendingMax={paymentDetail.isSendingMax}
+            cashDebitAmount={cashDebitForFixedSats(paymentDetail)}
             maxAmountButton={maxAmountButton}
           />
         </View>
