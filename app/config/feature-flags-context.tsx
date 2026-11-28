@@ -3,6 +3,7 @@ import { getRemoteConfig } from "@react-native-firebase/remote-config"
 import { useAppConfig } from "@app/hooks"
 import { useLevel } from "@app/graphql/level-context"
 import {
+  assistantInThisBuild,
   useAssistantDevOverride,
   useAssistantRepliesDevOverride,
   useAssistantVoiceDevOverride,
@@ -191,7 +192,11 @@ export const FeatureFlagContextProvider: React.FC<React.PropsWithChildren> = ({
     // ENG-689 decision 3, ENG-734), never meant for a store build.
     // Debug links can explicitly opt into voice atomically with the assistant;
     // a Remote Config fetch cannot overwrite that test-session choice.
-    assistantEnabled: remoteConfig.assistantEnabled || assistantDevOverride,
+    // A store build leaves the assistant out, whatever Remote Config says
+    // (assistantInThisBuild); voice, replies and the model are read only
+    // together with assistantEnabled (ask-flash-screen.tsx).
+    assistantEnabled:
+      assistantInThisBuild() && (remoteConfig.assistantEnabled || assistantDevOverride),
     assistantVoice: remoteConfig.assistantVoice || assistantVoiceDevOverride,
     assistantVoiceReplies:
       remoteConfig.assistantVoiceReplies || assistantRepliesDevOverride,

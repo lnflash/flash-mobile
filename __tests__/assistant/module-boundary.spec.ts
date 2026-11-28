@@ -57,10 +57,31 @@ describe("app/assistant", () => {
     )
 
     expect(fromNavigator).toEqual(["@app/assistant/ui"])
-    // What that specifier hands out: the screen, and only the screen.
+    // What that specifier hands out: the screen and its gate, and nothing else.
     const index = fs.readFileSync(path.join(assistantDir, "ui", "index.ts"), "utf8")
     const exported = index.split("\n").filter((line) => /^\s*export\b/.test(line))
-    expect(exported).toEqual(['export { AskFlashScreen } from "./ask-flash-screen"'])
+    expect(exported).toEqual([
+      'export { AskFlashGate } from "./ask-flash-gate"',
+      'export { AskFlashScreen } from "./ask-flash-screen"',
+    ])
+  })
+
+  it("registers the askFlash route behind the build switch, with the gate and never the bare screen", () => {
+    // Order 01 (ask-flash-hardening): a store build has no askFlash route
+    // (assistantInThisBuild), and where there is one, AskFlashGate closes it
+    // while assistantEnabled is off. Whitespace is folded so formatting alone
+    // never fails this; removing the condition or swapping the component does.
+    const source = fs.readFileSync(rootNavigator, "utf8").replace(/\s+/g, " ")
+
+    expect(source.split('name="askFlash"').length - 1).toBe(1)
+    expect(source).toContain(
+      '{assistantInThisBuild() && ( <RootNavigator.Screen name="askFlash" component={AskFlashGate}',
+    )
+    expect(source).not.toContain("AskFlashScreen")
+    expect(source).toContain('import { AskFlashGate } from "@app/assistant/ui"')
+    expect(source).toContain(
+      'import { assistantInThisBuild } from "@app/config/assistant-dev-override"',
+    )
   })
 
   it("allows exactly its one pair: any other importer, or specifier, still fails", () => {

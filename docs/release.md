@@ -44,6 +44,8 @@ yarn aab-android
 
 > It runs `scripts/ci/check-store-env.sh` first, which stops the build while `ASSISTANT_DEV_LINK` (local phone builds only, ENG-734) is in `.env`, the other env files the bundle reads, or the environment.
 
+> **Reset Metro's cache before any store build made by hand, Android or iOS.** react-native-dotenv writes the values from `.env` into the code when Metro transforms it, and Metro's cache does not notice when `.env` changes. On a machine that has made a test phone build with `ASSISTANT_DEV_LINK=true`, a store bundle can reuse that cached code and carry the dev link, which turns on Ask Flash, even after the key is removed and `check-store-env.sh` passes. Delete the cache first: `rm -rf "${TMPDIR:-/tmp}"/metro-cache "${TMPDIR:-/tmp}"/metro-file-map-*` (or run `yarn start --reset-cache` once and stop it). The CI deploy workflows build on fresh runners and are not affected.
+
 ### 3. **Upload to Google Play Console**
 
 - Go to [Google Play Console](https://play.google.com/console)
