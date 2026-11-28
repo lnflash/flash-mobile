@@ -66,6 +66,24 @@ describe("app/assistant", () => {
     ])
   })
 
+  it("registers the askFlash route behind the build switch, with the gate and never the bare screen", () => {
+    // Order 01 (ask-flash-hardening): a store build has no askFlash route
+    // (assistantInThisBuild), and where there is one, AskFlashGate closes it
+    // while assistantEnabled is off. Whitespace is folded so formatting alone
+    // never fails this; removing the condition or swapping the component does.
+    const source = fs.readFileSync(rootNavigator, "utf8").replace(/\s+/g, " ")
+
+    expect(source.split('name="askFlash"').length - 1).toBe(1)
+    expect(source).toContain(
+      '{assistantInThisBuild() && ( <RootNavigator.Screen name="askFlash" component={AskFlashGate}',
+    )
+    expect(source).not.toContain("AskFlashScreen")
+    expect(source).toContain('import { AskFlashGate } from "@app/assistant/ui"')
+    expect(source).toContain(
+      'import { assistantInThisBuild } from "@app/config/assistant-dev-override"',
+    )
+  })
+
   it("allows exactly its one pair: any other importer, or specifier, still fails", () => {
     const buttons = path.join(appDir, "components", "home-screen", "Buttons.tsx")
 
